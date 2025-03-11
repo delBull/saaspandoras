@@ -1,6 +1,5 @@
 import type { NextRequest } from "next/server";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
-
 import { createTRPCContext } from "@saasfly/api";
 import { edgeRouter } from "@saasfly/api/edge";
 
@@ -9,7 +8,7 @@ import { edgeRouter } from "@saasfly/api/edge";
 const handler = (req: NextRequest) =>
   fetchRequestHandler({
     endpoint: "/api/trpc/edge",
-    router: edgeRouter,
+    router: edgeRouter, 
     req: req,
     createContext: () => createTRPCContext({ req }),
     // createContext: () => ({}),
