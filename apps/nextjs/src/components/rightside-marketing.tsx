@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import React from 'react';
 
 import { GlowingEffect } from "@saasfly/ui/glowing-effect";
 import * as Icons from "@saasfly/ui/icons";
@@ -13,7 +14,7 @@ export function RightsideMarketing({ dict } : { dict: Record<string, string> | u
         icon={<Icons.Rocket className="h-4 w-4 text-black dark:text-neutral-400" />}
         title={dict?.deploy_on_vercel_title ?? ''}
         description={dict?.deploy_on_vercel_desc ?? ''}
-        link="https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fsaasfly%2Fsaasfly&env=NEXT_PUBLIC_APP_URL,NEXTAUTH_URL,NEXTAUTH_SECRET,STRIPE_API_KEY,STRIPE_WEBHOOK_SECRET,POSTGRES_URL,GITHUB_CLIENT_ID,GITHUB_CLIENT_SECRET,RESEND_API_KEY,RESEND_FROM&install-command=bun%20install&build-command=bun%20run%20build&root-directory=apps%2Fnextjs"
+        link=""
       />
 
       <GridItem
@@ -21,7 +22,7 @@ export function RightsideMarketing({ dict } : { dict: Record<string, string> | u
         icon={<Icons.Cloud className="h-4 w-4 text-black dark:text-neutral-400" />}
         title={dict?.ship_on_cloudflare_title ?? ''}
         description={dict?.ship_on_cloudflare_desc ?? ''}
-        link="https://oneclick.sh/"
+        link=""
       />
 
       <GridItem
@@ -29,7 +30,7 @@ export function RightsideMarketing({ dict } : { dict: Record<string, string> | u
         icon={<Icons.ThumbsUp className="h-4 w-4 text-black dark:text-neutral-400" />}
         title={dict?.showcase_title ?? ''}
         description={dict?.showcase_desc ?? ''}
-        link="https://discord.gg/b9uTZjdkrb"
+        link=""
       />
     </ul>
   );
@@ -44,6 +45,11 @@ interface GridItemProps {
 }
 
 const GridItem = ({ area, icon, title, description, link }: GridItemProps) => {
+  const handleClick = (event) => {
+    event.preventDefault();
+    // Aquí puedes agregar cualquier otra lógica que desees ejecutar cuando se haga clic en el enlace
+    console.log('Enlace no activado');
+};
   return (
     <li className={`min-h-[14rem] list-none ${area}`}>
       <div className="relative h-full rounded-2.5xl border dark:border-neutral-800 p-2 md:rounded-3xl md:p-3">
@@ -54,7 +60,7 @@ const GridItem = ({ area, icon, title, description, link }: GridItemProps) => {
           proximity={64}
           inactiveZone={0.01}
         />
-        <Link href={`${link ? link : ''}`} target="_blank">
+        <Link href={`${link ? link : ''}`} target="_blank" onClick={handleClick}>
           <div className="relative flex h-full flex-col justify-between gap-6 overflow-hidden rounded-xl border-0.75 p-6 dark:shadow-[0px_0px_27px_0px_#2D2D2D] md:p-6 dark:bg-neutral-900/40">
             <div className="relative flex flex-1 flex-col justify-between gap-3">
               <div className="w-fit rounded-lg border border-gray-600 dark:border-neutral-800 p-2">
