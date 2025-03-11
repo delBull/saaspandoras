@@ -1,127 +1,120 @@
 {
   "price": {
-    "title": "便宜，透明的价格！",
-    "pricing": "价格",
-    "slogan": "全速启动！",
-    "monthly_bill": "月度账单",
-    "annual_bill": "年度账单",
-    "annual_info": "年度收费时将收取",
-    "monthly_info": "每月收费时",
+    "title": "透明且实惠的定价！",
+    "pricing": "定价",
+    "slogan": "全速开始投资！",
+    "monthly_bill": "每月计费",
+    "annual_bill": "年度计费",
+    "annual_info": "年末结算",
+    "monthly_info": "每月结算",
     "mo": "/月",
-    "contact": "联系我们的支持团队。",
-    "contact_2": "您可以测试订阅，不会被收费。",
+    "contact": "请联系支持团队。",
+    "contact_2": "在计费前免费试用我们的订阅服务。",
     "faq": "常见问题",
-    "faq_detail": "浏览我们全面的常见问题，快速找到常见问题的答案。如果您需要进一步的帮助，不要犹豫，联系我们获取个性化的帮助。",
+    "faq_detail": "查看我们的常见问题（FAQ），快速获得常见问题的答案。如需进一步帮助，请随时联系我们获取个性化支持。",
     "signup": "注册",
     "upgrade": "升级",
     "manage_subscription": "管理订阅",
-    "go_to_dashboard": "转到仪表板",
-    "": ""
+    "go_to_dashboard": "前往仪表板"
   },
   "marketing": {
-    "introducing": "介绍 Saasfly",
-    "title": "更轻松地将您的应用推向全球，尽在 ",
-    "sub_title": "简单易上手，具备企业级品质的 Next.js 模板。打造 SaaS 服务的终极一体化解决方案，助力业务增长。",
-    "get_started": "快速开始",
+    "introducing": "介绍 Pandoras",
+    "title": "用 Pandoras 让你的创意焕发生机",
+    "sub_title": "一个高性能平台，用于将项目、不动产和初创企业进行代币化。为下一代投资机会提供完整解决方案。",
+    "get_started": "开始使用",
     "view_on_github": "在 GitHub 上查看",
     "explore_product": "探索产品",
-    "features": "特色",
-    "sub_features": "云原生：为初创公司简化技术、降低成本而生。",
-    "k8s_features": "开发快速、简单",
-    "devops_features": "应用轻松部署",
-    "price_features": "经济高效为生产环境打造。",
-    "main_nav_features": "特色",
-    "main_nav_pricing": "价格",
+    "features": "功能",
+    "sub_features": "区块链驱动：简化技术，为创新项目降低成本。",
+    "k8s_features": "快速简便的开发",
+    "devops_features": "轻松启动项目",
+    "price_features": "生产环境下高性价比",
+    "main_nav_features": "功能",
+    "main_nav_pricing": "定价",
     "main_nav_products": "产品",
     "main_nav_blog": "博客",
     "main_nav_documentation": "文档",
     "login": "登录",
     "signup": "注册",
-    "": "",
     "contributors": {
-      "contributors_desc": "位贡献者使Saasfly更强大了",
-      "developers_first": "帮助了超过 ",
+      "contributors_desc": "赋能 Pandoras 的贡献者",
+      "developers_first": "帮助超过 ",
       "developers_second": " 位开发者"
     },
     "right_side": {
-      "deploy_on_vercel_title": "部署到 Vercel",
-      "deploy_on_vercel_desc": "轻松上手，快速看到成果。",
-      "ship_on_cloudflare_title": "使用 Cloudflare 发布应用",
-      "ship_on_cloudflare_desc": "使用我们基于 Cloudflare 构建的平台，助力您的业务增长。",
-      "showcase_title": "最佳实践，与您分享",
-      "showcase_desc": "发现精彩应用，与开发者交流心得，向全球展示你的才华。"
+      "deploy_on_vercel_title": "自信投资",
+      "deploy_on_vercel_desc": "几秒内启动，立即见效。",
+      "ship_on_cloudflare_title": "区块链驱动",
+      "ship_on_cloudflare_desc": "我们的尖端平台确保您的项目安全且具有可扩展性。",
+      "showcase_title": "成功案例与展示",
+      "showcase_desc": "看看创新者们在构建什么，并分享您的成功。"
     },
     "features_grid": {
-      "monorepo_title": "Monorepo",
-      "monorepo_desc": "将多个项目统一管理，让代码共享更轻松，协作更高效。支持微服务架构、多平台应用以及大型项目。",
-      "i18n_title": "多语言支持",
-      "i18n_desc": "轻松实现多语言支持，为用户提供母语般的亲切体验，助您拓展国际市场，提升品牌形象。",
-      "payments_title": "全球化支付",
-      "payments_desc": "为您提供安全、便捷、高效的支付解决方案。全球化支持，多种支付方式，灵活定制，让您的业务轻松拓展，畅通无阻。",
-      "nextauth_title": "NextAuth",
-      "nextauth_desc": "让你的应用拥有安全可靠的身份验证，为用户提供丝滑流畅的登录体验。支持社交登录、邮箱验证以及自定义认证。"
+      "monorepo_title": "统一平台",
+      "monorepo_desc": "在一个平台上管理多个项目，增强协作与代码共享。",
+      "i18n_title": "全球覆盖",
+      "i18n_desc": "多语言支持为您提供更好的用户体验，并将业务扩展到全球。",
+      "payments_title": "无缝支付",
+      "payments_desc": "通过我们安全高效的支付系统，全球扩展您的业务。",
+      "nextauth_title": "安全认证",
+      "nextauth_desc": "提供流畅且安全的登录体验，提升您的平台。"
     },
     "sponsor": {
-      "title": "我们深受赞助商的喜爱",
-      "donate": "给我们买杯咖啡，您的品牌会出现在这里"
+      "title": "受赞助商信赖",
+      "donate": "请我们喝杯咖啡，您的品牌在此展示"
     },
     "video": {
-      "first_text": "观看视频，然后",
-      "second_text1": "在 ",
-      "second_text2": "构建你的应用程序",
-      "time_text": "1 小时内"
+      "first_text": "先观看视频，然后",
+      "second_text1": "用 Pandoras 构建",
+      "second_text2": "您的项目",
+      "time_text": "1 小时"
     },
     "people_comment": {
-      "title": "听听大家怎么说",
-      "desc": "不要只听我们说。以下是真实用户对 Saasfly 的评价。"
+      "title": "用户评价",
+      "desc": "不仅仅听我们说，看看真实用户对 Pandoras 的评价。"
     }
   },
   "login": {
     "back": "返回",
     "welcome_back": "欢迎回来",
-    "signin_title": "输入您的电子邮件以登录您的账户",
-    "singup_title": "还没有账户？立即注册。",
-    "signin_email": "用电子邮件登录",
-    "signin_others": "或者继续使用",
+    "signin_title": "请输入您的邮箱以登录账号",
+    "singup_title": "还没有账号？立即注册。",
+    "signin_email": "使用邮箱登录",
+    "signin_others": "或使用其他方式继续",
     "signup": "注册",
-    "privacy": "只有您的电子邮件和头像会被存储。",
-    "signup_github": "使用 Github 注册",
-    "": ""
+    "privacy": "仅保存您的邮箱和头像。",
+    "signup_github": "使用 GitHub 注册"
   },
   "common": {
-    "copyright": "版权所有 © ${currentYear} Nextify公司。保留所有权利。",
+    "copyright": "© ${currentYear} Pandoras Inc. 版权所有",
     "dashboard": {
       "main_nav_documentation": "文档",
       "main_nav_support": "支持",
-      "sidebar_nav_clusters": "集群",
-      "sidebar_nav_billing": "账单",
+      "sidebar_nav_clusters": "项目",
+      "sidebar_nav_billing": "计费",
       "sidebar_nav_settings": "设置",
-      "title_text": "创建和管理集群。",
-      "": ""
+      "title_text": "创建并管理您的项目。"
     }
   },
   "business": {
     "k8s": {
-      "new_cluster": "创建新的集群",
-      "no_cluster_title": "没有创建集群",
-      "no_cluster_content": "您还没有任何集群。开始创建集群吧。",
-      "": ""
+      "new_cluster": "新项目",
+      "no_cluster_title": "未创建任何项目",
+      "no_cluster_content": "您还没有创建任何项目。立即开始创建吧。"
     },
     "billing": {
-      "billing": "账单",
-      "content": "管理您的订阅和账单详情",
+      "billing": "计费",
+      "content": "管理您的订阅和计费详情",
       "noSubscription": "您尚未订阅任何计划。",
-      "subscriptionInfo": "您目前处于 <strong>{plan}</strong> 计划。您的订阅将在 <strong>{date}</strong> 续订。",
+      "subscriptionInfo": "您目前订阅的是 <strong>{plan}</strong> 计划。您的订阅将在 {date} 更新。",
       "manage_subscription": "管理订阅",
-      "upgrade": "升级",
-      "": ""
+      "upgrade": "升级"
     }
   },
   "dropdown": {
     "dashboard": "仪表板",
     "billing": "计费",
     "settings": "设置",
-    "sign_out": "登出",
-    "": ""
+    "sign_out": "退出登录"
   }
 }

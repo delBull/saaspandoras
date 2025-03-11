@@ -1,127 +1,120 @@
 {
-    "price": {
-      "title": "Precios transparentes y económicos!",
-      "pricing": "Precios",
-      "slogan": "¡Empezar a correr a máxima velocidad!",
-      "monthly_bill": "Facturación mensual",
-      "annual_bill": "Facturación anual",
-      "annual_info": "se cobrará cuando finalice el año",
-      "monthly_info": "se cobrará mensualmente",
-      "mo": "/mes",
-      "contact": "para contactar con nuestro equipo de soporte.",
-      "contact_2": "Puedes probar las suscripciones y no serás facturado.",
-      "faq": "Preguntas Frecuentes",
-      "faq_detail": "Explora nuestra FAQ completa para encontrar respuestas rápidas a preguntas comunes. Si necesitas más asistencia, no dudes en contactarnos para ayuda personalizada.",
-      "signup": "Registrarse",
-      "upgrade": "Actualizar",
-      "manage_subscription": "Administrar Suscripción",
-      "go_to_dashboard": "Ir al panel de control",
-      "": ""
+  "price": {
+    "title": "¡Precios transparentes y accesibles!",
+    "pricing": "Precios",
+    "slogan": "¡Empieza a invertir a toda velocidad!",
+    "monthly_bill": "Facturación mensual",
+    "annual_bill": "Facturación anual",
+    "annual_info": "Se cobrará al final del año",
+    "monthly_info": "Se cobrará mensualmente",
+    "mo": "/mes",
+    "contact": "para contactar a nuestro equipo de soporte.",
+    "contact_2": "Puedes probar las suscripciones sin ser facturado.",
+    "faq": "Preguntas Frecuentes",
+    "faq_detail": "Explora nuestra FAQ completa para encontrar respuestas rápidas a preguntas comunes. Si necesitas más ayuda, contáctanos para asistencia personalizada.",
+    "signup": "Regístrate",
+    "upgrade": "Actualizar",
+    "manage_subscription": "Administrar Suscripción",
+    "go_to_dashboard": "Ir al panel de control"
+  },
+  "marketing": {
+    "introducing": "Presentamos Pandoras",
+    "title": "Dale vida a tus ideas con Pandoras",
+    "sub_title": "Una plataforma de alto rendimiento para tokenizar proyectos, bienes raíces y startups. Tu solución integral para oportunidades de inversión de nueva generación.",
+    "get_started": "Comenzar",
+    "view_on_github": "Ver en GitHub",
+    "explore_product": "Explorar Producto",
+    "features": "Características",
+    "sub_features": "Impulsado por blockchain: Simplificando la tecnología y reduciendo costos para proyectos innovadores.",
+    "k8s_features": "Desarrollo rápido y sencillo",
+    "devops_features": "Lanzamiento de proyectos sin complicaciones",
+    "price_features": "Económico en entornos de producción",
+    "main_nav_features": "Características",
+    "main_nav_pricing": "Precios",
+    "main_nav_products": "Productos",
+    "main_nav_blog": "Blog",
+    "main_nav_documentation": "Documentación",
+    "login": "Iniciar sesión",
+    "signup": "Regístrate",
+    "contributors": {
+      "contributors_desc": "Contribuidores que han potenciado Pandoras",
+      "developers_first": "Ayudando a más de ",
+      "developers_second": " desarrolladores"
     },
-    "marketing": {
-      "introducing": "Introduciendo Saasfly",
-      "title": "Envía tus aplicaciones al mundo con ",
-      "sub_title": "Un esqueleto Next.js fácil de usar y de alto rendimiento para empresas. Tu solución completa para construir servicios SaaS.",
-      "get_started": "Empezar",
-      "view_on_github": "Ver en GitHub",
-      "explore_product": "Explorar Producto",
-      "features": "Características",
-      "sub_features": "Nuvem nativa: Simplificando la tecnología y reduciendo los costos para las startups.",
-      "k8s_features": "Desarrollo rápido y sencillo",
-      "devops_features": "Despliegue de aplicaciones fácil",
-      "price_features": "Económica en entornos de producción",
-      "main_nav_features": "Características",
-      "main_nav_pricing": "Precios",
-      "main_nav_products": "Productos",
-      "main_nav_blog": "Blog",
-      "main_nav_documentation": "Documentación",
-      "login": "Iniciar sesión",
-      "signup": "Registrarse",
-      "": "",
-      "contributors": {
-        "contributors_desc": "Contribuidores que han fortalecido Saasfly",
-        "developers_first": "Ayudando a más de ",
-        "developers_second": " desarrolladores"
-      },
-      "right_side": {
-        "deploy_on_vercel_title": "Desplegar en Vercel",
-        "deploy_on_vercel_desc": "Empieza en segundos, ve los resultados inmediatamente.",
-        "ship_on_cloudflare_title": "Enviar con Cloudflare",
-        "ship_on_cloudflare_desc": "Cuida tu negocio con nuestra plataforma impulsada por Cloudflare.",
-        "showcase_title": "Prácticas recomendadas y showcase",
-        "showcase_desc": "Mira lo que las personas están construyendo y chat con ellas. Y muestra tus aplicaciones al mundo."
-      },
-      "features_grid": {
-        "monorepo_title": "Monorepo",
-        "monorepo_desc": "Gestiona múltiples proyectos de manera unificada para facilitar el compartir de código y mejorar la colaboración.",
-        "i18n_title": "I18n",
-        "i18n_desc": "Soporte multilingüe fácil. Proporciona a tus usuarios una mejor experiencia y amplía tu negocio globalmente.",
-        "payments_title": "Pagos globales",
-        "payments_desc": "Amplia tu negocio global con nuestro sistema de pagos seguro, cómodo y eficiente.",
-        "nextauth_title": "NextAuth",
-        "nextauth_desc": "Potencia tu aplicación con autenticación segura y fluida, creando una experiencia de inicio de sesión sin fricción."
-      },
-      "sponsor": {
-        "title": "Amado por nuestros patrocinadores",
-        "donate": "Compranos un café, Tu marca aquí"
-      },
-      "video": {
-        "first_text": "Ve un video, luego",
-        "second_text1": "construye tu App en ",
-        "second_text2": "",
-        "time_text": "1 hora"
-      },
-      "people_comment": {
-        "title": "Lo que dicen las personas",
-        "desc": "No solo déjanos a nosotros creerlo. Aquí tienes lo que las personas reales están diciendo sobre Saasfly."
-      }
+    "right_side": {
+      "deploy_on_vercel_title": "Invierte con Confianza",
+      "deploy_on_vercel_desc": "Comienza en segundos y ve resultados inmediatos.",
+      "ship_on_cloudflare_title": "Impulsado por Blockchain",
+      "ship_on_cloudflare_desc": "Tu proyecto es seguro y escalable con nuestra plataforma de vanguardia.",
+      "showcase_title": "Historias de Éxito y Showcase",
+      "showcase_desc": "Mira lo que las mentes innovadoras están construyendo y comparte tu éxito."
     },
-    "login": {
-      "back": "Atrás",
-      "welcome_back": "Bienvenido de vuelta",
-      "signin_title": "Ingresa tu correo electrónico para iniciar sesión en tu cuenta",
-      "singup_title": "¿No tienes una cuenta? Regístrate ahora.",
-      "signin_email": "Iniciar sesión con Correo Electrónico",
-      "signin_others": "O continuar con",
-      "signup": "Regístrate",
-      "privacy": "solo se almacenará tu correo electrónico y foto de perfil.",
-      "signup_github": "Regístrate con Github",
-      "": ""
+    "features_grid": {
+      "monorepo_title": "Plataforma Unificada",
+      "monorepo_desc": "Gestiona múltiples proyectos en un solo lugar para facilitar la colaboración y el intercambio de código.",
+      "i18n_title": "Alcance Global",
+      "i18n_desc": "Soporte multilingüe que mejora la experiencia del usuario y expande tu negocio a nivel mundial.",
+      "payments_title": "Pagos sin Complicaciones",
+      "payments_desc": "Amplía tu negocio globalmente con nuestro sistema de pagos seguro y eficiente.",
+      "nextauth_title": "Autenticación Segura",
+      "nextauth_desc": "Potencia tu plataforma con inicios de sesión seguros y sin fricción."
     },
-    "common": {
-      "copyright": "Copyright © ${currentYear} Nextify Limited. Todos los derechos reservados.",
-      "dashboard": {
-        "main_nav_documentation": "Documentación",
-        "main_nav_support": "Soporte",
-        "sidebar_nav_clusters": "Clusters",
-        "sidebar_nav_billing": "Facturación",
-        "sidebar_nav_settings": "Configuraciones",
-        "title_text": "Crea y gestiona clusters."
-      },
-      "": ""
+    "sponsor": {
+      "title": "Respaldado por nuestros patrocinadores",
+      "donate": "Cómpranos un café, tu marca aquí"
     },
-    "business": {
-      "k8s": {
-        "new_cluster": "Nuevo Cluster",
-        "no_cluster_title": "No se han creado clústeres",
-        "no_cluster_content": "Aún no tienes ningún clúster. Comienza a crear uno.",
-        "": ""
-      },
-      "billing": {
-        "billing": "Facturación",
-        "content": "Gestiona tu suscripción y detalles de facturación",
-        "noSubscription": "No estás suscrito a ningún plan.",
-        "subscriptionInfo": "Actualmente te encuentras en el <strong>{plan}</strong> plan. Tu suscripción renovará el {date}.",
-        "manage_subscription": "Administrar Suscripción",
-        "upgrade": "actualizar",
-        "": ""
-      }
+    "video": {
+      "first_text": "Mira un video, luego",
+      "second_text1": "construye tu proyecto con ",
+      "second_text2": "Pandoras",
+      "time_text": "1 hora"
     },
-    "dropdown": {
-      "dashboard": "Panel de control",
-      "billing": "Facturación",
-      "settings": "Configuraciones",
-      "sign_out": "Cerrar sesión",
-      "": ""
+    "people_comment": {
+      "title": "Lo que dicen las personas",
+      "desc": "No solo confíes en nuestra palabra. Esto es lo que dicen usuarios reales sobre Pandoras."
     }
+  },
+  "login": {
+    "back": "Atrás",
+    "welcome_back": "Bienvenido de nuevo",
+    "signin_title": "Ingresa tu correo electrónico para iniciar sesión en tu cuenta",
+    "singup_title": "¿No tienes una cuenta? Regístrate ahora.",
+    "signin_email": "Inicia sesión con correo electrónico",
+    "signin_others": "O continúa con",
+    "signup": "Regístrate",
+    "privacy": "Solo se almacenará tu correo electrónico y foto de perfil.",
+    "signup_github": "Regístrate con Github"
+  },
+  "common": {
+    "copyright": "Copyright © ${currentYear} Pandoras Inc. Todos los derechos reservados.",
+    "dashboard": {
+      "main_nav_documentation": "Documentación",
+      "main_nav_support": "Soporte",
+      "sidebar_nav_clusters": "Proyectos",
+      "sidebar_nav_billing": "Facturación",
+      "sidebar_nav_settings": "Configuraciones",
+      "title_text": "Crea y gestiona tus proyectos."
+    }
+  },
+  "business": {
+    "k8s": {
+      "new_cluster": "Nuevo Proyecto",
+      "no_cluster_title": "No se han creado proyectos",
+      "no_cluster_content": "Aún no tienes ningún proyecto. Comienza a crear uno."
+    },
+    "billing": {
+      "billing": "Facturación",
+      "content": "Gestiona tu suscripción y detalles de facturación",
+      "noSubscription": "No estás suscrito a ningún plan.",
+      "subscriptionInfo": "Actualmente te encuentras en el plan <strong>{plan}</strong>. Tu suscripción se renovará el {date}.",
+      "manage_subscription": "Administrar Suscripción",
+      "upgrade": "Actualizar"
+    }
+  },
+  "dropdown": {
+    "dashboard": "Panel de control",
+    "billing": "Facturación",
+    "settings": "Configuraciones",
+    "sign_out": "Cerrar sesión"
   }
+}

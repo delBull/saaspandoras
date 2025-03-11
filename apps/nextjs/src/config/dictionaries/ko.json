@@ -1,128 +1,120 @@
 {
   "price": {
-    "title": "저렴하고 투명한 가격!",
-    "pricing": "가격 책정",
-    "slogan": "전속력으로 시작하세요!",
-    "monthly_bill": "월간 청구",
+    "title": "투명하고 합리적인 가격!",
+    "pricing": "가격",
+    "slogan": "최대 속도로 투자 시작하세요!",
+    "monthly_bill": "월별 청구",
     "annual_bill": "연간 청구",
-    "annual_info": "연간 청구시 청구됩니다",
-    "monthly_info": "월간 청구시",
+    "annual_info": "연말에 청구됩니다",
+    "monthly_info": "매월 청구됩니다",
     "mo": "/월",
-    "contact": "지원 팀에 연락하려면.",
-    "contact_2": "구독을 테스트하고 청구되지 않습니다.",
+    "contact": "지원팀에 문의하세요.",
+    "contact_2": "청구 전까지 무료로 구독을 사용해보세요.",
     "faq": "자주 묻는 질문",
-    "faq_detail": "우리의 포괄적인 FAQ를 탐색하여 일반적인 문의에 대한 빠른 답변을 찾아보세요. 추가 지원이 필요하시면 망설이지 말고 개인화된 도움을 위해 저희에게 연락하십시오.",
+    "faq_detail": "자주 묻는 질문(FAQ)을 확인하여 일반 질문에 대한 빠른 답변을 얻으세요. 추가 지원이 필요하면 언제든지 개별 지원을 위해 문의해 주세요.",
     "signup": "가입하기",
     "upgrade": "업그레이드",
     "manage_subscription": "구독 관리",
-    "go_to_dashboard": "대시보드로 이동",
-    "": ""
+    "go_to_dashboard": "대시보드로 이동"
   },
   "marketing": {
-    "introducing": "Saasfly 소개",
-    "title": "다국어 지원으로, 당신의 앱을 전 세계 사용자에게, ",
-    "sub_title": "이것 하나로 끝! 사용하기 쉽고 엔터프라이즈급 Next.js 보일러플레이트. SaaS 서비스 구축을 위한 완벽한 솔루션입니다.",
+    "introducing": "Pandoras 소개",
+    "title": "Pandoras와 함께 아이디어에 생명을 불어넣으세요",
+    "sub_title": "프로젝트, 부동산, 스타트업의 토큰화를 위한 고성능 플랫폼. 차세대 투자 기회를 위한 완벽한 솔루션입니다.",
     "get_started": "시작하기",
-    "view_on_github": "GitHub 에서 보기",
+    "view_on_github": "GitHub에서 보기",
     "explore_product": "제품 탐색",
     "features": "특징",
-    "sub_features": "클라우드 네이티브: 스타트업을 위한 기술 단순화 및 비용 절감.",
+    "sub_features": "블록체인 기반: 혁신적인 프로젝트의 기술을 단순화하고 비용을 절감합니다.",
     "k8s_features": "빠르고 간단한 개발",
-    "devops_features": "간편한 애플리케이션 배포",
-    "price_features": "생산 환경을 위한 경제적 효율성.",
+    "devops_features": "손쉬운 프로젝트 출범",
+    "price_features": "생산 환경에서 비용 효율적",
     "main_nav_features": "특징",
     "main_nav_pricing": "가격",
     "main_nav_products": "제품",
-    "main_nav_documentation": "문서",
     "main_nav_blog": "블로그",
+    "main_nav_documentation": "문서",
     "login": "로그인",
     "signup": "가입하기",
-    "": "",
     "contributors": {
-      "contributors_desc": "명의 기여자들이 Saasfly를 더 강하게 만들었습니다",
-      "developers_first": "",
-      "developers_second": " 명 이상의 개발자들의 성공을 돕습니다"
+      "contributors_desc": "Pandoras를 강화한 기여자들",
+      "developers_first": "천 명 이상의",
+      "developers_second": " 개발자"
     },
     "right_side": {
-      "deploy_on_vercel_title": "Vercel을 통한 배포",
-      "deploy_on_vercel_desc": "간단하게 시작하고 빠르게 결과를 얻으세요.",
-      "ship_on_cloudflare_title": "Cloudflare에서 앱을 배포하세요",
-      "ship_on_cloudflare_desc": "저희 Cloudflare 기반 플랫폼은 귀사의 비즈니스 성장에 도움이 될 것입니다.",
-      "showcase_title": "최고의 실천, 함께 공유",
-      "showcase_desc": "다른 사람들이 무엇을 만들고 있는지 확인하고, 그들과 자유롭게 대화하세요. 그리고 당신의 멋진 앱을 전 세계에 자랑스럽게 보여주세요."
+      "deploy_on_vercel_title": "자신감을 갖고 투자하세요",
+      "deploy_on_vercel_desc": "몇 초 안에 시작하여 즉시 결과를 확인하세요.",
+      "ship_on_cloudflare_title": "블록체인 기반",
+      "ship_on_cloudflare_desc": "최첨단 플랫폼으로 당신의 프로젝트는 안전하며 확장 가능합니다.",
+      "showcase_title": "성공 사례 및 쇼케이스",
+      "showcase_desc": "혁신적인 아이디어가 어떻게 구현되는지 확인하고, 당신의 성공을 공유하세요."
     },
     "features_grid": {
-      "monorepo_title": "Monorepo",
-      "monorepo_desc": "코드 공유와 효율적인 협업을 위해 여러 프로젝트를 통합 관리합니다. 마이크로서비스, 멀티 플랫폼, 대규모 프로젝트를 지원합니다.",
-      "i18n_title": "다중 언어 지원",
-      "i18n_desc": "쉽게 다국어 지원을 구현하여 사용자에게 모국어와 같은 친근한 경험을 제공하고 국제 시장을 확장하며 브랜드 이미지를 향상시킵니다.",
-      "payments_title": "글로벌 결제",
-      "payments_desc": "당신의 비즈니스를 위한 안전하고 편리한 맞춤형 결제 솔루션을 제공합니다. 글로벌 지원으로 전 세계 시장으로 진출하세요.",
-      "nextauth_title": "NextAuth",
-      "nextauth_desc": "안전하고 편리한 인증으로 앱을 강화하세요. 소셜 로그인, 이메일 인증, 맞춤 인증을 지원합니다."
+      "monorepo_title": "통합 플랫폼",
+      "monorepo_desc": "여러 프로젝트를 한 곳에서 관리하여 협업과 코드 공유를 강화하세요.",
+      "i18n_title": "글로벌 도달",
+      "i18n_desc": "다국어 지원으로 사용자 경험을 개선하고, 전 세계로 비즈니스를 확장하세요.",
+      "payments_title": "원활한 결제",
+      "payments_desc": "안전하고 효율적인 결제 시스템으로 비즈니스를 전 세계로 확장하세요.",
+      "nextauth_title": "안전한 인증",
+      "nextauth_desc": "매끄럽고 안전한 로그인 경험으로 플랫폼을 강화하세요."
     },
     "sponsor": {
-      "title": "스폰서 여러분의 사랑을 받고 있습니다",
-      "donate": "저희에게 커피 한 잔 사주세요, 당신의 브랜드는 바로 여기"
+      "title": "후원자들이 신뢰합니다",
+      "donate": "커피 한 잔 사주세요, 귀사의 브랜드가 여기 표시됩니다"
     },
     "video": {
-      "first_text": "비디오를 보고",
-      "second_text1": "",
-      "second_text2": " 안에 앱을 만드세요",
-      "time_text": "1 시간"
+      "first_text": "동영상을 본 후",
+      "second_text1": "Pandoras와 함께",
+      "second_text2": "프로젝트를 구축하세요",
+      "time_text": "1시간"
     },
     "people_comment": {
-      "title": "사람들의 반응을 살펴보세요",
-      "desc": "저희 말만 믿지 마세요. 실제 사용자들이 Saasfly에 대해 어떻게 말하는지 확인해 보세요."
+      "title": "사람들이 말하는 것",
+      "desc": "우리의 말만 믿지 마세요. 실제 사용자가 Pandoras에 대해 말하는 내용을 확인하세요."
     }
   },
   "login": {
     "back": "뒤로",
     "welcome_back": "다시 오신 것을 환영합니다",
-    "signin_title": "계정에 로그인하려면 이메일을 입력하세요",
+    "signin_title": "계정에 로그인하기 위해 이메일을 입력하세요",
     "singup_title": "계정이 없으신가요? 지금 가입하세요.",
     "signin_email": "이메일로 로그인",
     "signin_others": "또는 다음으로 계속",
     "signup": "가입하기",
     "privacy": "이메일과 프로필 사진만 저장됩니다.",
-    "signup_github": "Github으로 가입하기",
-    "": ""
+    "signup_github": "GitHub로 가입하기"
   },
   "common": {
-    "copyright": "저작권 © ${currentYear} Nextify 주식회사. 모든 권리 보유.",
+    "copyright": "© ${currentYear} Pandoras Inc. 모든 권리 보유.",
     "dashboard": {
       "main_nav_documentation": "문서",
       "main_nav_support": "지원",
-      "sidebar_nav_clusters": "클러스터",
+      "sidebar_nav_clusters": "프로젝트",
       "sidebar_nav_billing": "청구",
       "sidebar_nav_settings": "설정",
-      "title_text": "클러스터 생성 및 관리。",
-      "": ""
-    },
-    "": ""
+      "title_text": "프로젝트를 생성하고 관리하세요."
+    }
   },
   "business": {
     "k8s": {
-      "new_cluster": "새 클러스터 생성",
-      "no_cluster_title": "클러스터가 생성되지 않았습니다",
-      "no_cluster_content": "아직 클러스터가 없습니다. 클러스터 생성을 시작하세요."
+      "new_cluster": "새 프로젝트",
+      "no_cluster_title": "생성된 프로젝트가 없습니다",
+      "no_cluster_content": "아직 프로젝트가 생성되지 않았습니다. 지금 생성해보세요."
     },
     "billing": {
       "billing": "청구",
-      "content": "구독 및 청구 세부 정보 관리",
-      "noSubscription": "어떠한 플랜에도 가입하지 않았습니다。",
-      "subscriptionInfo": "현재 <strong>{plan}</strong> 플랜을 사용 중입니다。구독은 <strong>{date}</strong>에 갱신됩니다。",
+      "content": "구독 및 청구 세부 정보를 관리하세요",
+      "noSubscription": "어떤 플랜에도 가입되어 있지 않습니다.",
+      "subscriptionInfo": "현재 <strong>{plan}</strong> 플랜에 가입되어 있습니다. 구독은 {date}에 갱신됩니다.",
       "manage_subscription": "구독 관리",
-      "upgrade": "업그레이드",
-      "": ""
-    },
-    "": ""
+      "upgrade": "업그레이드"
+    }
   },
   "dropdown": {
     "dashboard": "대시보드",
     "billing": "청구",
     "settings": "설정",
-    "sign_out": "로그아웃",
-    "": ""
+    "sign_out": "로그아웃"
   }
 }

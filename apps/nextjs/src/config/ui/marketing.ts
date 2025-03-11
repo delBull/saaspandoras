@@ -18,15 +18,15 @@ export const getMarketingConfig = async ({
       },
       {
         title: dict.marketing.main_nav_pricing,
-        href: `/pricing`,
+        href: `/`,
       },
       {
         title: dict.marketing.main_nav_blog,
-        href: `/blog`,
+        href: `/`,
       },
       {
         title: dict.marketing.main_nav_documentation,
-        href: `/docs`,
+        href: `/`,
       },
     ],
   };
