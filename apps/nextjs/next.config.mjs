@@ -1,6 +1,6 @@
 // @ts-check
 import "./src/env.mjs";
-import "@saasfly/auth/env.mjs";
+import "@saasfly/auth/env.mjs"; 
 
 import { withNextDevtools } from "@next-devtools/core/plugin";
 // import "@saasfly/api/env"
