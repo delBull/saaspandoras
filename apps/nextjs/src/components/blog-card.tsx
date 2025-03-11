@@ -39,7 +39,7 @@ export function XBlogArticle() {
   );
 }
 
-const blogContent = {
+const blogContent = { 
   slug: "Making-Sense-of-React-Server-Components",
   author: "Nextify",
   date: "26th March, 2024",

@@ -23,7 +23,7 @@ export function VideoScroll({ dict } : { dict: Record<string, string> | undefine
       >
         <Link href="#" target="_blank">
           <Image
-            src={`https://cdnv2.ruguoapp.com/FoAVSRtT2zVc96oDjAWrd5TvXXQ4v3.png`}
+            src={`/images/coin.png`} 
             alt="hero"
             height={720}
             width={1400}

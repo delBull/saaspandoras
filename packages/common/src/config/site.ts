@@ -1,9 +1,9 @@
 export const siteConfig = {
-  name: "Saasfly",
+  name: "Pandora's",
   description: "We provide an easier way to build saas service in production",
-  url: "https://github.com/saaslfy/saasfly",
+  url: "#",
   ogImage: "",
   links: {
-    github: "https://github.com/saaslfy",
+    github: "#",
   },
 };
