@@ -1,5 +1,5 @@
 <div align="center" width="100%">
-    <img src="./saasfly-logo.svg" width="128" alt="" />
+    <img src="./logop.svg" width="128" alt="" />
 </div>
 
 # Saasfly </br>

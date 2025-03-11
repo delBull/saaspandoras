@@ -41,7 +41,7 @@ export default async function LoginPage({
       <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
         <div className="flex flex-col space-y-2 text-center">
           <Image
-            src="/images/avatars/saasfly-logo.svg"
+            src="/images/avatars/logop.svg"
             className="mx-auto"
             width="64"
             height="64"

@@ -1,0 +1,127 @@
+{
+    "price": {
+      "title": "Precios transparentes y económicos!",
+      "pricing": "Precios",
+      "slogan": "¡Empezar a correr a máxima velocidad!",
+      "monthly_bill": "Facturación mensual",
+      "annual_bill": "Facturación anual",
+      "annual_info": "se cobrará cuando finalice el año",
+      "monthly_info": "se cobrará mensualmente",
+      "mo": "/mes",
+      "contact": "para contactar con nuestro equipo de soporte.",
+      "contact_2": "Puedes probar las suscripciones y no serás facturado.",
+      "faq": "Preguntas Frecuentes",
+      "faq_detail": "Explora nuestra FAQ completa para encontrar respuestas rápidas a preguntas comunes. Si necesitas más asistencia, no dudes en contactarnos para ayuda personalizada.",
+      "signup": "Registrarse",
+      "upgrade": "Actualizar",
+      "manage_subscription": "Administrar Suscripción",
+      "go_to_dashboard": "Ir al panel de control",
+      "": ""
+    },
+    "marketing": {
+      "introducing": "Introduciendo Saasfly",
+      "title": "Envía tus aplicaciones al mundo con ",
+      "sub_title": "Un esqueleto Next.js fácil de usar y de alto rendimiento para empresas. Tu solución completa para construir servicios SaaS.",
+      "get_started": "Empezar",
+      "view_on_github": "Ver en GitHub",
+      "explore_product": "Explorar Producto",
+      "features": "Características",
+      "sub_features": "Nuvem nativa: Simplificando la tecnología y reduciendo los costos para las startups.",
+      "k8s_features": "Desarrollo rápido y sencillo",
+      "devops_features": "Despliegue de aplicaciones fácil",
+      "price_features": "Económica en entornos de producción",
+      "main_nav_features": "Características",
+      "main_nav_pricing": "Precios",
+      "main_nav_products": "Productos",
+      "main_nav_blog": "Blog",
+      "main_nav_documentation": "Documentación",
+      "login": "Iniciar sesión",
+      "signup": "Registrarse",
+      "": "",
+      "contributors": {
+        "contributors_desc": "Contribuidores que han fortalecido Saasfly",
+        "developers_first": "Ayudando a más de ",
+        "developers_second": " desarrolladores"
+      },
+      "right_side": {
+        "deploy_on_vercel_title": "Desplegar en Vercel",
+        "deploy_on_vercel_desc": "Empieza en segundos, ve los resultados inmediatamente.",
+        "ship_on_cloudflare_title": "Enviar con Cloudflare",
+        "ship_on_cloudflare_desc": "Cuida tu negocio con nuestra plataforma impulsada por Cloudflare.",
+        "showcase_title": "Prácticas recomendadas y showcase",
+        "showcase_desc": "Mira lo que las personas están construyendo y chat con ellas. Y muestra tus aplicaciones al mundo."
+      },
+      "features_grid": {
+        "monorepo_title": "Monorepo",
+        "monorepo_desc": "Gestiona múltiples proyectos de manera unificada para facilitar el compartir de código y mejorar la colaboración.",
+        "i18n_title": "I18n",
+        "i18n_desc": "Soporte multilingüe fácil. Proporciona a tus usuarios una mejor experiencia y amplía tu negocio globalmente.",
+        "payments_title": "Pagos globales",
+        "payments_desc": "Amplia tu negocio global con nuestro sistema de pagos seguro, cómodo y eficiente.",
+        "nextauth_title": "NextAuth",
+        "nextauth_desc": "Potencia tu aplicación con autenticación segura y fluida, creando una experiencia de inicio de sesión sin fricción."
+      },
+      "sponsor": {
+        "title": "Amado por nuestros patrocinadores",
+        "donate": "Compranos un café, Tu marca aquí"
+      },
+      "video": {
+        "first_text": "Ve un video, luego",
+        "second_text1": "construye tu App en ",
+        "second_text2": "",
+        "time_text": "1 hora"
+      },
+      "people_comment": {
+        "title": "Lo que dicen las personas",
+        "desc": "No solo déjanos a nosotros creerlo. Aquí tienes lo que las personas reales están diciendo sobre Saasfly."
+      }
+    },
+    "login": {
+      "back": "Atrás",
+      "welcome_back": "Bienvenido de vuelta",
+      "signin_title": "Ingresa tu correo electrónico para iniciar sesión en tu cuenta",
+      "singup_title": "¿No tienes una cuenta? Regístrate ahora.",
+      "signin_email": "Iniciar sesión con Correo Electrónico",
+      "signin_others": "O continuar con",
+      "signup": "Regístrate",
+      "privacy": "solo se almacenará tu correo electrónico y foto de perfil.",
+      "signup_github": "Regístrate con Github",
+      "": ""
+    },
+    "common": {
+      "copyright": "Copyright © ${currentYear} Nextify Limited. Todos los derechos reservados.",
+      "dashboard": {
+        "main_nav_documentation": "Documentación",
+        "main_nav_support": "Soporte",
+        "sidebar_nav_clusters": "Clusters",
+        "sidebar_nav_billing": "Facturación",
+        "sidebar_nav_settings": "Configuraciones",
+        "title_text": "Crea y gestiona clusters."
+      },
+      "": ""
+    },
+    "business": {
+      "k8s": {
+        "new_cluster": "Nuevo Cluster",
+        "no_cluster_title": "No se han creado clústeres",
+        "no_cluster_content": "Aún no tienes ningún clúster. Comienza a crear uno.",
+        "": ""
+      },
+      "billing": {
+        "billing": "Facturación",
+        "content": "Gestiona tu suscripción y detalles de facturación",
+        "noSubscription": "No estás suscrito a ningún plan.",
+        "subscriptionInfo": "Actualmente te encuentras en el <strong>{plan}</strong> plan. Tu suscripción renovará el {date}.",
+        "manage_subscription": "Administrar Suscripción",
+        "upgrade": "actualizar",
+        "": ""
+      }
+    },
+    "dropdown": {
+      "dashboard": "Panel de control",
+      "billing": "Facturación",
+      "settings": "Configuraciones",
+      "sign_out": "Cerrar sesión",
+      "": ""
+    }
+  }

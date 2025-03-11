@@ -40,34 +40,46 @@ export const metadata = {
   },
   description: siteConfig.description,
   keywords: [
-    "Next.js",
-    "Shadcn ui",
-    "Sass",
-    "Fast ",
-    "Simple ",
-    "Easy",
-    "Cloud Native",
+    "tokenizacion",
+    "fraccion",
+    "inversiones",
+    "real state",
+    "bienes raices",
+    "inmobiliairia",
+    "propiedad",
+    "venta",
+     "alquiler",
+     "arriendo",
+     "inmueble",
+     "propiedad inmobiliaria",
+     "bienes raices en venta",
+     "bienes raices en alquiler",
+     "bienes raices en arriendo",
+     "bienes raices en renta",
+     "bienes raices en rentado",
+     "inversión inmobiliaria",
+     "inversión en bienes raices",
   ],
   authors: [
     {
-      name: "saasfly",
+      name: "Pandora's Foundation",
     },
   ],
-  creator: "Saasfly",
+  creator: "Pandora's",
   openGraph: {
     type: "website",
-    locale: "en_US",
+    locale: "es_ES",
     url: siteConfig.url,
     title: siteConfig.name,
     description: siteConfig.description,
     siteName: siteConfig.name,
   },
   icons: {
-    icon: "/logo.svg",
+    icon: "/logop.svg",
     shortcut: "/favicon-16x16.png",
     apple: "/apple-touch-icon.png",
   },
-  metadataBase: new URL("https://show.saasfly.io/"),
+  metadataBase: new URL("https://dapp.pandoras.foundation/"),
   // manifest: `${siteConfig.url}/site.webmanifest`,
 };
 
@@ -77,7 +89,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning>
       <head />
       {/*<Suspense>*/}
       {/*  <PostHogPageview />*/}
