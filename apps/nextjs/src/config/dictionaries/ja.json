@@ -83,7 +83,8 @@
     "signin_others": "または、次で続行",
     "signup": "登録する",
     "privacy": "メールアドレスとプロフィール写真のみが保存されます。",
-    "signup_github": "GitHubで登録"
+    "signup_github": "GitHubで登録",
+    "signup_google": "Googleで登録"
   },
   "common": {
     "copyright": "© ${currentYear} Pandora's Foundation. すべての権利を保有します。",

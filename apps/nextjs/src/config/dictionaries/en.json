@@ -83,7 +83,8 @@
     "signin_others": "Or continue with",
     "signup": "Sign Up",
     "privacy": "only your email and profile picture will be stored.",
-    "signup_github": "Sign Up with GitHub"
+    "signup_github": "Sign Up with GitHub",
+    "signup_google":  "Sign Up with Google"
   },
   "common": {
     "copyright": "Copyright © ${currentYear} Pandora's Foundation. All rights reserved.",

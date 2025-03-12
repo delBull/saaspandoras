@@ -83,7 +83,8 @@
     "signin_others": "或使用其他方式继续",
     "signup": "注册",
     "privacy": "仅保存您的邮箱和头像。",
-    "signup_github": "使用 GitHub 注册"
+    "signup_github": "使用 GitHub 注册",
+    "signup_google": "使用 Google 注册"
   },
   "common": {
     "copyright": "© ${currentYear} Pandora's Foundation. 版权所有",

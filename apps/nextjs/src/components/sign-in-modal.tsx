@@ -3,10 +3,8 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { signIn } from "next-auth/react";
-
 import { Button } from "@saasfly/ui/button";
-import * as Icons from "@saasfly/ui/icons"; 
-
+import * as Icons from "@saasfly/ui/icons";
 import { Modal } from "~/components/modal";
 import { siteConfig } from "~/config/site";
 import { useSigninModal } from "~/hooks/use-signin-modal";
@@ -38,23 +36,36 @@ export const SignInModal = ({ dict }: { dict: Record<string, string> }) => {
             disabled={signInClicked}
             onClick={() => {
               setSignInClicked(true);
-              signIn("github", { redirect: true })
-                .then(() =>
-                  setTimeout(() => {
-                    signInModal.onClose();
-                  }, 1000),
-                )
-                .catch((error) => {
-                  console.error("signUp failed:", error);
-                });
+              signIn("github")
+                .then(() => setTimeout(() => signInModal.onClose(), 1000))
+                .catch((error) => console.error("GitHub signIn failed:", error));
             }}
           >
             {signInClicked ? (
               <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <Icons.GitHub className="mr-2 h-4 w-4" />
-            )}{" "}
+            )}
             {dict.signup_github}
+          </Button>
+
+          {/* Botón para Google */}
+          <Button
+            variant="default"
+            disabled={signInClicked}
+            onClick={() => {
+              setSignInClicked(true);
+              signIn("google", { redirect: true })
+                .then(() => setTimeout(() => signInModal.onClose(), 1000))
+                .catch((error) => console.error("Google signIn failed:", error));
+            }}
+          >
+            {signInClicked ? (
+              <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Icons.Google className="mr-2 h-4 w-4" />
+            )}
+            {dict.signup_google}
           </Button>
         </div>
       </div>
