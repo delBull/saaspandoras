@@ -83,7 +83,8 @@
     "signin_others": "또는 다음으로 계속",
     "signup": "가입하기",
     "privacy": "이메일과 프로필 사진만 저장됩니다.",
-    "signup_github": "GitHub로 가입하기"
+    "signup_github": "GitHub로 가입하기",
+    "signup_google": "Google로 가입하기"
   },
   "common": {
     "copyright": "© ${currentYear} Pandora's Foundation. 모든 권리 보유.",
