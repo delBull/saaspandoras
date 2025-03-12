@@ -86,7 +86,7 @@
     "signup_github": "GitHubで登録"
   },
   "common": {
-    "copyright": "© ${currentYear} Pandoras Inc. すべての権利を保有します。",
+    "copyright": "© ${currentYear} Pandora's Foundation. すべての権利を保有します。",
     "dashboard": {
       "main_nav_documentation": "ドキュメンテーション",
       "main_nav_support": "サポート",

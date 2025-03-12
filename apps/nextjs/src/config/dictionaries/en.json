@@ -86,7 +86,7 @@
     "signup_github": "Sign Up with GitHub"
   },
   "common": {
-    "copyright": "Copyright © ${currentYear} Pandoras Inc. All rights reserved.",
+    "copyright": "Copyright © ${currentYear} Pandora's Foundation. All rights reserved.",
     "dashboard": {
       "main_nav_documentation": "Documentation",
       "main_nav_support": "Support",

@@ -86,7 +86,7 @@
     "signup_github": "GitHub로 가입하기"
   },
   "common": {
-    "copyright": "© ${currentYear} Pandoras Inc. 모든 권리 보유.",
+    "copyright": "© ${currentYear} Pandora's Foundation. 모든 권리 보유.",
     "dashboard": {
       "main_nav_documentation": "문서",
       "main_nav_support": "지원",

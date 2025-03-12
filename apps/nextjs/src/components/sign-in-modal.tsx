@@ -5,7 +5,7 @@ import Image from "next/image";
 import { signIn } from "next-auth/react";
 
 import { Button } from "@saasfly/ui/button";
-import * as Icons from "@saasfly/ui/icons";
+import * as Icons from "@saasfly/ui/icons"; 
 
 import { Modal } from "~/components/modal";
 import { siteConfig } from "~/config/site";
@@ -38,7 +38,7 @@ export const SignInModal = ({ dict }: { dict: Record<string, string> }) => {
             disabled={signInClicked}
             onClick={() => {
               setSignInClicked(true);
-              signIn("github", { redirect: false })
+              signIn("github", { redirect: true })
                 .then(() =>
                   setTimeout(() => {
                     signInModal.onClose();
