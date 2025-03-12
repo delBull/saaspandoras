@@ -19,7 +19,7 @@
   },
   "marketing": {
     "introducing": "Introducing Pandoras",
-    "title": "Bring your ideas to life with Pandoras",
+    "title": "Bring your ideas to life with ",
     "sub_title": "A high-performance platform for tokenizing projects, real estate, and startups. Your complete solution for next-generation investment opportunities.",
     "get_started": "Get Started",
     "view_on_github": "View on GitHub",
@@ -65,8 +65,8 @@
     },
     "video": {
       "first_text": "Watch a video, then",
-      "second_text1": "build your project with ",
-      "second_text2": "Pandoras",
+      "second_text1": "build your project within ",
+      "second_text2": "",
       "time_text": "1 hour"
     },
     "people_comment": {

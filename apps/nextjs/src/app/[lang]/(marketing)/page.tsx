@@ -77,13 +77,14 @@ export default async function IndexPage({
                   <div
                     className="mb-6 max-w-4xl text-left text-4xl font-semibold dark:text-zinc-100 md:text-5xl xl:text-5xl md:leading-[4rem] xl:leading-[4rem]">
                     {dict.marketing.title || "Ship your apps to the world easier with "}
+                    <br/>
                     <ColourfulText text="Pandora's"/>
                   </div>
                 </div>
 
                 <div className="mt-4">
                   <span className="text-neutral-500 dark:text-neutral-400 sm:text-lg">
-                    {dict.marketing.sub_title || "Your complete All-in-One solution for building SaaS services."}
+                    {dict.marketing.sub_title || "Complete solution for building next-gen investment"}
                   </span>
                 </div>
 

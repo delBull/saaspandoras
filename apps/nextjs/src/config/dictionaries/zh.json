@@ -19,7 +19,7 @@
   },
   "marketing": {
     "introducing": "介绍 Pandoras",
-    "title": "用 Pandoras 让你的创意焕发生机",
+    "title": "用 让你的创意焕发生机",
     "sub_title": "一个高性能平台，用于将项目、不动产和初创企业进行代币化。为下一代投资机会提供完整解决方案。",
     "get_started": "开始使用",
     "view_on_github": "在 GitHub 上查看",
@@ -65,8 +65,8 @@
     },
     "video": {
       "first_text": "先观看视频，然后",
-      "second_text1": "用 Pandoras 构建",
-      "second_text2": "您的项目",
+      "second_text1": "您的项目",
+      "second_text2": "",
       "time_text": "1 小时"
     },
     "people_comment": {

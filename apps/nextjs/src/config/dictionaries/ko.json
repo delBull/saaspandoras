@@ -19,7 +19,7 @@
   },
   "marketing": {
     "introducing": "Pandoras 소개",
-    "title": "Pandoras와 함께 아이디어에 생명을 불어넣으세요",
+    "title": "와 함께 아이디어에 생명을 불어넣으세요",
     "sub_title": "프로젝트, 부동산, 스타트업의 토큰화를 위한 고성능 플랫폼. 차세대 투자 기회를 위한 완벽한 솔루션입니다.",
     "get_started": "시작하기",
     "view_on_github": "GitHub에서 보기",
@@ -65,8 +65,8 @@
     },
     "video": {
       "first_text": "동영상을 본 후",
-      "second_text1": "Pandoras와 함께",
-      "second_text2": "프로젝트를 구축하세요",
+      "second_text1": "프로젝트를 구축하세요",
+      "second_text2": "",
       "time_text": "1시간"
     },
     "people_comment": {
