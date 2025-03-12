@@ -19,7 +19,7 @@
   },
   "marketing": {
     "introducing": "Pandorasのご紹介",
-    "title": "Pandorasでアイデアに命を吹き込もう",
+    "title": "でアイデアに命を吹き込もう",
     "sub_title": "プロジェクト、不動産、スタートアップのトークン化に最適な高性能プラットフォーム。次世代投資機会のための完全なソリューションです。",
     "get_started": "始める",
     "view_on_github": "GitHubで見る",
@@ -65,8 +65,8 @@
     },
     "video": {
       "first_text": "動画を見てから",
-      "second_text1": "Pandorasで",
-      "second_text2": "あなたのプロジェクトを構築しよう",
+      "second_text1": "あなたのプロジェクトを構築しよう",
+      "second_text2": "",
       "time_text": "1時間"
     },
     "people_comment": {
