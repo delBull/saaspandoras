@@ -86,7 +86,7 @@
     "signup_github": "使用 GitHub 注册"
   },
   "common": {
-    "copyright": "© ${currentYear} Pandoras Inc. 版权所有",
+    "copyright": "© ${currentYear} Pandora's Foundation. 版权所有",
     "dashboard": {
       "main_nav_documentation": "文档",
       "main_nav_support": "支持",
