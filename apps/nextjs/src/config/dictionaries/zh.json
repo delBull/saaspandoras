@@ -21,7 +21,7 @@
     "introducing": "介绍 Pandoras",
     "title": "成为您房地产权利的所有者 ",
     "sub_title": "获取参与Pandoras独家项目的权利。",
-    "get_started": "开始使用",
+    "get_started": "您的第一个免费权利",
     "view_on_github": "在 GitHub 上查看",
     "explore_product": "探索产品",
     "features": "功能",
@@ -29,7 +29,7 @@
     "k8s_features": "快速简便的开发",
     "devops_features": "轻松启动项目",
     "price_features": "生产环境下高性价比",
-    "main_nav_features": "功能",
+    "main_nav_features": "商",
     "main_nav_pricing": "定价",
     "main_nav_products": "产品",
     "main_nav_blog": "博客",
@@ -37,9 +37,9 @@
     "login": "登录",
     "signup": "注册",
     "contributors": {
-      "contributors_desc": "赋能 Pandoras 的贡献者",
-      "developers_first": "帮助超过 ",
-      "developers_second": " 位开发者"
+      "contributors_desc": "随着越来越多的房地产和初创公司加入，许多人从 Pandora 中受益",
+      "developers_first": "",
+      "developers_second": ""
     },
     "right_side": {
       "deploy_on_vercel_title": "有形与数字的融合",

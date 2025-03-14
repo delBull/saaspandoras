@@ -5,7 +5,7 @@ import * as Icons from "@saasfly/ui/icons";
 
 export function CodeCopy() {
   const [copied, setCopied] = useState(false)
-  const command = "tokinize create"
+  const command = "Fortune favors the bold"
 
   const copyToClipboard = async () => {
     try {

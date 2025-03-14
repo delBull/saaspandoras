@@ -14,7 +14,6 @@ export function RightsideMarketing({ dict } : { dict: Record<string, string> | u
         icon={<Icons.Rocket className="h-4 w-4 text-black dark:text-neutral-400" />}
         title={dict?.deploy_on_vercel_title ?? ''}
         description={dict?.deploy_on_vercel_desc ?? ''}
-        link=""
       />
 
       <GridItem
@@ -22,7 +21,6 @@ export function RightsideMarketing({ dict } : { dict: Record<string, string> | u
         icon={<Icons.Cloud className="h-4 w-4 text-black dark:text-neutral-400" />}
         title={dict?.ship_on_cloudflare_title ?? ''}
         description={dict?.ship_on_cloudflare_desc ?? ''}
-        link=""
       />
 
       <GridItem
@@ -30,7 +28,7 @@ export function RightsideMarketing({ dict } : { dict: Record<string, string> | u
         icon={<Icons.ThumbsUp className="h-4 w-4 text-black dark:text-neutral-400" />}
         title={dict?.showcase_title ?? ''}
         description={dict?.showcase_desc ?? ''}
-        link=""
+        background="/images/building.jpg"
       />
     </ul>
   );
@@ -42,9 +40,10 @@ interface GridItemProps {
   title: string;
   description: React.ReactNode;
   link?: string;
+  background?: string;
 }
 
-const GridItem = ({ area, icon, title, description, link }: GridItemProps) => {
+const GridItem = ({ area, icon, title, description, link, background }: GridItemProps) => {
   const handleClick = (event) => {
     event.preventDefault();
     // Aquí puedes agregar cualquier otra lógica que desees ejecutar cuando se haga clic en el enlace
@@ -52,7 +51,14 @@ const GridItem = ({ area, icon, title, description, link }: GridItemProps) => {
 };
   return (
     <li className={`min-h-[14rem] list-none ${area}`}>
-      <div className="relative h-full rounded-2.5xl border dark:border-neutral-800 p-2 md:rounded-3xl md:p-3">
+      <div className="relative h-full rounded-2.5xl border dark:border-neutral-800 p-2 md:rounded-3xl md:p-3"
+      style={{
+        backgroundImage: background ? `url(${background})` : 'none',
+        backgroundSize: 'cover', // Ajusta la imagen al tamaño del contenedor
+        backgroundPosition: 'center', // Centra la imagen
+        backgroundRepeat: 'no-repeat', // Evita que la imagen se repita
+      }}
+      >
         <GlowingEffect
           spread={40}
           glow={true}
@@ -70,7 +76,7 @@ const GridItem = ({ area, icon, title, description, link }: GridItemProps) => {
                 <h3 className="pt-0.5 text-xl/[1.375rem] font-semibold font-sans -tracking-4 md:text-2xl/[1.875rem] text-balance text-black dark:text-white">
                   {title}
                 </h3>
-                <h2 className="[&_b]:md:font-semibold [&_strong]:md:font-semibold font-sans text-sm/[1.125rem] md:text-base/[1.375rem] text-black dark:text-neutral-400">
+                <h2 className="[&_b]:md:font-semibold [&_strong]:md:font-semibold font-sans text-sm/[1.125rem] md:text-base/[1.375rem] text-black dark:text-neutral-200">
                   {description}
                 </h2>
               </div>

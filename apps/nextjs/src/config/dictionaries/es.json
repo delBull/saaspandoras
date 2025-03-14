@@ -21,7 +21,7 @@
     "introducing": "Presentamos Pandora's",
     "title": "Conviértete en Propietario de tus Derechos Inmobiliarios ",
     "sub_title": "Adquiere tu derecho a participar en proyectos exclusivos con Pandoras.",
-    "get_started": "Comenzar",
+    "get_started": "Tu 1er derecho gratis",
     "view_on_github": "Ver en GitHub",
     "explore_product": "Explorar Producto",
     "features": "Características",
@@ -37,9 +37,9 @@
     "login": "Iniciar sesión",
     "signup": "Regístrate",
     "contributors": {
-      "contributors_desc": "Contribuidores que han potenciado Pandoras",
-      "developers_first": "Ayudando a más de ",
-      "developers_second": " desarrolladores"
+      "contributors_desc": "Muchos se han beneficiado con Pandora's, al mismo tiempo + propiedades y ",
+      "developers_first": "",
+      "developers_second": " se van sumando"
     },
     "right_side": {
       "deploy_on_vercel_title": "Fusión de lo tangible + digital",

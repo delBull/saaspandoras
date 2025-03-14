@@ -19,40 +19,38 @@ import {VideoScroll} from "~/components/video-scroll";
 const people = [
   {
     id: 1,
-    name: "tianzx",
-    designation: "CEO at Nextify",
+    name: "Juan",
+    designation: "This is amazing",
     image: "https://avatars.githubusercontent.com/u/10096899",
-    link: "#",
   },
   {
     id: 2,
-    name: "jackc3",
-    designation: "Co-founder at Nextify",
+    name: "Dany",
+    designation: "We can do so much",
     image: "https://avatars.githubusercontent.com/u/10334353",
-    link: "#",
   },
   {
     id: 3,
-    name: "imesong",
-    designation: "Contributor",
+    name: "Alan",
+    designation: "Real World Assets has evolved",
     image: "https://avatars.githubusercontent.com/u/3849293",
   },
   {
     id: 4,
-    name: "ziveen",
-    designation: "Contributor",
+    name: "Pablo",
+    designation: "Investmet is accesible now",
     image: "https://avatars.githubusercontent.com/u/22560152",
   },
   {
     id: 5,
-    name: "Zenuncl",
-    designation: "Independent Software Developer",
+    name: "Cesar",
+    designation: "Funding has never been this easy",
     image: "https://avatars.githubusercontent.com/u/3316062",
   },
   {
     id: 6,
-    name: "Innei",
-    designation: "Indie Developer",
+    name: "Susana",
+    designation: "What a way to distribute wealth",
     image: "https://avatars.githubusercontent.com/u/41265413",
   },
 ];
@@ -107,14 +105,12 @@ export default async function IndexPage({
                   </div>
                   <div className="flex flex-col items-center justify-start ml-8">
                     <div className="w-[340px]">
-                      <text className="font-semibold">9 </text>
+                      <text className="font-semibold"> </text>
                       <text
                         className="text-neutral-500 dark:text-neutral-400">{dict.marketing.contributors.contributors_desc}</text>
-                    </div>
-                    <div className="w-[340px]">
-                      <text
+                        <text
                         className="text-neutral-500 dark:text-neutral-400">{dict.marketing.contributors.developers_first}</text>
-                      <ColourfulText text="2000"/>
+                      <ColourfulText text=" startups"/>
                       <text
                         className="text-neutral-500 dark:text-neutral-400">{dict.marketing.contributors.developers_second}</text>
                     </div>
