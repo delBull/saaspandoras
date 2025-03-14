@@ -18,9 +18,9 @@
     "go_to_dashboard": "Go to Dashboard"
   },
   "marketing": {
-    "introducing": "Introducing Pandoras",
-    "title": "Bring your ideas to life with ",
-    "sub_title": "A high-performance platform for tokenizing projects, real estate, and startups. Your complete solution for next-generation investment opportunities.",
+    "introducing": "Introducing Pandora's",
+    "title": "Become the Owner of Your Real Estate Rights ",
+    "sub_title": "Acquire your right to participate in exclusive projects with Pandoras.",
     "get_started": "Get Started",
     "view_on_github": "View on GitHub",
     "explore_product": "Explore Product",
@@ -29,7 +29,7 @@
     "k8s_features": "Fast and Simple Development",
     "devops_features": "Effortless Project Launch",
     "price_features": "Cost-effective in production environments",
-    "main_nav_features": "Features",
+    "main_nav_features": "Business",
     "main_nav_pricing": "Pricing",
     "main_nav_products": "Products",
     "main_nav_blog": "Blog",
@@ -42,12 +42,12 @@
       "developers_second": " developers"
     },
     "right_side": {
-      "deploy_on_vercel_title": "Invest with Confidence",
-      "deploy_on_vercel_desc": "Start in seconds and see immediate results.",
-      "ship_on_cloudflare_title": "Powered by Blockchain",
-      "ship_on_cloudflare_desc": "Your project is secure and scalable with our cutting-edge platform.",
-      "showcase_title": "Success Stories and Showcase",
-      "showcase_desc": "See what innovative minds are building and share your success."
+      "deploy_on_vercel_title": "Fusion of the tangible & the digital",
+      "deploy_on_vercel_desc": "Pandoras is the platform that allows you to invest easily and securely in real estate and investment projects.",
+      "ship_on_cloudflare_title": "How?",
+      "ship_on_cloudflare_desc": "You acquire digital rights that give you access to unique opportunities and the possibility to earn passive income.",
+      "showcase_title": "We transform access to conventional investment",
+      "showcase_desc": "Access high-value asset investments with capital tailored to you."
     },
     "features_grid": {
       "monorepo_title": "Unified Platform",
@@ -74,7 +74,7 @@
       "desc": "Don’t just take our word for it. Here’s what real users are saying about Pandoras."
     }
   },
-  "login": {
+  "login": { 
     "back": "Back",
     "welcome_back": "Welcome back",
     "signin_title": "Enter your email to sign into your account",

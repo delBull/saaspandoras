@@ -18,9 +18,9 @@
     "go_to_dashboard": "Ir al panel de control"
   },
   "marketing": {
-    "introducing": "Presentamos Pandoras",
-    "title": "Dale vida a tus ideas con ",
-    "sub_title": "Una plataforma de alto rendimiento para tokenizar proyectos, bienes raíces y startups. Tu solución integral para oportunidades de inversión de nueva generación.",
+    "introducing": "Presentamos Pandora's",
+    "title": "Conviértete en Propietario de tus Derechos Inmobiliarios ",
+    "sub_title": "Adquiere tu derecho a participar en proyectos exclusivos con Pandoras.",
     "get_started": "Comenzar",
     "view_on_github": "Ver en GitHub",
     "explore_product": "Explorar Producto",
@@ -29,7 +29,7 @@
     "k8s_features": "Desarrollo rápido y sencillo",
     "devops_features": "Lanzamiento de proyectos sin complicaciones",
     "price_features": "Económico en entornos de producción",
-    "main_nav_features": "Características",
+    "main_nav_features": "Negocios",
     "main_nav_pricing": "Precios",
     "main_nav_products": "Productos",
     "main_nav_blog": "Blog",
@@ -42,12 +42,12 @@
       "developers_second": " desarrolladores"
     },
     "right_side": {
-      "deploy_on_vercel_title": "Invierte con Confianza",
-      "deploy_on_vercel_desc": "Comienza en segundos y ve resultados inmediatos.",
-      "ship_on_cloudflare_title": "Impulsado por Blockchain",
-      "ship_on_cloudflare_desc": "Tu proyecto es seguro y escalable con nuestra plataforma de vanguardia.",
-      "showcase_title": "Historias de Éxito y Showcase",
-      "showcase_desc": "Mira lo que las mentes innovadoras están construyendo y comparte tu éxito."
+      "deploy_on_vercel_title": "Fusión de lo tangible + digital",
+      "deploy_on_vercel_desc": "Pandoras es la plataforma que te permite invertir de forma sencilla y segura en proyectos inmobiliarios y de inversión.",
+      "ship_on_cloudflare_title": "¿Cómo?",
+      "ship_on_cloudflare_desc": "Adquieres derechos digitales que te brindan acceso a oportunidades únicas y la posibilidad de ganar ingresos pasivos.",
+      "showcase_title": "Transformamos el acceso a inversión convencional",
+      "showcase_desc": "Accede a inversiones de activos de alto valor con capital a tu medida."
     },
     "features_grid": {
       "monorepo_title": "Plataforma Unificada",
@@ -73,7 +73,7 @@
       "title": "Lo que dicen las personas",
       "desc": "No solo confíes en nuestra palabra. Esto es lo que dicen usuarios reales sobre Pandoras."
     }
-  },
+  }, 
   "login": {
     "back": "Atrás",
     "welcome_back": "Bienvenido de nuevo",

@@ -19,8 +19,8 @@
   },
   "marketing": {
     "introducing": "Pandoras 소개",
-    "title": "와 함께 아이디어에 생명을 불어넣으세요",
-    "sub_title": "프로젝트, 부동산, 스타트업의 토큰화를 위한 고성능 플랫폼. 차세대 투자 기회를 위한 완벽한 솔루션입니다.",
+    "title": "당신의 부동산 권리를 소유하세요 ",
+    "sub_title": "Pandoras와 함께 독점 프로젝트에 참여할 권리를 획득하세요.",
     "get_started": "시작하기",
     "view_on_github": "GitHub에서 보기",
     "explore_product": "제품 탐색",
@@ -42,12 +42,12 @@
       "developers_second": " 개발자"
     },
     "right_side": {
-      "deploy_on_vercel_title": "자신감을 갖고 투자하세요",
-      "deploy_on_vercel_desc": "몇 초 안에 시작하여 즉시 결과를 확인하세요.",
-      "ship_on_cloudflare_title": "블록체인 기반",
-      "ship_on_cloudflare_desc": "최첨단 플랫폼으로 당신의 프로젝트는 안전하며 확장 가능합니다.",
-      "showcase_title": "성공 사례 및 쇼케이스",
-      "showcase_desc": "혁신적인 아이디어가 어떻게 구현되는지 확인하고, 당신의 성공을 공유하세요."
+      "deploy_on_vercel_title": "유형과 디지털의 융합",
+      "deploy_on_vercel_desc": "Pandoras는 부동산 및 투자 프로젝트에 쉽고 안전하게 투자할 수 있는 플랫폼입니다.",
+      "ship_on_cloudflare_title": "어떻게?",
+      "ship_on_cloudflare_desc": "당신은 독특한 기회에 접근할 수 있고 수동적 소득을 얻을 수 있는 디지털 권리를 획득합니다.",
+      "showcase_title": "전통적인 투자 접근 방식을 혁신합니다",
+      "showcase_desc": "자신에게 맞춘 자본으로 고가치 자산 투자에 접근하세요."
     },
     "features_grid": {
       "monorepo_title": "통합 플랫폼",
@@ -73,7 +73,7 @@
       "title": "사람들이 말하는 것",
       "desc": "우리의 말만 믿지 마세요. 실제 사용자가 Pandoras에 대해 말하는 내용을 확인하세요."
     }
-  },
+  }, 
   "login": {
     "back": "뒤로",
     "welcome_back": "다시 오신 것을 환영합니다",
