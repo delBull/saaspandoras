@@ -21,7 +21,7 @@
     "introducing": "Pandorasのご紹介",
     "title": "あなたの不動産権を所有しよう ",
     "sub_title": "Pandorasで独占プロジェクトに参加する権利を手に入れよう。",
-    "get_started": "始める",
+    "get_started": "あなたの最初の無料権利",
     "view_on_github": "GitHubで見る",
     "explore_product": "製品を探る",
     "features": "特徴",
@@ -29,7 +29,7 @@
     "k8s_features": "迅速かつシンプルな開発",
     "devops_features": "手間のかからないプロジェクト立ち上げ",
     "price_features": "本番環境でのコスト効果に優れる",
-    "main_nav_features": "特徴",
+    "main_nav_features": "事",
     "main_nav_pricing": "価格設定",
     "main_nav_products": "製品",
     "main_nav_blog": "ブログ",
@@ -37,9 +37,9 @@
     "login": "ログイン",
     "signup": "登録する",
     "contributors": {
-      "contributors_desc": "Pandorasを支える貢献者たち",
-      "developers_first": "〜人以上の",
-      "developers_second": " 開発者"
+      "contributors_desc": "多くの施設やスタートアップが参加しているため、多くの人がPandoraの恩恵を受けています",
+      "developers_first": "",
+      "developers_second": ""
     },
     "right_side": {
       "deploy_on_vercel_title": "有形とデジタルの融合",

@@ -21,7 +21,7 @@
     "introducing": "Pandoras 소개",
     "title": "당신의 부동산 권리를 소유하세요 ",
     "sub_title": "Pandoras와 함께 독점 프로젝트에 참여할 권리를 획득하세요.",
-    "get_started": "시작하기",
+    "get_started": "첫 번째 무료 권리",
     "view_on_github": "GitHub에서 보기",
     "explore_product": "제품 탐색",
     "features": "특징",
@@ -29,7 +29,7 @@
     "k8s_features": "빠르고 간단한 개발",
     "devops_features": "손쉬운 프로젝트 출범",
     "price_features": "생산 환경에서 비용 효율적",
-    "main_nav_features": "특징",
+    "main_nav_features": "사업",
     "main_nav_pricing": "가격",
     "main_nav_products": "제품",
     "main_nav_blog": "블로그",
@@ -37,9 +37,9 @@
     "login": "로그인",
     "signup": "가입하기",
     "contributors": {
-      "contributors_desc": "Pandoras를 강화한 기여자들",
-      "developers_first": "천 명 이상의",
-      "developers_second": " 개발자"
+      "contributors_desc": "더 많은 부동산과 신생 기업이 참여함에 따라 많은 사람들이 Pandora's의 혜택을 받았습니다",
+      "developers_first": "",
+      "developers_second": ""
     },
     "right_side": {
       "deploy_on_vercel_title": "유형과 디지털의 융합",

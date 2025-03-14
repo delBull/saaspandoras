@@ -21,7 +21,7 @@
     "introducing": "Introducing Pandora's",
     "title": "Become the Owner of Your Real Estate Rights ",
     "sub_title": "Acquire your right to participate in exclusive projects with Pandoras.",
-    "get_started": "Get Started",
+    "get_started": "Your first free right",
     "view_on_github": "View on GitHub",
     "explore_product": "Explore Product",
     "features": "Features",
@@ -37,9 +37,9 @@
     "login": "Log In",
     "signup": "Sign Up",
     "contributors": {
-      "contributors_desc": "Contributors who have empowered Pandoras",
-      "developers_first": "Helping over ",
-      "developers_second": " developers"
+      "contributors_desc": "Many have benefited from Pandora's, at the same time more properties and ",
+      "developers_first": "",
+      "developers_second": " are adding up"
     },
     "right_side": {
       "deploy_on_vercel_title": "Fusion of the tangible & the digital",
