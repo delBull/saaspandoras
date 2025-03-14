@@ -75,10 +75,10 @@ export default async function IndexPage({
               <div className="flex flex-col pt-4 md:pt-36 lg:pt-36 xl:pt-36">
                 <div className="mt-20">
                   <div
-                    className="mb-6 max-w-4xl text-left text-4xl font-semibold dark:text-zinc-100 md:text-5xl xl:text-5xl md:leading-[4rem] xl:leading-[4rem]">
+                    className="mb-0 max-w-4xl text-left text-4xl font-semibold dark:text-zinc-100 md:text-5xl xl:text-5xl md:leading-[4rem] xl:leading-[4rem]">
                     {dict.marketing.title || "Ship your apps to the world easier with "}
-                    <br/>
-                    <ColourfulText text="Pandora's"/>
+                    {/*<br/>
+                    <ColourfulText text="Pandora's"/>}*/}
                   </div>
                 </div>
 
@@ -124,15 +124,15 @@ export default async function IndexPage({
             </BackgroundLines>
           </div>
 
-          <div className="hidden h-full w-full xl:block bg-background">
-            <div className="flex flex-col pt-44">
+          <div className="h-full w-full xl:block bg-background">
+            <div className="flex flex-col pt-0 xl:pt-44">
               <RightsideMarketing dict={dict.marketing.right_side}/>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="container mt-8 md:mt-[-80px] xl:mt-[-50px]">
+      <section className="container mt-8 md:mt-[50px] xl:mt-[-50px]">
         <FeaturesGrid dict={dict.marketing.features_grid}/>
       </section>
 

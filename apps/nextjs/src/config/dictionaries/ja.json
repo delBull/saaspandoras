@@ -19,8 +19,8 @@
   },
   "marketing": {
     "introducing": "Pandorasのご紹介",
-    "title": "でアイデアに命を吹き込もう",
-    "sub_title": "プロジェクト、不動産、スタートアップのトークン化に最適な高性能プラットフォーム。次世代投資機会のための完全なソリューションです。",
+    "title": "あなたの不動産権を所有しよう ",
+    "sub_title": "Pandorasで独占プロジェクトに参加する権利を手に入れよう。",
     "get_started": "始める",
     "view_on_github": "GitHubで見る",
     "explore_product": "製品を探る",
@@ -42,12 +42,12 @@
       "developers_second": " 開発者"
     },
     "right_side": {
-      "deploy_on_vercel_title": "自信を持って投資しよう",
-      "deploy_on_vercel_desc": "数秒で始め、すぐに結果を確認できます。",
-      "ship_on_cloudflare_title": "ブロックチェーン搭載",
-      "ship_on_cloudflare_desc": "最新鋭のプラットフォームで、あなたのプロジェクトは安全かつスケーラブルです。",
-      "showcase_title": "成功事例とショーケース",
-      "showcase_desc": "革新的なアイデアがどのように形になっているかを見て、あなたの成功も共有しましょう。"
+      "deploy_on_vercel_title": "有形とデジタルの融合",
+      "deploy_on_vercel_desc": "Pandorasは、不動産および投資プロジェクトに簡単かつ安全に投資できるプラットフォームです。",
+      "ship_on_cloudflare_title": "どうやって？",
+      "ship_on_cloudflare_desc": "あなたは、独自の機会にアクセスでき、受動的な収入を得る可能性を提供するデジタル権利を取得します。",
+      "showcase_title": "従来の投資へのアクセスを変革する",
+      "showcase_desc": "自分に合わせた資本で高価値資産への投資にアクセスする。"
     },
     "features_grid": {
       "monorepo_title": "統合プラットフォーム",
@@ -74,7 +74,7 @@
       "desc": "私たちの言葉だけでなく、実際の利用者の声をご覧ください。"
     }
   },
-  "login": {
+  "login": { 
     "back": "戻る",
     "welcome_back": "おかえりなさい",
     "signin_title": "アカウントにサインインするためにメールアドレスを入力してください",

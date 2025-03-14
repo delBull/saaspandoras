@@ -19,8 +19,8 @@
   },
   "marketing": {
     "introducing": "介绍 Pandoras",
-    "title": "用 让你的创意焕发生机",
-    "sub_title": "一个高性能平台，用于将项目、不动产和初创企业进行代币化。为下一代投资机会提供完整解决方案。",
+    "title": "成为您房地产权利的所有者 ",
+    "sub_title": "获取参与Pandoras独家项目的权利。",
     "get_started": "开始使用",
     "view_on_github": "在 GitHub 上查看",
     "explore_product": "探索产品",
@@ -42,12 +42,12 @@
       "developers_second": " 位开发者"
     },
     "right_side": {
-      "deploy_on_vercel_title": "自信投资",
-      "deploy_on_vercel_desc": "几秒内启动，立即见效。",
-      "ship_on_cloudflare_title": "区块链驱动",
-      "ship_on_cloudflare_desc": "我们的尖端平台确保您的项目安全且具有可扩展性。",
-      "showcase_title": "成功案例与展示",
-      "showcase_desc": "看看创新者们在构建什么，并分享您的成功。"
+      "deploy_on_vercel_title": "有形与数字的融合",
+      "deploy_on_vercel_desc": "Pandoras 是一个让您轻松、安全地投资房地产和投资项目的平台。",
+      "ship_on_cloudflare_title": "怎么？",
+      "ship_on_cloudflare_desc": "你获得数字权利，这些权利为你提供了独特的机会和赚取被动收入的可能性。",
+      "showcase_title": "我们正在改变传统投资的获取方式",
+      "showcase_desc": "使用适合你的资本，获取高价值资产的投资机会。"
     },
     "features_grid": {
       "monorepo_title": "统一平台",
@@ -77,7 +77,7 @@
   "login": {
     "back": "返回",
     "welcome_back": "欢迎回来",
-    "signin_title": "请输入您的邮箱以登录账号",
+    "signin_title": "请输入您的邮箱以登录账号", 
     "singup_title": "还没有账号？立即注册。",
     "signin_email": "使用邮箱登录",
     "signin_others": "或使用其他方式继续",
