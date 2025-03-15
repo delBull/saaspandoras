@@ -30,7 +30,7 @@
     "devops_features": "手間のかからないプロジェクト立ち上げ",
     "price_features": "本番環境でのコスト効果に優れる",
     "main_nav_features": "事",
-    "main_nav_pricing": "価格設定",
+    "main_nav_pricing": "",
     "main_nav_products": "製品",
     "main_nav_blog": "ブログ",
     "main_nav_documentation": "ドキュメンテーション",
@@ -50,24 +50,27 @@
       "showcase_desc": "自分に合わせた資本で高価値資産への投資にアクセスする。"
     },
     "features_grid": {
-      "monorepo_title": "統合プラットフォーム",
-      "monorepo_desc": "複数のプロジェクトを一元管理し、協力とコード共有を促進します。",
-      "i18n_title": "グローバルリーチ",
-      "i18n_desc": "多言語サポートでユーザー体験を向上させ、世界中にビジネスを拡大します。",
-      "payments_title": "シームレスな支払い",
-      "payments_desc": "安全かつ効率的な決済システムで、ビジネスをグローバルに拡大します。",
-      "nextauth_title": "安全な認証",
-      "nextauth_desc": "スムーズで安全なログイン体験でプラットフォームを強化します。"
+      "monorepo_title": "無料で権利を取得する",
+      "monorepo_desc": "サインアップして、物件のトークン購入に参加できるデジタル権利を取得しましょう。",
+      "i18n_title": "トークンを購入する",
+      "i18n_desc": "権利を取得したら、プレセールで特別価格でトークンを購入できます。各トークンはプロジェクトの価値の一部を表します。",
+      "payments_title": "稼いで成長する",
+      "payments_desc": "トークンを使って、家賃収入や投資を完全所有に変換する機会など、独占的な利益を享受できます。",
+      "nextauth_title": "",
+      "nextauth_desc": ""
     },
     "sponsor": {
       "title": "パートナーによる支援",
       "donate": "無料で権利を取得する"
     },
     "video": {
-      "first_text": "動画を見てから",
-      "second_text1": "あなたのプロジェクトを構築しよう",
-      "second_text2": "",
-      "time_text": "1時間"
+      "first_text": "トークンを購入する権利を行使しよう",
+      "second_text1": "それは不動産価値の一部を表します ",
+      "time_text": "不動産"
+    },
+    "transform_token": {
+      "title": "十分なトークンを持っているとき",
+      "desc": "限定アクセスや収益を楽しみ、実際の不動産に変える機会を得ることができます。"
     },
     "people_comment": {
       "title": "利用者の声",
@@ -87,7 +90,7 @@
     "signup_google": "Googleで登録"
   },
   "common": {
-    "copyright": "© ${currentYear} Pandora's Foundation. すべての権利を保有します。",
+    "copyright": "© ${currentYear} Pandora's Foundation は MXHUB エコシステム ブロックチェーン S.A. de C.V. のブランドです。",
     "dashboard": {
       "main_nav_documentation": "ドキュメンテーション",
       "main_nav_support": "サポート",
