@@ -136,11 +136,11 @@ export default async function IndexPage({
         <div className="flex flex-col justify-center items-center pt-10">
           <div className="text-lg text-neutral-500 dark:text-neutral-400">{dict.marketing.sponsor.title}</div>
           <div className="mt-4 flex items-center gap-4">
-            <Link href="#" target="_blank">
-              <Image src="https://www.twillot.com/logo-128.png" width="48" height="48" alt="twillot"/>
+            <Link href="https://www.costasierrarealty.com" target="_blank">
+              <Image src="/images/costa_sierra.avif" width="48" height="48" alt="twillot" className="filter brightness-0 invert contrast-100"/>
             </Link>
-            <Link href="#" target="_blank">
-              <Image src="https://www.setupyourpay.com/logo.png" width="48" height="48" alt="setupyourpay" />
+            <Link href="https://www.agodecosystem.com" target="_blank">
+              <Image src="/images/agod.png" width="48" height="48" alt="setupyourpay" />
             </Link>
             <Link href="#" target="_blank">
               <div className="flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-dashed border-neutral-300 dark:border-neutral-700 hover:bg-accent dark:hover:bg-neutral-800/30">
