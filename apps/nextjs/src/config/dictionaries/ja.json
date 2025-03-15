@@ -1,7 +1,7 @@
 {
   "price": {
     "title": "透明でお手頃な価格設定!",
-    "pricing": "価格設定",
+    "properties_title": "性能",
     "slogan": "全力で投資を始めよう!",
     "monthly_bill": "月次請求",
     "annual_bill": "年次請求",
@@ -29,8 +29,8 @@
     "k8s_features": "迅速かつシンプルな開発",
     "devops_features": "手間のかからないプロジェクト立ち上げ",
     "price_features": "本番環境でのコスト効果に優れる",
-    "main_nav_features": "事",
-    "main_nav_pricing": "",
+    "main_nav_business": "事",
+    "main_nav_properties": "プロパティ",
     "main_nav_products": "製品",
     "main_nav_blog": "ブログ",
     "main_nav_documentation": "ドキュメンテーション",

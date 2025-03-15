@@ -5,132 +5,139 @@ interface FAQItem {
 }
 
 export const priceFaqDataMap: Record<string, FAQItem[]> = {
-  zh: [
-    {
-      id: "item-1",
-      question: "免费计划的费用是多少？",
-      answer:
-        "我们的免费计划完全免费，没有月费或年费。这是一个开始使用和探索我们基本功能的好方法。",
-    },
-    {
-      id: "item-2",
-      question: "专业月度计划的费用是多少？",
-      answer:
-        "专业月度计划的价格是每月30美元。它提供了访问我们核心功能的权限，并且是按月计费的。",
-    },
-    {
-      id: "item-3",
-      question: "商务月度计划的价格是多少？",
-      answer:
-        "商务月度计划的价格是每月60美元。它提供高级功能，并且也是按月计费，增加了灵活性。",
-    },
-    {
-      id: "item-4",
-      question: "你们提供年度订阅计划吗？",
-      answer:
-        "是的，我们提供年度订阅计划，以便更多的节省。专业年度计划的费用是每年288美元，商务年度计划是每年600美元。",
-    },
-    {
-      id: "item-5",
-      question: "付费计划有试用期吗？",
-      answer:
-        "我们为专业月度和专业年度计划提供14天的免费试用期。这是一个在承诺付费订阅之前体验所有功能的好方法。",
-    },
-  ],
-  en: [
-    {
-      id: "item-1",
-      question: "What is the cost of the free plan?",
-      answer:
-        "Our free plan is completely free, with no monthly or annual charges. It's a great way to get started and explore our basic features.",
-    },
-    {
-      id: "item-2",
-      question: "How much does the Pro Monthly plan cost?",
-      answer:
-        "The Pro Monthly plan is priced at $30 per month. It provides access to our core features and is billed on a monthly basis.",
-    },
-    {
-      id: "item-3",
-      question: "What is the price of the Business Monthly plan?",
-      answer:
-        "The Business Monthly plan is available for $60 per month. It offers advanced features and is billed on a monthly basis for added flexibility.",
-    },
-    {
-      id: "item-4",
-      question: "Do you offer any annual subscription plans?",
-      answer:
-        "Yes, we offer annual subscription plans for even more savings. The Pro Annual plan is $288 per year, and the Business Annual plan is $600 per year.",
-    },
-    {
-      id: "item-5",
-      question: "Is there a trial period for the paid plans?",
-      answer:
-        "We offer a 14-day free trial for both the Pro Monthly and Pro Annual plans. It's a great way to experience all the features before committing to a paid subscription.",
-    },
-  ],
-  ja: [
-    {
-      id: "item-1",
-      question: "無料プランの費用はいくらですか？",
-      answer:
-        "私たちの無料プランは完全に無料で、月額料金や年間料金はかかりません。基本的な機能を使い始めるには最適な方法です。",
-    },
-    {
-      id: "item-2",
-      question: "プロ月額プランの費用はいくらですか？",
-      answer:
-        "プロ月額プランは月に30ドルで、核心機能へのアクセスを提供し、月額で課金されます。",
-    },
-    {
-      id: "item-3",
-      question: "ビジネス月額プランの価格はいくらですか？",
-      answer:
-        "ビジネス月額プランは月に60ドルで、高度な機能を提供し、柔軟性を高めるために月額で課金されます。",
-    },
-    {
-      id: "item-4",
-      question: "年間サブスクリプションプランを提供していますか？",
-      answer:
-        "はい、さらなる節約のために年間サブスクリプションプランを提供しています。プロ年間プランは年間288ドル、ビジネス年間プランは年間600ドルです。",
-    },
-    {
-      id: "item-5",
-      question: "有料プランには試用期間がありますか？",
-      answer:
-        "プロ月額プランとプロ年間プランの両方に14日間の無料トライアルを提供しています。これは、有料サブスクリプションを行う前に全ての機能を体験するのに最適な方法です。",
-    },
-  ],
-  ko: [
-    {
-      id: "item-1",
-      question: "무료 플랜의 비용은 얼마인가요?",
-      answer:
-        "저희 무료 플랜은 완전히 무료이며, 월간 또는 연간 요금이 없습니다. 기본 기능을 시작하고 탐색하는 데 좋은 방법입니다.",
-    },
-    {
-      id: "item-2",
-      question: "프로 월간 플랜의 비용은 얼마인가요?",
-      answer:
-        "프로 월간 플랜은 월 30달러입니다. 이 플랜은 핵심 기능에 대한 접근을 제공하며 월간으로 청구됩니다.",
-    },
-    {
-      id: "item-3",
-      question: "비즈니스 월간 플랜의 가격은 얼마인가요?",
-      answer:
-        "비즈니스 월간 플랜은 월 60달러입니다. 이 플랜은 고급 기능을 제공하며 유연성을 더하기 위해 월간으로 청구됩니다.",
-    },
-    {
-      id: "item-4",
-      question: "연간 구독 플랜을 제공하나요?",
-      answer:
-        "네, 더 큰 절약을 위해 연간 구독 플랜을 제공합니다. 프로 연간 플랜은 연 288달러이며, 비즈니스 연간 플랜은 연 600달러입니다.",
-    },
-    {
-      id: "item-5",
-      question: "유료 플랜에는 체험 기간이 있나요?",
-      answer:
-        "저희는 프로 월간 및 프로 연간 플랜에 대해 14일 무료 체험 기간을 제공합니다. 유료 구독을 하기 전에 모든 기능을 경험할 수 있는 좋은 방법입니다.",
-    },
-  ],
-};
+    zh: [
+      {
+        id: "item-1",
+        question: "什么是 Pandoras？",
+        answer: "Pandoras 是一个区块链平台，将房地产和创新项目进行代币化，让您可以轻松、安全地进行投资。"
+      },
+      {
+        id: "item-2",
+        question: "Pandoras 如何实现代币化？",
+        answer: "我们的平台将实物资产转换为数字代币，使您能够以较低的门槛投资高价值项目。"
+      },
+      {
+        id: "item-3",
+        question: "通过 Pandoras 投资有哪些好处？",
+        answer: "通过 Pandoras 投资，您将享受到透明、安全的投资环境，并有机会获得被动收入和资产增值。"
+      },
+      {
+        id: "item-4",
+        question: "我的投资安全吗？",
+        answer: "Pandoras 利用最先进的区块链技术，确保所有交易和投资都安全、透明，并受到严格保护。"
+      },
+      {
+        id: "item-5",
+        question: "我如何查看我的投资状况？",
+        answer: "您可以通过我们用户友好的仪表板实时跟踪您的投资和代币持有情况，操作简单直观。"
+      }
+    ],
+    en: [
+      {
+        id: "item-1",
+        question: "What is Pandoras?",
+        answer: "Pandoras is a blockchain platform that tokenizes real estate and innovative projects, allowing you to invest easily and securely."
+      },
+      {
+        id: "item-2",
+        question: "How does tokenization work on Pandoras?",
+        answer: "Our platform converts physical assets into digital tokens, enabling you to invest in high-value projects with a lower capital barrier."
+      },
+      {
+        id: "item-3",
+        question: "What are the benefits of investing through Pandoras?",
+        answer: "Investing through Pandoras provides a transparent, secure investment environment, with opportunities for passive income and asset appreciation."
+      },
+      {
+        id: "item-4",
+        question: "How secure is my investment?",
+        answer: "Pandoras leverages cutting-edge blockchain technology to ensure that all transactions and investments are secure, transparent, and rigorously protected."
+      },
+      {
+        id: "item-5",
+        question: "How can I track my investments?",
+        answer: "You can easily monitor your investments and token holdings through our user-friendly dashboard, available 24/7 for real-time updates."
+      }
+    ],
+    es: [
+      {
+        id: "item-1",
+        question: "¿Qué es Pandoras?",
+        answer: "Pandoras es una plataforma blockchain que tokeniza proyectos inmobiliarios e innovadores, permitiéndote invertir de forma sencilla y segura."
+      },
+      {
+        id: "item-2",
+        question: "¿Cómo funciona la tokenización en Pandoras?",
+        answer: "Nuestra plataforma convierte activos físicos en tokens digitales, permitiéndote invertir en proyectos de alto valor con una barrera de entrada menor."
+      },
+      {
+        id: "item-3",
+        question: "¿Cuáles son los beneficios de invertir a través de Pandoras?",
+        answer: "Invertir a través de Pandoras te ofrece un entorno de inversión transparente y seguro, con oportunidades para obtener ingresos pasivos y la apreciación de tus activos."
+      },
+      {
+        id: "item-4",
+        question: "¿Qué tan segura es mi inversión?",
+        answer: "Pandoras utiliza tecnología blockchain de última generación para garantizar que todas las transacciones e inversiones sean seguras, transparentes y estén rigurosamente protegidas."
+      },
+      {
+        id: "item-5",
+        question: "¿Cómo puedo seguir mis inversiones?",
+        answer: "Puedes monitorear fácilmente tus inversiones y la tenencia de tus tokens a través de nuestro panel de control, disponible las 24 horas para actualizaciones en tiempo real."
+      }
+    ],
+    ja: [
+      {
+        id: "item-1",
+        question: "Pandorasとは何ですか？",
+        answer: "Pandorasは、不動産や革新的なプロジェクトをトークン化するブロックチェーンプラットフォームで、簡単かつ安全に投資できる環境を提供します。"
+      },
+      {
+        id: "item-2",
+        question: "Pandorasでのトークン化はどのように機能しますか？",
+        answer: "当プラットフォームでは、実物資産をデジタルトークンに変換することで、少ない資本で高価値のプロジェクトに投資することが可能になります。"
+      },
+      {
+        id: "item-3",
+        question: "Pandorasを通じて投資するメリットは何ですか？",
+        answer: "Pandorasを通じて投資することで、透明性が高く安全な投資環境を享受でき、受動的な収入や資産の価値上昇の機会が得られます。"
+      },
+      {
+        id: "item-4",
+        question: "私の投資はどのくらい安全ですか？",
+        answer: "Pandorasは最新のブロックチェーン技術を活用しており、すべての取引と投資が安全かつ透明に管理されています。"
+      },
+      {
+        id: "item-5",
+        question: "Pandorasで自分の投資状況をどのように確認できますか？",
+        answer: "使いやすいダッシュボードを通じて、24時間いつでも自分の投資やトークン保有状況をリアルタイムで確認できます。"
+      }
+    ],
+    ko: [
+      {
+        id: "item-1",
+        question: "Pandoras란 무엇인가요?",
+        answer: "Pandoras는 부동산과 혁신 프로젝트를 토큰화하는 블록체인 플랫폼으로, 쉽고 안전하게 투자할 수 있는 환경을 제공합니다."
+      },
+      {
+        id: "item-2",
+        question: "Pandoras에서 토큰화는 어떻게 이루어지나요?",
+        answer: "우리 플랫폼은 실물 자산을 디지털 토큰으로 전환하여, 적은 자본으로도 고가치 프로젝트에 투자할 수 있도록 합니다."
+      },
+      {
+        id: "item-3",
+        question: "Pandoras를 통해 투자할 때의 장점은 무엇인가요?",
+        answer: "Pandoras를 통해 투자하면, 투명하고 안전한 투자 환경은 물론, 수동적 소득과 자산 가치 상승의 기회를 누릴 수 있습니다."
+      },
+      {
+        id: "item-4",
+        question: "제 투자는 얼마나 안전한가요?",
+        answer: "Pandoras는 최신 블록체인 기술을 사용하여 모든 거래와 투자가 안전하고 투명하게 관리되도록 보장합니다."
+      },
+      {
+        id: "item-5",
+        question: "Pandoras에서 제 투자를 어떻게 확인할 수 있나요?",
+        answer: "사용자 친화적인 대시보드를 통해 언제든지 실시간으로 투자 내역과 토큰 보유 현황을 확인할 수 있습니다."
+      }
+    ]
+  };  

@@ -1,7 +1,7 @@
 {
   "price": {
     "title": "¡Precios transparentes y accesibles!",
-    "pricing": "Precios",
+    "properties_title": "Propiedades",
     "slogan": "¡Empieza a invertir a toda velocidad!",
     "monthly_bill": "Facturación mensual",
     "annual_bill": "Facturación anual",
@@ -29,8 +29,8 @@
     "k8s_features": "Desarrollo rápido y sencillo",
     "devops_features": "Lanzamiento de proyectos sin complicaciones",
     "price_features": "Económico en entornos de producción",
-    "main_nav_features": "Negocios",
-    "main_nav_pricing": "",
+    "main_nav_business": "Negocios",
+    "main_nav_properties": "Propiedades",
     "main_nav_products": "Productos",
     "main_nav_blog": "Blog",
     "main_nav_documentation": "Documentación",

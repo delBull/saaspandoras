@@ -1,7 +1,7 @@
 {
   "price": {
     "title": "透明且实惠的定价！",
-    "pricing": "定价",
+    "properties_title": "プロパティ",
     "slogan": "全速开始投资！",
     "monthly_bill": "每月计费",
     "annual_bill": "年度计费",
@@ -29,8 +29,8 @@
     "k8s_features": "快速简便的开发",
     "devops_features": "轻松启动项目",
     "price_features": "生产环境下高性价比",
-    "main_nav_features": "商",
-    "main_nav_pricing": "",
+    "main_nav_business": "商",
+    "main_nav_properties": "性能",
     "main_nav_products": "产品",
     "main_nav_blog": "博客",
     "main_nav_documentation": "文档",

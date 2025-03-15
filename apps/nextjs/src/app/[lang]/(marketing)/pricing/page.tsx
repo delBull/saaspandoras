@@ -7,10 +7,10 @@ import { getDictionary } from "~/lib/get-dictionary";
 import { trpc } from "~/trpc/server";
 
 export const metadata = {
-  title: "Pricing",
+  title: "Properties",
 };
 
-export default async function PricingPage({
+export default async function PropertiesPage({
   params: { lang },
 }: {
   params: {
