@@ -50,18 +50,18 @@
       "showcase_desc": "Accede a inversiones de activos de alto valor con capital a tu medida."
     },
     "features_grid": {
-      "monorepo_title": "Plataforma Unificada",
-      "monorepo_desc": "Gestiona múltiples proyectos en un solo lugar para facilitar la colaboración y el intercambio de código.",
-      "i18n_title": "Alcance Global",
-      "i18n_desc": "Soporte multilingüe que mejora la experiencia del usuario y expande tu negocio a nivel mundial.",
-      "payments_title": "Pagos sin Complicaciones",
-      "payments_desc": "Amplía tu negocio globalmente con nuestro sistema de pagos seguro y eficiente.",
-      "nextauth_title": "Autenticación Segura",
-      "nextauth_desc": "Potencia tu plataforma con inicios de sesión seguros y sin fricción."
+      "monorepo_title": "Adquiere tu Derecho Gratis",
+      "monorepo_desc": "Regístrate y consigue tu derecho digital que te permitirá participar en la compra de tokens de la propiedad.",
+      "i18n_title": "Compra Tokens",
+      "i18n_desc": "Una vez que tengas tu derecho, podrás comprar tokens a un precio especial en nuestra preventa. Cada token representa una parte del valor del proyecto.",
+      "payments_title": "Gana y Crece",
+      "payments_desc": "Con tus tokens, tendrás acceso a beneficios exclusivos, como ingresos por rentas y la posibilidad de convertir tu inversión en propiedad total.",
+      "nextauth_title": "",
+      "nextauth_desc": ""
     },
     "sponsor": {
-      "title": "Respaldado por nuestros patrocinadores",
-      "donate": "Cómpranos un café, tu marca aquí"
+      "title": "Respaldado por nuestros colaboradores",
+      "donate": "Adquiere tu Derecho Gratis"
     },
     "video": {
       "first_text": "Mira un video, luego",
