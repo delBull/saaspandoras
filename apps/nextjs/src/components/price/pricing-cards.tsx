@@ -20,6 +20,10 @@ interface PricingOption {
   benefits: string[];
   limitations: string[];
   id: string;
+  stage0: string[];
+  price_per_token0: number;
+  availability0: string[];
+  special_benefits0: string[];
 }
 
 interface PricingCardsProps {
@@ -108,6 +112,24 @@ export function PricingCards({
                     key={feature}
                   >
                     <Icons.Close className="mr-3 h-5 w-5 shrink-0" />
+                    <p>{feature}</p>
+                  </li>
+                ))}
+                {offer.stage0.map((feature) => (
+                  <li className="flex items-start" key={feature}>
+                    <Icons.Check className="mr-3 h-5 w-5 shrink-0" />
+                    <p>{feature}</p>
+                  </li>
+                ))}
+                {offer.availability0.map((feature) => (
+                  <li className="flex items-start" key={feature}>
+                    <Icons.Check className="mr-3 h-5 w-5 shrink-0" />
+                    <p>{feature}</p>
+                  </li>
+                ))}
+                {offer.special_benefits0.map((feature) => (
+                  <li className="flex items-start" key={feature}>
+                    <Icons.Check className="mr-3 h-5 w-5 shrink-0" />
                     <p>{feature}</p>
                   </li>
                 ))}

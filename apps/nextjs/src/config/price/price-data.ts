@@ -1,5 +1,3 @@
-//import { env } from "~/env.mjs";
-
 interface SubscriptionPlanTranslation {
   id: string;
   title: string;
@@ -10,6 +8,10 @@ interface SubscriptionPlanTranslation {
     monthly: number;
     yearly: number;
   };
+  stage0: string[];
+  price_per_token0: number;
+  availability0: string[];
+  special_benefits0: string[];
   stripeIds: {
     monthly: string | null;
     yearly: string | null;
@@ -42,6 +44,16 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
         monthly: null,
         yearly: null,
       },
+      stage0: [
+        "亲友轮"
+      ],
+      price_per_token0: 10,
+      availability0: [
+        "仅限早期投资者的代币。"
+      ],
+      special_benefits0: [
+        "更高的盈利能力和独家访问权限。"
+      ],
     },
     {
       id: "pro",
@@ -63,6 +75,16 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
         monthly: null,
         yearly: null,
       },
+      stage0: [
+        "亲友轮"
+      ],
+      price_per_token0: 10,
+      availability0: [
+        "仅限早期投资者的代币。"
+      ],
+      special_benefits0: [
+        "更高的盈利能力和独家访问权限。"
+      ],
     },
     {
       id: "business",
@@ -84,6 +106,16 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
         monthly: null,
         yearly: null,
       },
+      stage0: [
+        "亲友轮"
+      ],
+      price_per_token0: 10,
+      availability0: [
+        "仅限早期投资者的代币。"
+      ],
+      special_benefits0: [
+        "更高的盈利能力和独家访问权限。"
+      ],
     },
   ],
   es: [
@@ -111,6 +143,16 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
         monthly: null,
         yearly: null,
       },
+      stage0: [
+        "Family & Friends"
+      ],
+      price_per_token0: 10,
+      availability0: [
+        "Tokens limitados para inversionistas tempranos."
+      ],
+      special_benefits0: [
+        "Mayor rentabilidad y acceso exclusivo."
+      ],
     },
     {
       id: "business",
@@ -132,6 +174,16 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
         monthly: null,
         yearly: null,
       },
+      stage0: [
+        "Family & Friends"
+      ],
+      price_per_token0: 10,
+      availability0: [
+        "Tokens limitados para inversionistas tempranos."
+      ],
+      special_benefits0: [
+        "Mayor rentabilidad y acceso exclusivo."
+      ],
     },
   ],  
   en: [
@@ -159,6 +211,16 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
         monthly: null,
         yearly: null,
       },
+      stage0: [
+        "Family & Friends"
+      ],
+      price_per_token0: 10,
+      availability0: [
+        "Limited tokens for early investors."
+      ],
+      special_benefits0: [
+        "Higher profitability and exclusive access."
+      ],
     },
     {
       id: "pro",
@@ -183,6 +245,16 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
         monthly: null,
         yearly: null,
       },
+      stage0: [
+        "Family & Friends"
+      ],
+      price_per_token0: 10,
+      availability0: [
+        "Limited tokens for early investors."
+      ],
+      special_benefits0: [
+        "Higher profitability and exclusive access."
+      ],
     },
     {
       id: "business",
@@ -204,7 +276,17 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
         monthly: null,
         yearly: null,
       },
-    },
+      stage0: [
+        "Family & Friends"
+      ],
+      price_per_token0: 10,
+      availability0: [
+        "Limited tokens for early investors."
+      ],
+      special_benefits0: [
+        "Higher profitability and exclusive access."
+      ],
+    }
   ],
   ja: [
     {
@@ -231,6 +313,16 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
         monthly: null,
         yearly: null,
       },
+      stage0: [
+        "ファミリー＆フレンズ"
+      ],
+      price_per_token0: 10,
+      availability0: [
+        "早期投資家向けの限定トークン。"
+      ],
+      special_benefits0: [
+        "高い収益性と限定アクセス。"
+      ],
     },
     {
       id: "pro",
@@ -255,6 +347,16 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
         monthly: null,
         yearly: null,
       },
+      stage0: [
+        "ファミリー＆フレンズ"
+      ],
+      price_per_token0: 10,
+      availability0: [
+        "早期投資家向けの限定トークン。"
+      ],
+      special_benefits0: [
+        "高い収益性と限定アクセス。"
+      ],
     },
     {
       id: "business",
@@ -276,6 +378,16 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
         monthly: null,
         yearly: null,
       },
+      stage0: [
+        "ファミリー＆フレンズ"
+      ],
+      price_per_token0: 10,
+      availability0: [
+        "早期投資家向けの限定トークン。"
+      ],
+      special_benefits0: [
+        "高い収益性と限定アクセス。"
+      ],
     },
   ],
   ko: [
@@ -302,7 +414,17 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
       stripeIds: {
         "monthly": null,
         "yearly": null
-      }
+      },
+      stage0: [
+        "패밀리 & 프렌즈"
+      ],
+      price_per_token0: 10,
+      availability0: [
+        "초기 투자자를 위한 제한된 토큰."
+      ],
+      special_benefits0: [
+        "더 높은 수익성과 독점 접근 권한."
+      ],
     },
     {
       id: "pro",
@@ -324,6 +446,16 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
         monthly: null,
         yearly: null,
       },
+      stage0: [
+        "패밀리 & 프렌즈"
+      ],
+      price_per_token0: 10,
+      availability0: [
+        "초기 투자자를 위한 제한된 토큰."
+      ],
+      special_benefits0: [
+        "더 높은 수익성과 독점 접근 권한."
+      ],
     },
     {
       id: "business",
@@ -345,6 +477,16 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
         monthly: null,
         yearly: null,
       },
+      stage0: [
+        "패밀리 & 프렌즈"
+      ],
+      price_per_token0: 10,
+      availability0: [
+        "초기 투자자를 위한 제한된 토큰."
+      ],
+      special_benefits0: [
+        "더 높은 수익성과 독점 접근 권한."
+      ],
     },
   ],
 };
