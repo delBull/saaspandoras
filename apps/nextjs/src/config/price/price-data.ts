@@ -1,4 +1,4 @@
-import { env } from "~/env.mjs";
+//import { env } from "~/env.mjs";
 
 interface SubscriptionPlanTranslation {
   id: string;
@@ -20,18 +20,23 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
   zh: [
     {
       id: "starter",
-      title: "入门版",
-      description: "适合初学者",
-      benefits: ["每月最多1个集群", "基础分析和报告", "访问基础功能"],
+      title: "Narai Bucerías",
+      description: "投资于纳亚里特州布塞里亚斯的独家房地产开发项目。",
+      benefits: [
+        "获取由房地产支持的代币。",
+        "收益基于增值和度假租赁收入。",
+        "优先获得预售权，并享受优惠价格。",
+        "投资由有形资产支持。"
+      ],
       limitations: [
-        "无法优先获取新功能",
-        "有限的客户支持",
-        "无法自定义品牌",
-        "对商业资源的访问受限",
+        "可用代币数量有限。",
+        "购买需经可用性和审批。",
+        "需要连接数字钱包。",
+        "收益取决于房地产市场需求。"
       ],
       prices: {
-        monthly: 0,
-        yearly: 0,
+        monthly: 10, 
+        yearly: 10,
       },
       stripeIds: {
         monthly: null,
@@ -51,12 +56,12 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
       ],
       limitations: ["无法自定义品牌", "对商业资源的访问受限"],
       prices: {
-        monthly: 30,
-        yearly: 288,
+        monthly: 10, 
+        yearly: 10,
       },
       stripeIds: {
-        monthly: env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY_PRICE_ID,
-        yearly: env.NEXT_PUBLIC_STRIPE_PRO_YEARLY_PRICE_ID,
+        monthly: null,
+        yearly: null,
       },
     },
     {
@@ -72,34 +77,83 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
       ],
       limitations: [],
       prices: {
-        monthly: 60,
-        yearly: 600,
+        monthly: 10, 
+        yearly: 10,
       },
       stripeIds: {
-        monthly: env.NEXT_PUBLIC_STRIPE_BUSINESS_MONTHLY_PRICE_ID,
-        yearly: env.NEXT_PUBLIC_STRIPE_BUSINESS_YEARLY_PRICE_ID,
+        monthly: null,
+        yearly: null,
       },
     },
   ],
+  es: [
+    {
+      id: "starter",
+      title: "Narai Bucerías",
+      description: "Invierte en un exclusivo desarrollo inmobiliario en Bucerías, Nayarit.",
+      benefits: [
+        "Adquiere tokens respaldados por bienes raíces.",
+        "Rentabilidad basada en plusvalía y rentas vacacionales.",
+        "Acceso prioritario a preventa con precios preferenciales.",
+        "Inversión respaldada por activos tangibles.",
+      ],
+      limitations: [
+        "Número limitado de tokens disponibles.",
+        "Sujeto a disponibilidad y aprobación de compra.",
+        "Requiere conexión con una billetera digital.",
+        "Los retornos dependen de la demanda del mercado inmobiliario.",
+      ],
+      prices: {
+        monthly: 10, 
+        yearly: 10,
+      },
+      stripeIds: {
+        monthly: null,
+        yearly: null,
+      },
+    },
+    {
+      id: "business",
+      title: "Negocios",
+      description: "Para usuarios avanzados",
+      benefits: [
+        "Hasta 10 clústeres por mes",
+        "Análisis y reportes en tiempo real",
+        "Acceso a todas las plantillas, incluida la personalización de marca",
+        "Soporte empresarial 24/7",
+        "Configuración y gestión de cuentas personalizadas",
+      ],
+      limitations: [],
+      prices: {
+        monthly: 10, 
+        yearly: 10,
+      },
+      stripeIds: {
+        monthly: null,
+        yearly: null,
+      },
+    },
+  ],  
   en: [
     {
       id: "starter",
-      title: "Starter",
-      description: "For Beginners",
+      title: "Narai Bucerías",
+      description: "Invest in an exclusive real estate development in Bucerías, Nayarit.",
       benefits: [
-        "Up to 1 cluster per month",
-        "Basic analytics and reporting",
-        "Access to basic features",
+        "Acquire tokens backed by real estate.",
+        "Profitability based on appreciation and vacation rentals.",
+        "Priority access to pre-sale with preferential prices.",
+        "Investment backed by tangible assets."
       ],
       limitations: [
-        "No priority access to new features",
-        "Limited customer support",
-        "No custom branding",
-        "Limited access to business resources",
+        "Limited number of tokens available.",
+        "Subject to availability and purchase approval.",
+        "Requires connection with a digital wallet.",
+        "Returns depend on real estate market demand."
       ],
       prices: {
-        monthly: 0,
-        yearly: 0,
+        monthly: 10, 
+        yearly: 10,
       },
       stripeIds: {
         monthly: null,
@@ -122,12 +176,12 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
         "Limited access to business resources",
       ],
       prices: {
-        monthly: 30,
-        yearly: 288,
+        monthly: 10, 
+        yearly: 10,
       },
       stripeIds: {
-        monthly: env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY_PRICE_ID,
-        yearly: env.NEXT_PUBLIC_STRIPE_PRO_YEARLY_PRICE_ID,
+        monthly: null,
+        yearly: null,
       },
     },
     {
@@ -143,34 +197,35 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
       ],
       limitations: [],
       prices: {
-        monthly: 60,
-        yearly: 600,
+        monthly: 10, 
+        yearly: 10,
       },
       stripeIds: {
-        monthly: env.NEXT_PUBLIC_STRIPE_BUSINESS_MONTHLY_PRICE_ID,
-        yearly: env.NEXT_PUBLIC_STRIPE_BUSINESS_YEARLY_PRICE_ID,
+        monthly: null,
+        yearly: null,
       },
     },
   ],
   ja: [
     {
       id: "starter",
-      title: "スターター",
-      description: "初心者向け",
+      title: "Narai Bucerías",
+      description: "ナヤリット州ブセリアスの高級不動産開発に投資しましょう。",
       benefits: [
-        "月に最大1つのクラスター",
-        "基本的な分析とレポート",
-        "基本機能へのアクセス",
+        "不動産で裏付けられたトークンを取得。",
+        "資産価値の上昇とバケーションレンタルによる収益。",
+        "優先的なプリセールアクセスと特別価格。",
+        "有形資産に裏付けられた投資。"
       ],
       limitations: [
-        "新機能への優先アクセスなし",
-        "限定的なカスタマーサポート",
-        "カスタムブランディングなし",
-        "ビジネスリソースへのアクセスが限定的",
+        "利用可能なトークン数が限られています。",
+        "購入は在庫状況および承認の対象となります。",
+        "デジタルウォレットとの接続が必要です。",
+        "収益は不動産市場の需要に依存します。"
       ],
       prices: {
-        monthly: 0,
-        yearly: 0,
+        monthly: 10, 
+        yearly: 10,
       },
       stripeIds: {
         monthly: null,
@@ -193,12 +248,12 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
         "ビジネスリソースへのアクセスが限定的",
       ],
       prices: {
-        monthly: 30,
-        yearly: 288,
+        monthly: 10, 
+        yearly: 10,
       },
       stripeIds: {
-        monthly: env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY_PRICE_ID,
-        yearly: env.NEXT_PUBLIC_STRIPE_PRO_YEARLY_PRICE_ID,
+        monthly: null,
+        yearly: null,
       },
     },
     {
@@ -214,39 +269,40 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
       ],
       limitations: [],
       prices: {
-        monthly: 60,
-        yearly: 600,
+        monthly: 10, 
+        yearly: 10,
       },
       stripeIds: {
-        monthly: env.NEXT_PUBLIC_STRIPE_BUSINESS_MONTHLY_PRICE_ID,
-        yearly: env.NEXT_PUBLIC_STRIPE_BUSINESS_YEARLY_PRICE_ID,
+        monthly: null,
+        yearly: null,
       },
     },
   ],
   ko: [
     {
       id: "starter",
-      title: "스타터",
-      description: "초보자를 위한",
+      title: "Narai Bucerías",
+      description: "나야리트 부세리아스의 독점적인 부동산 개발에 투자하세요.",
       benefits: [
-        "월 최대 1개의 클러스터",
-        "기본 분석 및 보고",
-        "기본 기능에 대한 액세스",
+        "부동산으로 보장된 토큰을 획득하세요.",
+        "자산 가치 상승과 휴가 임대를 통한 수익성.",
+        "우대 가격으로 사전 판매 우선 접근 권한.",
+        "실물 자산으로 보장된 투자."
       ],
       limitations: [
-        "새로운 기능에 대한 우선 액세스 없음",
-        "제한된 고객 지원",
-        "맞춤 브랜딩 없음",
-        "비즈니스 리소스에 대한 액세스 제한",
+        "이용 가능한 토큰 수가 제한되어 있습니다.",
+        "구매 가능 여부 및 승인에 따라 달라집니다.",
+        "디지털 지갑 연결이 필요합니다.",
+        "수익은 부동산 시장의 수요에 따라 달라집니다."
       ],
       prices: {
-        monthly: 0,
-        yearly: 0,
+        "monthly": 10,
+        "yearly": 10
       },
       stripeIds: {
-        monthly: null,
-        yearly: null,
-      },
+        "monthly": null,
+        "yearly": null
+      }
     },
     {
       id: "pro",
@@ -261,12 +317,12 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
       ],
       limitations: ["맞춤 브랜딩 없음", "비즈니스 리소스에 대한 액세스 제한"],
       prices: {
-        monthly: 30,
-        yearly: 288,
+        monthly: 10, 
+        yearly: 10,
       },
       stripeIds: {
-        monthly: env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY_PRICE_ID,
-        yearly: env.NEXT_PUBLIC_STRIPE_PRO_YEARLY_PRICE_ID,
+        monthly: null,
+        yearly: null,
       },
     },
     {
@@ -282,12 +338,12 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
       ],
       limitations: [],
       prices: {
-        monthly: 60,
-        yearly: 600,
+        monthly: 10, 
+        yearly: 10,
       },
       stripeIds: {
-        monthly: env.NEXT_PUBLIC_STRIPE_BUSINESS_MONTHLY_PRICE_ID,
-        yearly: env.NEXT_PUBLIC_STRIPE_BUSINESS_YEARLY_PRICE_ID,
+        monthly: null,
+        yearly: null,
       },
     },
   ],

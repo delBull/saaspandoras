@@ -1,7 +1,7 @@
 {
   "price": {
     "title": "투명하고 합리적인 가격!",
-    "pricing": "가격",
+    "properties_title": "속성",
     "slogan": "최대 속도로 투자 시작하세요!",
     "monthly_bill": "월별 청구",
     "annual_bill": "연간 청구",
@@ -29,8 +29,8 @@
     "k8s_features": "빠르고 간단한 개발",
     "devops_features": "손쉬운 프로젝트 출범",
     "price_features": "생산 환경에서 비용 효율적",
-    "main_nav_features": "사업",
-    "main_nav_pricing": "",
+    "main_nav_business": "사업",
+    "main_nav_properties": "속성",
     "main_nav_products": "제품",
     "main_nav_blog": "블로그",
     "main_nav_documentation": "문서",
