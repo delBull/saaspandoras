@@ -30,7 +30,7 @@
     "devops_features": "Lanzamiento de proyectos sin complicaciones",
     "price_features": "Económico en entornos de producción",
     "main_nav_features": "Negocios",
-    "main_nav_pricing": "Precios",
+    "main_nav_pricing": "",
     "main_nav_products": "Productos",
     "main_nav_blog": "Blog",
     "main_nav_documentation": "Documentación",
@@ -64,10 +64,13 @@
       "donate": "Adquiere tu Derecho Gratis"
     },
     "video": {
-      "first_text": "Mira un video, luego",
-      "second_text1": "construye tu proyecto en ",
-      "second_text2": "",
-      "time_text": "1 hora"
+      "first_text": "Utiliza tu derecho para comprar tokens",
+      "second_text1": "que representan una parte del valor de la ",
+      "time_text": "propiedad"
+    },
+    "transform_token": {
+      "title": "Cuando tengas suficientes tokens",
+      "desc": "Podrás disfrutar de acceso exclusivo, rentas y la oportunidad de convertirlos en propiedad real."
     },
     "people_comment": {
       "title": "Lo que dicen las personas",
@@ -87,7 +90,7 @@
     "signup_google": "Regístrate con Google"
   },
   "common": {
-    "copyright": "Copyright © ${currentYear} Pandora's Foundation. Todos los derechos reservados.",
+    "copyright": "© ${currentYear} Pandora's Foundation es una marca de MXHUB Ecosistema Blockchain S.A. de C.V.",
     "dashboard": {
       "main_nav_documentation": "Documentación",
       "main_nav_support": "Soporte",

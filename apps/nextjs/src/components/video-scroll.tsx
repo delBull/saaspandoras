@@ -27,7 +27,15 @@ export function VideoScroll({ dict } : { dict: Record<string, string> | undefine
             alt="hero"
             height={720}
             width={1400}
-            className="mx-auto rounded-2xl object-cover h-full object-left-top"
+            className="mx-auto rounded-2xl object-cover h-full object-left-top hidden xl:block md:block"
+            draggable={false}
+          />
+          <Image
+            src={`/images/coin_mobile.jpg`} 
+            alt="hero"
+            height={720}
+            width={1400}
+            className="mx-auto rounded-2xl object-cover h-full object-left-top block xl:hidden md:block"
             draggable={false}
           />
         </Link>

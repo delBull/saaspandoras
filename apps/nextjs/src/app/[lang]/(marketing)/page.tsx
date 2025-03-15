@@ -156,6 +156,22 @@ export default async function IndexPage({
         <VideoScroll dict={dict.marketing.video}/>
       </section>
 
+      <section className="w-full px-8 sm:px-0 md:px-0 xl:px-0">
+        <div className="flex h-full w-full flex-col items-center pb-[100px] pt-10">
+        <div className="absolute z-[-100] opacity-50">
+        <Image src="/images/logopure.png" width="480" height="480" alt="setupyourpay" />
+        </div>
+          <div>
+            <h1 className="mb-6 text-center text-3xl font-bold dark:text-zinc-100 md:text-5xl">
+              {dict.marketing.transform_token.title}
+            </h1>
+          </div>
+          <div className="mb-6 text-center text-2xl text-neutral-500 dark:text-neutral-300">
+            {dict.marketing.transform_token.desc}
+          </div>
+        </div>
+      </section>
+
       <section className="w-full px-8 pt-10 sm:px-0 sm:pt-24 md:px-0 md:pt-24 xl:px-0 xl:pt-24">
         <div className="flex h-full w-full flex-col items-center pb-[100px] pt-10">
           <div>
