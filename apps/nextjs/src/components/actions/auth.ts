@@ -5,10 +5,10 @@ import { privateKeyToAccount } from "thirdweb/wallets";
 import { client } from "../../lib/client";
 import { cookies } from "next/headers";
  
-const privateKey = process.env.THIRDWEB_ADMIN_PRIVATE_KEY ?? "";
+const privateKey = process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID ?? "";
 
 if (!privateKey) {
-  throw new Error("Missing THIRDWEB_ADMIN_PRIVATE_KEY in .env file.");
+  throw new Error("Missing NEXT_PUBLIC_THIRDWEB_CLIENT_ID in .env file.");
 }
 
 const thirdwebAuth = createAuth({
