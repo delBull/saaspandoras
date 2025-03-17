@@ -69,7 +69,7 @@ export function NavBar({
                   className={cn(
                     "flex items-center text-lg font-medium transition-colors hover:text-foreground/80 sm:text-sm",
                     item.href.startsWith(`/${segment}`)
-                      ? "text-blue-500 font-semibold"
+                      ? "text-lime-300 font-semibold"
                       : "",
                     item.disabled && "cursor-not-allowed opacity-80",
                   )}
