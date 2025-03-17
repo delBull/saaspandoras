@@ -8,22 +8,22 @@ import Image from "next/image";
 import { Button } from "@saasfly/ui/button";
 
 const client = createThirdwebClient({
-  clientId: "8a0dde1c971805259575cea5cb737530",
+  clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID ?? "",
 });
 
 const properties = [
   {
     id: "1",
-    title: "Luxury Villa",
-    price: "500,000 USDC",
-    image: "/images/villa.jpg",
+    title: "Narai",
+    price: "120,000,000 MXN",
+    image: "/images/coin.png",
     description: "Una villa de lujo con vista al mar y acabados de alta gama.",
   },
   {
     id: "2",
     title: "Downtown Apartment",
     price: "300,000 USDC",
-    image: "/images/apartment.jpg",
+    image: "/images/coin.png",
     description: "Moderno apartamento en el centro de la ciudad, excelente inversión.",
   },
 ];
@@ -41,7 +41,7 @@ export default function PropertiesPage() {
             className="bg-white shadow-lg rounded-xl overflow-hidden"
             whileHover={{ scale: 1.05 }}
           >
-            <Image src={property.image} alt={property.title} width={400} height={250} />
+            <Image src={property.image} alt={property.title} width={800} height={450} />
             <div className="p-4">
               <h3 className="text-xl font-semibold">{property.title}</h3>
               <p className="text-gray-600">{property.price}</p>

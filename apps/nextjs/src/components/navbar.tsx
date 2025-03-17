@@ -6,16 +6,19 @@ import type { User } from "next-auth";
 import { useSelectedLayoutSegment } from "next/navigation";
 
 import { cn } from "@saasfly/ui";
-import { Button } from "@saasfly/ui/button";
 
 import { MainNav } from "./main-nav";
 import { LocaleChange } from "~/components/locale-change";
-import { GitHubStar } from "~/components/github-star";
-import { useSigninModal } from "~/hooks/use-signin-modal";
+//import { GitHubStar } from "~/components/github-star";
 import { UserAccountNav } from "./user-account-nav";
 
 import useScroll from "~/hooks/use-scroll";
 import type { MainNavItem } from "~/types";
+
+import { ConnectButton } from "thirdweb/react";
+import { client } from "../lib/client";
+import { generatePayload, isLoggedIn, login, logout } from "./actions/auth";
+import { defineChain } from "thirdweb";
 
 type Dictionary = Record<string, string>;
 
@@ -43,7 +46,6 @@ export function NavBar({
   dropdown,
 }: NavBarProps) {
   const scrolled = useScroll(50);
-  const signInModal = useSigninModal();
   const segment = useSelectedLayoutSegment();
 
   return (
@@ -81,38 +83,41 @@ export function NavBar({
           <div className="w-[1px] h-8 bg-accent"></div>
 
           {rightElements}
-
+          {/*
           <div className="hidden md:flex lg:flex xl:flex">
             <GitHubStar />
           </div>
-          <LocaleChange url={"/"} />
-          {!user ? (
-            <Link href={`/${lang}/login`}>
-              <Button variant="outline" size="sm">
-                {typeof marketing.login === "string"
-                  ? marketing.login
-                  : "Default Login Text"}
-              </Button>
-            </Link>
-          ) : null}
-
-          {user ? (
+          */}
+          <LocaleChange url={"/"} /> 
+            {user ? (
             <UserAccountNav
               user={user}
               params={{ lang: `${lang}` }}
               dict={dropdown}
             />
           ) : (
-            <Button
-              className="px-3"
-              variant="default"
-              size="sm"
-              onClick={signInModal.onOpen}
-            >
-              {typeof marketing.signup === "string"
-                ? marketing.signup
-                : "Default Signup Text"}
-            </Button>
+            <ConnectButton
+                  client={client}
+                  accountAbstraction={{
+                    chain: defineChain(17000),
+                    sponsorGas: true,
+                  }}
+                  auth={{
+                    isLoggedIn: async (address) => {
+                      console.log("checking if logged in!", { address });
+                      return await isLoggedIn();
+                    },
+                    doLogin: async (params) => {
+                      console.log("logging in!");
+                      await login(params);
+                    },
+                    getLoginPayload: async ({ address }) => generatePayload({ address, chainId: 17000 }),
+                    doLogout: async () => {
+                      console.log("logging out!");
+                      await logout();
+                    },
+                  }}
+                />
           )}
         </div>
       </div>
