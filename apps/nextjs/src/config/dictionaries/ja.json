@@ -77,6 +77,14 @@
       "desc": "私たちの言葉だけでなく、実際の利用者の声をご覧ください。"
     }
   },
+  "properties": {
+    "realestate": {
+      "id": "1",
+      "title": "Narai",
+      "short": "Descubre las propiedad de playa en Bcerías, Nayarit.",
+      "desc": "Esta propiedad está en la playa y tiene un incremente de plusvalía del 10% anual. Te va a encantar por qué es una propiedad con una vista increíble.",
+      "cta": "Ver Más"
+    }, 
   "login": { 
     "back": "戻る",
     "welcome_back": "おかえりなさい",
@@ -121,4 +129,5 @@
     "settings": "設定",
     "sign_out": "サインアウト"
   }
+ }
 }

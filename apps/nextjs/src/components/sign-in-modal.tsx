@@ -26,8 +26,8 @@ export const SignInModal = ({ dict }: { dict: Record<string, string> }) => {
               alt=""
             />
           </a>
-          <h3 className="font-urban text-2xl font-bold">{dict.signup}</h3>
-          <p className="text-sm text-gray-500">{dict.privacy}</p>
+          <h3 className="font-urban text-2xl font-bold">{dict?.signup ?? "Sign Up"}</h3>
+          <p className="text-sm text-gray-500">{dict?.privacy ?? "Your privacy is important to us."}</p>
         </div>
 
         <div className="flex flex-col space-y-4 bg-secondary/50 px-4 py-8 md:px-16">
@@ -46,7 +46,7 @@ export const SignInModal = ({ dict }: { dict: Record<string, string> }) => {
             ) : (
               <Icons.GitHub className="mr-2 h-4 w-4" />
             )}
-            {dict.signup_github}
+            {dict?.signup_github ?? "Sign up with GitHub"}
           </Button>
 
           {/* Botón para Google */}
@@ -65,7 +65,7 @@ export const SignInModal = ({ dict }: { dict: Record<string, string> }) => {
             ) : (
               <Icons.Google className="mr-2 h-4 w-4" />
             )}
-            {dict.signup_google}
+            {dict?.signup_google ?? "Sign up with Google"}
           </Button>
         </div>
       </div>
