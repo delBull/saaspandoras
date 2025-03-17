@@ -5,9 +5,9 @@ import { privateKeyToAccount } from "thirdweb/wallets";
 import { client } from "../../lib/client";
 import { cookies } from "next/headers";
  
-const privateKey = process.env.THIRDWEB_SECRET_KEY;
+const privateKey = process.env.NEXT_PUBLIC_THIRDWEB_SECRET_KEY;
 if (!privateKey) {
-  throw new Error("Missing THIRDWEB_SECRET_KEY in .env file.");
+  throw new Error("Missing NEXT_PUBLIC_THIRDWEB_SECRET_KEY in .env file.");
 }
 
 const thirdwebAuth = createAuth({
