@@ -1,15 +1,9 @@
 "use client";
 
-import { createThirdwebClient } from "thirdweb";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ConnectButton } from "thirdweb/react";
 import Image from "next/image";
 import { Button } from "@saasfly/ui/button";
-
-const client = createThirdwebClient({
-  clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID ?? "",
-});
 
 const properties = [
   {
@@ -29,7 +23,14 @@ const properties = [
 ];
 
 export default function PropertiesPage() {
-  const [selectedProperty, setSelectedProperty] = useState(null);
+  const [selectedProperty, setSelectedProperty] = useState<{
+    id: string;
+    title: string;
+    price: string;
+    image: string;
+    description: string;
+  } | null>(null);
+  
 
   return (
     <section className="container mx-auto p-6 text-center">
@@ -47,14 +48,11 @@ export default function PropertiesPage() {
               <p className="text-gray-600">{property.price}</p>
               <div className="flex justify-between mt-4">
                 <Button onClick={() => setSelectedProperty(property)} variant="outline">
-                  Detalles
+                  Details
                 </Button>
                 
-                  <Button variant="default">Adquirir Tokens</Button>
-                  <ConnectButton
-                    client={client}
-                  />
-                
+                  <Button variant="default">Get Tokens</Button>
+            
               </div>
             </div>
           </motion.div>
@@ -83,8 +81,8 @@ export default function PropertiesPage() {
               >
                 ✕
               </button>
-              <h3 className="text-xl font-bold mb-2">{selectedProperty.title}</h3>
-              <p className="text-gray-700">{selectedProperty.description}</p>
+              <h3 className="text-xl font-bold mb-2">{selectedProperty?.title}</h3>
+              <p className="text-gray-700">{selectedProperty?.description}</p>
             </motion.div>
           </motion.div>
         )}

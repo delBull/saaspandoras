@@ -5,14 +5,13 @@ import { privateKeyToAccount } from "thirdweb/wallets";
 import { client } from "../../lib/client";
 import { cookies } from "next/headers";
  
-const privateKey = process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID ?? "";
-
+const privateKey = process.env.THIRDWEB_SECRET_KEY;
 if (!privateKey) {
-  throw new Error("Missing NEXT_PUBLIC_THIRDWEB_CLIENT_ID in .env file.");
+  throw new Error("Missing THIRDWEB_SECRET_KEY in .env file.");
 }
 
 const thirdwebAuth = createAuth({
-  domain: process.env.NEXT_PUBLIC_THIRDWEB_AUTH_DOMAIN ?? "",
+  domain: process.env.NEXT_PUBLIC_DOMAIN ?? "localhost:3000",
   adminAccount: privateKeyToAccount({ client, privateKey }),
   client
 });
