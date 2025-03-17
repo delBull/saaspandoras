@@ -76,7 +76,15 @@
       "title": "사람들이 말하는 것",
       "desc": "우리의 말만 믿지 마세요. 실제 사용자가 Pandoras에 대해 말하는 내용을 확인하세요."
     }
-  }, 
+  },
+  "properties": {
+    "realestate": {
+      "id": "1",
+      "title": "Narai",
+      "short": "Descubre las propiedad de playa en Bcerías, Nayarit.",
+      "desc": "Esta propiedad está en la playa y tiene un incremente de plusvalía del 10% anual. Te va a encantar por qué es una propiedad con una vista increíble.",
+      "cta": "Ver Más"
+    },  
   "login": {
     "back": "뒤로",
     "welcome_back": "다시 오신 것을 환영합니다",
@@ -121,4 +129,5 @@
     "settings": "설정",
     "sign_out": "로그아웃"
   }
+ }
 }

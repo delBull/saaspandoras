@@ -77,6 +77,14 @@
       "desc": "不仅仅听我们说，看看真实用户对 Pandoras 的评价。"
     }
   },
+  "properties": {
+    "realestate": {
+      "id": "1",
+      "title": "Narai",
+      "short": "Descubre las propiedad de playa en Bcerías, Nayarit.",
+      "desc": "Esta propiedad está en la playa y tiene un incremente de plusvalía del 10% anual. Te va a encantar por qué es una propiedad con una vista increíble.",
+      "cta": "Ver Más"
+    }, 
   "login": {
     "back": "返回",
     "welcome_back": "欢迎回来",
@@ -121,4 +129,5 @@
     "settings": "设置",
     "sign_out": "退出登录"
   }
+ }
 }

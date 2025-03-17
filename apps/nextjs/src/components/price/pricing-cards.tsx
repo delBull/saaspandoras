@@ -1,16 +1,22 @@
 "use client";
 
 import Balancer from "react-wrap-balancer";
-import Properties from "~/components/price/propertiesv2"; // Importamos Properties
+import Properties from "~/components/price/propertiesv2";
 
 
-export function PricingCards() {
+interface Dictionary {
+  properties?: {
+    realestate?: Record<string, any>;
+  };
+}
+
+export function PricingCards({ dict }: { dict?: Dictionary }) {
+  const realEstateDict = dict?.properties?.realestate ?? {};
 
   return (
     <section className="container flex flex-col items-center text-center">
 
-      {/* Renderizamos Properties arriba de los planes de precios */}
-      <Properties />
+      <Properties dict={realEstateDict} />
 
       <p className="mt-3 text-center text-base text-muted-foreground">
         <Balancer>

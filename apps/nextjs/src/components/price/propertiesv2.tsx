@@ -1,11 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
+//import { useState } from "react";
+//import { motion, AnimatePresence } from "framer-motion";
+//import Image from "next/image";
 import { Button } from "@saasfly/ui/button";
+import Link from "next/link";
+import { GlowingEffect } from "@saasfly/ui/glowing-effect";
+import * as Icons from "@saasfly/ui/icons";
 
-const properties = [
+{/*
+  const properties = [
   {
     id: "1",
     title: "Narai",
@@ -20,73 +24,107 @@ const properties = [
     image: "/images/coin.png",
     description: "Moderno apartamento en el centro de la ciudad, excelente inversión.",
   },
-];
+]; 
+*/}
 
-export default function PropertiesPage() {
-  const [selectedProperty, setSelectedProperty] = useState<{
-    id: string;
-    title: string;
-    price: string;
-    image: string;
-    description: string;
-  } | null>(null);
+export default function PropertiesPage({ dict } : { dict: Record<string, string> | undefined }) {
+  return (
+    <ul className="grid grid-cols-1 grid-rows-none gap-4 md:grid-cols-12 md:grid-rows-2 lg:gap-4 xl:max-h-[34rem] xl:grid-rows-2">
+      <GridItem
+        area="md:[grid-area:1/1/2/7] xl:[grid-area:1/1/2/7]"
+        icon={<Icons.Rocket className="h-4 w-4 text-black dark:text-neutral-400" />}
+        title={dict?.title ?? ''}
+        description={dict?.short ?? ''}
+      />
+
+      <GridItem
+        area="md:[grid-area:1/7/2/13] xl:[grid-area:2/1/3/7]"
+        icon={<Icons.Cloud className="h-4 w-4 text-black dark:text-neutral-400" />}
+        title={dict?.title ?? ''}
+        description={dict?.desc ?? ''}
+      />
+
+      <GridItem
+        area="md:[grid-area:2/1/3/7] xl:[grid-area:1/7/3/13]"
+        icon={<Icons.ThumbsUp className="h-4 w-4 text-black dark:text-neutral-400" />}
+        title={dict?.title ?? ''}
+        description={dict?.desc ?? ''}
+        background="/images/building.jpg"
+      />
+    </ul>
+  );
+}
+
+interface GridItemProps {
+  area: string;
+  icon: React.ReactNode;
+  title: string;
+  description: React.ReactNode;
+  link?: string;
+  background?: string;
+}
+
+const GridItem = ({ area, icon, title, description, link, background }: GridItemProps) => {
+  const handleClick = (event) => {
+    event.preventDefault();
+    // Aquí puedes agregar cualquier otra lógica que desees ejecutar cuando se haga clic en el enlace
+    console.log('Enlace no activado');
+};
   
 
   return (
-    <section className="container mx-auto p-6 text-center">
-      <h2 className="text-3xl font-bold mb-8">Propiedades Disponibles</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {properties.map((property) => (
-          <motion.div
-            key={property.id}
-            className="bg-white shadow-lg rounded-xl overflow-hidden"
-            whileHover={{ scale: 1.05 }}
-          >
-            <Image src={property.image} alt={property.title} width={800} height={450} />
-            <div className="p-4">
-              <h3 className="text-xl font-semibold">{property.title}</h3>
-              <p className="text-gray-600">{property.price}</p>
-              <div className="flex justify-between mt-4">
-                <Button onClick={() => setSelectedProperty(property)} variant="outline">
+<li className={`min-h-[14rem] list-none ${area}`}>
+      <div className="relative h-full rounded-2.5xl border dark:border-neutral-800 p-2 md:rounded-3xl md:p-3"
+      style={{
+        backgroundImage: background ? `url(${background})` : 'none',
+        backgroundSize: 'cover', // Ajusta la imagen al tamaño del contenedor
+        backgroundPosition: 'center', // Centra la imagen
+        backgroundRepeat: 'no-repeat', // Evita que la imagen se repita
+      }}
+      >
+        <GlowingEffect
+          spread={40}
+          glow={true}
+          disabled={false}
+          proximity={64}
+          inactiveZone={0.01}
+        />
+        <Link href={`${link ? link : ''}`} target="_blank" onClick={handleClick}>
+          <div className="relative flex h-full flex-col justify-between gap-6 overflow-hidden rounded-xl border-0.75 p-6 dark:shadow-[0px_0px_27px_0px_#2D2D2D] md:p-6 dark:bg-neutral-900/40">
+            <div className="relative flex flex-1 flex-col justify-between gap-3">
+              <div className="w-fit rounded-lg border border-gray-600 dark:border-neutral-800 p-2">
+                {icon}
+              </div>
+              <div className="space-y-3">
+                <h3 className="pt-0.5 text-xl/[1.375rem] font-semibold font-sans -tracking-4 md:text-2xl/[1.875rem] text-balance text-black dark:text-white">
+                  {title}
+                </h3>
+                <h2 className="[&_b]:md:font-semibold [&_strong]:md:font-semibold font-sans text-sm/[1.125rem] md:text-base/[1.375rem] text-black dark:text-neutral-200">
+                  {description}
+                </h2>
+                <div className="flex justify-between mt-4">
+                <Button variant="outline">
                   Details
                 </Button>
-                
-                  <Button variant="default">Get Tokens</Button>
-            
+                <Button variant="default">
+                  Get Tokens
+                </Button>
+              </div>
               </div>
             </div>
-          </motion.div>
-        ))}
+          </div>
+        </Link>
       </div>
-
-      <AnimatePresence>
-        {selectedProperty && (
-          <motion.div
-            className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setSelectedProperty(null)}
-          >
-            <motion.div
-              className="bg-white rounded-lg p-6 w-4/5 md:w-1/3 relative"
-              initial={{ y: 100 }}
-              animate={{ y: 0 }}
-              exit={{ y: 100 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                className="absolute top-2 right-2 text-lg"
-                onClick={() => setSelectedProperty(null)}
-              >
-                ✕
-              </button>
-              <h3 className="text-xl font-bold mb-2">{selectedProperty?.title}</h3>
-              <p className="text-gray-700">{selectedProperty?.description}</p>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </section>
+    </li>
   );
-}
+};
+{/*
+<div className="flex justify-between mt-4">
+                <Button variant="outline">
+                  Details
+                </Button>
+                <Button variant="default">
+                  Get Tokens
+                </Button>
+              </div>
+*/}

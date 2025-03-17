@@ -77,6 +77,14 @@
       "desc": "Don’t just take our word for it. Here’s what real users are saying about Pandoras."
     }
   },
+  "properties": {
+    "realestate": {
+      "id": "1",
+      "title": "Narai",
+      "short": "Descubre las propiedad de playa en Bcerías, Nayarit.",
+      "desc": "Esta propiedad está en la playa y tiene un incremente de plusvalía del 10% anual. Te va a encantar por qué es una propiedad con una vista increíble.",
+      "cta": "Ver Más"
+    }, 
   "login": { 
     "back": "Back",
     "welcome_back": "Welcome back",
@@ -121,4 +129,5 @@
     "settings": "Settings",
     "sign_out": "Sign Out"
   }
+ }
 }
