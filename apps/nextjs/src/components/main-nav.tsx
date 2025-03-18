@@ -33,7 +33,7 @@ export function MainNav({ items, children, params: { lang }, marketing }: MainNa
           <div className="text-3xl">Pandora&apos;s</div>
         </Link>
 
-        <Link href="#" target="_blank" className="ml-4 hidden md:flex lg:flex xl:flex">
+        <Link href="https://pandoras.foundation" target="_blank" className="ml-4 hidden md:flex lg:flex xl:flex">
           <DocumentGuide>
             {marketing?.introducing ?? "Introducing Pandora's"}
           </DocumentGuide>

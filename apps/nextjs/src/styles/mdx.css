@@ -37,3 +37,23 @@
 [data-rehype-pretty-code-title] + pre {
   @apply mt-0;
 }
+
+.terms-container {
+  @apply prose prose-gray dark:prose-invert max-w-none;
+}
+
+.terms-container h2 {
+  @apply text-2xl font-bold mt-8 mb-4;
+}
+
+.terms-container h3 {
+  @apply text-xl font-semibold mt-6 mb-3;
+}
+
+.terms-container ul {
+  @apply list-disc pl-6 mb-4;
+}
+
+.terms-container p {
+  @apply mb-4 leading-relaxed;
+}

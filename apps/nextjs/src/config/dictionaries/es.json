@@ -123,11 +123,146 @@
       "upgrade": "Actualizar"
     }
   },
-  "dropdown": {
+  "dropdown": { 
     "dashboard": "Panel de control",
     "billing": "Facturación",
     "settings": "Configuraciones",
     "sign_out": "Cerrar sesión"
   }
- }
+ },
+  "terms": {
+    "title": "Términos y Condiciones",
+    "lastUpdate": "Última Actualización: Marzo 2025",
+    "tabTerms": "Términos y Condiciones",
+    "tabPrivacy": "Política de Privacidad",
+    "sections": {
+      "welcome": {
+        "title": "Bienvenido a Pandora's Foundation",
+        "content": "Estos términos y condiciones regulan el acceso y uso de nuestra plataforma digital y DApp, disponible en https://dapp.pandoras.foundation/, así como los servicios de tokenización, compra de participaciones inmobiliarias y derechos digitales."
+      },
+      "definitions": {
+        "title": "Definiciones",
+        "items": [
+          "Plataforma: DApp y servicios digitales de Pandoras.",
+          "Usuarios: Personas físicas o jurídicas que acceden y usan los servicios.",
+          "Derechos Inmobiliarios (NFTs): Activos digitales que otorgan acceso a la compra de participaciones inmobiliarias.",
+          "Participaciones Inmobiliarias: Fracciones digitales representativas de un activo inmobiliario.",
+          "Tokenización: Proceso de representar un activo real en blockchain mediante tokens digitales."
+        ]
+      },
+      "usage": {
+        "title": "Uso de la Plataforma",
+        "items": [
+          "La Plataforma permite adquirir Derechos Inmobiliarios (NFTs) de manera gratuita, lo que otorga acceso a la compra de Participaciones Inmobiliarias en proyectos seleccionados.",
+          "Los usuarios deben tener una billetera digital compatible para interactuar con la Plataforma.",
+          "Pandoras no es un asesor financiero ni ofrece garantías sobre la rentabilidad de las inversiones realizadas en la Plataforma."
+        ]
+      },
+      "responsibility": {
+        "title": "Responsabilidad y Exención de Garantías",
+        "items": [
+          "Pandoras no se responsabiliza por pérdidas, riesgos o fluctuaciones de valor de los activos digitalizados en la Plataforma.",
+          "La Plataforma opera en blockchain, por lo que todas las transacciones son irreversibles y no pueden modificarse una vez confirmadas.",
+          "Los usuarios aceptan que la propiedad de un Derecho Inmobiliario (NFT) no equivale a la propiedad del bien físico.",
+          "La Plataforma se reserva el derecho de modificar, actualizar o suspender cualquier servicio sin previo aviso."
+        ]
+      },
+      "requirements": {
+        "title": "Requisitos del Usuario",
+        "items": [
+          "Debe ser mayor de 18 años para usar la Plataforma.",
+          "Acepta cumplir con las regulaciones fiscales de su país de residencia.",
+          "Pandoras se reserva el derecho de rechazar el acceso a cualquier usuario si se detecta actividad sospechosa."
+        ]
+      },
+      "payments": {
+        "title": "Pagos y Comisiones",
+        "items": [
+          "Los pagos se realizan exclusivamente en criptomonedas o mediante métodos aprobados.",
+          "Pandoras puede cobrar tarifas o comisiones por el uso de ciertos servicios.",
+          "No se ofrecen reembolsos una vez completada una compra de tokens o participaciones."
+        ]
+      },
+      "dataProtection": {
+        "title": "Protección de Datos y Seguridad",
+        "items": [
+          "Los datos personales se tratan conforme a nuestra Política de Privacidad.",
+          "El usuario es responsable de la seguridad de su cuenta y credenciales.",
+          "Pandoras no se hace responsable por accesos no autorizados por negligencia del usuario."
+        ]
+      },
+      "law": {
+        "title": "Ley Aplicable y Jurisdicción",
+        "items": [
+          "Estos Términos se rigen por las leyes de México.",
+          "Cualquier disputa se resolverá en tribunales competentes en Ciudad de México, México."
+        ]
+      }
+    },
+    "acceptance": {
+      "title": "Aceptación de los Términos y Condiciones",
+      "content": "Al hacer uso de la plataforma, usted reconoce haber leído y comprendido estos Términos y la Política de Privacidad, aceptando su cumplimiento sin reservas."
+    }
+  },
+  "privacy": {
+    "title": "Política de Privacidad",
+    "lastUpdate": "Última Actualización: Marzo 2025",
+    "introduction": "En Pandora's, nos comprometemos a proteger la privacidad de nuestros usuarios. Esta Política de Privacidad describe cómo recopilamos, usamos y protegemos su información personal cuando usa nuestra Plataforma.",
+    "sections": {
+      "collection": {
+        "title": "Información que Recopilamos",
+        "items": [
+          "Información personal: Nombre, correo electrónico, dirección de billetera digital.",
+          "Información de transacciones: Historial de compras y movimientos.",
+          "Datos técnicos: Dirección IP, tipo de navegador, datos de cookies."
+        ]
+      },
+      "usage": {
+        "title": "Uso de la Información",
+        "items": [
+          "Procesar transacciones y administrar cuentas de usuario.",
+          "Mejorar la seguridad y funcionalidad de la Plataforma.",
+          "Enviar comunicaciones sobre cambios y actualizaciones.",
+          "Cumplir con regulaciones legales y fiscales aplicables."
+        ]
+      },
+      "protection": {
+        "title": "Protección de la Información",
+        "items": [
+          "Implementamos medidas de seguridad técnicas y organizativas.",
+          "La información en blockchain es inmutable y transparente.",
+          "No vendemos información personal a terceros sin consentimiento."
+        ]
+      },
+      "rights": {
+        "title": "Derechos del Usuario",
+        "items": [
+          "Acceder, modificar o eliminar su información personal.",
+          "Solicitar la cancelación de su cuenta.",
+          "Optar por no recibir comunicaciones promocionales."
+        ]
+      },
+      "cookies": {
+        "title": "Cookies y Tecnologías de Rastreo",
+        "items": [
+          "Utilizamos cookies para mejorar la experiencia del usuario.",
+          "Autenticación segura y persistente en la sesión.",
+          "Análisis de comportamiento y navegación."
+        ]
+      },
+      "transfers": {
+        "title": "Transferencias Internacionales de Datos",
+        "content": "Debido a la naturaleza descentralizada de la tecnología blockchain, algunos datos pueden ser procesados fuera de México. Nos aseguramos de cumplir con regulaciones de protección de datos aplicables en todas las jurisdicciones."
+      },
+      "changes": {
+        "title": "Cambios en la Política de Privacidad",
+        "content": "Podemos actualizar esta política en cualquier momento. Se notificará a los usuarios sobre cambios importantes mediante la Plataforma o correo electrónico."
+      },
+      "contact": {
+        "title": "Contacto",
+        "content": "Para dudas o solicitudes sobre la privacidad de los datos, contáctenos en:",
+        "email": "correo@pandoras.foundation"
+      }
+    }
+  }
 }

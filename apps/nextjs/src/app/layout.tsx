@@ -1,4 +1,5 @@
 import { Inter as FontSans } from "next/font/google";
+
 import localFont from "next/font/local";
 import { ThirdwebProvider } from "thirdweb/react";
 
@@ -69,7 +70,7 @@ export const metadata = {
   creator: "Pandora's",
   openGraph: {
     type: "website",
-    locale: "es_ES",
+    locale: "es",
     url: siteConfig.url,
     title: siteConfig.name,
     description: siteConfig.description,
