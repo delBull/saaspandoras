@@ -1,7 +1,5 @@
 import { Suspense } from "react";
-
 import { getCurrentUser } from "@saasfly/auth";
-
 import { NavBar } from "~/components/navbar";
 import { SiteFooter } from "~/components/site-footer";
 import type { Locale } from "~/config/i18n-config";
@@ -19,17 +17,16 @@ export default async function DocsLayout({
   children,
   params: { lang },
 }: DocsLayoutProps) {
-  const dict = await getDictionary(lang);
+  const dict = await getDictionary(lang); // Removed type assertion
   const user = await getCurrentUser();
+  const marketingConfig = await getMarketingConfig({ params: { lang } });
 
   return (
     <div className="flex min-h-screen flex-col">
       <Suspense fallback="...">
         <NavBar
-          items={
-            (await getMarketingConfig({ params: { lang: `${lang}` } })).mainNav
-          }
-          params={{ lang: `${lang}` }}
+          items={marketingConfig.mainNav}
+          params={{ lang }}
           scroll={true}
           user={user}
           marketing={dict.marketing}
@@ -39,7 +36,7 @@ export default async function DocsLayout({
       <div className="container flex-1">{children}</div>
       <SiteFooter
         className="border-t"
-        params={{ lang: `${lang}` }}
+        params={{ lang }}
         dict={dict.common}
       />
     </div>

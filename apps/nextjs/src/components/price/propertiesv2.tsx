@@ -9,7 +9,6 @@ import Link from "next/link";
 import { GlowingEffect } from "@saasfly/ui/glowing-effect";
 import * as Icons from "@saasfly/ui/icons";
 import { motion, AnimatePresence } from "framer-motion";
-import { useWalletInfo } from "thirdweb/react";
 
 {/*
   const properties = [
@@ -34,42 +33,62 @@ const data = {
   en: {
     title1: "Casa Bella",
     description1: "A luxury villa with sea view and high-end finishes.",
-    title2: "Downtown Apartment",
-    description2: "Modern apartment in the city center, excellent investment.",
+    title2: "Horizon View",
+    description2: "The best view of the Bay in a wonderful place.",
     title3: "Narai",
     description3: "Condominiums with ocean views, comfort, beach and luxury have never been so close.",
+    buttons: {
+      details: "Details",
+      getTokens: "Get Tokens"
+    }
   },
   es: {
     title1: "Casa Bella",
     description1: "Una villa de lujo con vista al mar y acabados de alta gama.",
-    title2: "Apartamento en el Centro",
-    description2: "Moderno apartamento en el centro de la ciudad, excelente inversión.",
+    title2: "Vista Horizonte",
+    description2: "La mejor vista de la Bahía en un lugar maravilloso.",
     title3: "Narai",
     description3: "Condominios con vista al mar, comodidad, playa y lujo jamás estuvieran tan cerca.",
+    buttons: {
+      details: "Detalles",
+      getTokens: "Obtener Tokens"
+    }
   },
   ja: {
     title1: "カーサベラ",
-    description1: "海の景色と高級仕上げのある豪華なヴィラ。",
-    title2: "ダウンタウンアパートメント",
-    description2: "市の中心部にあるモダンなアパートメント、優れた投資。",
+    description1: "海の景色とハイエンドの仕上げが施された豪華なヴィラ。",
+    title2: "ホライゾンビュー",
+    description2: "素晴らしい場所での湾の最高の眺め。",
     title3: "Narai",
     description3: "オーシャンビュー、快適さ、ビーチ、豪華さを備えたコンドミニアムは、かつてないほど近くにありました。",
+    buttons: {
+      details: "詳細",
+      getTokens: "トークンを取得"
+    }
   },
   ko: {
     title1: "카사 벨라",
-    description1: "바다 전망과 고급 마감재가 있는 럭셔리 빌라.",
-    title2: "다운타운 아파트",
-    description2: "도심에 위치한 현대적인 아파트, 훌륭한 투자.",
+    description1: "바다 전망과 고급 마감재를 갖춘 고급 빌라입니다.",
+    title2: "호라이즌 뷰",
+    description2: "멋진 장소에서만의 최고의 전망.",
     title3: "Narai",
     description3: "바다 전망, 편안함, 해변, 고급스러움을 갖춘 콘도미니엄이 이렇게 가까이 있었던 적은 없었습니다.",
+    buttons: {
+      details: "상세정보",
+      getTokens: "토큰 받기"
+    }
   },
   zh: {
     title1: "Casa Bella（贝拉之家酒店）",
-    description1: "拥有海景和高端装修的豪华别墅。",
-    title2: "市中心公寓",
-    description2: "市中心的现代公寓，绝佳的投资。",
+    description1: "海景豪华别墅，拥有高端饰面。",
+    title2: "Horizon View",
+    description2: "在美妙的地方欣赏海湾的最佳景观。",
     title3: "Narai",
     description3: "拥有海景、舒适、海滩和豪华的公寓从未如此接近。",
+    buttons: {
+      details: "详情",
+      getTokens: "获取代币"
+    }
   },
 };
 
@@ -90,6 +109,7 @@ export default function PropertiesPage({ lang }: { lang: 'en' | 'es' | 'ja' | 'k
         title={dict.title1}
         description={dict.description1}
         link=""
+        buttonTexts={dict.buttons}
       />
 
       <GridItem
@@ -98,6 +118,7 @@ export default function PropertiesPage({ lang }: { lang: 'en' | 'es' | 'ja' | 'k
         title={dict.title2}
         description={dict.description2}
         link=""
+        buttonTexts={dict.buttons}
       />
 
       <GridItem
@@ -106,7 +127,8 @@ export default function PropertiesPage({ lang }: { lang: 'en' | 'es' | 'ja' | 'k
         title={dict.title3}
         description={dict.description3}
         background="/images/narai_blk.jpg"
-        link="/properties/narai"
+        link="/assets/narai"
+        buttonTexts={dict.buttons}
       />
     </ul>
   );
@@ -119,30 +141,18 @@ interface GridItemProps {
   description: React.ReactNode;
   link?: string;
   background?: string;
+  buttonTexts: {
+    details: string;
+    getTokens: string;
+  };
 }
 
-const GridItem = ({ area, icon, title, description, link, background }: GridItemProps) => {
+const GridItem = ({ area, icon, title, description, link, background, buttonTexts }: GridItemProps) => {
   const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
-  const { wallet, isConnected } = useWalletInfo();
 
-  const handleClick = (event: React.MouseEvent) => {
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>) => {
     if (!link) {
       event.preventDefault();
-      setToastMessage("Coming soon!");
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
-    }
-  };
-
-  const handleGetTokens = () => {
-    if (!wallet) {
-      setToastMessage("Please connect your wallet using the button in the navigation bar");
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
-    } else {
-      // Lógica para obtener tokens cuando la wallet está conectada
-      setToastMessage("Token functionality coming soon!");
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     }
@@ -166,7 +176,7 @@ const GridItem = ({ area, icon, title, description, link, background }: GridItem
           proximity={64}
           inactiveZone={0.01}
         />
-        <Link href={link ?? "#"} target="_blank" onClick={handleClick}>
+        <Link href={link ?? "#"} onClick={handleClick}>
           <div className="relative flex h-full flex-col justify-between gap-6 overflow-hidden rounded-xl border-0.75 p-6 dark:shadow-[0px_0px_27px_0px_#2D2D2D] md:p-6 dark:bg-neutral-900/40">
             <div className="relative flex flex-1 flex-col justify-between gap-3">
               <div className="w-fit rounded-lg border border-gray-600 dark:border-neutral-800 p-2">
@@ -181,10 +191,10 @@ const GridItem = ({ area, icon, title, description, link, background }: GridItem
                 </h2>
                 <div className="flex justify-between mt-4">
                 <Button variant="outline" onClick={handleClick}>
-                  Details
+                  {buttonTexts.details}
                 </Button>
-                <Button variant="default" onClick={handleGetTokens}>
-                  Get Tokens
+                <Button variant="default">
+                  {buttonTexts.getTokens}
                 </Button>
               </div>
               </div>
@@ -199,7 +209,7 @@ const GridItem = ({ area, icon, title, description, link, background }: GridItem
               exit={{ opacity: 0, y: 50 }}
               className="fixed top-20 right-10 z-[9999] transform -translate-x-1/2 bg-lime-300 text-black px-4 py-2 rounded-md shadow-lg"
             >
-              {toastMessage}
+              Coming soon!
             </motion.div>
           )}
         </AnimatePresence>
