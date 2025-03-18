@@ -4,7 +4,7 @@ import type { Locale } from "~/config/i18n-config";
 import { getDictionary } from "~/lib/get-dictionary";
 
 export const metadata = {
-  title: "Properties",
+  title: "Assets",
 };
 
 export default async function PropertiesPage({
@@ -19,7 +19,7 @@ export default async function PropertiesPage({
 
   return (
     <div className="flex w-full flex-col gap-16 py-8 md:py-8">
-      <Properties />
+      <Properties lang={lang}/>
       <hr className="container" />
       <PricingFaq params={{ lang }} dict={dict.price} />
     </div>
