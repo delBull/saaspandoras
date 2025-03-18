@@ -6,11 +6,11 @@ import { motion } from "framer-motion";
 import type { Locale } from "~/config/i18n-config";
 
 interface PropertyDetails {
-    price: string;
-    area: string;
-    bedrooms: string;
-    bathrooms: string;
-    parking: string;
+    availabilty: string;
+    stage: string;
+    roi: string;
+    benefits: string;
+    value: string;
   }
   
   interface PropertyData {
@@ -34,130 +34,125 @@ interface PropertyDetails {
     title: "Narai Ocean View Luxury Condominium",
     description: "Luxury condominiums with breathtaking ocean views in an exclusive location",
     details: {
-      price: "300,000 USDC",
-      area: "250 m²",
-      bedrooms: "3",
-      bathrooms: "2.5",
-      parking: "2",
+      availabilty: "30,000,000 Narai Shares",
+      stage: "Family & Friends",
+      roi: "16%",
+      benefits: "Right of Occupancy",
+      value: "Surplus value",
     },
     features: [
       "Ocean view from all rooms",
       "High-end finishes",
-      "Private beach access",
+      "Beach access",
       "24/7 security",
       "Pool and spa",
       "Fitness center",
     ],
     gallery: [
-      "/images/narai/exterior.jpg",
+      "/images/narai/loft.jpg",
       "/images/narai/living.jpg",
       "/images/narai/kitchen.jpg",
       "/images/narai/bedroom.jpg",
-      "/images/narai/view.jpg",
     ],
   },
   es: {
     title: "Condominio de Lujo Narai con Vista al Mar",
     description: "Condominios de lujo con impresionantes vistas al océano en una ubicación exclusiva",
     details: {
-      price: "300,000 USDC",
-      area: "250 m²",
-      bedrooms: "3",
-      bathrooms: "2.5",
-      parking: "2",
+      availabilty: "30,000,000 Narai Shares",
+      stage: "Family & Friends",
+      roi: "16%",
+      benefits: "Derecho de Ocupación",
+      value: "Plusvalía",
     },
     features: [
       "Vista al mar desde todas las habitaciones",
       "Acabados de alta gama",
-      "Acceso privado a la playa",
+      "Acceso a la playa",
       "Seguridad 24/7",
       "Piscina y spa",
       "Centro de fitness",
     ],
     gallery: [
-        "/images/narai/exterior.jpg",
+        "/images/narai/loft.jpg",
         "/images/narai/living.jpg",
         "/images/narai/kitchen.jpg",
         "/images/narai/bedroom.jpg",
-        "/images/narai/view.jpg",
       ],
     },
     ja: {
         title: "ナライ オーシャンビュー ラグジュアリーコンドミニアム",
         description: "絶好のロケーションにある、息をのむような海の眺めを望む高級コンドミニアム",
         details: {
-          price: "300,000 USDC",
-          area: "250 m²",
-          bedrooms: "3",
-          bathrooms: "2.5",
-          parking: "2",
+          availabilty: "30,000,000 Narai株式",
+          stage: "家族と友人",
+          roi: "16%",
+          benefits: "占有権",
+         value: "剰余価値",
         },
         features: [
           "全室オーシャンビュー",
           "高級仕上げ",
-          "プライベートビーチアクセス",
+          "ビーチへのアクセス",
           "24時間セキュリティ",
           "プールとスパ",
           "フィットネスセンター",
         ],
         gallery: [
-            "/images/narai/exterior.jpg",
+            "/images/narai/loft.jpg",
             "/images/narai/living.jpg",
             "/images/narai/kitchen.jpg",
             "/images/narai/bedroom.jpg",
-            "/images/narai/view.jpg",
           ],
       },
       ko: {
         title: "나라이 오션 뷰 럭셔리 콘도미니엄",
         description: "독점적인 위치에서 탁 트인 바다 전망을 자랑하는 럭셔리 콘도미니엄",
         details: {
-          price: "300,000 USDC",
-          area: "250 m²",
-          bedrooms: "3",
-          bathrooms: "2.5",
-          parking: "2",
+          availabilty: "30,000,000 나라이 주식",
+          stage: "가족 & 친구들",
+          roi: "16%",
+          benefits: "점유권",
+          value: "잉여가치",
         },
         features: [
           "모든 방에서 바다 전망",
           "고급 마감재",
-          "전용 해변 접근",
+          "해변 접근성",
           "24시간 보안",
           "수영장과 스파",
           "피트니스 센터",
         ],
         gallery: [
-            "/images/narai/exterior.jpg",
+            "/images/narai/loft.jpg",
             "/images/narai/living.jpg",
             "/images/narai/kitchen.jpg",
             "/images/narai/bedroom.jpg",
-            "/images/narai/view.jpg",
           ],
       },
       zh: {
         title: "奈莱海景豪华公寓",
         description: "位于独特位置的豪华公寓，拥有令人惊叹的海景",
         details: {
-          price: "300,000 USDC",
-          area: "250 m²",
-          bedrooms: "3",
-          bathrooms: "2.5",
-          parking: "2",
+          availabilty: "30,000,000 股 Narai 股票",
+          stage: "家人和朋友",
+          roi: "16%",
+          benefits: "占用权",
+          value: "剩余价值",
         },
         features: [
           "所有房间都能看到海景",
           "高端装修",
-          "私人海滩通道",
+          "海滩通道",
           "24小时安保",
           "游泳池和水疗",
           "健身中心",
         ],
         gallery: [
-            "/images/narai/exterior.jpg",
+            "/images/narai/loft.jpg",
             "/images/narai/living.jpg",
             "/images/narai/kitchen.jpg",
             "/images/narai/bedroom.jpg",
-            "/images/narai/view.jpg",
           ],
     },
 };
@@ -170,7 +165,7 @@ export default function NaraiPage({ params: { lang } }: { params: { lang: Locale
       {/* Hero Section */}
       <div className="relative h-[60vh] w-full rounded-2xl overflow-hidden mb-8">
         <Image
-          src="/images/narai_blk.jpg"
+          src="/images/narai.jpg"
           alt="Narai Property"
           fill
           className="object-cover"
@@ -205,7 +200,7 @@ export default function NaraiPage({ params: { lang } }: { params: { lang: Locale
           <ul className="space-y-2">
             {data.features.map((feature, index) => (
               <li key={index} className="flex items-center">
-                <span className="w-2 h-2 bg-blue-500 rounded-full mr-2" />
+                <span className="w-2 h-2 bg-lime-300 rounded-full mr-2" />
                 {feature}
               </li>
             ))}
@@ -228,7 +223,10 @@ export default function NaraiPage({ params: { lang } }: { params: { lang: Locale
                 src={image}
                 alt={`Property image ${index + 1}`}
                 fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                quality={85}
                 className="object-cover"
+                priority={index === 0}
               />
             </motion.div>
           ))}
