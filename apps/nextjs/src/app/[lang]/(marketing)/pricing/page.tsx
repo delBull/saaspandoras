@@ -1,39 +1,24 @@
-import { getCurrentUser } from "@saasfly/auth";
-
-import { PricingCards } from "~/components/price/pricing-cards";
-import { PricingFaq } from "~/components/price/pricing-faq";
+import PropertiesPage from "~/components/price/propertiesv2";
 import type { Locale } from "~/config/i18n-config";
-import { getDictionary } from "~/lib/get-dictionary";
-import { trpc } from "~/trpc/server";
 
 export const metadata = {
   title: "Properties",
 };
 
-export default async function PropertiesPage({
+export default function Page({
   params: { lang },
 }: {
   params: {
     lang: Locale;
   };
 }) {
-  const user = await getCurrentUser();
-  const dict = await getDictionary(lang);
-  let subscriptionPlan;
 
-  if (user) {
-    subscriptionPlan = await trpc.stripe.userPlans.query();
-  }
+  const supportedLangs = ['en', 'es', 'ja', 'ko', 'zh'] as const;
+  const selectedLang = supportedLangs.includes(lang) ? lang : 'en';
+
   return (
     <div className="flex w-full flex-col gap-16 py-8 md:py-8">
-      <PricingCards
-        userId={user?.id}
-        subscriptionPlan={subscriptionPlan}
-        dict={dict.price}
-        params={{ lang }}
-      />
-      <hr className="container" />
-      <PricingFaq params={{ lang }} dict={dict.price} />
+      <PropertiesPage lang={selectedLang} />
     </div>
   );
 }
