@@ -1,27 +1,18 @@
 import * as React from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 import { cn } from "@saasfly/ui";
 
 import { ModeToggle } from "~/components/mode-toggle";
 
-function getCopyrightText(
-  dict: Record<string, string | Record<string, string>>,
-) {
-  const currentYear = new Date().getFullYear();
-  const copyrightTemplate = dict?.copyright ? String(dict.copyright) : "";
-  return copyrightTemplate?.replace("${currentYear}", String(currentYear));
-}
-
 export function SiteFooter({
   className,
-  dict,
 }: {
   className?: string;
   params: {
     lang: string;
   };
-
   dict: Record<string, string | Record<string, string>>;
 }) {
   return (
@@ -30,14 +21,19 @@ export function SiteFooter({
         <div className="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
           <Image
             src="/images/avatars/logop.svg"
-            width="36"
-            height="36"
+            width="26"
+            height="26"
             alt=""
           />
           <p className="text-center text-sm leading-loose md:text-left">
-            {getCopyrightText(dict)}
+            Pandora&apos;s es una marca registrada de MXHUB Ecosistema Blockchain S.A. de C.V.
           </p>
         </div>
+        <Link href="/terms">
+          <p className="text-center text-sm leading-loose md:text-right right-1">
+            Terms of Service | Privacy Policy
+          </p>
+          </Link>
         <ModeToggle />
       </div>
     </footer>

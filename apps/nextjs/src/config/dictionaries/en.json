@@ -129,5 +129,140 @@
     "settings": "Settings",
     "sign_out": "Sign Out"
   }
- }
+ },
+  "terms": {
+    "title": "Terms and Conditions",
+    "lastUpdate": "Last Updated: March 2025",
+    "tabTerms": "Terms & Conditions",
+    "tabPrivacy": "Privacy Policy",
+    "sections": {
+      "welcome": {
+        "title": "Welcome to Pandora's Foundation",
+        "content": "These terms and conditions govern the access and use of our digital platform and DApp, available at https://dapp.pandoras.foundation/, as well as tokenization services, real estate participation purchases, and digital rights."
+      },
+      "definitions": {
+        "title": "Definitions",
+        "items": [
+          "Platform: DApp and digital services by Pandoras.",
+          "Users: Natural or legal persons who access and use the services.",
+          "Real Estate Rights (NFTs): Digital assets that grant access to purchase real estate participations.",
+          "Real Estate Participations: Digital fractions representing a real estate asset.",
+          "Tokenization: Process of representing a real asset on blockchain through digital tokens."
+        ]
+      },
+      "usage": {
+        "title": "Platform Usage",
+        "items": [
+          "The Platform allows you to acquire Real Estate Rights (NFTs) for free, which grants access to purchase Real Estate Participations in selected projects.",
+          "Users must have a compatible digital wallet to interact with the Platform.",
+          "Pandoras is not a financial advisor and offers no guarantees on the profitability of investments made on the Platform."
+        ]
+      },
+      "responsibility": {
+        "title": "Responsibility and Warranty Disclaimer",
+        "items": [
+          "Pandoras is not responsible for losses, risks, or value fluctuations of digitalized assets on the Platform.",
+          "The Platform operates on blockchain, therefore all transactions are irreversible and cannot be modified once confirmed.",
+          "Users accept that ownership of a Real Estate Right (NFT) does not equate to ownership of the physical property.",
+          "The Platform reserves the right to modify, update, or suspend any service without prior notice."
+        ]
+      },
+      "requirements": {
+        "title": "User Requirements",
+        "items": [
+          "Must be over 18 years old to use the Platform.",
+          "Agrees to comply with tax regulations in their country of residence.",
+          "Pandoras reserves the right to deny access to any user if suspicious activity is detected."
+        ]
+      },
+      "payments": {
+        "title": "Payments and Fees",
+        "items": [
+          "Payments are made exclusively in cryptocurrencies or through approved methods.",
+          "Pandoras may charge fees for the use of certain services.",
+          "No refunds are offered once a token or participation purchase is completed."
+        ]
+      },
+      "dataProtection": {
+        "title": "Data Protection and Security",
+        "items": [
+          "Personal data is processed according to our Privacy Policy.",
+          "The user is responsible for their account and credentials security.",
+          "Pandoras is not responsible for unauthorized access due to user negligence."
+        ]
+      },
+      "law": {
+        "title": "Applicable Law and Jurisdiction",
+        "items": [
+          "These Terms are governed by Mexican law.",
+          "Any disputes will be resolved in competent courts in Mexico City, Mexico."
+        ]
+      }
+    },
+    "acceptance": {
+      "title": "Terms and Conditions Acceptance",
+      "content": "By using the platform, you acknowledge having read and understood these Terms and Privacy Policy, accepting their compliance without reservations."
+    }
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "lastUpdate": "Last Updated: March 2025",
+    "introduction": "At Pandora's, we are committed to protecting our users' privacy. This Privacy Policy describes how we collect, use, and protect your personal information when you use our Platform.",
+    "sections": {
+      "collection": {
+        "title": "Information We Collect",
+        "items": [
+          "Personal information: Name, email, digital wallet address.",
+          "Transaction information: Purchase history and movements.",
+          "Technical data: IP address, browser type, cookie data."
+        ]
+      },
+      "usage": {
+        "title": "Use of Information",
+        "items": [
+          "Process transactions and manage user accounts.",
+          "Improve Platform security and functionality.",
+          "Send communications about changes and updates.",
+          "Comply with applicable legal and tax regulations."
+        ]
+      },
+      "protection": {
+        "title": "Information Protection",
+        "items": [
+          "We implement technical and organizational security measures.",
+          "Information stored on blockchain is immutable and transparent.",
+          "We don't sell personal information to third parties without consent."
+        ]
+      },
+      "rights": {
+        "title": "User Rights",
+        "items": [
+          "Access, modify or delete your stored personal information.",
+          "Request account cancellation.",
+          "Opt out of promotional communications."
+        ]
+      },
+      "cookies": {
+        "title": "Cookies and Tracking Technologies",
+        "items": [
+          "We use cookies to improve user experience.",
+          "Secure and persistent session authentication.",
+          "Behavior and navigation analysis."
+        ]
+      },
+      "transfers": {
+        "title": "International Data Transfers",
+        "content": "Due to the decentralized nature of blockchain technology, some data may be processed outside Mexico. We ensure compliance with applicable data protection regulations in all jurisdictions."
+      },
+      "changes": {
+        "title": "Changes to Privacy Policy",
+        "content": "We may update this policy at any time. Users will be notified of significant changes through the Platform or email."
+      },
+      "contact": {
+        "title": "Contact",
+        "content": "For questions or requests about data privacy, please contact us at:",
+        "email": "support@pandoras.foundation"
+      }
+    }
+  }
 }
