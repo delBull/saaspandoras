@@ -186,30 +186,31 @@ export default function NaraiPage({ params: { lang } }: { params: { lang: Locale
           priority
         />
         <div className="absolute inset-0 bg-black/40">
-          <div className="absolute bottom-8 left-8 text-white">
-            <h1 className="text-4xl font-bold mb-2">{data.title}</h1>
-            <p className="text-xl">{data.description}</p>
-          </div>
+  {/* Text container */}
+  <div className="absolute bottom-24 sm:bottom-8 left-4 sm:left-8 text-white">
+    <h1 className="text-2xl sm:text-4xl font-bold mb-2">{data.title}</h1>
+    <p className="text-base sm:text-xl max-w-2xl">{data.description}</p>
+  </div>
 
-            {/* Buttons container */}
-          <div className="absolute bottom-8 right-8 flex gap-4">
-            <Link
-              href={`/${lang}/assets/narai/legal`}
-              className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg font-mono font-semibold text-white transition-all"
-            >
-            <Post className="w-4 h-4" />
-              <span>{data.legalButton}</span>
-            </Link>
-      
-            <Link
-              href={`/${lang}/assets/narai/construction`}
-              className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg font-mono font-semibold text-white transition-all"
-            >
-            <Organization className="w-4 h-4" />
-              <span>{data.constructionButton}</span>
-            </Link>
-          </div>
-        </div>
+  {/* Buttons container - centered on mobile */}
+  <div className="absolute bottom-4 sm:bottom-8 left-0 sm:left-auto right-0 sm:right-8 flex justify-center sm:justify-end gap-2 sm:gap-4 px-4 sm:px-0">
+    <Link
+      href={`/${lang}/assets/narai/legal`}
+      className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg text-white transition-all text-xs sm:text-base"
+    >
+      <Post className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+      <span>{data.legalButton}</span>
+    </Link>
+
+    <Link
+      href={`/${lang}/assets/narai/construction`}
+      className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg text-white transition-all text-xs sm:text-base"
+    >
+      <Organization className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+      <span>{data.constructionButton}</span>
+    </Link>
+  </div>
+</div>
       </div>
 
       {/* Property Details */}

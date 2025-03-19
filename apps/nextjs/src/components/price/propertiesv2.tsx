@@ -140,9 +140,20 @@ export default function PropertiesPage({ lang }: { lang: 'en' | 'es' | 'ja' | 'k
 
       {/* Properties Grid */}
     <ul className="grid grid-cols-1 grid-rows-none gap-4 md:grid-cols-12 md:grid-rows-2 lg:gap-4 xl:max-h-[34rem] xl:grid-rows-2">
-      <GridItem
-        area="md:[grid-area:1/1/2/7] xl:[grid-area:1/1/2/7]"
+    <GridItem
+        area="md:[grid-area:1/1/3/7] xl:[grid-area:1/1/3/7]"
         icon={<Icons.Rocket className="h-4 w-4 text-black dark:text-neutral-400" />}
+        title={dict.title3}
+        description={dict.description3}
+        background="/images/narai_blk.jpg"
+        link="/assets/narai"
+        buttonTexts={dict.buttons}
+        lang={lang}
+      />
+     
+      <GridItem
+        area="md:[grid-area:1/7/2/13] xl:[grid-area:1/7/2/13]"
+        icon={<Icons.Spinner className="h-4 w-4 text-black dark:text-neutral-400" />}
         title={dict.title1}
         description={dict.description1}
         link=""
@@ -151,8 +162,8 @@ export default function PropertiesPage({ lang }: { lang: 'en' | 'es' | 'ja' | 'k
       />
 
       <GridItem
-        area="md:[grid-area:1/7/2/13] xl:[grid-area:2/1/3/7]"
-        icon={<Icons.Cloud className="h-4 w-4 text-black dark:text-neutral-400" />}
+        area="md:[grid-area:2/7/3/13] xl:[grid-area:2/7/3/13]"
+        icon={<Icons.Spinner className="h-4 w-4 text-black dark:text-neutral-400" />}
         title={dict.title2}
         description={dict.description2}
         link=""
@@ -160,16 +171,6 @@ export default function PropertiesPage({ lang }: { lang: 'en' | 'es' | 'ja' | 'k
         lang={lang}
       />
 
-      <GridItem
-        area="md:[grid-area:2/1/3/7] xl:[grid-area:1/7/3/13]"
-        icon={<Icons.ThumbsUp className="h-4 w-4 text-black dark:text-neutral-400" />}
-        title={dict.title3}
-        description={dict.description3}
-        background="/images/narai_blk.jpg"
-        link="/assets/narai"
-        buttonTexts={dict.buttons}
-        lang={lang}
-      />
     </ul>
   </div>
   );
