@@ -9,25 +9,7 @@ import Link from "next/link";
 import { GlowingEffect } from "@saasfly/ui/glowing-effect";
 import * as Icons from "@saasfly/ui/icons";
 import { motion, AnimatePresence } from "framer-motion";
-
-{/*
-  const properties = [
-  {
-    id: "1",
-    title: "Narai",
-    price: "120,000,000 MXN",
-    image: "/images/coin.png",
-    description: "Una villa de lujo con vista al mar y acabados de alta gama.",
-  },
-  {
-    id: "2",
-    title: "Downtown Apartment",
-    price: "300,000 USDC",
-    image: "/images/coin.png",
-    description: "Moderno apartamento en el centro de la ciudad, excelente inversión.",
-  },
-]; 
-*/}
+import { AssetTabs } from "~/components/price/assets-tabs";
 
 const data = {
   en: {
@@ -40,6 +22,14 @@ const data = {
     buttons: {
       details: "Details",
       getTokens: "Get Tokens"
+    },
+    assets: {
+      title: "Asset Categories",
+      description: "",
+      real_estate: "Real Estate",
+      startups: "Startups",
+      others: "Others",
+      coming_soon: "Coming soon"
     }
   },
   es: {
@@ -52,6 +42,14 @@ const data = {
     buttons: {
       details: "Detalles",
       getTokens: "Obtener Tokens"
+    },
+    assets: {
+      title: "Categorías de Activos",
+      description: "",
+      real_estate: "Inmobiliarios",
+      startups: "Startups",
+      others: "Otros",
+      coming_soon: "Próximamente"
     }
   },
   ja: {
@@ -64,6 +62,14 @@ const data = {
     buttons: {
       details: "詳細",
       getTokens: "トークンを取得"
+    },
+    assets: {
+      title: "資産カテゴリー",
+      description: "",
+      real_estate: "不動産",
+      startups: "スタートアップ",
+      others: "その他",
+      coming_soon: "近日公開"
     }
   },
   ko: {
@@ -76,6 +82,14 @@ const data = {
     buttons: {
       details: "상세정보",
       getTokens: "토큰 받기"
+    },
+    assets: {
+      title: "자산 카테고리",
+      description: "",
+      real_estate: "부동산",
+      startups: "스타트업",
+      others: "기타",
+      coming_soon: "출시 예정"
     }
   },
   zh: {
@@ -88,8 +102,16 @@ const data = {
     buttons: {
       details: "详情",
       getTokens: "获取代币"
+    },
+    assets: {
+      title: "资产类别",
+      description: "",
+      real_estate: "房地产",
+      startups: "创业公司",
+      others: "其他",
+      coming_soon: "即将推出"
     }
-  },
+  }
 };
 
 export default function PropertiesPage({ lang }: { lang: 'en' | 'es' | 'ja' | 'ko' | 'zh' }) {
@@ -102,6 +124,21 @@ export default function PropertiesPage({ lang }: { lang: 'en' | 'es' | 'ja' | 'k
   console.log("dict:", dict);
 
   return (
+    <div className="px-5 space-y-8">
+      {/* Title and Description Section */}
+      <div className="ml-5 space-y-4 -mb-5">
+        <h1 className="text-2xl font-normal tracking-tight sm:text-1xl text-foreground text-gray-400">
+          {dict.assets?.title}
+        </h1>
+        <p className="text-lg text-muted-foreground max-w-2xl">
+          {dict.assets?.description}
+        </p>
+      </div>
+
+      {/* Asset Tabs */}
+      <AssetTabs lang={lang} dict={dict.assets} />
+
+      {/* Properties Grid */}
     <ul className="grid grid-cols-1 grid-rows-none gap-4 md:grid-cols-12 md:grid-rows-2 lg:gap-4 xl:max-h-[34rem] xl:grid-rows-2">
       <GridItem
         area="md:[grid-area:1/1/2/7] xl:[grid-area:1/1/2/7]"
@@ -110,6 +147,7 @@ export default function PropertiesPage({ lang }: { lang: 'en' | 'es' | 'ja' | 'k
         description={dict.description1}
         link=""
         buttonTexts={dict.buttons}
+        lang={lang}
       />
 
       <GridItem
@@ -119,6 +157,7 @@ export default function PropertiesPage({ lang }: { lang: 'en' | 'es' | 'ja' | 'k
         description={dict.description2}
         link=""
         buttonTexts={dict.buttons}
+        lang={lang}
       />
 
       <GridItem
@@ -129,8 +168,10 @@ export default function PropertiesPage({ lang }: { lang: 'en' | 'es' | 'ja' | 'k
         background="/images/narai_blk.jpg"
         link="/assets/narai"
         buttonTexts={dict.buttons}
+        lang={lang}
       />
     </ul>
+  </div>
   );
 }
 
@@ -145,9 +186,10 @@ interface GridItemProps {
     details: string;
     getTokens: string;
   };
+  lang: string;
 }
 
-const GridItem = ({ area, icon, title, description, link, background, buttonTexts }: GridItemProps) => {
+const GridItem = ({ area, icon, title, description, link, background, buttonTexts, lang }: GridItemProps) => {
   const [showToast, setShowToast] = useState(false);
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>) => {
@@ -158,6 +200,7 @@ const GridItem = ({ area, icon, title, description, link, background, buttonText
     }
   };
   
+  const fullLink = link ? `/${lang}${link}` : "#";
 
   return (
 <li className={`min-h-[14rem] list-none ${area}`}>
@@ -176,7 +219,7 @@ const GridItem = ({ area, icon, title, description, link, background, buttonText
           proximity={64}
           inactiveZone={0.01}
         />
-        <Link href={link ?? "#"} onClick={handleClick}>
+        <Link href={fullLink} onClick={handleClick}>
           <div className="relative flex h-full flex-col justify-between gap-6 overflow-hidden rounded-xl border-0.75 p-6 dark:shadow-[0px_0px_27px_0px_#2D2D2D] md:p-6 dark:bg-neutral-900/40">
             <div className="relative flex flex-1 flex-col justify-between gap-3">
               <div className="w-fit rounded-lg border border-gray-600 dark:border-neutral-800 p-2">
@@ -217,13 +260,3 @@ const GridItem = ({ area, icon, title, description, link, background, buttonText
     </li>
   );
 };
-{/*
-<div className="flex justify-between mt-4">
-                <Button variant="outline">
-                  Details
-                </Button>
-                <Button variant="default">
-                  Get Tokens
-                </Button>
-              </div>
-*/}
