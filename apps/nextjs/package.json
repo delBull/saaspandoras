@@ -16,6 +16,7 @@
     "@formatjs/intl-localematcher": "0.5.4",
     "@hookform/resolvers": "3.3.4",
     "@next/mdx": "14.2.5",
+    "@radix-ui/react-tooltip": "^1.1.8",
     "@saasfly/api": "workspace:*",
     "@saasfly/auth": "workspace:*",
     "@saasfly/db": "workspace:*",
