@@ -15,11 +15,6 @@ export default async function PropertiesPage({
   try {
     const dict = await getDictionary(lang);
 
-    if (!dict?.assets) {
-      console.error("Dictionary or assets section not found");
-      return null;
-    }
-
     return (
       <div className="flex w-full flex-col min-h-screen">
         <div className="container mx-auto px-4 py-8 space-y-16">
