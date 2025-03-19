@@ -1,6 +1,8 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
+import { Post, Organization } from "@saasfly/ui/icons";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import type { Locale } from "~/config/i18n-config";
@@ -16,6 +18,8 @@ interface PropertyDetails {
   interface PropertyData {
     title: string;
     description: string;
+    legalButton: string;
+    constructionButton: string;
     details: PropertyDetails;
     features: string[];
     gallery: string[];
@@ -33,6 +37,8 @@ interface PropertyDetails {
   en: {
     title: "Narai Ocean View Luxury Condominium",
     description: "Luxury condominiums with breathtaking ocean views in an exclusive location",
+    legalButton: "Legal Details",
+    constructionButton: "Construction Details",
     details: {
       availabilty: "30,000,000 Narai Shares",
       stage: "Family & Friends",
@@ -58,6 +64,8 @@ interface PropertyDetails {
   es: {
     title: "Condominio de Lujo Narai con Vista al Mar",
     description: "Condominios de lujo con impresionantes vistas al océano en una ubicación exclusiva",
+    legalButton: "Detalles Legales",
+    constructionButton: "Detalles de Construcción",
     details: {
       availabilty: "30,000,000 Narai Shares",
       stage: "Family & Friends",
@@ -83,12 +91,14 @@ interface PropertyDetails {
     ja: {
         title: "ナライ オーシャンビュー ラグジュアリーコンドミニアム",
         description: "絶好のロケーションにある、息をのむような海の眺めを望む高級コンドミニアム",
+        legalButton: "法的詳細",
+        constructionButton: "建設詳細",
         details: {
           availabilty: "30,000,000 Narai株式",
           stage: "家族と友人",
           roi: "16%",
           benefits: "占有権",
-         value: "剰余価値",
+          value: "剰余価値",
         },
         features: [
           "全室オーシャンビュー",
@@ -108,6 +118,8 @@ interface PropertyDetails {
       ko: {
         title: "나라이 오션 뷰 럭셔리 콘도미니엄",
         description: "독점적인 위치에서 탁 트인 바다 전망을 자랑하는 럭셔리 콘도미니엄",
+        legalButton: "법적 세부사항",
+        constructionButton: "건설 세부사항",
         details: {
           availabilty: "30,000,000 나라이 주식",
           stage: "가족 & 친구들",
@@ -133,6 +145,8 @@ interface PropertyDetails {
       zh: {
         title: "奈莱海景豪华公寓",
         description: "位于独特位置的豪华公寓，拥有令人惊叹的海景",
+        legalButton: "法律详情",
+        constructionButton: "建设详情",
         details: {
           availabilty: "30,000,000 股 Narai 股票",
           stage: "家人和朋友",
@@ -175,6 +189,25 @@ export default function NaraiPage({ params: { lang } }: { params: { lang: Locale
           <div className="absolute bottom-8 left-8 text-white">
             <h1 className="text-4xl font-bold mb-2">{data.title}</h1>
             <p className="text-xl">{data.description}</p>
+          </div>
+
+            {/* Buttons container */}
+          <div className="absolute bottom-8 right-8 flex gap-4">
+            <Link
+              href={`/${lang}/assets/narai/legal`}
+              className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg font-mono font-semibold text-white transition-all"
+            >
+            <Post className="w-4 h-4" />
+              <span>{data.legalButton}</span>
+            </Link>
+      
+            <Link
+              href={`/${lang}/assets/narai/construction`}
+              className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg font-mono font-semibold text-white transition-all"
+            >
+            <Organization className="w-4 h-4" />
+              <span>{data.constructionButton}</span>
+            </Link>
           </div>
         </div>
       </div>

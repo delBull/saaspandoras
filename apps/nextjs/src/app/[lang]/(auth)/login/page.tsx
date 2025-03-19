@@ -41,13 +41,13 @@ export default async function LoginPage({
       </Link>
       <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
         <div className="flex flex-col space-y-2 text-center">
-          <Image
-            src="/images/avatars/logop.svg"
-            className="mx-auto"
-            width="64"
-            height="64"
-            alt=""
-          />
+        <Image
+          src="/images/avatars/logop.svg"
+          alt="Logo"
+          width={32}
+          height={32}
+          className="w-8 h-8"
+        />
           <h1 className="text-2xl font-semibold tracking-tight">
             {dict?.login?.welcome_back || "Welcome back"}
           </h1>
