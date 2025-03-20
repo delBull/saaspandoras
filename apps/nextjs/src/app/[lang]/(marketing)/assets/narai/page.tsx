@@ -213,12 +213,12 @@ interface PropertyDetails {
           "健身中心",
         ],
         gallery: [
-          "/images/narai/loft.png",
-          "/images/narai/living.png",
-          "/images/narai/kitchen.png",
-          "/images/narai/bedroom.png",
-          "/images/narai/terrace.png",
-        ],
+      "/images/narai/loft.png",
+      "/images/narai/living.png",
+      "/images/narai/kitchen.png",
+      "/images/narai/bedroom.png",
+      "/images/narai/terrace.png",
+    ],
     },
 };
 
