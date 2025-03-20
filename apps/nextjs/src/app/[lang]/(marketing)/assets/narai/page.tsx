@@ -2,13 +2,13 @@
 
 import React from "react";
 import Link from "next/link";
-import { Post, Organization } from "@saasfly/ui/icons";
+import { Organization } from "@saasfly/ui/icons";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import type { Locale } from "~/config/i18n-config";
 import { Help } from "@saasfly/ui/icons";
 import * as Tooltip from "@radix-ui/react-tooltip";
-import { PDFViewer } from "~/components/PDFViewer";
+import { ConstructionDashboard } from "~/components/construction-dashboard";
 
 interface PropertyDetailTooltips {
   availability: string;
@@ -26,6 +26,13 @@ interface PropertyDetails {
   value: string;
   tooltips: PropertyDetailTooltips;
 }
+
+interface ConstructionTab {
+  id: string;
+  title: string;
+  content: string;
+  pdfUrl: string;
+}
   
   interface PropertyData {
     title: string;
@@ -37,6 +44,7 @@ interface PropertyDetails {
     gallery: string[];
     constructionTitle?: string;
     constructionDescription?: string;
+    constructionTabs: ConstructionTab[];
   }
   
   interface PropertyDataByLang {
@@ -52,7 +60,7 @@ interface PropertyDetails {
     title: "Narai Ocean View Luxury Condominium",
     description: "Luxury condominiums with breathtaking ocean views in an exclusive location",
     legalButton: "Legal Details",
-    constructionButton: "Construction Details",
+    constructionButton: "Project Details",
     details: {
       availability: "30,000,000 Narai Shares",
       stage: "Family & Friends",
@@ -82,14 +90,34 @@ interface PropertyDetails {
       "/images/narai/bedroom.png",
       "/images/narai/terrace.png",
     ],
-    constructionTitle: "Construction Project Details",
+    constructionTitle: "Project Details",
     constructionDescription: "Detailed architectural plans and construction specifications for the Narai Ocean View Luxury Condominium project.",
+    constructionTabs: [
+      {
+        id: 'preliminary',
+        title: 'Preliminary Project',
+        content: 'Detailed architectural plans and initial specifications.',
+        pdfUrl: '/docs/narai_anteproyecto.pdf'
+      },
+      {
+        id: 'engineering',
+        title: 'Engineering Details',
+        content: 'Structural and technical specifications.',
+        pdfUrl: '/docs/narai_engineering.pdf'
+      },
+      {
+        id: 'legal',
+        title: 'Legal Details',
+        content: 'Legal documentation and ownership structure.',
+        pdfUrl: '/docs/narai_legal.pdf'
+      }
+    ],
   },
   es: {
     title: "Condominio de Lujo Narai con Vista al Mar",
     description: "Condominios de lujo con impresionantes vistas al océano en una ubicación exclusiva",
     legalButton: "Detalles Legales",
-    constructionButton: "Detalles de Construcción",
+    constructionButton: "Detalles del Proyecto",
     details: {
       availability: "30,000,000 Narai Shares",
       stage: "Family & Friends",
@@ -119,14 +147,34 @@ interface PropertyDetails {
       "/images/narai/bedroom.png",
       "/images/narai/terrace.png",
     ],
-    constructionTitle: "Detalles del Proyecto de Construcción",
+    constructionTitle: "Detalles del Proyecto",
     constructionDescription: "Planes arquitectónicos detallados y especificaciones de construcción para el proyecto Condominio de Lujo Narai con Vista al Mar.",
+    constructionTabs: [
+      {
+        id: 'preliminary',
+        title: 'Anteproyecto',
+        content: 'Planes arquitectónicos detallados y especificaciones iniciales.',
+        pdfUrl: '/docs/narai_anteproyecto.pdf'
+      },
+      {
+        id: 'engineering',
+        title: 'Detalles de Ingeniería',
+        content: 'Especificaciones estructurales y técnicas.',
+        pdfUrl: '/docs/narai_engineering.pdf'
+      },
+      {
+        id: 'legal',
+        title: 'Detalles Legales',
+        content: 'Documentación legal y estructura de propiedad.',
+        pdfUrl: '/docs/narai_legal.pdf'
+      }
+    ],
     },
     ja: {
         title: "ナライ オーシャンビュー ラグジュアリーコンドミニアム",
         description: "絶好のロケーションにある、息をのむような海の眺めを望む高級コンドミニアム",
         legalButton: "法的詳細",
-        constructionButton: "建設詳細",
+        constructionButton: "プロジェクト詳細",
         details: {
           availability: "30,000,000 Narai株式",
           stage: "家族と友人",
@@ -156,14 +204,34 @@ interface PropertyDetails {
           "/images/narai/bedroom.png",
           "/images/narai/terrace.png",
         ],
-        constructionTitle: "建設プロジェクトの詳細",
+        constructionTitle: "プロジェクト詳細",
         constructionDescription: "ナライ オーシャンビュー ラグジュアリーコンドミニアムプロジェクトの詳細な建築計画と建設仕様。",
+        constructionTabs: [
+          {
+            id: 'preliminary',
+            title: '予備プロジェクト',
+            content: '詳細な建築計画と初期仕様。',
+            pdfUrl: '/docs/narai_anteproyecto.pdf'
+          },
+          {
+            id: 'engineering',
+            title: 'エンジニアリング詳細',
+            content: '構造および技術仕様。',
+            pdfUrl: '/docs/narai_engineering.pdf'
+          },
+          {
+            id: 'legal',
+            title: '法的詳細',
+            content: '法的文書と所有権構造。',
+            pdfUrl: '/docs/narai_legal.pdf'
+          }
+        ],
       },
       ko: {
         title: "나라이 오션 뷰 럭셔리 콘도미니엄",
         description: "독점적인 위치에서 탁 트인 바다 전망을 자랑하는 럭셔리 콘도미니엄",
         legalButton: "법적 세부사항",
-        constructionButton: "건설 세부사항",
+        constructionButton: "프로젝트 세부사항",
         details: {
           availability: "30,000,000 나라이 주식",
           stage: "가족 & 친구들",
@@ -193,14 +261,34 @@ interface PropertyDetails {
           "/images/narai/bedroom.png",
           "/images/narai/terrace.png",
         ],
-        constructionTitle: "건설 프로젝트 세부사항",
+        constructionTitle: "프로젝트 세부사항",
         constructionDescription: "나라이 오션 뷰 럭셔리 콘도미니엄 프로젝트의 상세 건축 계획 및 건설 사양.",
+        constructionTabs: [
+          {
+            id: 'preliminary',
+            title: '예비 프로젝트',
+            content: '상세 건축 계획 및 초기 사양.',
+            pdfUrl: '/docs/narai_anteproyecto.pdf'
+          },
+          {
+            id: 'engineering',
+            title: '엔지니어링 세부사항',
+            content: '구조 및 기술 사양.',
+            pdfUrl: '/docs/narai_engineering.pdf'
+          },
+          {
+            id: 'legal',
+            title: '법적 세부사항',
+            content: '법적 문서 및 소유권 구조.',
+            pdfUrl: '/docs/narai_legal.pdf'
+          }
+        ],
       },
       zh: {
         title: "奈莱海景豪华公寓",
         description: "位于独特位置的豪华公寓，拥有令人惊叹的海景",
         legalButton: "法律详情",
-        constructionButton: "建设详情",
+        constructionButton: "项目详情",
         details: {
           availability: "30,000,000 股 Narai 股票",
           stage: "家人和朋友",
@@ -230,8 +318,28 @@ interface PropertyDetails {
       "/images/narai/bedroom.png",
       "/images/narai/terrace.png",
         ],
-        constructionTitle: "建设项目详情",
+        constructionTitle: "项目详情",
         constructionDescription: "奈莱海景豪华公寓项目的详细建筑计划和建设规范。",
+        constructionTabs: [
+          {
+            id: 'preliminary',
+            title: '初步项目',
+            content: '详细建筑计划和初始规格。',
+            pdfUrl: '/docs/narai_anteproyecto.pdf'
+          },
+          {
+            id: 'engineering',
+            title: '工程细节',
+            content: '结构和技术规格。',
+            pdfUrl: '/docs/narai_engineering.pdf'
+          },
+          {
+            id: 'legal',
+            title: '法律详情',
+            content: '法律文件和所有权结构。',
+            pdfUrl: '/docs/narai_legal.pdf'
+          }
+        ],
     },
 };
 
@@ -268,26 +376,18 @@ export default function NaraiPage({ params: { lang } }: { params: { lang: Locale
 
   {/* Buttons container - centered on mobile */}
   <div className="absolute bottom-4 sm:bottom-8 left-0 sm:left-auto right-0 sm:right-8 flex justify-center sm:justify-end gap-2 sm:gap-4 px-4 sm:px-0">
-    <Link
-      href={`/${lang}/assets/narai/legal`}
-      className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg text-white transition-all text-xs sm:text-base"
-    >
-      <Post className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-      <span>{data.legalButton}</span>
-    </Link>
-
-    <Link
-      href="#construction"
-      onClick={(e) => {
-        e.preventDefault();
-        scrollToConstruction();
-      }}
-      className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg text-white transition-all text-xs sm:text-base"
-    >
-      <Organization className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-      <span>{data.constructionButton}</span>
-    </Link>
-  </div>
+  <Link
+    href="#construction"
+    onClick={(e) => {
+      e.preventDefault();
+      scrollToConstruction();
+    }}
+    className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg text-white transition-all text-xs sm:text-base"
+  >
+    <Organization className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+    <span>{data.constructionButton}</span>
+  </Link>
+</div>
 </div>
       </div>
 
@@ -370,26 +470,24 @@ export default function NaraiPage({ params: { lang } }: { params: { lang: Locale
 
             {/* Construction Details Section */}
             <div ref={constructionRef} id="construction" className="mb-12">
-              <motion.div
-                ref={constructionRef}
-                id="construction"
-                className="mb-12"
-                initial={{ opacity: 0, y: 20 }}
-                animate={activeSection === 'construction' ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.5 }}
-              >
-              <div className="mb-4">
-                <h2 className="text-2xl font-bold">{data.constructionTitle}</h2>
-                <p className="text-neutral-600 dark:text-neutral-400 mt-2">
-                  {data.constructionDescription}
-                </p>
-              </div>
-               <PDFViewer
-                  pdfUrl="/docs/narai_anteproyecto.pdf"
-                  title=""
-               />
-               </motion.div>
-            </div>
+            <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={activeSection === 'construction' ? { opacity: 1, y: 0 } : {}}
+    transition={{ duration: 0.5 }}
+    className="space-y-6"
+  >
+              {/* Title and description outside dashboard */}
+    <div className="mb-8">
+      <h2 className="text-2xl font-bold">{data.constructionTitle}</h2>
+      <p className="text-neutral-600 dark:text-neutral-400 mt-2">
+        {data.constructionDescription}
+      </p>
     </div>
+
+    {/* Construction Dashboard */}
+    <ConstructionDashboard tabs={data.constructionTabs} />
+  </motion.div>
+</div>
+            </div>
   );
 }
