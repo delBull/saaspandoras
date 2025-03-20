@@ -42,7 +42,7 @@
     "@radix-ui/react-toast": "next",
     "@radix-ui/react-toggle": "next",
     "@radix-ui/react-toggle-group": "next",
-    "@radix-ui/react-tooltip": "next",
+    "@radix-ui/react-tooltip": "^1.1.8",
     "@react-email/button": "0.0.15",
     "@react-email/components": "0.0.19",
     "@react-email/html": "0.0.8",
