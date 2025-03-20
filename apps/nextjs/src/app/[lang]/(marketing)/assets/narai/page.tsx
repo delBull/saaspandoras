@@ -57,11 +57,11 @@ interface PropertyDetails {
       benefits: "Right of Occupancy",
       value: "Surplus value",
       tooltips: {
-        availability: "Total number of Narai Shares available for this property",
-        stage: "Current investment stage, exclusive for family and friends",
-        roi: "Expected Return on Investment per year",
-        benefits: "Right to occupy the property according to share ownership",
-        value: "Potential increase in property value over time"
+        availability: "Total number of Narai Shares available for this property. A total of 100 million tokens will be issued in 3 investment stages with progressive pricing.",
+        stage: "Current investment stage, exclusive to family and friends. Investors at this stage receive the best token price, the most benefits, and the right to occupy the property.",
+        roi: "Estimated annual return on investment (ROI) of 16%, based on rental income and property appreciation. ROI may vary depending on the investment stage and market demand.",
+        benefits: "Investors in Stage 0 and Stage 1 can access the property on specific dates, depending on the number of shares owned. Investors in Stage 2 receive financial returns without occupancy benefits.",
+        value: "The price of each Narai Share will increase at each stage. Stage 0: 1 MXN/token, Stage 1: 1.5 MXN/token, Stage 2: 2 MXN/token, reflecting the property's value appreciation over time."
       }
     },
     features: [
@@ -91,12 +91,12 @@ interface PropertyDetails {
       benefits: "Derecho de Ocupación",
       value: "Plusvalía",
       tooltips: {
-        availability: "Número total de Narai Shares disponibles para esta propiedad",
-        stage: "Etapa actual de inversión, exclusiva para familia y amigos",
-        roi: "Retorno de inversión esperado por año",
-        benefits: "Derecho a ocupar la propiedad según la propiedad de acciones",
-        value: "Potencial incremento en el valor de la propiedad con el tiempo"
-      }
+        availability: "Número total de Narai Shares disponibles para esta propiedad. En total, se emitirán 100 millones de tokens en 3 etapas de inversión con precios progresivos.",
+        stage: "Etapa actual de inversión, exclusiva para familia y amigos. Los inversores en esta fase obtienen el mejor precio por token, mayores beneficios y derecho de ocupación.",
+        roi: "Retorno de inversión estimado del 16% anual, basado en ingresos por renta y plusvalía del activo. El ROI puede variar dependiendo de la etapa de inversión y la demanda en el mercado.",
+        benefits: "Los inversores en la Etapa 0 y Etapa 1 pueden acceder a la propiedad en ciertas fechas, según la cantidad de participaciones adquiridas. Los inversores de la Etapa 2 solo obtienen rentabilidad financiera sin acceso a la ocupación.",
+        value: "El precio de cada Narai Share aumentará en cada etapa. Etapa 0: 1 MXN/token, Etapa 1: 1.5 MXN/token, Etapa 2: 2 MXN/token, reflejando la plusvalía de la propiedad conforme avanza la construcción."
+      }      
     },
     features: [
       "Vista al mar desde todas las habitaciones",
@@ -125,11 +125,11 @@ interface PropertyDetails {
           benefits: "占有権",
           value: "剰余価値",
           tooltips: {
-            availability: "この物件で利用可能なナライシェアの総数",
-            stage: "現在の投資段階、家族や友人限定",
-            roi: "年間予想投資収益率",
-            benefits: "株式保有に応じた物件占有権",
-            value: "時間経過による物件価値の潜在的な上昇"
+            availability: "この物件に利用可能な Narai シェアの総数。合計 1 億トークンが 3 つの投資段階で発行され、価格は段階的に上昇します。",
+            stage: "現在の投資ステージ。家族や友人限定。 この段階の投資家は、最も低価格でトークンを購入でき、多くの特典を受け、物件を利用する権利を得られます。",
+            roi: "年間推定投資収益率 (ROI) は 16%。賃貸収入と資産価値の上昇に基づきます。ROI は投資ステージや市場需要によって変動する可能性があります。",
+            benefits: "ステージ 0 および ステージ 1 の投資家は、保有シェア数に応じて特定の日に物件を利用可能。ステージ 2 の投資家は、物件を利用できませんが、金銭的リターンが得られます。",
+            value: "各 Narai シェアの価格は各ステージで上昇します。 ステージ 0: 1 MXN/トークン、ステージ 1: 1.5 MXN/トークン、ステージ 2: 2 MXN/トークン。物件の価値が上昇するにつれて価格も上がります。"
           }
         },
         features: [
@@ -159,11 +159,11 @@ interface PropertyDetails {
           benefits: "점유권",
           value: "잉여가치",
           tooltips: {
-            availability: "이 부동산에 사용 가능한 총 나라이 쉐어 수",
-            stage: "현재 투자 단계, 가족 및 친구 전용",
-            roi: "연간 예상 투자 수익률",
-            benefits: "주식 소유권에 따른 부동산 점유권",
-            value: "시간 경과에 따른 잠재적 부동산 가치 상승"
+            availability: "이 부동산에 사용할 수 있는 Narai 지분의 총 수량. 총 1억 개의 토큰이 3단계의 투자 라운드에서 발행되며, 점진적인 가격 상승이 있습니다.",
+            stage: "현재 투자 단계로, 가족 및 친구 전용입니다. 이 단계의 투자자는 최상의 가격, 가장 많은 혜택, 그리고 부동산 이용 권리를 받을 수 있습니다.",
+            roi: "연간 예상 투자 수익률(ROI) 16%, 임대 수익 및 부동산 가치 상승을 기반으로 합니다. 투자 단계 및 시장 수요에 따라 ROI는 변동될 수 있습니다.",
+            benefits: "0단계 및 1단계 투자자는 보유한 지분 수에 따라 특정 날짜에 부동산을 이용할 수 있습니다. 2단계 투자자는 점유 혜택 없이 재정적 수익만 얻습니다.",
+            value: "각 Narai 지분의 가격은 단계마다 증가합니다. 0단계: 1 MXN/토큰, 1단계: 1.5 MXN/토큰, 2단계: 2 MXN/토큰. 부동산 가치 상승을 반영하여 가격이 상승합니다."
           }
         },
         features: [
@@ -193,11 +193,11 @@ interface PropertyDetails {
           benefits: "占用权",
           value: "剩余价值",
           tooltips: {
-            availability: "该房产可用的奈莱股份总数",
-            stage: "当前投资阶段，仅限家人和朋友",
-            roi: "预期年投资回报率",
-            benefits: "根据股份所有权的房产占用权",
-            value: "随时间推移的潜在房产增值"
+            availability: "该房产可用的 Narai 份额总数。总共将发行 1 亿个代币，并在 3 个投资阶段逐步提高价格。",
+            stage: "当前投资阶段，仅限家人和朋友参与。在此阶段投资的用户可以获得最低的代币价格、最多的福利，以及使用该房产的权利。",
+            roi: "预计年投资回报率 (ROI) 为 16%，基于租金收入和房产增值。根据投资阶段和市场需求，ROI 可能有所变化。",
+            benefits: "阶段 0 和阶段 1 的投资者可以在特定日期根据其持有的份额使用该房产。阶段 2 的投资者不会获得使用权，但仍可获得财务回报。",
+            value: "每个 Narai 份额的价格将在每个阶段上涨。阶段 0: 1 MXN/代币，阶段 1: 1.5 MXN/代币，阶段 2: 2 MXN/代币，反映房产价值随时间增长。"
           }
         },
         features: [
