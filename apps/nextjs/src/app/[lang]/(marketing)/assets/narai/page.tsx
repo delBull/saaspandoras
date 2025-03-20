@@ -268,33 +268,31 @@ export default function NaraiPage({ params: { lang } }: { params: { lang: Locale
   {Object.entries(data.details).map(([key, value]) => {
     if (key === 'tooltips') return null; // Skip tooltips object
     return (
-      <div key={key} className="p-4 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
-        <div className="flex items-center gap-2">
-          <div className="text-sm text-neutral-500 dark:text-neutral-400 capitalize">
-            {key}
-          </div>
-          <Tooltip.Provider>
-            <Tooltip.Root>
-              <Tooltip.Trigger asChild>
-                <button className="rounded-full p-0.5 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors">
-                  <Help className="w-3.5 h-3.5 text-neutral-400" />
-                </button>
-              </Tooltip.Trigger>
-              <Tooltip.Portal>
-                <Tooltip.Content
-                  className="max-w-xs bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 px-3 py-1.5 text-sm rounded-lg shadow-lg"
-                  side="top"
-                  sideOffset={5}
-                >
-                  {data.details.tooltips[key as keyof PropertyDetailTooltips]}
-                  <Tooltip.Arrow className="fill-neutral-900 dark:fill-white" />
-                </Tooltip.Content>
-              </Tooltip.Portal>
-            </Tooltip.Root>
-          </Tooltip.Provider>
-        </div>
-        <div className="text-lg font-semibold mt-1">{value}</div>
-      </div>
+      <div key={key} className="p-4 bg-neutral-100 dark:bg-neutral-800 rounded-lg relative">
+  <Tooltip.Provider>
+    <Tooltip.Root>
+      <Tooltip.Trigger asChild>
+        <button className="absolute top-3 right-3 rounded-lg p-1.5 bg-white/10 hover:bg-white/20 backdrop-blur-md transition-colors">
+          <Help className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+        </button>
+      </Tooltip.Trigger>
+      <Tooltip.Portal>
+        <Tooltip.Content
+          className="max-w-xs bg-white/10 backdrop-blur-md text-white px-3 py-1.5 text-sm rounded-lg shadow-lg border border-white/20"
+          side="top"
+          sideOffset={5}
+        >
+          {data.details.tooltips[key as keyof PropertyDetailTooltips]}
+          <Tooltip.Arrow className="fill-white/10" />
+        </Tooltip.Content>
+      </Tooltip.Portal>
+    </Tooltip.Root>
+  </Tooltip.Provider>
+  <div className="text-sm text-neutral-500 dark:text-neutral-400 capitalize">
+    {key}
+  </div>
+  <div className="text-lg font-semibold mt-1">{value}</div>
+</div>
     );
   })}
 </div>
