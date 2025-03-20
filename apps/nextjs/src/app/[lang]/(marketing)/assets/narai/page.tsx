@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import type { Locale } from "~/config/i18n-config";
 import { Help } from "@saasfly/ui/icons";
 import * as Tooltip from "@radix-ui/react-tooltip";
+import { PDFViewer } from "~/components/PDFViewer";
 
 interface PropertyDetailTooltips {
   availability: string;
@@ -34,6 +35,8 @@ interface PropertyDetails {
     details: PropertyDetails;
     features: string[];
     gallery: string[];
+    constructionTitle?: string;
+    constructionDescription?: string;
   }
   
   interface PropertyDataByLang {
@@ -79,6 +82,8 @@ interface PropertyDetails {
       "/images/narai/bedroom.png",
       "/images/narai/terrace.png",
     ],
+    constructionTitle: "Construction Project Details",
+    constructionDescription: "Detailed architectural plans and construction specifications for the Narai Ocean View Luxury Condominium project.",
   },
   es: {
     title: "Condominio de Lujo Narai con Vista al Mar",
@@ -114,6 +119,8 @@ interface PropertyDetails {
       "/images/narai/bedroom.png",
       "/images/narai/terrace.png",
     ],
+    constructionTitle: "Detalles del Proyecto de Construcción",
+    constructionDescription: "Planes arquitectónicos detallados y especificaciones de construcción para el proyecto Condominio de Lujo Narai con Vista al Mar.",
     },
     ja: {
         title: "ナライ オーシャンビュー ラグジュアリーコンドミニアム",
@@ -149,6 +156,8 @@ interface PropertyDetails {
           "/images/narai/bedroom.png",
           "/images/narai/terrace.png",
         ],
+        constructionTitle: "建設プロジェクトの詳細",
+        constructionDescription: "ナライ オーシャンビュー ラグジュアリーコンドミニアムプロジェクトの詳細な建築計画と建設仕様。",
       },
       ko: {
         title: "나라이 오션 뷰 럭셔리 콘도미니엄",
@@ -184,6 +193,8 @@ interface PropertyDetails {
           "/images/narai/bedroom.png",
           "/images/narai/terrace.png",
         ],
+        constructionTitle: "건설 프로젝트 세부사항",
+        constructionDescription: "나라이 오션 뷰 럭셔리 콘도미니엄 프로젝트의 상세 건축 계획 및 건설 사양.",
       },
       zh: {
         title: "奈莱海景豪华公寓",
@@ -218,12 +229,24 @@ interface PropertyDetails {
       "/images/narai/kitchen.png",
       "/images/narai/bedroom.png",
       "/images/narai/terrace.png",
-    ],
+        ],
+        constructionTitle: "建设项目详情",
+        constructionDescription: "奈莱海景豪华公寓项目的详细建筑计划和建设规范。",
     },
 };
 
 export default function NaraiPage({ params: { lang } }: { params: { lang: Locale } }) {
   const data = propertyData[lang] || propertyData.en;
+  const [activeSection, setActiveSection] = React.useState<string | null>(null);
+
+    // Scroll handler
+    const constructionRef = React.useRef<HTMLDivElement>(null);
+  
+    const scrollToConstruction = () => {
+      constructionRef.current?.scrollIntoView({ behavior: 'smooth' });
+      setActiveSection('construction');
+    };
+  
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -254,7 +277,11 @@ export default function NaraiPage({ params: { lang } }: { params: { lang: Locale
     </Link>
 
     <Link
-      href={`/${lang}/assets/narai/construction`}
+      href="#construction"
+      onClick={(e) => {
+        e.preventDefault();
+        scrollToConstruction();
+      }}
       className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg text-white transition-all text-xs sm:text-base"
     >
       <Organization className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -340,6 +367,29 @@ export default function NaraiPage({ params: { lang } }: { params: { lang: Locale
           ))}
         </div>
       </div>
+
+            {/* Construction Details Section */}
+            <div ref={constructionRef} id="construction" className="mb-12">
+              <motion.div
+                ref={constructionRef}
+                id="construction"
+                className="mb-12"
+                initial={{ opacity: 0, y: 20 }}
+                animate={activeSection === 'construction' ? { opacity: 1, y: 0 } : {}}
+                transition={{ duration: 0.5 }}
+              >
+              <div className="mb-4">
+                <h2 className="text-2xl font-bold">{data.constructionTitle}</h2>
+                <p className="text-neutral-600 dark:text-neutral-400 mt-2">
+                  {data.constructionDescription}
+                </p>
+              </div>
+               <PDFViewer
+                  pdfUrl="/docs/narai_anteproyecto.pdf"
+                  title=""
+               />
+               </motion.div>
+            </div>
     </div>
   );
 }
