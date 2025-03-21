@@ -4,6 +4,7 @@ import * as Lucide from "lucide-react";
 export type Icon = (props: LucideProps) => JSX.Element;
 
 export const Add = Lucide.Plus;
+export const Money = Lucide.DollarSign;
 export const ArrowRight = Lucide.ArrowRight;
 export const X = Lucide.X;
 export const Blocks = Lucide.Blocks;
