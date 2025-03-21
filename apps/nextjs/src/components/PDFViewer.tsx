@@ -1,5 +1,5 @@
 import React from 'react';
-import { Add } from "@saasfly/ui/icons";
+import { Download } from "@saasfly/ui/icons";
 
 interface PDFViewerProps {
   pdfUrl: string | null | undefined;
@@ -25,7 +25,7 @@ export function PDFViewer({ pdfUrl, title }: PDFViewerProps) {
           download
           className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg text-white transition-all"
         >
-          <Add className="w-4 h-4" />
+          <Download className="w-4 h-4" />
           <span>Download PDF</span>
         </a>
       </div>
