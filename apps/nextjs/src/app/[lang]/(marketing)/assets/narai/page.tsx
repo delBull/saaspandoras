@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import type { Locale } from "~/config/i18n-config";
 import { Help } from "@saasfly/ui/icons";
 import * as Tooltip from "@radix-ui/react-tooltip";
+import { FullscreenImage } from "~/components/fullscreen-image";
 import { ConstructionDashboard } from "~/components/construction-dashboard";
 
 interface PropertyDetailTooltips {
@@ -103,13 +104,13 @@ interface ConstructionTab {
         id: 'engineering',
         title: 'Engineering Details',
         content: 'Structural and technical specifications.',
-        pdfUrl: '/docs/narai_engineering.pdf'
+        pdfUrl: ''
       },
       {
         id: 'legal',
         title: 'Legal Details',
         content: 'Legal documentation and ownership structure.',
-        pdfUrl: '/docs/narai_legal.pdf'
+        pdfUrl: ''
       }
     ],
   },
@@ -160,13 +161,13 @@ interface ConstructionTab {
         id: 'engineering',
         title: 'Detalles de Ingeniería',
         content: 'Especificaciones estructurales y técnicas.',
-        pdfUrl: '/docs/narai_engineering.pdf'
+        pdfUrl: ''
       },
       {
         id: 'legal',
         title: 'Detalles Legales',
         content: 'Documentación legal y estructura de propiedad.',
-        pdfUrl: '/docs/narai_legal.pdf'
+        pdfUrl: ''
       }
     ],
     },
@@ -217,13 +218,13 @@ interface ConstructionTab {
             id: 'engineering',
             title: 'エンジニアリング詳細',
             content: '構造および技術仕様。',
-            pdfUrl: '/docs/narai_engineering.pdf'
+            pdfUrl: ''
           },
           {
             id: 'legal',
             title: '法的詳細',
             content: '法的文書と所有権構造。',
-            pdfUrl: '/docs/narai_legal.pdf'
+            pdfUrl: ''
           }
         ],
       },
@@ -274,13 +275,13 @@ interface ConstructionTab {
             id: 'engineering',
             title: '엔지니어링 세부사항',
             content: '구조 및 기술 사양.',
-            pdfUrl: '/docs/narai_engineering.pdf'
+            pdfUrl: ''
           },
           {
             id: 'legal',
             title: '법적 세부사항',
             content: '법적 문서 및 소유권 구조.',
-            pdfUrl: '/docs/narai_legal.pdf'
+            pdfUrl: ''
           }
         ],
       },
@@ -331,13 +332,13 @@ interface ConstructionTab {
             id: 'engineering',
             title: '工程细节',
             content: '结构和技术规格。',
-            pdfUrl: '/docs/narai_engineering.pdf'
+            pdfUrl: ''
           },
           {
             id: 'legal',
             title: '法律详情',
             content: '法律文件和所有权结构。',
-            pdfUrl: '/docs/narai_legal.pdf'
+            pdfUrl: ''
           }
         ],
     },
@@ -355,6 +356,8 @@ export default function NaraiPage({ params: { lang } }: { params: { lang: Locale
       setActiveSection('construction');
     };
   
+    const [isFullscreenOpen, setIsFullscreenOpen] = React.useState(false);
+    const [currentImageIndex, setCurrentImageIndex] = React.useState(0);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -391,82 +394,98 @@ export default function NaraiPage({ params: { lang } }: { params: { lang: Locale
 </div>
       </div>
 
-      {/* Property Details */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-        <div className="col-span-2">
-          <h2 className="text-2xl font-bold mb-4">Property Details</h2>
+      {/* Property Details and Features */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 mb-8 lg:mb-12">
+        <div className="lg:col-span-2">
+          <h2 className="text-xl sm:text-2xl font-bold mb-4">Property Details</h2>
           
-<div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-  {Object.entries(data.details).map(([key, value]) => {
-    if (key === 'tooltips') return null; // Skip tooltips object
-    return (
-      <div key={key} className="p-4 bg-neutral-100 dark:bg-neutral-800 rounded-lg relative">
-  <Tooltip.Provider>
-    <Tooltip.Root>
-      <Tooltip.Trigger asChild>
-        <button className="absolute top-3 right-3 rounded-lg p-1.5 bg-white/10 hover:bg-white/20 backdrop-blur-md transition-colors">
-          <Help className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-        </button>
-      </Tooltip.Trigger>
-      <Tooltip.Portal>
-        <Tooltip.Content
-          className="max-w-xs bg-white/10 backdrop-blur-md text-white px-3 py-1.5 text-sm rounded-lg shadow-lg border border-white/20"
-          side="top"
-          sideOffset={5}
-        >
-          {data.details.tooltips[key as keyof PropertyDetailTooltips]}
-          <Tooltip.Arrow className="fill-white/10" />
-        </Tooltip.Content>
-      </Tooltip.Portal>
-    </Tooltip.Root>
-  </Tooltip.Provider>
-  <div className="text-sm text-neutral-500 dark:text-neutral-400 capitalize">
-    {key}
-  </div>
-  <div className="text-lg font-semibold mt-1">{value}</div>
-</div>
-    );
-  })}
-</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {Object.entries(data.details).map(([key, value]) => {
+              if (key === 'tooltips') return null;
+              return (
+                <div key={key} className="p-3 sm:p-4 bg-neutral-100 dark:bg-neutral-800 rounded-lg relative">
+                  <Tooltip.Provider>
+                    <Tooltip.Root>
+                      <Tooltip.Trigger asChild>
+                        <button className="absolute top-2 right-2 sm:top-3 sm:right-3 rounded-lg p-1.5 bg-white/10 hover:bg-white/20 backdrop-blur-md transition-colors">
+                          <Help className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-500 dark:text-neutral-400" />
+                        </button>
+                      </Tooltip.Trigger>
+                      <Tooltip.Portal>
+                        <Tooltip.Content
+                          className="max-w-[280px] sm:max-w-xs bg-white/10 backdrop-blur-md text-white px-3 py-1.5 text-sm rounded-lg shadow-lg border border-white/20"
+                          side="top"
+                          sideOffset={5}
+                        >
+                          {data.details.tooltips[key as keyof PropertyDetailTooltips]}
+                          <Tooltip.Arrow className="fill-white/10" />
+                        </Tooltip.Content>
+                      </Tooltip.Portal>
+                    </Tooltip.Root>
+                  </Tooltip.Provider>
+                  <div className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 capitalize">
+                    {key}
+                  </div>
+                  <div className="text-base sm:text-lg font-semibold mt-1">{value}</div>
+                </div>
+              );
+            })}
+          </div>
         </div>
         
-        <div>
-          <h2 className="text-2xl font-bold mb-4">Features</h2>
-          <ul className="space-y-2">
+        <div className="mt-6 lg:mt-0">
+          <h2 className="text-xl sm:text-2xl font-bold mb-4">Features</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2 sm:gap-3">
             {data.features.map((feature, index) => (
-              <li key={index} className="flex items-center">
-                <span className="w-2 h-2 bg-lime-300 rounded-full mr-2" />
-                {feature}
-              </li>
+              <div 
+                key={index} 
+                className="flex items-center p-2 sm:p-3 bg-neutral-100/50 dark:bg-neutral-800/50 rounded-lg"
+              >
+                <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-lime-300 rounded-full mr-2 sm:mr-3 flex-shrink-0" />
+                <span className="text-sm sm:text-base">{feature}</span>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       </div>
 
       {/* Gallery */}
-      <div className="mb-12">
-        <h2 className="text-2xl font-bold mb-4">Gallery</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {data.gallery.map((image, index) => (
-            <motion.div
-              key={index}
-              className="relative h-64 rounded-lg overflow-hidden"
-              whileHover={{ scale: 1.05 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Image
-                src={image}
-                alt={`Property image ${index + 1}`}
-                fill
-                sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                quality={85}
-                className="object-cover"
-                priority={index === 0}
-              />
-            </motion.div>
-          ))}
-        </div>
-      </div>
+      <div className="mb-8 lg:mb-12">
+    <h2 className="text-xl sm:text-2xl font-bold mb-4">Gallery</h2>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+      {data.gallery.map((image, index) => (
+        <motion.button
+          key={index}
+          className="relative aspect-[4/3] rounded-lg overflow-hidden cursor-pointer"
+          whileHover={{ scale: 1.02 }}
+          transition={{ duration: 0.2 }}
+          onClick={() => {
+            setCurrentImageIndex(index);
+            setIsFullscreenOpen(true);
+          }}
+        >
+          <Image
+            src={image}
+            alt={`Property image ${index + 1}`}
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            quality={85}
+            className="object-cover"
+            priority={index === 0}
+          />
+        </motion.button>
+      ))}
+    </div>
+
+    {/* Fullscreen Image Viewer */}
+    <FullscreenImage
+      isOpen={isFullscreenOpen}
+      onClose={() => setIsFullscreenOpen(false)}
+      images={data.gallery}
+      currentIndex={currentImageIndex}
+      setCurrentIndex={setCurrentImageIndex}
+    />
+  </div>
 
             {/* Construction Details Section */}
             <div ref={constructionRef} id="construction" className="mb-12">
