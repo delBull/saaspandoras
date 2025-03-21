@@ -1,8 +1,5 @@
 "use client";
 
-//import { useState } from "react";
-//import { motion, AnimatePresence } from "framer-motion";
-//import Image from "next/image";
 import React, { useState } from "react";
 import { Button } from "@saasfly/ui/button";
 import Link from "next/link";
@@ -21,7 +18,7 @@ const data = {
     description3: "Condominiums with ocean views, comfort, beach and luxury have never been so close.",
     buttons: {
       details: "Details",
-      getTokens: "Get Tokens"
+      getTokens: "Get Shares"
     },
     assets: {
       title: "Asset Categories",
@@ -41,7 +38,7 @@ const data = {
     description3: "Condominios con vista al mar, comodidad, playa y lujo jamás estuvieran tan cerca.",
     buttons: {
       details: "Detalles",
-      getTokens: "Obtener Tokens"
+      getTokens: "Adquiere Fracciones"
     },
     assets: {
       title: "Categorías de Activos",
@@ -61,7 +58,7 @@ const data = {
     description3: "オーシャンビュー、快適さ、ビーチ、豪華さを備えたコンドミニアムは、かつてないほど近くにありました。",
     buttons: {
       details: "詳細",
-      getTokens: "トークンを取得"
+      getTokens: "株式を取得"
     },
     assets: {
       title: "資産カテゴリー",
@@ -81,7 +78,7 @@ const data = {
     description3: "바다 전망, 편안함, 해변, 고급스러움을 갖춘 콘도미니엄이 이렇게 가까이 있었던 적은 없었습니다.",
     buttons: {
       details: "상세정보",
-      getTokens: "토큰 받기"
+      getTokens: "주식 구매"
     },
     assets: {
       title: "자산 카테고리",
@@ -101,7 +98,7 @@ const data = {
     description3: "拥有海景、舒适、海滩和豪华的公寓从未如此接近。",
     buttons: {
       details: "详情",
-      getTokens: "获取代币"
+      getTokens: "获取股份"
     },
     assets: {
       title: "资产类别",
@@ -159,6 +156,7 @@ export default function PropertiesPage({ lang }: { lang: 'en' | 'es' | 'ja' | 'k
         link=""
         buttonTexts={dict.buttons}
         lang={lang}
+        isComingSoon={true}
       />
 
       <GridItem
@@ -169,6 +167,7 @@ export default function PropertiesPage({ lang }: { lang: 'en' | 'es' | 'ja' | 'k
         link=""
         buttonTexts={dict.buttons}
         lang={lang}
+        isComingSoon={true}
       />
 
     </ul>
@@ -188,9 +187,10 @@ interface GridItemProps {
     getTokens: string;
   };
   lang: string;
+  isComingSoon?: boolean;
 }
 
-const GridItem = ({ area, icon, title, description, link, background, buttonTexts, lang }: GridItemProps) => {
+const GridItem = ({ area, icon, title, description, link, background, buttonTexts, lang, isComingSoon }: GridItemProps) => {
   const [showToast, setShowToast] = useState(false);
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>) => {
@@ -204,7 +204,7 @@ const GridItem = ({ area, icon, title, description, link, background, buttonText
   const fullLink = link ? `/${lang}${link}` : "#";
 
   return (
-<li className={`min-h-[14rem] list-none ${area}`}>
+<li className={`min-h-[14rem] list-none ${area} relative`}>
       <div className="relative h-full rounded-2.5xl border dark:border-neutral-800 p-2 md:rounded-3xl md:p-3"
       style={{
         backgroundImage: background ? `url(${background})` : 'none',
@@ -213,6 +213,13 @@ const GridItem = ({ area, icon, title, description, link, background, buttonText
         backgroundRepeat: 'no-repeat', // Evita que la imagen se repita
       }}
       >
+        {/* Add Coming Soon overlay */}
+        {isComingSoon && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/60 rounded-2xl backdrop-blur-sm">
+            <p className="text-2xl font-semibold text-white/90">Coming Soon</p>
+          </div>
+        )}
+
         <GlowingEffect
           spread={40}
           glow={true}

@@ -1,8 +1,10 @@
 "use client";
 
 import React from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Organization } from "@saasfly/ui/icons";
+import { Money } from "@saasfly/ui/icons";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import type { Locale } from "~/config/i18n-config";
@@ -38,7 +40,7 @@ interface ConstructionTab {
   interface PropertyData {
     title: string;
     description: string;
-    legalButton: string;
+    getButton: string;
     constructionButton: string;
     details: PropertyDetails;
     features: string[];
@@ -60,7 +62,7 @@ interface ConstructionTab {
   en: {
     title: "Narai Ocean View Luxury Condominium",
     description: "Luxury condominiums with breathtaking ocean views in an exclusive location",
-    legalButton: "Legal Details",
+    getButton: "Get Shares",
     constructionButton: "Project Details",
     details: {
       availability: "30,000,000 Narai Shares",
@@ -117,7 +119,7 @@ interface ConstructionTab {
   es: {
     title: "Condominio de Lujo Narai con Vista al Mar",
     description: "Condominios de lujo con impresionantes vistas al océano en una ubicación exclusiva",
-    legalButton: "Detalles Legales",
+    getButton: "Adquiere Fracciones",
     constructionButton: "Detalles del Proyecto",
     details: {
       availability: "30,000,000 Narai Shares",
@@ -174,7 +176,7 @@ interface ConstructionTab {
     ja: {
         title: "ナライ オーシャンビュー ラグジュアリーコンドミニアム",
         description: "絶好のロケーションにある、息をのむような海の眺めを望む高級コンドミニアム",
-        legalButton: "法的詳細",
+        getButton: "株式を取得",
         constructionButton: "プロジェクト詳細",
         details: {
           availability: "30,000,000 Narai株式",
@@ -231,7 +233,7 @@ interface ConstructionTab {
       ko: {
         title: "나라이 오션 뷰 럭셔리 콘도미니엄",
         description: "독점적인 위치에서 탁 트인 바다 전망을 자랑하는 럭셔리 콘도미니엄",
-        legalButton: "법적 세부사항",
+        getButton: "주식 구매",
         constructionButton: "프로젝트 세부사항",
         details: {
           availability: "30,000,000 나라이 주식",
@@ -288,7 +290,7 @@ interface ConstructionTab {
       zh: {
         title: "奈莱海景豪华公寓",
         description: "位于独特位置的豪华公寓，拥有令人惊叹的海景",
-        legalButton: "法律详情",
+        getButton: "获取股份",
         constructionButton: "项目详情",
         details: {
           availability: "30,000,000 股 Narai 股票",
@@ -347,6 +349,7 @@ interface ConstructionTab {
 export default function NaraiPage({ params: { lang } }: { params: { lang: Locale } }) {
   const data = propertyData[lang] || propertyData.en;
   const [activeSection, setActiveSection] = React.useState<string | null>(null);
+  const [openTooltip, setOpenTooltip] = useState<string | null>(null);
 
     // Scroll handler
     const constructionRef = React.useRef<HTMLDivElement>(null);
@@ -390,6 +393,13 @@ export default function NaraiPage({ params: { lang } }: { params: { lang: Locale
     <Organization className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
     <span>{data.constructionButton}</span>
   </Link>
+  <Link
+    href="#"
+    className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white/90 hover:bg-white rounded-lg text-black font-medium transition-all text-xs sm:text-base"
+  >
+    <Money className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+    <span>{data.getButton}</span>
+  </Link>
 </div>
 </div>
       </div>
@@ -404,21 +414,32 @@ export default function NaraiPage({ params: { lang } }: { params: { lang: Locale
               if (key === 'tooltips') return null;
               return (
                 <div key={key} className="p-3 sm:p-4 bg-neutral-100 dark:bg-neutral-800 rounded-lg relative">
-                  <Tooltip.Provider>
-                    <Tooltip.Root>
+                  <Tooltip.Provider delayDuration={0}>
+                    <Tooltip.Root
+                      open={openTooltip === key}
+                      onOpenChange={(open) => {
+                        setOpenTooltip(open ? key : null);
+                      }}
+                    >
                       <Tooltip.Trigger asChild>
-                        <button className="absolute top-2 right-2 sm:top-3 sm:right-3 rounded-lg p-1.5 bg-white/10 hover:bg-white/20 backdrop-blur-md transition-colors">
+                        <button 
+                          className="absolute top-2 right-2 sm:top-3 sm:right-3 rounded-lg p-1.5 bg-white/10 hover:bg-white/20 backdrop-blur-md transition-colors"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setOpenTooltip(openTooltip === key ? null : key);
+                          }}
+                        >
                           <Help className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-500 dark:text-neutral-400" />
                         </button>
                       </Tooltip.Trigger>
                       <Tooltip.Portal>
                         <Tooltip.Content
-                          className="max-w-[280px] sm:max-w-xs bg-white/10 backdrop-blur-md text-white px-3 py-1.5 text-sm rounded-lg shadow-lg border border-white/20"
+                          className="max-w-[280px] sm:max-w-xs bg-black/80 backdrop-blur-md text-white px-3 py-1.5 text-sm rounded-lg shadow-lg"
                           side="top"
                           sideOffset={5}
+                          onPointerDownOutside={() => setOpenTooltip(null)}
                         >
                           {data.details.tooltips[key as keyof PropertyDetailTooltips]}
-                          <Tooltip.Arrow className="fill-white/10" />
                         </Tooltip.Content>
                       </Tooltip.Portal>
                     </Tooltip.Root>
@@ -456,7 +477,7 @@ export default function NaraiPage({ params: { lang } }: { params: { lang: Locale
       {data.gallery.map((image, index) => (
         <motion.button
           key={index}
-          className="relative aspect-[4/3] rounded-lg overflow-hidden cursor-pointer"
+          className="relative aspect-[4/3] rounded-lg overflow-hidden inter"
           whileHover={{ scale: 1.02 }}
           transition={{ duration: 0.2 }}
           onClick={() => {
