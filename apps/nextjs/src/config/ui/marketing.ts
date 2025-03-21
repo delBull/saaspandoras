@@ -17,12 +17,16 @@ export const getMarketingConfig = async ({
         href: `/pricing`,
       },
       {
-        title: dict.marketing.main_nav_business,
-        href: `/`,
+        title: dict.marketing.main_nav_documentation,
+        href: '#',
+        disabled: true,
+        tooltip: "Coming Soon"
       },
       {
-        title: dict.marketing.main_nav_documentation,
-        href: `/`,
+        title: dict.marketing.main_nav_business,
+        href: '#',
+        disabled: true,
+        tooltip: "Coming Soon"
       },
     ],
   };

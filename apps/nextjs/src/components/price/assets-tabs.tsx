@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@saasfly/ui";
 import { useToast } from "@saasfly/ui/use-toast";
+import * as Tooltip from "@radix-ui/react-tooltip";
 import type { Locale } from "~/config/i18n-config";
 
 interface AssetTabsProps {
@@ -26,7 +27,7 @@ interface TabButtonProps {
 }
 
 function TabButton({ isActive, onClick, disabled, children }: TabButtonProps) {
-  return (
+  const button = (
     <button
       onClick={onClick}
       disabled={disabled}
@@ -35,7 +36,7 @@ function TabButton({ isActive, onClick, disabled, children }: TabButtonProps) {
         isActive 
           ? "text-black dark:text-lime-300" 
           : disabled 
-            ? "text-neutral-400 dark:text-neutral-600 cursor-not-allowed"
+            ? "text-neutral-400 dark:text-neutral-600 cursor-default"
             : "text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-300"
       )}
     >
@@ -49,6 +50,31 @@ function TabButton({ isActive, onClick, disabled, children }: TabButtonProps) {
       <span className="relative">{children}</span>
     </button>
   );
+
+if (disabled) {
+  return (
+    <Tooltip.Provider delayDuration={50}>
+      <Tooltip.Root>
+        <Tooltip.Trigger asChild>
+          {button}
+        </Tooltip.Trigger>
+        <Tooltip.Portal>
+          <Tooltip.Content
+            className="z-50 rounded-md bg-neutral-900 px-3 py-1.5 text-xs text-white animate-in fade-in-0 zoom-in-95 shadow-md"
+            sideOffset={5}
+            side="top"
+            align="center"
+            avoidCollisions
+          >
+            Coming Soon
+          </Tooltip.Content>
+        </Tooltip.Portal>
+      </Tooltip.Root>
+    </Tooltip.Provider>
+  );
+}
+
+return button;
 }
 
 export function AssetTabs({ dict }: AssetTabsProps) {
