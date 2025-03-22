@@ -19,7 +19,7 @@
   },
   "marketing": {
     "introducing": "介绍 Pandoras",
-    "title": "成为您房地产权利的所有者 ",
+    "title": "轻松安全地投资独家房产 ",
     "sub_title": "获取参与Pandoras独家项目的权利。",
     "get_started": "您的第一个免费权利",
     "view_on_github": "在 GitHub 上查看",
@@ -43,25 +43,25 @@
     },
     "right_side": {
       "deploy_on_vercel_title": "有形与数字的融合",
-      "deploy_on_vercel_desc": "Pandoras 是一个让您轻松、安全地投资房地产和投资项目的平台。",
+      "deploy_on_vercel_desc": "Pandoras 是一个平台，使您能够轻松、安全地投资房地产和投资项目。",
       "ship_on_cloudflare_title": "怎么？",
-      "ship_on_cloudflare_desc": "你获得数字权利，这些权利为你提供了独特的机会和赚取被动收入的可能性。",
+      "ship_on_cloudflare_desc": "获取数字股份，赋予您获得独家机会并有可能获得额外收入。",
       "showcase_title": "我们正在改变传统投资的获取方式",
-      "showcase_desc": "使用适合你的资本，获取高价值资产的投资机会。"
+      "showcase_desc": "以适合您的资本，进入高价值资产的投资。"
     },
     "features_grid": {
-      "monorepo_title": "免费获取您的权利",
-      "monorepo_desc": "注册并获取您的数字权利，从而参与房产代币的购买。",
-      "i18n_title": "购买代币",
-      "i18n_desc": "一旦获得权利，您可以在预售中以优惠价格购买代币。每个代币代表项目价值的一部分。",
-      "payments_title": "赚取与成长",
-      "payments_desc": "利用您的代币享受独家福利，如租金收入，以及将投资转化为完整房产的机会。",
+      "monorepo_title": "获取您的免费股份",
+      "monorepo_desc": "注册并获取您的免费数字股份，使您能够投资独家房产。",
+      "i18n_title": "以特价投资",
+      "i18n_desc": "凭借您的股份，您可以在我们的预售期间以特价投资。每笔投资代表项目价值的一部分。",
+      "payments_title": "赚取并增长",
+      "payments_desc": "通过您的投资，您将获得独家福利，例如租金收入和将您的投资转化为完全所有权的机会。",
       "nextauth_title": "",
       "nextauth_desc": ""
     },
     "sponsor": {
       "title": "由我们的合作伙伴提供支持",
-      "donate": "免费获取您的权利"
+      "donate": "获取您的免费股份"
     },
     "video": {
       "first_text": "使用你的权利来购买代币",
