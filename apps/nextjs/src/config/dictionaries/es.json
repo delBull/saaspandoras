@@ -19,7 +19,7 @@
   },
   "marketing": {
     "introducing": "Presentamos Pandora's",
-    "title": "Conviértete en Propietario de tus Derechos Inmobiliarios ",
+    "title": "Invierte en propiedades exclusivas de forma sencilla y segura ",
     "sub_title": "Adquiere tu derecho a participar en proyectos exclusivos con Pandoras.",
     "get_started": "Tu 1er derecho gratis",
     "view_on_github": "Ver en GitHub",
@@ -43,25 +43,25 @@
     },
     "right_side": {
       "deploy_on_vercel_title": "Fusión de lo tangible + digital",
-      "deploy_on_vercel_desc": "Pandoras es la plataforma que te permite invertir de forma sencilla y segura en proyectos inmobiliarios y de inversión.",
+      "deploy_on_vercel_desc": "Pandoras es la plataforma que te permite invertir fácil y seguro en proyectos inmobiliarios y de inversión.",
       "ship_on_cloudflare_title": "¿Cómo?",
-      "ship_on_cloudflare_desc": "Adquieres derechos digitales que te brindan acceso a oportunidades únicas y la posibilidad de ganar ingresos pasivos.",
+      "ship_on_cloudflare_desc": "Adquiere participaciones digitales que te brindan acceso a oportunidades exclusivas y la posibilidad de obtener ingresos adicionales.",
       "showcase_title": "Transformamos el acceso a inversión convencional",
-      "showcase_desc": "Accede a inversiones de activos de alto valor con capital a tu medida."
+      "showcase_desc": "Accede a inversiones en activos de alto valor con un capital adaptado a ti."
     },
     "features_grid": {
-      "monorepo_title": "Adquiere tu Derecho Gratis",
-      "monorepo_desc": "Regístrate y consigue tu derecho digital que te permitirá participar en la compra de tokens de la propiedad.",
-      "i18n_title": "Compra Tokens",
-      "i18n_desc": "Una vez que tengas tu derecho, podrás comprar tokens a un precio especial en nuestra preventa. Cada token representa una parte del valor del proyecto.",
+      "monorepo_title": "Obtén tu participación gratuita",
+      "monorepo_desc": "Regístrate y obtén tu participación digital gratuita que te permitirá invertir en propiedades exclusivas.",
+      "i18n_title": "Invierte a un precio especial",
+      "i18n_desc": "Con tu participación, podrás invertir a un precio especial durante nuestra preventa. Cada inversión representa una porción del valor del proyecto.",
       "payments_title": "Gana y Crece",
-      "payments_desc": "Con tus tokens, tendrás acceso a beneficios exclusivos, como ingresos por rentas y la posibilidad de convertir tu inversión en propiedad total.",
+      "payments_desc": "Con tu inversión, accederás a beneficios exclusivos, como ingresos por renta y la posibilidad de convertir tu inversión en propiedad completa.",
       "nextauth_title": "",
       "nextauth_desc": ""
     },
     "sponsor": {
       "title": "Respaldado por nuestros colaboradores",
-      "donate": "Adquiere tu Derecho Gratis"
+      "donate": "Obtén tu participación gratuita"
     },
     "video": {
       "first_text": "Utiliza tu derecho para comprar tokens",

@@ -22,7 +22,7 @@ export function FeaturesGrid({ dict } : { dict: Record<string, string> | undefin
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
-              <Icons.Billing className="w-6 h-6 text-purple-500" />
+              <Icons.Add className="w-6 h-6 text-purple-500" />
             </div>
             <h2 className="text-lg font-semibold">{dict?.i18n_title}</h2>
           </div>

@@ -19,7 +19,7 @@
   },
   "marketing": {
     "introducing": "Pandorasのご紹介",
-    "title": "あなたの不動産権を所有しよう ",
+    "title": "簡単かつ安全に独占的な不動産に投資する ",
     "sub_title": "Pandorasで独占プロジェクトに参加する権利を手に入れよう。",
     "get_started": "あなたの最初の無料権利",
     "view_on_github": "GitHubで見る",
@@ -43,25 +43,25 @@
     },
     "right_side": {
       "deploy_on_vercel_title": "有形とデジタルの融合",
-      "deploy_on_vercel_desc": "Pandorasは、不動産および投資プロジェクトに簡単かつ安全に投資できるプラットフォームです。",
+      "deploy_on_vercel_desc": "Pandorasは、不動産および投資プロジェクトに簡単かつ安全に投資できるプラットフォームです",
       "ship_on_cloudflare_title": "どうやって？",
-      "ship_on_cloudflare_desc": "あなたは、独自の機会にアクセスでき、受動的な収入を得る可能性を提供するデジタル権利を取得します。",
+      "ship_on_cloudflare_desc": "デジタルシェアを取得すると、独占的な機会にアクセスし、追加収入を得る可能性があります。",
       "showcase_title": "従来の投資へのアクセスを変革する",
-      "showcase_desc": "自分に合わせた資本で高価値資産への投資にアクセスする。"
+      "showcase_desc": "あなたに合わせた資本で高価値の資産への投資にアクセスできます。"
     },
     "features_grid": {
-      "monorepo_title": "無料で権利を取得する",
-      "monorepo_desc": "サインアップして、物件のトークン購入に参加できるデジタル権利を取得しましょう。",
-      "i18n_title": "トークンを購入する",
-      "i18n_desc": "権利を取得したら、プレセールで特別価格でトークンを購入できます。各トークンはプロジェクトの価値の一部を表します。",
+      "monorepo_title": "無料のシェアを取得する",
+      "monorepo_desc": "登録して、独占的な不動産に投資することを可能にする無料のデジタルシェアを取得してください。",
+      "i18n_title": "特別価格で投資する",
+      "i18n_desc": "シェアを持っていると、プレセール中に特別価格で投資できます。各投資はプロジェクトの価値の一部を表します。",
       "payments_title": "稼いで成長する",
-      "payments_desc": "トークンを使って、家賃収入や投資を完全所有に変換する機会など、独占的な利益を享受できます。",
+      "payments_desc": "投資により、賃貸収入や投資を完全な所有権に変える機会など、独占的な特典にアクセスできます。",
       "nextauth_title": "",
       "nextauth_desc": ""
     },
     "sponsor": {
       "title": "パートナーによる支援",
-      "donate": "無料で権利を取得する"
+      "donate": "無料のシェアを取得する"
     },
     "video": {
       "first_text": "トークンを購入する権利を行使しよう",

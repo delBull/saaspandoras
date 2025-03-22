@@ -19,7 +19,7 @@
   },
   "marketing": {
     "introducing": "Introducing Pandora's",
-    "title": "Become the Owner of Your Real Estate Rights ",
+    "title": "Invest in exclusive properties easily and securely ",
     "sub_title": "Acquire your right to participate in exclusive projects with Pandoras.",
     "get_started": "Your first free right",
     "view_on_github": "View on GitHub",
@@ -45,23 +45,23 @@
       "deploy_on_vercel_title": "Fusion of the tangible & the digital",
       "deploy_on_vercel_desc": "Pandoras is the platform that allows you to invest easily and securely in real estate and investment projects.",
       "ship_on_cloudflare_title": "How?",
-      "ship_on_cloudflare_desc": "You acquire digital rights that give you access to unique opportunities and the possibility to earn passive income.",
+      "ship_on_cloudflare_desc": "Acquire digital shares that give you access to exclusive opportunities and the possibility of earning additional income.",
       "showcase_title": "We transform access to conventional investment",
-      "showcase_desc": "Access high-value asset investments with capital tailored to you."
+      "showcase_desc": "Access investments in high-value assets with capital tailored to you."
     },
     "features_grid": {
-      "monorepo_title": "Get Your Right for Free",
-      "monorepo_desc": "Sign up and get your digital right that will allow you to participate in token purchases of the property.",
-      "i18n_title": "Buy Tokens",
-      "i18n_desc": "Once you have your right, you can buy tokens at a special price during our pre-sale. Each token represents a portion of the project's value.",
+      "monorepo_title": "Get your free share",
+      "monorepo_desc": "Register and obtain your free digital share that will allow you to invest in exclusive properties",
+      "i18n_title": "Invest at a special price",
+      "i18n_desc": "With your share, you can invest at a special price during the early stages. Each investment represents a portion of the project's value.",
       "payments_title": "Earn and Grow",
-      "payments_desc": "With your tokens, you'll have access to exclusive benefits, such as rental income and the opportunity to convert your investment into full ownership.",
+      "payments_desc": "With your investment, you'll access exclusive benefits, such as rental income and the opportunity to convert your investment into full ownership.",
       "nextauth_title": "",
       "nextauth_desc": ""
     },
     "sponsor": {
       "title": "Trusted by Our Partners",
-      "donate": "Get Your Right for Free"
+      "donate": "Get your free share"
     },
     "video": {
       "first_text": "Use your right to buy tokens",

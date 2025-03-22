@@ -19,7 +19,7 @@
   },
   "marketing": {
     "introducing": "Pandoras 소개",
-    "title": "당신의 부동산 권리를 소유하세요 ",
+    "title": "독점적인 부동산에 쉽고 안전하게 투자하세요 ",
     "sub_title": "Pandoras와 함께 독점 프로젝트에 참여할 권리를 획득하세요.",
     "get_started": "첫 번째 무료 권리",
     "view_on_github": "GitHub에서 보기",
@@ -45,15 +45,15 @@
       "deploy_on_vercel_title": "유형과 디지털의 융합",
       "deploy_on_vercel_desc": "Pandoras는 부동산 및 투자 프로젝트에 쉽고 안전하게 투자할 수 있는 플랫폼입니다.",
       "ship_on_cloudflare_title": "어떻게?",
-      "ship_on_cloudflare_desc": "당신은 독특한 기회에 접근할 수 있고 수동적 소득을 얻을 수 있는 디지털 권리를 획득합니다.",
+      "ship_on_cloudflare_desc": "디지털 지분을 획득하여 독점적인 기회에 접근하고 추가 수입을 얻을 수 있습니다.",
       "showcase_title": "전통적인 투자 접근 방식을 혁신합니다",
-      "showcase_desc": "자신에게 맞춘 자본으로 고가치 자산 투자에 접근하세요."
+      "showcase_desc": "귀하에게 맞는 자본으로 고가치 자산에 대한 투자에 접근하세요."
     },
     "features_grid": {
-      "monorepo_title": "무료로 권한 획득",
-      "monorepo_desc": "가입하여 부동산 토큰 구매에 참여할 수 있는 디지털 권한을 얻으세요.",
-      "i18n_title": "토큰 구매",
-      "i18n_desc": "권한 획득 후, 프리세일에서 특별 가격으로 토큰을 구매하세요. 각 토큰은 프로젝트 가치의 일부를 나타냅니다.",
+      "monorepo_title": "무료 지분 받기",
+      "monorepo_desc": "가입하고 독점적인 부동산에 투자할 수 있는 무료 디지털 지분을 받으세요.",
+      "i18n_title": "특별 가격으로 투자하기",
+      "i18n_desc": "지분을 보유하면 사전 판매 기간 동안 특별 가격으로 투자할 수 있습니다. 각 투자는 프로젝트 가치의 일부를 나타냅니다.",
       "payments_title": "수익 창출 및 성장",
       "payments_desc": "토큰으로 임대 수익 등 독점적 혜택을 누리고, 투자 전부를 소유할 수 있는 기회를 잡으세요.",
       "nextauth_title": "",
@@ -61,7 +61,7 @@
     },
     "sponsor": {
       "title": "파트너의 지원",
-      "donate": "무료로 권한을 획득하세요"
+      "donate": "무료 지분 받기"
     },
     "video": {
       "first_text": "토큰을 구매할 권리를 사용하세요",
