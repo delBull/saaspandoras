@@ -153,7 +153,7 @@ export default async function IndexPage({
       </section>
 
       <section className="container pt-8">
-        <VideoScroll dict={dict.marketing.video}/>
+        <VideoScroll dict={dict.marketing.video}/> 
       </section>
 
       <section className="w-full px-8 sm:px-0 md:px-0 xl:px-0">
