@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { getDictionary } from "~/lib/get-dictionary";
+import { TransformTokenDetails } from "~/components/tokendetails";
 
 import { CodeCopy } from "~/components/code-copy";
 import { Comments } from "~/components/comments";
@@ -169,6 +170,7 @@ export default async function IndexPage({
           <div className="mb-6 text-center text-2xl text-neutral-500 dark:text-neutral-300">
             {dict.marketing.transform_token.desc}
           </div>
+          <TransformTokenDetails dict={dict.marketing.transform_token} />
         </div>
       </section>
 
