@@ -64,13 +64,13 @@
       "donate": "Obtén tu participación gratuita"
     },
     "video": {
-      "first_text": "Utiliza tu derecho para comprar tokens",
-      "second_text1": "que representan una parte del valor de la ",
-      "time_text": "propiedad"
+      "first_text": "Obtén participaciones digitales que representan una parte",
+      "second_text1": "del valor de la propiedad, para participar en inversiones inmobiliarias ",
+      "time_text": "exclusivas"
     },
-    "transform_token": {
-      "title": "Cuando tengas suficientes tokens",
-      "desc": "Podrás disfrutar de acceso exclusivo, rentas y la oportunidad de convertirlos en propiedad real."
+    "transform_token": { 
+      "title": "Disfruta de Beneficios Exclusivos", 
+      "desc": "Acumula más participaciones y accede a privilegios únicos, obtén ingresos por rentas y disfruta de la posibilidad de convertir tu inversión en propiedad completa." 
     },
     "people_comment": {
       "title": "Lo que dicen las personas",

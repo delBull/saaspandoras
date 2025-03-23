@@ -64,13 +64,13 @@
       "donate": "Get your free share"
     },
     "video": {
-      "first_text": "Use your right to buy tokens",
-      "second_text1": "that represent a portion of the value of the ",
-      "time_text": "property"
+      "first_text": "Obtain digital shares representing a portion ",
+      "second_text1": "of the property's value, to participate in exclusive real estate ",
+      "time_text": "investments"
     },
     "transform_token": {
-      "title": "When you have enough tokens",
-      "desc": "You will be able to enjoy exclusive access, rents, and the opportunity to convert them into real property."
+      "title": "Enjoy Exclusive Benefits",
+      "desc": "Accumulate more shares and access unique privileges, earn rental income and enjoy the possibility of converting your investment into full ownership."
     },
     "people_comment": {
       "title": "What People Are Saying",
