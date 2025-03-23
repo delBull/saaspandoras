@@ -70,7 +70,13 @@
     },
     "transform_token": {
       "title": "Enjoy Exclusive Benefits",
-      "desc": "Accumulate more shares and access unique privileges, earn rental income and enjoy the possibility of converting your investment into full ownership."
+      "desc": "Accumulate more shares and access unique privileges, earn rental income and enjoy the possibility of converting your investment into full ownership.",
+      "more_details": "More Details",
+      "close": "Close",
+      "part1_title": "Unlock Exclusive Privileges",
+      "part1_content": "Imagine each share you acquire not only represents your investment but also opens doors to a world of exclusive privileges. Over time, as you accumulate more shares, you'll gain access to special events, personalized support, and privileged information about our premium developments. This benefit positions you to be part of a select community, where your investment provides unique experiences reserved only for our most committed members.",
+      "part2_title": "Earn Rental Income and Full Ownership Opportunities",
+      "part2_content": "In addition to privileges, your shares allow you to earn rental income, as the property generates income during the rental period. When you reach a certain number of shares, you'll have the opportunity to convert your investment into full ownership, transforming your participation into a tangible, high-value asset. This approach provides you with immediate and long-term benefits, driven by the success and appreciation of the project."
     },
     "people_comment": {
       "title": "What People Are Saying",
