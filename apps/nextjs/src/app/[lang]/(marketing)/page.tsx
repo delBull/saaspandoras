@@ -91,7 +91,7 @@ export default async function IndexPage({
                   className="mb-4 mt-6 flex w-full flex-col justify-center space-y-4 sm:flex-row sm:justify-start sm:space-x-8 sm:space-y-0 z-10">
                   <Link href="/pricing">
                     <Button
-                      className="bg-blue-600 hover:bg-blue-500 text-white rounded-full text-lg px-6 h-12 font-medium">
+                      className="bg-lime-300 hover:bg-lime-500 text-black rounded-full text-lg px-6 h-12 font-medium">
                       {dict.marketing.get_started}
                       <Icons.ArrowRight className="h-5 w-5"/>
                     </Button>
@@ -145,7 +145,7 @@ export default async function IndexPage({
             </Link>
             <Link href="/pricing">
               <div className="flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-dashed border-neutral-300 dark:border-neutral-700 hover:bg-accent dark:hover:bg-neutral-800/30">
-                <Icons.Heart className="w-5 h-5 fill-pink-600 text-pink-600 dark:fill-pink-700 dark:text-pink-700" />
+                <Icons.Heart className="w-5 h-5 fill-lime-300 text-lime-300 dark:fill-lime-300 dark:text-lime-300" />
                 <span className="text-sm font-medium text-neutral-500 dark:text-neutral-200">{dict.marketing.sponsor.donate || ''}</span>
               </div>
             </Link>
@@ -166,10 +166,14 @@ export default async function IndexPage({
             <h1 className="mb-6 text-center text-3xl font-bold dark:text-zinc-100 md:text-5xl">
               {dict.marketing.transform_token.title}
             </h1>
-          </div>
-          <div className="mb-6 text-center text-2xl text-neutral-500 dark:text-neutral-300">
+            </div>
+      <div className="group relative max-w-4xl p-8 transition-all duration-300 hover:scale-[1.01]">
+        <div className="relative rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/50 dark:bg-neutral-900/50 backdrop-blur-sm p-8">
+          <p className="text-center text-xl text-neutral-600 dark:text-neutral-300 leading-relaxed">
             {dict.marketing.transform_token.desc}
-          </div>
+          </p>
+        </div>
+      </div>
           <TransformTokenDetails dict={dict.marketing.transform_token} />
         </div>
       </section>

@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 
 import * as Icons from "@saasfly/ui/icons";
-import { DocumentGuide } from "~/components/document-guide";
+//import { DocumentGuide } from "~/components/document-guide";
 import { MobileNav } from "~/components/mobile-nav";
 
 import type { MainNavItem } from "~/types";
@@ -18,7 +18,7 @@ interface MainNavProps {
   marketing: Record<string, string>;
 }
 
-export function MainNav({ items, children, params: { lang }, marketing }: MainNavProps) {
+export function MainNav({ items, children, params: { lang } }: MainNavProps) {
   const [showMobileMenu, setShowMobileMenu] = React.useState<boolean>(false);
   const toggleMenu = () => {
     setShowMobileMenu(!showMobileMenu);
@@ -32,12 +32,13 @@ export function MainNav({ items, children, params: { lang }, marketing }: MainNa
         <Link href={`/${lang}`} className="hidden items-center space-x-2 md:flex">
           <div className="text-3xl">Pandora&apos;s</div>
         </Link>
-
+        {/*
         <Link href="https://pandoras.foundation" target="_blank" className="ml-4 hidden md:flex lg:flex xl:flex">
           <DocumentGuide>
             {marketing?.introducing ?? "Introducing Pandora's"}
           </DocumentGuide>
         </Link>
+        */}
       </div>
 
       <button

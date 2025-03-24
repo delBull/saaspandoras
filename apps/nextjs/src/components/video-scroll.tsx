@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+//import Link from "next/link";
 import Image from "next/image";
 
 import { ContainerScroll } from "@saasfly/ui/container-scroll-animation";
@@ -21,13 +21,13 @@ export function VideoScroll({ dict } : { dict: Record<string, string> | undefine
           </>
         }
       >
-        <Link href="#" target="_blank">
+        <div className="pointer-events-none">
           <Image
             src={`/images/coin.png`} 
             alt="hero"
             height={720}
             width={1400}
-            className="mx-auto rounded-2xl object-cover h-full object-left-top hidden xl:block md:block"
+            className="mx-auto rounded-2xl object-cover h-full object-left-top hidden xl:block md:block cursor-default"
             draggable={false}
           />
           <Image
@@ -38,7 +38,7 @@ export function VideoScroll({ dict } : { dict: Record<string, string> | undefine
             className="mx-auto rounded-2xl object-cover h-full object-left-top block xl:hidden md:block"
             draggable={false}
           />
-        </Link>
+        </div>
       </ContainerScroll>
     </div>
   );
