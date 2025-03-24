@@ -3,7 +3,6 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { Cross2Icon } from "@radix-ui/react-icons";
 import { Button } from "@saasfly/ui/button";
-import * as Icons from "@saasfly/ui/icons";
 
 interface TransformTokenDetailsProps {
   dict: {
@@ -23,10 +22,9 @@ export function TransformTokenDetails({ dict }: TransformTokenDetailsProps) {
     <Dialog.Root>
       <Dialog.Trigger asChild>
         <Button 
-          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-full text-lg px-8 h-12 font-medium"
+          className="bg-gradient-to-r from-lime-300 to-lime-200 hover:from-lime-500 hover:to-lime-400 text-black rounded-full text-lg px-8 h-12 font-medium"
         >
           {dict.more_details ?? "More Details"}
-          <Icons.ArrowRight className="ml-2 h-5 w-5" />
         </Button>
       </Dialog.Trigger>
 
