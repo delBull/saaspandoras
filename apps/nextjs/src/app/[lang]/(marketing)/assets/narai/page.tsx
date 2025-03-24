@@ -12,6 +12,7 @@ import { Help } from "@saasfly/ui/icons";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { FullscreenImage } from "~/components/fullscreen-image";
 import { ConstructionDashboard } from "~/components/construction-dashboard";
+import { useInView } from "framer-motion";
 
 interface PropertyDetailTooltips {
   availability: string;
@@ -353,6 +354,13 @@ export default function NaraiPage({ params: { lang } }: { params: { lang: Locale
 
     // Scroll handler
     const constructionRef = React.useRef<HTMLDivElement>(null);
+    const isInView = useInView(constructionRef, { once: true, amount: 0.2 });
+
+    React.useEffect(() => {
+      if (isInView) {
+        setActiveSection('construction');
+      }
+    }, [isInView]);
   
     const scrollToConstruction = () => {
       constructionRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -509,13 +517,13 @@ export default function NaraiPage({ params: { lang } }: { params: { lang: Locale
   </div>
 
             {/* Construction Details Section */}
-            <div ref={constructionRef} id="construction" className="mb-12">
+            <div ref={constructionRef} id="construction" className="mb-12 scroll-mt-16">
             <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={activeSection === 'construction' ? { opacity: 1, y: 0 } : {}}
-    transition={{ duration: 0.5 }}
-    className="space-y-6"
-  >
+          initial={{ opacity: 0, y: 20 }}
+          animate={(activeSection === 'construction' || isInView) ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.5 }}
+          className="space-y-6"
+        >
               {/* Title and description outside dashboard */}
     <div className="mb-8">
       <h2 className="text-2xl font-bold">{data.constructionTitle}</h2>
