@@ -9,7 +9,7 @@ import { FeaturesGrid } from "~/components/features-grid";
 import { RightsideMarketing } from "~/components/rightside-marketing";
 
 import { AnimatedTooltip } from "@saasfly/ui/animated-tooltip";
-import { BackgroundLines } from "@saasfly/ui/background-lines";
+import Aurora from "~/components/aurora-background";
 import { Button } from "@saasfly/ui/button";
 import { ColourfulText } from "@saasfly/ui/colorful-text";
 import * as Icons from "@saasfly/ui/icons";
@@ -67,10 +67,20 @@ export default async function IndexPage({
 
   return (
     <>
+           
+      <div className="fixed inset-0 -z-10 opacity-75">
+        <Aurora
+          colorStops={["#3A29FF", "#FF94B4", "#FF3232"]}
+          blend={0.5}
+          amplitude={1.0}
+          speed={0.5}
+        />
+      </div>
+      
       <section className="container">
         <div className="grid grid-cols-1 gap-10 xl:grid-cols-2">
           <div className="flex flex-col items-start h-full">
-            <BackgroundLines className="h-full">
+            
               <div className="flex flex-col pt-4 md:pt-36 lg:pt-36 xl:pt-36">
                 <div className="mt-20">
                   <div
@@ -118,10 +128,9 @@ export default async function IndexPage({
                   </div>
                 </div>
               </div>
-            </BackgroundLines>
           </div>
 
-          <div className="h-full w-full xl:block bg-background">
+          <div className="h-full w-full xl:block">
             <div className="flex flex-col pt-0 xl:pt-44">
               <RightsideMarketing dict={dict.marketing.right_side}/>
             </div>
@@ -129,7 +138,7 @@ export default async function IndexPage({
         </div>
       </section>
 
-      <section className="container mt-8 md:mt-[50px] xl:mt-[-50px]">
+      <section className="container mt-8 md:mt-[50px]">
         <FeaturesGrid dict={dict.marketing.features_grid}/>
       </section>
 
