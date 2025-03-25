@@ -26,7 +26,7 @@ export function SiteFooter({
             alt=""
           />
           <p className="text-center text-sm leading-loose md:text-left">
-            Pandora&apos;s es una marca registrada de MXHUB Ecosistema Blockchain S.A. de C.V.
+            ® Pandora&apos;s Foundation
           </p>
         </div>
         <Link href="/terms">
