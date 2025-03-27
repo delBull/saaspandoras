@@ -3,14 +3,14 @@
 import { useEffect, useState } from "react"
 import { motion, useScroll, useTransform } from "framer-motion"
 import Image from "next/image"
-import { Annotation } from "./dashboard-annotations"
 import type { MarketingDictionary } from "~/types"
 
 interface AnimatedDashboardProps {
   dict: MarketingDictionary['dashboard']
 }
 
-export function AnimatedDashboard({ dict }: AnimatedDashboardProps) {
+export function AnimatedDashboard({ dict: _dict }: AnimatedDashboardProps) {
+
   const { scrollY } = useScroll()
   const [isMobile, setIsMobile] = useState(false)
 
@@ -46,7 +46,7 @@ export function AnimatedDashboard({ dict }: AnimatedDashboardProps) {
         style={{ opacity, y }}
         className="relative group"
       >
-        {/* Left side annotation */}
+        {/* Left side annotation 
         <div className="absolute -left-96 top-0 z-20">
           <Annotation
             direction="right"
@@ -57,8 +57,8 @@ export function AnimatedDashboard({ dict }: AnimatedDashboardProps) {
             startOffset={-20}
           />
         </div>
-
-        {/* Right side annotation */}
+        */}
+        {/* Right side annotation 
         <div className="absolute -right-6 top-96 z-20">
           <Annotation
             direction="left"
@@ -69,6 +69,7 @@ export function AnimatedDashboard({ dict }: AnimatedDashboardProps) {
             startOffset={20}
           />
         </div>
+        */}
 
         {/* Dashboard Image */}
         <div className="relative rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/50 dark:bg-neutral-900/50 backdrop-blur-sm p-4 transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-xl">
@@ -77,7 +78,7 @@ export function AnimatedDashboard({ dict }: AnimatedDashboardProps) {
             width={800}
             height={600}
             alt="Pandoras Dashboard"
-            className="rounded-lg w-full h-auto opacity-45"
+            className="rounded-lg w-full h-auto md:opacity-70 opacity-90"
             priority
           />
         </div>
