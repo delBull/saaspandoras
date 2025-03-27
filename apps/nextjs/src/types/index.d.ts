@@ -292,6 +292,10 @@ export interface MarketingDictionary {
     developers_first: string;
     developers_second: string;
   };
+  dashboard: {
+    config_panel: string;
+    investments_panel: string;
+  };
 }
 
 export interface NavItem {
