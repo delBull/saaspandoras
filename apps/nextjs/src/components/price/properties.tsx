@@ -3,12 +3,12 @@
 import { useState } from "react";
 import Balancer from "react-wrap-balancer";
 import { motion } from "framer-motion";
-import { ThirdwebProvider, useWallet } from "@thirdweb-dev/react";
+import { ThirdwebProvider } from "thirdweb/react";
 import { Button } from "@saasfly/ui/button";
 import * as Icons from "@saasfly/ui/icons";
 import { priceDataMap } from "~/config/price/price-data";
-import { useSigninModal } from "~/hooks/use-signin-modal";
 import type { UserSubscriptionPlan } from "~/types";
+import Image from "next/image";
 
 interface PricingOption {
   title: string;
@@ -36,9 +36,9 @@ export function PricingCards({
   dict,
   params: { lang },
 }: PricingCardsProps) {
-  const signInModal = useSigninModal();
+  
   const [selectedProperty, setSelectedProperty] = useState<PricingOption | null>(null);
-  const { connectWallet, disconnectWallet, wallet } = useWallet();
+  const { connectWallet, wallet } = useWallet();
 
   const pricingData: PricingOption[] | undefined = priceDataMap[lang];
 
@@ -76,7 +76,7 @@ export function PricingCards({
               className="relative flex flex-col overflow-hidden rounded-xl border w-full md:max-w-lg mx-auto"
               key={offer.id}
             >
-              <img src={offer.image} alt={offer.title} className="w-full h-48 object-cover" />
+              <Image src={offer.image} alt={offer.title} className="w-full h-48 object-cover" />
               <div className="min-h-[150px] items-start space-y-4 bg-secondary/70 p-6">
                 <p className="font-urban flex text-sm font-bold uppercase tracking-wider text-muted-foreground">
                   {offer.title}

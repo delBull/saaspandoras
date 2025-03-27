@@ -31,6 +31,7 @@ export const SignInModal = ({ dict }: { dict: Record<string, string> }) => {
         </div>
 
         <div className="flex flex-col space-y-4 bg-secondary/50 px-4 py-8 md:px-16">
+        {/*
           <Button
             variant="default"
             disabled={signInClicked}
@@ -48,7 +49,7 @@ export const SignInModal = ({ dict }: { dict: Record<string, string> }) => {
             )}
             {dict?.signup_github ?? "Sign up with GitHub"}
           </Button>
-
+          */}
           {/* Botón para Google */}
           <Button
             variant="default"

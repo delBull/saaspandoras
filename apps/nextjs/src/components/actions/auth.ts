@@ -1,20 +1,19 @@
 "use server";
 import type { VerifyLoginPayloadParams } from "thirdweb/auth";
 import { createAuth } from "thirdweb/auth";
-import { privateKeyToAccount } from "thirdweb/wallets";
 import { client } from "../../lib/client";
 import { cookies } from "next/headers";
  
-const privateKey = process.env.NEXT_PUBLIC_THIRDWEB_SECRET_KEY;
+const privateKey = process.env.THIRDWEB_SECRET_KEY;
 if (!privateKey) {
-  throw new Error("Missing NEXT_PUBLIC_THIRDWEB_SECRET_KEY in .env file.");
+  throw new Error("Missing THIRDWEB_SECRET_KEY in .env file.");
 }
 
 const thirdwebAuth = createAuth({
   domain: process.env.NEXT_PUBLIC_DOMAIN ?? "localhost:3000",
-  adminAccount: privateKeyToAccount({ client, privateKey }),
-  client
+  client,
 });
+
 
 export const generatePayload = thirdwebAuth.generatePayload;
 
@@ -35,14 +34,14 @@ export async function isLoggedIn() {
   if (!jwt?.value) {
     return false;
   }
-
   const authResult = await thirdwebAuth.verifyJWT({ jwt: jwt.value });
   if (!authResult.valid) {
-    return false
+    return false;
   }
   return true;
 }
 
 export async function logout() {
+  await Promise.resolve(); // Dummy await para cumplir con el requisito async
   cookies().delete("jwt");
 }
