@@ -79,6 +79,10 @@
         }
       ]
     },
+    "dashboard": {
+      "config_panel": "平台配置和工作流程管理面板",
+      "investments_panel": "实时收益和当前投资概况"
+    },
     "sponsor": {
       "title": "由我们的合作伙伴提供支持",
       "donate": "获取您的免费股份"

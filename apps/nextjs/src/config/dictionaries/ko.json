@@ -79,6 +79,10 @@
         }
       ]
     },
+    "dashboard": {
+      "config_panel": "플랫폼 설정 및 워크플로우 관리 패널",
+      "investments_panel": "실시간 수익률과 활성 투자 현황"
+    },
     "sponsor": {
       "title": "파트너의 지원",
       "donate": "무료 지분 받기"

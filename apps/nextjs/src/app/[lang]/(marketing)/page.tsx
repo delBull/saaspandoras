@@ -4,11 +4,12 @@ import { getDictionary } from "~/lib/get-dictionary";
 import { TransformTokenDetails } from "~/components/tokendetails";
 import { InvestmentSteps } from "~/components/investment-steps";
 import { ScrollButton } from "~/components/scroll-button"
+import { AnimatedDashboard } from "~/components/animated-dashboard"
 
 import { CodeCopy } from "~/components/code-copy";
 import { Comments } from "~/components/comments";
 //import { FeaturesGrid } from "~/components/features-grid";
-import { RightsideMarketing } from "~/components/rightside-marketing";
+//import { RightsideMarketing } from "~/components/rightside-marketing";
 
 import { AnimatedTooltip } from "@saasfly/ui/animated-tooltip";
 import Aurora from "~/components/aurora-background";
@@ -118,14 +119,20 @@ export default async function IndexPage({
     </div>
   </div>
 </div>
-              </div>
-          </div>
-
+</div>
+</div>
+<div className="h-full w-full xl:block">
+        <div className="flex flex-col pt-0 xl:pt-24">
+          <AnimatedDashboard dict={dict.marketing.dashboard}/>
+        </div>
+      </div>
+          {/*
           <div className="h-full w-full xl:block">
             <div className="flex flex-col pt-0 xl:pt-44">
               <RightsideMarketing dict={dict.marketing.right_side}/>
             </div>
           </div>
+          */}
         </div>
       </section>
       {/*

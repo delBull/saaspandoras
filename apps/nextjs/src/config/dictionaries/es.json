@@ -79,6 +79,10 @@
         }
       ]
     },
+    "dashboard": {
+      "config_panel": "Panel de configuración y flujo de la plataforma",
+      "investments_panel": "Inversiones activas y rendimientos en tiempo real"
+    },
     "sponsor": {
       "title": "Respaldado por nuestros colaboradores",
       "donate": "Obtén tu participación gratuita"

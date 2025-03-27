@@ -79,6 +79,10 @@
         }
       ]
     },
+    "dashboard": {
+      "config_panel": "プラットフォームの設定とワークフロー管理パネル",
+      "investments_panel": "アクティブな投資とリアルタイムのリターン"
+    },
     "sponsor": {
       "title": "パートナーによる支援",
       "donate": "無料のシェアを取得する"
