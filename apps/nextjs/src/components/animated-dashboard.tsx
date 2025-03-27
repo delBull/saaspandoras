@@ -1,5 +1,6 @@
-'use client'
+"use client"
 
+import { useEffect, useState } from "react"
 import { motion, useScroll, useTransform } from "framer-motion"
 import Image from "next/image"
 import { Annotation } from "./dashboard-annotations"
@@ -11,17 +12,29 @@ interface AnimatedDashboardProps {
 
 export function AnimatedDashboard({ dict }: AnimatedDashboardProps) {
   const { scrollY } = useScroll()
-  
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768)
+    }
+
+    handleResize()
+    window.addEventListener("resize", handleResize)
+
+    return () => window.removeEventListener("resize", handleResize)
+  }, [])
+
   const opacity = useTransform(
     scrollY,
-    [0, 200, 300, 500],
-    [1, 1, 0.5, 0]
+    isMobile ? [0, 300, 500, 800] : [0, 200, 300, 500],
+    isMobile ? [1, 1, 0.8, 0] : [1, 1, 0.5, 0]
   )
-  
+
   const y = useTransform(
     scrollY,
-    [0, 200, 300, 500],
-    [0, 0, 100, 200]
+    isMobile ? [0, 300, 500, 800] : [0, 200, 300, 500],
+    isMobile ? [0, 0, 50, 150] : [0, 0, 100, 200]
   )
 
   return (
