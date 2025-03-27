@@ -36,7 +36,7 @@ interface NavBarProps {
   params: {
     lang: string;
   };
-  marketing: MarketingType & Record<string, string>; // Changed from Dictionary to allow nested objects
+  marketing: MarketingType & Record<string, string>;
   dropdown: Record<string, string>;
 }
 
