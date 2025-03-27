@@ -2,15 +2,16 @@ import Link from "next/link";
 import Image from "next/image";
 import { getDictionary } from "~/lib/get-dictionary";
 import { TransformTokenDetails } from "~/components/tokendetails";
+import { InvestmentSteps } from "~/components/investment-steps";
+import { ScrollButton } from "~/components/scroll-button"
 
 import { CodeCopy } from "~/components/code-copy";
 import { Comments } from "~/components/comments";
-import { FeaturesGrid } from "~/components/features-grid";
+//import { FeaturesGrid } from "~/components/features-grid";
 import { RightsideMarketing } from "~/components/rightside-marketing";
 
 import { AnimatedTooltip } from "@saasfly/ui/animated-tooltip";
 import Aurora from "~/components/aurora-background";
-import { Button } from "@saasfly/ui/button";
 import { ColourfulText } from "@saasfly/ui/colorful-text";
 import * as Icons from "@saasfly/ui/icons";
 
@@ -92,23 +93,15 @@ export default async function IndexPage({
                 </div>
 
                 <div className="mt-4">
-                  <span className="text-neutral-500 dark:text-neutral-400 sm:text-lg">
+                  <span className="text-neutral-500 dark:text-neutral-400 md:text-2xl text-xl">
                     {dict.marketing.sub_title || "Complete solution for building next-gen investment"}
                   </span>
                 </div>
 
-                <div
-                  className="mb-4 mt-6 flex w-full flex-col justify-center space-y-4 sm:flex-row sm:justify-start sm:space-x-8 sm:space-y-0 z-10">
-                  <Link href={`/${lang}/pricing`}>
-                    <Button
-                      className="bg-lime-300 hover:bg-lime-500 text-black rounded-full text-lg px-6 h-12 font-medium">
-                      {dict.marketing.get_started}
-                      <Icons.ArrowRight className="h-5 w-5"/>
-                    </Button>
-                  </Link>
-
-                  <CodeCopy/>
-                </div>
+                <div className="mb-4 mt-6 flex w-full flex-col justify-center space-y-4 sm:flex-row sm:justify-start sm:space-x-8 sm:space-y-0 z-10">
+        <ScrollButton text={dict.marketing.get_started} />
+        <CodeCopy/>
+      </div>
 
                 <div className="flex xl:flex-row flex-col items-center justify-start mt-4 w-full">
   <div className="flex">
@@ -135,11 +128,15 @@ export default async function IndexPage({
           </div>
         </div>
       </section>
-
+      {/*
       <section className="container mt-8 md:mt-[50px]">
         <FeaturesGrid dict={dict.marketing.features_grid}/>
       </section>
-
+      */}
+      <section id="investment-steps" className="container  mt-8 md:mt-[50px]">
+        <InvestmentSteps dict={dict.marketing.investment_steps} />
+      </section>
+      
       <section className="container pt-24">
         <div className="flex flex-col justify-center items-center pt-10">
           <div className="text-lg text-neutral-500 dark:text-neutral-400">{dict.marketing.sponsor.title}</div>

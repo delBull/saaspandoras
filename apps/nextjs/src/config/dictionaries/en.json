@@ -20,8 +20,8 @@
   "marketing": {
     "introducing": "Introducing Pandora's",
     "title": "Invest in exclusive properties easily and securely ",
-    "sub_title": "Acquire your right to participate in exclusive projects with Pandoras.",
-    "get_started": "Your first free right",
+    "sub_title": "Getting digital shares with exclusive opportunities has never been easier",
+    "get_started": "How?",
     "view_on_github": "View on GitHub",
     "explore_product": "Explore Product",
     "features": "Features",
@@ -58,6 +58,26 @@
       "payments_desc": "With your investment, you'll access exclusive benefits, such as rental income and the opportunity to convert your investment into full ownership.",
       "nextauth_title": "",
       "nextauth_desc": ""
+    },
+    "investment_steps": {
+      "title": "Investing is as easy as →",
+      "steps": [
+        {
+          "title": "Getting your free share",
+          "content": "With Pandoras, your investment is legally backed and your money goes directly to our treasury, guaranteed by a trust. This ensures complete transparency and security in every transaction.",
+          "caption": "Register and get your free digital share that allows you to invest in exclusive properties."
+        },
+        {
+          "title": "Invest at a special price",
+          "content": "Each contribution represents a portion of the project's value. Additionally, thanks to our solid legal and financial structure, your investment is handled with the highest security standards. Pandoras is legally constituted and operates in a regulated manner, giving you confidence and peace of mind.",
+          "caption": "Use your share to invest at a special price during our presale."
+        },
+        {
+          "title": "Earn and Grow",
+          "content": "Pandoras, a company committed to protecting your capital and long-term growth, backed by a trust that guarantees the integrity of your money.",
+          "caption": "With your investment, you'll access exclusive benefits, such as rental income and the possibility of converting your investment into full ownership."
+        }
+      ]
     },
     "sponsor": {
       "title": "Trusted by Our Partners",
