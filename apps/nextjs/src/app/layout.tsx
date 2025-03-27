@@ -1,6 +1,7 @@
 import { Inter as FontSans } from "next/font/google";
 
 import localFont from "next/font/local";
+import { Dancing_Script } from "next/font/google";
 import { ThirdwebProvider } from "thirdweb/react";
 
 import "~/styles/globals.css";
@@ -29,6 +30,11 @@ const fontSans = FontSans({
 const fontHeading = localFont({
   src: "../styles/fonts/CalSans-SemiBold.woff2",
   variable: "--font-heading",
+});
+
+const fontHandwritten = Dancing_Script({ 
+  subsets: ["latin"],
+  variable: "--font-handwritten" 
 });
 
 export function generateStaticParams() {
@@ -101,6 +107,7 @@ export default function RootLayout({
           "min-h-screen bg-background font-sans antialiased",
           fontSans.variable,
           fontHeading.variable,
+          fontHandwritten.variable
         )}
       >
         <ThemeProvider

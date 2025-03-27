@@ -279,6 +279,19 @@ export interface MarketingDictionary {
     title: string;
     desc: string;
   };
+  investment_steps: {
+    title: string;
+    steps: {
+      title: string;
+      content: string;
+      caption: string;
+    }[];
+  };
+  contributors: {
+    contributors_desc: string;
+    developers_first: string;
+    developers_second: string;
+  };
 }
 
 export interface NavItem {

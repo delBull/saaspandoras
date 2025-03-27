@@ -20,8 +20,8 @@
   "marketing": {
     "introducing": "Presentamos Pandora's",
     "title": "Invierte en propiedades exclusivas de forma sencilla y segura ",
-    "sub_title": "Adquiere tu derecho a participar en proyectos exclusivos con Pandoras.",
-    "get_started": "Tu 1er derecho gratis",
+    "sub_title": "Adquirir participaciones digitales con oportunidades exclusivas nunca fue tan fácil",
+    "get_started": "¿Cómo?",
     "view_on_github": "Ver en GitHub",
     "explore_product": "Explorar Producto",
     "features": "Características",
@@ -58,6 +58,26 @@
       "payments_desc": "Con tu inversión, accederás a beneficios exclusivos, como ingresos por renta y la posibilidad de convertir tu inversión en propiedad completa.",
       "nextauth_title": "",
       "nextauth_desc": ""
+    },
+    "investment_steps": {
+      "title": "Invertir es tan fácil como →",
+      "steps": [
+        {
+          "title": "Obtener tu participación gratuita",
+          "content": "Con Pandoras, tu inversión está respaldada legalmente y tu dinero se destina directamente a nuestra tesorería, garantizada por un fideicomiso. Esto asegura total transparencia y seguridad en cada transacción.",
+          "caption": "Regístrate y adquiere tu participación digital gratuita que te permite invertir en propiedades exclusivas."
+        },
+        {
+          "title": "Invierte a un precio especial",
+          "content": "Cada aporte representa una porción del valor del proyecto. Además, gracias a nuestra estructura legal y financiera sólida, tu inversión se maneja con los más altos estándares de seguridad.",
+          "caption": "Utiliza tu participación para invertir a un precio especial durante cualquier etapa de venta."
+        },
+        {
+          "title": "Gana y Crece",
+          "content": "Pandoras, una empresa comprometida con la protección de tu capital y el crecimiento a largo plazo, respaldada por un fideicomiso que garantiza la integridad de tu dinero.",
+          "caption": "Con tu inversión, accederás a beneficios exclusivos, como ingresos por renta y la posibilidad de convertir tu inversión en propiedad completa."
+        }
+      ]
     },
     "sponsor": {
       "title": "Respaldado por nuestros colaboradores",
