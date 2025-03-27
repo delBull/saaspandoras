@@ -124,6 +124,7 @@ export function NavBar({
             ) : (
               <ConnectButton
                 client={client}
+                connectButton={{ label: "Sign in" }}
                 accountAbstraction={{
                   chain: defineChain(8453),
                   sponsorGas: true,
