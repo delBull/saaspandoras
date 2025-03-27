@@ -111,22 +111,20 @@ export default async function IndexPage({
                 </div>
 
                 <div className="flex xl:flex-row flex-col items-center justify-start mt-4 w-full">
-                  <div className="flex">
-                    <AnimatedTooltip items={people}/>
-                  </div>
-                  <div className="flex flex-col items-center justify-start ml-8">
-                    <div className="w-[340px]">
-                      <text className="font-semibold"> </text>
-                      <text
-                        className="text-neutral-500 dark:text-neutral-400">{dict.marketing.contributors.contributors_desc}</text>
-                        <text
-                        className="text-neutral-500 dark:text-neutral-400">{dict.marketing.contributors.developers_first}</text>
-                      <ColourfulText text=" startups"/>
-                      <text
-                        className="text-neutral-500 dark:text-neutral-400">{dict.marketing.contributors.developers_second}</text>
-                    </div>
-                  </div>
-                </div>
+  <div className="flex">
+    <AnimatedTooltip items={people}/>
+  </div>
+  <div className="flex flex-col items-center justify-start mx-4 xl:ml-8">
+    <div className="w-full max-w-[340px] px-4 xl:px-0">
+      <div className="text-neutral-500 dark:text-neutral-400 text-sm sm:text-base">
+        <span>{dict.marketing.contributors.contributors_desc}</span>
+        <span>{dict.marketing.contributors.developers_first}</span>
+        <ColourfulText text=" startups"/>
+        <span>{dict.marketing.contributors.developers_second}</span>
+      </div>
+    </div>
+  </div>
+</div>
               </div>
           </div>
 

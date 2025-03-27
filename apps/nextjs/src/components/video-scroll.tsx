@@ -12,9 +12,9 @@ export function VideoScroll({ dict } : { dict: Record<string, string> | undefine
       <ContainerScroll
         titleComponent={
           <>
-            <h1 className="text-4xl font-semibold text-black dark:text-white">
+            <h1 className="text-2xl md:text-4xl font-semibold text-black dark:text-white">
               {dict?.first_text}<br />
-              <span className="text-4xl md:text-6xl font-bold mt-1 leading-none">
+              <span className="text-2xl md:text-6xl font-bold mt-1 leading-none">
                 {dict?.second_text1}<ColourfulText text={dict?.time_text ?? ''} />{dict?.second_text2}
               </span>
             </h1>
