@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import type { User } from "next-auth";
 import { useSelectedLayoutSegment } from "next/navigation";
@@ -52,6 +52,24 @@ export function NavBar({
 }: NavBarProps) {
   const scrolled = useScroll(50);
   const segment = useSelectedLayoutSegment();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        const loggedIn = await isLoggedIn();
+        setIsAuthenticated(loggedIn);
+      } catch (error) {
+        console.error("Error checking authentication status:", error);
+        setIsAuthenticated(false);
+      }
+    };
+    checkAuthStatus().catch((error) => {
+      console.error("Error during auth status check:", error);
+    });
+  }, []);
+
+  console.log("isAuthenticated:", isAuthenticated);
 
   return (
     <Tooltip.Provider>
@@ -115,16 +133,29 @@ export function NavBar({
             
             <LocaleChange url="/" />
             
-            {user ? (
-              <UserAccountNav
-                user={user}
-                params={{ lang }}
-                dict={dropdown}
-              />
+            {isAuthenticated && user ? (
+              <div className="flex items-center space-x-4">
+                <Link
+                  href={`/${lang}/profile`}
+                  className="text-lg font-medium text-foreground hover:text-foreground/80"
+                >
+                  Perfil
+                </Link>
+                <Link
+                  href={`/${lang}/dashboard`}
+                  className="text-lg font-medium text-foreground hover:text-foreground/80"
+                >
+                  Dashboard
+                </Link>
+                <UserAccountNav
+                  user={user}
+                  params={{ lang }}
+                  dict={dropdown}
+                />
+              </div>
             ) : (
               <ConnectButton
                 client={client}
-                connectButton={{ label: "Sign in" }}
                 accountAbstraction={{
                   chain: defineChain(8453),
                   sponsorGas: true,
