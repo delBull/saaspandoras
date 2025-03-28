@@ -169,6 +169,7 @@ export function NavBar({
             ) : (
               <ConnectButton
                 client={client}
+                connectButton={{ label: "Sign in" }}
                 connectModal={{
                   size: "wide",
                   showThirdwebBranding: false,
@@ -178,21 +179,16 @@ export function NavBar({
                   sponsorGas: true,
                 }}
                 auth={{
-                  isLoggedIn: async (address) => {
-                    console.log("checking if logged in!", { address });
-                    return await isLoggedIn();
+                  // The following methods run on the server (not client)!
+                  isLoggedIn: async () => {
+                    const authResult = await isLoggedIn();
+                    if (!authResult) return false;
+                    return true;
                   },
-                  doLogin: async (params) => {
-                    console.log("logging in!");
-                    await login(params);
-                    setIsAuthenticated(true); // Actualizar el estado después de login
-                  },
-                  getLoginPayload: async ({ address }) => generatePayload({ address, chainId: 17000 }),
-                  doLogout: async () => {
-                    console.log("logging out!");
-                    await logout();
-                    setIsAuthenticated(false); // Limpiar el estado después de logout
-                  },
+                  doLogin: async (params) => await login(params),
+                  getLoginPayload: async ({ address }) =>
+                    generatePayload({ address }),
+                  doLogout: async () => await logout(),
                 }}
               />
             )}
