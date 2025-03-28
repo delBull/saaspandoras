@@ -6,6 +6,7 @@ import type { User } from "next-auth";
 import { useSelectedLayoutSegment } from "next/navigation";
 import { cn } from "@saasfly/ui";
 import * as Tooltip from "@radix-ui/react-tooltip";
+import Image from "next/image";
 
 import { MainNav } from "./main-nav";
 import { LocaleChange } from "~/components/locale-change";
@@ -16,6 +17,7 @@ import { ConnectButton } from "thirdweb/react";
 import { client } from "../lib/client";
 import { generatePayload, isLoggedIn, login, logout } from "./actions/auth";
 import { defineChain } from "thirdweb";
+
 
 interface MarketingType {
   main_nav_assets: string;
@@ -61,15 +63,13 @@ export function NavBar({
         setIsAuthenticated(loggedIn);
       } catch (error) {
         console.error("Error checking authentication status:", error);
-        setIsAuthenticated(false);
+        setIsAuthenticated(false); // En caso de error, se establece como no autenticado
       }
     };
     checkAuthStatus().catch((error) => {
-      console.error("Error during auth status check:", error);
+      console.error("Error during auth status check:", error); // Aquí se maneja cualquier error en la promesa
     });
   }, []);
-
-  console.log("isAuthenticated:", isAuthenticated);
 
   return (
     <Tooltip.Provider>
@@ -80,10 +80,11 @@ export function NavBar({
         )}
       >
         <div className="container flex h-16 items-center justify-between py-4">
-          <MainNav 
-          items={items} 
-          params={{ lang }} 
-          marketing={marketing}>
+          <MainNav
+            items={items}
+            params={{ lang }}
+            marketing={marketing}
+          >
             {children}
           </MainNav>
 
@@ -130,23 +131,35 @@ export function NavBar({
             <div className="w-[1px] h-8 bg-accent" />
 
             {rightElements}
-            
+
             <LocaleChange url="/" />
-            
+
             {isAuthenticated && user ? (
               <div className="flex items-center space-x-4">
-                <Link
-                  href={`/${lang}/profile`}
-                  className="text-lg font-medium text-foreground hover:text-foreground/80"
-                >
-                  Perfil
-                </Link>
-                <Link
-                  href={`/${lang}/dashboard`}
-                  className="text-lg font-medium text-foreground hover:text-foreground/80"
-                >
-                  Dashboard
-                </Link>
+                {/* Aquí va el ícono de perfil y el dropdown para Dashboard y Logout */}
+                <div className="relative">
+                  <button className="text-lg font-medium text-foreground hover:text-foreground/80">
+                    <Image
+                      src={user.image ?? "/default-avatar.png"} // Agregar imagen de perfil
+                      alt="User Profile"
+                      className="w-8 h-8 rounded-full"
+                    />
+                  </button>
+                  <div className="absolute right-0 mt-2 w-40 bg-white shadow-lg rounded-md">
+                    <Link href={`/${lang}/dashboard`} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-200">
+                      Dashboard
+                    </Link>
+                    <button
+                      onClick={async () => {
+                        await logout();
+                        setIsAuthenticated(false); // Limpiar el estado después de logout
+                      }}
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 w-full text-left"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                </div>
                 <UserAccountNav
                   user={user}
                   params={{ lang }}
@@ -156,6 +169,10 @@ export function NavBar({
             ) : (
               <ConnectButton
                 client={client}
+                connectModal={{
+                  size: "wide",
+                  showThirdwebBranding: false,
+                }}
                 accountAbstraction={{
                   chain: defineChain(8453),
                   sponsorGas: true,
@@ -168,11 +185,13 @@ export function NavBar({
                   doLogin: async (params) => {
                     console.log("logging in!");
                     await login(params);
+                    setIsAuthenticated(true); // Actualizar el estado después de login
                   },
                   getLoginPayload: async ({ address }) => generatePayload({ address, chainId: 17000 }),
                   doLogout: async () => {
                     console.log("logging out!");
                     await logout();
+                    setIsAuthenticated(false); // Limpiar el estado después de logout
                   },
                 }}
               />
