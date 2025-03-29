@@ -10,38 +10,26 @@ if (!privateKey) {
 }
 
 const thirdwebAuth = createAuth({
-  domain: process.env.NEXT_PUBLIC_DOMAIN ?? "localhost:3000",
+  domain: process.env.NEXT_PUBLIC_DOMAIN ?? "https://dapp.pandoras.foundation",
   client,
 });
 
-
 export const generatePayload = thirdwebAuth.generatePayload;
 
-export async function login(payload: VerifyLoginPayloadParams) {
+
+export async function login(payload: VerifyLoginPayloadParams): Promise<void> {
   const verifiedPayload = await thirdwebAuth.verifyPayload(payload);
-  console.log(verifiedPayload);
   if (verifiedPayload.valid) {
-    const jwt = await thirdwebAuth.generateJWT({
-      payload: verifiedPayload.payload,
-    });
-    cookies().set("jwt", jwt);
+    cookies().set('isAuthenticated', 'true');
   }
 }
 
-export async function isLoggedIn() {
-  const jwt = cookies().get("jwt");
-  console.log(jwt);
-  if (!jwt?.value) {
-    return false;
-  }
-  const authResult = await thirdwebAuth.verifyJWT({ jwt: jwt.value });
-  if (!authResult.valid) {
-    return false;
-  }
-  return true;
+export async function isLoggedIn(): Promise<boolean> {
+  await Promise.resolve(); // Dummy await para ESLint
+  return cookies().has('isAuthenticated');
 }
 
-export async function logout() {
-  await Promise.resolve(); // Dummy await para cumplir con el requisito async
-  cookies().delete("jwt");
+export async function logout(): Promise<void> {
+  await Promise.resolve(); // Dummy await para ESLint
+  cookies().delete('isAuthenticated');
 }
