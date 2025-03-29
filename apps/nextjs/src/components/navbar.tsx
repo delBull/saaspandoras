@@ -1,23 +1,24 @@
 "use client";
-
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import type { User } from "next-auth";
 import { useSelectedLayoutSegment } from "next/navigation";
 import { cn } from "@saasfly/ui";
 import * as Tooltip from "@radix-ui/react-tooltip";
-import Image from "next/image";
-
 import { MainNav } from "./main-nav";
 import { LocaleChange } from "~/components/locale-change";
 import { UserAccountNav } from "./user-account-nav";
 import useScroll from "~/hooks/use-scroll";
 import type { MainNavItem } from "~/types";
-import { ConnectButton } from "thirdweb/react";
+import { Button } from "@saasfly/ui/button";
 import { client } from "../lib/client";
 import { generatePayload, isLoggedIn, login, logout } from "./actions/auth";
-import { defineChain } from "thirdweb";
-
+import {
+  type SiweAuthOptions,
+  useConnectModal,
+  useActiveWallet,
+  useSiweAuth,
+} from "thirdweb/react";
 
 interface MarketingType {
   main_nav_assets: string;
@@ -42,6 +43,19 @@ interface NavBarProps {
   dropdown: Record<string, string>;
 }
 
+const authOptions: SiweAuthOptions = {
+  isLoggedIn: async (_address) => {
+    return await isLoggedIn();
+  },
+  doLogin: async (params) => {
+    await login(params); // Ahora acepta el parámetro correctamente
+  },
+  getLoginPayload: ({ address }) => generatePayload({ address }),
+  doLogout: async () => {
+    await logout();
+  },
+};
+
 export function NavBar({
   user,
   items,
@@ -52,24 +66,47 @@ export function NavBar({
   marketing,
   dropdown,
 }: NavBarProps) {
+
   const scrolled = useScroll(50);
   const segment = useSelectedLayoutSegment();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
+  // Obtenemos el estado de autenticación de thirdweb (ya como booleano)
+  const { isLoggedIn: thirdwebIsLoggedIn } = useSiweAuth(
+    useActiveWallet(),
+    undefined,
+    authOptions
+  );
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  
   useEffect(() => {
-    const checkAuthStatus = async () => {
+    const checkAuth = async () => {
       try {
-        const loggedIn = await isLoggedIn();
-        setIsAuthenticated(loggedIn);
+        const authStatus = await isLoggedIn();
+        setIsAuthenticated(authStatus);
       } catch (error) {
-        console.error("Error checking authentication status:", error);
-        setIsAuthenticated(false); // En caso de error, se establece como no autenticado
+        console.error("Error checking auth:", error);
+        setIsAuthenticated(false);
       }
     };
-    checkAuthStatus().catch((error) => {
-      console.error("Error during auth status check:", error); // Aquí se maneja cualquier error en la promesa
-    });
-  }, []);
+    
+    void checkAuth();
+  }, [thirdwebIsLoggedIn]);
+  
+  const { connect } = useConnectModal();
+
+  const onClick = async () => {
+    try {
+      if (isAuthenticated) {
+        await logout();
+      } else {
+        await connect({
+          client: client,
+          auth: authOptions,
+        });
+      }
+    } catch (error) {
+      console.error("Auth error:", error);
+    }
+  };
 
   return (
     <Tooltip.Provider>
@@ -80,14 +117,9 @@ export function NavBar({
         )}
       >
         <div className="container flex h-16 items-center justify-between py-4">
-          <MainNav
-            items={items}
-            params={{ lang }}
-            marketing={marketing}
-          >
+          <MainNav items={items} params={{ lang }} marketing={marketing}>
             {children}
           </MainNav>
-
           <div className="flex items-center space-x-3">
             {items?.length ? (
               <nav className="hidden gap-6 md:flex">
@@ -127,70 +159,35 @@ export function NavBar({
                 ))}
               </nav>
             ) : null}
-
             <div className="w-[1px] h-8 bg-accent" />
-
             {rightElements}
-
             <LocaleChange url="/" />
-
-            {isAuthenticated && user ? (
+            {isAuthenticated ? (
               <div className="flex items-center space-x-4">
-                {/* Aquí va el ícono de perfil y el dropdown para Dashboard y Logout */}
-                <div className="relative">
-                  <button className="text-lg font-medium text-foreground hover:text-foreground/80">
-                    <Image
-                      src={user.image ?? "/default-avatar.png"} // Agregar imagen de perfil
-                      alt="User Profile"
-                      className="w-8 h-8 rounded-full"
-                    />
-                  </button>
-                  <div className="absolute right-0 mt-2 w-40 bg-white shadow-lg rounded-md">
-                    <Link href={`/${lang}/dashboard`} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-200">
-                      Dashboard
-                    </Link>
-                    <button
-                      onClick={async () => {
-                        await logout();
-                        setIsAuthenticated(false); // Limpiar el estado después de logout
-                      }}
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 w-full text-left"
-                    >
-                      Logout
-                    </button>
-                  </div>
-                </div>
-                <UserAccountNav
-                  user={user}
-                  params={{ lang }}
-                  dict={dropdown}
-                />
+                <Link
+                  href={`/${lang}/profile`}
+                  className="text-lg font-medium text-foreground hover:text-foreground/80"
+                >
+                  Perfil
+                </Link>
+                <Link
+                  href={`/${lang}/dashboard`}
+                  className="text-lg font-medium text-foreground hover:text-foreground/80"
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  href={`/${lang}/signout`}
+                  className="text-lg font-medium text-foreground hover:text-foreground/80"
+                >
+                  Signout
+                </Link>
+                {user && <UserAccountNav user={user} params={{ lang }} dict={dropdown} />}
               </div>
             ) : (
-              <ConnectButton
-                client={client}
-                connectButton={{ label: "Sign in" }}
-                connectModal={{
-                  size: "wide",
-                  showThirdwebBranding: false,
-                }}
-                accountAbstraction={{
-                  chain: defineChain(8453),
-                  sponsorGas: true,
-                }}
-                auth={{
-                  // The following methods run on the server (not client)!
-                  isLoggedIn: async () => {
-                    const authResult = await isLoggedIn();
-                    if (!authResult) return false;
-                    return true;
-                  },
-                  doLogin: async (params) => await login(params),
-                  getLoginPayload: async ({ address }) =>
-                    generatePayload({ address }),
-                  doLogout: async () => await logout(),
-                }}
-              />
+              <Button type="button" onClick={onClick}>
+                Sign in
+              </Button>
             )}
           </div>
         </div>
