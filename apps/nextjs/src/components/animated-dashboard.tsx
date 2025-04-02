@@ -72,16 +72,23 @@ export function AnimatedDashboard({ dict: _dict }: AnimatedDashboardProps) {
         */}
 
         {/* Dashboard Image */}
-        <div className="relative rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/50 dark:bg-neutral-900/50 backdrop-blur-sm p-4 transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-xl">
+        {/*<div className="relative rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/50 dark:bg-neutral-900/50 backdrop-blur-sm p-4 transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-xl">*/}
           <Image
-            src="/images/layout.png"
+            src="/images/onlybox2.png"
             width={800}
-            height={600}
+            height={1200}
             alt="Pandoras Dashboard"
-            className="rounded-lg w-full h-auto md:opacity-70 opacity-90"
+            className="rounded-lg w-auto h-full"
             priority
           />
-        </div>
+          <Image
+            src="/images/smoke.png"
+            width={800}
+            height={1200}
+            alt="Pandoras Dashboard"
+            className="absolute bottom-0 right-0 -z-10 opacity-70"
+            priority
+          />
       </motion.div>
     </div>
   )
