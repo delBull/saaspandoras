@@ -401,13 +401,29 @@ export default function NaraiPage({ params: { lang } }: { params: { lang: Locale
     <Organization className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
     <span>{data.constructionButton}</span>
   </Link>
-  <Link
-    href="#"
-    className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white/90 hover:bg-white rounded-lg text-black font-medium transition-all text-xs sm:text-base"
-  >
-    <Money className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-    <span>{data.getButton}</span>
-  </Link>
+  <Tooltip.Provider delayDuration={0}>
+  <Tooltip.Root>
+      <Tooltip.Trigger asChild>
+        <span
+          className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white/90 rounded-lg text-black font-medium transition-all text-xs sm:text-base select-none"
+          // No usamos Link porque no debe ser clicable
+        >
+          <Money className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span>{data.getButton}</span>
+        </span>
+      </Tooltip.Trigger>
+      <Tooltip.Portal>
+        <Tooltip.Content
+          className="rounded-md bg-black/80 text-white px-3 py-1.5 text-sm shadow-md"
+          side="top"
+          sideOffset={5}
+        >
+          Coming Soon
+          <Tooltip.Arrow className="fill-black/80" />
+        </Tooltip.Content>
+      </Tooltip.Portal>
+    </Tooltip.Root>
+    </Tooltip.Provider>
 </div>
 </div>
       </div>
