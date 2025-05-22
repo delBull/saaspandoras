@@ -48,6 +48,7 @@ function isNoNeedProcess(request: NextRequest): boolean {
 }
 
 export default async function middleware(req: NextRequest, event: NextFetchEvent) {
+  return NextResponse.next();
   if (isNoNeedProcess(req)) {
     return NextResponse.next();
   }
