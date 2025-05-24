@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 import * as Icons from "@saasfly/ui/icons";
 //import { DocumentGuide } from "~/components/document-guide";
@@ -30,6 +31,13 @@ export function MainNav({ items, children, params: { lang } }: MainNavProps) {
     <div className="flex gap-6 md:gap-10">
       <div className="flex items-center">
         <Link href={`/${lang}`} className="hidden items-center space-x-2 md:flex">
+          <Image 
+            src="/images/logo.png"
+            alt="Pandora's Logo"
+            width={40}
+            height={40}
+            priority
+          />
           <div className="text-3xl">Pandora&apos;s</div>
         </Link>
         {/*
@@ -45,7 +53,17 @@ export function MainNav({ items, children, params: { lang } }: MainNavProps) {
         className="flex items-center space-x-2 md:hidden"
         onClick={() => setShowMobileMenu(!showMobileMenu)}
       >
-        {showMobileMenu ? <Icons.Close/> : <Icons.Logo/>}
+        {showMobileMenu ? (
+          <Icons.Close/>
+        ) : (
+          <Image 
+            src="/images/logo.png"
+            alt="Pandora's Logo"
+            width={24}
+            height={24}
+            priority
+          />
+        )}
         <span className="font-bold">Menu</span>
       </button>
       {showMobileMenu && items && (

@@ -15,13 +15,25 @@ const noRedirectRoute = ["/api(.*)", "/trpc(.*)", "/admin"];
 
 const publicRoute = [
   "/(\\w{2}/)?signin(.*)",
+    "/(\\w{2}/)?login(.*)",
+  "/(\\w{2}/)?register(.*)",
   "/(\\w{2}/)?terms(.*)",
   "/(\\w{2}/)?privacy(.*)",
-  "/(\\w{2}/)?docs(.*)",
-  "/(\\w{2}/)?blog(.*)",
-  "/(\\w{2}/)?pricing(.*)",
-  "/(\\w{2}/)?assets(.*)", 
   "^/\\w{2}$", // root with locale
+];
+
+const protectedRoutes = [
+  "/(\\w{2}/)?dashboard(.*)",
+  "/(\\w{2}/)?admin(.*)",
+];
+
+const authRoutes = [
+  "/api/auth(.*)",
+  "/api/auth/callback(.*)",
+  "/api/auth/signin(.*)",
+  "/api/auth/signout(.*)",
+  "/(\\w{2}/)?login(.*)",
+  "/(\\w{2}/)?register(.*)",
 ];
 
 function getLocale(req: NextRequest): string | undefined {
@@ -48,19 +60,37 @@ function isNoNeedProcess(request: NextRequest): boolean {
 }
 
 export default async function middleware(req: NextRequest, event: NextFetchEvent) {
-  if (isNoNeedProcess(req)) {
+  // Debug logs
+  console.log('Requested Path:', req.nextUrl.pathname);
+  console.log('Is Public Page:', isPublicPage(req));
+  console.log('Is Auth Route:', authRoutes.some(pattern => new RegExp(`^${pattern}$`).test(req.nextUrl.pathname)));
+  
+  // Check if current path requires skipping middleware
+  if (
+    req.nextUrl.pathname.startsWith('/api/auth') || 
+    req.nextUrl.pathname.includes('/api/auth/callback') ||
+    isNoNeedProcess(req) ||
+    req.nextUrl.pathname.startsWith('/api/webhooks/')
+  ) {
     return NextResponse.next();
   }
 
-  const isWebhooksRoute = req.nextUrl.pathname.startsWith('/api/webhooks/');
-  if (isWebhooksRoute) {
-    return NextResponse.next();
-  }
-
+  // Check if the pathname is missing a locale
   const pathname = req.nextUrl.pathname;
   const pathnameIsMissingLocale = i18n.locales.every(
     (locale) => !pathname.startsWith(`/${locale}/`) && pathname !== `/${locale}`
   );
+
+  // Redirect if locale is missing
+  if (pathnameIsMissingLocale) {
+    const locale = getLocale(req) ?? i18n.defaultLocale;
+    return NextResponse.redirect(
+      new URL(
+        `/${locale}${pathname.startsWith("/") ? "" : "/"}${pathname}`,
+        req.url
+      )
+    );
+  }
 
   if (!isNoRedirect(req) && pathnameIsMissingLocale) {
     const locale = getLocale(req);
@@ -82,48 +112,74 @@ const authMiddleware = withAuth(
   async function middlewares(req: NextRequestWithAuth, _event: NextFetchEvent) {
     const token = await getToken({ req });
     const isAuth = !!token;
-    const isAdmin = token?.isAdmin;
-    const isAuthPage = req.nextUrl.pathname.match(/^\/[a-zA-Z]{2,}\/(login|register)/);
-    const isAuthRoute = req.nextUrl.pathname.startsWith("/api/trpc/");
-    const locale = getLocale(req);
-
-    if (isAuthRoute && isAuth) {
-      return NextResponse.next();
+    const locale = getLocale(req) ?? i18n.defaultLocale;
+    const pathname = req.nextUrl.pathname;
+    
+    console.log('Auth Middleware - Path:', pathname, 'Auth:', isAuth);
+    
+    // Check if current path is login or register
+    const isAuthPath = pathname.includes('/login') || pathname.includes('/register');
+    
+    // If authenticated and trying to access login, redirect appropriately
+    if (isAuth && isAuthPath) {
+      console.log('Authenticated user accessing auth path, handling redirection');
+      
+      const callbackUrl = req.nextUrl.searchParams.get("callbackUrl");
+      if (callbackUrl) {
+        // Handle relative URLs
+        if (callbackUrl.startsWith('/')) {
+          // Add locale prefix if missing
+          if (!/^\/[a-z]{2}\//.test(callbackUrl)) {
+            return NextResponse.redirect(new URL(`/${locale}${callbackUrl}`, req.url));
+          }
+          return NextResponse.redirect(new URL(callbackUrl, req.url));
+        }
+        // Handle absolute URLs that match our origin
+        try {
+          const redirectUrl = new URL(callbackUrl);
+          if (redirectUrl.origin === new URL(req.url).origin) {
+            return NextResponse.redirect(redirectUrl);
+          }
+        } catch {
+          // Invalid URL, fall through to default redirect
+        }
+      }
+      // Default redirect to localized dashboard
+      return NextResponse.redirect(new URL(`/${locale}/dashboard`, req.url));
     }
 
-    if (req.nextUrl.pathname.startsWith("/admin/dashboard")) {
-      if (!isAuth || !isAdmin) {
-        return NextResponse.redirect(new URL(`/admin/login`, req.url));
-      }
-      return NextResponse.next();
-    }
-
-    if (isAuthPage) {
-      if (isAuth) {
-        return NextResponse.redirect(new URL(`/${locale}/dashboard`, req.url));
-      }
-      return NextResponse.next();
-    }
-
-    if (!isAuth) {
-      let from = req.nextUrl.pathname;
-      if (req.nextUrl.search) {
-        from += req.nextUrl.search;
-      }
-      return NextResponse.redirect(
-        new URL(`/${locale}/login?from=${encodeURIComponent(from)}`, req.url)
+    // If not authenticated and trying to access protected routes
+    if (!isAuth && !isAuthPath) {
+      const protectedRoute = protectedRoutes.some(route => 
+        new RegExp(route).test(pathname)
       );
+      
+      if (protectedRoute) {
+        console.log('Unauthenticated user accessing protected route, redirecting to login');
+        const from = pathname;
+        return NextResponse.redirect(
+          new URL(`/${locale}/login?callbackUrl=${encodeURIComponent(from)}`, req.url)
+        );
+      }
     }
 
     return NextResponse.next();
   },
   {
     callbacks: {
-      authorized: () => true,
+      authorized: ({ token }) => !!token,
+    },
+    pages: {
+      signIn: '/login',
     },
   }
 );
 
 export const config = {
-  matcher: ["/((?!.*\\..*|_next).*)", "/", "/(api|trpc)(.*)"],
+  matcher: [
+    '/',
+    '/(es|en|zh|ko|ja)/:path*',
+    '/api/auth/:path*',
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+  ]
 };

@@ -24,7 +24,6 @@ export default async function LoginPage({
   };
 }) {
   const dict = await getDictionary(lang);
-
   return (
     <div className="container flex h-screen w-screen flex-col items-center justify-center">
       <Link
@@ -36,26 +35,26 @@ export default async function LoginPage({
       >
         <>
           <Icons.ChevronLeft className="mr-2 h-4 w-4" />
-          {dict?.login?.back || "Back"}
+          {dict.login.back}
         </>
       </Link>
       <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
         <div className="flex flex-col space-y-2 text-center">
-        <Image
-          src="/images/avatars/logop.svg"
-          alt="Logo"
-          width={32}
-          height={32}
-          className="w-8 h-8"
-        />
+          <Image
+            src="/images/avatars/saasfly-logo.svg"
+            className="mx-auto"
+            width="64"
+            height="64"
+            alt=""
+          />
           <h1 className="text-2xl font-semibold tracking-tight">
-            {dict?.login?.welcome_back || "Welcome back"}
+            {dict.login.welcome_back}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {dict?.login?.signin_title || "Enter your email to sign into your account"}
+            {dict.login.signin_title}
           </p>
         </div>
-        <UserAuthForm lang={lang} dict={dict?.login} />
+        <UserAuthForm lang={lang} dict={dict.login} />
         {/* <p className="px-8 text-center text-sm text-muted-foreground">
           <Link
             href={`/${lang}/register`}

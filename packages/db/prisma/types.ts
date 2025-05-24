@@ -9,7 +9,7 @@ export type Generated<T> =
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
 export type Account = {
-  id: Generated<string>;
+  id: string;
   userId: string;
   type: string;
   provider: string;
@@ -21,6 +21,7 @@ export type Account = {
   scope: string | null;
   id_token: string | null;
   session_state: string | null;
+  refresh_token_expires_in: number | null;
 };
 export type Customer = {
   id: Generated<number>;

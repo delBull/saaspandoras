@@ -1,22 +1,19 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
 "use client";
 
 import * as React from "react";
-//navigate to new page
 import { useRouter } from "next/navigation";
 
 import { cn } from "@saasfly/ui";
-//button self design
 import { buttonVariants, type ButtonProps } from "@saasfly/ui/button";
 import * as Icons from "@saasfly/ui/icons";
 import { toast } from "@saasfly/ui/use-toast";
 
 import { trpc } from "~/trpc/client";
+import type { Dictionary } from "~/types";
 
 interface K8sCreateButtonProps extends ButtonProps {
   customProp?: string;
-  dict: Record<string, unknown>;
+  dict: Dictionary['business'];
 }
 
 export function K8sCreateButton({

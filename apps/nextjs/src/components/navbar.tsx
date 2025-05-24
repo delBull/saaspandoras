@@ -1,24 +1,20 @@
 "use client";
-import React, { useState, useEffect } from "react";
+
+import React from "react";
 import Link from "next/link";
 import type { User } from "next-auth";
 import { useSelectedLayoutSegment } from "next/navigation";
+
 import { cn } from "@saasfly/ui";
+import { Button } from "@saasfly/ui/button";
+
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { MainNav } from "./main-nav";
 import { LocaleChange } from "~/components/locale-change";
 import { UserAccountNav } from "./user-account-nav";
+import { useSigninModal } from "~/hooks/use-signin-modal";
 import useScroll from "~/hooks/use-scroll";
 import type { MainNavItem } from "~/types";
-import { Button } from "@saasfly/ui/button";
-import { client } from "../lib/client";
-import { generatePayload, isLoggedIn, login, logout } from "./actions/auth";
-import {
-  type SiweAuthOptions,
-  useConnectModal,
-  useActiveWallet,
-  useSiweAuth,
-} from "thirdweb/react";
 
 interface MarketingType {
   main_nav_assets: string;
@@ -43,19 +39,6 @@ interface NavBarProps {
   dropdown: Record<string, string>;
 }
 
-const authOptions: SiweAuthOptions = {
-  isLoggedIn: async (_address) => {
-    return await isLoggedIn();
-  },
-  doLogin: async (params) => {
-    await login(params); // Ahora acepta el parámetro correctamente
-  },
-  getLoginPayload: ({ address }) => generatePayload({ address }),
-  doLogout: async () => {
-    await logout();
-  },
-};
-
 export function NavBar({
   user,
   items,
@@ -66,47 +49,9 @@ export function NavBar({
   marketing,
   dropdown,
 }: NavBarProps) {
-
   const scrolled = useScroll(50);
+  const signInModal = useSigninModal();
   const segment = useSelectedLayoutSegment();
-  // Obtenemos el estado de autenticación de thirdweb (ya como booleano)
-  const { isLoggedIn: thirdwebIsLoggedIn } = useSiweAuth(
-    useActiveWallet(),
-    undefined,
-    authOptions
-  );
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const authStatus = await isLoggedIn();
-        setIsAuthenticated(authStatus);
-      } catch (error) {
-        console.error("Error checking auth:", error);
-        setIsAuthenticated(false);
-      }
-    };
-    
-    void checkAuth();
-  }, [thirdwebIsLoggedIn]);
-  
-  const { connect } = useConnectModal();
-
-  const onClick = async () => {
-    try {
-      if (isAuthenticated) {
-        await logout();
-      } else {
-        await connect({
-          client: client,
-          auth: authOptions,
-        });
-      }
-    } catch (error) {
-      console.error("Auth error:", error);
-    }
-  };
 
   return (
     <Tooltip.Provider>
@@ -120,6 +65,7 @@ export function NavBar({
           <MainNav items={items} params={{ lang }} marketing={marketing}>
             {children}
           </MainNav>
+
           <div className="flex items-center space-x-3">
             {items?.length ? (
               <nav className="hidden gap-6 md:flex">
@@ -161,34 +107,35 @@ export function NavBar({
             ) : null}
             <div className="w-[1px] h-8 bg-accent" />
             {rightElements}
-            <LocaleChange url="/" />
-            {isAuthenticated ? (
-              <div className="flex items-center space-x-4">
-                <Link
-                  href={`/${lang}/profile`}
-                  className="text-lg font-medium text-foreground hover:text-foreground/80"
-                >
-                  Perfil
-                </Link>
-                <Link
-                  href={`/${lang}/dashboard`}
-                  className="text-lg font-medium text-foreground hover:text-foreground/80"
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  href={`/${lang}/signout`}
-                  className="text-lg font-medium text-foreground hover:text-foreground/80"
-                >
-                  Signout
-                </Link>
-                {user && <UserAccountNav user={user} params={{ lang }} dict={dropdown} />}
-              </div>
-            ) : (
-              <Button type="button" onClick={onClick}>
-                Sign in
+            <LocaleChange url={"/"} />
+          {!user ? (
+            <Link href={`/${lang}/login`}>
+              <Button variant="outline" size="sm">
+                {typeof marketing.login === "string"
+                  ? marketing.login
+                  : "Default Login Text"}
               </Button>
-            )}
+            </Link>
+          ) : null}
+
+          {user ? (
+            <UserAccountNav
+              user={user}
+              params={{ lang: `${lang}` }}
+              dict={dropdown}
+            />
+          ) : (
+            <Button
+              className="px-3"
+              variant="default"
+              size="sm"
+              onClick={signInModal.onOpen}
+            >
+              {typeof marketing.signup === "string"
+                ? marketing.signup
+                : "Default Signup Text"}
+            </Button>
+          )}
           </div>
         </div>
       </header>

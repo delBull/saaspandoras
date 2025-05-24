@@ -111,6 +111,7 @@ export interface Dictionary {
       sidebar_nav_billing: string;
       sidebar_nav_settings: string;
       title_text: string;
+      marketing_introducing: string;
     };
   };
   business: {
@@ -351,6 +352,7 @@ export interface MarketingConfig {
 export interface DashboardConfig {
   mainNav: MainNavItem[];
   sidebarNav: SidebarNavItem[];
+  marketing: Record<string, string>;
 }
 
 export interface SubscriptionPlan {

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 
 import { getCurrentUser } from "@saasfly/auth";
@@ -12,7 +13,7 @@ import { getDashboardConfig } from "~/config/ui/dashboard";
 import { getDictionary } from "~/lib/get-dictionary";
 
 interface DashboardLayoutProps {
-  children?: React.ReactNode;
+  children: React.ReactNode;
   params: {
     lang: Locale;
   };
@@ -28,10 +29,13 @@ export default async function DashboardLayout({
 }: DashboardLayoutProps) {
   const user = await getCurrentUser();
   const dict = await getDictionary(lang);
+
   if (!user) {
     return notFound();
   }
+
   const dashboardConfig = await getDashboardConfig({ params: { lang } });
+
   return (
     <div className="flex min-h-screen flex-col space-y-6">
       <header className="sticky top-0 z-40 border-b bg-background">
@@ -39,6 +43,7 @@ export default async function DashboardLayout({
           <MainNav
             items={dashboardConfig.mainNav}
             params={{ lang: `${lang}` }}
+            marketing={dashboardConfig.marketing}
           />
           <div className="flex items-center space-x-3">
             <LocaleChange url={"/dashboard"} />
@@ -62,7 +67,16 @@ export default async function DashboardLayout({
           />
         </aside>
         <main className="flex w-full flex-1 flex-col overflow-hidden">
-          {children}
+          <Suspense
+            fallback={
+              <div className="animate-pulse space-y-4">
+                <div className="h-8 w-[200px] bg-muted rounded" />
+                <div className="h-[400px] w-full bg-muted rounded" />
+              </div>
+            }
+          >
+            {children}
+          </Suspense>
         </main>
       </div>
       <SiteFooter

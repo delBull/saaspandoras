@@ -149,8 +149,15 @@ export default async function IndexPage({
           <div className="text-lg text-neutral-500 dark:text-neutral-400">{dict.marketing.sponsor.title}</div>
           <div className="mt-4 flex items-center gap-4">
             <Link href="https://www.costasierrarealty.com" target="_blank">
-              <Image src="/images/costa_sierra.avif" width="48" height="48" alt="twillot" className="filter brightness-0 invert contrast-100"/>
-            </Link>
+              <Image 
+                src="/images/costa_sierra.png" 
+                width="48" 
+                height="48" 
+                alt="Costa Sierra Realty" 
+                className="filter brightness-0 invert contrast-100"
+                unoptimized
+              />
+            </Link> 
             <Link href="https://www.agodecosystem.com" target="_blank">
               <Image src="/images/agod.png" width="48" height="48" alt="setupyourpay" />
             </Link>

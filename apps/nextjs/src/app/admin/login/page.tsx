@@ -4,6 +4,7 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 
 import { cn } from "@saasfly/ui";
 import { CardBody, CardContainer, CardItem } from "@saasfly/ui/3d-card";
@@ -13,6 +14,22 @@ import * as Icons from "@saasfly/ui/icons";
 export default function LoginPage() {
   // const [isLoading, setIsLoading] = React.useState<boolean>(false);
   const [isGitHubLoading, setIsGitHubLoading] = React.useState<boolean>(false);
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
+
+    const handleGitHubLogin = async () => {
+    try {
+      setIsGitHubLoading(true);
+      await signIn("github", {
+        callbackUrl,
+        redirect: true,
+      });
+    } catch (error) {
+      console.error("GitHub login error:", error);
+    } finally {
+      setIsGitHubLoading(false);
+    }
+  };
 
   return (
     <div className="container flex h-screen w-screen flex-col items-center justify-center">
@@ -53,27 +70,20 @@ export default function LoginPage() {
             />
           </CardItem>
           <div className="mt-20 flex items-center justify-between">
-            <CardItem
-              translateZ={20}
-              as={Link}
-              href="#"
-              target="__blank"
+            <Link
+              href="https://pandoras.foundation"
+              target="_blank"
               className="rounded-xl px-4 py-2 text-xs font-normal dark:text-white"
             >
-              You know this is not easy for us
-            </CardItem>
+              <CardItem translateZ={20}>
+                You know this is not easy for us
+              </CardItem>
+            </Link>
+
             <button
               type="button"
               className={cn(buttonVariants({ variant: "outline" }))}
-              onClick={() => {
-                setIsGitHubLoading(true);
-                signIn("github", {
-                  redirect: true,
-                  callbackUrl: "https://dapp.pandoras.foundation/admin/dashboard",
-                }).catch((error) => {
-                  console.error("GitHub signIn error:", error);
-                });
-              }}
+              onClick={handleGitHubLogin}
               disabled={isGitHubLoading}
             >
               {isGitHubLoading ? (
