@@ -20,6 +20,7 @@ const publicRoute = [
   "/(\\w{2}/)?terms(.*)",
   "/(\\w{2}/)?pricing(.*)",
   "/(\\w{2}/)?privacy(.*)",
+  "/(\\w{2}/)?assets(.*)",
   "^/\\w{2}$", // root with locale
 ];
 
