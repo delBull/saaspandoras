@@ -9,7 +9,13 @@ import type { NextFetchEvent } from "next/server";
 
 import { i18n } from "~/config/i18n-config";
 
-const noNeedProcessRoute = [".*\\.png", ".*\\.jpg", ".*\\.opengraph-image.png"];
+const noNeedProcessRoute = [
+  ".*\\.png", 
+  ".*\\.jpg", 
+  ".*\\.opengraph-image.png",
+  "/__next_devtools__/client(.*)",
+  "/en/__next_devtools__/client(.*)", 
+];
 
 const noRedirectRoute = ["/api(.*)", "/trpc(.*)", "/admin"];
 
@@ -186,6 +192,6 @@ export const config = {
     '/',
     '/(es|en|zh|ko|ja)/:path*',
     '/api/auth/:path*',
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|__next_devtools__).*)'
   ]
 };
