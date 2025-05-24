@@ -2,7 +2,6 @@ import { Inter as FontSans } from "next/font/google";
 
 import localFont from "next/font/local";
 import { Dancing_Script } from "next/font/google";
-import { ThirdwebProvider } from "thirdweb/react";
 
 import "~/styles/globals.css";
 
@@ -115,13 +114,11 @@ export default function RootLayout({
           defaultTheme="dark"
           enableSystem={false}
         >
-          <ThirdwebProvider>
           <NextDevtoolsProvider>{children}</NextDevtoolsProvider>
           <Analytics />
           <SpeedInsights />
           <Toaster />
           <TailwindIndicator />
-          </ThirdwebProvider>
         </ThemeProvider>
       </body>
     </html>
