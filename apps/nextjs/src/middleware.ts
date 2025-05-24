@@ -18,6 +18,7 @@ const publicRoute = [
     "/(\\w{2}/)?login(.*)",
   "/(\\w{2}/)?register(.*)",
   "/(\\w{2}/)?terms(.*)",
+  "/(\\w{2}/)?pricing(.*)",
   "/(\\w{2}/)?privacy(.*)",
   "^/\\w{2}$", // root with locale
 ];
@@ -51,7 +52,11 @@ function isNoRedirect(request: NextRequest): boolean {
 
 function isPublicPage(request: NextRequest): boolean {
   const pathname = request.nextUrl.pathname;
-  return publicRoute.some((route) => new RegExp(route).test(pathname));
+  return publicRoute.some(
+    (route) => 
+    new RegExp(route).test(pathname) ||
+    new RegExp(`/[a-z]{2}${route}`).test(pathname)
+  );
 }
 
 function isNoNeedProcess(request: NextRequest): boolean {
