@@ -105,11 +105,13 @@ export function Sidebar({ wallet = "0x1344543534...", totalBalance = 1267.45 }: 
       <button
         onClick={() => setOpen(!open)}
         className={cn(
-          "absolute -right-3 top-12 z-10",
-          "flex h-10 w-5 items-center justify-center",
-          "rounded-md border border-gray-700 border-l-0",
+          "absolute -right-3 z-50",
+          "top-1/2 -translate-y-1/2",
+          "flex h-20 w-5 items-center justify-center",
+          "rounded-md border-2 border-gray-800 border-l-0",
+          "bg-zinc-900",
           "text-gray-400",
-          "hover:bg-gray-700 hover:text-white",
+          "hover:text-white",
           "transition-colors duration-200"
         )}
       >
