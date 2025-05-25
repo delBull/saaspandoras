@@ -4,9 +4,7 @@ import { notFound } from "next/navigation";
 import { getCurrentUser } from "@saasfly/auth";
 
 import { LocaleChange } from "~/components/locale-change";
-import { MainNav } from "~/components/main-nav";
 // import { DashboardNav } from "~/components/nav";
-import { SiteFooter } from "~/components/site-footer";
 import { UserAccountNav } from "~/components/user-account-nav";
 import { i18n, type Locale } from "~/config/i18n-config";
 import { getDashboardConfig } from "~/config/ui/dashboard";
@@ -74,11 +72,7 @@ export default async function DashboardLayout({
           </Suspense>
         </main>
       </div>
-      <SiteFooter
-        className="border-t border-border"
-        params={{ lang: `${lang}` }}
-        dict={dict.common}
-      />
+   
     </div>
   );
 }
