@@ -286,7 +286,7 @@ export default async function DashboardPage({
       <PromotionalBanner
         title="Hemp Project"
         subtitle="Green GENESIS Become an early supporter"
-      actionText="You won't believe how much can be done with hemp!"
+      actionText="A lot can be done with hemp!"
         variant="purple"
       />
       <PromotionalBanner
@@ -298,7 +298,7 @@ export default async function DashboardPage({
       <PromotionalBanner
         title="RA Wallet"
         subtitle="Best blockchain wallet, rewards like no other"
-        actionText="WIN BY HOLDING"
+        actionText="Win by holding"
         variant="red"
       />
     </div>
