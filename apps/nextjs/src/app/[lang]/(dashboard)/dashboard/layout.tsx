@@ -35,8 +35,8 @@ export default async function DashboardLayout({
   const dashboardConfig = await getDashboardConfig({ params: { lang } });
 
   return (
-  <div className="flex min-h-screen flex-col space-y-6">
-    <header className="top-0 z-40 ml-[20rem] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+  <div className="flex top-4 right-0 fixed min-h-screen flex-col space-y-6">
+    <header className="z-10">
       <div className="container flex h-12 items-center justify-end py-4"> 
         <div className="flex items-center space-x-3">
             <LocaleChange url={"/dashboard"} />
