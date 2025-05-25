@@ -36,7 +36,7 @@ export default async function DashboardLayout({
 
   return (
   <div className="flex min-h-screen flex-col space-y-6">
-    <header className="top-0 z-40">
+    <header className="top-0 z-40 ml-[20rem] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-12 items-center justify-end py-4"> 
         <div className="flex items-center space-x-3">
             <LocaleChange url={"/dashboard"} />
@@ -52,7 +52,7 @@ export default async function DashboardLayout({
           </div>
         </div>
       </header>
-      <div className="container flex-1 ">
+      <div className="container flex-1">
        <aside className="hidden w-[200px] flex-col md:flex">
          {/*  <DashboardNav
             items={dashboardConfig.sidebarNav}

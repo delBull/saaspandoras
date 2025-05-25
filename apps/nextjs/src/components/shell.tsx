@@ -22,7 +22,7 @@ export function DashboardShell({
     )}>
       <Sidebar wallet={wallet} totalBalance={totalBalance} />
       <main className={cn(
-        "flex-1 relative", 
+        "flex-1 relative mt-5", 
         "h-screen overflow-y-auto",
         "p-12 bg-gray-950",
         "rounded-tl-[4rem]"

@@ -278,7 +278,9 @@ export default async function DashboardPage({
     }
 
     return (
-      <DashboardShell wallet={walletAddress} totalBalance={totalBalance}>
+      <DashboardShell 
+      wallet={walletAddress} 
+      totalBalance={totalBalance}>
         <StatsOverview stats={tokenStats} />
 
             {/* Promotional Banners */}
