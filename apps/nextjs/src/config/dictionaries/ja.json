@@ -128,7 +128,14 @@
       "sidebar_nav_billing": "請求",
       "sidebar_nav_settings": "設定",
       "title_text": "プロジェクトの作成と管理",
-      "marketing_introduction": "Pandorasのご紹介"
+      "marketing_introduction": "Pandorasのご紹介",
+      "portfolio": "ポートフォリオ",
+      "tickets": "チケット",
+      "action": "アクション",
+      "all_investments": "すべての投資",
+      "real_estate": "不動産",
+      "startups": "スタートアップ",
+      "scaleups": "スケールアップ"
     }
   },
   "business": {

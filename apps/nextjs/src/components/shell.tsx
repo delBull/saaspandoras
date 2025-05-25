@@ -1,32 +1,23 @@
 import * as React from "react";
+import { Sidebar } from "~/components/sidebar";
 
-export function DashboardShell(props: {
-  title?: string;
-  description?: React.ReactNode;
-  breadcrumb?: boolean;
-  headerAction?: React.ReactNode;
+interface DashboardShellProps {
   children: React.ReactNode;
-  className?: string;
-}) {
+  wallet?: string;
+  totalBalance?: number;
+}
+
+export function DashboardShell({
+  children,
+  wallet,
+  totalBalance
+}: DashboardShellProps) {
   return (
-    <div>
-      <div className="mb-4 flex items-center justify-between">
-        <div className="space-y-1">
-          <h1 className="font-cal text-xl font-semibold leading-none">
-            {props.title}
-          </h1>
-          {typeof props.description === "string" ? (
-            <h2 className="text-base text-muted-foreground">
-              {props.description}
-            </h2>
-          ) : (
-            props.description
-          )}
-        </div>
-        {props.headerAction}
-      </div>
-      {/*{props.breadcrumb && <Breadcrumbs />}*/}
-      <div className={props.className}>{props.children}</div>
+    <div className="flex min-h-screen bg-gray-950">
+      <Sidebar wallet={wallet} totalBalance={totalBalance} />
+      <main className="flex-1 p-8">
+        {children}
+      </main>
     </div>
   );
 }

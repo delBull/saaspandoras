@@ -32,13 +32,17 @@ export function MainNav({ items, children, params: { lang } }: MainNavProps) {
       <div className="flex items-center">
         <Link href={`/${lang}`} className="hidden items-center space-x-2 md:flex">
           <Image 
+            className="hidden"
             src="/images/logo.png"
             alt="Pandora's Logo"
             width={40}
             height={40}
             priority
           />
-          <div className="text-3xl">Pandora&apos;s</div>
+          <div className="text-xl">
+            <span className="text-lime-300">Pandora&apos;s</span>{" "}
+            <span className="text-violet-900">Foundation</span>
+          </div>
         </Link>
         {/*
         <Link href="https://pandoras.foundation" target="_blank" className="ml-4 hidden md:flex lg:flex xl:flex">

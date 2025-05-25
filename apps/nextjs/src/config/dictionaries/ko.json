@@ -128,7 +128,14 @@
       "sidebar_nav_billing": "청구",
       "sidebar_nav_settings": "설정",
       "title_text": "프로젝트를 생성하고 관리하세요.",
-      "marketing_introduction": "판도라스 소개"
+      "marketing_introduction": "판도라스 소개",
+      "portfolio": "포트폴리오",
+      "tickets": "티켓",
+      "action": "작업",
+      "all_investments": "모든 투자",
+      "real_estate": "부동산",
+      "startups": "스타트업",
+      "scaleups": "스케일업"
     }
   },
   "business": {

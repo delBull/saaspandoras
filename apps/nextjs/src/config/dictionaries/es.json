@@ -128,7 +128,14 @@
       "sidebar_nav_billing": "Facturación",
       "sidebar_nav_settings": "Configuraciones",
       "title_text": "Crea y gestiona tus proyectos.",
-      "marketing_introduction": "Presentando Pandora's"
+      "marketing_introduction": "Presentando Pandora's",
+      "portfolio": "Portafolio",
+      "tickets": "Tickets",
+      "action": "Acción",
+      "all_investments": "Todas las Inversiones",
+      "real_estate": "Bienes Raíces",
+      "startups": "Startups",
+      "scaleups": "Scaleups"
     }
   },
   "business": {

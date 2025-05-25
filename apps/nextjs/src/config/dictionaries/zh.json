@@ -128,7 +128,14 @@
       "sidebar_nav_billing": "计费",
       "sidebar_nav_settings": "设置",
       "title_text": "创建并管理您的项目。",
-      "marketing_introducing": "潘多拉介绍"
+      "marketing_introducing": "潘多拉介绍",
+      "portfolio": "投资组合",
+      "tickets": "票据",
+      "action": "操作",
+      "all_investments": "所有投资",
+      "real_estate": "房地产",
+      "startups": "创业公司",
+      "scaleups": "扩张公司"
     }
   },
   "business": {
