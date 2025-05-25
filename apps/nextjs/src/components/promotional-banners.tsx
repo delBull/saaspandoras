@@ -102,7 +102,7 @@ export function PromotionalBanner({ title, subtitle, actionText, variant }: Bann
       />
 
       {/* Gradient Border */}
-      <div className="absolute inset-0 p-[2px] rounded-xl bg-gradient-to-r from-white/10 to-white/5">
+      <div className="absolute inset-0 p-[1px] rounded-xl bg-gradient-to-r from-white/10 to-white/5">
         {/* Content Container */}
         <div className={cn(contentContainerClasses.join(' ')) as unknown as string}>
           <div>

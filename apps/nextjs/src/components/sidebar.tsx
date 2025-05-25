@@ -1,127 +1,246 @@
+"use client";
+
 import { 
   HomeIcon, 
   BanknotesIcon, 
   ArrowPathIcon,
   Cog6ToothIcon,
-  CreditCardIcon
+  CreditCardIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon
 } from "@heroicons/react/24/outline";
-import Link from "next/link";
 import Image from "next/image";
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { cn } from "~/lib/utils";
+import Link from "next/link";
 
 interface SidebarProps {
-  wallet?: string;
+  wallet?: string; 
   totalBalance?: number;
 }
 
 export function Sidebar({ wallet = "0x1344543534...", totalBalance = 1267.45 }: SidebarProps) {
+  const [open, setOpen] = useState(true);
+
+  const links = [
+    {
+      label: "HOME",
+      href: "/dashboard",
+      icon: <HomeIcon className="h-5 w-5 shrink-0 text-gray-400" />
+    },
+    {
+      label: "INVEST",
+      href: "/dashboard",
+      icon: <ArrowPathIcon className="h-5 w-5 shrink-0 text-gray-400" />
+    },
+    {
+      label: "POOL",
+      href: "#",
+      icon: <BanknotesIcon className={cn(
+        "h-5 w-5 shrink-0",
+        "text-gray-400",
+        !open && "mx-auto"
+      )} />,
+      comingSoon: true
+    },
+    {
+      label: "BILLING",
+      href: "/dashboard/billing",
+      icon: <CreditCardIcon className="h-5 w-5 shrink-0 text-gray-400" />
+    },
+    {
+      label: "SETTINGS",
+      href: "/dashboard/settings",
+      icon: <Cog6ToothIcon className="h-5 w-5 shrink-0 text-gray-400" />
+    }
+  ];
+
   return (
-    <div className="w-64 bg-zinc-900 min-h-screen flex flex-col">
-        <div className="flex-1 py-6 space-y-4">
+   <motion.div
+      animate={{ width: open ? "20rem" : "6rem" }}
+      className={cn(
+        "relative h-screen bg-zinc-900",
+        "border-r border-gray-800",
+        "flex flex-col",
+        "px-2",
+        "pt-20"
+      )}
+    >
+      
+    {/* Logo Section with Animation */}
+    <Link href="/" className="z-50">
+    <div className="absolute top-12 left-0 right-0 flex justify-center">
+      <motion.div
+        animate={{ 
+          opacity: open ? 1 : 0,
+          display: open ? "block" : "none"
+        }}
+      >
+        <Image 
+          src="/images/logo_finance.png" 
+          width={256}
+          height={64} 
+          alt="Logo Finance"
+        />
+      </motion.div>
+      <motion.div
+        animate={{ 
+          opacity: open ? 0 : 1,
+          display: open ? "none" : "block"
+        }}
+      >
+        <Image 
+          src="/images/logo_green.png" 
+          width={32}
+          height={32} 
+          alt="Logo"
+          className="h-8 w-8" 
+        />
+      </motion.div>
+    </div>
+    </Link>
+
+      {/* Toggle Button */}
+      <button
+        onClick={() => setOpen(!open)}
+        className={cn(
+          "absolute -right-3 top-12 z-10",
+          "flex h-10 w-5 items-center justify-center",
+          "rounded-md border border-gray-700 border-l-0",
+          "text-gray-400",
+          "hover:bg-gray-700 hover:text-white",
+          "transition-colors duration-200"
+        )}
+      >
+        {open ? (
+          <ChevronLeftIcon className="h-4 w-4" />
+        ) : (
+          <ChevronRightIcon className="h-4 w-4" />
+        )}
+      </button>
+
       {/* Wallet Section */}
-      <div className="bg-gray-800/50 rounded-lg p-2 mr-2 ml-2 border border-gray-700">
+      <div className="bg-gray-800/50 rounded-lg p-2 mx-2 mt-6 border border-gray-700">
         <div className="flex flex-col space-y-1">
           <div className="flex items-center space-x-1">
-            <span className="text-xs text-gray-400 font-mono">C:\PANDORAS\</span>
-            <span className="text-xs text-lime-400 font-mono truncate">{wallet}</span>
+            <motion.span 
+              animate={{ 
+                width: open ? "auto" : "2rem",
+              }}
+              className="text-xs text-gray-400 font-mono overflow-hidden whitespace-nowrap"
+            >
+              {open ? "C:\\PANDORAS\\" : "C:\\"}
+            </motion.span>
+            <motion.span 
+              animate={{ 
+                opacity: open ? 1 : 0,
+                width: open ? "auto" : 0
+              }}
+              className="text-xs text-lime-400 font-mono truncate"
+            >
+              {wallet}
+            </motion.span>
           </div>
         </div>
       </div>
 
       {/* Balance Section */}
-      <div className="border-b border-gray-800 w-full px-4 pb-2">
+      <motion.div 
+        animate={{ 
+          opacity: open ? 1 : 0,
+          height: open ? "auto" : 0,
+          marginTop: open ? "1rem" : 0,
+          marginBottom: open ? "0.5rem" : 0,
+        }}
+        className="border-b border-gray-800 w-full px-4 pb-2 overflow-hidden"
+      >
         <div className="flex flex-col items-center">
           <Image 
             src="/images/logo.png"
             width={32}
             height={32} 
             alt="Logo" 
-            className="h-8 w-8 mb-2" />
-          <h3 className="text-xs font-medium text-lime-500">BALANCE</h3>
-          <p className="text-xl font-bold font-mono text-lime-300">${totalBalance.toLocaleString()}</p>
+            className="h-8 w-8 mb-2" 
+          />
+          <div className="flex flex-col items-center">
+            <h3 className="text-xs font-medium text-lime-500">BALANCE</h3>
+            <p className="text-xl font-bold font-mono text-lime-300">
+              ${totalBalance.toLocaleString()}
+            </p>
+          </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Navigation Links */}
-      <nav className="space-y-2">
-        {/* Home */}
-        <div className="border-b border-gray-800 w-full px-4 pb-2">
-          <Link 
-            href="/dashboard" 
-            className="flex items-center space-x-3 p-4 text-gray-400 hover:text-white"
+      <div className="mt-8 flex flex-col gap-2 flex-1">
+        {links.map((link, idx) => (
+          <motion.a
+            key={idx}
+            href={link.href}
+            className={cn(
+              "flex items-center py-2 text-gray-400 relative",
+              "hover:text-white hover:bg-gray-800/50 rounded-lg",
+              "transition-all duration-200",
+              open ? "px-4" : "justify-center w-full"
+            )}
           >
-            <HomeIcon className="h-5 w-5" />
-            <span>HOME</span>
-          </Link>
-        </div>
-
-        {/* Invest */}
-        <div className="border-b border-gray-800 w-full px-4 pb-2">
-          <Link 
-            href="/dashboard" 
-            className="flex items-center space-x-3 p-4 text-gray-400 hover:text-white"
-          >
-            <ArrowPathIcon className="h-5 w-5" />
-            <span>INVEST</span>
-          </Link>
-        </div>
-
-        {/* Pool */}
-        <div className="border-b border-gray-800 w-full px-4 pb-2">
-          <div className="p-4">
-            <div className="flex items-center space-x-3 text-gray-300">
-              <BanknotesIcon className="h-5 w-5" />
-              <span>POOL</span>
-            </div>
-            <span className="text-xs text-gray-500 ml-8">coming soon</span>
-          </div>
-        </div>
-
-        {/* Services */}
-        <div className="border-b border-gray-800 w-full px-4 pb-2">
-          <div className="p-4">
-            <h3 className="text-gray-300 mb-2">SERVICES</h3>
-            <div className="space-y-2 ml-4">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-300">+ Incubation</span>
-                <span className="text-xs text-gray-500">coming soon</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-300">+ Tokenize</span>
-                <span className="text-xs text-gray-500">coming soon</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </nav>
+            {link.icon}
+            <motion.span
+              animate={{ 
+                opacity: open ? 1 : 0,
+                width: open ? "auto" : 0,
+                marginLeft: open ? "0.75rem" : "0"
+              }}
+              className="font-medium whitespace-nowrap"
+            >
+              {link.label}
+            </motion.span>
+            {link.comingSoon && open && (
+              <motion.span
+                animate={{ 
+                  opacity: open ? 1 : 0,
+                  width: open ? "auto" : 0 
+              }}
+                className="ml-auto text-xs text-gray-500"
+              >
+                coming soon
+              </motion.span>
+            )}
+          </motion.a>
+        ))}
       </div>
 
-      {/* Bottom Links */}
-      <div className="border-t border-gray-800 mt-auto">
-        <div className="px-4">
-          <Link 
-            href="/dashboard/billing" 
-            className="flex items-center space-x-3 p-4 text-gray-400 hover:text-white"
-          >
-            <CreditCardIcon className="h-5 w-5" />
-            <span>Billing</span>
-          </Link>
-          <Link 
-            href="/dashboard/settings" 
-            className="flex items-center space-x-3 p-4 text-gray-400 hover:text-white"
-          >
-            <Cog6ToothIcon className="h-5 w-5" />
-            <span>Settings</span>
-          </Link>
+      {/* Services Section */}
+      <motion.div 
+        animate={{ opacity: open ? 1 : 0 }}
+        className="px-4 mb-4"
+      >
+        <div className="border-t border-gray-800 pt-4">
+          <h3 className="text-gray-300 mb-2 px-4">SERVICES</h3>
+          <div className="space-y-2 px-4">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-300">+ Incubation</span>
+              <span className="text-xs text-gray-500">coming soon</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-300">+ Tokenize</span>
+              <span className="text-xs text-gray-500">coming soon</span>
+            </div>
+          </div>
         </div>
-        <div className="flex justify-center py-4">
+
+        {/* Bottom Logo */}
+        <div className="flex justify-center mt-8">
           <Image 
             src="/images/onlybox2.png" 
             width={54} 
             height={54} 
             alt="Logo" 
-            className="h-36 w-36" />
+            className="h-36 w-36" 
+          />
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

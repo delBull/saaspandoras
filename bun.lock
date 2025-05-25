@@ -61,6 +61,7 @@
         "@saasfly/db": "workspace:*",
         "@saasfly/stripe": "workspace:*",
         "@t3-oss/env-nextjs": "0.8.0",
+        "@tabler/icons-react": "^3.33.0",
         "@tanstack/react-query": "5.36.0",
         "@tanstack/react-query-devtools": "5.36.0",
         "@tanstack/react-table": "8.17.0",
@@ -1110,6 +1111,10 @@
     "@t3-oss/env-core": ["@t3-oss/env-core@0.8.0", "", { "peerDependencies": { "typescript": ">=5.0.0", "zod": "^3.0.0" }, "optionalPeers": ["typescript"] }, "sha512-Tc1pg0KH/tJeI0Z1s/Isp1VsGDj1N03ZAYFV8GjWgMxytF/ve0Dv+opjmTapHICRv8qiB1Y/fsTjkWNMpKPRCQ=="],
 
     "@t3-oss/env-nextjs": ["@t3-oss/env-nextjs@0.8.0", "", { "dependencies": { "@t3-oss/env-core": "0.8.0" }, "peerDependencies": { "typescript": ">=5.0.0", "zod": "^3.0.0" }, "optionalPeers": ["typescript"] }, "sha512-bJyoE8of4QmqZN7a49iLJAbUq4graScb9ezXzvnuIVr9JP43C093vmy55hT1uZL533CwiPz8zo1INwyAS6qnHw=="],
+
+    "@tabler/icons": ["@tabler/icons@3.33.0", "", {}, "sha512-NZeFfzcYe7xcBHR3zKoCSrw/cFWvfj6LjenPQ48yVMTGdX854HH9nH44ZfMH8rrDzHBllfjwl4CIX6Vh2tyN0Q=="],
+
+    "@tabler/icons-react": ["@tabler/icons-react@3.33.0", "", { "dependencies": { "@tabler/icons": "3.33.0" }, "peerDependencies": { "react": ">= 16" } }, "sha512-ay+HDecCjmFl25Lg14hcl59ffSjnOcgfrlV14shu8Qjbz+Xh4LRus93DuoyLQte8YSxE7Pe5gnEz6OF0GtwNtw=="],
 
     "@tanstack/query-core": ["@tanstack/query-core@5.36.0", "", {}, "sha512-B5BD3pg/mztDR36i77hGcyySKKeYrbM5mnogOROTBi1SUml5ByRK7PGUUl16vvubvQC+mSnqziFG/VIy/DE3FQ=="],
 

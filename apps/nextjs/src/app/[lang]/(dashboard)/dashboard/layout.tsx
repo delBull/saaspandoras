@@ -37,15 +37,10 @@ export default async function DashboardLayout({
   const dashboardConfig = await getDashboardConfig({ params: { lang } });
 
   return (
-    <div className="flex min-h-screen flex-col space-y-6">
-      <header className="top-0 z-40">
-        <div className="container flex h-16 items-center justify-between py-4">
-          <MainNav
-            items={dashboardConfig.mainNav}
-            params={{ lang: `${lang}` }}
-            marketing={dashboardConfig.marketing}
-          />
-          <div className="flex items-center space-x-3">
+  <div className="flex min-h-screen flex-col space-y-6">
+    <header className="top-0 z-40">
+      <div className="container flex h-12 items-center justify-end py-4"> 
+        <div className="flex items-center space-x-3">
             <LocaleChange url={"/dashboard"} />
             <UserAccountNav
               user={{
