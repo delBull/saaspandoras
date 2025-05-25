@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Sidebar } from "~/components/sidebar";
+import { cn } from "~/lib/utils";
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -10,13 +11,25 @@ interface DashboardShellProps {
 export function DashboardShell({
   children,
   wallet,
-  totalBalance
+  totalBalance 
 }: DashboardShellProps) {
   return (
-    <div className="flex min-h-screen bg-gray-950">
+    <div className={cn(
+      "fixed inset-0",
+      "flex bg-gray-950",
+      "border-zinc-900",
+      "overflow-hidden"
+    )}>
       <Sidebar wallet={wallet} totalBalance={totalBalance} />
-      <main className="flex-1 p-8">
-        {children}
+      <main className={cn(
+        "flex-1 relative", 
+        "h-screen overflow-y-auto",
+        "p-12 bg-gray-950",
+        "rounded-tl-[4rem]"
+      )}>
+        <div className="max-w-7xl mx-auto">
+          {children}
+        </div>
       </main>
     </div>
   );

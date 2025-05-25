@@ -286,7 +286,7 @@ export default async function DashboardPage({
       <PromotionalBanner
         title="Hemp Project"
         subtitle="Green GENESIS Become an early supporter"
-      actionText="A lot can be done with hemp!"
+      actionText="Do more with hemp!"
         variant="purple"
       />
       <PromotionalBanner
