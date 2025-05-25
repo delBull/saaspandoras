@@ -124,11 +124,18 @@
     "dashboard": {
       "main_nav_documentation": "Documentation",
       "main_nav_support": "Support",
-      "sidebar_nav_clusters": "Projects",
+      "sidebar_nav_clusters": "Projects", 
       "sidebar_nav_billing": "Billing",
       "sidebar_nav_settings": "Settings",
       "title_text": "Create and manage your projects.",
-      "marketing_introducing": "Introducing Pandora's"
+      "marketing_introducing": "Introducing Pandora's",
+      "portfolio": "Portfolio",
+      "tickets": "Tickets",
+      "action": "Action",
+      "all_investments": "All Investments",
+      "real_estate": "Real Estate",
+      "startups": "Startups",
+      "scaleups": "Scaleups"
     }
   },
   "business": {

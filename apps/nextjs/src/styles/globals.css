@@ -84,3 +84,31 @@
   }
 }
 
+select {
+  text-align: left;
+  color: white !important;
+}
+
+select option {
+  background-color: #111827;
+  color: white;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+}
+
+select:focus {
+  outline: none;
+}
+
+select::-ms-expand {
+  display: none;
+}
+
+select:-moz-focusring {
+  color: transparent;
+  text-shadow: 0 0 0 white;
+}
+
+main.flex-1.p-8 {
+    padding-top: 0;
+}

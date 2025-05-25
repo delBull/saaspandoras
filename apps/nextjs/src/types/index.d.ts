@@ -113,6 +113,13 @@ export interface Dictionary {
       title_text: string;
       marketing_introducing: string;
     };
+    portfolio: string;
+    tickets: string;
+    action: string;
+    all_investments: string;
+    real_estate: string;
+    startups: string;
+    scaleups: string;
   };
   business: {
     k8s: {
