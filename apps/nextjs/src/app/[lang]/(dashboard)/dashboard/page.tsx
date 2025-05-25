@@ -21,6 +21,7 @@ import type { Locale } from "~/config/i18n-config";
 import { getDictionary } from "~/lib/get-dictionary";
 import type { Dictionary } from "~/types";
 import { trpc } from "~/trpc/server";
+import { PromotionalBanner } from "~/components/promotional-banners";
 
 export const metadata = {
   title: "Dashboard",
@@ -260,7 +261,7 @@ export default async function DashboardPage({
   }, 0);
 
   // TODO: Get wallet address from authentication
-  const walletAddress = "0x134454353467890...";
+  const walletAddress = "delBull.blockchain";
 
   const dict = await getDictionary(lang);
   const tokenStats = await getTokenStats();
@@ -279,6 +280,29 @@ export default async function DashboardPage({
     return (
       <DashboardShell wallet={walletAddress} totalBalance={totalBalance}>
         <StatsOverview stats={tokenStats} />
+
+            {/* Promotional Banners */}
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 my-6">
+      <PromotionalBanner
+        title="Hemp Project"
+        subtitle="Green GENESIS Become an early supporter"
+      actionText="You won't believe how much can be done with hemp!"
+        variant="purple"
+      />
+      <PromotionalBanner
+        title="Mining Project"
+        subtitle="Ever dream about being a miner?"
+        actionText="Soon to be launched"
+        variant="green"
+      />
+      <PromotionalBanner
+        title="RA Wallet"
+        subtitle="Best blockchain wallet, rewards like no other"
+        actionText="WIN BY HOLDING"
+        variant="red"
+      />
+    </div>
+
         <Suspense
           fallback={
             <div className="divide-border-200 divide-y rounded-md border p-4">

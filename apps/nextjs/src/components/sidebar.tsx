@@ -2,7 +2,6 @@ import {
   HomeIcon, 
   BanknotesIcon, 
   ArrowPathIcon,
-  WalletIcon,
   Cog6ToothIcon,
   CreditCardIcon
 } from "@heroicons/react/24/outline";
@@ -19,10 +18,12 @@ export function Sidebar({ wallet = "0x1344543534...", totalBalance = 1267.45 }: 
     <div className="w-64 bg-zinc-900 min-h-screen flex flex-col">
         <div className="flex-1 py-6 space-y-4">
       {/* Wallet Section */}
-      <div className="border-b border-gray-800 w-full px-4 pb-2">
-        <div className="flex items-center space-x-2">
-          <WalletIcon className="h-4 w-4 text-gray-400" />
-          <span className="text-xs text-gray-400 font-mono truncate">{wallet}</span>
+      <div className="bg-gray-800/50 rounded-lg p-2 mr-2 ml-2 border border-gray-700">
+        <div className="flex flex-col space-y-1">
+          <div className="flex items-center space-x-1">
+            <span className="text-xs text-gray-400 font-mono">C:\PANDORAS\</span>
+            <span className="text-xs text-lime-400 font-mono truncate">{wallet}</span>
+          </div>
         </div>
       </div>
 
@@ -81,11 +82,11 @@ export function Sidebar({ wallet = "0x1344543534...", totalBalance = 1267.45 }: 
             <h3 className="text-gray-300 mb-2">SERVICES</h3>
             <div className="space-y-2 ml-4">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-300">Incubation</span>
+                <span className="text-sm text-gray-300">+ Incubation</span>
                 <span className="text-xs text-gray-500">coming soon</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-300">Tokenize</span>
+                <span className="text-sm text-gray-300">+ Tokenize</span>
                 <span className="text-xs text-gray-500">coming soon</span>
               </div>
             </div>

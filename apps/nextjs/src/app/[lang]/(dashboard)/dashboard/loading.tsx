@@ -5,10 +5,10 @@ export default function DashboardLoading() {
   return (
     <DashboardShell>
       <DashboardHeader
-        heading="kubernetes"
+        heading="Pandorians"
         text="Loading dashboard..."
       />
-      <div className="divide-border-200 divide-y rounded-md border">
+      <div className="divide-border-200 divide-y rounded-sm border">
         <div className="p-4">
           <div className="space-y-3">
             <div className="h-5 w-2/6 animate-pulse rounded bg-muted" />
