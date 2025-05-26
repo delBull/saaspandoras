@@ -58,20 +58,30 @@ async function getTokenStats(): Promise<TokenStats> {
 
 function StatsOverview({ stats }: { stats: TokenStats }) {
   return (
-    <div className="space-y-6">
-      {/* Top Stats Row */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-lg bg-zinc-900 p-6">
-          <h3 className="text-sm font-medium text-gray-400">Marketcap</h3>
-          <div className="mt-2 flex items-baseline">
-            <p className="text-3xl font-semibold font-mono text-white">${stats.marketcap}</p>
-            <p className="ml-2 flex items-center text-sm text-green-400">
-              <ArrowTrendingUpIcon className="h-4 w-4" />
-              {stats.marketcapChange}%
-            </p>
+    <div className="space-y-1">
+      {/* Top Independent Stats */}
+      <div className="flex gap-2">
+        {/* Holders Stats */}
+        <div className="rounded-lg border pl-3 pr-3 border-slate-800">
+          <h3 className="text-xs font-medium text-gray-400">Holders</h3>
+          <div className="flex items-baseline"> 
+            <p className="text-sm font-semibold font-mono text-white">{stats.holders}</p>
           </div>
         </div>
-        <div className="rounded-lg bg-zinc-900 p-6">
+
+        {/* PBOX Price Stats */}
+        <div className="rounded-lg border border-slate-800 pl-3 pr-3">
+          <h3 className="text-xs font-medium text-gray-400">PBOX Price</h3>
+          <div className="flex items-baseline">
+            <p className="text-sm font-semibold font-mono text-white">${stats.price}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Stats Row */}
+      <div className="grid grid-cols-3">
+        {/* Circulating Supply */}
+        <div className="rounded-l-lg bg-zinc-900 p-6">
           <h3 className="text-sm font-medium text-gray-400">Circulating Supply</h3>
           <div className="mt-2 flex items-baseline">
             <p className="text-3xl font-semibold font-mono text-white">
@@ -79,23 +89,9 @@ function StatsOverview({ stats }: { stats: TokenStats }) {
             </p>
           </div>
         </div>
-        <div className="rounded-lg bg-zinc-900 p-6">
-          <h3 className="text-sm font-medium text-gray-400">Holders</h3>
-          <div className="mt-2 flex items-baseline">
-            <p className="text-3xl font-semibold font-mono text-white">{stats.holders}</p>
-          </div>
-        </div>
-        <div className="rounded-lg bg-zinc-900 p-6">
-          <h3 className="text-sm font-medium text-gray-400">PBOX Price</h3>
-          <div className="mt-2 flex items-baseline">
-            <p className="text-3xl font-semibold font-mono text-white">${stats.price}</p>
-          </div>
-        </div>
-      </div>
 
-      {/* Additional Stats Row */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-lg bg-zinc-900 p-6">
+        {/* Liquidity */}
+        <div className="bg-zinc-900 p-6">
           <h3 className="text-sm font-medium text-gray-400">Liquidity</h3>
           <div className="mt-2 flex items-baseline">
             <p className="text-3xl font-semibold font-mono text-white">${stats.liquidity}</p>
@@ -105,7 +101,9 @@ function StatsOverview({ stats }: { stats: TokenStats }) {
             </p>
           </div>
         </div>
-        <div className="rounded-lg bg-zinc-900 p-6">
+
+        {/* Treasury */}
+        <div className="rounded-r-smlg bg-zinc-900 p-6">
           <h3 className="text-sm font-medium text-gray-400">Treasury</h3>
           <div className="mt-2 flex items-baseline">
             <p className="text-3xl font-semibold font-mono text-white">${stats.treasury}</p>
@@ -116,6 +114,18 @@ function StatsOverview({ stats }: { stats: TokenStats }) {
           </div>
         </div>
       </div>
+
+      {/* Marketcap section - commented out */}
+      {/* <div className="rounded-lg bg-zinc-900 p-6">
+        <h3 className="text-sm font-medium text-gray-400">Marketcap</h3>
+        <div className="mt-2 flex items-baseline">
+          <p className="text-3xl font-semibold font-mono text-white">${stats.marketcap}</p>
+          <p className="ml-2 flex items-center text-sm text-green-400">
+            <ArrowTrendingUpIcon className="h-4 w-4" />
+            {stats.marketcapChange}%
+          </p>
+        </div>
+      </div> */}
     </div>
   );
 }
