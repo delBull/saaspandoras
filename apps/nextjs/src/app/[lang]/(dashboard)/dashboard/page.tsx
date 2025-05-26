@@ -79,11 +79,11 @@ function StatsOverview({ stats }: { stats: TokenStats }) {
       </div>
 
       {/* Main Stats Row */}
-      <div className="grid grid-cols-3">
+      <div className="md:grid md:grid-cols-3 justify-between">
         {/* Circulating Supply */}
         <div className="rounded-l-lg bg-zinc-900 p-6">
-          <h3 className="text-sm font-medium text-gray-400">Circulating Supply</h3>
-          <div className="mt-2 flex items-baseline">
+          <h3 className="text-sm font-medium text-gray-400 text-center">Circulating Supply</h3>
+          <div className="mt-2 flex items-baseline justify-center">
             <p className="text-3xl font-semibold font-mono text-white">
               {stats.circulatingSupply} ₿
             </p>
@@ -92,8 +92,8 @@ function StatsOverview({ stats }: { stats: TokenStats }) {
 
         {/* Liquidity */}
         <div className="bg-zinc-900 p-6">
-          <h3 className="text-sm font-medium text-gray-400">Liquidity</h3>
-          <div className="mt-2 flex items-baseline">
+          <h3 className="text-sm font-medium text-gray-400 text-center">Liquidity</h3>
+          <div className="mt-2 flex items-baseline justify-center">
             <p className="text-3xl font-semibold font-mono text-white">${stats.liquidity}</p>
             <p className="ml-2 flex items-center text-sm text-red-400">
               <ArrowTrendingDownIcon className="h-4 w-4" />
@@ -104,8 +104,8 @@ function StatsOverview({ stats }: { stats: TokenStats }) {
 
         {/* Treasury */}
         <div className="rounded-r-smlg bg-zinc-900 p-6">
-          <h3 className="text-sm font-medium text-gray-400">Treasury</h3>
-          <div className="mt-2 flex items-baseline">
+          <h3 className="text-sm font-medium text-gray-400 text-center">Treasury</h3>
+          <div className="mt-2 flex items-baseline justify-center">
             <p className="text-3xl font-semibold font-mono text-white">${stats.treasury}</p>
             <p className="ml-2 flex items-center text-sm text-green-400">
               <ArrowTrendingUpIcon className="h-4 w-4" />
