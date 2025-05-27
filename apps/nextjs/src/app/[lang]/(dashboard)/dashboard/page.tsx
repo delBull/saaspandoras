@@ -1,5 +1,6 @@
 import React, { Suspense } from "react";
 import { redirect } from "next/navigation";
+import { BackgroundBeams } from "~/components/ui/background-beams";
 import {
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
@@ -81,7 +82,7 @@ function StatsOverview({ stats }: { stats: TokenStats }) {
       {/* Main Stats Row */}
       <div className="md:grid md:grid-cols-3 justify-between">
         {/* Circulating Supply */}
-        <div className="rounded-l-lg bg-zinc-900 p-6">
+        <div className="rounded-l-lg bg-zinc-900 opacity-85 p-6 z-10">
           <h3 className="text-sm font-medium text-gray-400 text-center">Circulating Supply</h3>
           <div className="mt-2 flex items-baseline justify-center">
             <p className="text-3xl font-semibold font-mono text-white">
@@ -91,7 +92,7 @@ function StatsOverview({ stats }: { stats: TokenStats }) {
         </div>
 
         {/* Liquidity */}
-        <div className="bg-zinc-900 p-6">
+        <div className="bg-zinc-900 opacity-85 p-6 z-10">
           <h3 className="text-sm font-medium text-gray-400 text-center">Liquidity</h3>
           <div className="mt-2 flex items-baseline justify-center">
             <p className="text-3xl font-semibold font-mono text-white">${stats.liquidity}</p>
@@ -103,7 +104,7 @@ function StatsOverview({ stats }: { stats: TokenStats }) {
         </div>
 
         {/* Treasury */}
-        <div className="rounded-r-smlg bg-zinc-900 p-6">
+        <div className="rounded-r-smlg bg-zinc-900 opacity-85 p-6 z-10">
           <h3 className="text-sm font-medium text-gray-400 text-center">Treasury</h3>
           <div className="mt-2 flex items-baseline justify-center">
             <p className="text-3xl font-semibold font-mono text-white">${stats.treasury}</p>
@@ -291,6 +292,7 @@ export default async function DashboardPage({
       <DashboardShell 
       wallet={walletAddress} 
       totalBalance={totalBalance}>
+        <BackgroundBeams />
         <StatsOverview stats={tokenStats} />
 
             {/* Promotional Banners */}
