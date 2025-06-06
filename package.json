@@ -15,6 +15,7 @@
     "typecheck": "turbo typecheck",
     "postinstall": "bun run check-deps",
     "check-deps": "check-dependency-version-consistency .",
+    "fix-deps": "check-dependency-version-consistency . --fix",
     "gen": "turbo gen --config 'turbo/generators/config.ts'"
   },
   "devDependencies": {
@@ -22,6 +23,7 @@
     "check-dependency-version-consistency": "4.1.0",
     "prettier": "3.2.5",
     "tailwind-config-viewer": "^2.0.4",
+    "@types/node": "^22.15.29",
     "turbo": "1.13.3",
     "typescript": "5.4.5"
   },
