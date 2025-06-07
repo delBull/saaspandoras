@@ -18,6 +18,7 @@ import type { MainNavItem } from "~/types";
 
 interface MarketingType {
   main_nav_assets: string;
+  main_nav_invest: string;
   main_nav_documentation: string;
   main_nav_business: string;
   main_nav_products: string;

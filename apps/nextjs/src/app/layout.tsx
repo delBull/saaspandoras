@@ -5,7 +5,7 @@ import { Dancing_Script } from "next/font/google";
 
 import "~/styles/globals.css";
 
-import { NextDevtoolsProvider } from "@next-devtools/core";
+//import { NextDevtoolsProvider } from "@next-devtools/core";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
@@ -16,6 +16,7 @@ import { TailwindIndicator } from "~/components/tailwind-indicator";
 import { ThemeProvider } from "~/components/theme-provider";
 import { i18n } from "~/config/i18n-config";
 import { siteConfig } from "~/config/site";
+import { Providers } from "~/components/Providers";
 
 // import { Suspense } from "react";
 // import { PostHogPageview } from "~/config/providers";
@@ -114,7 +115,9 @@ export default function RootLayout({
           defaultTheme="dark"
           enableSystem={false}
         >
-          <NextDevtoolsProvider>{children}</NextDevtoolsProvider>
+           {/*<NextDevtoolsProvider>*/}
+-          <Providers>{children}</Providers>
+-       {/*</NextDevtoolsProvider>*/}
           <Analytics />
           <SpeedInsights />
           <Toaster />
