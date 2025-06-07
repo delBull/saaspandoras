@@ -5,7 +5,6 @@ import { Dancing_Script } from "next/font/google";
 
 import "~/styles/globals.css";
 
-//import { NextDevtoolsProvider } from "@next-devtools/core";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
@@ -18,15 +17,11 @@ import { i18n } from "~/config/i18n-config";
 import { siteConfig } from "~/config/site";
 import { Providers } from "~/components/Providers";
 
-// import { Suspense } from "react";
-// import { PostHogPageview } from "~/config/providers";
-
 const fontSans = FontSans({
   subsets: ["latin"],
   variable: "--font-sans",
 });
 
-// Font files can be colocated inside of `pages`
 const fontHeading = localFont({
   src: "../styles/fonts/CalSans-SemiBold.woff2",
   variable: "--font-heading",
@@ -88,7 +83,6 @@ export const metadata = {
     apple: "/apple-touch-icon.png",
   },
   metadataBase: new URL("https://dapp.pandoras.foundation/"),
-  // manifest: `${siteConfig.url}/site.webmanifest`,
 };
 
 export default function RootLayout({
@@ -116,8 +110,8 @@ export default function RootLayout({
           enableSystem={false}
         >
            {/*<NextDevtoolsProvider>*/}
--          <Providers>{children}</Providers>
--       {/*</NextDevtoolsProvider>*/}
+          <Providers>{children}</Providers>
+          {/*</NextDevtoolsProvider>*/}
           <Analytics />
           <SpeedInsights />
           <Toaster />

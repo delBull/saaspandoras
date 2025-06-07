@@ -18,7 +18,6 @@ type PrivacySections = Record<string, Section>;
 export function TermsContent({ dict }: { dict: Dictionary }) {
   const currentDate = "Marzo 2025";
 
-  // Helper function to render section items
   const renderSectionItems = (items: string[]) => (
     <ul className="list-disc pl-6">
       {items.map((item: string, i: number) => (
@@ -27,7 +26,6 @@ export function TermsContent({ dict }: { dict: Dictionary }) {
     </ul>
   );
 
-  // Helper function to render privacy sections
   const renderPrivacySection = (section: Section, index: number) => {
     if (!section) return null;
 

@@ -294,5 +294,17 @@
         "email": "support@pandoras.foundation"
       }
     }
-  }
+  },
+  "invest": {
+      "title": "ファミリー＆フレンズ投資プール",
+      "description": "当社のプライベートプールに投資してください。資金は6か月間ロックされます。投資する前に利用規約をお読みください。",
+      "cap": "プール全体の上限（CAP）：",
+      "total": "投資済み合計",
+      "available": "利用可能なスペース",
+      "shares": "プールでのあなたのポジション（シェア）",
+      "equivalent": "USDC換算額",
+      "toinvest": "投資金額（USDC）",
+      "subtitle": "プールに投資する",
+      "balance": "あなたのUSDC残高（テストネット）"
+    }
 }

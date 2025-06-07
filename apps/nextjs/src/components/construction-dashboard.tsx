@@ -115,7 +115,7 @@ export function ConstructionDashboard({ tabs }: ConstructionDashboardProps) {
                   {tab.content}
                 </p>
                 <PDFViewer 
-                  pdfUrl={tab.pdfUrl ?? null} 
+                  pdfUrl={tab.pdfUrl} 
                   title={tab.title} 
                 />
               </motion.div>

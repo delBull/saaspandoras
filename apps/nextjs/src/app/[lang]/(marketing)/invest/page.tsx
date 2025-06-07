@@ -1,16 +1,29 @@
-import { notFound } from "next/navigation";
-import { Locale, i18n } from "~/config/i18n-config";
-import InvestClient from "./InvestClient";
+import { getDictionary } from "~/lib/get-dictionary";
+import { InvestContent } from "~/components/invest-content";
+import type { Locale } from "~/config/i18n-config";
 
-interface PageProps {
+export default async function Page({
+  params: { lang },
+}: {
   params: { lang: Locale };
+}) {
+  const dict = await getDictionary(lang);
+
+  return (
+    <div className="container mx-auto py-8">
+      <div className="mx-auto max-w-4xl space-y-8">
+        <InvestContent dict={dict} />
+      </div>
+    </div>
+  );
 }
 
-export const metadata = {
-  title: "Investment Pool",
-};
-
-export default function Page({ params }: PageProps) {
-  if (!i18n.locales.includes(params.lang)) return notFound();
-  return <InvestClient lang={params.lang} />;
+export function generateStaticParams() {
+  return [
+    { lang: 'en' },
+    { lang: 'es' },
+    { lang: 'ja' },
+    { lang: 'ko' },
+    { lang: 'zh' },
+  ];
 }
