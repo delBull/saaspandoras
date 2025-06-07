@@ -3,10 +3,11 @@ import { InvestContent } from "~/components/invest-content";
 import type { Locale } from "~/config/i18n-config";
 
 export default async function Page({
-  params: { lang },
+  params,
 }: {
   params: { lang: Locale };
 }) {
+  const { lang } = params;
   const dict = await getDictionary(lang);
 
   return (
@@ -16,14 +17,4 @@ export default async function Page({
       </div>
     </div>
   );
-}
-
-export function generateStaticParams() {
-  return [
-    { lang: 'en' },
-    { lang: 'es' },
-    { lang: 'ja' },
-    { lang: 'ko' },
-    { lang: 'zh' },
-  ];
 }

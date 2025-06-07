@@ -1,177 +1,137 @@
 "use client";
 
-import * as React from "react";
 import {
-  Web3Button,
-  useContract,
-  useToken,
+  ConnectWallet,
   useAddress,
+  useContract,
+  useContractWrite,
   useTokenBalance,
-  useContractRead,
 } from "@thirdweb-dev/react";
-import { useState } from "react";
+import { motion } from "framer-motion";
 import { parseUnits } from "ethers/lib/utils";
-import { BigNumber } from "ethers";
+import { useState } from "react";
 import type { Dictionary } from "~/types";
 
-interface Section {
-  title: string;
-  description: string;
-  cap: string;
-  total: string;
-  available: string;
-  shares: string;
-  equivalent: string;
-  toinvest: string;
-  subtitle: string;
-  balance: string;
-}
-
 const VAULT_ADDRESS = "0xEb7b9fBF6dfE8Bfd94DA940f9615077Cd7F4b4C3";
-const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+const USDC_ADDRESS  = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+const IMAGE_URL     = "/images/coin_mobile.jpg";
 
 export function InvestContent({ dict }: { dict: Dictionary }) {
   const address = useAddress();
-
   const { contract: vault } = useContract(VAULT_ADDRESS);
-  const usdcContract = useToken(USDC_ADDRESS);
+  const { contract: usdc  } = useContract(USDC_ADDRESS, "token");
 
-  const { data: usdcBalance } = useTokenBalance(usdcContract, address);
-  const { data: shareBalanceRaw } = useTokenBalance(vault, address);
+  const { data: usdcBalance  } = useTokenBalance(usdc, address);
+  const { data: shareBalance } = useTokenBalance(vault, address);
 
-  const { data: cap } = useContractRead(vault, "maxCap");
-  const { data: totalDeposited } = useContractRead(vault, "totalDeposited");
+  const {
+    mutateAsync: deposit,
+    isLoading:  isDepositing,
+  } = useContractWrite(vault, "deposit");
 
-  const previewArg = shareBalanceRaw?.value && shareBalanceRaw.value.gt(0)
-    ? shareBalanceRaw.value
-    : BigNumber.from(0);
-  const { data: sharesToUSDC } = useContractRead(vault, "previewRedeem", [previewArg]);
+  const [amount, setAmount]   = useState("");
+  const [error, setError]     = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
-  const [noti, setNoti] = useState<string | null>(null);
-  const [amount, setAmount] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const handleDeposit = async () => {
+    setError(null);
+    setSuccess(null);
 
-  const capFormatted = cap ? Number(cap) / 1e6 : 0;
-  const depositedFormatted = totalDeposited ? Number(totalDeposited) / 1e6 : 0;
-  const poolLeft = cap && totalDeposited
-    ? (Number(cap) - Number(totalDeposited)) / 1e6
-    : capFormatted;
-  const sharesUSDC = sharesToUSDC ? Number(sharesToUSDC) / 1e6 : 0;
+    if (!address) {
+      setError("🔌 Conecta tu wallet primero");
+      return;
+    }
+    if (!vault || !usdc) {
+      setError("⚠️ Contrato no disponible");
+      return;
+    }
+    if (!amount || Number(amount) <= 0) {
+      setError("❌ Ingresa un monto válido");
+      return;
+    }
 
-  const isDisabled =
-    !amount ||
-    Number(amount) <= 0 ||
-    !address ||
-    (typeof poolLeft === "number" && Number(amount) > poolLeft);
+    try {
+      const value = parseUnits(amount, 6);
+      await usdc.call("approve", [VAULT_ADDRESS, value]);
+      await deposit({ args: [value, address] });
+      setSuccess("✅ Inversión exitosa!");
+      setAmount("");
+    } catch (e: any) {
+      setError(e.message || "😕 Error desconocido");
+    }
+  };
 
   return (
-    <div
-      style={{
-        maxWidth: 500,
-        margin: "0 auto",
-        padding: 30,
-      }}
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+      className="flex flex-col md:flex-row gap-8 p-6"
+      style={{ maxWidth: 900, margin: "0 auto" }}
     >
-      <h1>{dict.invest.title}</h1>
-      <p>{dict.invest.description}</p>
+      {/* IZQUIERDA: formulario y stats */}
+      <div className="flex-1 space-y-6">
+        <ConnectWallet />
 
+        <h1 className="text-3xl font-semibold">{dict.invest.title}</h1>
+        <p className="text-lg text-gray-600 dark:text-gray-300">
+          {dict.invest.description}
+        </p>
+
+        {/* Estadísticas sin fondo blanco */}
+        <div className="grid grid-cols-1 gap-4 text-gray-700 dark:text-gray-200">
+          <div><strong>{dict.invest.shares}:</strong> {shareBalance?.displayValue ?? "0"} {shareBalance?.symbol}</div>
+          <div><strong>{dict.invest.balance}:</strong> {usdcBalance?.displayValue ?? "0"} {usdcBalance?.symbol}</div>
+        </div>
+
+        {/* Input y botón animados */}
+        <motion.div
+          transition={{ type: "spring", stiffness: 300 }}
+          className="flex items-center gap-4"
+        >
+          <label className="flex-1">
+            <span className="block mb-1">{dict.invest.toinvest}</span>
+            <motion.input
+              type="number"
+              min="0"
+              step="0.01"
+              value={amount}
+              onChange={e => setAmount(e.target.value)}
+              disabled={isDepositing}
+              className="w-full px-3 py-2 border rounded-lg"
+              whileFocus={{ scale: 1.02 }}
+            />
+          </label>
+          <motion.button
+            onClick={handleDeposit}
+            disabled={!address || isDepositing || Number(amount) <= 0}
+            className="px-6 py-2 bg-lime-300 text-black rounded-lg shadow"
+            whileTap={{ scale: 0.95 }}
+          >
+            {isDepositing ? "Procesando..." : dict.invest.subtitle}
+          </motion.button>
+        </motion.div>
+
+        {/* Mensajes */}
+        {success && (
+          <div className="text-green-700">{success}</div>
+        )}
+        {error && (
+          <div className="text-red-600">{error}</div>
+        )}
+      </div>
+
+      {/* DERECHA: imagen */}
       <div
+        className="hidden md:block flex-shrink-0"
         style={{
-          margin: "16px 0",
-          background: "#f2f2f2",
-          padding: 10,
-          borderRadius: 8,
+          width: 200,
+          backgroundImage: `url(${IMAGE_URL})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          borderRadius: 12,
         }}
-      >
-        <strong>{dict.invest.cap}:</strong> {capFormatted.toLocaleString()} USDC
-        <br />
-        <strong>{dict.invest.total}:</strong> {depositedFormatted.toLocaleString()} USDC
-        <br />
-        <strong>{dict.invest.available}:</strong> {poolLeft?.toLocaleString() ?? "0"} USDC
-        <br />
-        <strong>{dict.invest.shares}:</strong> {shareBalanceRaw?.displayValue ?? "0"} {shareBalanceRaw?.symbol ?? ""}
-        <br />
-        <strong>{dict.invest.equivalent}:</strong>{" "}
-        {sharesUSDC.toLocaleString(undefined, {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })}{" "}
-        USDC
-      </div>
-
-      <form onSubmit={(e) => e.preventDefault()} style={{ marginTop: 20 }}>
-        <label>
-          {dict.invest.toinvest}:{" "}
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            required
-            style={{ marginLeft: 4, marginRight: 8 }}
-          />
-        </label>
-
-        <Web3Button
-          contractAddress={USDC_ADDRESS}
-          action={async (usdc) => {
-            setError(null);
-            try {
-              if (!address) throw new Error("Conecta tu wallet");
-              if (!vault) throw new Error("Vault contract not found");
-              if (!amount || Number(amount) <= 0) throw new Error("Monto inválido");
-
-              const parsed = parseUnits(amount, 6);
-              await usdc.call("approve", [VAULT_ADDRESS, parsed]);
-              await vault.call("deposit", [parsed, address]);
-
-              setAmount("");
-              setNoti("¡Inversión exitosa! Revisa tus shares en el pool.");
-              setTimeout(() => setNoti(null), 5000);
-            } catch (err) {
-              setError((err as any)?.message || "Error desconocido");
-            }
-          }}
-          isDisabled={isDisabled}
-        >
-          {dict.invest.subtitle}
-        </Web3Button>
-      </form>
-
-      <div style={{ marginTop: 16 }}>
-        <strong>{dict.invest.balance}:</strong> {usdcBalance?.displayValue ?? "0"} {usdcBalance?.symbol ?? ""}
-      </div>
-
-      {noti && (
-        <div
-          style={{
-            marginTop: 20,
-            padding: 10,
-            background: "#d8ffd1",
-            color: "#227634",
-            borderRadius: 8,
-            border: "1px solid #b2ff99",
-          }}
-        >
-          {noti}
-        </div>
-      )}
-
-      {error && (
-        <div
-          style={{
-            marginTop: 20,
-            padding: 10,
-            background: "#ffd6d6",
-            color: "#bb2020",
-            borderRadius: 8,
-            border: "1px solid #e19898",
-          }}
-        >
-          {error}
-        </div>
-      )}
-    </div>
+      />
+    </motion.div>
   );
 }
