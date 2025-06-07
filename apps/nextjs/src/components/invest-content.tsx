@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import {
   Web3Button,
   useContract,
@@ -11,26 +12,36 @@ import {
 import { useState } from "react";
 import { parseUnits } from "ethers/lib/utils";
 import { BigNumber } from "ethers";
+import type { Dictionary } from "~/types";
+
+interface Section {
+  title: string;
+  description: string;
+  cap: string;
+  total: string;
+  available: string;
+  shares: string;
+  equivalent: string;
+  toinvest: string;
+  subtitle: string;
+  balance: string;
+}
 
 const VAULT_ADDRESS = "0xEb7b9fBF6dfE8Bfd94DA940f9615077Cd7F4b4C3";
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 
-export default function InvestPage() {
+export function InvestContent({ dict }: { dict: Dictionary }) {
   const address = useAddress();
 
-  // Contratos thirdweb
   const { contract: vault } = useContract(VAULT_ADDRESS);
   const usdcContract = useToken(USDC_ADDRESS);
 
-  // Balances (usa primero el contrato, luego address)
   const { data: usdcBalance } = useTokenBalance(usdcContract, address);
   const { data: shareBalanceRaw } = useTokenBalance(vault, address);
 
-  // Info del pool
   const { data: cap } = useContractRead(vault, "maxCap");
   const { data: totalDeposited } = useContractRead(vault, "totalDeposited");
 
-  // Valor de shares en USDC (previewRedeem)
   const previewArg = shareBalanceRaw?.value && shareBalanceRaw.value.gt(0)
     ? shareBalanceRaw.value
     : BigNumber.from(0);
@@ -61,10 +72,8 @@ export default function InvestPage() {
         padding: 30,
       }}
     >
-      <h1>Family &amp; Friends Investment Pool</h1>
-      <p>
-        Invierte en nuestro pool privado. Capital bloqueado por 6 meses. Lee términos antes de invertir.
-      </p>
+      <h1>{dict.invest.title}</h1>
+      <p>{dict.invest.description}</p>
 
       <div
         style={{
@@ -74,15 +83,15 @@ export default function InvestPage() {
           borderRadius: 8,
         }}
       >
-        <strong>CAP global del Pool:</strong> {capFormatted.toLocaleString()} USDC
+        <strong>{dict.invest.cap}:</strong> {capFormatted.toLocaleString()} USDC
         <br />
-        <strong>Total Invertido:</strong> {depositedFormatted.toLocaleString()} USDC
+        <strong>{dict.invest.total}:</strong> {depositedFormatted.toLocaleString()} USDC
         <br />
-        <strong>Espacio disponible:</strong> {poolLeft?.toLocaleString() ?? "0"} USDC
+        <strong>{dict.invest.available}:</strong> {poolLeft?.toLocaleString() ?? "0"} USDC
         <br />
-        <strong>Tu posición en el Pool (shares):</strong> {shareBalanceRaw?.displayValue ?? "0"} {shareBalanceRaw?.symbol ?? ""}
+        <strong>{dict.invest.shares}:</strong> {shareBalanceRaw?.displayValue ?? "0"} {shareBalanceRaw?.symbol ?? ""}
         <br />
-        <strong>Valor equivalente en USDC:</strong>{" "}
+        <strong>{dict.invest.equivalent}:</strong>{" "}
         {sharesUSDC.toLocaleString(undefined, {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
@@ -92,7 +101,7 @@ export default function InvestPage() {
 
       <form onSubmit={(e) => e.preventDefault()} style={{ marginTop: 20 }}>
         <label>
-          Monto a invertir (USDC):{" "}
+          {dict.invest.toinvest}:{" "}
           <input
             type="number"
             min="0"
@@ -126,12 +135,12 @@ export default function InvestPage() {
           }}
           isDisabled={isDisabled}
         >
-          Invertir en el Pool
+          {dict.invest.subtitle}
         </Web3Button>
       </form>
 
       <div style={{ marginTop: 16 }}>
-        <strong>Tu balance USDC (testnet):</strong> {usdcBalance?.displayValue ?? "0"} {usdcBalance?.symbol ?? ""}
+        <strong>{dict.invest.balance}:</strong> {usdcBalance?.displayValue ?? "0"} {usdcBalance?.symbol ?? ""}
       </div>
 
       {noti && (

@@ -294,5 +294,17 @@
         "email": "support@pandoras.foundation"
       }
     }
-  }
+  },
+  "invest": {
+      "title": "Family & Friends Investment Pool",
+      "description": "Invest in our private pool. Capital locked for 6 months. Read the terms before investing.",
+      "cap": "Global Pool CAP:",
+      "total": "Total Invested",
+      "available": "Available Space",
+      "shares": "Your Position in the Pool (shares)",
+      "equivalent": "Equivalent Value in USDC",
+      "toinvest": "Amount to Invest (USDC)",
+      "subtitle": "Invest in the Pool",
+      "balance": "Your USDC Balance (testnet)"
+    }
 }

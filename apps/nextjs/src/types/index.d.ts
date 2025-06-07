@@ -226,6 +226,18 @@ privacy: {
     };
   };
  };
+ invest: {
+  title: string;
+  description: string;
+  cap: string;
+  total: string;
+  available: string;
+  shares: string;
+  equivalent: string;
+  toinvest: string;
+  subtitle: string;
+  balance: string;
+};
 }
 
 export interface MarketingDictionary {
@@ -242,6 +254,7 @@ export interface MarketingDictionary {
   price_features: string;
   main_nav_business: string;
   main_nav_assets: string;
+  main_nav_invest: string;
   main_nav_products: string;
   main_nav_blog: string;
   main_nav_documentation: string;

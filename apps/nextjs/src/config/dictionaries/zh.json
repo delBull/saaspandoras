@@ -294,5 +294,17 @@
         "email": "support@pandoras.foundation"
       }
     }
-  }
+  },
+  "invest": {
+      "title": "亲友投资池",
+      "description": "投资我们的私人池。资金将被锁定6个月。投资前请阅读条款。",
+      "cap": "全局池上限（CAP）：",
+      "total": "已投资总额",
+      "available": "可用空间",
+      "shares": "您在池中的份额（shares）",
+      "equivalent": "等值USDC金额",
+      "toinvest": "投资金额（USDC）",
+      "subtitle": "投资该池",
+      "balance": "您的USDC余额（测试网）"
+    }
 }
