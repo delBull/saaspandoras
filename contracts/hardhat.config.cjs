@@ -19,11 +19,14 @@ module.exports = {
       chainId: 1337,
     },
     "base-sepolia": {
-      url: "https://sepolia.base.org",
+      url: "https://base-sepolia.public.blastapi.io",
       accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
       chainId: 84532,
       gasPrice: "auto",
     },
+    // o, si arriba falla:
+  // url: "https://rpc.ankr.com/base_sepolia",
+  // url: "https://sepolia.base.org",
   },
   paths: {
     sources: path.resolve(__dirname, "contracts"),
