@@ -18,7 +18,7 @@ export const getMarketingConfig = async ({
       },
       {
         title: dict.marketing.main_nav_invest,
-        href: `/invest`,
+        href: `https://minter.agodecosystem.com`,
       },
       {
         title: dict.marketing.main_nav_documentation,
