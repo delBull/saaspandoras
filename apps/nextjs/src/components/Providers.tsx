@@ -1,14 +1,13 @@
 "use client";
 
 import React, { ReactNode } from "react";
-import { ThirdwebProvider as ThirdwebProviderV4 } from "@thirdweb-dev/react";
-import { BaseSepoliaTestnet } from "@thirdweb-dev/chains";
+import { ThirdwebProvider } from "thirdweb/react";
 
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <ThirdwebProviderV4 activeChain={BaseSepoliaTestnet} clientId={process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID} >
+    <ThirdwebProvider >
       {children}
-    </ThirdwebProviderV4>
+    </ThirdwebProvider>
   );
 }

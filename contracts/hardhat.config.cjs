@@ -24,6 +24,17 @@ module.exports = {
       chainId: 84532,
       gasPrice: "auto",
     },
+    "base": {
+      url: "https://mainnet.base.org",
+      chainId: 8453,
+      accounts: [process.env.PRIVATE_KEY],
+      verify: {
+        etherscan: {
+          apiUrl: "https://api.basescan.org",
+          apiKey: process.env.BASESCAN_API_KEY
+        }
+      }
+    }
     // o, si arriba falla:
   // url: "https://rpc.ankr.com/base_sepolia",
   // url: "https://sepolia.base.org",

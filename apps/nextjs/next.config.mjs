@@ -26,7 +26,6 @@ const config = {
     // serverActions: true,
   },
   images: {
-    domains: ["dapp.pandoras.foundation"],
     unoptimized: process.env.NODE_ENV === 'production',
     remotePatterns: [
       {
