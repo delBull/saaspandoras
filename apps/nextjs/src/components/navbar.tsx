@@ -70,10 +70,25 @@ export function NavBar({
           <div className="flex items-center space-x-3">
             {items?.length ? (
               <nav className="hidden gap-6 md:flex">
-                {items.map((item, index) => (
-                  <React.Fragment key={index}>
-                    {item.disabled ? (
-                      <Tooltip.Root delayDuration={50}>
+                {items.map((item, index) => {
+                  if (item.external) {
+                    return (
+                      <a
+                        key={index}
+                        href={item.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={cn(
+                          "flex items-center text-lg font-medium transition-colors hover:text-foreground/80 sm:text-sm"
+                        )}
+                      >
+                        {item.title}
+                      </a>
+                    );
+                  }
+                  if (item.disabled) {
+                    return (
+                      <Tooltip.Root key={index} delayDuration={50}>
                         <Tooltip.Trigger asChild>
                           <span className="cursor-default text-muted-foreground opacity-60">
                             {item.title}
@@ -91,19 +106,23 @@ export function NavBar({
                           </Tooltip.Content>
                         </Tooltip.Portal>
                       </Tooltip.Root>
-                    ) : (
-                      <Link
-                        href={`/${lang}${item.href}`}
-                        className={cn(
-                          "flex items-center text-lg font-medium transition-colors hover:text-foreground/80 sm:text-sm",
-                          item.href.startsWith(`/${segment}`) && "text-lime-300 font-semibold"
-                        )}
-                      >
-                        {item.title}
-                      </Link>
-                    )}
-                  </React.Fragment>
-                ))}
+                    );
+                  }
+                  const linkHref = `/${lang}${item.href}`;
+                  return (
+                    <Link
+                      key={index}
+                      href={linkHref}
+                      className={cn(
+                        "flex items-center text-lg font-medium transition-colors hover:text-foreground/80 sm:text-sm",
+                        item.href.startsWith(`/${segment}`) &&
+                          "text-lime-300 font-semibold"
+                      )}
+                    >
+                      {item.title}
+                    </Link>
+                  );
+                })}
               </nav>
             ) : null}
             <div className="w-[1px] h-8 bg-accent" />

@@ -10,8 +10,9 @@ import type { NextFetchEvent } from "next/server";
 import { i18n } from "~/config/i18n-config";
 
 const noNeedProcessRoute = [
-  ".*\\.png", 
-  ".*\\.jpg", 
+  ".*\\.png",
+  ".*\\.jpg",
+  ".*\\.pdf",
   ".*\\.opengraph-image.png",
   "/__next_devtools__/client(.*)",
   "/en/__next_devtools__/client(.*)", 
@@ -74,9 +75,9 @@ function isNoNeedProcess(request: NextRequest): boolean {
 
 export default async function middleware(req: NextRequest, event: NextFetchEvent) {
   // Debug logs
-  console.log('Requested Path:', req.nextUrl.pathname);
-  console.log('Is Public Page:', isPublicPage(req));
-  console.log('Is Auth Route:', authRoutes.some(pattern => new RegExp(`^${pattern}$`).test(req.nextUrl.pathname)));
+  // console.log('Requested Path:', req.nextUrl.pathname);
+  // console.log('Is Public Page:', isPublicPage(req));
+  // console.log('Is Auth Route:', authRoutes.some(pattern => new RegExp(`^${pattern}$`).test(req.nextUrl.pathname)));
   
   // Check if current path requires skipping middleware
   if (
@@ -128,14 +129,14 @@ const authMiddleware = withAuth(
     const locale = getLocale(req) ?? i18n.defaultLocale;
     const pathname = req.nextUrl.pathname;
     
-    console.log('Auth Middleware - Path:', pathname, 'Auth:', isAuth);
+    // console.log('Auth Middleware - Path:', pathname, 'Auth:', isAuth);
     
     // Check if current path is login or register
     const isAuthPath = pathname.includes('/login') || pathname.includes('/register');
     
     // If authenticated and trying to access login, redirect appropriately
     if (isAuth && isAuthPath) {
-      console.log('Authenticated user accessing auth path, handling redirection');
+      // console.log('Authenticated user accessing auth path, handling redirection');
       
       const callbackUrl = req.nextUrl.searchParams.get("callbackUrl");
       if (callbackUrl) {
@@ -168,7 +169,7 @@ const authMiddleware = withAuth(
       );
       
       if (protectedRoute) {
-        console.log('Unauthenticated user accessing protected route, redirecting to login');
+        // console.log('Unauthenticated user accessing protected route, redirecting to login');
         const from = pathname;
         return NextResponse.redirect(
           new URL(`/${locale}/login?callbackUrl=${encodeURIComponent(from)}`, req.url)

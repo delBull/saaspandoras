@@ -28,19 +28,35 @@ export function MobileNav({ items, children, menuItemClick }: MobileNavProps) {
           <span className="font-bold">{siteConfig.name}</span>
         </Link>
         <nav className="grid grid-flow-row auto-rows-max text-sm">
-          {items.map((item, index) => (
-            <Link
-              key={index}
-              href={item.disabled ? "#" : item.href}
-              className={cn(
-                "flex w-full items-center rounded-md p-2 text-sm font-medium hover:underline",
-                item.disabled && "cursor-not-allowed opacity-60",
-              )}
-              onClick={menuItemClick}
-            >
-              {item.title}
-            </Link>
-          ))}
+          {items.map((item, idx) =>
+            item.external ? (
+              <a
+                key={idx}
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(
+                  "p-2 rounded-md hover:underline",
+                  item.disabled && "opacity-50"
+                )}
+                onClick={menuItemClick}
+              >
+                {item.title}
+              </a>
+            ) : (
+              <Link
+                key={idx}
+                href={item.disabled ? "#" : item.href}
+                className={cn(
+                  "p-2 rounded-md hover:underline",
+                  item.disabled && "opacity-50"
+                )}
+                onClick={menuItemClick}
+              >
+                {item.title}
+              </Link>
+            )
+          )}
         </nav>
         {children}
       </div>

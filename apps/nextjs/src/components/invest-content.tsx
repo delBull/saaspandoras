@@ -6,7 +6,7 @@ import {
   useContract,
   useContractWrite,
   useTokenBalance,
-} from "@thirdweb-dev/react";
+} from "thirdweb/react";
 import { motion } from "framer-motion";
 import { parseUnits } from "ethers/lib/utils";
 import { useState } from "react";
