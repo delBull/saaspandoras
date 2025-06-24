@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
 require("@nomiclabs/hardhat-ethers");
 const hre = require("hardhat");
 
@@ -8,34 +7,26 @@ async function main() {
   const [deployer] = await ethers.getSigners();
 
   if (!deployer) {
-    throw new Error(
-      "No se encontró ninguna cuenta para desplegar",
-    );
+    throw new Error("No se encontró ninguna cuenta para desplegar");
   }
-  console.log(
-    "Desplegando contrato con la cuenta:",
-    deployer.address,
-  );
-  console.log(
-    "Balance de la cuenta deployer (wei):",
-    (await deployer.getBalance()).toString(),
-  );
+  console.log("Desplegando contrato con la cuenta:", deployer.address);
+  console.log("Balance de la cuenta deployer (wei):", (await deployer.getBalance()).toString());
 
   // Admins iniciales para el contrato (puedes agregar más addresses)
   const initialAdmins = [deployer.address];
 
-  const ContractFactory = await ethers.getContractFactory(
-    "TimeLockedEthInvestmentVault",
-  );
-  const contract =
-    await ContractFactory.connect(deployer).deploy(
-      initialAdmins,
-    );
+  // Cambia estos addresses por los correctos de la red que uses
+  const utilityAddress = deployer.address;
+  const usdc = "0x833589fCD6eDb6E08f4c7C32D4f71b54bda02913"; // USDC Base Mainnet
 
-  console.log(
-    "Transacción de despliegue enviada. Hash:",
-    contract.deployTransaction.hash,
+  const ContractFactory = await ethers.getContractFactory("PoolFamilyAndFriends");
+  const contract = await ContractFactory.connect(deployer).deploy(
+    initialAdmins,
+    utilityAddress,
+    usdc
   );
+
+  console.log("Transacción de despliegue enviada. Hash:", contract.deployTransaction.hash);
   console.log("Esperando confirmación…");
 
   await contract.deployed();
