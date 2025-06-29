@@ -2,11 +2,12 @@ import { getDictionary } from "~/lib/get-dictionary";
 import { InvestContent } from "~/components/invest-content";
 import type { Locale } from "~/config/i18n-config";
 
-export default async function Page({
-  params,
-}: {
-  params: { lang: Locale };
-}) {
+export default async function Page(
+  props: {
+    params: Promise<{ lang: Locale }>;
+  }
+) {
+  const params = await props.params;
   const { lang } = params;
   const dict = await getDictionary(lang);
 
