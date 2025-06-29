@@ -30,8 +30,11 @@ export function MainNav({ items, children, params: { lang } }: MainNavProps) {
   return (
     <div className="flex gap-6 md:gap-10">
       <div className="flex items-center">
-        <Link href={`/${lang}`} className="hidden items-center space-x-2 md:flex">
-          <Image 
+        <Link
+          href={`/${lang}`}
+          className="hidden items-center space-x-2 md:flex"
+        >
+          <Image
             className="hidden"
             src="/images/logo.png"
             alt="Pandora's Logo"
@@ -58,9 +61,9 @@ export function MainNav({ items, children, params: { lang } }: MainNavProps) {
         onClick={() => setShowMobileMenu(!showMobileMenu)}
       >
         {showMobileMenu ? (
-          <Icons.Close/>
+          <Icons.Close />
         ) : (
-          <Image 
+          <Image
             src="/images/logo.png"
             alt="Pandora's Logo"
             width={24}

@@ -1,15 +1,15 @@
 "use client";
 
-import { 
-  HomeIcon, 
-  BanknotesIcon, 
+import {
+  HomeIcon,
+  BanknotesIcon,
   ArrowPathIcon,
   Cog6ToothIcon,
   CreditCardIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import Image from "next/image";
 import { useState } from "react";
@@ -18,11 +18,14 @@ import { cn } from "~/lib/utils";
 import Link from "next/link";
 
 interface SidebarProps {
-  wallet?: string; 
+  wallet?: string;
   totalBalance?: number;
 }
 
-export function Sidebar({ wallet = "0x1344543534...", totalBalance = 1267.45 }: SidebarProps) {
+export function Sidebar({
+  wallet = "0x1344543534...",
+  totalBalance = 1267.45,
+}: SidebarProps) {
   const [open, setOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -30,33 +33,37 @@ export function Sidebar({ wallet = "0x1344543534...", totalBalance = 1267.45 }: 
     {
       label: "HOME",
       href: "/dashboard",
-      icon: <HomeIcon className="h-5 w-5 shrink-0 text-gray-400" />
+      icon: <HomeIcon className="h-5 w-5 shrink-0 text-gray-400" />,
     },
     {
       label: "INVEST",
       href: "/dashboard",
-      icon: <ArrowPathIcon className="h-5 w-5 shrink-0 text-gray-400" />
+      icon: <ArrowPathIcon className="h-5 w-5 shrink-0 text-gray-400" />,
     },
     {
       label: "POOL",
       href: "#",
-      icon: <BanknotesIcon className={cn(
-        "h-5 w-5 shrink-0",
-        "text-gray-400",
-        !open && "mx-auto"
-      )} />,
-      comingSoon: true
+      icon: (
+        <BanknotesIcon
+          className={cn(
+            "h-5 w-5 shrink-0",
+            "text-gray-400",
+            !open && "mx-auto",
+          )}
+        />
+      ),
+      comingSoon: true,
     },
     {
       label: "BILLING",
       href: "/dashboard/billing",
-      icon: <CreditCardIcon className="h-5 w-5 shrink-0 text-gray-400" />
+      icon: <CreditCardIcon className="h-5 w-5 shrink-0 text-gray-400" />,
     },
     {
       label: "SETTINGS",
       href: "/dashboard/settings",
-      icon: <Cog6ToothIcon className="h-5 w-5 shrink-0 text-gray-400" />
-    }
+      icon: <Cog6ToothIcon className="h-5 w-5 shrink-0 text-gray-400" />,
+    },
   ];
 
   return (
@@ -69,37 +76,37 @@ export function Sidebar({ wallet = "0x1344543534...", totalBalance = 1267.45 }: 
           "border-r border-gray-800",
           "flex flex-col",
           "px-2 pt-20",
-          "hidden md:flex" 
+          "hidden md:flex",
         )}
       >
         {/* Logo Section with Animation */}
         <Link href="/" className="z-50">
           <div className="absolute top-12 left-0 right-0 flex justify-center">
             <motion.div
-              animate={{ 
+              animate={{
                 opacity: open ? 1 : 0,
-                display: open ? "block" : "none"
+                display: open ? "block" : "none",
               }}
             >
-              <Image 
-                src="/images/logo_finance.png" 
+              <Image
+                src="/images/logo_finance.png"
                 width={256}
-                height={64} 
+                height={64}
                 alt="Logo Finance"
               />
             </motion.div>
             <motion.div
-              animate={{ 
+              animate={{
                 opacity: open ? 0 : 1,
-                display: open ? "none" : "block"
+                display: open ? "none" : "block",
               }}
             >
-              <Image 
-                src="/images/logo_green.png" 
+              <Image
+                src="/images/logo_green.png"
                 width={32}
-                height={32} 
+                height={32}
                 alt="Logo"
-                className="h-8 w-8" 
+                className="h-8 w-8"
               />
             </motion.div>
           </div>
@@ -116,7 +123,7 @@ export function Sidebar({ wallet = "0x1344543534...", totalBalance = 1267.45 }: 
             "bg-zinc-900",
             "text-gray-400",
             "hover:text-white",
-            "transition-colors duration-200"
+            "transition-colors duration-200",
           )}
         >
           {open ? (
@@ -130,18 +137,18 @@ export function Sidebar({ wallet = "0x1344543534...", totalBalance = 1267.45 }: 
         <div className="bg-gray-800/50 rounded-lg p-2 mx-2 mt-6 border border-gray-700">
           <div className="flex flex-col space-y-1">
             <div className="flex items-center space-x-1">
-              <motion.span 
-                animate={{ 
+              <motion.span
+                animate={{
                   width: open ? "auto" : "2rem",
                 }}
                 className="text-xs text-gray-400 font-mono overflow-hidden whitespace-nowrap"
               >
                 {open ? "C:\\PANDORAS\\" : "C:\\"}
               </motion.span>
-              <motion.span 
-                animate={{ 
+              <motion.span
+                animate={{
                   opacity: open ? 1 : 0,
-                  width: open ? "auto" : 0
+                  width: open ? "auto" : 0,
                 }}
                 className="text-xs text-lime-400 font-mono truncate"
               >
@@ -152,8 +159,8 @@ export function Sidebar({ wallet = "0x1344543534...", totalBalance = 1267.45 }: 
         </div>
 
         {/* Balance Section */}
-        <motion.div 
-          animate={{ 
+        <motion.div
+          animate={{
             opacity: open ? 1 : 0,
             height: open ? "auto" : 0,
             marginTop: open ? "1rem" : 0,
@@ -162,12 +169,12 @@ export function Sidebar({ wallet = "0x1344543534...", totalBalance = 1267.45 }: 
           className="border-b border-gray-800 w-full px-4 pb-2 overflow-hidden"
         >
           <div className="flex flex-col items-center">
-            <Image 
+            <Image
               src="/images/logo.png"
               width={32}
-              height={32} 
-              alt="Logo" 
-              className="h-8 w-8 mb-2" 
+              height={32}
+              alt="Logo"
+              className="h-8 w-8 mb-2"
             />
             <div className="flex flex-col items-center">
               <h3 className="text-xs font-medium text-lime-500">BALANCE</h3>
@@ -188,15 +195,15 @@ export function Sidebar({ wallet = "0x1344543534...", totalBalance = 1267.45 }: 
                 "flex items-center py-2 text-gray-400 relative",
                 "hover:text-white hover:bg-gray-800/50 rounded-lg",
                 "transition-all duration-200",
-                open ? "px-4" : "justify-center w-full"
+                open ? "px-4" : "justify-center w-full",
               )}
             >
               {link.icon}
               <motion.span
-                animate={{ 
+                animate={{
                   opacity: open ? 1 : 0,
                   width: open ? "auto" : 0,
-                  marginLeft: open ? "0.75rem" : "0"
+                  marginLeft: open ? "0.75rem" : "0",
                 }}
                 className="font-medium whitespace-nowrap"
               >
@@ -204,10 +211,10 @@ export function Sidebar({ wallet = "0x1344543534...", totalBalance = 1267.45 }: 
               </motion.span>
               {link.comingSoon && open && (
                 <motion.span
-                  animate={{ 
+                  animate={{
                     opacity: open ? 1 : 0,
-                    width: open ? "auto" : 0 
-                }}
+                    width: open ? "auto" : 0,
+                  }}
                   className="ml-auto text-xs text-gray-500"
                 >
                   coming soon
@@ -218,10 +225,7 @@ export function Sidebar({ wallet = "0x1344543534...", totalBalance = 1267.45 }: 
         </div>
 
         {/* Services Section */}
-        <motion.div 
-          animate={{ opacity: open ? 1 : 0 }}
-          className="px-4 mb-4"
-        >
+        <motion.div animate={{ opacity: open ? 1 : 0 }} className="px-4 mb-4">
           <div className="border-t border-gray-800 pt-4">
             <h3 className="text-gray-300 mb-2 px-4">SERVICES</h3>
             <div className="space-y-2 px-4">
@@ -238,12 +242,12 @@ export function Sidebar({ wallet = "0x1344543534...", totalBalance = 1267.45 }: 
 
           {/* Bottom Logo */}
           <div className="flex justify-center mt-8">
-            <Image 
-              src="/images/onlybox2.png" 
-              width={54} 
-              height={54} 
-              alt="Logo" 
-              className="h-36 w-36" 
+            <Image
+              src="/images/onlybox2.png"
+              width={54}
+              height={54}
+              alt="Logo"
+              className="h-36 w-36"
             />
           </div>
         </motion.div>
@@ -254,12 +258,12 @@ export function Sidebar({ wallet = "0x1344543534...", totalBalance = 1267.45 }: 
         onClick={() => setMobileOpen(true)}
         className={cn(
           "md:hidden fixed",
-          "top-2 left-2", 
+          "top-2 left-2",
           "p-2 rounded-lg",
           "text-gray-400 hover:text-white",
           "transition-colors duration-200",
           "z-10",
-          "shadow-lg"
+          "shadow-lg",
         )}
       >
         <Bars3Icon className="h-8 w-8" />
@@ -277,7 +281,7 @@ export function Sidebar({ wallet = "0x1344543534...", totalBalance = 1267.45 }: 
               onClick={() => setMobileOpen(false)}
               className="fixed inset-0 bg-black/50 z-40 md:hidden"
             />
-            
+
             {/* Sidebar */}
             <motion.div
               initial={{ x: "-100%" }}
@@ -288,7 +292,7 @@ export function Sidebar({ wallet = "0x1344543534...", totalBalance = 1267.45 }: 
                 "fixed inset-y-0 left-0 z-50 w-full",
                 "bg-zinc-900 md:hidden",
                 "flex flex-col",
-                "px-2 pt-20"
+                "px-2 pt-20",
               )}
             >
               {/* Close Button */}
@@ -298,7 +302,7 @@ export function Sidebar({ wallet = "0x1344543534...", totalBalance = 1267.45 }: 
                   "absolute top-4 left-4",
                   "p-2 rounded-lg",
                   "text-gray-400 hover:text-white",
-                  "transition-colors duration-200"
+                  "transition-colors duration-200",
                 )}
               >
                 <XMarkIcon className="h-6 w-6" />
@@ -322,15 +326,17 @@ export function Sidebar({ wallet = "0x1344543534...", totalBalance = 1267.45 }: 
               {/* Balance Section */}
               <div className="border-b border-gray-800 w-full px-4 pb-2 overflow-hidden">
                 <div className="flex flex-col items-center">
-                  <Image 
+                  <Image
                     src="/images/logo.png"
                     width={32}
-                    height={32} 
-                    alt="Logo" 
-                    className="h-8 w-8 mb-2" 
+                    height={32}
+                    alt="Logo"
+                    className="h-8 w-8 mb-2"
                   />
                   <div className="flex flex-col items-center">
-                    <h3 className="text-xs font-medium text-lime-500">BALANCE</h3>
+                    <h3 className="text-xs font-medium text-lime-500">
+                      BALANCE
+                    </h3>
                     <p className="text-xl font-bold font-mono text-lime-300">
                       ${totalBalance.toLocaleString()}
                     </p>
@@ -348,7 +354,7 @@ export function Sidebar({ wallet = "0x1344543534...", totalBalance = 1267.45 }: 
                       "flex items-center py-2 text-gray-400 relative",
                       "hover:text-white hover:bg-gray-800/50 rounded-lg",
                       "transition-all duration-200",
-                      "px-4"
+                      "px-4",
                     )}
                   >
                     {link.icon}
@@ -370,7 +376,9 @@ export function Sidebar({ wallet = "0x1344543534...", totalBalance = 1267.45 }: 
                   <h3 className="text-gray-300 mb-2 px-4">SERVICES</h3>
                   <div className="space-y-2 px-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-300">+ Incubation</span>
+                      <span className="text-sm text-gray-300">
+                        + Incubation
+                      </span>
                       <span className="text-xs text-gray-500">coming soon</span>
                     </div>
                     <div className="flex justify-between items-center">
@@ -382,12 +390,12 @@ export function Sidebar({ wallet = "0x1344543534...", totalBalance = 1267.45 }: 
 
                 {/* Bottom Logo */}
                 <div className="flex justify-center mt-8">
-                  <Image 
-                    src="/images/onlybox2.png" 
-                    width={54} 
-                    height={54} 
-                    alt="Logo" 
-                    className="h-36 w-36" 
+                  <Image
+                    src="/images/onlybox2.png"
+                    width={54}
+                    height={54}
+                    alt="Logo"
+                    className="h-36 w-36"
                   />
                 </div>
               </div>

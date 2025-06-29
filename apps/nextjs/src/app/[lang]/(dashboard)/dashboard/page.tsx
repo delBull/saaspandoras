@@ -8,12 +8,7 @@ import {
 } from "@heroicons/react/24/solid";
 
 import { authOptions, getCurrentUser } from "@saasfly/auth";
-import {
-  Table,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@saasfly/ui/table";
+import { Table, TableHead, TableHeader, TableRow } from "@saasfly/ui/table";
 
 // import { DashboardHeader } from "~/components/header";
 // import { K8sCreateButton } from "~/components/k8s/cluster-create-button";
@@ -42,7 +37,7 @@ interface TokenStats {
 }
 
 async function getTokenStats(): Promise<TokenStats> {
-    await new Promise((resolve) => setTimeout(resolve, 500));
+  await new Promise((resolve) => setTimeout(resolve, 500));
   // TODO: Implement real data fetching from your API
   return {
     marketcap: "29.80M",
@@ -65,8 +60,10 @@ function StatsOverview({ stats }: { stats: TokenStats }) {
         {/* Holders Stats */}
         <div className="rounded-lg border pl-3 pr-3 border-slate-800">
           <h3 className="text-xs font-medium text-gray-400">Holders</h3>
-          <div className="flex items-baseline"> 
-            <p className="text-sm font-semibold font-mono text-white">{stats.holders}</p>
+          <div className="flex items-baseline">
+            <p className="text-sm font-semibold font-mono text-white">
+              {stats.holders}
+            </p>
           </div>
         </div>
 
@@ -74,7 +71,9 @@ function StatsOverview({ stats }: { stats: TokenStats }) {
         <div className="rounded-lg border border-slate-800 pl-3 pr-3">
           <h3 className="text-xs font-medium text-gray-400">PBOX Price</h3>
           <div className="flex items-baseline">
-            <p className="text-sm font-semibold font-mono text-white">${stats.price}</p>
+            <p className="text-sm font-semibold font-mono text-white">
+              ${stats.price}
+            </p>
           </div>
         </div>
       </div>
@@ -83,7 +82,9 @@ function StatsOverview({ stats }: { stats: TokenStats }) {
       <div className="md:grid md:grid-cols-3 justify-between">
         {/* Circulating Supply */}
         <div className="rounded-l-lg bg-zinc-900 opacity-85 p-6 z-10">
-          <h3 className="text-sm font-medium text-gray-400 text-center">Circulating Supply</h3>
+          <h3 className="text-sm font-medium text-gray-400 text-center">
+            Circulating Supply
+          </h3>
           <div className="mt-2 flex items-baseline justify-center">
             <p className="text-3xl font-semibold font-mono text-white">
               {stats.circulatingSupply} ₿
@@ -93,9 +94,13 @@ function StatsOverview({ stats }: { stats: TokenStats }) {
 
         {/* Liquidity */}
         <div className="bg-zinc-900 opacity-85 p-6 z-10">
-          <h3 className="text-sm font-medium text-gray-400 text-center">Liquidity</h3>
+          <h3 className="text-sm font-medium text-gray-400 text-center">
+            Liquidity
+          </h3>
           <div className="mt-2 flex items-baseline justify-center">
-            <p className="text-3xl font-semibold font-mono text-white">${stats.liquidity}</p>
+            <p className="text-3xl font-semibold font-mono text-white">
+              ${stats.liquidity}
+            </p>
             <p className="ml-2 flex items-center text-sm text-red-400">
               <ArrowTrendingDownIcon className="h-4 w-4" />
               {Math.abs(stats.liquidityChange)}%
@@ -105,9 +110,13 @@ function StatsOverview({ stats }: { stats: TokenStats }) {
 
         {/* Treasury */}
         <div className="rounded-r-smlg bg-zinc-900 opacity-85 p-6 z-10">
-          <h3 className="text-sm font-medium text-gray-400 text-center">Treasury</h3>
+          <h3 className="text-sm font-medium text-gray-400 text-center">
+            Treasury
+          </h3>
           <div className="mt-2 flex items-baseline justify-center">
-            <p className="text-3xl font-semibold font-mono text-white">${stats.treasury}</p>
+            <p className="text-3xl font-semibold font-mono text-white">
+              ${stats.treasury}
+            </p>
             <p className="ml-2 flex items-center text-sm text-green-400">
               <ArrowTrendingUpIcon className="h-4 w-4" />
               {stats.treasuryChange}%
@@ -178,12 +187,18 @@ function InvestmentList({ dict }: { dict: Dictionary }) {
       <div className="p-4 mt-8">
         <div className="flex items-center justify-between mb-4">
           <div className="flex space-x-8">
-            <span className="text-sm font-medium text-gray-400">{dict.common.portfolio}</span>
-            <span className="text-sm font-medium text-gray-400">{dict.common.tickets}</span>
-            <span className="text-sm font-medium text-gray-400">{dict.common.action}</span>
+            <span className="text-sm font-medium text-gray-400">
+              {dict.common.portfolio}
+            </span>
+            <span className="text-sm font-medium text-gray-400">
+              {dict.common.tickets}
+            </span>
+            <span className="text-sm font-medium text-gray-400">
+              {dict.common.action}
+            </span>
           </div>
           <div className="relative">
-            <select 
+            <select
               defaultValue="all"
               className="
                 appearance-none
@@ -212,8 +227,18 @@ function InvestmentList({ dict }: { dict: Dictionary }) {
               <option value="scaleups">{dict.common.scaleups}</option>
             </select>
             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              <svg
+                className="w-4 h-4 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
               </svg>
             </div>
           </div>
@@ -249,23 +274,19 @@ function InvestmentList({ dict }: { dict: Dictionary }) {
           </tbody>
         </Table>
       </div>
-     </div> 
+    </div>
   );
 }
 
 // Main dashboard component
-export default async function DashboardPage(
-  props: {
-    params: Promise<{
-      lang: Locale;
-    }>;
-  }
-) {
+export default async function DashboardPage(props: {
+  params: Promise<{
+    lang: Locale;
+  }>;
+}) {
   const params = await props.params;
 
-  const {
-    lang
-  } = params;
+  const { lang } = params;
 
   const user = await getCurrentUser();
   if (!user) {
@@ -274,7 +295,7 @@ export default async function DashboardPage(
 
   // Calculate total balance from investments
   const totalBalance = dummyInvestments.reduce((acc, inv) => {
-    return acc + parseFloat(inv.amount.replace(',', ''));
+    return acc + parseFloat(inv.amount.replace(",", ""));
   }, 0);
 
   // TODO: Get wallet address from authentication
@@ -295,33 +316,31 @@ export default async function DashboardPage(
     }
 
     return (
-      <DashboardShell 
-      wallet={walletAddress} 
-      totalBalance={totalBalance}>
+      <DashboardShell wallet={walletAddress} totalBalance={totalBalance}>
         <BackgroundBeams />
         <StatsOverview stats={tokenStats} />
 
-            {/* Promotional Banners */}
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 my-6">
-      <PromotionalBanner
-        title="Hemp Project"
-        subtitle="Green GENESIS Become an early supporter"
-      actionText="Do more with hemp!"
-        variant="purple"
-      />
-      <PromotionalBanner
-        title="Mining Project"
-        subtitle="Ever dream about being a miner?"
-        actionText="Soon to be launched"
-        variant="green"
-      />
-      <PromotionalBanner
-        title="RA Wallet"
-        subtitle="Best blockchain wallet, rewards like no other"
-        actionText="Win by holding"
-        variant="red"
-      />
-    </div>
+        {/* Promotional Banners */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 my-6">
+          <PromotionalBanner
+            title="Hemp Project"
+            subtitle="Green GENESIS Become an early supporter"
+            actionText="Do more with hemp!"
+            variant="purple"
+          />
+          <PromotionalBanner
+            title="Mining Project"
+            subtitle="Ever dream about being a miner?"
+            actionText="Soon to be launched"
+            variant="green"
+          />
+          <PromotionalBanner
+            title="RA Wallet"
+            subtitle="Best blockchain wallet, rewards like no other"
+            actionText="Win by holding"
+            variant="red"
+          />
+        </div>
 
         <Suspense
           fallback={
@@ -338,9 +357,7 @@ export default async function DashboardPage(
     console.error("Error loading dashboard:", error);
     return (
       <DashboardShell wallet={walletAddress} totalBalance={0}>
-        <div className="text-red-500">
-          Error loading dashboard data
-        </div>
+        <div className="text-red-500">Error loading dashboard data</div>
       </DashboardShell>
     );
   }

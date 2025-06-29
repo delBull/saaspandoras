@@ -1,35 +1,35 @@
-'use client'
+"use client";
 
-import { motion } from "framer-motion"
+import { motion } from "framer-motion";
 
 interface AnnotationProps {
-  direction: 'left' | 'right'
-  label: string
-  lineLength?: number
-  dotSpacing?: number
-  dotSize?: number
-  startOffset?: number
+  direction: "left" | "right";
+  label: string;
+  lineLength?: number;
+  dotSpacing?: number;
+  dotSize?: number;
+  startOffset?: number;
 }
 
-export function Annotation({ 
-  direction, 
-  label, 
+export function Annotation({
+  direction,
+  label,
   lineLength = 100,
   dotSpacing = 6,
   dotSize = 3,
-  startOffset = 0
+  startOffset = 0,
 }: AnnotationProps) {
-  const isLeft = direction === 'left'
-  const dots = Math.floor(lineLength / dotSpacing)
-  
+  const isLeft = direction === "left";
+  const dots = Math.floor(lineLength / dotSpacing);
+
   const generateHandDrawnPath = (i: number) => {
-    const progress = i / dots
+    const progress = i / dots;
     // Create a natural wave pattern
-    const yOffset = Math.sin(progress * Math.PI * 4) * 8
+    const yOffset = Math.sin(progress * Math.PI * 4) * 8;
     // Add some random variation for natural look
-    const randomness = Math.sin(progress * Math.PI * 8) * 3
-    return yOffset + randomness
-  }
+    const randomness = Math.sin(progress * Math.PI * 8) * 3;
+    return yOffset + randomness;
+  };
 
   return (
     <motion.div
@@ -48,10 +48,10 @@ export function Annotation({
           {label}
         </motion.div>
       )}
-      
+
       <motion.div
-  className="relative"
-  style={{ width: lineLength, height: 100 }}
+        className="relative"
+        style={{ width: lineLength, height: 100 }}
       >
         {Array.from({ length: dots }).map((_, i) => (
           <motion.div
@@ -61,50 +61,50 @@ export function Annotation({
               width: dotSize,
               height: dotSize,
               left: `${(i * dotSpacing * 100) / lineLength}%`,
-              top: '50%',
+              top: "50%",
             }}
-            initial={{ 
+            initial={{
               scale: 0,
               opacity: 0,
-              y: generateHandDrawnPath(i / dots)
+              y: generateHandDrawnPath(i / dots),
             }}
-            animate={{ 
+            animate={{
               scale: [0, 1, 1, 0],
               opacity: [0, 1, 1, 0],
               y: [
                 generateHandDrawnPath(i / dots),
                 generateHandDrawnPath((i + 0.33) / dots),
                 generateHandDrawnPath((i + 0.66) / dots),
-                generateHandDrawnPath((i + 1) / dots)
-              ]
+                generateHandDrawnPath((i + 1) / dots),
+              ],
             }}
             transition={{
               duration: 3,
               repeat: Infinity,
               delay: i * 0.03,
-              ease: [0.16, 1, 0.3, 1] // Custom easing for natural movement
+              ease: [0.16, 1, 0.3, 1], // Custom easing for natural movement
             }}
           />
         ))}
-        
+
         {/* Endpoint marker with natural wobble */}
         <motion.div
           className="absolute"
           style={{
-            left: isLeft ? '100%' : '0%',
-            top: '50%',
-            transform: `translate(${startOffset}px, -50%)`
+            left: isLeft ? "100%" : "0%",
+            top: "50%",
+            transform: `translate(${startOffset}px, -50%)`,
           }}
           initial={{ scale: 0 }}
-          animate={{ 
+          animate={{
             scale: [1, 1.1, 0.9, 1],
             y: [-2, 2, -1, 1, -2],
-            opacity: [0.7, 1, 0.7]
+            opacity: [0.7, 1, 0.7],
           }}
-          transition={{ 
+          transition={{
             duration: 2,
             repeat: Infinity,
-            ease: "easeInOut"
+            ease: "easeInOut",
           }}
         >
           <div className="w-3 h-3 border-2 border-lime-300 rounded-full" />
@@ -122,5 +122,5 @@ export function Annotation({
         </motion.div>
       )}
     </motion.div>
-  )
+  );
 }

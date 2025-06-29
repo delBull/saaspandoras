@@ -15,7 +15,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     locales.map((locale) => ({
       ...route,
       url: `${siteConfig.url}/${locale}${route.url.replace(siteConfig.url, "")}`,
-    }))
+    })),
   );
 
   return [...localizedRoutes];

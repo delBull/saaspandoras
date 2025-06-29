@@ -1,7 +1,11 @@
-import { Card } from "@saasfly/ui/card"
+import { Card } from "@saasfly/ui/card";
 import * as Icons from "@saasfly/ui/icons";
 
-export function FeaturesGrid({ dict } : { dict: Record<string, string> | undefined }) {
+export function FeaturesGrid({
+  dict,
+}: {
+  dict: Record<string, string> | undefined;
+}) {
   return (
     <div className="flex gap-4 flex-col sm:flex-row md:flex-row xl:flex-row">
       <Card className="p-3 w-full rounded-3xl dark:border-neutral-800 dark:bg-neutral-900/40">
@@ -61,5 +65,5 @@ export function FeaturesGrid({ dict } : { dict: Record<string, string> | undefin
       </Card>
       */}
     </div>
-  )
+  );
 }

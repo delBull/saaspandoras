@@ -34,7 +34,9 @@ function getPostFromParams(params: { slug?: string | string[] }) {
   return post;
 }
 
-export async function generateMetadata(props: PostPageProps): Promise<Metadata> {
+export async function generateMetadata(
+  props: PostPageProps,
+): Promise<Metadata> {
   const params = await props.params;
   const post = getPostFromParams(params);
   if (!post) {

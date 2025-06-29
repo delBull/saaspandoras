@@ -17,7 +17,7 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
 
-    const handleGitHubLogin = async () => {
+  const handleGitHubLogin = async () => {
     try {
       setIsGitHubLoading(true);
       await signIn("github", {

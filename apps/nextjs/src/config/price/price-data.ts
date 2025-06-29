@@ -28,32 +28,26 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
         "获取由房地产支持的代币。",
         "收益基于增值和度假租赁收入。",
         "优先获得预售权，并享受优惠价格。",
-        "投资由有形资产支持。"
+        "投资由有形资产支持。",
       ],
       limitations: [
         "可用代币数量有限。",
         "购买需经可用性和审批。",
         "需要连接数字钱包。",
-        "收益取决于房地产市场需求。"
+        "收益取决于房地产市场需求。",
       ],
       prices: {
-        monthly: 10, 
+        monthly: 10,
         yearly: 10,
       },
       stripeIds: {
         monthly: null,
         yearly: null,
       },
-      stage0: [
-        "亲友轮"
-      ],
+      stage0: ["亲友轮"],
       price_per_token0: 10,
-      availability0: [
-        "仅限早期投资者的代币。"
-      ],
-      special_benefits0: [
-        "更高的盈利能力和独家访问权限。"
-      ],
+      availability0: ["仅限早期投资者的代币。"],
+      special_benefits0: ["更高的盈利能力和独家访问权限。"],
     },
     {
       id: "pro",
@@ -68,23 +62,17 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
       ],
       limitations: ["无法自定义品牌", "对商业资源的访问受限"],
       prices: {
-        monthly: 10, 
+        monthly: 10,
         yearly: 10,
       },
       stripeIds: {
         monthly: null,
         yearly: null,
       },
-      stage0: [
-        "亲友轮"
-      ],
+      stage0: ["亲友轮"],
       price_per_token0: 10,
-      availability0: [
-        "仅限早期投资者的代币。"
-      ],
-      special_benefits0: [
-        "更高的盈利能力和独家访问权限。"
-      ],
+      availability0: ["仅限早期投资者的代币。"],
+      special_benefits0: ["更高的盈利能力和独家访问权限。"],
     },
     {
       id: "business",
@@ -99,30 +87,25 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
       ],
       limitations: [],
       prices: {
-        monthly: 10, 
+        monthly: 10,
         yearly: 10,
       },
       stripeIds: {
         monthly: null,
         yearly: null,
       },
-      stage0: [
-        "亲友轮"
-      ],
+      stage0: ["亲友轮"],
       price_per_token0: 10,
-      availability0: [
-        "仅限早期投资者的代币。"
-      ],
-      special_benefits0: [
-        "更高的盈利能力和独家访问权限。"
-      ],
+      availability0: ["仅限早期投资者的代币。"],
+      special_benefits0: ["更高的盈利能力和独家访问权限。"],
     },
   ],
   es: [
     {
       id: "starter",
       title: "Narai Bucerías",
-      description: "Invierte en un exclusivo desarrollo inmobiliario en Bucerías, Nayarit.",
+      description:
+        "Invierte en un exclusivo desarrollo inmobiliario en Bucerías, Nayarit.",
       benefits: [
         "Adquiere tokens respaldados por bienes raíces.",
         "Rentabilidad basada en plusvalía y rentas vacacionales.",
@@ -136,23 +119,17 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
         "Los retornos dependen de la demanda del mercado inmobiliario.",
       ],
       prices: {
-        monthly: 10, 
+        monthly: 10,
         yearly: 10,
       },
       stripeIds: {
         monthly: null,
         yearly: null,
       },
-      stage0: [
-        "Family & Friends"
-      ],
+      stage0: ["Family & Friends"],
       price_per_token0: 10,
-      availability0: [
-        "Tokens limitados para inversionistas tempranos."
-      ],
-      special_benefits0: [
-        "Mayor rentabilidad y acceso exclusivo."
-      ],
+      availability0: ["Tokens limitados para inversionistas tempranos."],
+      special_benefits0: ["Mayor rentabilidad y acceso exclusivo."],
     },
     {
       id: "business",
@@ -167,60 +144,49 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
       ],
       limitations: [],
       prices: {
-        monthly: 10, 
+        monthly: 10,
         yearly: 10,
       },
       stripeIds: {
         monthly: null,
         yearly: null,
       },
-      stage0: [
-        "Family & Friends"
-      ],
+      stage0: ["Family & Friends"],
       price_per_token0: 10,
-      availability0: [
-        "Tokens limitados para inversionistas tempranos."
-      ],
-      special_benefits0: [
-        "Mayor rentabilidad y acceso exclusivo."
-      ],
+      availability0: ["Tokens limitados para inversionistas tempranos."],
+      special_benefits0: ["Mayor rentabilidad y acceso exclusivo."],
     },
-  ],  
+  ],
   en: [
     {
       id: "starter",
       title: "Narai Bucerías",
-      description: "Invest in an exclusive real estate development in Bucerías, Nayarit.",
+      description:
+        "Invest in an exclusive real estate development in Bucerías, Nayarit.",
       benefits: [
         "Acquire tokens backed by real estate.",
         "Profitability based on appreciation and vacation rentals.",
         "Priority access to pre-sale with preferential prices.",
-        "Investment backed by tangible assets."
+        "Investment backed by tangible assets.",
       ],
       limitations: [
         "Limited number of tokens available.",
         "Subject to availability and purchase approval.",
         "Requires connection with a digital wallet.",
-        "Returns depend on real estate market demand."
+        "Returns depend on real estate market demand.",
       ],
       prices: {
-        monthly: 10, 
+        monthly: 10,
         yearly: 10,
       },
       stripeIds: {
         monthly: null,
         yearly: null,
       },
-      stage0: [
-        "Family & Friends"
-      ],
+      stage0: ["Family & Friends"],
       price_per_token0: 10,
-      availability0: [
-        "Limited tokens for early investors."
-      ],
-      special_benefits0: [
-        "Higher profitability and exclusive access."
-      ],
+      availability0: ["Limited tokens for early investors."],
+      special_benefits0: ["Higher profitability and exclusive access."],
     },
     {
       id: "pro",
@@ -238,23 +204,17 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
         "Limited access to business resources",
       ],
       prices: {
-        monthly: 10, 
+        monthly: 10,
         yearly: 10,
       },
       stripeIds: {
         monthly: null,
         yearly: null,
       },
-      stage0: [
-        "Family & Friends"
-      ],
+      stage0: ["Family & Friends"],
       price_per_token0: 10,
-      availability0: [
-        "Limited tokens for early investors."
-      ],
-      special_benefits0: [
-        "Higher profitability and exclusive access."
-      ],
+      availability0: ["Limited tokens for early investors."],
+      special_benefits0: ["Higher profitability and exclusive access."],
     },
     {
       id: "business",
@@ -269,24 +229,18 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
       ],
       limitations: [],
       prices: {
-        monthly: 10, 
+        monthly: 10,
         yearly: 10,
       },
       stripeIds: {
         monthly: null,
         yearly: null,
       },
-      stage0: [
-        "Family & Friends"
-      ],
+      stage0: ["Family & Friends"],
       price_per_token0: 10,
-      availability0: [
-        "Limited tokens for early investors."
-      ],
-      special_benefits0: [
-        "Higher profitability and exclusive access."
-      ],
-    }
+      availability0: ["Limited tokens for early investors."],
+      special_benefits0: ["Higher profitability and exclusive access."],
+    },
   ],
   ja: [
     {
@@ -297,32 +251,26 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
         "不動産で裏付けられたトークンを取得。",
         "資産価値の上昇とバケーションレンタルによる収益。",
         "優先的なプリセールアクセスと特別価格。",
-        "有形資産に裏付けられた投資。"
+        "有形資産に裏付けられた投資。",
       ],
       limitations: [
         "利用可能なトークン数が限られています。",
         "購入は在庫状況および承認の対象となります。",
         "デジタルウォレットとの接続が必要です。",
-        "収益は不動産市場の需要に依存します。"
+        "収益は不動産市場の需要に依存します。",
       ],
       prices: {
-        monthly: 10, 
+        monthly: 10,
         yearly: 10,
       },
       stripeIds: {
         monthly: null,
         yearly: null,
       },
-      stage0: [
-        "ファミリー＆フレンズ"
-      ],
+      stage0: ["ファミリー＆フレンズ"],
       price_per_token0: 10,
-      availability0: [
-        "早期投資家向けの限定トークン。"
-      ],
-      special_benefits0: [
-        "高い収益性と限定アクセス。"
-      ],
+      availability0: ["早期投資家向けの限定トークン。"],
+      special_benefits0: ["高い収益性と限定アクセス。"],
     },
     {
       id: "pro",
@@ -340,23 +288,17 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
         "ビジネスリソースへのアクセスが限定的",
       ],
       prices: {
-        monthly: 10, 
+        monthly: 10,
         yearly: 10,
       },
       stripeIds: {
         monthly: null,
         yearly: null,
       },
-      stage0: [
-        "ファミリー＆フレンズ"
-      ],
+      stage0: ["ファミリー＆フレンズ"],
       price_per_token0: 10,
-      availability0: [
-        "早期投資家向けの限定トークン。"
-      ],
-      special_benefits0: [
-        "高い収益性と限定アクセス。"
-      ],
+      availability0: ["早期投資家向けの限定トークン。"],
+      special_benefits0: ["高い収益性と限定アクセス。"],
     },
     {
       id: "business",
@@ -371,23 +313,17 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
       ],
       limitations: [],
       prices: {
-        monthly: 10, 
+        monthly: 10,
         yearly: 10,
       },
       stripeIds: {
         monthly: null,
         yearly: null,
       },
-      stage0: [
-        "ファミリー＆フレンズ"
-      ],
+      stage0: ["ファミリー＆フレンズ"],
       price_per_token0: 10,
-      availability0: [
-        "早期投資家向けの限定トークン。"
-      ],
-      special_benefits0: [
-        "高い収益性と限定アクセス。"
-      ],
+      availability0: ["早期投資家向けの限定トークン。"],
+      special_benefits0: ["高い収益性と限定アクセス。"],
     },
   ],
   ko: [
@@ -399,32 +335,26 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
         "부동산으로 보장된 토큰을 획득하세요.",
         "자산 가치 상승과 휴가 임대를 통한 수익성.",
         "우대 가격으로 사전 판매 우선 접근 권한.",
-        "실물 자산으로 보장된 투자."
+        "실물 자산으로 보장된 투자.",
       ],
       limitations: [
         "이용 가능한 토큰 수가 제한되어 있습니다.",
         "구매 가능 여부 및 승인에 따라 달라집니다.",
         "디지털 지갑 연결이 필요합니다.",
-        "수익은 부동산 시장의 수요에 따라 달라집니다."
+        "수익은 부동산 시장의 수요에 따라 달라집니다.",
       ],
       prices: {
-        "monthly": 10,
-        "yearly": 10
+        monthly: 10,
+        yearly: 10,
       },
       stripeIds: {
-        "monthly": null,
-        "yearly": null
+        monthly: null,
+        yearly: null,
       },
-      stage0: [
-        "패밀리 & 프렌즈"
-      ],
+      stage0: ["패밀리 & 프렌즈"],
       price_per_token0: 10,
-      availability0: [
-        "초기 투자자를 위한 제한된 토큰."
-      ],
-      special_benefits0: [
-        "더 높은 수익성과 독점 접근 권한."
-      ],
+      availability0: ["초기 투자자를 위한 제한된 토큰."],
+      special_benefits0: ["더 높은 수익성과 독점 접근 권한."],
     },
     {
       id: "pro",
@@ -439,23 +369,17 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
       ],
       limitations: ["맞춤 브랜딩 없음", "비즈니스 리소스에 대한 액세스 제한"],
       prices: {
-        monthly: 10, 
+        monthly: 10,
         yearly: 10,
       },
       stripeIds: {
         monthly: null,
         yearly: null,
       },
-      stage0: [
-        "패밀리 & 프렌즈"
-      ],
+      stage0: ["패밀리 & 프렌즈"],
       price_per_token0: 10,
-      availability0: [
-        "초기 투자자를 위한 제한된 토큰."
-      ],
-      special_benefits0: [
-        "더 높은 수익성과 독점 접근 권한."
-      ],
+      availability0: ["초기 투자자를 위한 제한된 토큰."],
+      special_benefits0: ["더 높은 수익성과 독점 접근 권한."],
     },
     {
       id: "business",
@@ -470,23 +394,17 @@ export const priceDataMap: Record<string, SubscriptionPlanTranslation[]> = {
       ],
       limitations: [],
       prices: {
-        monthly: 10, 
+        monthly: 10,
         yearly: 10,
       },
       stripeIds: {
         monthly: null,
         yearly: null,
       },
-      stage0: [
-        "패밀리 & 프렌즈"
-      ],
+      stage0: ["패밀리 & 프렌즈"],
       price_per_token0: 10,
-      availability0: [
-        "초기 투자자를 위한 제한된 토큰."
-      ],
-      special_benefits0: [
-        "더 높은 수익성과 독점 접근 권한."
-      ],
+      availability0: ["초기 투자자를 위한 제한된 토큰."],
+      special_benefits0: ["더 높은 수익성과 독점 접근 권한."],
     },
   ],
 };

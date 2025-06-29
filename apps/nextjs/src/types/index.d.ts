@@ -21,7 +21,7 @@ export interface Dictionary {
     go_to_dashboard: string;
   };
   marketing: MarketingDictionary;
-   properties: {
+  properties: {
     introducing: string;
     title: string;
     sub_title: string;
@@ -142,102 +142,102 @@ export interface Dictionary {
     settings: string;
     sign_out: string;
   };
-terms: {
-  title: string;
-  lastUpdate: string;
-  tabTerms: string;
-  tabPrivacy: string;
-  sections: {
-    welcome: {
-      title: string;
-      content: string;
-    };
-    definitions: {
-      title: string;
-      items: string[];
-    };
-    usage: {
-      title: string;
-      items: string[];
-    };
-    responsibility: {
-      title: string;
-      items: string[];
-    };
-    requirements: {
-      title: string;
-      items: string[];
-    };
-    payments: {
-      title: string;
-      items: string[];
-    };
-    dataProtection: {
-      title: string;
-      items: string[];
-    };
-    law: {
-      title: string;
-      items: string[];
-    };
-  };
-  acceptance: {
+  terms: {
     title: string;
-    content: string;
+    lastUpdate: string;
+    tabTerms: string;
+    tabPrivacy: string;
+    sections: {
+      welcome: {
+        title: string;
+        content: string;
+      };
+      definitions: {
+        title: string;
+        items: string[];
+      };
+      usage: {
+        title: string;
+        items: string[];
+      };
+      responsibility: {
+        title: string;
+        items: string[];
+      };
+      requirements: {
+        title: string;
+        items: string[];
+      };
+      payments: {
+        title: string;
+        items: string[];
+      };
+      dataProtection: {
+        title: string;
+        items: string[];
+      };
+      law: {
+        title: string;
+        items: string[];
+      };
+    };
+    acceptance: {
+      title: string;
+      content: string;
+    };
   };
-};
-privacy: {
-  title: string;
-  lastUpdate: string;
-  introduction: string;
-  sections: {
-    collection: {
-      title: string;
-      items: string[];
-    };
-    usage: {
-      title: string;
-      items: string[];
-    };
-    protection: {
-      title: string;
-      items: string[];
-    };
-    rights: {
-      title: string;
-      items: string[];
-    };
-    cookies: {
-      title: string;
-      items: string[];
-    };
-    transfers: {
-      title: string;
-      content: string;
-    };
-    changes: {
-      title: string;
-      content: string;
-    };
-    contact: {
-      title: string;
-      content: string;
-      email: string;
+  privacy: {
+    title: string;
+    lastUpdate: string;
+    introduction: string;
+    sections: {
+      collection: {
+        title: string;
+        items: string[];
+      };
+      usage: {
+        title: string;
+        items: string[];
+      };
+      protection: {
+        title: string;
+        items: string[];
+      };
+      rights: {
+        title: string;
+        items: string[];
+      };
+      cookies: {
+        title: string;
+        items: string[];
+      };
+      transfers: {
+        title: string;
+        content: string;
+      };
+      changes: {
+        title: string;
+        content: string;
+      };
+      contact: {
+        title: string;
+        content: string;
+        email: string;
+      };
     };
   };
- };
- invest: {
-  title: string;
-  description: string;
-  cap: string;
-  total: string;
-  available: string;
-  shares: string;
-  equivalent: string;
-  toinvest: string;
-  subtitle: string;
-  balance: string;
-};
+  invest: {
+    title: string;
+    description: string;
+    cap: string;
+    total: string;
+    available: string;
+    shares: string;
+    equivalent: string;
+    toinvest: string;
+    subtitle: string;
+    balance: string;
+  };
 }
 
 export interface MarketingDictionary {

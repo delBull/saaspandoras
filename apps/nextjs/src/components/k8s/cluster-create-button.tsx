@@ -13,7 +13,7 @@ import type { Dictionary } from "~/types";
 
 interface K8sCreateButtonProps extends ButtonProps {
   customProp?: string;
-  dict: Dictionary['business'];
+  dict: Dictionary["business"];
 }
 
 export function K8sCreateButton({

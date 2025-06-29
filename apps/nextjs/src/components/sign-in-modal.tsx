@@ -26,12 +26,16 @@ export const SignInModal = ({ dict }: { dict: Record<string, string> }) => {
               alt=""
             />
           </a>
-          <h3 className="font-urban text-2xl font-bold">{dict?.signup ?? "Sign Up"}</h3>
-          <p className="text-sm text-gray-500">{dict?.privacy ?? "Your privacy is important to us."}</p>
+          <h3 className="font-urban text-2xl font-bold">
+            {dict?.signup ?? "Sign Up"}
+          </h3>
+          <p className="text-sm text-gray-500">
+            {dict?.privacy ?? "Your privacy is important to us."}
+          </p>
         </div>
 
         <div className="flex flex-col space-y-4 bg-secondary/50 px-4 py-8 md:px-16">
-        {/*
+          {/*
           <Button
             variant="default"
             disabled={signInClicked}
@@ -58,7 +62,9 @@ export const SignInModal = ({ dict }: { dict: Record<string, string> }) => {
               setSignInClicked(true);
               signIn("google", { redirect: true })
                 .then(() => setTimeout(() => signInModal.onClose(), 1000))
-                .catch((error) => console.error("Google signIn failed:", error));
+                .catch((error) =>
+                  console.error("Google signIn failed:", error),
+                );
             }}
           >
             {signInClicked ? (

@@ -23,15 +23,15 @@ export const getMarketingConfig = async ({
       },
       {
         title: dict.marketing.main_nav_documentation,
-        href: '#',
+        href: "#",
         disabled: true,
-        tooltip: "Coming Soon"
+        tooltip: "Coming Soon",
       },
       {
         title: dict.marketing.main_nav_business,
-        href: '#',
+        href: "#",
         disabled: true,
-        tooltip: "Coming Soon"
+        tooltip: "Coming Soon",
       },
     ],
   };

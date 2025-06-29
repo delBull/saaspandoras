@@ -20,13 +20,9 @@ export function generateStaticParams() {
 export default async function DashboardLayout(props: DashboardLayoutProps) {
   const params = await props.params;
 
-  const {
-    lang
-  } = params;
+  const { lang } = params;
 
-  const {
-    children
-  } = props;
+  const { children } = props;
 
   const user = await getCurrentUser();
   const dict = await getDictionary(lang);

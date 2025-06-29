@@ -2,23 +2,17 @@ import { DocsSidebarNav } from "~/components/docs/sidebar-nav";
 import type { Locale } from "~/config/i18n-config";
 import { getDocsConfig } from "~/config/ui/docs";
 
-export default async function DocsLayout(
-  props: {
-    children: React.ReactNode;
-    params: Promise<{
-      lang: Locale;
-    }>;
-  }
-) {
+export default async function DocsLayout(props: {
+  children: React.ReactNode;
+  params: Promise<{
+    lang: Locale;
+  }>;
+}) {
   const params = await props.params;
 
-  const {
-    lang
-  } = params;
+  const { lang } = params;
 
-  const {
-    children
-  } = props;
+  const { children } = props;
 
   return (
     <div className="flex-1 md:grid md:grid-cols-[220px_1fr] md:gap-6 lg:grid-cols-[240px_1fr] lg:gap-10">

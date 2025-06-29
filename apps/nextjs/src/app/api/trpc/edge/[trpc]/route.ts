@@ -8,7 +8,7 @@ import { edgeRouter } from "@saasfly/api/edge";
 const handler = (req: NextRequest) =>
   fetchRequestHandler({
     endpoint: "/api/trpc/edge",
-    router: edgeRouter, 
+    router: edgeRouter,
     req: req,
     createContext: () => createTRPCContext({ req }),
     // createContext: () => ({}),

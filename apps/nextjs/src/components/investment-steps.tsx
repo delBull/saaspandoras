@@ -4,9 +4,9 @@ import { motion } from "framer-motion";
 import { cn } from "@saasfly/ui";
 import { Shadows_Into_Light } from "next/font/google";
 
-const shadowsIntoLight = Shadows_Into_Light({ 
+const shadowsIntoLight = Shadows_Into_Light({
   subsets: ["latin"],
-  weight: "400"
+  weight: "400",
 });
 
 interface InvestmentStep {
@@ -31,15 +31,15 @@ export function InvestmentSteps({ dict }: InvestmentStepsProps) {
     <div className="relative w-full py-20">
       {/* Title */}
       <div className="mb-16 flex items-center gap-4">
-        <motion.h2 
+        <motion.h2
           initial={{ opacity: 0, x: 20, rotate: -3 }}
           whileInView={{ opacity: 1, x: 0 }}
           className={cn(
             shadowsIntoLight.className,
-            "text-4xl sm:text-5xl text-neutral-800 dark:text-neutral-200"
+            "text-4xl sm:text-5xl text-neutral-800 dark:text-neutral-200",
           )}
         >
-           {dict?.title}
+          {dict?.title}
         </motion.h2>
         <motion.div
           initial={{ width: 0 }}
@@ -51,7 +51,7 @@ export function InvestmentSteps({ dict }: InvestmentStepsProps) {
 
       {/* Steps Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
-      {dict.steps.map((step, index) => (
+        {dict.steps.map((step, index) => (
           <motion.div
             key={index}
             initial={{ opacity: 0, y: 20 }}
@@ -60,13 +60,13 @@ export function InvestmentSteps({ dict }: InvestmentStepsProps) {
             className="relative"
           >
             {/* Step number */}
-            <div 
+            <div
               className={cn(
                 shadowsIntoLight.className,
-                "absolute -left-4 -top-16 text-9xl text-lime-300/20 transform -rotate-6"
+                "absolute -left-4 -top-16 text-9xl text-lime-300/20 transform -rotate-6",
               )}
-              style={{ 
-                WebkitTextStroke: '8px rgba(163, 230, 53, 0.2)'
+              style={{
+                WebkitTextStroke: "8px rgba(163, 230, 53, 0.2)",
               }}
             >
               {index + 1}
@@ -88,7 +88,7 @@ export function InvestmentSteps({ dict }: InvestmentStepsProps) {
               whileHover={{ rotate: 3 }}
               className={cn(
                 shadowsIntoLight.className,
-                "absolute inset-x-0 md:-mt-4 -mt-20 md:text-3xl text-2xl text-neutral-700 dark:text-neutral-300 -ml-3 z-50"
+                "absolute inset-x-0 md:-mt-4 -mt-20 md:text-3xl text-2xl text-neutral-700 dark:text-neutral-300 -ml-3 z-50",
               )}
             >
               {step.caption}
