@@ -2,16 +2,12 @@ import { getDictionary } from "~/lib/get-dictionary";
 import { TermsContent } from "~/components/terms-content";
 import type { Locale } from "~/config/i18n-config";
 
-export default async function TermsPage(
-  props: {
-    params: Promise<{ lang: Locale }>;
-  }
-) {
+export default async function TermsPage(props: {
+  params: Promise<{ lang: Locale }>;
+}) {
   const params = await props.params;
 
-  const {
-    lang
-  } = params;
+  const { lang } = params;
 
   const dict = await getDictionary(lang);
 
@@ -26,10 +22,10 @@ export default async function TermsPage(
 
 export function generateStaticParams() {
   return [
-    { lang: 'en' },
-    { lang: 'es' },
-    { lang: 'ja' },
-    { lang: 'ko' },
-    { lang: 'zh' },
+    { lang: "en" },
+    { lang: "es" },
+    { lang: "ja" },
+    { lang: "ko" },
+    { lang: "zh" },
   ];
 }

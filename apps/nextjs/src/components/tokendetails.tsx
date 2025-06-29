@@ -21,9 +21,7 @@ export function TransformTokenDetails({ dict }: TransformTokenDetailsProps) {
   return (
     <Dialog.Root>
       <Dialog.Trigger asChild>
-        <Button 
-          className="bg-gradient-to-r from-lime-300 to-lime-200 hover:from-lime-500 hover:to-lime-400 text-black rounded-full text-lg px-8 h-12 font-medium"
-        >
+        <Button className="bg-gradient-to-r from-lime-300 to-lime-200 hover:from-lime-500 hover:to-lime-400 text-black rounded-full text-lg px-8 h-12 font-medium">
           {dict.more_details ?? "More Details"}
         </Button>
       </Dialog.Trigger>
@@ -40,7 +38,7 @@ export function TransformTokenDetails({ dict }: TransformTokenDetailsProps) {
                 {dict.part1_content ?? dict.desc}
               </Dialog.Description>
             </div>
-            
+
             {dict.part2_title && dict.part2_content && (
               <div>
                 <Dialog.Title className="text-2xl font-bold mb-4 dark:text-white">
@@ -52,7 +50,7 @@ export function TransformTokenDetails({ dict }: TransformTokenDetailsProps) {
               </div>
             )}
           </div>
-          
+
           <Dialog.Close asChild>
             <button
               className="absolute right-6 top-6 rounded-full p-2.5 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"

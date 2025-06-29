@@ -27,9 +27,9 @@ const fontHeading = localFont({
   variable: "--font-heading",
 });
 
-const fontHandwritten = Dancing_Script({ 
+const fontHandwritten = Dancing_Script({
   subsets: ["latin"],
-  variable: "--font-handwritten" 
+  variable: "--font-handwritten",
 });
 
 export function generateStaticParams() {
@@ -124,7 +124,7 @@ export default function RootLayout({
           "min-h-screen bg-background font-sans antialiased",
           fontSans.variable,
           fontHeading.variable,
-          fontHandwritten.variable
+          fontHandwritten.variable,
         )}
       >
         <ThemeProvider
@@ -132,7 +132,7 @@ export default function RootLayout({
           defaultTheme="dark"
           enableSystem={false}
         >
-           {/*<NextDevtoolsProvider>*/}
+          {/*<NextDevtoolsProvider>*/}
           <Providers>{children}</Providers>
           {/*</NextDevtoolsProvider>*/}
           <Analytics />

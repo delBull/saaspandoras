@@ -4,77 +4,77 @@ import Image from "next/image";
 
 const reviews = [
   {
-    "name": "Carlos",
-    "username": "@carlos",
-    "body": "Nunca había visto algo tan innovador. Pandoras ha cambiado la forma en que invertimos en propiedades, ¡es realmente revolucionario!",
-    "img": "https://avatar.vercel.sh/carlos"
+    name: "Carlos",
+    username: "@carlos",
+    body: "Nunca había visto algo tan innovador. Pandoras ha cambiado la forma en que invertimos en propiedades, ¡es realmente revolucionario!",
+    img: "https://avatar.vercel.sh/carlos",
   },
   {
-    "name": "Sofía",
-    "username": "@sofia",
-    "body": "La plataforma de Pandoras me ha abierto nuevas oportunidades de inversión en bienes raíces. Es fácil de usar y llena de beneficios únicos.",
-    "img": "https://avatar.vercel.sh/sofia"
+    name: "Sofía",
+    username: "@sofia",
+    body: "La plataforma de Pandoras me ha abierto nuevas oportunidades de inversión en bienes raíces. Es fácil de usar y llena de beneficios únicos.",
+    img: "https://avatar.vercel.sh/sofia",
   },
   {
-    "name": "Juan",
-    "username": "@juan",
-    "body": "Estoy encantado con Pandoras. Es increíble cómo han simplificado la inversión en propiedades con un enfoque tan moderno y accesible.",
-    "img": "https://avatar.vercel.sh/juan"
+    name: "Juan",
+    username: "@juan",
+    body: "Estoy encantado con Pandoras. Es increíble cómo han simplificado la inversión en propiedades con un enfoque tan moderno y accesible.",
+    img: "https://avatar.vercel.sh/juan",
   },
   {
-    "name": "Luis",
-    "username": "@luis",
-    "body": "Pandoras ha transformado mi manera de ver las inversiones en bienes raíces. La transparencia y las oportunidades que ofrecen son impresionantes.",
-    "img": "https://avatar.vercel.sh/luis"
+    name: "Luis",
+    username: "@luis",
+    body: "Pandoras ha transformado mi manera de ver las inversiones en bienes raíces. La transparencia y las oportunidades que ofrecen son impresionantes.",
+    img: "https://avatar.vercel.sh/luis",
   },
   {
-    "name": "María",
-    "username": "@maria",
-    "body": "La facilidad y seguridad que brinda Pandoras para invertir en proyectos inmobiliarios es asombrosa. Definitivamente, una revolución en el sector.",
-    "img": "https://avatar.vercel.sh/maria"
+    name: "María",
+    username: "@maria",
+    body: "La facilidad y seguridad que brinda Pandoras para invertir en proyectos inmobiliarios es asombrosa. Definitivamente, una revolución en el sector.",
+    img: "https://avatar.vercel.sh/maria",
   },
   {
-    "name": "Fernando",
-    "username": "@fernando",
-    "body": "Con Pandoras tengo acceso a oportunidades únicas de inversión en el mercado. Es el futuro de las inversiones en bienes raíces.",
-    "img": "https://avatar.vercel.sh/fernando"
+    name: "Fernando",
+    username: "@fernando",
+    body: "Con Pandoras tengo acceso a oportunidades únicas de inversión en el mercado. Es el futuro de las inversiones en bienes raíces.",
+    img: "https://avatar.vercel.sh/fernando",
   },
-    {
-      "name": "Miguel",
-      "username": "@miguel",
-      "body": "Pandoras me ha abierto nuevas oportunidades de inversión. La plataforma es sencilla y confiable.",
-      "img": "https://avatar.vercel.sh/jack"
-    },
-    {
-      "name": "Patricia",
-      "username": "@patricia",
-      "body": "La experiencia con Pandoras es única; me siento parte de una comunidad exclusiva y con visión de futuro.",
-      "img": "https://avatar.vercel.sh/jill"
-    },
-    {
-      "name": "Ricardo",
-      "username": "@ricardo",
-      "body": "Gracias a Pandoras, he diversificado mi inversión en bienes raíces de forma innovadora.",
-      "img": "https://avatar.vercel.sh/john"
-    },
-    {
-      "name": "Lorena",
-      "username": "@lorena",
-      "body": "La plataforma me brinda transparencia y seguridad en cada paso, ¡altamente recomendable!",
-      "img": "https://avatar.vercel.sh/jane"
-    },
-    {
-      "name": "Sergio",
-      "username": "@sergio",
-      "body": "Pandoras me permite invertir en proyectos inmobiliarios de alto valor sin complicaciones.",
-      "img": "https://avatar.vercel.sh/jenny"
-    },
-    {
-      "name": "Isabel",
-      "username": "@isabel",
-      "body": "Estoy encantada con Pandoras; es una herramienta que realmente transforma la inversión inmobiliaria.",
-      "img": "https://avatar.vercel.sh/james"
-    }
+  {
+    name: "Miguel",
+    username: "@miguel",
+    body: "Pandoras me ha abierto nuevas oportunidades de inversión. La plataforma es sencilla y confiable.",
+    img: "https://avatar.vercel.sh/jack",
+  },
+  {
+    name: "Patricia",
+    username: "@patricia",
+    body: "La experiencia con Pandoras es única; me siento parte de una comunidad exclusiva y con visión de futuro.",
+    img: "https://avatar.vercel.sh/jill",
+  },
+  {
+    name: "Ricardo",
+    username: "@ricardo",
+    body: "Gracias a Pandoras, he diversificado mi inversión en bienes raíces de forma innovadora.",
+    img: "https://avatar.vercel.sh/john",
+  },
+  {
+    name: "Lorena",
+    username: "@lorena",
+    body: "La plataforma me brinda transparencia y seguridad en cada paso, ¡altamente recomendable!",
+    img: "https://avatar.vercel.sh/jane",
+  },
+  {
+    name: "Sergio",
+    username: "@sergio",
+    body: "Pandoras me permite invertir en proyectos inmobiliarios de alto valor sin complicaciones.",
+    img: "https://avatar.vercel.sh/jenny",
+  },
+  {
+    name: "Isabel",
+    username: "@isabel",
+    body: "Estoy encantada con Pandoras; es una herramienta que realmente transforma la inversión inmobiliaria.",
+    img: "https://avatar.vercel.sh/james",
+  },
 ];
 
 const firstRow = reviews.slice(0, reviews.length / 2);
@@ -102,7 +102,7 @@ const ReviewCard = ({
       )}
     >
       <div className="flex flex-row items-center gap-2">
-      <Image 
+        <Image
           src={img}
           alt={`${name}'s avatar`}
           width={32}

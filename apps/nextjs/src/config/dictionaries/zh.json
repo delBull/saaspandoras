@@ -111,7 +111,7 @@
   "login": {
     "back": "返回",
     "welcome_back": "欢迎回来",
-    "signin_title": "请输入您的邮箱以登录账号", 
+    "signin_title": "请输入您的邮箱以登录账号",
     "singup_title": "还没有账号？立即注册。",
     "signin_email": "使用邮箱登录",
     "signin_others": "或使用其他方式继续",
@@ -296,15 +296,15 @@
     }
   },
   "invest": {
-      "title": "亲友投资池",
-      "description": "投资我们的私人池。资金将被锁定6个月。投资前请阅读条款。",
-      "cap": "全局池上限（CAP）：",
-      "total": "已投资总额",
-      "available": "可用空间",
-      "shares": "您在池中的份额（shares）",
-      "equivalent": "等值USDC金额",
-      "toinvest": "投资金额（USDC）",
-      "subtitle": "投资该池",
-      "balance": "您的USDC余额（测试网）"
-    }
+    "title": "亲友投资池",
+    "description": "投资我们的私人池。资金将被锁定6个月。投资前请阅读条款。",
+    "cap": "全局池上限（CAP）：",
+    "total": "已投资总额",
+    "available": "可用空间",
+    "shares": "您在池中的份额（shares）",
+    "equivalent": "等值USDC金额",
+    "toinvest": "投资金额（USDC）",
+    "subtitle": "投资该池",
+    "balance": "您的USDC余额（测试网）"
+  }
 }

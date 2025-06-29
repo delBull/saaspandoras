@@ -30,7 +30,7 @@ export const endingLink = (opts?: {
     const edgeLink = httpBatchLink({
       ...sharedOpts,
       url: `${getBaseUrl()}/api/trpc/edge`,
-    })(runtime); 
+    })(runtime);
     const lambdaLink = httpBatchLink({
       ...sharedOpts,
       url: `${getBaseUrl()}/api/trpc/lambda`,

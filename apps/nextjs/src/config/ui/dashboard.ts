@@ -41,8 +41,9 @@ export const getDashboardConfig = async ({
       },
     ],
     marketing: {
-        introducing: dict.common.dashboard.marketing_introducing || "Introducing Pandora's",
-        href: "/dashboard/marketing"
-      } as Record<string, string>
+      introducing:
+        dict.common.dashboard.marketing_introducing || "Introducing Pandora's",
+      href: "/dashboard/marketing",
+    } as Record<string, string>,
   };
 };

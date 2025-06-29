@@ -15,7 +15,10 @@ export default function DashboardLoading() {
             {/* Fake Navigation Items */}
             <div className="space-y-4">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-10 animate-pulse rounded bg-zinc-800" />
+                <div
+                  key={i}
+                  className="h-10 animate-pulse rounded bg-zinc-800"
+                />
               ))}
             </div>
           </div>
@@ -25,16 +28,13 @@ export default function DashboardLoading() {
         <div className="flex-1 min-h-screen bg-black">
           <div className="p-8">
             {/* Header */}
-            <DashboardHeader
-              heading="Pandorians"
-              text="Loading dashboard..."
-            />
+            <DashboardHeader heading="Pandorians" text="Loading dashboard..." />
 
             {/* Fake Stats Grid */}
             <div className="grid gap-4 md:grid-cols-3 mb-8">
               {[...Array(3)].map((_, i) => (
-                <div 
-                  key={i} 
+                <div
+                  key={i}
                   className="h-32 animate-pulse rounded-lg bg-zinc-900 border border-zinc-800"
                 />
               ))}

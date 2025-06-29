@@ -28,7 +28,12 @@ interface SidebarLinkProps {
   className?: string;
 }
 
-export function AceSidebar({ children, open, setOpen, animate = true }: AceSidebarProps) {
+export function AceSidebar({
+  children,
+  open,
+  setOpen,
+  animate = true,
+}: AceSidebarProps) {
   return (
     <motion.div
       animate={animate ? { width: open ? "17rem" : "4rem" } : {}}
@@ -41,9 +46,7 @@ export function AceSidebar({ children, open, setOpen, animate = true }: AceSideb
 
 export function SidebarBody({ children, className }: SidebarBodyProps) {
   return (
-    <div className={cn("flex h-full flex-col", className)}>
-      {children}
-    </div>
+    <div className={cn("flex h-full flex-col", className)}>{children}</div>
   );
 }
 
@@ -54,7 +57,7 @@ export function SidebarLink({ link, className }: SidebarLinkProps) {
       className={cn(
         "group flex items-center rounded-lg px-3 py-2",
         "transition-all duration-200",
-        className
+        className,
       )}
     >
       {link.icon}

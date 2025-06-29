@@ -107,7 +107,7 @@
       "title": "사람들이 말하는 것",
       "desc": "우리의 말만 믿지 마세요. 실제 사용자가 Pandoras에 대해 말하는 내용을 확인하세요."
     }
-  }, 
+  },
   "login": {
     "back": "뒤로",
     "welcome_back": "다시 오신 것을 환영합니다",
@@ -296,15 +296,15 @@
     }
   },
   "invest": {
-      "title": "가족 및 친구 투자 풀",
-      "description": "당사의 프라이빗 풀에 투자하십시오. 자본은 6개월 동안 잠금됩니다. 투자하기 전에 약관을 읽어보세요.",
-      "cap": "전체 풀 한도(CAP):",
-      "total": "총 투자 금액",
-      "available": "남은 공간",
-      "shares": "풀에서의 당신의 포지션(쉐어)",
-      "equivalent": "USDC 환산 가치",
-      "toinvest": "투자 금액(USDC)",
-      "subtitle": "풀에 투자하기",
-      "balance": "당신의 USDC 잔액(테스트넷)"
-    }
+    "title": "가족 및 친구 투자 풀",
+    "description": "당사의 프라이빗 풀에 투자하십시오. 자본은 6개월 동안 잠금됩니다. 투자하기 전에 약관을 읽어보세요.",
+    "cap": "전체 풀 한도(CAP):",
+    "total": "총 투자 금액",
+    "available": "남은 공간",
+    "shares": "풀에서의 당신의 포지션(쉐어)",
+    "equivalent": "USDC 환산 가치",
+    "toinvest": "투자 금액(USDC)",
+    "subtitle": "풀에 투자하기",
+    "balance": "당신의 USDC 잔액(테스트넷)"
+  }
 }

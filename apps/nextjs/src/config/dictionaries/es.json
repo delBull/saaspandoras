@@ -93,21 +93,21 @@
       "second_text1": "del valor de la propiedad, para participar en inversiones inmobiliarias ",
       "time_text": "exclusivas"
     },
-    "transform_token": { 
-      "title": "Disfruta de Beneficios Exclusivos", 
+    "transform_token": {
+      "title": "Disfruta de Beneficios Exclusivos",
       "desc": "Acumula más participaciones y accede a privilegios únicos, obtén ingresos por rentas y disfruta de la posibilidad de convertir tu inversión en propiedad completa.",
       "more_details": "Más Detalles",
       "close": "Cerrar",
       "part1_title": "Desbloquea Privilegios Exclusivos",
       "part1_content": "Imagina que cada acción que adquieres no solo representa tu inversión, sino que también te abre las puertas a un mundo de privilegios exclusivos. Con el tiempo, a medida que acumulas más acciones, tendrás acceso a eventos especiales, soporte personalizado e información privilegiada sobre nuestros desarrollos premium. Este beneficio te posiciona dentro de una comunidad selecta, donde tu inversión te proporciona experiencias únicas reservadas solo para nuestros miembros más comprometidos.",
       "part2_title": "Gana Ingresos por Alquiler y Oportunidades de Propiedad Total",
-      "part2_content": "Además de los privilegios, tus acciones te permiten generar ingresos por alquiler, ya que la propiedad genera ingresos durante el período de arrendamiento. Cuando alcances una cierta cantidad de acciones, tendrás la oportunidad de convertir tu inversión en propiedad total, transformando tu participación en un activo tangible y de alto valor. Este enfoque te brinda beneficios tanto inmediatos como a largo plazo, impulsados por el éxito y la apreciación del proyecto." 
+      "part2_content": "Además de los privilegios, tus acciones te permiten generar ingresos por alquiler, ya que la propiedad genera ingresos durante el período de arrendamiento. Cuando alcances una cierta cantidad de acciones, tendrás la oportunidad de convertir tu inversión en propiedad total, transformando tu participación en un activo tangible y de alto valor. Este enfoque te brinda beneficios tanto inmediatos como a largo plazo, impulsados por el éxito y la apreciación del proyecto."
     },
     "people_comment": {
       "title": "Lo que dicen las personas",
       "desc": "No solo confíes en nuestra palabra. Esto es lo que dicen usuarios reales sobre Pandoras."
     }
-  }, 
+  },
   "login": {
     "back": "Atrás",
     "welcome_back": "Bienvenido de nuevo",
@@ -154,7 +154,7 @@
       "upgrade": "Actualizar"
     }
   },
-  "dropdown": { 
+  "dropdown": {
     "dashboard": "Panel de control",
     "billing": "Facturación",
     "settings": "Configuraciones",

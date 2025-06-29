@@ -33,11 +33,11 @@ function TabButton({ isActive, onClick, disabled, children }: TabButtonProps) {
       disabled={disabled}
       className={cn(
         "relative px-4 py-2 text-sm font-medium transition-colors",
-        isActive 
-          ? "text-black dark:text-lime-300" 
-          : disabled 
+        isActive
+          ? "text-black dark:text-lime-300"
+          : disabled
             ? "text-neutral-400 dark:text-neutral-600 cursor-default"
-            : "text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-300"
+            : "text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-300",
       )}
     >
       {isActive && (
@@ -51,30 +51,28 @@ function TabButton({ isActive, onClick, disabled, children }: TabButtonProps) {
     </button>
   );
 
-if (disabled) {
-  return (
-    <Tooltip.Provider delayDuration={50}>
-      <Tooltip.Root>
-        <Tooltip.Trigger asChild>
-          {button}
-        </Tooltip.Trigger>
-        <Tooltip.Portal>
-          <Tooltip.Content
-            className="z-50 rounded-md bg-neutral-900 px-3 py-1.5 text-xs text-white animate-in fade-in-0 zoom-in-95 shadow-md"
-            sideOffset={5}
-            side="top"
-            align="center"
-            avoidCollisions
-          >
-            Coming Soon
-          </Tooltip.Content>
-        </Tooltip.Portal>
-      </Tooltip.Root>
-    </Tooltip.Provider>
-  );
-}
+  if (disabled) {
+    return (
+      <Tooltip.Provider delayDuration={50}>
+        <Tooltip.Root>
+          <Tooltip.Trigger asChild>{button}</Tooltip.Trigger>
+          <Tooltip.Portal>
+            <Tooltip.Content
+              className="z-50 rounded-md bg-neutral-900 px-3 py-1.5 text-xs text-white animate-in fade-in-0 zoom-in-95 shadow-md"
+              sideOffset={5}
+              side="top"
+              align="center"
+              avoidCollisions
+            >
+              Coming Soon
+            </Tooltip.Content>
+          </Tooltip.Portal>
+        </Tooltip.Root>
+      </Tooltip.Provider>
+    );
+  }
 
-return button;
+  return button;
 }
 
 export function AssetTabs({ dict }: AssetTabsProps) {
@@ -100,7 +98,10 @@ export function AssetTabs({ dict }: AssetTabsProps) {
   return (
     <div className="w-full bg-background">
       <div className="container mx-auto px-4">
-        <nav className="flex items-center h-14 gap-4" aria-label="Asset categories">
+        <nav
+          className="flex items-center h-14 gap-4"
+          aria-label="Asset categories"
+        >
           <TabButton
             isActive={activeTab === "real-estate"}
             onClick={() => handleTabClick("real-estate")}
@@ -108,7 +109,7 @@ export function AssetTabs({ dict }: AssetTabsProps) {
           >
             {dict.real_estate}
           </TabButton>
-          
+
           <TabButton
             isActive={false}
             onClick={() => handleTabClick("startups")}
@@ -116,7 +117,7 @@ export function AssetTabs({ dict }: AssetTabsProps) {
           >
             {dict.startups}
           </TabButton>
-          
+
           <TabButton
             isActive={false}
             onClick={() => handleTabClick("others")}

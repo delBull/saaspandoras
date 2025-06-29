@@ -108,7 +108,7 @@
       "desc": "Don’t just take our word for it. Here’s what real users are saying about Pandoras."
     }
   },
-  "login": { 
+  "login": {
     "back": "Back",
     "welcome_back": "Welcome back",
     "signin_title": "Enter your email to sign into your account",
@@ -118,14 +118,14 @@
     "signup": "Sign Up",
     "privacy": "only your email and profile picture will be stored.",
     "signup_github": "Sign Up with GitHub",
-    "signup_google":  "Sign Up with Google"
+    "signup_google": "Sign Up with Google"
   },
   "common": {
     "copyright": "© ${currentYear} Pandora's Foundation is a brand of MXHUB Ecosystem Blockchain S.A. de C.V.",
     "dashboard": {
       "main_nav_documentation": "Documentation",
       "main_nav_support": "Support",
-      "sidebar_nav_clusters": "Projects", 
+      "sidebar_nav_clusters": "Projects",
       "sidebar_nav_billing": "Billing",
       "sidebar_nav_settings": "Settings",
       "title_text": "Create and manage your projects.",
@@ -296,15 +296,15 @@
     }
   },
   "invest": {
-      "title": "Family & Friends Investment Pool",
-      "description": "Invest in our private pool. Capital locked for 6 months. Read the terms before investing.",
-      "cap": "Global Pool CAP:",
-      "total": "Total Invested",
-      "available": "Available Space",
-      "shares": "Your Position in the Pool (shares)",
-      "equivalent": "Equivalent Value in USDC",
-      "toinvest": "Amount to Invest (USDC)",
-      "subtitle": "Invest in the Pool",
-      "balance": "Your USDC Balance (testnet)"
-    }
+    "title": "Family & Friends Investment Pool",
+    "description": "Invest in our private pool. Capital locked for 6 months. Read the terms before investing.",
+    "cap": "Global Pool CAP:",
+    "total": "Total Invested",
+    "available": "Available Space",
+    "shares": "Your Position in the Pool (shares)",
+    "equivalent": "Equivalent Value in USDC",
+    "toinvest": "Amount to Invest (USDC)",
+    "subtitle": "Invest in the Pool",
+    "balance": "Your USDC Balance (testnet)"
+  }
 }

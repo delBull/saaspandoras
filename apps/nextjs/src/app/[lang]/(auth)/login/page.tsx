@@ -16,18 +16,14 @@ export const metadata: Metadata = {
   description: "Login to your account",
 };
 
-export default async function LoginPage(
-  props: {
-    params: Promise<{
-      lang: Locale;
-    }>;
-  }
-) {
+export default async function LoginPage(props: {
+  params: Promise<{
+    lang: Locale;
+  }>;
+}) {
   const params = await props.params;
 
-  const {
-    lang
-  } = params;
+  const { lang } = params;
 
   const dict = await getDictionary(lang);
   return (

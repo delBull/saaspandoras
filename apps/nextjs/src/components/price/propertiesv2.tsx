@@ -15,10 +15,11 @@ const data = {
     title2: "Horizon View",
     description2: "The best view of the Bay in a wonderful place.",
     title3: "Narai",
-    description3: "Condominiums with ocean views, comfort, beach and luxury have never been so close.",
+    description3:
+      "Condominiums with ocean views, comfort, beach and luxury have never been so close.",
     buttons: {
       details: "Details",
-      getTokens: "Get Shares"
+      getTokens: "Get Shares",
     },
     assets: {
       title: "Asset Categories",
@@ -26,8 +27,8 @@ const data = {
       real_estate: "Real Estate",
       startups: "Startups",
       others: "Others",
-      coming_soon: "Coming soon"
-    }
+      coming_soon: "Coming soon",
+    },
   },
   es: {
     title1: "Casa Bella",
@@ -35,10 +36,11 @@ const data = {
     title2: "Vista Horizonte",
     description2: "La mejor vista de la Bahía en un lugar maravilloso.",
     title3: "Narai",
-    description3: "Condominios con vista al mar, comodidad, playa y lujo jamás estuvieran tan cerca.",
+    description3:
+      "Condominios con vista al mar, comodidad, playa y lujo jamás estuvieran tan cerca.",
     buttons: {
       details: "Detalles",
-      getTokens: "Adquiere Fracciones"
+      getTokens: "Adquiere Fracciones",
     },
     assets: {
       title: "Categorías de Activos",
@@ -46,8 +48,8 @@ const data = {
       real_estate: "Inmobiliarios",
       startups: "Startups",
       others: "Otros",
-      coming_soon: "Próximamente"
-    }
+      coming_soon: "Próximamente",
+    },
   },
   ja: {
     title1: "カーサベラ",
@@ -55,10 +57,11 @@ const data = {
     title2: "ホライゾンビュー",
     description2: "素晴らしい場所での湾の最高の眺め。",
     title3: "Narai",
-    description3: "オーシャンビュー、快適さ、ビーチ、豪華さを備えたコンドミニアムは、かつてないほど近くにありました。",
+    description3:
+      "オーシャンビュー、快適さ、ビーチ、豪華さを備えたコンドミニアムは、かつてないほど近くにありました。",
     buttons: {
       details: "詳細",
-      getTokens: "株式を取得"
+      getTokens: "株式を取得",
     },
     assets: {
       title: "資産カテゴリー",
@@ -66,8 +69,8 @@ const data = {
       real_estate: "不動産",
       startups: "スタートアップ",
       others: "その他",
-      coming_soon: "近日公開"
-    }
+      coming_soon: "近日公開",
+    },
   },
   ko: {
     title1: "카사 벨라",
@@ -75,10 +78,11 @@ const data = {
     title2: "호라이즌 뷰",
     description2: "멋진 장소에서만의 최고의 전망.",
     title3: "Narai",
-    description3: "바다 전망, 편안함, 해변, 고급스러움을 갖춘 콘도미니엄이 이렇게 가까이 있었던 적은 없었습니다.",
+    description3:
+      "바다 전망, 편안함, 해변, 고급스러움을 갖춘 콘도미니엄이 이렇게 가까이 있었던 적은 없었습니다.",
     buttons: {
       details: "상세정보",
-      getTokens: "주식 구매"
+      getTokens: "주식 구매",
     },
     assets: {
       title: "자산 카테고리",
@@ -86,8 +90,8 @@ const data = {
       real_estate: "부동산",
       startups: "스타트업",
       others: "기타",
-      coming_soon: "출시 예정"
-    }
+      coming_soon: "출시 예정",
+    },
   },
   zh: {
     title1: "Casa Bella（贝拉之家酒店）",
@@ -98,7 +102,7 @@ const data = {
     description3: "拥有海景、舒适、海滩和豪华的公寓从未如此接近。",
     buttons: {
       details: "详情",
-      getTokens: "获取股份"
+      getTokens: "获取股份",
     },
     assets: {
       title: "资产类别",
@@ -106,12 +110,16 @@ const data = {
       real_estate: "房地产",
       startups: "创业公司",
       others: "其他",
-      coming_soon: "即将推出"
-    }
-  }
+      coming_soon: "即将推出",
+    },
+  },
 };
 
-export default function PropertiesPage({ lang }: { lang: 'en' | 'es' | 'ja' | 'ko' | 'zh' }) {
+export default function PropertiesPage({
+  lang,
+}: {
+  lang: "en" | "es" | "ja" | "ko" | "zh";
+}) {
   const dict = data[lang];
   if (!dict) {
     console.error(`Invalid language: ${lang}`);
@@ -136,42 +144,47 @@ export default function PropertiesPage({ lang }: { lang: 'en' | 'es' | 'ja' | 'k
       <AssetTabs lang={lang} dict={dict.assets} />
 
       {/* Properties Grid */}
-    <ul className="grid grid-cols-1 grid-rows-none gap-4 md:grid-cols-12 md:grid-rows-2 lg:gap-4 xl:max-h-[34rem] xl:grid-rows-2">
-    <GridItem
-        area="md:[grid-area:1/1/3/7] xl:[grid-area:1/1/3/7]"
-        icon={<Icons.Rocket className="h-4 w-4 text-black dark:text-neutral-400" />}
-        title={dict.title3}
-        description={dict.description3}
-        background="/images/narai_blk.jpg"
-        link="/assets/narai"
-        buttonTexts={dict.buttons}
-        lang={lang}
-      />
-     
-      <GridItem
-        area="md:[grid-area:1/7/2/13] xl:[grid-area:1/7/2/13]"
-        icon={<Icons.Spinner className="h-4 w-4 text-black dark:text-neutral-400" />}
-        title={dict.title1}
-        description={dict.description1}
-        link=""
-        buttonTexts={dict.buttons}
-        lang={lang}
-        isComingSoon={true}
-      />
+      <ul className="grid grid-cols-1 grid-rows-none gap-4 md:grid-cols-12 md:grid-rows-2 lg:gap-4 xl:max-h-[34rem] xl:grid-rows-2">
+        <GridItem
+          area="md:[grid-area:1/1/3/7] xl:[grid-area:1/1/3/7]"
+          icon={
+            <Icons.Rocket className="h-4 w-4 text-black dark:text-neutral-400" />
+          }
+          title={dict.title3}
+          description={dict.description3}
+          background="/images/narai_blk.jpg"
+          link="/assets/narai"
+          buttonTexts={dict.buttons}
+          lang={lang}
+        />
 
-      <GridItem
-        area="md:[grid-area:2/7/3/13] xl:[grid-area:2/7/3/13]"
-        icon={<Icons.Spinner className="h-4 w-4 text-black dark:text-neutral-400" />}
-        title={dict.title2}
-        description={dict.description2}
-        link=""
-        buttonTexts={dict.buttons}
-        lang={lang}
-        isComingSoon={true}
-      />
+        <GridItem
+          area="md:[grid-area:1/7/2/13] xl:[grid-area:1/7/2/13]"
+          icon={
+            <Icons.Spinner className="h-4 w-4 text-black dark:text-neutral-400" />
+          }
+          title={dict.title1}
+          description={dict.description1}
+          link=""
+          buttonTexts={dict.buttons}
+          lang={lang}
+          isComingSoon={true}
+        />
 
-    </ul>
-  </div>
+        <GridItem
+          area="md:[grid-area:2/7/3/13] xl:[grid-area:2/7/3/13]"
+          icon={
+            <Icons.Spinner className="h-4 w-4 text-black dark:text-neutral-400" />
+          }
+          title={dict.title2}
+          description={dict.description2}
+          link=""
+          buttonTexts={dict.buttons}
+          lang={lang}
+          isComingSoon={true}
+        />
+      </ul>
+    </div>
   );
 }
 
@@ -190,28 +203,41 @@ interface GridItemProps {
   isComingSoon?: boolean;
 }
 
-const GridItem = ({ area, icon, title, description, link, background, buttonTexts, lang, isComingSoon }: GridItemProps) => {
+const GridItem = ({
+  area,
+  icon,
+  title,
+  description,
+  link,
+  background,
+  buttonTexts,
+  lang,
+  isComingSoon,
+}: GridItemProps) => {
   const [showToast, setShowToast] = useState(false);
 
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>) => {
+  const handleClick = (
+    event: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>,
+  ) => {
     if (!link) {
       event.preventDefault();
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     }
   };
-  
+
   const fullLink = link ? `/${lang}${link}` : "#";
 
   return (
-<li className={`min-h-[14rem] list-none ${area} relative`}>
-      <div className="relative h-full rounded-2.5xl border dark:border-neutral-800 p-2 md:rounded-3xl md:p-3"
-      style={{
-        backgroundImage: background ? `url(${background})` : 'none',
-        backgroundSize: 'cover', // Ajusta la imagen al tamaño del contenedor
-        backgroundPosition: 'center', // Centra la imagen
-        backgroundRepeat: 'no-repeat', // Evita que la imagen se repita
-      }}
+    <li className={`min-h-[14rem] list-none ${area} relative`}>
+      <div
+        className="relative h-full rounded-2.5xl border dark:border-neutral-800 p-2 md:rounded-3xl md:p-3"
+        style={{
+          backgroundImage: background ? `url(${background})` : "none",
+          backgroundSize: "cover", // Ajusta la imagen al tamaño del contenedor
+          backgroundPosition: "center", // Centra la imagen
+          backgroundRepeat: "no-repeat", // Evita que la imagen se repita
+        }}
       >
         {/* Add Coming Soon overlay */}
         {isComingSoon && (
@@ -241,13 +267,11 @@ const GridItem = ({ area, icon, title, description, link, background, buttonText
                   {description}
                 </h2>
                 <div className="flex justify-between mt-4">
-                <Button variant="outline" onClick={handleClick}>
-                  {buttonTexts.details}
-                </Button>
-                <Button variant="default">
-                  {buttonTexts.getTokens}
-                </Button>
-              </div>
+                  <Button variant="outline" onClick={handleClick}>
+                    {buttonTexts.details}
+                  </Button>
+                  <Button variant="default">{buttonTexts.getTokens}</Button>
+                </div>
               </div>
             </div>
           </div>

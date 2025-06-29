@@ -15,14 +15,14 @@ const noNeedProcessRoute = [
   ".*\\.pdf",
   ".*\\.opengraph-image.png",
   "/__next_devtools__/client(.*)",
-  "/en/__next_devtools__/client(.*)", 
+  "/en/__next_devtools__/client(.*)",
 ];
 
 const noRedirectRoute = ["/api(.*)", "/trpc(.*)", "/admin"];
 
 const publicRoute = [
   "/(\\w{2}/)?signin(.*)",
-    "/(\\w{2}/)?login(.*)",
+  "/(\\w{2}/)?login(.*)",
   "/(\\w{2}/)?register(.*)",
   "/(\\w{2}/)?terms(.*)",
   "/(\\w{2}/)?pricing(.*)",
@@ -32,10 +32,7 @@ const publicRoute = [
   "^/\\w{2}$", // root with locale
 ];
 
-const protectedRoutes = [
-  "/(\\w{2}/)?dashboard(.*)",
-  "/(\\w{2}/)?admin(.*)",
-];
+const protectedRoutes = ["/(\\w{2}/)?dashboard(.*)", "/(\\w{2}/)?admin(.*)"];
 
 const authRoutes = [
   "/api/auth(.*)",
@@ -50,7 +47,9 @@ function getLocale(req: NextRequest): string | undefined {
   const negotiatorHeaders: Record<string, string> = {};
   req.headers.forEach((value, key) => (negotiatorHeaders[key] = value));
   const locales = Array.from(i18n.locales);
-  const languages = new Negotiator({ headers: negotiatorHeaders }).languages(locales);
+  const languages = new Negotiator({ headers: negotiatorHeaders }).languages(
+    locales,
+  );
   return matchLocale(languages, locales, i18n.defaultLocale);
 }
 
@@ -62,9 +61,9 @@ function isNoRedirect(request: NextRequest): boolean {
 function isPublicPage(request: NextRequest): boolean {
   const pathname = request.nextUrl.pathname;
   return publicRoute.some(
-    (route) => 
-    new RegExp(route).test(pathname) ||
-    new RegExp(`/[a-z]{2}${route}`).test(pathname)
+    (route) =>
+      new RegExp(route).test(pathname) ||
+      new RegExp(`/[a-z]{2}${route}`).test(pathname),
   );
 }
 
@@ -73,18 +72,21 @@ function isNoNeedProcess(request: NextRequest): boolean {
   return noNeedProcessRoute.some((route) => new RegExp(route).test(pathname));
 }
 
-export default async function middleware(req: NextRequest, event: NextFetchEvent) {
+export default async function middleware(
+  req: NextRequest,
+  event: NextFetchEvent,
+) {
   // Debug logs
   // console.log('Requested Path:', req.nextUrl.pathname);
   // console.log('Is Public Page:', isPublicPage(req));
   // console.log('Is Auth Route:', authRoutes.some(pattern => new RegExp(`^${pattern}$`).test(req.nextUrl.pathname)));
-  
+
   // Check if current path requires skipping middleware
   if (
-    req.nextUrl.pathname.startsWith('/api/auth') || 
-    req.nextUrl.pathname.includes('/api/auth/callback') ||
+    req.nextUrl.pathname.startsWith("/api/auth") ||
+    req.nextUrl.pathname.includes("/api/auth/callback") ||
     isNoNeedProcess(req) ||
-    req.nextUrl.pathname.startsWith('/api/webhooks/')
+    req.nextUrl.pathname.startsWith("/api/webhooks/")
   ) {
     return NextResponse.next();
   }
@@ -92,7 +94,8 @@ export default async function middleware(req: NextRequest, event: NextFetchEvent
   // Check if the pathname is missing a locale
   const pathname = req.nextUrl.pathname;
   const pathnameIsMissingLocale = i18n.locales.every(
-    (locale) => !pathname.startsWith(`/${locale}/`) && pathname !== `/${locale}`
+    (locale) =>
+      !pathname.startsWith(`/${locale}/`) && pathname !== `/${locale}`,
   );
 
   // Redirect if locale is missing
@@ -101,15 +104,18 @@ export default async function middleware(req: NextRequest, event: NextFetchEvent
     return NextResponse.redirect(
       new URL(
         `/${locale}${pathname.startsWith("/") ? "" : "/"}${pathname}`,
-        req.url
-      )
+        req.url,
+      ),
     );
   }
 
   if (!isNoRedirect(req) && pathnameIsMissingLocale) {
     const locale = getLocale(req);
     return NextResponse.redirect(
-      new URL(`/${locale}${pathname.startsWith("/") ? "" : "/"}${pathname}`, req.url)
+      new URL(
+        `/${locale}${pathname.startsWith("/") ? "" : "/"}${pathname}`,
+        req.url,
+      ),
     );
   }
 
@@ -128,23 +134,26 @@ const authMiddleware = withAuth(
     const isAuth = !!token;
     const locale = getLocale(req) ?? i18n.defaultLocale;
     const pathname = req.nextUrl.pathname;
-    
+
     // console.log('Auth Middleware - Path:', pathname, 'Auth:', isAuth);
-    
+
     // Check if current path is login or register
-    const isAuthPath = pathname.includes('/login') || pathname.includes('/register');
-    
+    const isAuthPath =
+      pathname.includes("/login") || pathname.includes("/register");
+
     // If authenticated and trying to access login, redirect appropriately
     if (isAuth && isAuthPath) {
       // console.log('Authenticated user accessing auth path, handling redirection');
-      
+
       const callbackUrl = req.nextUrl.searchParams.get("callbackUrl");
       if (callbackUrl) {
         // Handle relative URLs
-        if (callbackUrl.startsWith('/')) {
+        if (callbackUrl.startsWith("/")) {
           // Add locale prefix if missing
           if (!/^\/[a-z]{2}\//.test(callbackUrl)) {
-            return NextResponse.redirect(new URL(`/${locale}${callbackUrl}`, req.url));
+            return NextResponse.redirect(
+              new URL(`/${locale}${callbackUrl}`, req.url),
+            );
           }
           return NextResponse.redirect(new URL(callbackUrl, req.url));
         }
@@ -164,15 +173,18 @@ const authMiddleware = withAuth(
 
     // If not authenticated and trying to access protected routes
     if (!isAuth && !isAuthPath) {
-      const protectedRoute = protectedRoutes.some(route => 
-        new RegExp(route).test(pathname)
+      const protectedRoute = protectedRoutes.some((route) =>
+        new RegExp(route).test(pathname),
       );
-      
+
       if (protectedRoute) {
         // console.log('Unauthenticated user accessing protected route, redirecting to login');
         const from = pathname;
         return NextResponse.redirect(
-          new URL(`/${locale}/login?callbackUrl=${encodeURIComponent(from)}`, req.url)
+          new URL(
+            `/${locale}/login?callbackUrl=${encodeURIComponent(from)}`,
+            req.url,
+          ),
         );
       }
     }
@@ -184,16 +196,16 @@ const authMiddleware = withAuth(
       authorized: ({ token }) => !!token,
     },
     pages: {
-      signIn: '/login',
+      signIn: "/login",
     },
-  }
+  },
 );
 
 export const config = {
   matcher: [
-    '/',
-    '/(es|en|zh|ko|ja)/:path*',
-    '/api/auth/:path*',
-    '/((?!api|_next/static|_next/image|favicon.ico|__next_devtools__).*)'
-  ]
+    "/",
+    "/(es|en|zh|ko|ja)/:path*",
+    "/api/auth/:path*",
+    "/((?!api|_next/static|_next/image|favicon.ico|__next_devtools__).*)",
+  ],
 };

@@ -37,7 +37,7 @@ export function MobileNav({ items, children, menuItemClick }: MobileNavProps) {
                 rel="noopener noreferrer"
                 className={cn(
                   "p-2 rounded-md hover:underline",
-                  item.disabled && "opacity-50"
+                  item.disabled && "opacity-50",
                 )}
                 onClick={menuItemClick}
               >
@@ -49,13 +49,13 @@ export function MobileNav({ items, children, menuItemClick }: MobileNavProps) {
                 href={item.disabled ? "#" : item.href}
                 className={cn(
                   "p-2 rounded-md hover:underline",
-                  item.disabled && "opacity-50"
+                  item.disabled && "opacity-50",
                 )}
                 onClick={menuItemClick}
               >
                 {item.title}
               </Link>
-            )
+            ),
           )}
         </nav>
         {children}

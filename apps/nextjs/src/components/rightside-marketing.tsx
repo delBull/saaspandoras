@@ -1,33 +1,43 @@
 "use client";
 
 import Link from "next/link";
-import React from 'react';
+import React from "react";
 
 import { GlowingEffect } from "@saasfly/ui/glowing-effect";
 import * as Icons from "@saasfly/ui/icons";
 
-export function RightsideMarketing({ dict } : { dict: Record<string, string> | undefined }) {
+export function RightsideMarketing({
+  dict,
+}: {
+  dict: Record<string, string> | undefined;
+}) {
   return (
     <ul className="grid grid-cols-1 grid-rows-none gap-4 md:grid-cols-12 md:grid-rows-2 lg:gap-4 xl:max-h-[34rem] xl:grid-rows-2">
       <GridItem
         area="md:[grid-area:1/1/2/7] xl:[grid-area:1/1/2/7]"
-        icon={<Icons.Rocket className="h-4 w-4 text-black dark:text-neutral-400" />}
-        title={dict?.deploy_on_vercel_title ?? ''}
-        description={dict?.deploy_on_vercel_desc ?? ''}
+        icon={
+          <Icons.Rocket className="h-4 w-4 text-black dark:text-neutral-400" />
+        }
+        title={dict?.deploy_on_vercel_title ?? ""}
+        description={dict?.deploy_on_vercel_desc ?? ""}
       />
 
       <GridItem
         area="md:[grid-area:1/7/2/13] xl:[grid-area:2/1/3/7]"
-        icon={<Icons.Cloud className="h-4 w-4 text-black dark:text-neutral-400" />}
-        title={dict?.ship_on_cloudflare_title ?? ''}
-        description={dict?.ship_on_cloudflare_desc ?? ''}
+        icon={
+          <Icons.Cloud className="h-4 w-4 text-black dark:text-neutral-400" />
+        }
+        title={dict?.ship_on_cloudflare_title ?? ""}
+        description={dict?.ship_on_cloudflare_desc ?? ""}
       />
 
       <GridItem
         area="md:[grid-area:2/1/3/7] xl:[grid-area:1/7/3/13]"
-        icon={<Icons.ThumbsUp className="h-4 w-4 text-black dark:text-neutral-400" />}
-        title={dict?.showcase_title ?? ''}
-        description={dict?.showcase_desc ?? ''}
+        icon={
+          <Icons.ThumbsUp className="h-4 w-4 text-black dark:text-neutral-400" />
+        }
+        title={dict?.showcase_title ?? ""}
+        description={dict?.showcase_desc ?? ""}
         background="/images/building.jpg"
       />
     </ul>
@@ -43,21 +53,29 @@ interface GridItemProps {
   background?: string;
 }
 
-const GridItem = ({ area, icon, title, description, link, background }: GridItemProps) => {
+const GridItem = ({
+  area,
+  icon,
+  title,
+  description,
+  link,
+  background,
+}: GridItemProps) => {
   const handleClick = (event) => {
     event.preventDefault();
     // Aquí puedes agregar cualquier otra lógica que desees ejecutar cuando se haga clic en el enlace
-    console.log('Enlace no activado');
-};
+    console.log("Enlace no activado");
+  };
   return (
     <li className={`min-h-[14rem] list-none ${area}`}>
-      <div className="relative h-full rounded-2.5xl border dark:border-neutral-800 p-2 md:rounded-3xl md:p-3"
-      style={{
-        backgroundImage: background ? `url(${background})` : 'none',
-        backgroundSize: 'cover', // Ajusta la imagen al tamaño del contenedor
-        backgroundPosition: 'center', // Centra la imagen
-        backgroundRepeat: 'no-repeat', // Evita que la imagen se repita
-      }}
+      <div
+        className="relative h-full rounded-2.5xl border dark:border-neutral-800 p-2 md:rounded-3xl md:p-3"
+        style={{
+          backgroundImage: background ? `url(${background})` : "none",
+          backgroundSize: "cover", // Ajusta la imagen al tamaño del contenedor
+          backgroundPosition: "center", // Centra la imagen
+          backgroundRepeat: "no-repeat", // Evita que la imagen se repita
+        }}
       >
         <GlowingEffect
           spread={40}
@@ -66,7 +84,11 @@ const GridItem = ({ area, icon, title, description, link, background }: GridItem
           proximity={64}
           inactiveZone={0.01}
         />
-        <Link href={`${link ? link : ''}`} target="_blank" onClick={handleClick}>
+        <Link
+          href={`${link ? link : ""}`}
+          target="_blank"
+          onClick={handleClick}
+        >
           <div className="relative flex h-full flex-col justify-between gap-6 overflow-hidden rounded-xl border-0.75 p-6 dark:shadow-[0px_0px_27px_0px_#2D2D2D] md:p-6 dark:bg-neutral-900/40">
             <div className="relative flex flex-1 flex-col justify-between gap-3">
               <div className="w-fit rounded-lg border border-gray-600 dark:border-neutral-800 p-2">

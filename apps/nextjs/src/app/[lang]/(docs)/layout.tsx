@@ -6,7 +6,6 @@ import type { Locale } from "~/config/i18n-config";
 import { getMarketingConfig } from "~/config/ui/marketing";
 import { getDictionary } from "~/lib/get-dictionary";
 
-
 interface DocsLayoutProps {
   children: React.ReactNode;
   params: Promise<{
@@ -17,13 +16,9 @@ interface DocsLayoutProps {
 export default async function DocsLayout(props: DocsLayoutProps) {
   const params = await props.params;
 
-  const {
-    lang
-  } = params;
+  const { lang } = params;
 
-  const {
-    children
-  } = props;
+  const { children } = props;
 
   const dict = await getDictionary(lang); // Removed type assertion
   const user = await getCurrentUser();
@@ -42,11 +37,7 @@ export default async function DocsLayout(props: DocsLayoutProps) {
         />
       </Suspense>
       <div className="container flex-1">{children}</div>
-      <SiteFooter
-        className="border-t"
-        params={{ lang }}
-        dict={dict.common}
-      />
+      <SiteFooter className="border-t" params={{ lang }} dict={dict.common} />
     </div>
   );
 }

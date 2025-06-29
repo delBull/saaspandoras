@@ -9,17 +9,13 @@ import type { Locale } from "~/config/i18n-config";
 import { getMarketingConfig } from "~/config/ui/marketing";
 import { getDictionary } from "~/lib/get-dictionary";
 
-export default async function MarketingLayout(
-  props: {
-    children: React.ReactNode;
-    params: Promise<{ lang: Locale }>;
-  }
-) {
+export default async function MarketingLayout(props: {
+  children: React.ReactNode;
+  params: Promise<{ lang: Locale }>;
+}) {
   const params = await props.params;
 
-  const {
-    children
-  } = props;
+  const { children } = props;
 
   const { lang } = params;
 

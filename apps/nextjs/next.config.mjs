@@ -1,6 +1,6 @@
 // @ts-check
 import "./src/env.mjs";
-import "@saasfly/auth/env.mjs"; 
+import "@saasfly/auth/env.mjs";
 
 import { withNextDevtools } from "@next-devtools/core/plugin";
 // import "@saasfly/api/env"
@@ -26,19 +26,19 @@ const config = {
     // serverActions: true,
   },
   images: {
-    unoptimized: process.env.NODE_ENV === 'production',
+    unoptimized: process.env.NODE_ENV === "production",
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: '**',
+        protocol: "https",
+        hostname: "**",
       },
     ],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    formats: ['image/webp'],
+    formats: ["image/webp"],
     minimumCacheTTL: 60,
   },
-    async rewrites() {
+  async rewrites() {
     return [
       {
         source: "/:lang/docs/:slug",

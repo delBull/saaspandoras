@@ -15,7 +15,7 @@ interface ConstructionDashboardProps {
 }
 
 export function ConstructionDashboard({ tabs }: ConstructionDashboardProps) {
-  const [activeTab, setActiveTab] = useState<string>(tabs[0]?.id ?? '');
+  const [activeTab, setActiveTab] = useState<string>(tabs[0]?.id ?? "");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Mobile: Show only first tab, rest go to dropdown
@@ -48,8 +48,12 @@ export function ConstructionDashboard({ tabs }: ConstructionDashboardProps) {
             className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 dark:bg-neutral-800/10 dark:hover:bg-neutral-800/20"
             whileTap={{ scale: 0.98 }}
           >
-            <span className="font-medium text-sm absolute left-1/2 -translate-x-1/2">+</span>
-            <ChevronDown className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+            <span className="font-medium text-sm absolute left-1/2 -translate-x-1/2">
+              +
+            </span>
+            <ChevronDown
+              className={`w-4 h-4 transition-transform ${isDropdownOpen ? "rotate-180" : ""}`}
+            />
           </motion.button>
 
           <AnimatePresence>
@@ -114,10 +118,7 @@ export function ConstructionDashboard({ tabs }: ConstructionDashboardProps) {
                 <p className="text-neutral-600 dark:text-neutral-400">
                   {tab.content}
                 </p>
-                <PDFViewer 
-                  pdfUrl={tab.pdfUrl} 
-                  title={tab.title} 
-                />
+                <PDFViewer pdfUrl={tab.pdfUrl} title={tab.title} />
               </motion.div>
             );
           })}

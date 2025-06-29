@@ -1,41 +1,40 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { motion, useScroll, useTransform } from "framer-motion"
-import Image from "next/image"
-import type { MarketingDictionary } from "~/types"
+import { useEffect, useState } from "react";
+import { motion, useScroll, useTransform } from "framer-motion";
+import Image from "next/image";
+import type { MarketingDictionary } from "~/types";
 
 interface AnimatedDashboardProps {
-  dict: MarketingDictionary['dashboard']
+  dict: MarketingDictionary["dashboard"];
 }
 
 export function AnimatedDashboard({ dict: _dict }: AnimatedDashboardProps) {
-
-  const { scrollY } = useScroll()
-  const [isMobile, setIsMobile] = useState(false)
+  const { scrollY } = useScroll();
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768)
-    }
+      setIsMobile(window.innerWidth <= 768);
+    };
 
-    handleResize()
-    window.addEventListener("resize", handleResize)
+    handleResize();
+    window.addEventListener("resize", handleResize);
 
-    return () => window.removeEventListener("resize", handleResize)
-  }, [])
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const opacity = useTransform(
     scrollY,
     isMobile ? [0, 300, 500, 800] : [0, 200, 300, 500],
-    isMobile ? [1, 1, 0.8, 0] : [1, 1, 0.5, 0]
-  )
+    isMobile ? [1, 1, 0.8, 0] : [1, 1, 0.5, 0],
+  );
 
   const y = useTransform(
     scrollY,
     isMobile ? [0, 300, 500, 800] : [0, 200, 300, 500],
-    isMobile ? [0, 0, 50, 150] : [0, 0, 100, 200]
-  )
+    isMobile ? [0, 0, 50, 150] : [0, 0, 100, 200],
+  );
 
   return (
     <div className="relative w-full">
@@ -73,23 +72,23 @@ export function AnimatedDashboard({ dict: _dict }: AnimatedDashboardProps) {
 
         {/* Dashboard Image */}
         {/*<div className="relative rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/50 dark:bg-neutral-900/50 backdrop-blur-sm p-4 transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-xl">*/}
-          <Image
-            src="/images/onlybox2.png"
-            width={800}
-            height={1200}
-            alt="Pandoras Dashboard"
-            className="rounded-lg w-auto h-full"
-            priority
-          />
-          <Image
-            src="/images/smoke.png"
-            width={800}
-            height={1200}
-            alt="Pandoras Dashboard"
-            className="absolute bottom-0 right-0 -z-10 opacity-70"
-            priority
-          />
+        <Image
+          src="/images/onlybox2.png"
+          width={800}
+          height={1200}
+          alt="Pandoras Dashboard"
+          className="rounded-lg w-auto h-full"
+          priority
+        />
+        <Image
+          src="/images/smoke.png"
+          width={800}
+          height={1200}
+          alt="Pandoras Dashboard"
+          className="absolute bottom-0 right-0 -z-10 opacity-70"
+          priority
+        />
       </motion.div>
     </div>
-  )
+  );
 }

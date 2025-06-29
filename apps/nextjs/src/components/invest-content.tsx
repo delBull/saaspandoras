@@ -13,24 +13,24 @@ import { useState } from "react";
 import type { Dictionary } from "~/types";
 
 const VAULT_ADDRESS = "0xEb7b9fBF6dfE8Bfd94DA940f9615077Cd7F4b4C3";
-const USDC_ADDRESS  = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-const IMAGE_URL     = "/images/coin_mobile.jpg";
+const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+const IMAGE_URL = "/images/coin_mobile.jpg";
 
 export function InvestContent({ dict }: { dict: Dictionary }) {
   const address = useAddress();
   const { contract: vault } = useContract(VAULT_ADDRESS);
-  const { contract: usdc  } = useContract(USDC_ADDRESS, "token");
+  const { contract: usdc } = useContract(USDC_ADDRESS, "token");
 
-  const { data: usdcBalance  } = useTokenBalance(usdc, address);
+  const { data: usdcBalance } = useTokenBalance(usdc, address);
   const { data: shareBalance } = useTokenBalance(vault, address);
 
-  const {
-    mutateAsync: deposit,
-    isLoading:  isDepositing,
-  } = useContractWrite(vault, "deposit");
+  const { mutateAsync: deposit, isLoading: isDepositing } = useContractWrite(
+    vault,
+    "deposit",
+  );
 
-  const [amount, setAmount]   = useState("");
-  const [error, setError]     = useState<string | null>(null);
+  const [amount, setAmount] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   const handleDeposit = async () => {
@@ -80,8 +80,14 @@ export function InvestContent({ dict }: { dict: Dictionary }) {
 
         {/* Estadísticas sin fondo blanco */}
         <div className="grid grid-cols-1 gap-4 text-gray-700 dark:text-gray-200">
-          <div><strong>{dict.invest.shares}:</strong> {shareBalance?.displayValue ?? "0"} {shareBalance?.symbol}</div>
-          <div><strong>{dict.invest.balance}:</strong> {usdcBalance?.displayValue ?? "0"} {usdcBalance?.symbol}</div>
+          <div>
+            <strong>{dict.invest.shares}:</strong>{" "}
+            {shareBalance?.displayValue ?? "0"} {shareBalance?.symbol}
+          </div>
+          <div>
+            <strong>{dict.invest.balance}:</strong>{" "}
+            {usdcBalance?.displayValue ?? "0"} {usdcBalance?.symbol}
+          </div>
         </div>
 
         {/* Input y botón animados */}
@@ -96,7 +102,7 @@ export function InvestContent({ dict }: { dict: Dictionary }) {
               min="0"
               step="0.01"
               value={amount}
-              onChange={e => setAmount(e.target.value)}
+              onChange={(e) => setAmount(e.target.value)}
               disabled={isDepositing}
               className="w-full px-3 py-2 border rounded-lg"
               whileFocus={{ scale: 1.02 }}
@@ -113,12 +119,8 @@ export function InvestContent({ dict }: { dict: Dictionary }) {
         </motion.div>
 
         {/* Mensajes */}
-        {success && (
-          <div className="text-green-700">{success}</div>
-        )}
-        {error && (
-          <div className="text-red-600">{error}</div>
-        )}
+        {success && <div className="text-green-700">{success}</div>}
+        {error && <div className="text-red-600">{error}</div>}
       </div>
 
       {/* DERECHA: imagen */}

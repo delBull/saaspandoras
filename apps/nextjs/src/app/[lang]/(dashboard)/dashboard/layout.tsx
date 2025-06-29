@@ -24,13 +24,9 @@ export function generateStaticParams() {
 export default async function DashboardLayout(props: DashboardLayoutProps) {
   const params = await props.params;
 
-  const {
-    lang
-  } = params;
+  const { lang } = params;
 
-  const {
-    children
-  } = props;
+  const { children } = props;
 
   const user = await getCurrentUser();
   const dict = await getDictionary(lang);
@@ -42,10 +38,10 @@ export default async function DashboardLayout(props: DashboardLayoutProps) {
   const dashboardConfig = await getDashboardConfig({ params: { lang } });
 
   return (
-  <div className="flex top-4 right-0 fixed min-h-screen flex-col space-y-6">
-    <header className="z-10">
-      <div className="container flex h-12 items-center justify-end py-4"> 
-        <div className="flex items-center space-x-3">
+    <div className="flex top-4 right-0 fixed min-h-screen flex-col space-y-6">
+      <header className="z-10">
+        <div className="container flex h-12 items-center justify-end py-4">
+          <div className="flex items-center space-x-3">
             <LocaleChange url={"/dashboard"} />
             <UserAccountNav
               user={{
@@ -60,12 +56,12 @@ export default async function DashboardLayout(props: DashboardLayoutProps) {
         </div>
       </header>
       <div className="container flex-1">
-       <aside className="hidden w-[200px] flex-col md:flex">
-         {/*  <DashboardNav
+        <aside className="hidden w-[200px] flex-col md:flex">
+          {/*  <DashboardNav
             items={dashboardConfig.sidebarNav}
             params={{ lang: `${lang}` }}
           />*/}
-        </aside> 
+        </aside>
         <main className="flex w-full flex-1 flex-col overflow-hidden">
           <Suspense
             fallback={
@@ -79,7 +75,6 @@ export default async function DashboardLayout(props: DashboardLayoutProps) {
           </Suspense>
         </main>
       </div>
-   
     </div>
   );
 }
