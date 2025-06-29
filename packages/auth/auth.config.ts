@@ -3,7 +3,7 @@ import { type NextAuthOptions } from "next-auth";
 import GithubProvider from "next-auth/providers/github";
 import EmailProvider from "next-auth/providers/email";
 
-import { MagicLinkEmail, resend, siteConfig } from "@saasfly/common";
+import { MagicLinkEmail, resend, siteConfig } from "@saasfly/shared";
 import { db } from "./db";
 import { env } from "./env.mjs";
 

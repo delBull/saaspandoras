@@ -1,3 +1,4 @@
+// Este archivo ha sido eliminado. Usa Sparkles directamente desde @saasfly/ui/sparkles.
 // "use client";
 
 import React from "react";

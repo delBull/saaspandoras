@@ -1,0 +1,4 @@
+{
+  "root": true,
+  "extends": ["./tooling/eslint-config/nextjs.js"]
+}

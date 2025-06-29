@@ -16,7 +16,7 @@ const config = {
     "@saasfly/api",
     "@saasfly/auth",
     "@saasfly/db",
-    "@saasfly/common",
+    "@saasfly/shared",
     "@saasfly/ui",
     "@saasfly/stripe",
   ],
