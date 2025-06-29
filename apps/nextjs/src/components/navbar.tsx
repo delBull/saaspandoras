@@ -14,7 +14,7 @@ import { LocaleChange } from "~/components/locale-change";
 import { UserAccountNav } from "./user-account-nav";
 import { useSigninModal } from "~/hooks/use-signin-modal";
 import useScroll from "~/hooks/use-scroll";
-import type { MainNavItem } from "~/types";
+import type { MainNavItem, MarketingDictionary } from "~/types";
 
 interface MarketingType {
   main_nav_assets: string;
@@ -36,7 +36,7 @@ interface NavBarProps {
   params: {
     lang: string;
   };
-  marketing: MarketingType & Record<string, string>;
+  marketing: MarketingType & Record<string, string> | MarketingDictionary; 
   dropdown: Record<string, string>;
 }
 
@@ -63,7 +63,7 @@ export function NavBar({
         )}
       >
         <div className="container flex h-16 items-center justify-between py-4">
-          <MainNav items={items} params={{ lang }} marketing={marketing}>
+          <MainNav items={items} params={{ lang }} marketing={marketing as Record<string, string>}>
             {children}
           </MainNav>
 

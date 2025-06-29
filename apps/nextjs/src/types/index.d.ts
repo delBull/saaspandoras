@@ -320,6 +320,7 @@ export interface MarketingDictionary {
 }
 
 export interface NavItem {
+  external: any;
   title: string;
   href: string;
   disabled?: boolean;

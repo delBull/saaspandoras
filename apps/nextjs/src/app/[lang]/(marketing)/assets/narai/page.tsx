@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { use } from "react";
 import { useState } from "react";
 import Link from "next/link";
 import { Organization } from "@saasfly/ui/icons";
@@ -347,28 +347,34 @@ interface ConstructionTab {
     },
 };
 
-export default function NaraiPage({ params: { lang } }: { params: { lang: Locale } }) {
+export default function NaraiPage(props: { params: Promise<{ lang: Locale }> }) {
+  const params = use(props.params);
+
+  const {
+    lang
+  } = params;
+
   const data = propertyData[lang] || propertyData.en;
   const [activeSection, setActiveSection] = React.useState<string | null>(null);
   const [openTooltip, setOpenTooltip] = useState<string | null>(null);
 
-    // Scroll handler
-    const constructionRef = React.useRef<HTMLDivElement>(null);
-    const isInView = useInView(constructionRef, { once: true, amount: 0.2 });
+  // Scroll handler
+  const constructionRef = React.useRef<HTMLDivElement>(null);
+  const isInView = useInView(constructionRef, { once: true, amount: 0.2 });
 
-    React.useEffect(() => {
-      if (isInView) {
-        setActiveSection('construction');
-      }
-    }, [isInView]);
-  
-    const scrollToConstruction = () => {
-      constructionRef.current?.scrollIntoView({ behavior: 'smooth' });
+  React.useEffect(() => {
+    if (isInView) {
       setActiveSection('construction');
-    };
-  
-    const [isFullscreenOpen, setIsFullscreenOpen] = React.useState(false);
-    const [currentImageIndex, setCurrentImageIndex] = React.useState(0);
+    }
+  }, [isInView]);
+
+  const scrollToConstruction = () => {
+    constructionRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setActiveSection('construction');
+  };
+
+  const [isFullscreenOpen, setIsFullscreenOpen] = React.useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = React.useState(0);
 
   return (
     <div className="container mx-auto px-4 py-8">

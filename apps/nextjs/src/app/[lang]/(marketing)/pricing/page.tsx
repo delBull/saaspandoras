@@ -5,13 +5,18 @@ export const metadata = {
   title: "Properties",
 };
 
-export default function Page({
-  params: { lang },
-}: {
-  params: {
-    lang: Locale;
-  };
-}) {
+export default async function Page(
+  props: {
+    params: Promise<{
+      lang: Locale;
+    }>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    lang
+  } = params;
 
   const supportedLangs = ['en', 'es', 'ja', 'ko', 'zh'] as const;
   const selectedLang = supportedLangs.includes(lang) ? lang : 'en';

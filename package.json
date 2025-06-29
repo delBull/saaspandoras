@@ -23,7 +23,7 @@
     "check-dependency-version-consistency": "4.1.0",
     "prettier": "3.2.5",
     "tailwind-config-viewer": "^2.0.4",
-    "@types/node": "^22.15.29",
+    "@types/node": "^22.15.34",
     "turbo": "1.13.3",
     "typescript": "5.4.5"
   },
@@ -38,19 +38,19 @@
   ],
   "packageManager": "bun@1.1.10",
   "dependencies": {
-    "@radix-ui/react-tooltip": "^1.1.8",
+    "@radix-ui/react-tooltip": "^1.2.7",
     "@vercel/analytics": "^1.5.0",
-    "caniuse-lite": "^1.0.30001703",
+    "caniuse-lite": "^1.0.30001726",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "framer-motion": "^12.12.2",
+    "framer-motion": "^12.19.2",
     "geoip-lite": "^1.4.10",
     "lucide-react": "^0.511.0",
     "ogl": "^1.0.11",
     "pino-pretty": "^13.0.0",
     "sooner": "^1.1.4",
-    "tailwind-merge": "^3.3.0",
+    "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
-    "thirdweb": "^5.92.1"
+    "thirdweb": "^5.105.3"
   }
 }

@@ -2,7 +2,7 @@
 
 import "server-only";
 
-import { cookies, headers } from "next/headers";
+import { cookies, headers, type UnsafeUnwrappedCookies, type UnsafeUnwrappedHeaders } from "next/headers";
 import { loggerLink } from "@trpc/client";
 import { experimental_createTRPCNextAppDirServer } from "@trpc/next/app-dir/server";
 
@@ -26,11 +26,11 @@ export const trpc = experimental_createTRPCNextAppDirServer<AppRouter>({
         }),
         endingLink({
           headers: () => {
-            const h = new Map(headers());
+            const h = new Map((headers() as unknown as UnsafeUnwrappedHeaders));
             h.delete("connection");
             h.delete("transfer-encoding");
             h.set("x-trpc-source", "server");
-            h.set("cookie", cookies().toString());
+            h.set("cookie", (cookies() as unknown as UnsafeUnwrappedCookies).toString());
             return Object.fromEntries(h.entries());
           },
         }),

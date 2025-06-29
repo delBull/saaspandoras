@@ -254,13 +254,19 @@ function InvestmentList({ dict }: { dict: Dictionary }) {
 }
 
 // Main dashboard component
-export default async function DashboardPage({
-  params: { lang },
-}: {
-  params: {
-    lang: Locale;
-  };
-}) {
+export default async function DashboardPage(
+  props: {
+    params: Promise<{
+      lang: Locale;
+    }>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    lang
+  } = params;
+
   const user = await getCurrentUser();
   if (!user) {
     redirect(authOptions?.pages?.signIn ?? "/login");

@@ -9,15 +9,22 @@ import { getDictionary } from "~/lib/get-dictionary";
 
 interface DocsLayoutProps {
   children: React.ReactNode;
-  params: {
+  params: Promise<{
     lang: Locale;
-  };
+  }>;
 }
 
-export default async function DocsLayout({
-  children,
-  params: { lang },
-}: DocsLayoutProps) {
+export default async function DocsLayout(props: DocsLayoutProps) {
+  const params = await props.params;
+
+  const {
+    lang
+  } = params;
+
+  const {
+    children
+  } = props;
+
   const dict = await getDictionary(lang); // Removed type assertion
   const user = await getCurrentUser();
   const marketingConfig = await getMarketingConfig({ params: { lang } });
