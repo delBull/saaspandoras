@@ -132,6 +132,7 @@ export function NavBar({
             <div className="w-[1px] h-8 bg-accent" />
             {rightElements}
             <LocaleChange url={"/"} />
+            {/*
             {!user ? (
               <Link href={`/${lang}/login`}>
                 <Button variant="outline" size="sm">
@@ -160,6 +161,7 @@ export function NavBar({
                   : "Default Signup Text"}
               </Button>
             )}
+              */}
           </div>
         </div>
       </header>

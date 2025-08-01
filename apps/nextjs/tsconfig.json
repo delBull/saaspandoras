@@ -4,6 +4,8 @@
     "baseUrl": ".",
     "paths": {
       "~/*": ["./src/*"],
+      "@saasfly/shared": ["../../packages/shared/src"],
+      "@saasfly/shared/*": ["../../packages/shared/src/*"],
       "contentlayer/generated": ["./.contentlayer/generated"]
     },
     "plugins": [
