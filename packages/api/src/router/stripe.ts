@@ -5,7 +5,7 @@ import { getCurrentUser } from "@saasfly/auth";
 import { Customer, db } from "@saasfly/db";
 import { stripe } from "@saasfly/stripe";
 
-import { pricingData } from "../../../common/src/subscriptions";
+//import { pricingData } from "../../../common/src/subscriptions";
 import { env } from "../env.mjs";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -136,6 +136,7 @@ export const stripeRouter = createTRPCRouter({
         custom.stripeCurrentPeriodEnd &&
         custom.stripeCurrentPeriodEnd.getTime() + 86_400_000 > Date.now();
       // Find the pricing data corresponding to the custom's plan
+      {/*
       const customPlan =
         pricingData.find(
           (plan) => plan.stripeIds.monthly === custom.stripePriceId,
@@ -159,14 +160,15 @@ export const stripeRouter = createTRPCRouter({
         );
         isCanceled = stripePlan.cancel_at_period_end;
       }
+        */}
 
       return {
-        ...plan,
+        //...plan,
         ...custom,
         stripeCurrentPeriodEnd: custom.stripeCurrentPeriodEnd?.getTime() ?? 0,
         isPaid,
-        interval,
-        isCanceled,
+        //interval,
+        //isCanceled,
       };
     }),
 });
