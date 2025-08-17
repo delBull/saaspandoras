@@ -80,7 +80,7 @@ export function NavBar({
                       <a
                         key={index}
                         href={item.href}
-                        target="_blank"
+                        target=""
                         rel="noopener noreferrer"
                         className={cn(
                           "flex items-center text-lg font-medium transition-colors hover:text-foreground/80 sm:text-sm",
