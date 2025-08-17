@@ -18,7 +18,7 @@ export const getMarketingConfig = async ({
       },
       {
         title: dict.marketing.main_nav_invest,
-        href: `https://minter.agodecosystem.com`,
+        href: `https://minter.pandoras.foundation`,
         external: true,
       },
       {

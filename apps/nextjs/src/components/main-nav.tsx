@@ -44,7 +44,7 @@ export function MainNav({ items, children, params: { lang } }: MainNavProps) {
           />
           <div className="text-xl">
             <span className="text-lime-300">Pandora&apos;s</span>{" "}
-            <span className="text-violet-900">Foundation</span>
+            <span className="text-gray-100">Foundation</span>
           </div>
         </Link>
         {/*
