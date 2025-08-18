@@ -33,7 +33,6 @@ export function MobileNav({ items, children, menuItemClick }: MobileNavProps) {
               <a
                 key={idx}
                 href={item.href}
-                target="_blank"
                 rel="noopener noreferrer"
                 className={cn(
                   "p-2 rounded-md hover:underline",

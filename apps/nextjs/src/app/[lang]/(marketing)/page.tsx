@@ -8,8 +8,6 @@ import { PinContainer } from "~/components/ui/3d-pin";
 
 import { CodeCopy } from "~/components/code-copy";
 import { Comments } from "~/components/comments";
-//import { FeaturesGrid } from "~/components/features-grid";
-//import { RightsideMarketing } from "~/components/rightside-marketing";
 
 import { AnimatedTooltip } from "@saasfly/ui/animated-tooltip";
 import Aurora from "~/components/aurora-background";
@@ -128,41 +126,52 @@ export default async function IndexPage(props: {
               </div>
             </div>
           </div>
-          <div className="h-full w-full flex flex-col justify-end items-end xl:block">
-            <div className="flex flex-col items-center justify-end flex-grow relative w-full h-full pb-56">
-              <PinContainer title="Your Next Property" href="/">
-                <div className="w-56 h-40 md:w-80 md:h-80 mb-56 ">
-                  <div className="p-4 absolute top-1 z-10">
-                  <span className="flex text-lg font-mono text-zinc-900 mt-10">Real World Assets</span>
-                  <span className="flex text-sm font-mono text-zinc-900">Get them from anywhere you are</span>
+          <div className="h-full w-full flex flex-col justify-end items-end xl:block mt-10 md:mt-0">
+            <div className="relative flex items-center justify-end w-full h-full">
+              <div className="absolute right-28 md:right-60 z-0 -rotate-12 transform">
+                <PinContainer title="Your Next Property" href="/">
+                  <div className="w-36 h-[28vh] md:w-80 md:h-[32rem]">
+                    <div className="absolute top-1 z-10 p-4">
+                      <span className="mt-10 flex font-mono text-xs md:text-lg leading-0 text-zinc-900">
+                        Real World Assets
+                      </span>
+                      <span className="flex font-mono text-xs md:text-lg leading-0 text-zinc-900">
+                        Get them from anywhere you are
+                      </span>
+                    </div>
+                    <img
+                      src="/images/jaguar.jpg"
+                      alt="Preview"
+                      className="absolute inset-0 h-full w-full rounded-lg object-cover"
+                    />
                   </div>
-                  <img src="/images/nft.png" alt="Preview" className="absolute w-full h-full inset-0 object-coverrounded-lg" />
-                </div>
-              </PinContainer>
-              <Image
-                src="/images/smoke.png"
-                width={800}
-                height={1200}
-                alt="Pandoras Dashboard"
-                className="absolute bottom-0 right-0 -z-10 opacity-70 pointer-events-none select-none"
-                priority
-              />
+                </PinContainer>
+              </div>
+              <div className="absolute right-0 md:right-10 z-10 rotate-6 transform">
+                <PinContainer title="Your Next Token" href="/">
+                  <div className="w-36 h-[28vh] md:w-80 md:h-[32rem]">
+                    <div className="absolute top-1 z-10 p-4">
+                      <span className="mt-10 flex font-mono text-xs md:text-lg leading-0 text-zinc-900">
+                        Digital Assets
+                      </span>
+                      <span className="flex font-mono text-xs md:text-lg leading-0 text-zinc-900">
+                        Get them from anywhere you are
+                      </span>
+                    </div>
+                    <img
+                      src="/images/nft.png"
+                      alt="Preview"
+                      className="absolute inset-0 h-full w-full rounded-lg object-cover"
+                    />
+                  </div>
+                </PinContainer>
+              </div>
             </div>
           </div>
-          {/*
-          <div className="h-full w-full xl:block">
-            <div className="flex flex-col pt-0 xl:pt-44">
-              <RightsideMarketing dict={dict.marketing.right_side}/>
-            </div>
-          </div>
-          */}
+          
         </div>
       </section>
-      {/*
-      <section className="container mt-8 md:mt-[50px]">
-        <FeaturesGrid dict={dict.marketing.features_grid}/>
-      </section>
-      */}
+      
       <section id="investment-steps" className="container  mt-96 md:mt-[50px]">
         <InvestmentSteps dict={dict.marketing.investment_steps} />
       </section>
