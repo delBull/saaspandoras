@@ -163,7 +163,7 @@ export default async function IndexPage(props: {
         <FeaturesGrid dict={dict.marketing.features_grid}/>
       </section>
       */}
-      <section id="investment-steps" className="container  mt-60 md:mt-[50px]">
+      <section id="investment-steps" className="container  mt-96 md:mt-[50px]">
         <InvestmentSteps dict={dict.marketing.investment_steps} />
       </section>
 
