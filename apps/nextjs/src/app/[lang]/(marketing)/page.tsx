@@ -85,7 +85,7 @@ export default async function IndexPage(props: {
           <div className="flex flex-col items-start h-full">
             <div className="flex flex-col pt-4 mt-20">
               <div className="mt-20">
-                <div className="mb-0 max-w-4xl text-left text-4xl font-semibold dark:text-zinc-100 md:text-5xl xl:text-5xl md:leading-[4rem] xl:leading-[4rem]">
+                <div className="mb-0 max-w-4xl text-left text-4xl font-semibold dark:text-zinc-100 md:text-5xl xl:text-5xl leading-none">
                   {dict.marketing.title ||
                     "Ship your apps to the world easier with "}
                   {/*<br/>
@@ -130,13 +130,13 @@ export default async function IndexPage(props: {
           </div>
           <div className="h-full w-full flex flex-col justify-end items-end xl:block">
             <div className="flex flex-col items-center justify-end flex-grow relative w-full h-full pb-56">
-              <PinContainer title="Tu siguiente Propiedad" href="/">
-                <div className=" w-80 h-60 mb-56">
-                  <div className="absolute z-[10] opacity-50">
-                  <span className="text-lg font-mono text-white mt-20">Activos Tangibles</span>
-                  <span className="text-sm text-center font-mono text-zinc-300">Invierte desde cualquier parte del mundo</span>
+              <PinContainer title="Your Next Property" href="/">
+                <div className="w-56 h-40 md:w-80 md:h-80 mb-56 ">
+                  <div className="p-4 absolute top-1 z-10">
+                  <span className="flex text-lg font-mono text-zinc-900 mt-10">Real World Assets</span>
+                  <span className="flex text-sm font-mono text-zinc-900">Get them from anywhere you are</span>
                   </div>
-                  <img src="/images/nft.png" width={180} height={180} alt="Preview" className="absolute w-full h-full rounded-lg" />
+                  <img src="/images/nft.png" alt="Preview" className="absolute w-full h-full inset-0 object-coverrounded-lg" />
                 </div>
               </PinContainer>
               <Image
@@ -163,7 +163,7 @@ export default async function IndexPage(props: {
         <FeaturesGrid dict={dict.marketing.features_grid}/>
       </section>
       */}
-      <section id="investment-steps" className="container  mt-8 md:mt-[50px]">
+      <section id="investment-steps" className="container  mt-48 md:mt-[50px]">
         <InvestmentSteps dict={dict.marketing.investment_steps} />
       </section>
 

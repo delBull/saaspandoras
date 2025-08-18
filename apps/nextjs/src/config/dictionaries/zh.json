@@ -51,7 +51,7 @@
       "showcase_desc": "以适合您的资本，进入高价值资产的投资。"
     },
     "features_grid": {
-      "monorepo_title": "获取您的免费股份",
+      "monorepo_title": "获取您的下一个房产",
       "monorepo_desc": "注册并获取您的免费数字股份，使您能够投资独家房产。",
       "i18n_title": "以特价投资",
       "i18n_desc": "凭借您的股份，您可以在我们的预售期间以特价投资。每笔投资代表项目价值的一部分。",
@@ -86,12 +86,12 @@
     },
     "sponsor": {
       "title": "由我们的合作伙伴提供支持",
-      "donate": "获取您的免费股份"
+      "donate": "获取您的下一个房产"
     },
     "video": {
-      "first_text": "获取代表房产部分价值的数字股份，",
-      "second_text1": "以参与独家房地产投资， ",
-      "time_text": "开启您的投资之旅"
+      "first_text": "获得代表部分资产的数字份额，",
+      "second_text1": "参与专属现实世界资产的 ",
+      "time_text": "投资"
     },
     "transform_token": {
       "title": "享受专属权益",

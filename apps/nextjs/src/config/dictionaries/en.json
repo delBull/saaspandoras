@@ -51,7 +51,7 @@
       "showcase_desc": "Access investments in high-value assets with capital tailored to you."
     },
     "features_grid": {
-      "monorepo_title": "Get your free share",
+      "monorepo_title": "Get your next property",
       "monorepo_desc": "Register and obtain your free digital share that will allow you to invest in exclusive properties",
       "i18n_title": "Invest at a special price",
       "i18n_desc": "With your share, you can invest at a special price during the early stages. Each investment represents a portion of the project's value.",
@@ -86,11 +86,11 @@
     },
     "sponsor": {
       "title": "Trusted by Our Partners",
-      "donate": "Get your free share"
+      "donate": "Get your next property"
     },
     "video": {
       "first_text": "Obtain digital shares representing a portion ",
-      "second_text1": "of the property's value, to participate in exclusive real estate ",
+      "second_text1": "of the property's value, to participate in exclusive real world asset ",
       "time_text": "investments"
     },
     "transform_token": {
