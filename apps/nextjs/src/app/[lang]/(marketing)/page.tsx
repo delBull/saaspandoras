@@ -78,16 +78,14 @@ export default async function IndexPage(props: {
         />
       </div>
 
-  <section className="w-full h-screen mb-0 px-4 md:px-8 xl:px-16">
+  <section className="w-full h-screen px-4 md:px-8 xl:px-16">
   <div className="grid grid-cols-1 gap-10 xl:grid-cols-2 h-full">
           <div className="flex flex-col items-start h-full">
-            <div className="flex flex-col pt-4 mt-20">
+            <div className="flex flex-col pt-4 mt-20 md:mb-o mb-10">
               <div className="mt-20">
                 <div className="mb-0 max-w-4xl text-left text-4xl font-semibold dark:text-zinc-100 md:text-5xl xl:text-5xl leading-none">
                   {dict.marketing.title ||
                     "Ship your apps to the world easier with "}
-                  {/*<br/>
-                    <ColourfulText text="Pandora's"/>}*/}
                 </div>
               </div>
 
@@ -174,7 +172,7 @@ export default async function IndexPage(props: {
         </div>
       </section>
       
-      <section id="investment-steps" className="container  mt-20 md:mt-[50px]">
+      <section id="investment-steps" className="container mt-32 md:mt-[50px]">
         <InvestmentSteps dict={dict.marketing.investment_steps} />
       </section>
 
@@ -199,7 +197,7 @@ export default async function IndexPage(props: {
                 src="/images/agod.png"
                 width="48"
                 height="48"
-                alt="setupyourpay"
+                alt="Pandora's"
               />
             </Link>
             <Link href={`/${lang}/pricing`}>
@@ -225,7 +223,7 @@ export default async function IndexPage(props: {
               src="/images/logopure.png"
               width="480"
               height="480"
-              alt="setupyourpay"
+              alt="Pandora's"
             />
           </div>
           <div>
