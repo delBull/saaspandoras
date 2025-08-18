@@ -71,7 +71,7 @@ export default async function IndexPage(props: {
 
   return (
     <>
-      <div className="fixed inset-0 -z-10 opacity-75">
+      <div className="fixed inset-0 -z-10 opacity-75 rotate-180">
         <Aurora
           colorStops={["#3A29FF", "#FF94B4", "#FF3232"]}
           blend={0.5}
@@ -109,7 +109,7 @@ export default async function IndexPage(props: {
                 <div className="flex">
                   <AnimatedTooltip items={people} />
                 </div>
-                <div className="flex flex-col items-center justify-start mx-4 xl:ml-8">
+                <div className="flex flex-col items-center justify-start mx-4 mb-10 md:mb-0 xl:ml-8">
                   <div className="w-full max-w-[340px] px-4 xl:px-0">
                     <div className="text-neutral-500 dark:text-neutral-400 text-sm sm:text-base">
                       <span>
@@ -163,7 +163,7 @@ export default async function IndexPage(props: {
         <FeaturesGrid dict={dict.marketing.features_grid}/>
       </section>
       */}
-      <section id="investment-steps" className="container  mt-48 md:mt-[50px]">
+      <section id="investment-steps" className="container  mt-60 md:mt-[50px]">
         <InvestmentSteps dict={dict.marketing.investment_steps} />
       </section>
 
