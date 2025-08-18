@@ -10,6 +10,8 @@ import type { NextFetchEvent } from "next/server";
 import { i18n } from "~/config/i18n-config";
 
 const noNeedProcessRoute = [
+  ".*\\.webm",
+  ".*\\.mp4",
   ".*\\.png",
   ".*\\.jpg",
   ".*\\.pdf",
@@ -206,6 +208,6 @@ export const config = {
     "/",
     "/(es|en|zh|ko|ja)/:path*",
     "/api/auth/:path*",
-    "/((?!api|_next/static|_next/image|favicon.ico|__next_devtools__).*)",
+    "/((?!api|_next/static|_next/image|videos|favicon.ico|__next_devtools__).*)",
   ],
 };
