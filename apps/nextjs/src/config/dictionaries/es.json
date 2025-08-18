@@ -51,7 +51,7 @@
       "showcase_desc": "Accede a inversiones en activos de alto valor con un capital adaptado a ti."
     },
     "features_grid": {
-      "monorepo_title": "Obtén tu participación gratuita",
+      "monorepo_title": "Consigue tu siguiente propiedad",
       "monorepo_desc": "Regístrate y obtén tu participación digital gratuita que te permitirá invertir en propiedades exclusivas.",
       "i18n_title": "Invierte a un precio especial",
       "i18n_desc": "Con tu participación, podrás invertir a un precio especial durante nuestra preventa. Cada inversión representa una porción del valor del proyecto.",
@@ -86,12 +86,12 @@
     },
     "sponsor": {
       "title": "Respaldado por nuestros colaboradores",
-      "donate": "Obtén tu participación gratuita"
+      "donate": "Consigue tu siguiente propiedad"
     },
     "video": {
-      "first_text": "Obtén participaciones digitales que representan una parte",
-      "second_text1": "del valor de la propiedad, para participar en inversiones inmobiliarias ",
-      "time_text": "exclusivas"
+      "first_text": "Obtén participaciones digitales que representan una parte ",
+      "second_text1": "del valor de la propiedad y participa en exclusivos activos del mundo real mediante ",
+      "time_text": "inversiones"
     },
     "transform_token": {
       "title": "Disfruta de Beneficios Exclusivos",

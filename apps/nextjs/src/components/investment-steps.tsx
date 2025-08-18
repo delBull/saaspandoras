@@ -88,7 +88,7 @@ export function InvestmentSteps({ dict }: InvestmentStepsProps) {
               whileHover={{ rotate: 3 }}
               className={cn(
                 shadowsIntoLight.className,
-                "absolute inset-x-0 md:-mt-4 -mt-20 md:text-3xl text-2xl text-neutral-700 dark:text-neutral-300 -ml-3 z-50",
+                "absolute inset-x-0 md:-mt-4 -mt-20 md:text-3xl text-2xl text-neutral-700 dark:text-neutral-300 -ml-3 z-10",
               )}
             >
               {step.caption}
