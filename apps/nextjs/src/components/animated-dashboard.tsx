@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import Image from "next/image";
 import type { MarketingDictionary } from "~/types";
+import { PinContainer } from "./ui/3d-pin";
 
 interface AnimatedDashboardProps {
   dict: MarketingDictionary["dashboard"];
@@ -70,16 +71,16 @@ export function AnimatedDashboard({ dict: _dict }: AnimatedDashboardProps) {
         </div>
         */}
 
-        {/* Dashboard Image */}
-        {/*<div className="relative rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/50 dark:bg-neutral-900/50 backdrop-blur-sm p-4 transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-xl">*/}
-        <Image
-          src="/images/onlybox2.png"
-          width={800}
-          height={1200}
-          alt="Pandoras Dashboard"
-          className="rounded-lg w-auto h-full"
-          priority
-        />
+        
+        <div className="pt-80 xs:pt-0">
+          <PinContainer title="Pandoras Dashboard" href="/dashboard">
+            <div className="flex flex-col items-center justify-center w-80 h-60">
+              <span className="text-xl font-bold text-white mb-2">Pandoras Dashboard</span>
+              <span className="text-sm text-zinc-300">Visualiza tus inversiones y métricas aquí</span>
+              <Image src="/images/onlybox2.png" width={120} height={120} alt="Dashboard Preview" className="mt-4 rounded-lg" />
+            </div>
+          </PinContainer>
+        </div>
         <Image
           src="/images/smoke.png"
           width={800}

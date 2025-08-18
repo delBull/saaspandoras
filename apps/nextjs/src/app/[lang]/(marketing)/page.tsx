@@ -4,7 +4,7 @@ import { getDictionary } from "~/lib/get-dictionary";
 import { TransformTokenDetails } from "~/components/tokendetails";
 import { InvestmentSteps } from "~/components/investment-steps";
 import { ScrollButton } from "~/components/scroll-button";
-import { AnimatedDashboard } from "~/components/animated-dashboard";
+import { PinContainer } from "~/components/ui/3d-pin";
 
 import { CodeCopy } from "~/components/code-copy";
 import { Comments } from "~/components/comments";
@@ -80,10 +80,10 @@ export default async function IndexPage(props: {
         />
       </div>
 
-      <section className="container">
-        <div className="grid grid-cols-1 gap-10 xl:grid-cols-2">
+  <section className="w-full h-screen mb-0 px-4 md:px-8 xl:px-16">
+  <div className="grid grid-cols-1 gap-10 xl:grid-cols-2 h-full">
           <div className="flex flex-col items-start h-full">
-            <div className="flex flex-col pt-4 md:pt-36 lg:pt-36 xl:pt-36">
+            <div className="flex flex-col pt-4 mt-20">
               <div className="mt-20">
                 <div className="mb-0 max-w-4xl text-left text-4xl font-semibold dark:text-zinc-100 md:text-5xl xl:text-5xl md:leading-[4rem] xl:leading-[4rem]">
                   {dict.marketing.title ||
@@ -128,9 +128,25 @@ export default async function IndexPage(props: {
               </div>
             </div>
           </div>
-          <div className="h-full w-full xl:block">
-            <div className="flex flex-col pt-0 xl:pt-24">
-              <AnimatedDashboard dict={dict.marketing.dashboard} />
+          <div className="h-full w-full flex flex-col justify-end items-end xl:block">
+            <div className="flex flex-col items-center justify-end flex-grow relative w-full h-full pb-56">
+              <PinContainer title="Tu siguiente Propiedad" href="/">
+                <div className=" w-80 h-60 mb-56">
+                  <div className="absolute z-[10] opacity-50">
+                  <span className="text-lg font-mono text-white mt-20">Activos Tangibles</span>
+                  <span className="text-sm text-center font-mono text-zinc-300">Invierte desde cualquier parte del mundo</span>
+                  </div>
+                  <img src="/images/nft.png" width={180} height={180} alt="Preview" className="absolute w-full h-full rounded-lg" />
+                </div>
+              </PinContainer>
+              <Image
+                src="/images/smoke.png"
+                width={800}
+                height={1200}
+                alt="Pandoras Dashboard"
+                className="absolute bottom-0 right-0 -z-10 opacity-70 pointer-events-none select-none"
+                priority
+              />
             </div>
           </div>
           {/*

@@ -15,6 +15,7 @@ export const getMarketingConfig = async ({
       {
         title: dict.marketing.main_nav_assets,
         href: `/pricing`,
+        external: false,
       },
       {
         title: dict.marketing.main_nav_invest,
@@ -26,12 +27,14 @@ export const getMarketingConfig = async ({
         href: "#",
         disabled: true,
         tooltip: "Coming Soon",
+        external: false,
       },
       {
         title: dict.marketing.main_nav_business,
         href: "#",
         disabled: true,
         tooltip: "Coming Soon",
+        external: false,
       },
     ],
   };
