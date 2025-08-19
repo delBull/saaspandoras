@@ -124,11 +124,11 @@ export default async function IndexPage(props: {
               </div>
             </div>
           </div>
-          <div className="h-full w-full flex flex-col justify-center items-center xl:flex-row xl:justify-end xl:items-end mt-10 md:mt-0">
-            <div className="flex flex-nowrap items-center justify-center gap-2 md:flex-wrap md:gap-8">
-              <div className="transform -rotate-12">
-                <PinContainer title="Your Next Property">
-                  <div className="w-36 h-[36vh] md:w-80 md:h-[32rem]">
+          <div className="h-full w-full flex flex-col justify-center items-center xl:flex-row xl:justify-end xl:items-end -mt-16 md:mt-0">
+            <div className="flex flex-wrap items-center justify-center gap-0 md:flex-wrap md:gap-8">
+              <div className="absolute -mt-72 md:-mt-0 transform rotate-6 ml-28 md:ml-0">
+                <PinContainer title="Your Next Property" className="block md:hidden">
+                  <div className="w-44 h-[34vh] md:w-80 md:h-[32rem]">
                     <div className="absolute top-1 z-10 p-4">
                       <span className="mt-10 flex font-mono text-xs md:text-lg leading-0 text-zinc-100">
                         Digital Assets
@@ -145,10 +145,10 @@ export default async function IndexPage(props: {
                     <div className="absolute inset-0 h-full w-full rounded-lg bg-black/40 backdrop-blur-xs"></div>
                   </div>
                 </PinContainer>
-              </div>
-              <div className="transform rotate-6">
+                </div>
+              <div className="transform -rotate-12 mr-32 md:mr-0">
                 <PinContainer title="Your Next Token">
-                  <div className="w-36 h-[36vh] md:w-80 md:h-[32rem]">
+                  <div className="w-44 h-[34vh] md:w-80 md:h-[32rem]">
                     <div className="absolute top-1 z-10 p-4">
                       <span className="mt-10 flex font-mono text-xs md:text-lg leading-0 text-zinc-900">
                         Real World Assets
@@ -163,6 +163,26 @@ export default async function IndexPage(props: {
                       className="absolute inset-0 h-full w-full rounded-lg object-cover"
                     />
                     <div className="absolute inset-0 h-full w-full rounded-lg bg-white/5 backdrop-blur-xs"></div>
+                  </div>
+                </PinContainer>
+              </div>
+              <div className="transform rotate-6 ml-28 md:ml-0">
+                <PinContainer title="Your Next Property" className="hidden md:block">
+                  <div className="w-44 h-[34vh] md:w-80 md:h-[32rem]">
+                    <div className="absolute top-1 z-10 p-4">
+                      <span className="mt-10 flex font-mono text-xs md:text-lg leading-0 text-zinc-100">
+                        Digital Assets
+                      </span>
+                      <span className="flex font-mono text-xs md:text-lg leading-0 text-zinc-100">
+                        Get them from anywhere you are
+                      </span>
+                    </div>
+                    <img
+                      src="/images/jaguar.jpg"
+                      alt="Preview"
+                      className="absolute inset-0 h-full w-full rounded-lg object-cover"
+                    />
+                    <div className="absolute inset-0 h-full w-full rounded-lg bg-black/40 backdrop-blur-xs"></div>
                   </div>
                 </PinContainer>
               </div>
