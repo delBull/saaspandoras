@@ -79,10 +79,10 @@ export default async function IndexPage(props: {
       </div>
 
   <section className="w-full h-screen px-4 md:px-8 xl:px-16">
-  <div className="grid grid-cols-1 gap-10 xl:grid-cols-2 h-full">
+  <div className="grid grid-cols-1 gap-10 md:grid-cols-2 h-full">
           <div className="flex flex-col items-start h-full">
-            <div className="flex flex-col pt-4 mt-20 md:mb-o mb-10">
-              <div className="mt-20">
+            <div className="flex flex-col pt-4 mt-40 md:mb-0 mb-10">
+              <div>
                 <div className="mb-0 max-w-4xl text-left text-4xl font-semibold dark:text-zinc-100 md:text-5xl xl:text-5xl leading-none">
                   {dict.marketing.title ||
                     "Ship your apps to the world easier with "}
@@ -124,10 +124,10 @@ export default async function IndexPage(props: {
               </div>
             </div>
           </div>
-          <div className="h-full w-full flex flex-col justify-end items-end xl:block mt-10 md:mt-0">
-            <div className="relative flex items-center justify-end w-full h-full">
-              <div className="absolute right-10 md:right-60 z-0 -rotate-12 transform">
-                <PinContainer title="Your Next Property" href="/">
+          <div className="h-full w-full flex flex-col justify-center items-center xl:flex-row xl:justify-end xl:items-end mt-10 md:mt-0">
+            <div className="flex flex-nowrap items-center justify-center gap-2 md:flex-wrap md:gap-8">
+              <div className="transform -rotate-12">
+                <PinContainer title="Your Next Property">
                   <div className="w-36 h-[36vh] md:w-80 md:h-[32rem]">
                     <div className="absolute top-1 z-10 p-4">
                       <span className="mt-10 flex font-mono text-xs md:text-lg leading-0 text-zinc-100">
@@ -146,8 +146,8 @@ export default async function IndexPage(props: {
                   </div>
                 </PinContainer>
               </div>
-              <div className="absolute right-0 md:right-10 z-10 rotate-6 transform">
-                <PinContainer title="Your Next Token" href="/">
+              <div className="transform rotate-6">
+                <PinContainer title="Your Next Token">
                   <div className="w-36 h-[36vh] md:w-80 md:h-[32rem]">
                     <div className="absolute top-1 z-10 p-4">
                       <span className="mt-10 flex font-mono text-xs md:text-lg leading-0 text-zinc-900">
@@ -172,7 +172,7 @@ export default async function IndexPage(props: {
         </div>
       </section>
       
-      <section id="investment-steps" className="container mt-32 md:mt-[50px]">
+      <section id="investment-steps" className="container mt-20 md:mt-32">
         <InvestmentSteps dict={dict.marketing.investment_steps} />
       </section>
 
