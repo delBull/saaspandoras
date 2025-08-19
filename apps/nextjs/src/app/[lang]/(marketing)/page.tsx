@@ -124,9 +124,9 @@ export default async function IndexPage(props: {
               </div>
             </div>
           </div>
-          <div className="h-full w-full flex flex-col justify-center items-center xl:flex-row xl:justify-end xl:items-end -mt-16 md:mt-0">
+          <div className="h-full w-full flex flex-col justify-center items-center xl:flex-row xl:justify-end xl:items-end mt-16 md:mt-0">
             <div className="flex flex-wrap items-center justify-center gap-0 md:flex-wrap md:gap-8">
-              <div className="absolute -mt-72 md:-mt-0 transform rotate-6 ml-28 md:ml-0">
+              <div className="absolute -mt-16 md:-mt-0 transform rotate-6 ml-14 md:ml-0">
                 <PinContainer title="Your Next Property" className="block md:hidden">
                   <div className="w-44 h-[34vh] md:w-80 md:h-[32rem]">
                     <div className="absolute top-1 z-10 p-4">
@@ -146,7 +146,7 @@ export default async function IndexPage(props: {
                   </div>
                 </PinContainer>
                 </div>
-              <div className="transform -rotate-12 mr-32 md:mr-0">
+              <div className="transform -rotate-12 mr-16 md:mr-0">
                 <PinContainer title="Your Next Token">
                   <div className="w-44 h-[34vh] md:w-80 md:h-[32rem]">
                     <div className="absolute top-1 z-10 p-4">
