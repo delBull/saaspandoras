@@ -102,10 +102,10 @@ export default async function IndexPage(props: {
               </div>
 
               <div className="flex xl:flex-row flex-col items-center justify-start mt-4 w-full">
-                <div className="flex">
+                <div className="flex mb-2 md:mb-0">
                   <AnimatedTooltip items={people} />
                 </div>
-                <div className="flex flex-col items-center justify-start mx-4 mb-10 md:mb-0 xl:ml-8">
+                <div className="flex flex-col items-center justify-start mx-4 xl:ml-8">
                   <div className="w-full max-w-[340px] px-4 xl:px-0">
                     <div className="text-neutral-500 dark:text-neutral-400 text-sm sm:text-base">
                       <span>
@@ -124,28 +124,8 @@ export default async function IndexPage(props: {
               </div>
             </div>
           </div>
-          <div className="h-full w-full flex flex-col justify-center items-center xl:flex-row xl:justify-end xl:items-end mt-16 md:mt-0">
+          <div className="h-full w-full hidden md:flex flex-col justify-center items-center xl:flex-row xl:justify-end xl:items-end">
             <div className="flex flex-wrap items-center justify-center gap-0 md:flex-wrap md:gap-8">
-              <div className="absolute -mt-16 md:-mt-0 transform rotate-6 ml-14 md:ml-0">
-                <PinContainer title="Your Next Property" className="block md:hidden">
-                  <div className="w-44 h-[34vh] md:w-80 md:h-[32rem]">
-                    <div className="absolute top-1 z-10 p-4">
-                      <span className="mt-10 flex font-mono text-xs md:text-lg leading-0 text-zinc-100">
-                        Digital Assets
-                      </span>
-                      <span className="flex font-mono text-xs md:text-lg leading-0 text-zinc-100">
-                        Get them from anywhere you are
-                      </span>
-                    </div>
-                    <img
-                      src="/images/jaguar.jpg"
-                      alt="Preview"
-                      className="absolute inset-0 h-full w-full rounded-lg object-cover"
-                    />
-                    <div className="absolute inset-0 h-full w-full rounded-lg bg-black/40 backdrop-blur-xs"></div>
-                  </div>
-                </PinContainer>
-                </div>
               <div className="transform -rotate-12 mr-16 md:mr-0">
                 <PinContainer title="Your Next Token">
                   <div className="w-44 h-[34vh] md:w-80 md:h-[32rem]">
@@ -192,7 +172,7 @@ export default async function IndexPage(props: {
         </div>
       </section>
       
-      <section id="investment-steps" className="container mt-20 md:mt-32">
+      <section id="investment-steps" className="container md:mt-32">
         <InvestmentSteps dict={dict.marketing.investment_steps} />
       </section>
 
