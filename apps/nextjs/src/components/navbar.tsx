@@ -2,19 +2,16 @@
 
 import React from "react";
 import Link from "next/link";
-import type { User } from "next-auth";
 import { useSelectedLayoutSegment } from "next/navigation";
 
 import { cn } from "@saasfly/ui";
-import { Button } from "@saasfly/ui/button";
 
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { MainNav } from "./main-nav";
 import { LocaleChange } from "~/components/locale-change";
-import { UserAccountNav } from "./user-account-nav";
-import { useSigninModal } from "~/hooks/use-signin-modal";
 import useScroll from "~/hooks/use-scroll";
 import type { MainNavItem, MarketingDictionary } from "~/types";
+import { ConnectWalletButton } from "./connect-wallet-button";
 
 interface MarketingType {
   main_nav_assets: string;
@@ -28,7 +25,6 @@ interface MarketingType {
 }
 
 interface NavBarProps {
-  user: Pick<User, "name" | "image" | "email"> | undefined;
   items?: MainNavItem[];
   children?: React.ReactNode;
   rightElements?: React.ReactNode;
@@ -41,17 +37,14 @@ interface NavBarProps {
 }
 
 export function NavBar({
-  user,
   items,
   children,
   rightElements,
   scroll = false,
   params: { lang },
   marketing,
-  dropdown,
 }: NavBarProps) {
   const scrolled = useScroll(50);
-  const signInModal = useSigninModal();
   const segment = useSelectedLayoutSegment();
 
   return (
@@ -132,36 +125,7 @@ export function NavBar({
             <div className="w-[1px] h-8 bg-accent" />
             {rightElements}
             <LocaleChange url={"/"} />
-            {/*
-            {!user ? (
-              <Link href={`/${lang}/login`}>
-                <Button variant="outline" size="sm">
-                  {typeof marketing.login === "string"
-                    ? marketing.login
-                    : "Default Login Text"}
-                </Button>
-              </Link>
-            ) : null}
-
-            {user ? (
-              <UserAccountNav
-                user={user}
-                params={{ lang: `${lang}` }}
-                dict={dropdown}
-              />
-            ) : (
-              <Button
-                className="px-3"
-                variant="default"
-                size="sm"
-                onClick={signInModal.onOpen}
-              >
-                {typeof marketing.signup === "string"
-                  ? marketing.signup
-                  : "Default Signup Text"}
-              </Button>
-            )}
-              */}
+            <ConnectWalletButton />
           </div>
         </div>
       </header>

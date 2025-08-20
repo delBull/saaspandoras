@@ -1,5 +1,5 @@
 import React, { Suspense } from "react";
-import { redirect } from "next/navigation";
+// import { redirect } from "next/navigation";
 import { BackgroundBeams } from "~/components/ui/background-beams";
 import {
   ArrowTrendingUpIcon,
@@ -7,7 +7,7 @@ import {
   ChevronRightIcon,
 } from "@heroicons/react/24/solid";
 
-import { authOptions, getCurrentUser } from "@saasfly/auth";
+// import { authOptions, getCurrentUser } from "@saasfly/auth";
 import { Table, TableHead, TableHeader, TableRow } from "@saasfly/ui/table";
 
 // import { DashboardHeader } from "~/components/header";
@@ -288,10 +288,10 @@ export default async function DashboardPage(props: {
 
   const { lang } = params;
 
-  const user = await getCurrentUser();
-  if (!user) {
-    redirect(authOptions?.pages?.signIn ?? "/login");
-  }
+  // const user = await getCurrentUser();
+  // if (!user) {
+  //   redirect(authOptions?.pages?.signIn ?? "/login");
+  // }
 
   // Calculate total balance from investments
   const totalBalance = dummyInvestments.reduce((acc, inv) => {
@@ -305,15 +305,15 @@ export default async function DashboardPage(props: {
   const tokenStats = await getTokenStats();
 
   try {
-    const customer = await trpc.customer.queryCustomer.query({
-      userId: user.id,
-    });
+    // const customer = await trpc.customer.queryCustomer.query({
+    //   userId: user.id,
+    // });
 
-    if (!customer) {
-      await trpc.customer.insertCustomer.mutate({
-        userId: user.id,
-      });
-    }
+    // if (!customer) {
+    //   await trpc.customer.insertCustomer.mutate({
+    //     userId: user.id,
+    //   });
+    // }
 
     return (
       <DashboardShell wallet={walletAddress} totalBalance={totalBalance}>
