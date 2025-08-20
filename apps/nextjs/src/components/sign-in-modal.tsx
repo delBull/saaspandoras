@@ -14,7 +14,11 @@ export const SignInModal = ({ dict }: { dict: Record<string, string> }) => {
   const [signInClicked, setSignInClicked] = useState(false);
 
   return (
-    <Modal showModal={signInModal.isOpen} setShowModal={signInModal.onClose}>
+    <Modal
+      showModal={signInModal.isOpen}
+      setShowModal={signInModal.onClose}
+      title={dict?.signup ?? "Sign Up"}
+    >
       <div className="w-full">
         <div className="flex flex-col items-center justify-center space-y-3 border-b bg-background px-4 py-6 pt-8 text-center md:px-16">
           <a href={siteConfig.url}>

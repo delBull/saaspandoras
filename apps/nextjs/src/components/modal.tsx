@@ -12,6 +12,7 @@ interface ModalProps {
   className?: string;
   showModal: boolean;
   setShowModal: () => void;
+  title: string;
 }
 
 export function Modal({
@@ -19,6 +20,7 @@ export function Modal({
   className,
   showModal,
   setShowModal,
+  title,
 }: ModalProps) {
   const { isMobile } = useMediaQuery();
 
@@ -45,7 +47,7 @@ export function Modal({
   }
   return (
     <Dialog open={showModal} onOpenChange={setShowModal}>
-      <DialogTitle></DialogTitle>
+      <DialogTitle className="sr-only">{title}</DialogTitle>
       <DialogContent className="overflow-hidden p-0 md:max-w-md md:rounded-2xl md:border">
         {children}
       </DialogContent>

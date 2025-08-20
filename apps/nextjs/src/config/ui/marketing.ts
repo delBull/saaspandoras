@@ -19,7 +19,7 @@ export const getMarketingConfig = async ({
       },
       {
         title: dict.marketing.main_nav_invest,
-        href: `https://minter.pandoras.foundation`,
+        href: `https://minter.pandoras.finance`,
         external: true,
       },
       {
