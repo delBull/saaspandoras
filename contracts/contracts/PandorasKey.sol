@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/utils/Base64.sol";
 
 /**
  * @title PandorasKey
@@ -54,7 +55,6 @@ contract PandorasKey is ERC721, Ownable, AccessControl, ERC2771Context, Reentran
         return ERC2771Context._msgData();
     }
 
-    // This override is required by Solidity 0.8+ when inheriting from both ERC2771Context and another contract (like AccessControl) that inherits from Context.
     function _contextSuffixLength() internal view virtual override(ERC2771Context, Context) returns (uint256) {
         return ERC2771Context._contextSuffixLength();
     }
@@ -81,6 +81,26 @@ contract PandorasKey is ERC721, Ownable, AccessControl, ERC2771Context, Reentran
 
     function isGateHolder(address _user) external view returns (bool) {
         return balanceOf(_user) > 0;
+    }
+
+    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+        require(tokenId < _nextTokenId, "ERC721Metadata: URI query for nonexistent token");
+
+        string memory name = "Pandora\'s Key";
+        string memory description = "Your key to the Pandora\'s ecosystem. Unlocks exclusive access and opportunities.";
+        string memory image = "https://pandoras.finance/images/coin.png";
+
+        string memory json = Base64.encode(
+            bytes(
+                string.concat(
+                    '{"name":"', name, '", ',
+                    '"description":"', description, '", ',
+                    '"image":"', image, '"}'
+                )
+            )
+        );
+
+        return string(abi.encodePacked("data:application/json;base64,", json));
     }
 
     function depositToHolder(address holder) external payable nonReentrant {
