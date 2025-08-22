@@ -1,7 +1,7 @@
 import { unstable_noStore as noStore } from "next/cache";
 import { z } from "zod";
 
-import { getCurrentUser } from "@saasfly/auth";
+//import { getCurrentUser } from "@saasfly/auth";
 import { Customer, db } from "@saasfly/db";
 import { stripe } from "@saasfly/stripe";
 
@@ -64,16 +64,18 @@ export const stripeRouter = createTRPCRouter({
        * Use existing email address if available
        */
 
+      {/*
       const user = await getCurrentUser();
       if (!user) {
         return null;
       }
-      const email = user.email!;
+      */}
+      //const email = user.email!;
 
       const session = await stripe.checkout.sessions.create({
         mode: "subscription",
         payment_method_types: ["card"],
-        customer_email: email,
+        //customer_email: email,
         client_reference_id: userId,
         subscription_data: { metadata: { userId } },
         cancel_url: returnUrl,

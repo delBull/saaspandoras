@@ -3,7 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { getServerSession } from "next-auth/next";
 import { z } from "zod";
 
-import { authOptions } from "@saasfly/auth";
+//import { authOptions } from "@saasfly/auth";
 import { db, SubscriptionPlan } from "@saasfly/db";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -20,15 +20,17 @@ const k8sClusterDeleteSchema = z.object({
 
 export const k8sRouter = createTRPCRouter({
   getClusters: protectedProcedure.query(async (opts) => {
+    {/*
     const session = await getServerSession(authOptions);
     const userId = opts.ctx.userId! as string;
     if (!session) {
       return;
     }
+    */}
     return await db
       .selectFrom("K8sClusterConfig")
       .selectAll()
-      .where("authUserId", "=", userId)
+      //.where("authUserId", "=", userId)
       .execute();
   }),
   createCluster: protectedProcedure
@@ -36,6 +38,7 @@ export const k8sRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.userId! as string;
 
+      {/*
       const session = await getServerSession(authOptions);
       if (!session) {
         throw new TRPCError({
@@ -43,6 +46,7 @@ export const k8sRouter = createTRPCRouter({
           message: "You must be logged in to create a cluster",
         });
       }
+      */}
       try {
         const newCluster = await db
           .insertInto("K8sClusterConfig")

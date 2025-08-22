@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 
-import { getCurrentUser } from "@saasfly/auth";
+//import { getCurrentUser } from "@saasfly/auth";
 
 import { LocaleChange } from "~/components/locale-change";
 // import { DashboardNav } from "~/components/nav";
@@ -28,13 +28,14 @@ export default async function DashboardLayout(props: DashboardLayoutProps) {
 
   const { children } = props;
 
-  const user = await getCurrentUser();
+  //const user = await getCurrentUser();
   const dict = await getDictionary(lang);
 
+  {/*
   if (!user) {
     return notFound();
   }
-
+  */}
   const dashboardConfig = await getDashboardConfig({ params: { lang } });
 
   return (
@@ -43,6 +44,7 @@ export default async function DashboardLayout(props: DashboardLayoutProps) {
         <div className="container flex h-12 items-center justify-end py-4">
           <div className="flex items-center space-x-3">
             <LocaleChange url={"/dashboard"} />
+            {/*
             <UserAccountNav
               user={{
                 name: user.name,
@@ -52,6 +54,7 @@ export default async function DashboardLayout(props: DashboardLayoutProps) {
               params={{ lang: `${lang}` }}
               dict={dict.dropdown}
             />
+            */}
           </div>
         </div>
       </header>
