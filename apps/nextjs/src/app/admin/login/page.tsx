@@ -39,7 +39,7 @@ function LoginContent() {
       {/*    buttonVariants({ variant: "ghost" }),*/}
       {/*    "absolute left-4 top-4 md:left-8 md:top-8",*/}
       {/*  )}*/}
-      {/*>*//*}
+      {/*>*/}
       {/*  <>*/}
       {/*    <Icons.ChevronLeft className="mr-2 h-4 w-4" />*/}
       {/*    {dict.login.back}*/}
@@ -90,4 +90,20 @@ function LoginContent() {
                 <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <Icons.GitHub className="mr-2 h-4 w-4" />
-              )}{
+              )}{" "}
+              Github
+            </button>
+          </div>
+        </CardBody>
+      </CardContainer>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginContent />
+    </Suspense>
+  );
+}

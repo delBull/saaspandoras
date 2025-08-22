@@ -3,7 +3,7 @@ import React from "react";
 import { cn } from "~/lib/utils";
 import createGlobe from "cobe";
 import { useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+//import { motion } from "framer-motion";
 import { IconBrandYoutubeFilled, IconShieldCheck, IconGavel, IconEye, IconFileCheck } from "@tabler/icons-react";
 import { Shadows_Into_Light } from "next/font/google";
 

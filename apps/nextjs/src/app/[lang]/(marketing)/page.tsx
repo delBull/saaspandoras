@@ -72,6 +72,7 @@ export default async function IndexPage(props: {
 
   return (
     <>
+      <NFTGatingMint />
       <div className="fixed inset-0 -z-10 opacity-75 rotate-180">
         <Aurora
           colorStops={["#3A29FF", "#FF94B4", "#FF3232"]}
@@ -79,7 +80,6 @@ export default async function IndexPage(props: {
           amplitude={1.0}
           speed={0.5}
         />
-        <NFTGatingMint />
       </div>
 
   <section className="w-full h-screen px-4 md:px-8 xl:px-16">
