@@ -65,18 +65,18 @@
       "steps": [
         {
           "title": "Obtener tu participación gratuita",
-          "content": "Con Pandoras, tu inversión está respaldada legalmente y tu dinero se destina directamente a nuestra tesorería, garantizada por un fideicomiso. Esto asegura total transparencia y seguridad en cada transacción.",
+          "content": "Accede instantáneamente con una llave de acceso gratuita que te desbloquea la plataforma.",
           "caption": "Regístrate y adquiere tu participación digital gratuita que te permite invertir en propiedades exclusivas."
         },
         {
           "title": "Invierte a un precio especial",
-          "content": "Cada aporte representa una porción del valor del proyecto. Además, gracias a nuestra estructura legal y financiera sólida, tu inversión se maneja con los más altos estándares de seguridad.",
+          "content": "Invierte a precios preferenciales durante preventas legales y reguladas.",
           "caption": "Utiliza tu participación para invertir a un precio especial durante cualquier etapa de venta."
         },
         {
           "title": "Gana y Crece",
-          "content": "Pandoras, una empresa comprometida con la protección de tu capital y el crecimiento a largo plazo, respaldada por un fideicomiso que garantiza la integridad de tu dinero.",
-          "caption": "Con tu inversión, accederás a beneficios exclusivos, como ingresos por renta y la posibilidad de convertir tu inversión en propiedad completa."
+          "content": "Gana desde el día uno con renta, plusvalía y posibilidad de co-propiedad.",
+          "caption": "Con tu inversión, accederás a beneficios exclusivos."
         }
       ]
     },
@@ -106,8 +106,50 @@
     "people_comment": {
       "title": "Lo que dicen las personas",
       "desc": "No solo confíes en nuestra palabra. Esto es lo que dicen usuarios reales sobre Pandoras."
-    }
-  },
+    },
+    "what_is_pandoras": {
+      "title": "¿Qué es Pandora’s Finance?",
+      "description": "Pandora’s transforma activos reales (propiedades inmobiliarias y startups) en oportunidades digitales accesibles. Sin intermediarios, respaldado por fideicomiso legal, tecnología blockchain y una visión de futuro financiero.",
+      "feature_1": "Legal y regulado",
+      "feature_2": "Acceso global e inclusivo",
+      "feature_3": "Activos reales tokenizados"
+    },
+    "problem_we_solve": {
+      "title": "El Problema Que Resolvemos",
+      "problem_1": "Altos montos e intermediarios que encarecen la inversión.",
+      "problem_2": "Liquidez limitada: propiedades tardan en venderse.",
+      "problem_3": "Falta de transparencia y trazabilidad en procesos tradicionales.",
+      "solution": "Solución con Pandora’s: inversiones accesibles, líquidas y seguras."
+    },
+    "benefits_market": {
+      "main_title": "Ventajas Poderosas",
+      "main_description": "Estamos ante una industria que está cambiando la forma en que vemos el mundo digital.",
+      "ventajas_title0": "",
+      "ventajas_description0": "",
+      "ventajas_title1": "Confianza construida",
+      "ventajas_description1": "",
+      "ventajas_title2": "Datos y respaldo académico",
+      "ventajas_description2": "“Se proyecta que los activos tokenizables alcanzarán $26 trillones USD en 2030 gracias a la transformación digital de los mercados reales.” (Fuente: G2 Learn)",
+      "ventajas_title3": "Una tendencia imparable",
+      "ventajas_description3": "El mercado global de tokenización de bienes raíces podría superar los $3 billones USD para 2030, representando hasta el 15 % de los activos inmobiliarios globales. Pandora’s permite ser parte de este movimiento desde hoy"  
+    },
+      "skeleton_one": {
+        "items": [
+          { "title": "Inversiones accesibles desde montos bajos." },
+          { "title": "Alta liquidez en un mercado digital global." },
+          { "title": "Transparencia de fondos con blockchain." },
+          { "title": "Diversificación en bienes raíces y emprendimiento." }
+        ]
+      },
+      "skeleton_two": {
+        "items": [
+          { "title": "Legalidad formal" },
+          { "title": "Tecnología sólida (blockchain)" },
+          { "title": "Activos reales tokenizados" },
+          { "title": "Transparencia total en transacciones" }
+        ]
+      }
+    },
   "login": {
     "back": "Atrás",
     "welcome_back": "Bienvenido de nuevo",
