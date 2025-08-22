@@ -11,7 +11,7 @@ import { MainNav } from "./main-nav";
 import { LocaleChange } from "~/components/locale-change";
 import useScroll from "~/hooks/use-scroll";
 import type { MainNavItem, MarketingDictionary } from "~/types";
-//import { ConnectWalletButton } from "./connect-wallet-button";
+import { ConnectWalletButton } from "./connect-wallet-button";
 import { NFTGatingMint } from "./nft-gating-mint";
 
 interface MarketingType {
@@ -126,7 +126,7 @@ export function NavBar({
             <div className="w-[1px] h-8 bg-accent" />
             {rightElements}
             <LocaleChange url={"/"} />
-            {/*<ConnectWalletButton /> */}
+            <ConnectWalletButton />
             <NFTGatingMint />
           </div>
         </div>

@@ -32,6 +32,7 @@ export default async function BillingPage(props: {
   const { lang } = params;
 
   const dict = await getDictionary(lang);
+  console.log('Dictionary:', JSON.stringify(dict, null, 2));
   return (
     <DashboardShell
       title={dict.business.billing.billing}
