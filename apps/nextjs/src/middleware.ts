@@ -100,18 +100,7 @@ export default async function middleware(
       !pathname.startsWith(`/${locale}/`) && pathname !== `/${locale}`,
   );
 
-  // Redirect if locale is missing
-  if (pathnameIsMissingLocale) {
-    const locale = getLocale(req) ?? i18n.defaultLocale;
-    return NextResponse.redirect(
-      new URL(
-        `/${locale}${pathname.startsWith("/") ? "" : "/"}${pathname}`,
-        req.url,
-      ),
-    );
-  }
-
-  if (!isNoRedirect(req) && pathnameIsMissingLocale) {
+  if (pathnameIsMissingLocale && !isNoRedirect(req)) {
     const locale = getLocale(req);
     return NextResponse.redirect(
       new URL(

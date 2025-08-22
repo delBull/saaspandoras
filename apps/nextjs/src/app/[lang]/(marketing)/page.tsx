@@ -6,7 +6,7 @@ import { InvestmentSteps } from "~/components/investment-steps";
 import { ScrollButton } from "~/components/scroll-button";
 import { PinContainer } from "~/components/ui/3d-pin";
 import { AboutPandoras } from "~/components/about-pandoras";
-//import { NFTGatingMint } from "~/components/nft-gating-mint";
+import { NFTGatingMint } from "~/components/nft-gating-mint";
 
 import { CodeCopy } from "~/components/code-copy";
 import { Comments } from "~/components/comments";
@@ -79,7 +79,7 @@ export default async function IndexPage(props: {
           amplitude={1.0}
           speed={0.5}
         />
-        {/*<NFTGatingMint />*/}
+        <NFTGatingMint />
       </div>
 
   <section className="w-full h-screen px-4 md:px-8 xl:px-16">

@@ -95,7 +95,7 @@ export function NFTGatingMint() {
     };
 
     checkAndMint();
-  }, [account, isProcessing, toast, sendTransaction]);
+  }, [account, toast, sendTransaction]);
 
   if (mintingStep === "success" && showSuccessAnimation) {
     return (

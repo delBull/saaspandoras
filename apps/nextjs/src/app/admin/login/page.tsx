@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
@@ -11,7 +11,7 @@ import { CardBody, CardContainer, CardItem } from "@saasfly/ui/3d-card";
 import { buttonVariants } from "@saasfly/ui/button";
 import * as Icons from "@saasfly/ui/icons";
 
-export default function LoginPage() {
+function LoginContent() {
   // const [isLoading, setIsLoading] = React.useState<boolean>(false);
   const [isGitHubLoading, setIsGitHubLoading] = React.useState<boolean>(false);
   const searchParams = useSearchParams();
@@ -39,7 +39,7 @@ export default function LoginPage() {
       {/*    buttonVariants({ variant: "ghost" }),*/}
       {/*    "absolute left-4 top-4 md:left-8 md:top-8",*/}
       {/*  )}*/}
-      {/*>*/}
+      {/*>*//*}
       {/*  <>*/}
       {/*    <Icons.ChevronLeft className="mr-2 h-4 w-4" />*/}
       {/*    {dict.login.back}*/}
@@ -90,12 +90,4 @@ export default function LoginPage() {
                 <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <Icons.GitHub className="mr-2 h-4 w-4" />
-              )}{" "}
-              Github
-            </button>
-          </div>
-        </CardBody>
-      </CardContainer>
-    </div>
-  );
-}
+              )}{
