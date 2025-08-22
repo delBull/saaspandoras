@@ -90,6 +90,18 @@ export interface Dictionary {
       cta: string;
     };
   };
+  benefits_market: {
+    main_title: string;
+    main_description: string; 
+    ventajas_title0: string;
+    ventajas_description0: string;
+    ventajas_title1: string;
+    ventajas_description1: string;
+    ventajas_title2: string;
+    ventajas_description2: string;
+    ventajas_title3: string;
+    ventajas_description3: string;
+  };
   login: {
     back: string;
     welcome_back: string;
@@ -287,6 +299,18 @@ export interface MarketingDictionary {
     title: string;
     donate: string;
   };
+  benefits_market: {
+    main_title: string;
+    main_description: string; 
+    ventajas_title0: string;
+    ventajas_description0: string;
+    ventajas_title1: string;
+    ventajas_description1: string;
+    ventajas_title2: string;
+    ventajas_description2: string;
+    ventajas_title3: string;
+    ventajas_description3: string;
+  };
   video: {
     first_text: string;
     second_text1: string;
@@ -316,6 +340,17 @@ export interface MarketingDictionary {
   dashboard: {
     config_panel: string;
     investments_panel: string;
+  };
+  skeleton_one: {
+    items: {
+      title: string;
+      image?: string;
+    }[];
+  };
+  skeleton_two: {
+    items: {
+      title: string;
+    }[];
   };
 }
 

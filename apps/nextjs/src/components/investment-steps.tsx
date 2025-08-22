@@ -77,7 +77,7 @@ export function InvestmentSteps({ dict }: InvestmentStepsProps) {
               <h3 className="text-xl font-semibold mb-4 text-neutral-800 dark:text-neutral-200">
                 {step.title}
               </h3>
-              <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed md:pb-0 pb-20">
+              <p className="text-neutral-600 dark:text-neutral-400 text-md font-mono leading-relaxed md:pb-0 pb-20">
                 {step.content}
               </p>
             </div>

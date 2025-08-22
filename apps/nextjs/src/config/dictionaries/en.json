@@ -65,18 +65,18 @@
       "steps": [
         {
           "title": "Getting your free share",
-          "content": "With Pandoras, your investment is legally backed and your money goes directly to our treasury, guaranteed by a trust. This ensures complete transparency and security in every transaction.",
+          "content": "Get instant access with a free passkey that unlocks the platform for you.",
           "caption": "Register and get your free digital share that allows you to invest in exclusive properties."
         },
         {
           "title": "Invest at a special price",
-          "content": "Each contribution represents a portion of the project's value. Additionally, thanks to our solid legal and financial structure, your investment is handled with the highest security standards. Pandoras is legally constituted and operates in a regulated manner, giving you confidence and peace of mind.",
+          "content": "Invest at preferential prices during legal and regulated presales.",
           "caption": "Use your share to invest at a special price during our presale."
         },
         {
           "title": "Earn and Grow",
-          "content": "Pandoras, a company committed to protecting your capital and long-term growth, backed by a trust that guarantees the integrity of your money.",
-          "caption": "With your investment, you'll access exclusive benefits, such as rental income and the possibility of converting your investment into full ownership."
+          "content": "Earn from day one with rent, capital gains, and the possibility of co-ownership.",
+          "caption": "With your investment, you will access exclusive benefits."
         }
       ]
     },
@@ -106,7 +106,49 @@
     "people_comment": {
       "title": "What People Are Saying",
       "desc": "Don’t just take our word for it. Here’s what real users are saying about Pandoras."
-    }
+    },
+    "what_is_pandoras": {
+      "title": "What is Pandora's Finance?",
+      "description": "Pandora's transforms real assets (real estate and startups) into accessible digital opportunities. Without intermediaries, backed by a legal trust, blockchain technology, and a vision of the financial future.",
+      "feature_1": "Legal and regulated",
+      "feature_2": "Global and inclusive access",
+      "feature_3": "Tokenized real assets"
+    },
+    "problem_we_solve": {
+      "title": "The Problem We Solve",
+      "problem_1": "High amounts and intermediaries that make investment more expensive.",
+      "problem_2": "Limited liquidity: properties take time to sell.",
+      "problem_3": "Lack of transparency and traceability in traditional processes.",
+      "solution": "Solution with Pandora's: accessible, liquid, and secure investments."
+    },
+    "benefits_market": {
+      "main_title": "Powerful Advantages",
+      "main_description": "We are facing an industry that is changing the way we see the digital world.",
+      "ventajas_title0": "",
+      "ventajas_description0": "",
+      "ventajas_title1": "Built Trust",
+      "ventajas_description1": "",
+      "ventajas_title2": "Data and academic support",
+      "ventajas_description2": "“Tokenizable assets are projected to reach $26 trillion USD in 2030 thanks to the digital transformation of real markets.” (Source: G2 Learn)",
+      "ventajas_title3": "An unstoppable trend",
+      "ventajas_description3": "The global real estate tokenization market could exceed $3 trillion USD by 2030, representing up to 15% of global real estate assets. Pandora's allows you to be part of this movement from today"  
+    },
+      "skeleton_one": {
+        "items": [
+          { "title": "Accessible investments from low amounts." },
+          { "title": "High liquidity in a global digital market." },
+          { "title": "Full traceability with blockchain." },
+          { "title": "Diversification in real estate and entrepreneurship." }
+        ]
+      },
+      "skeleton_two": {
+        "items": [
+          { "title": "Formal legality" },
+          { "title": "Solid technology (blockchain)" },
+          { "title": "Tokenized real assets" },
+          { "title": "Full transparency in transactions" }
+        ]
+      }
   },
   "login": {
     "back": "Back",

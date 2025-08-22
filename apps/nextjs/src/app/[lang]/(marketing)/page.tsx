@@ -5,6 +5,7 @@ import { TransformTokenDetails } from "~/components/tokendetails";
 import { InvestmentSteps } from "~/components/investment-steps";
 import { ScrollButton } from "~/components/scroll-button";
 import { PinContainer } from "~/components/ui/3d-pin";
+import { AboutPandoras } from "~/components/about-pandoras";
 
 import { CodeCopy } from "~/components/code-copy";
 import { Comments } from "~/components/comments";
@@ -16,6 +17,7 @@ import * as Icons from "@saasfly/ui/icons";
 
 import type { Locale } from "~/config/i18n-config";
 import { VideoScroll } from "~/components/video-scroll";
+import { FeaturesSectionDemo } from "~/components/features-section";
 
 const people = [
   {
@@ -171,12 +173,24 @@ export default async function IndexPage(props: {
           
         </div>
       </section>
+
+      <section id="about-pandoras" className="container md:mt-44 md:mb-20">
+        <AboutPandoras dict={dict.marketing} />
+      </section>
       
-      <section id="investment-steps" className="container md:mt-32">
+      <section id="investment-steps" className="container">
         <InvestmentSteps dict={dict.marketing.investment_steps} />
       </section>
 
-      <section className="container pt-24">
+      <section id="benefits-market" className="container mt-20">
+        <FeaturesSectionDemo
+          {...dict.marketing.benefits_market}
+          skeleton_one={dict.marketing.skeleton_one}
+          skeleton_two={dict.marketing.skeleton_two}
+        />
+      </section>
+
+      <section id="sponsor" className="container pt-24">
         <div className="flex flex-col justify-center items-center pt-10">
           <div className="text-lg text-neutral-500 dark:text-neutral-400">
             {dict.marketing.sponsor.title}
