@@ -5,7 +5,6 @@ export const i18n = {
 
 export type Locale = (typeof i18n)["locales"][number];
 
-// 新增的映射对象
 export const localeMap = {
   es: "Español",
   en: "English",

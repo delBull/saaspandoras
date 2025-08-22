@@ -31,7 +31,7 @@ const publicRoute = [
   "/(\\w{2}/)?privacy(.*)",
   "/(\\w{2}/)?assets(.*)",
   "/(\\w{2}/)?invest(.*)",
-  "^/\\w{2}$", // root with locale
+  "^/\\w{2}$",
 ];
 
 const protectedRoutes = ["/(\\w{2}/)?dashboard(.*)", "/(\\w{2}/)?admin(.*)"];

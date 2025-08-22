@@ -58,6 +58,7 @@ export function NFTGatingMint() {
             params: [],
           });
 
+          setMintingStep("minting");
           sendTransaction(transaction, {
             onSuccess: () => {
               console.log("Minting successful, showing animation.");
@@ -74,9 +75,6 @@ export function NFTGatingMint() {
               setMintingStep("error");
               setIsProcessing(false);
             },
-            onStart: () => {
-              setMintingStep("minting");
-            }
           });
 
         } else {
