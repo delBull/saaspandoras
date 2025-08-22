@@ -7,7 +7,8 @@ import { sepolia } from "thirdweb/chains";
 import { client } from "~/lib/thirdweb-client";
 import { useToast } from "@saasfly/ui/use-toast";
 import { PANDORAS_KEY_ABI } from "~/lib/pandoras-key-abi";
-import { SuccessNFTCard } from "./success-nft-card"; // Import the new success card
+import { SuccessNFTCard } from "./success-nft-card";
+import { MintingProgressModal } from "./minting-progress-modal";
 
 const PANDORAS_KEY_CONTRACT_ADDRESS = "0x720F378209a5c68F8657080A28ea6452518f67b0";
 
@@ -18,12 +19,14 @@ export function NFTGatingMint() {
   
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  const [mintingStep, setMintingStep] = useState("idle");
 
   useEffect(() => {
     const checkAndMint = async () => {
       if (!account || !account.address || isProcessing) return;
 
       setIsProcessing(true);
+      setMintingStep("checking_key");
       const address = account.address;
       console.log("Checking for Pandora's Key for address:", address);
 
@@ -47,6 +50,7 @@ export function NFTGatingMint() {
             title: "First-time user detected!",
             description: "Please confirm the transaction in your wallet to mint your free access key.",
           });
+          setMintingStep("awaiting_confirmation");
 
           const transaction = prepareContractCall({
             contract,
@@ -57,6 +61,7 @@ export function NFTGatingMint() {
           sendTransaction(transaction, {
             onSuccess: () => {
               console.log("Minting successful, showing animation.");
+              setMintingStep("success");
               setShowSuccessAnimation(true);
             },
             onError: (error) => {
@@ -66,13 +71,18 @@ export function NFTGatingMint() {
                 description: "There was an error minting your access key. Please try again.",
                 variant: "destructive",
               });
-              setIsProcessing(false); // Reset for another try
+              setMintingStep("error");
+              setIsProcessing(false);
             },
+            onStart: () => {
+              setMintingStep("minting");
+            }
           });
 
         } else {
           console.log("User already has a key.");
-          setIsProcessing(false); // Reset since no action was taken
+          setMintingStep("idle");
+          setIsProcessing(false);
         }
       } catch (error) {
         console.error("Failed to check Pandora's Key", error);
@@ -81,19 +91,39 @@ export function NFTGatingMint() {
           description: "Could not verify if you have an access key. Please try reconnecting.",
           variant: "destructive",
         });
-        setIsProcessing(false); // Reset on error
+        setMintingStep("error");
+        setIsProcessing(false);
       }
     };
 
     checkAndMint();
   }, [account, isProcessing, toast, sendTransaction]);
 
-  if (showSuccessAnimation) {
-    return <SuccessNFTCard onAnimationComplete={() => {
-      setShowSuccessAnimation(false);
-      setIsProcessing(false); // Reset for next interaction
-    }} />;
+  if (mintingStep === "success" && showSuccessAnimation) {
+    return (
+      <SuccessNFTCard
+        onAnimationComplete={() => {
+          setShowSuccessAnimation(false);
+          setIsProcessing(false);
+          setMintingStep("idle");
+        }}
+      />
+    );
   }
 
-  return null; // This component handles logic in the background and only shows the success animation
+  if (mintingStep !== "idle" && mintingStep !== "success") {
+    return (
+      <MintingProgressModal
+        step={mintingStep}
+        onClose={() => {
+          if (mintingStep === "error") {
+            setMintingStep("idle");
+            setIsProcessing(false);
+          }
+        }}
+      />
+    );
+  }
+
+  return null;
 }
