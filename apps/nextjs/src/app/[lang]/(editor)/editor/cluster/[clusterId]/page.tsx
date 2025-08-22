@@ -1,12 +1,13 @@
 import { notFound, redirect } from "next/navigation";
-import type { User } from "next-auth";
+// import type { User } from "next-auth";
 
-import { authOptions, getCurrentUser } from "@saasfly/auth";
+//import { authOptions, getCurrentUser } from "@saasfly/auth";
 import { db } from "@saasfly/db";
 
 import { ClusterConfig } from "~/components/k8s/cluster-config";
 import type { Cluster } from "~/types/k8s";
 
+/*
 async function getClusterForUser(clusterId: Cluster["id"], userId: User["id"]) {
   return await db
     .selectFrom("K8sClusterConfig")
@@ -15,6 +16,7 @@ async function getClusterForUser(clusterId: Cluster["id"], userId: User["id"]) {
     .where("authUserId", "=", userId)
     .executeTakeFirst();
 }
+*/
 
 interface EditorClusterProps {
   params: Promise<{
@@ -24,11 +26,14 @@ interface EditorClusterProps {
 }
 
 export default async function EditorClusterPage(props: EditorClusterProps) {
+  /*
   const params = await props.params;
+  
   const user = await getCurrentUser();
   if (!user) {
     redirect(authOptions?.pages?.signIn ?? "/login");
   }
+  
 
   // console.log("EditorClusterPage user:" + user.id + "params:", params);
   const cluster = await getClusterForUser(params.clusterId, user.id);
@@ -36,14 +41,16 @@ export default async function EditorClusterPage(props: EditorClusterProps) {
   if (!cluster) {
     notFound();
   }
+  */
   return (
-    <ClusterConfig
-      cluster={{
-        id: cluster.id,
-        name: cluster.name,
-        location: cluster.location,
-      }}
-      params={{ lang: params.lang }}
-    />
+    // <ClusterConfig
+    //   cluster={{
+    //     id: cluster.id,
+    //     name: cluster.name,
+    //     location: cluster.location,
+    //   }}
+    //   params={{ lang: params.lang }}
+    // />
+    null
   );
 }

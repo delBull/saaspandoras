@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { getCurrentUser } from "@saasfly/auth";
+// import { getCurrentUser } from "@saasfly/auth";
 
 import { MainNav } from "~/components/main-nav";
 import { DashboardNav } from "~/components/nav";
@@ -24,13 +24,15 @@ export default async function DashboardLayout(props: EditLayoutProps) {
 
   const { children } = props;
 
-  const user = await getCurrentUser();
+  // const user = await getCurrentUser();
   const dict = await getDictionary(lang);
 
   const dashboardConfig = await getDashboardConfig({ params: { lang } });
+  /*
   if (!user) {
     return notFound();
   }
+  */
 
   return (
     <div className="flex min-h-screen flex-col space-y-6">
@@ -40,6 +42,7 @@ export default async function DashboardLayout(props: EditLayoutProps) {
             items={dashboardConfig.mainNav}
             params={{ lang: `${lang}` }}
           />
+          {/*
           <UserAccountNav
             user={{
               name: user.name,
@@ -49,6 +52,7 @@ export default async function DashboardLayout(props: EditLayoutProps) {
             params={{ lang: `${lang}` }}
             dict={dict.dropdown}
           />
+          */}
         </div>
       </header>
       <div className="container grid flex-1 gap-12 md:grid-cols-[200px_1fr]">

@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { getCurrentUser } from "@saasfly/auth";
+//import { getCurrentUser } from "@saasfly/auth";
 import { NavBar } from "~/components/navbar";
 import { SiteFooter } from "~/components/site-footer";
 import type { Locale } from "~/config/i18n-config";
@@ -21,7 +21,7 @@ export default async function DocsLayout(props: DocsLayoutProps) {
   const { children } = props;
 
   const dict = await getDictionary(lang); // Removed type assertion
-  const user = await getCurrentUser();
+  //const user = await getCurrentUser();
   const marketingConfig = await getMarketingConfig({ params: { lang } });
 
   return (
@@ -31,7 +31,7 @@ export default async function DocsLayout(props: DocsLayoutProps) {
           items={marketingConfig.mainNav}
           params={{ lang }}
           scroll={true}
-          user={user}
+          //user={user}
           marketing={dict.marketing}
           dropdown={dict.dropdown}
         />
