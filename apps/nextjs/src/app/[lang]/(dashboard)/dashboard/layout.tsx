@@ -9,6 +9,7 @@ import { UserAccountNav } from "~/components/user-account-nav";
 import { i18n, type Locale } from "~/config/i18n-config";
 import { getDashboardConfig } from "~/config/ui/dashboard";
 import { getDictionary } from "~/lib/get-dictionary";
+import { NFTGate } from "~/components/nft-gate";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -66,16 +67,18 @@ export default async function DashboardLayout(props: DashboardLayoutProps) {
           />*/}
         </aside>
         <main className="flex w-full flex-1 flex-col overflow-hidden">
-          <Suspense
-            fallback={
-              <div className="animate-pulse space-y-4">
-                <div className="h-8 w-[200px] bg-muted rounded" />
-                <div className="h-[400px] w-full bg-muted rounded" />
-              </div>
-            }
-          >
-            {children}
-          </Suspense>
+          <NFTGate>
+            <Suspense
+              fallback={
+                <div className="animate-pulse space-y-4">
+                  <div className="h-8 w-[200px] bg-muted rounded" />
+                  <div className="h-[400px] w-full bg-muted rounded" />
+                </div>
+              }
+            >
+              {children}
+            </Suspense>
+          </NFTGate>
         </main>
       </div>
     </div>
