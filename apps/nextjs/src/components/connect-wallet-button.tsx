@@ -2,9 +2,9 @@
 
 import {
   ConnectButton,
-  useActiveAccount,
-  useActiveWallet,
-  useDisconnect,
+  //useActiveAccount,
+  //useActiveWallet,
+  //useDisconnect,
 } from "thirdweb/react";
 import {
   createWallet,
@@ -15,9 +15,9 @@ import { client } from "~/lib/thirdweb-client";
 import { chain } from "~/lib/thirdweb-chain"; 
 
 export function ConnectWalletButton() {
-  const account = useActiveAccount();
-  const wallet = useActiveWallet();
-  const { disconnect } = useDisconnect();
+  //const account = useActiveAccount();
+  //const wallet = useActiveWallet();
+  //const { disconnect } = useDisconnect();
 
   return (
     <>
