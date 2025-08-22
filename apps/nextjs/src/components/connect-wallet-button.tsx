@@ -1,14 +1,23 @@
 "use client";
 
-import { ConnectButton } from "thirdweb/react";
-import { createWallet, inAppWallet } from "thirdweb/wallets";
-import { useDisconnect } from "thirdweb/react";
+import {
+  ConnectButton,
+  useActiveAccount,
+  useActiveWallet,
+  useDisconnect,
+} from "thirdweb/react";
+import {
+  createWallet,
+  inAppWallet,
+} from "thirdweb/wallets";
 import React from "react";
 import { client } from "~/lib/thirdweb-client";
+import { chain } from "~/lib/thirdweb-chain"; 
 
 export function ConnectWalletButton() {
   const account = useActiveAccount();
-  const disconnect = useDisconnect();
+  const wallet = useActiveWallet();
+  const { disconnect } = useDisconnect();
 
   return (
     <>
@@ -18,23 +27,27 @@ export function ConnectWalletButton() {
         wallets={[
           inAppWallet({
             auth: {
-              options: ["email", "google", "apple", "facebook"],
+              options: [
+                "email",
+                "google",
+                "apple",
+                "facebook",
+                "passkey",
+              ],
             },
-            gasless: false, // Explicitly disable gasless for inAppWallet
+            smartAccount: {
+              chain, 
+              sponsorGas: true,
+            },
           }),
-          createWallet("passkey"),
           createWallet("io.metamask"),
           createWallet("walletConnect"),
         ]}
+        connectModal={{
+          showThirdwebBranding: false,
+          size: "compact",
+        }}
       />
-      {account && (
-        <button
-          onClick={() => disconnect(account)}
-          className="ml-2 px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700"
-        >
-          Disconnect
-        </button>
-      )}
     </>
   );
 }
