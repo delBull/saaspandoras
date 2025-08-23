@@ -96,14 +96,6 @@ export function SuccessNFTCard({ onAnimationComplete }: SuccessNFTCardProps) {
         </div>
         <p className="text-center font-mono text-gray-300 px-4">Tu Pandora's Key ha sido creada y guardada de forma segura en tu billetera.</p>
       </motion.div>
-      <div className="absolute bottom-10 z-20">
-        <button
-          onClick={() => setIsPaused(!isPaused)}
-          className="rounded-md bg-blue-500 px-4 py-2 text-white"
-        >
-          {isPaused ? 'Resume' : 'Pause'}
-        </button>
-      </div>
     </div>
   );
 }
