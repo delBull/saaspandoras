@@ -120,7 +120,7 @@ export function NavBar({
                         "flex items-center text-lg font-medium transition-colors hover:text-foreground/80 sm:text-sm",
                         item.href.startsWith(`/${segment}`) &&
                           "text-lime-300 font-semibold",
-                        item.title === "Stake" && shadowsIntoLight.className // Apply font here
+                        item.title === "Stake" && "[font-family:'Shadows_Into_Light',cursive] [text-shadow:0_0_8px_rgba(255,255,255,0.8)]"
                       )}
                     >
                       {item.title}

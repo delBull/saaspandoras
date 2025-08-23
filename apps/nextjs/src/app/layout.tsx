@@ -1,7 +1,7 @@
 import { Inter as FontSans } from "next/font/google";
 
 import localFont from "next/font/local";
-import { Dancing_Script } from "next/font/google";
+import { Dancing_Script, Shadows_Into_Light } from "next/font/google"; // Added Shadows_Into_Light
 
 import "~/styles/globals.css";
 
@@ -30,6 +30,12 @@ const fontHeading = localFont({
 const fontHandwritten = Dancing_Script({
   subsets: ["latin"],
   variable: "--font-handwritten",
+});
+
+const shadowsIntoLight = Shadows_Into_Light({ // Added shadowsIntoLight
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-shadows",
 });
 
 export function generateStaticParams() {
@@ -125,6 +131,7 @@ export default function RootLayout({
           fontSans.variable,
           fontHeading.variable,
           fontHandwritten.variable,
+          shadowsIntoLight.variable // Added shadowsIntoLight.variable
         )}
       >
         <ThemeProvider
