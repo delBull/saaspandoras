@@ -17,6 +17,10 @@ const config = {
     "@saasfly/shared",
     "@saasfly/ui",
     "@saasfly/stripe",
+    "@walletconnect/ethereum-provider",
+    "viem",
+    "wagmi",
+    "thirdweb",
   ],
   pageExtensions: ["ts", "tsx", "mdx"],
   experimental: {
