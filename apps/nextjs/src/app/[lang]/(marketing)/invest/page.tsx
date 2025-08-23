@@ -1,6 +1,11 @@
 import { getDictionary } from "~/lib/get-dictionary";
-import { InvestContent } from "~/components/invest-content";
 import type { Locale } from "~/config/i18n-config";
+import dynamic from 'next/dynamic';
+
+const DynamicInvestContent = dynamic(
+  () => import('~/components/invest-content').then((mod) => mod.InvestContent),
+  { ssr: false }
+);
 
 export default async function Page(props: {
   params: Promise<{ lang: Locale }>;
@@ -12,7 +17,7 @@ export default async function Page(props: {
   return (
     <div className="container mx-auto py-8">
       <div className="mx-auto max-w-4xl space-y-8">
-        <InvestContent dict={dict} />
+        <DynamicInvestContent dict={dict} />
       </div>
     </div>
   );
