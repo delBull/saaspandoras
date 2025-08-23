@@ -257,6 +257,12 @@ export interface MarketingDictionary {
   title: string;
   sub_title: string;
   get_started: string;
+  hero_supertitle: string;
+  hero_title: string;
+  hero_subtitle: string;
+  hero_cta1: string;
+  hero_cta2: string;
+  hero_cta3: string;
   view_on_github: string;
   explore_product: string;
   features: string;
