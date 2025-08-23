@@ -40,6 +40,7 @@ export function MainNav({ items, children, params: { lang } }: MainNavProps) {
             width={250}
             height={50}
             priority
+            style={{ width: 'auto', height: 'auto' }}
           />
           {/*
           <div className="text-xl">
