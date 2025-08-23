@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import React, { useEffect, useRef, useState } from 'react';
 import { Shadows_Into_Light } from "next/font/google";
 import { cn } from '~/lib/utils';
@@ -24,6 +23,25 @@ interface ImpactfulHeroProps {
 }
 
 export const ImpactfulHero = ({ dict }: ImpactfulHeroProps) => {
+  const handleSmoothScroll = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    const href = e.currentTarget.getAttribute('href');
+    if (!href || !href.startsWith('#')) return;
+
+    const targetId = href.substring(1);
+    const targetElement = document.getElementById(targetId);
+
+    if (targetElement) {
+      const elementPosition = targetElement.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - 50;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   return (
     <section className="relative grid h-screen w-full place-content-center overflow-hidden px-4 md:px-8 xl:px-16">
       <div className="relative z-10 flex flex-col items-center">
@@ -37,24 +55,27 @@ export const ImpactfulHero = ({ dict }: ImpactfulHeroProps) => {
           {dict.marketing.hero_subtitle}
         </p>
         <div className="flex flex-col items-center gap-4 sm:flex-row">
-          <Link
+          <a
             href="#investment-steps"
+            onClick={handleSmoothScroll}
             className="inline-flex h-12 items-center justify-center whitespace-nowrap rounded-md bg-primary px-6 py-3 text-base font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
           >
             {dict.marketing.hero_cta1}
-          </Link>
-          <Link
+          </a>
+          <a
             href="#about-pandoras"
+            onClick={handleSmoothScroll}
             className="inline-flex h-12 items-center justify-center whitespace-nowrap rounded-md border border-input bg-transparent px-6 py-3 text-base font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
           >
             {dict.marketing.hero_cta2}
-          </Link>
-          <Link
+          </a>
+          <a
             href="#benefits-market"
+            onClick={handleSmoothScroll}
             className="inline-flex h-12 items-center justify-center whitespace-nowrap rounded-md border border-input bg-transparent px-6 py-3 text-base font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
           >
             {dict.marketing.hero_cta3}
-          </Link>
+          </a>
         </div>
       </div>
       <DotGrid />

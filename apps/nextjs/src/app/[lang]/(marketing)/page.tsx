@@ -119,7 +119,7 @@ export default async function IndexPage(props: {
           <TransformTokenDetails dict={dict.marketing.transform_token} />
         </div>
       </section>
-
+      {/*
       <section className="w-full px-8 pt-10 sm:px-0 sm:pt-24 md:px-0 md:pt-24 xl:px-0 xl:pt-24">
         <div className="flex h-full w-full flex-col items-center pb-[100px] pt-10">
           <div>
@@ -129,13 +129,13 @@ export default async function IndexPage(props: {
           </div>
           <div className="mb-6 text-lg text-neutral-500 dark:text-neutral-400">
             {dict.marketing.people_comment.desc}
-          </div>
-
+          </div>         
           <div className="w-full overflow-x-hidden">
             <Comments />
-          </div>
+          </div>         
         </div>
       </section>
+      */}
     </>
   );
 }

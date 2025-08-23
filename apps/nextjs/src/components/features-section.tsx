@@ -154,11 +154,11 @@ const FeatureDescription = ({ children }: { children?: React.ReactNode }) => {
 export const SkeletonOne = ({ items = [] }: { items?: SkeletonOneItem[] }) => {
   return (
     <div className="relative w-full h-full flex items-center justify-center">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
         {items.map((item, idx) => (
           <div
             key={"items-first" + idx}
-            className="group relative w-48 h-48 rounded-full flex items-center justify-center text-center p-4 overflow-hidden"
+            className="group relative w-32 h-32 md:w-48 md:h-48 rounded-full flex items-center justify-center text-center p-4 overflow-hidden"
             style={{
               background: "linear-gradient(to bottom right, rgba(123, 27, 116, 0.8), rgba(180, 80, 170, 0.2))",
               backdropFilter: "blur(10px)",
