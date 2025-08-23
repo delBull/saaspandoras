@@ -6,7 +6,7 @@
   "main": "index.ts",
   "files": [
     "index.ts",
-    "postcss.js"
+    "postcss.cjs"
   ],
   "scripts": {
     "clean": "rm -rf .turbo node_modules",

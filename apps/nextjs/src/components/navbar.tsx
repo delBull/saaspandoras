@@ -12,6 +12,12 @@ import { LocaleChange } from "~/components/locale-change";
 import useScroll from "~/hooks/use-scroll";
 import type { MainNavItem, MarketingDictionary } from "~/types";
 import { ConnectWalletButton } from "./connect-wallet-button";
+import { Shadows_Into_Light } from "next/font/google";
+
+const shadowsIntoLight = Shadows_Into_Light({
+  subsets: ["latin"],
+  weight: "400", // Assuming a weight of 400 is available for this font
+});
 
 interface MarketingType {
   main_nav_assets: string;
@@ -114,6 +120,7 @@ export function NavBar({
                         "flex items-center text-lg font-medium transition-colors hover:text-foreground/80 sm:text-sm",
                         item.href.startsWith(`/${segment}`) &&
                           "text-lime-300 font-semibold",
+                        item.title === "Stake" && shadowsIntoLight.className // Apply font here
                       )}
                     >
                       {item.title}
