@@ -1,20 +1,88 @@
 "use client";
 
-import { useConnectModal } from "thirdweb/react";
+import { useConnectModal, useActiveWallet, AccountAvatar, AccountBlobbie, NFTMedia, AccountProvider, NFTProvider, useReadContract, useDisconnect } from "thirdweb/react";
+import { getContract } from "thirdweb";
 import { createWallet, inAppWallet } from "thirdweb/wallets";
 import React from "react";
 import { client } from "~/lib/thirdweb-client";
 import { chain } from "~/lib/thirdweb-chain";
 import { motion } from "framer-motion";
+import { getOwnedNFTs } from "thirdweb/extensions/erc721";
 
 export function ConnectWalletButton() {
   const { connect, isConnecting } = useConnectModal();
+  const { disconnect } = useDisconnect();
+  const wallet = useActiveWallet();
 
+  // Define the NFT contract (placeholder)
+  const pandorasKeyContract = getContract({
+    client,
+    chain,
+    address: "0x720f378209a5c68f8657080a28ea6452518f67b0",
+  });
+
+  // If connected, show the user icon and dropdown
+  if (wallet) {
+    const account = wallet.getAccount();
+    if (!account) return null;
+
+    return (
+      <div className="relative group">
+        <AccountProvider address={account.address} client={client}>
+          <div
+            className="flex items-center space-x-2 cursor-pointer rounded-[40px] p-2"
+            style={{
+              boxShadow: "0px 0.7065919983928324px 0.7065919983928324px -0.625px rgba(0, 0, 0, 0.18456), 0px 1.8065619053231785px 1.8065619053231785px -1.25px rgba(0, 0, 0, 0.17997), 0px 3.6217592146567767px 3.6217592146567767px -1.875px rgba(0, 0, 0, 0.17241), 0px 6.8655999097303715px 6.8655999097303715px -2.5px rgba(0, 0, 0, 0.15889), 0px 13.646761411524492px 13.646761411524492px -3.125px rgba(0, 0, 0, 0.13064), 0px 30px 30px -3.75px rgba(0, 0, 0, 0.0625)",
+              backgroundColor: "rgb(0, 0, 0)",
+            }}
+          >
+            {/* Account Avatar or Blobbie */}
+            <AccountAvatar
+              className="w-8 h-8 rounded-full"
+              loadingComponent={<AccountBlobbie className="w-8 h-8 rounded-full" />}
+            />
+            <span className="text-gray-200 text-[14px] whitespace-nowrap">Pandorian</span>
+          </div>
+        </AccountProvider>
+
+        {/* Dropdown Content */}
+        <div
+          className="absolute top-full left-1/2 -translate-x-1/2 w-56 p-4 rounded-[20px] shadow-lg opacity-0 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 ease-in-out transform"
+          style={{
+            backgroundColor: "rgb(0, 0, 0)",
+            boxShadow: "0px 0.7065919983928324px 0.7065919983928324px -0.625px rgba(0, 0, 0, 0.18456), 0px 1.8065619053231785px 1.8065619053231785px -1.25px rgba(0, 0, 0, 0.17997), 0px 3.6217592146567767px 3.6217592146567767px -1.875px rgba(0, 0, 0, 0.17241), 0px 6.8655999097303715px 6.8655999097303715px -2.5px rgba(0, 0, 0, 0.15889), 0px 13.646761411524492px 13.646761411524492px -3.125px rgba(0, 0, 0, 0.13064), 0px 30px 30px -3.75px rgba(0, 0, 0, 0.0625)",
+          }}
+        >
+          <button
+            onClick={() => disconnect(wallet!)}
+            className="flex items-center justify-between w-full text-left hover:bg-gray-800 p-2 rounded-md"
+          >
+            <div className="flex items-center">
+              <NFTProvider contract={pandorasKeyContract} tokenId={0n}>
+                <NFTMedia
+                  className="w-8 h-8 rounded-full"
+                  loadingComponent={<span className="text-gray-400">Loading...</span>}
+                />
+              </NFTProvider>
+              <span className="ml-2 text-white">Disconnect</span>
+            </div>
+            <p className="text-gray-400 text-xs break-words text-right">
+              {pandorasKeyContract.address.slice(0, 6)}...{pandorasKeyContract.address.slice(-4)}
+            </p>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // If not connected, render the original button
   return (
     <motion.button
       onClick={() =>
         connect({
           client,
+          showThirdwebBranding: false, 
+          size: "compact",
           wallets: [
             inAppWallet({
               auth: {
@@ -40,7 +108,7 @@ export function ConnectWalletButton() {
       className="relative flex items-center justify-center overflow-hidden rounded-[40px] cursor-pointer will-change-transform group"
       style={{
         boxShadow: "0px 0.7065919983928324px 0.7065919983928324px -0.625px rgba(0, 0, 0, 0.18456), 0px 1.8065619053231785px 1.8065619053231785px -1.25px rgba(0, 0, 0, 0.17997), 0px 3.6217592146567767px 3.6217592146567767px -1.875px rgba(0, 0, 0, 0.17241), 0px 6.8655999097303715px 6.8655999097303715px -2.5px rgba(0, 0, 0, 0.15889), 0px 13.646761411524492px 13.646761411524492px -3.125px rgba(0, 0, 0, 0.13064), 0px 30px 30px -3.75px rgba(0, 0, 0, 0.0625)",
-        padding: "16px 32px",
+        padding: "2px 32px",
         height: "min-content",
         width: "min-content",
       }}
@@ -73,14 +141,14 @@ export function ConnectWalletButton() {
         <span
           className="z-10 text-[14px] leading-[1.7em] text-gray-400 whitespace-nowrap"
         >
-          Get it!
+          Get your Pandora's Key&emsp; 
         </span>
 
         {/* Button Text */}
         <span
           className="z-10 text-[14px] leading-[1.7em] text-gray-200"
         >
-          {isConnecting ? "Conectando..." : "Connect"}
+          {isConnecting ? "Conectando..." : "🔑"}
         </span>
       </div>
     </motion.button>
