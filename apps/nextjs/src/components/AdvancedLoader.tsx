@@ -13,6 +13,7 @@ const shadowsIntoLight = Shadows_Into_Light({
 interface AdvancedLoaderProps {
   onComplete: () => void;
   isMinting: boolean;
+  alreadyOwned?: boolean;
 }
 
 const words = [
@@ -23,34 +24,45 @@ const words = [
 ];
 
 const finalWord = "Minteado con Éxito!";
+const alreadyOwnedWord = "Already Owned a Pandora's Key";
 
-export function AdvancedLoader({ onComplete, isMinting }: AdvancedLoaderProps) {
+export function AdvancedLoader({ onComplete, isMinting, alreadyOwned }: AdvancedLoaderProps) {
   const [index, setIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
+  const [showAlreadyOwned, setShowAlreadyOwned] = useState(false);
 
   useEffect(() => {
+    if (alreadyOwned) {
+      setShowAlreadyOwned(true);
+      setProgress(100);
+      setTimeout(() => {
+        onComplete();
+      }, 1000);
+      return;
+    }
+
     if (!isMinting && progress >= 80 && !isFinished) {
       setProgress(100);
       setIsFinished(true);
       setTimeout(() => {
         onComplete();
-      }, 2000);
+      }, 1000);
     }
-  }, [isMinting, progress, onComplete, isFinished]);
+  }, [isMinting, progress, onComplete, isFinished, alreadyOwned]);
 
   useEffect(() => {
-    if (isFinished) return;
+    if (isFinished || alreadyOwned) return;
     if (progress < 80) {
       const progressInterval = setInterval(() => {
         setProgress(p => Math.min(p + 1, 80));
       }, 200);
       return () => clearInterval(progressInterval);
     }
-  }, [progress, isFinished]);
+  }, [progress, isFinished, alreadyOwned]);
 
   useEffect(() => {
-    if (isFinished) return;
+    if (isFinished || alreadyOwned) return;
     const interval = setInterval(() => {
       setIndex(prevIndex => {
         if (prevIndex < words.length - 1) {
@@ -60,10 +72,10 @@ export function AdvancedLoader({ onComplete, isMinting }: AdvancedLoaderProps) {
       });
     }, 3000);
     return () => clearInterval(interval);
-  }, [isFinished]);
+  }, [isFinished, alreadyOwned]);
 
-  const displayedText = (isFinished ? finalWord : words[index]) ?? '';
-  const isMagicWord = displayedText === "Estamos haciendo magia";
+  const displayedText = showAlreadyOwned ? alreadyOwnedWord : (isFinished ? finalWord : words[index]) ?? '';
+  const isSpecialFont = displayedText === "Estamos haciendo magia" || showAlreadyOwned;
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -92,7 +104,8 @@ export function AdvancedLoader({ onComplete, isMinting }: AdvancedLoaderProps) {
             exit="hidden"
             className={cn(
               "text-2xl font-semibold text-white",
-              isMagicWord ? shadowsIntoLight.className : "font-mono"
+              isSpecialFont ? shadowsIntoLight.className : "font-mono",
+              showAlreadyOwned && "text-3xl"
             )}
           >
             {displayedText.split(' ').map((word, i) => (
@@ -111,8 +124,8 @@ export function AdvancedLoader({ onComplete, isMinting }: AdvancedLoaderProps) {
         <motion.div
           className="bg-lime-300 h-1.5 rounded-full"
           initial={{ width: '0%' }}
-          animate={{ width: `${progress}%` }}
-          transition={{ duration: 1, ease: "linear" }}
+          animate={{ width: showAlreadyOwned ? '100%' : `${progress}%` }}
+          transition={{ duration: showAlreadyOwned ? 0 : 1, ease: "linear" }}
         />
       </div>
     </div>

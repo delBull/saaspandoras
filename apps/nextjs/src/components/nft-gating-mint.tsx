@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useActiveAccount, useSendTransaction } from "thirdweb/react";
 import { getContract, readContract, prepareContractCall } from "thirdweb";
 import { sepolia } from "thirdweb/chains";
@@ -17,18 +17,17 @@ export function NFTGatingMint() {
   const { toast } = useToast();
   const { mutate: sendTransaction } = useSendTransaction();
   
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [mintingStep, setMintingStep] = useState("idle");
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  const hasStartedProcessing = useRef(false);
 
   useEffect(() => {
     const checkAndMint = async () => {
-      if (!account || !account.address || isProcessing) return;
+      if (!account || !account.address || hasStartedProcessing.current) return;
 
-      setIsProcessing(true);
+      hasStartedProcessing.current = true;
       setMintingStep("checking_key");
       const address = account.address;
-      console.log("Checking for Pandora's Key for address:", address);
 
       try {
         const contract = getContract({
@@ -45,7 +44,6 @@ export function NFTGatingMint() {
         });
 
         if (!hasKey) {
-          console.log("User does not have a key. Minting...");
           toast({
             title: "First-time user detected!",
             description: "Please confirm the transaction in your wallet to mint your free access key.",
@@ -58,10 +56,8 @@ export function NFTGatingMint() {
             params: [],
           });
 
-          setMintingStep("minting");
           sendTransaction(transaction, {
             onSuccess: () => {
-              console.log("Minting successful, showing animation.");
               setMintingStep("success");
               setShowSuccessAnimation(true);
             },
@@ -73,14 +69,11 @@ export function NFTGatingMint() {
                 variant: "destructive",
               });
               setMintingStep("error");
-              setIsProcessing(false);
             },
           });
 
         } else {
-          console.log("User already has a key.");
-          setMintingStep("idle");
-          setIsProcessing(false);
+          setMintingStep("alreadyOwned");
         }
       } catch (error) {
         console.error("Failed to check Pandora's Key", error);
@@ -90,20 +83,24 @@ export function NFTGatingMint() {
           variant: "destructive",
         });
         setMintingStep("error");
-        setIsProcessing(false);
       }
     };
 
     checkAndMint();
   }, [account, toast, sendTransaction]);
 
+  // Reset processing flag when account changes
+  useEffect(() => {
+    hasStartedProcessing.current = false;
+  }, [account]);
+
   if (mintingStep === "success" && showSuccessAnimation) {
     return (
       <SuccessNFTCard
         onAnimationComplete={() => {
           setShowSuccessAnimation(false);
-          setIsProcessing(false);
           setMintingStep("idle");
+          hasStartedProcessing.current = false;
         }}
       />
     );
@@ -113,11 +110,10 @@ export function NFTGatingMint() {
     return (
       <MintingProgressModal
         step={mintingStep}
+        alreadyOwned={mintingStep === "alreadyOwned"}
         onClose={() => {
-          if (mintingStep === "error") {
-            setMintingStep("idle");
-            setIsProcessing(false);
-          }
+          setMintingStep("idle");
+          hasStartedProcessing.current = false;
         }}
       />
     );

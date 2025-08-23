@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useConnectModal, useActiveWallet, AccountAvatar, AccountBlobbie, NFTMedia, AccountProvider, NFTProvider, useReadContract, useDisconnect } from "thirdweb/react";
+import { useConnectModal, useActiveWallet, AccountAvatar, AccountBlobbie, NFTMedia, AccountProvider, NFTProvider, useDisconnect } from "thirdweb/react";
 import { getContract } from "thirdweb";
 import { createWallet, inAppWallet } from "thirdweb/wallets";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { client } from "~/lib/thirdweb-client";
 import { chain } from "~/lib/thirdweb-chain";
 import { motion } from "framer-motion";
@@ -13,16 +13,34 @@ export function ConnectWalletButton() {
   const { connect, isConnecting } = useConnectModal();
   const { disconnect } = useDisconnect();
   const wallet = useActiveWallet();
+  const [hasNFT, setHasNFT] = useState(false);
 
-  // Define the NFT contract (placeholder)
   const pandorasKeyContract = getContract({
     client,
     chain,
     address: "0x720f378209a5c68f8657080a28ea6452518f67b0",
   });
 
-  // If connected, show the user icon and dropdown
+  useEffect(() => {
+    const checkNFT = async () => {
+      if (wallet) {
+        const account = wallet.getAccount();
+        if (account) {
+          const nfts = await getOwnedNFTs({ contract: pandorasKeyContract, owner: account.address });
+          setHasNFT(nfts.length > 0);
+        }
+      } else {
+        setHasNFT(false);
+      }
+    };
+    checkNFT();
+  }, [wallet, pandorasKeyContract]);
+
   if (wallet) {
+    if (hasNFT) {
+      return null;
+    }
+
     const account = wallet.getAccount();
     if (!account) return null;
 
