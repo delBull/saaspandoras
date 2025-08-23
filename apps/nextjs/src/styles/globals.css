@@ -145,3 +145,9 @@ main.flex-1.p-8 {
     @apply bg-background text-foreground;
   }
 }
+
+a[href$="/invest"],
+a[href$="/stake"] {
+  font-family: 'Shadows Into Light', cursive !important;
+  text-shadow: 0 0 8px rgba(255,255,255,0.8) !important;
+}

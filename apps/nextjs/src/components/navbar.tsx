@@ -16,7 +16,7 @@ import { Shadows_Into_Light } from "next/font/google";
 
 const shadowsIntoLight = Shadows_Into_Light({
   subsets: ["latin"],
-  weight: "400", // Assuming a weight of 400 is available for this font
+  weight: "400",
 });
 
 interface MarketingType {
@@ -119,8 +119,7 @@ export function NavBar({
                       className={cn(
                         "flex items-center text-lg font-medium transition-colors hover:text-foreground/80 sm:text-sm",
                         item.href.startsWith(`/${segment}`) &&
-                          "text-lime-300 font-semibold",
-                        item.title === "Stake" && "[font-family:'Shadows_Into_Light',cursive] [text-shadow:0_0_8px_rgba(255,255,255,0.8)]"
+                          "text-lime-300 font-semibold"
                       )}
                     >
                       {item.title}
