@@ -36,7 +36,7 @@ export function MainNav({ items, children, params: { lang } }: MainNavProps) {
         >
           <Image
             src="/logo-finance.png"
-            alt="Pandora's Logo"
+            alt="Pandora's"
             width={250}
             height={50}
             priority
