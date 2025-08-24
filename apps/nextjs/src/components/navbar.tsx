@@ -129,7 +129,7 @@ export function NavBar({
               </nav>
             ) : null}
             {rightElements}
-            <div className="w-[1px] h-8 bg-accent" />
+            <div className="hidden md:block w-[1px] h-8 bg-accent" />
             <LocaleChange url={"/"} />
             <ConnectWalletButton />
           </div>

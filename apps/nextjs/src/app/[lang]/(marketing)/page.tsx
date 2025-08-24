@@ -5,13 +5,13 @@ import { TransformTokenDetails } from "~/components/tokendetails";
 import { InvestmentSteps } from "~/components/investment-steps";
 import { AboutPandoras } from "~/components/about-pandoras";
 import { NFTGatingMint } from "~/components/nft-gating-mint";
-import { Comments } from "~/components/comments";
-import Aurora from "~/components/aurora-background";
+//import { Comments } from "~/components/comments";
+//import Aurora from "~/components/aurora-background";
 import * as Icons from "@saasfly/ui/icons";
 import type { Locale } from "~/config/i18n-config";
 import { VideoScroll } from "~/components/video-scroll";
 import { FeaturesSectionDemo } from "~/components/features-section";
-import { ImpactfulHero } from "~/components/ImpactfulHero";
+import { ShimmerDotHero } from "~/components/ShimmerDotHero";
 
 export default async function IndexPage(props: {
   params: Promise<{
@@ -27,6 +27,7 @@ export default async function IndexPage(props: {
   return (
     <>
       <NFTGatingMint />
+      {/*
       <div className="fixed inset-0 -z-10 opacity-75 rotate-180">
         <Aurora
           colorStops={["#3A29FF", "#FF94B4", "#FF3232"]}
@@ -35,8 +36,10 @@ export default async function IndexPage(props: {
           speed={0.5}
         />
       </div>
-
-      <ImpactfulHero dict={dict} />
+      */}
+      <section id="hero">
+      <ShimmerDotHero dict={dict} />
+      </section>
 
       <section id="about-pandoras" className="container md:mt-44 md:mb-20">
         <AboutPandoras dict={dict.marketing} />
