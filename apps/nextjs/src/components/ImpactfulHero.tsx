@@ -45,13 +45,13 @@ export const ImpactfulHero = ({ dict }: ImpactfulHeroProps) => {
   return (
     <section className="relative grid h-screen w-full place-content-center overflow-hidden px-4 md:px-8 xl:px-16">
       <div className="relative z-10 flex flex-col items-center">
-        <div className="mb-4 text-md font-mono font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+        <div className="mb-4 text-md text-center font-mono font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
           {dict.marketing.hero_supertitle}
         </div>
         <h1 className="max-w-4xl bg-gradient-to-br from-white to-gray-400 bg-clip-text text-center text-4xl font-semibold text-transparent dark:text-zinc-100 md:text-5xl xl:text-6xl leading-tight">
           {dict.marketing.hero_title}
         </h1>
-        <p className={cn("my-6 max-w-2xl text-center text-xl text-neutral-500 dark:text-neutral-400 md:text-2xl", shadowsIntoLight.className)}>
+        <p className={cn("my-6 max-w-2xl text-center text-2xl text-neutral-500 dark:text-neutral-400 md:text-3xl", shadowsIntoLight.className)}>
           {dict.marketing.hero_subtitle}
         </p>
         <div className="flex flex-col items-center gap-4 sm:flex-row">
