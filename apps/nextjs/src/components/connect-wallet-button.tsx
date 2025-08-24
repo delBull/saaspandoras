@@ -79,7 +79,7 @@ export function ConnectWalletButton() {
       <div className="relative flex flex-row items-center justify-between p-0 w-full">
         {/* Text */}
         <span
-          className="z-10 text-[14px] leading-[1.7em] text-gray-400 whitespace-nowrap"
+          className="z-10 text-[14px] leading-[1.7em] text-gray-200 whitespace-nowrap"
         >
           Get your Pandora's Key&emsp; 
         </span>

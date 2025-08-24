@@ -28,7 +28,7 @@ export function MainNav({ items, children, params: { lang } }: MainNavProps) {
     toggleMenu();
   };
   return (
-    <div className="flex gap-6 md:gap-10">
+    <div className="flex gap-0 md:gap-10">
       <div className="flex items-center">
         <Link
           href={`/${lang}`}
