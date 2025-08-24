@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
 import { Shadows_Into_Light } from "next/font/google";
 import { cn } from '~/lib/utils';
 
@@ -78,50 +78,6 @@ export const ImpactfulHero = ({ dict }: ImpactfulHeroProps) => {
           </a>
         </div>
       </div>
-      <DotGrid />
     </section>
-  );
-};
-
-const NUM_DOTS = 200;
-
-const DotGrid = () => {
-  const ref = useRef<HTMLDivElement>(null);
-  const [dots, setDots] = useState<Array<{x: number, y: number}>>([]);
-
-  useEffect(() => {
-    const newDots = Array.from({ length: NUM_DOTS }).map(() => ({
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-    }));
-    setDots(newDots);
-  }, []);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const { clientX, clientY } = e;
-    if (ref.current) {
-      const { left, top } = ref.current.getBoundingClientRect();
-      const x = clientX - left;
-      const y = clientY - top;
-      ref.current.style.setProperty('--mouse-x', `${x}px`);
-      ref.current.style.setProperty('--mouse-y', `${y}px`);
-    }
-  };
-
-  return (
-    <div ref={ref} onMouseMove={handleMouseMove} className="absolute inset-0 z-0">
-
-
-      {dots.map((dot, i) => (
-        <div
-          key={i}
-          className="absolute h-1 w-1 rounded-full bg-gray-500/20"
-          style={{
-            left: `${dot.x}vw`,
-            top: `${dot.y}vh`,
-          }}
-        />
-      ))}
-    </div>
   );
 };
