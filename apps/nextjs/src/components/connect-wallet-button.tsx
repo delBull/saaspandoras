@@ -48,7 +48,7 @@ export function ConnectWalletButton() {
       className="relative flex items-center justify-center overflow-hidden rounded-[40px] cursor-pointer will-change-transform group"
       style={{
         boxShadow: "0px 0.7065919983928324px 0.7065919983928324px -0.625px rgba(0, 0, 0, 0.18456), 0px 1.8065619053231785px 1.8065619053231785px -1.25px rgba(0, 0, 0, 0.17997), 0px 3.6217592146567767px 3.6217592146567767px -1.875px rgba(0, 0, 0, 0.17241), 0px 6.8655999097303715px 6.8655999097303715px -2.5px rgba(0, 0, 0, 0.15889), 0px 13.646761411524492px 13.646761411524492px -3.125px rgba(0, 0, 0, 0.13064), 0px 30px 30px -3.75px rgba(0, 0, 0, 0.0625)",
-        padding: "2px 32px",
+        padding: "2px 16px",
         height: "min-content",
         width: "min-content",
       }}
@@ -81,12 +81,12 @@ export function ConnectWalletButton() {
         <span
           className="z-10 text-[14px] leading-[1.7em] text-gray-200 whitespace-nowrap"
         >
-          Get your Pandora's Key&emsp; 
+          Get your Pandora's Key
         </span>
 
         {/* Button Text */}
         <span
-          className="z-10 text-[14px] leading-[1.7em] text-gray-200"
+          className="z-10 text-[14px] leading-[1.7em] text-gray-200 pl-2"
         >
           {isConnecting ? "Conectando..." : "🔑"}
         </span>
