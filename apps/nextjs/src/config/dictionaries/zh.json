@@ -415,5 +415,17 @@
     "white_paper": "WHITE PAPER",
     "support": "SUPPORT",
     "terms_privacy": "TERMS | PRIVACY"
+  },
+  "activos": {
+    "title": "数字资产市场",
+    "subtitle": "在数字世界中探索独特的投资机会。",
+    "assets": {
+      "casa_bella": { "tag": "房地产", "title": "卡萨贝拉", "description": "享有海景和高端装修的豪华别墅。" },
+      "vista_horizonte": { "tag": "房地产", "title": "维斯塔地平线", "description": "在一个美妙的地方欣赏海湾的最佳景色。" },
+      "narai": { "tag": "房地产", "title": "纳莱", "description": "拥有海景、舒适和豪华的公寓。" },
+      "startup_ia": { "tag": "初创公司", "title": "人工智能初创公司", "description": "用人工智能彻底改变市场。" },
+      "fintech": { "tag": "初创公司", "title": "创新金融科技", "description": "提供全新的支付解决方案。" },
+      "ecommerce": { "tag": "初创公司", "title": "可持续电子商务", "description": "具有巨大增长潜力的可持续时尚。" }
+    }
   }
 }

@@ -24,7 +24,7 @@
     "get_started": "어떻게?",
     "hero_supertitle": "투자의 미래, 새로운 시대",
     "hero_title": "부동산에 대한 포괄적 투자",
-    "hero_subtitle": "참여 지분을 토큰화하고, 실제 수익을 받고, 중개인 없는 새로운 시대에 동참하세요.",
+    "hero_subtitle": "참여 지분을 토큰화하고, 실제 수익을 받고, 중개인 없는 새로운 시대에 동참하세요。",
     "hero_cta1": "지금 시작하기",
     "hero_cta2": "작동 방식",
     "hero_cta3": "왜 판도라즈인가?",
@@ -46,27 +46,27 @@
     "login": "로그인",
     "signup": "가입하기",
     "contributors": {
-      "contributors_desc": "더 많은 부동산과 신생 기업이 참여함에 따라 많은 사람들이 Pandora's의 혜택을 받았습니다",
+      "contributors_description": "더 많은 부동산과 신생 기업이 참여함에 따라 많은 사람들이 Pandora's의 혜택을 받았습니다",
       "developers_first": "",
       "developers_second": ""
     },
     "right_side": {
       "deploy_on_vercel_title": "유형과 디지털의 융합",
-      "deploy_on_vercel_desc": "Pandoras는 부동산 및 투자 프로젝트에 쉽고 안전하게 투자할 수 있는 플랫폼입니다。",
+      "deploy_on_vercel_description": "Pandoras는 부동산 및 투자 프로젝트에 쉽고 안전하게 투자할 수 있는 플랫폼입니다。",
       "ship_on_cloudflare_title": "어떻게?",
-      "ship_on_cloudflare_desc": "디지털 지분을 획득하여 독점적인 기회에 접근하고 추가 수입을 얻을 수 있습니다。",
+      "ship_on_cloudflare_description": "디지털 지분을 획득하여 독점적인 기회에 접근하고 추가 수입을 얻을 수 있습니다。",
       "showcase_title": "전통적인 투자 접근 방식을 혁신합니다",
-      "showcase_desc": "귀하에게 맞는 자본으로 고가치 자산에 대한 투자에 접근하세요。"
+      "showcase_description": "귀하에게 맞는 자본으로 고가치 자산에 대한 투자에 접근하세요。"
     },
     "features_grid": {
       "monorepo_title": "다음 부동산을 얻으세요",
-      "monorepo_desc": "가입하고 독점적인 부동산에 투자할 수 있는 무료 디지털 지분을 받으세요。",
+      "monorepo_description": "가입하고 독점적인 부동산에 투자할 수 있는 무료 디지털 지분을 받으세요。",
       "i18n_title": "특별 가격으로 투자하기",
-      "i18n_desc": "지분을 보유하면 사전 판매 기간 동안 특별 가격으로 투자할 수 있습니다。 각 투자는 프로젝트 가치의 일부를 나타냅니다。",
+      "i18n_description": "지분을 보유하면 사전 판매 기간 동안 특별 가격으로 투자할 수 있습니다。 각 투자는 프로젝트 가치의 일부를 나타냅니다。",
       "payments_title": "수익 창출 및 성장",
-      "payments_desc": "토큰으로 임대 수익 등 독점적 혜택을 누리고, 투자 전부를 소유할 수 있는 기회를 잡으세요。",
+      "payments_description": "토큰으로 임대 수익 등 독점적 혜택을 누리고, 투자 전부를 소유할 수 있는 기회를 잡으세요。",
       "nextauth_title": "",
-      "nextauth_desc": ""
+      "nextauth_description": ""
     },
     "investment_steps": {
       "title": "투자는 이렇게 쉽습니다 →",
@@ -104,12 +104,12 @@
       "second_text2": "",
       "academic_backing": {
         "title": "데이터 및 학술적 지원",
-        "subtitle": "실제 시장의 디지털 전환 덕분에 2030년에는 토큰화 가능한 자산이 26조 달러에 이를 것으로 예상됩니다."
+        "subtitle": "실제 시장의 디지털 전환 덕분에 2030년에는 토큰화 가능한 자산이 26조 달러에 이를 것으로 예상됩니다。"
       }
     },
     "transform_token": {
       "title": "독점적인 혜택 즐기기",
-      "desc": "더 많은 지분을 축적하여 특별한 혜택을 누리고, 임대 수익을 얻으며, 투자를 완전한 소유권으로 전환할 수 있는 기회를 즐기세요。",
+      "description": "더 많은 지분을 축적하여 특별한 혜택을 누리고, 임대 수익을 얻으며, 투자를 완전한 소유권으로 전환할 수 있는 기회를 즐기세요。",
       "more_details": "자세히 보기",
       "close": "닫기",
       "part1_title": "독점 특권 해제",
@@ -119,7 +119,7 @@
     },
     "people_comment": {
       "title": "사람들이 말하는 것",
-      "desc": "우리의 말만 믿지 마세요。 실제 사용자가 Pandoras에 대해 말하는 내용을 확인하세요。"
+      "description": "우리의 말만 믿지 마세요。 실제 사용자가 Pandoras에 대해 말하는 내용을 확인하세요。"
     },
     "what_is_pandoras": {
       "title": "Pandora’s Finance란 무엇인가요?",
@@ -410,10 +410,22 @@
   },
   "footer": {
     "title": "Pandora's",
-    "slogan": "실물 자산 투자의 미래.",
-    "copyright": "© 2025 Pandora's Foundation. 모든 권리 보유.",
+    "slogan": "실물 자산 투자의 미래。",
+    "copyright": "© 2025 Pandora's Foundation. 모든 권리 보유。",
     "white_paper": "WHITE PAPER",
     "support": "SUPPORT",
     "terms_privacy": "TERMS | PRIVACY"
+  },
+  "activos": {
+    "title": "디지털 자산 마켓플레이스",
+    "subtitle": "디지털 세계에서 독특한 투자 기회를 탐색하십시오.",
+    "assets": {
+      "casa_bella": { "tag": "부동산", "title": "카사 벨라", "description": "바다 전망과 고급 마감재를 갖춘 고급 빌라." },
+      "vista_horizonte": { "tag": "부동산", "title": "비스타 호라이즌테", "description": "멋진 장소에서 바라보는 만의 최고의 전망." },
+      "narai": { "tag": "부동산", "title": "나라이", "description": "바다 전망, 편안함, 고급스러움을 갖춘 콘도미니엄." },
+      "startup_ia": { "tag": "스타트업", "title": "AI 스타트업", "description": "인공 지능으로 시장을 혁신합니다." },
+      "fintech": { "tag": "스타트업", "title": "혁신적인 핀테크", "description": "근본적으로 새로운 결제 솔루션을 제공합니다." },
+      "ecommerce": { "tag": "스타트업", "title": "지속 가능한 전자 상거래", "description": "큰 성장 잠재력을 가진 지속 가능한 패션." }
+    }
   }
 }

@@ -415,5 +415,17 @@
     "white_paper": "WHITE PAPER",
     "support": "SUPPORT",
     "terms_privacy": "TERMS | PRIVACY"
+  },
+  "activos": {
+    "title": "Digital Asset Marketplace",
+    "subtitle": "Explore unique investment opportunities in the digital world.",
+    "assets": {
+      "casa_bella": { "tag": "REAL ESTATE", "title": "Casa Bella", "description": "A luxury villa with sea views and high-end finishes." },
+      "vista_horizonte": { "tag": "REAL ESTATE", "title": "Vista Horizonte", "description": "The best view of the Bay in a wonderful place." },
+      "narai": { "tag": "REAL ESTATE", "title": "Narai", "description": "Condominiums with sea view, comfort and luxury." },
+      "startup_ia": { "tag": "STARTUP", "title": "AI Startup", "description": "Revolutionizing the market with artificial intelligence." },
+      "fintech": { "tag": "STARTUP", "title": "Innovative Fintech", "description": "Offering radically new payment solutions." },
+      "ecommerce": { "tag": "STARTUP", "title": "Sustainable E-commerce", "description": "Sustainable fashion with great growth potential." }
+    }
   }
 }

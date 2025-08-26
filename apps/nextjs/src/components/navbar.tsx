@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { useSelectedLayoutSegment } from "next/navigation";
+import { usePathname, useSelectedLayoutSegment } from "next/navigation";
 
 import { cn } from "@saasfly/ui";
 
@@ -52,6 +52,18 @@ export function NavBar({
 }: NavBarProps) {
   const scrollDirection = useScrollDirection();
   const [scrolled, setScrolled] = React.useState(false);
+  const pathname = usePathname();
+
+  const getBasePath = () => {
+    if (!pathname) return "";
+    const segments = pathname.split('/');
+    if (segments[1] === lang) {
+      return segments.slice(2).join('/');
+    }
+    return segments.slice(1).join('/');
+  };
+
+  const basePath = getBasePath();
 
   React.useEffect(() => {
     const handleScroll = () => {
@@ -141,7 +153,7 @@ export function NavBar({
             ) : null}
             {rightElements}
             <div className="hidden md:block w-[1px] h-8 bg-accent" />
-            <LocaleChange url={"/"} />
+            <LocaleChange url={basePath} />
             <ConnectWalletButton />
           </div>
         </div>
