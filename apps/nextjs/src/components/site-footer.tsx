@@ -5,10 +5,10 @@ import { DitherImage } from './dither-image';
 import Link from 'next/link';
 
 const images = [
-    '/images/Pandoart.png',
-    '/images/Pandoart2.png',
+    '/images/Pandoart.jpg',
+    '/images/Pandoart2.jpg',
     '/images/download (2).png',
-    '/images/Pandoart3.png',
+    '/images/Pandoart3.jpg',
     '/images/download (4).png',
 ];
 
@@ -18,7 +18,7 @@ export const SiteFooter: React.FC = () => {
     React.useEffect(() => {
         const interval = setInterval(() => {
             setCurrentImageIndex(prevIndex => (prevIndex + 1) % images.length);
-        }, 500); // Change image every 0.5 seconds
+        }, 500);
 
         return () => clearInterval(interval);
     }, []);
@@ -45,7 +45,7 @@ export const SiteFooter: React.FC = () => {
 
                     {/* Right Column */}
                     <div className="relative w-full aspect-[4/5] rounded-lg overflow-hidden">
-                        <DitherImage imageSrc={images[currentImageIndex]!} />
+                        <DitherImage imageSrc={images[currentImageIndex]!} pixelSize={2} pixelated={true} />
                     </div>
                 </div>
             </div>
