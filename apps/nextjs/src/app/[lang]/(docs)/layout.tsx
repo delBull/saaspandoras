@@ -37,7 +37,7 @@ export default async function DocsLayout(props: DocsLayoutProps) {
         />
       </Suspense>
       <div className="container flex-1">{children}</div>
-      <SiteFooter className="border-t" params={{ lang }} dict={dict.common} />
+      <SiteFooter className="border-t" params={{ lang }} dict={dict} />
     </div>
   );
 }
