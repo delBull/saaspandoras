@@ -81,13 +81,15 @@ interface DitherImageProps {
     pixelSize?: number;
     backgroundColor?: string;
     dotColor?: string;
+    pixelated?: boolean;
 }
 
 export const DitherImage: React.FC<DitherImageProps> = ({ 
     imageSrc,
-    pixelSize = 4,
+    pixelSize = 6,
     backgroundColor = "#000000",
-    dotColor = "#FFFFFF"
+    dotColor = "#FFFFFF",
+    pixelated = true,
 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const imageRef = useRef<HTMLImageElement | null>(null);
@@ -100,15 +102,16 @@ export const DitherImage: React.FC<DitherImageProps> = ({
         if (!ctx) return;
 
         const img = imageRef.current;
+        const currentPixelSize = pixelated ? pixelSize : 1;
         const aspectRatio = img.naturalWidth / img.naturalHeight;
         const baseResolution = canvas.clientWidth;
 
         let targetWidth, targetHeight;
         if (aspectRatio >= 1) {
-            targetWidth = Math.floor(baseResolution / pixelSize);
+            targetWidth = Math.floor(baseResolution / currentPixelSize);
             targetHeight = Math.floor(targetWidth / aspectRatio);
         } else {
-            targetHeight = Math.floor(baseResolution / pixelSize);
+            targetHeight = Math.floor(baseResolution / currentPixelSize);
             targetWidth = Math.floor(targetHeight * aspectRatio);
         }
 
@@ -118,11 +121,12 @@ export const DitherImage: React.FC<DitherImageProps> = ({
         ctx.imageSmoothingEnabled = false;
         ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
 
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const processedData = DitherProcessor.floydSteinberg(imageData, 128, backgroundColor, dotColor);
-        
-        ctx.putImageData(processedData, 0, 0);
-    }, [pixelSize, backgroundColor, dotColor]);
+        if (pixelated) {
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const processedData = DitherProcessor.floydSteinberg(imageData, 128, backgroundColor, dotColor);
+            ctx.putImageData(processedData, 0, 0);
+        }
+    }, [pixelSize, backgroundColor, dotColor, pixelated]);
 
     useEffect(() => {
         const img = new Image();
