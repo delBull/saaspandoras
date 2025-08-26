@@ -405,5 +405,10 @@
     "toinvest": "Amount to Invest (USDC)",
     "subtitle": "Invest in the Pool",
     "balance": "Your USDC Balance (testnet)"
+  },
+  "footer": {
+    "title": "Pandora's",
+    "slogan": "The future of real-world asset investment.",
+    "copyright": "© 2025 Pandora's Foundation. All rights reserved."
   }
 }

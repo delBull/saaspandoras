@@ -9,7 +9,7 @@ import { cn } from "@saasfly/ui";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { MainNav } from "./main-nav";
 import { LocaleChange } from "~/components/locale-change";
-import useScroll from "~/hooks/use-scroll";
+import { useScrollDirection } from "~/hooks/use-scroll-direction";
 import type { MainNavItem, MarketingDictionary } from "~/types";
 import { ConnectWalletButton } from "./connect-wallet-button";
 import { Shadows_Into_Light } from "next/font/google";
@@ -50,15 +50,26 @@ export function NavBar({
   params: { lang },
   marketing,
 }: NavBarProps) {
-  const scrolled = useScroll(50);
+  const scrollDirection = useScrollDirection();
+  const [scrolled, setScrolled] = React.useState(false);
+
+  React.useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.pageYOffset > 50);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   const segment = useSelectedLayoutSegment();
 
   return (
     <Tooltip.Provider>
       <header
         className={cn(
-          "sticky top-0 z-40 flex w-full justify-center border-border bg-background/60 backdrop-blur-xl transition-all",
+          "sticky top-0 z-40 flex w-full justify-center border-border bg-background/60 backdrop-blur-xl transition-all duration-300",
           scroll ? (scrolled ? "border-b" : "bg-background/0") : "border-b",
+          scrollDirection === "down" ? "-translate-y-full" : "translate-y-0"
         )}
       >
         <div className="container flex h-16 items-center justify-between py-4">

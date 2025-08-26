@@ -250,6 +250,11 @@ export interface Dictionary {
     subtitle: string;
     balance: string;
   };
+  footer: {
+    title: string;
+    slogan: string;
+    copyright: string;
+  };
 }
 
 export interface MarketingDictionary {

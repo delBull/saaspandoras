@@ -405,5 +405,10 @@
     "toinvest": "Monto a invertir (USDC)",
     "subtitle": "Invertir en el Pool",
     "balance": "Tu balance USDC (testnet)"
+  },
+  "footer": {
+    "title": "Pandora's",
+    "slogan": "El futuro de la inversión en activos del mundo real.",
+    "copyright": "© 2025 Pandora's Foundation. Todos los derechos reservados."
   }
 }

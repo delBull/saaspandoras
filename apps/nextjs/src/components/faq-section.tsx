@@ -81,7 +81,7 @@ export const FaqSection: React.FC<FaqSectionProps> = ({ dict }) => {
   };
 
   return (
-    <section id="faq" className="container py-16 md:py-24 bg-black">
+    <section id="faq" className="container py-16 md:py-24 mt-28">
       <div className="mx-auto flex max-w-md md:max-w-2xl flex-col items-start gap-4">
         {currentTime && <p className="text-md font-mono text-gray-500 text-left mb-0">From FAQ Planet, {currentTime}</p>}
         {dict.faqs.map((faq, index) => (

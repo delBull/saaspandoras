@@ -405,5 +405,10 @@
     "toinvest": "投资金额（USDC）",
     "subtitle": "投资该池",
     "balance": "您的USDC余额（测试网）"
+  },
+  "footer": {
+    "title": "Pandora's",
+    "slogan": "真实世界资产投资的未来。",
+    "copyright": "© 2025 Pandora's Foundation. 版权所有。"
   }
 }
