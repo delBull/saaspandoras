@@ -210,7 +210,7 @@ function PerlinWall(props: PerlinWallProps) {
 
     return (
         <motion.div ref={containerRef} style={{ width: "100%", height: "100%", borderRadius: radius, overflow: "hidden" }}>
-            <canvas ref={canvasRef} style={{ ...animationStyles, width: "100%", height: "100%" }} />
+            <canvas ref={canvasRef} style={{ ...animationStyles }} />
             <style>{`
                 @keyframes moveMask {
                     0% { 
@@ -239,7 +239,7 @@ interface ShimmerDotHeroProps {
 
 export const ShimmerDotHero = ({ dict }: ShimmerDotHeroProps) => {
   return (
-    <section className="relative grid h-screen w-full place-content-center overflow-hidden bg-black px-4 md:px-8 xl:px-16">
+    <section className="relative grid h-screen w-full place-content-center overflow-hidden px-4 md:px-8 xl:px-16">
       <PerlinWall 
         shapeType="Circle"
         size={4}

@@ -91,7 +91,7 @@ export default async function IndexPage(props: {
 
       <section className="w-full px-8 sm:px-0 md:px-0 xl:px-0">
         <div className="flex h-full w-full flex-col items-center pb-[100px] pt-10">
-          <div className="absolute z-[-100] opacity-50">
+          <div className="absolute z-[-100] opacity-50 md:opacity-100">
             <Image
               src="/images/logopure.png"
               width="480"

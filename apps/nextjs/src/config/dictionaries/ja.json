@@ -405,5 +405,10 @@
     "toinvest": "投資金額（USDC）",
     "subtitle": "プールに投資する",
     "balance": "あなたのUSDC残高（テストネット）"
+  },
+  "footer": {
+    "title": "Pandora's",
+    "slogan": "実世界資産投資の未来。",
+    "copyright": "© 2025 Pandora's Foundation. 全著作権所有。"
   }
 }

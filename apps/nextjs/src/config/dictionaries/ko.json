@@ -405,5 +405,10 @@
     "toinvest": "투자 금액(USDC)",
     "subtitle": "풀에 투자하기",
     "balance": "당신의 USDC 잔액(테스트넷)"
+  },
+  "footer": {
+    "title": "Pandora's",
+    "slogan": "실물 자산 투자의 미래.",
+    "copyright": "© 2025 Pandora's Foundation. 모든 권리 보유."
   }
 }
