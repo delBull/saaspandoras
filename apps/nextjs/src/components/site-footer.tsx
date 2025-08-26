@@ -5,10 +5,10 @@ import { DitherImage } from './dither-image';
 import Link from 'next/link';
 
 const images = [
-    '/images/download.png',
-    '/images/download (1).png',
+    '/images/Pandoart.png',
+    '/images/Pandoart2.png',
     '/images/download (2).png',
-    '/images/download (3).png',
+    '/images/Pandoart3.png',
     '/images/download (4).png',
 ];
 
