@@ -91,13 +91,19 @@
       "investments_panel": "Inversiones activas y rendimientos en tiempo real"
     },
     "sponsor": {
-      "title": "Respaldado por nuestros colaboradores",
-      "donate": "Consigue tu siguiente propiedad"
+      "title": "¿Listo para transformar tu forma de invertir?",
+      "donate": "Consigue tu siguiente propiedad",
+      "subtitle": "Sé parte de Pandora’s hoy y accede a una nueva era de activos digitales reales"
     },
     "video": {
       "first_text": "Obtén participaciones digitales que representan una parte ",
       "second_text1": "del valor de la propiedad y participa en exclusivos activos del mundo real mediante ",
-      "time_text": "inversiones"
+      "time_text": "inversiones",
+      "second_text2": "",
+      "academic_backing": {
+        "title": "Datos y respaldo académico",
+        "subtitle": "Se proyecta que los activos tokenizables alcanzarán 6 trillones USD en 2030 gracias a la transformación digital de los mercados reales."
+      }
     },
     "transform_token": {
       "title": "Disfruta de Beneficios Exclusivos",
@@ -137,25 +143,70 @@
       "ventajas_title2": "Datos y respaldo académico",
       "ventajas_description2": "“Se proyecta que los activos tokenizables alcanzarán $26 trillones USD en 2030 gracias a la transformación digital de los mercados reales.” (Fuente: G2 Learn)",
       "ventajas_title3": "Una tendencia imparable",
-      "ventajas_description3": "El mercado global de tokenización de bienes raíces podría superar los $3 billones USD para 2030, representando hasta el 15 % de los activos inmobiliarios globales. Pandora’s permite ser parte de este movimiento desde hoy"  
+      "ventajas_description3": "El mercado global de tokenización de bienes raíces podría superar los $3 billones USD para 2030, representando hasta el 15 % de los activos inmobiliarios globales. Pandora’s permite ser parte de este movimiento desde hoy"
     },
-      "skeleton_one": {
-        "items": [
-          { "title": "Inversiones accesibles desde montos bajos." },
-          { "title": "Alta liquidez en un mercado digital global." },
-          { "title": "Transparencia de fondos con blockchain." },
-          { "title": "Diversificación en bienes raíces y emprendimiento." }
-        ]
-      },
-      "skeleton_two": {
-        "items": [
-          { "title": "Legalidad formal" },
-          { "title": "Tecnología sólida (blockchain)" },
-          { "title": "Activos reales tokenizados" },
-          { "title": "Transparencia total en transacciones" }
-        ]
-      }
+    "skeleton_one": {
+      "items": [
+        {
+          "title": "Inversiones accesibles desde montos bajos."
+        },
+        {
+          "title": "Alta liquidez en un mercado digital global."
+        },
+        {
+          "title": "Transparencia de fondos con blockchain."
+        },
+        {
+          "title": "Diversificación en bienes raíces y emprendimiento."
+        }
+      ]
     },
+    "skeleton_two": {
+      "items": [
+        {
+          "title": "Legalidad formal"
+        },
+        {
+          "title": "Tecnología sólida (blockchain)"
+        },
+        {
+          "title": "Activos reales tokenizados"
+        },
+        {
+          "title": "Transparencia total en transacciones"
+        }
+      ]
+    },
+    "academic_backing": {
+      "title": "Datos y respaldo académico",
+      "subtitle": "Se proyecta que los activos tokenizables alcanzarán 6 trillones USD en 2030 gracias a la transformación digital de los mercados reales."
+    },
+    "faq": {
+      "title": "Preguntas Frecuentes",
+      "faqs": [
+        {
+          "question": "¿Qué es Pandora’s Finance y cómo funciona?",
+          "answer": "Plataforma para invertir en fracciones de propiedades y startups: te registras, obtienes un derecho de acceso y participas en rondas de inversión respaldadas legalmente."
+        },
+        {
+          "question": "¿Cómo invierto y cuánto necesito?",
+          "answer": "Regístrate, reclama tu acceso y elige proyecto. El mínimo varía por oferta; puedes pagar en fiat o stablecoins según cada proyecto."
+        },
+        {
+          "question": "¿Cómo protegen mi dinero?",
+          "answer": "Fondos custodiados en fideicomiso/escrow, operaciones en smart contracts y validación multisig; la estructura legal aparece en cada oferta."
+        },
+        {
+          "question": "¿Qué rendimientos puedo esperar y cuáles son los riesgos?",
+          "answer": "Rendimientos: dependen del proyecto (renta, plusvalía, venta). Riesgos: construcción, mercado, regulatorios y liquidez. No hay garantías."
+        },
+        {
+          "question": "¿Cuándo y cómo recibo mi retorno o puedo salir?",
+          "answer": "Pagos según calendario del proyecto (p. ej. trimestral o al cierre). Salidas anticipadas pueden permitirse vía mercado secundario o transferencias, sujetas a condiciones y posibles penalizaciones."
+        }
+      ]
+    }
+  },
   "login": {
     "back": "Atrás",
     "welcome_back": "Bienvenido de nuevo",
