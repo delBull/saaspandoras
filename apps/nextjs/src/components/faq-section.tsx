@@ -18,15 +18,15 @@ const FaqItem: React.FC<FaqItemProps> = ({ question, answer, isOpen, setIsOpen, 
     <div className="w-full">
       <div className="flex items-start gap-3 cursor-pointer" onClick={setIsOpen}>
         <div className="relative w-fit max-w-[80%] group">
-          <div className={`bg-gray-200 dark:bg-gray-800 p-3 rounded-2xl`}>
-            <p className={`font-mono font-medium transition-colors ${isOpen ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-gray-200'}`}>{question}</p>
+          <div className={`bg-gray-200 border border-neutral-200 dark:border-neutral-800 bg-white/50 dark:bg-neutral-900/50 backdrop-blur-sm p-3 rounded-2xl`}>
+            <p className={`font-mono font-medium transition-colors ${isOpen ? 'text-lime-300 dark:text-lime-200' : 'text-gray-900 dark:text-gray-200'}`}>{question}</p>
           </div>
           {isThird && <span className="absolute -top-0 -left-3 text-2xl transform -rotate-12">⭐</span>}
           {isFirst && <span className="absolute -top-3 -right-2 text-2xl transform rotate-[30deg]">❤️</span>}
         </div>
         <div 
-          className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-colors duration-300 ${isOpen ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'}`}>
-          {isOpen ? <Minus size={16} className="text-white" /> : <Plus size={16} className="text-gray-800 dark:text-white" />}
+          className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-colors duration-300 ${isOpen ? 'bg-lime-300' : 'bg-gray-200 dark:border border-neutral-200 dark:border-neutral-800 bg-white/50 dark:bg-neutral-900/50 backdrop-blur-sm'}`}>
+          {isOpen ? <Minus size={16} className="text-gray-800" /> : <Plus size={16} className="text-gray-800 dark:text-white" />}
         </div>
       </div>
 
@@ -40,7 +40,7 @@ const FaqItem: React.FC<FaqItemProps> = ({ question, answer, isOpen, setIsOpen, 
             className="flex justify-end mt-2"
           >
             <div className="relative w-fit max-w-[80%]">
-              <div className="bg-blue-600 text-white p-3 rounded-2xl">
+              <div className="bg-gradient-to-r from-lime-300 to-lime-200 text-black p-3 rounded-2xl">
                 <p>{answer}</p>
               </div>
             </div>
