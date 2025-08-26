@@ -69,7 +69,7 @@ export default async function DashboardLayout(props: EditLayoutProps) {
       <SiteFooter
         className="border-t"
         params={{ lang: `${lang}` }}
-        dict={dict.common}
+        dict={dict}
       />
     </div>
   );
