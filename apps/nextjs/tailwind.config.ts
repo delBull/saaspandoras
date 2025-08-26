@@ -9,6 +9,9 @@ export default {
   plugins: [require("tailwindcss-animate")],
   theme: {
     extend: {
+      scale: {
+        '150': '1.5',
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
