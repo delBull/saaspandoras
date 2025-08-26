@@ -426,6 +426,11 @@
       "startup_ia": { "tag": "STARTUP", "title": "Startup de IA", "description": "Revolucionando el mercado con inteligencia artificial." },
       "fintech": { "tag": "STARTUP", "title": "Fintech Innovadora", "description": "Ofreciendo soluciones de pago radicalmente nuevas." },
       "ecommerce": { "tag": "STARTUP", "title": "E-commerce Sostenible", "description": "Moda sostenible con un gran potencial de crecimiento." }
+    },
+    "info_modal": {
+      "title": "Sobre Nuestro Marketplace",
+      "paragraph1": "Nuestro marketplace conecta a inversionistas con activos reales y digitales tokenizados, ofreciendo una nueva forma de participar en la economía global. Aquí no solo exploras oportunidades: accedes a proyectos inmobiliarios, startups y negocios respaldados por bienes tangibles y estructuras legales sólidas. Cada inversión está gestionada con transparencia blockchain, protegiendo tu capital y facilitando la liquidez a través de stablecoins y herramientas DeFi.",
+      "paragraph2": "Con Pandoras, invertir deja de ser exclusivo para grandes corporativos: ahora puedes diversificar tu portafolio, participar desde montos accesibles y recibir rendimientos generados por la economía real. Nuestra plataforma te guía de principio a fin: desde la selección y análisis de proyectos hasta la gestión de tus activos tokenizados, todo dentro de un ecosistema seguro, regulado y diseñado para crecer contigo."
     }
   }
 }

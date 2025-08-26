@@ -260,6 +260,11 @@ export interface Dictionary {
         description: string;
       };
     };
+    info_modal: {
+      title: string;
+      paragraph1: string;
+      paragraph2: string;
+    };
   };
   footer: {
     title: string;
