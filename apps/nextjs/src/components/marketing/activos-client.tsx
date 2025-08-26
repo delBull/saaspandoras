@@ -1,7 +1,15 @@
 'use client';
 
 import { motion, type Variants } from "framer-motion";
-import { KeyRound } from 'lucide-react';
+import { Info, KeyRound } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@saasfly/ui/dialog";
 
 // --- Card Component ---
 function MarketplaceCard({ 
@@ -16,8 +24,8 @@ function MarketplaceCard({
   return (
     <motion.div
       variants={cardVariants}
-      className="group relative flex flex-col justify-between p-6 overflow-hidden rounded-md 
-                 border border-gray-800/80 shadow-lg h-96 font-sans"
+      className="group relative flex flex-col justify-between p-6 overflow-hidden rounded-xl 
+                 border border-gray-700/80 shadow-lg h-96 font-sans"
     >
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden rounded-xl">
           <div className="absolute -top-1/2 -left-1/2 w-[200%] h-[200%] bg-gradient-to-br from-transparent via-lime-100/10 to-transparent 
@@ -29,7 +37,7 @@ function MarketplaceCard({
           <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-lime-300 font-shadows">
             {tag}
           </p>
-          <h3 className="mb-4 text-3xl font-mono font-bold text-white leading-tight">{title}</h3>
+          <h3 className="mb-4 text-3xl font-bold text-white leading-tight">{title}</h3>
           <p className="text-gray-300 text-sm">{description}</p>
         </div>
         <div className="mt-auto flex justify-end">
@@ -56,9 +64,33 @@ export function ActivosClient({ dict }: { dict: any }) {
           <h1 className="text-5xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-gray-300 to-gray-100">
             {dict.activos.title}
           </h1>
-          <p className="mt-4 text-lg text-gray-400">
-            {dict.activos.subtitle}
-          </p>
+          <div className="flex items-center justify-center gap-2 mt-4">
+            <p className="text-lg text-gray-400">
+              {dict.activos.subtitle}
+            </p>
+            <Dialog>
+              <DialogTrigger asChild>
+                <button className="transition-transform duration-200 ease-in-out hover:scale-95 active:scale-90">
+                  <Info className="h-5 w-5 text-gray-400 hover:text-gray-200" />
+                </button>
+              </DialogTrigger>
+              <DialogContent className="fixed left-[50%] top-[50%] max-h-[85vh] w-[90vw] max-w-[800px] translate-x-[-50%] translate-y-[-50%] rounded-2xl bg-white dark:bg-neutral-900 p-8 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] overflow-y-auto">
+                <DialogTitle className="sr-only">{dict.activos.info_modal.title}</DialogTitle>
+                <div className="space-y-8">
+                  <div>
+                    <DialogDescription className="text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                      {dict.activos.info_modal.paragraph1}
+                    </DialogDescription>
+                  </div>
+                  <div>
+                    <DialogDescription className="text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                      {dict.activos.info_modal.paragraph2}
+                    </DialogDescription>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </motion.div>
 
         <motion.div
