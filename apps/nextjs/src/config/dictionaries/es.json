@@ -415,5 +415,17 @@
     "white_paper": "LIBRO BLANCO",
     "support": "SOPORTE",
     "terms_privacy": "TÉRMINOS | PRIVACIDAD"
+  },
+  "activos": {
+    "title": "Marketplace de Activos Digitales",
+    "subtitle": "Explora oportunidades de inversión únicas en el mundo digital.",
+    "assets": {
+      "casa_bella": { "tag": "REAL ESTATE", "title": "Casa Bella", "description": "Una villa de lujo con vista al mar y acabados de alta gama." },
+      "vista_horizonte": { "tag": "REAL ESTATE", "title": "Vista Horizonte", "description": "La mejor vista de la Bahía en un lugar maravilloso." },
+      "narai": { "tag": "REAL ESTATE", "title": "Narai", "description": "Condominios con vista al mar, comodidad y lujo." },
+      "startup_ia": { "tag": "STARTUP", "title": "Startup de IA", "description": "Revolucionando el mercado con inteligencia artificial." },
+      "fintech": { "tag": "STARTUP", "title": "Fintech Innovadora", "description": "Ofreciendo soluciones de pago radicalmente nuevas." },
+      "ecommerce": { "tag": "STARTUP", "title": "E-commerce Sostenible", "description": "Moda sostenible con un gran potencial de crecimiento." }
+    }
   }
 }

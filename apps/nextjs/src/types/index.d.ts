@@ -250,6 +250,17 @@ export interface Dictionary {
     subtitle: string;
     balance: string;
   };
+  activos: {
+    title: string;
+    subtitle: string;
+    assets: {
+      [key: string]: {
+        tag: string;
+        title: string;
+        description: string;
+      };
+    };
+  };
   footer: {
     title: string;
     slogan: string;

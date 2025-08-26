@@ -415,5 +415,17 @@
     "white_paper": "WHITE PAPER",
     "support": "SUPPORT",
     "terms_privacy": "TERMS | PRIVACY"
+  },
+  "activos": {
+    "title": "デジタル資産マーケットプレイス",
+    "subtitle": "デジタル世界でユニークな投資機会を探る。",
+    "assets": {
+      "casa_bella": { "tag": "不動産", "title": "カーサ・ベラ", "description": "海の景色と高級仕上げの豪華なヴィラ。" },
+      "vista_horizonte": { "tag": "不動産", "title": "ビスタ・オリゾンテ", "description": "素晴らしい場所からの湾の最高の眺め。" },
+      "narai": { "tag": "不動産", "title": "ナライ", "description": "海の景色、快適さ、豪華さを備えたコンドミニアム。" },
+      "startup_ia": { "tag": "スタートアップ", "title": "AIスタートアップ", "description": "人工知能で市場を革命する。" },
+      "fintech": { "tag": "スタートアップ", "title": "革新的フィンテック", "description": "根本的に新しい支払いソリューションを提供する。" },
+      "ecommerce": { "tag": "スタートアップ", "title": "持続可能なEコマース", "description": "大きな成長の可能性を秘めた持続可能なファッション。" }
+    }
   }
 }
