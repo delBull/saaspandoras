@@ -41,6 +41,8 @@
     "main_nav_products": "製品",
     "main_nav_blog": "ブログ",
     "main_nav_documentation": "ドキュメンテーション",
+    "main_nav_home": "HOME",
+    "main_nav_about": "ABOUT",
     "login": "ログイン",
     "signup": "登録する",
     "contributors": {
@@ -409,6 +411,9 @@
   "footer": {
     "title": "Pandora's",
     "slogan": "実世界資産投資の未来。",
-    "copyright": "© 2025 Pandora's Foundation. 全著作権所有。"
+    "copyright": "© 2025 Pandora's Foundation. 全著作権所有。",
+    "white_paper": "WHITE PAPER",
+    "support": "SUPPORT",
+    "terms_privacy": "TERMS | PRIVACY"
   }
 }

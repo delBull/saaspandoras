@@ -14,7 +14,9 @@ const images = [
 
 import { useFitText } from '~/hooks/use-fit-text';
 
-export const SiteFooter: React.FC = () => {
+import type { Dictionary } from '~/types';
+
+export const SiteFooter: React.FC<{ dict: Dictionary }> = ({ dict }) => {
     const { fontSize, ref } = useFitText<HTMLHeadingElement>({ maxFontSize: 150, minFontSize: 50 });
     const [currentImageIndex, setCurrentImageIndex] = React.useState(0);
 
@@ -34,22 +36,22 @@ export const SiteFooter: React.FC = () => {
                     <div className="flex flex-col justify-between pb-10 pt-10">
                         <div>
                             <div className="grid grid-cols-3 gap-4">
-                                <Link href="/" className="font-mono text-white text-sm hover:text-gray-100 transition-colors hover:underline-offset-1 hover:underline z-50">HOME</Link>
-                                <Link href="#" className="font-mono text-white text-sm hover:text-gray-100 transition-colors hover:underline-offset-1 hover:underline z-50">ABOUT</Link>
-                                <Link href="/pricing" className="font-mono bg-white text-black py-1 rounded-sm text-sm text-center hover:bg-gray-100 transition-colors z-50">ACTIVOS</Link>
+                                <Link href="/" className="font-mono text-white text-sm hover:text-gray-100 transition-colors hover:underline-offset-1 hover:underline z-50">{dict.marketing.main_nav_home}</Link>
+                                <Link href="#" className="font-mono text-white text-sm hover:text-gray-100 transition-colors hover:underline-offset-1 hover:underline z-50">{dict.marketing.main_nav_about}</Link>
+                                <Link href="/pricing" className="font-mono bg-white text-black py-1 rounded-sm text-sm text-center hover:bg-gray-100 transition-colors z-50">{dict.marketing.main_nav_assets}</Link>
                             </div>
-                            <h2 ref={ref} style={{ fontSize }} className="w-full text-center font-mono font-bold mb-4 whitespace-nowrap scale-y-150">PANDORA'S</h2>
+                            <h2 ref={ref} style={{ fontSize }} className="w-full text-center font-mono font-bold uppercase mb-4 whitespace-nowrap scale-y-150">{dict.footer.title}</h2>
                             {/*<p className="text-gray-400 max-w-sm mb-6">{dict.slogan}</p>*/}
                          </div>
                         <div className="border border-dashed border-gray-700 rounded-md px-6 py-6 mt-8">
                             <div className="flex justify-between mb-12">
-                                <Link href="#" className="font-mono text-sm hover:text-white transition-colors">WHITE PAPER</Link>
-                                <Link href="#" className="font-mono text-sm hover:text-white transition-colors">SUPPORT</Link>
+                                <Link href="#" className="font-mono text-sm hover:text-white transition-colors">{dict.footer.white_paper}</Link>
+                                <Link href="#" className="font-mono text-sm hover:text-white transition-colors">{dict.footer.support}</Link>
                             </div>
                             <div className="flex flex-col sm:flex-row justify-between text-xs text-gray-500">
-                                <p className="font-mono mb-2 sm:mb-0"> ® PANDORA'S FINANCE</p>
+                                <p className="font-mono mb-2 sm:mb-0">{dict.footer.copyright}</p>
                                 <div className="flex space-x-4">
-                                    <Link href="/terms" className="hover:text-white transition-colors">TERMS | PRIVACY</Link>
+                                    <Link href="/terms" className="hover:text-white transition-colors">{dict.footer.terms_privacy}</Link>
                                 </div>
                             </div>
                         </div>

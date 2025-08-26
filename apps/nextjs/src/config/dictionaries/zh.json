@@ -41,6 +41,8 @@
     "main_nav_products": "产品",
     "main_nav_blog": "博客",
     "main_nav_documentation": "文档",
+    "main_nav_home": "HOME",
+    "main_nav_about": "ABOUT",
     "login": "登录",
     "signup": "注册",
     "contributors": {
@@ -409,6 +411,9 @@
   "footer": {
     "title": "Pandora's",
     "slogan": "真实世界资产投资的未来。",
-    "copyright": "© 2025 Pandora's Foundation. 版权所有。"
+    "copyright": "© 2025 Pandora's Foundation. 版权所有。",
+    "white_paper": "WHITE PAPER",
+    "support": "SUPPORT",
+    "terms_privacy": "TERMS | PRIVACY"
   }
 }
