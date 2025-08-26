@@ -9,6 +9,9 @@ export default {
   plugins: [require("tailwindcss-animate")],
   theme: {
     extend: {
+      fontFamily: {
+        shadows: ["var(--font-shadows)"],
+      },
       scale: {
         '150': '1.5',
       },
