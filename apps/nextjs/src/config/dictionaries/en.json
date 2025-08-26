@@ -91,13 +91,19 @@
       "investments_panel": "Inversiones activas y rendimientos en tiempo real"
     },
     "sponsor": {
-      "title": "Trusted by Our Partners",
-      "donate": "Get your next property"
+      "title": "Ready to transform the way you invest?",
+      "donate": "Get your next property",
+      "subtitle": "Become part of Pandora's today and access a new era of real digital assets"
     },
     "video": {
       "first_text": "Obtain digital shares representing a portion ",
       "second_text1": "of the property's value, to participate in exclusive real world asset ",
-      "time_text": "investments"
+      "time_text": "investments",
+      "second_text2": "",
+      "academic_backing": {
+        "title": "Data and academic support",
+        "subtitle": "Tokenizable assets are projected to reach 6 trillion USD in 2030 thanks to the digital transformation of real markets."
+      }
     },
     "transform_token": {
       "title": "Enjoy Exclusive Benefits",
@@ -137,24 +143,69 @@
       "ventajas_title2": "Data and academic support",
       "ventajas_description2": "“Tokenizable assets are projected to reach $26 trillion USD in 2030 thanks to the digital transformation of real markets.” (Source: G2 Learn)",
       "ventajas_title3": "An unstoppable trend",
-      "ventajas_description3": "The global real estate tokenization market could exceed $3 trillion USD by 2030, representing up to 15% of global real estate assets. Pandora's allows you to be part of this movement from today"  
+      "ventajas_description3": "The global real estate tokenization market could exceed $3 trillion USD by 2030, representing up to 15% of global real estate assets. Pandora's allows you to be part of this movement from today"
     },
-      "skeleton_one": {
-        "items": [
-          { "title": "Accessible investments from low amounts." },
-          { "title": "High liquidity in a global digital market." },
-          { "title": "Full traceability with blockchain." },
-          { "title": "Diversification in real estate and entrepreneurship." }
-        ]
-      },
-      "skeleton_two": {
-        "items": [
-          { "title": "Formal legality" },
-          { "title": "Solid technology (blockchain)" },
-          { "title": "Tokenized real assets" },
-          { "title": "Full transparency in transactions" }
-        ]
-      }
+    "skeleton_one": {
+      "items": [
+        {
+          "title": "Accessible investments from low amounts."
+        },
+        {
+          "title": "High liquidity in a global digital market."
+        },
+        {
+          "title": "Full traceability with blockchain."
+        },
+        {
+          "title": "Diversification in real estate and entrepreneurship."
+        }
+      ]
+    },
+    "skeleton_two": {
+      "items": [
+        {
+          "title": "Formal legality"
+        },
+        {
+          "title": "Solid technology (blockchain)"
+        },
+        {
+          "title": "Tokenized real assets"
+        },
+        {
+          "title": "Full transparency in transactions"
+        }
+      ]
+    },
+    "academic_backing": {
+      "title": "Data and academic support",
+      "subtitle": "Tokenizable assets are projected to reach 6 trillion USD in 2030 thanks to the digital transformation of real markets."
+    },
+    "faq": {
+      "title": "Frequently Asked Questions",
+      "faqs": [
+        {
+          "question": "What is Pandora’s Finance and how does it work?",
+          "answer": "It's a platform to invest in fractions of properties and startups: you register, get an access right, and participate in legally backed investment rounds."
+        },
+        {
+          "question": "How do I invest and how much do I need?",
+          "answer": "Sign up, claim your access, and choose a project. The minimum varies per offer; you can pay in fiat or stablecoins depending on each project."
+        },
+        {
+          "question": "How do you protect my money?",
+          "answer": "Funds are held in trust/escrow, operations are on smart contracts with multisig validation; the legal structure is detailed in each offer."
+        },
+        {
+          "question": "What returns can I expect and what are the risks?",
+          "answer": "Returns depend on the project (rent, appreciation, sale). Risks include construction, market, regulatory, and liquidity. There are no guarantees."
+        },
+        {
+          "question": "When and how do I receive my return or can I exit?",
+          "answer": "Payments follow the project's schedule (e.g., quarterly or at closing). Early exits may be allowed via a secondary market or transfers, subject to conditions and potential penalties."
+        }
+      ]
+    }
   },
   "login": {
     "back": "Back",

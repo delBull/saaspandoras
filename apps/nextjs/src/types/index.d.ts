@@ -303,7 +303,12 @@ export interface MarketingDictionary {
   };
   sponsor: {
     title: string;
+    subtitle: string;
     donate: string;
+  };
+  academic_backing: {
+    title: string;
+    subtitle: string;
   };
   benefits_market: {
     main_title: string;
@@ -356,6 +361,13 @@ export interface MarketingDictionary {
   skeleton_two: {
     items: {
       title: string;
+    }[];
+  };
+  faq: {
+    title: string;
+    faqs: {
+      question: string;
+      answer: string;
     }[];
   };
 }

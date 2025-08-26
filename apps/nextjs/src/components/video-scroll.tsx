@@ -7,10 +7,20 @@ import { useRef, useState } from "react";
 import { ContainerScroll } from "@saasfly/ui/container-scroll-animation";
 import { ColourfulText } from "@saasfly/ui/colorful-text";
 
+interface VideoScrollDict {
+  academic_backing?: {
+    title: string;
+    subtitle: string;
+  };
+  time_text: string;
+  second_text2?: string;
+  [key: string]: any;
+}
+
 export function VideoScroll({
   dict,
 }: {
-  dict: Record<string, string> | undefined;
+  dict: VideoScrollDict | undefined;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -47,20 +57,17 @@ export function VideoScroll({
       <ContainerScroll
         titleComponent={
           <>
-            <h1 className="text-2xl md:text-4xl font-semibold text-black dark:text-white">
-              {dict?.first_text}
+            <h1 className="text-2xl md:text-4xl font-semibold text-black dark:text-gray-200">
+              {dict?.academic_backing?.title}
               <br />
-              <span className="text-2xl md:text-6xl font-bold mt-1 leading-none">
-                {dict?.second_text1}
-                <ColourfulText text={dict?.time_text ?? ""} />
-                {dict?.second_text2}
+              <span className="text-2xl md:text-5xl font-bold font-mono mt-1 leading-none">
+                {dict?.academic_backing?.subtitle}
               </span>
             </h1>
           </>
         }
       >
         <div className="relative w-full h-full flex items-center justify-center group">
-          {/* Show images and play button if not playing */}
           {!isPlaying && (
             <>
               <Image
