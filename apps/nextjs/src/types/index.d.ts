@@ -254,6 +254,9 @@ export interface Dictionary {
     title: string;
     slogan: string;
     copyright: string;
+    white_paper: string;
+    support: string;
+    terms_privacy: string;
   };
 }
 
@@ -281,6 +284,8 @@ export interface MarketingDictionary {
   main_nav_products: string;
   main_nav_blog: string;
   main_nav_documentation: string;
+  main_nav_home: string;
+  main_nav_about: string;
   login: string;
   signup: string;
   contributors: {

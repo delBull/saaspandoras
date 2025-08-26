@@ -41,6 +41,8 @@
     "main_nav_products": "Products",
     "main_nav_blog": "Blog",
     "main_nav_documentation": "Documentation",
+    "main_nav_home": "HOME",
+    "main_nav_about": "ABOUT",
     "login": "Log In",
     "signup": "Sign Up",
     "contributors": {
@@ -409,6 +411,9 @@
   "footer": {
     "title": "Pandora's",
     "slogan": "The future of real-world asset investment.",
-    "copyright": "© 2025 Pandora's Foundation. All rights reserved."
+    "copyright": "© 2025 Pandora's Foundation. All rights reserved.",
+    "white_paper": "WHITE PAPER",
+    "support": "SUPPORT",
+    "terms_privacy": "TERMS | PRIVACY"
   }
 }

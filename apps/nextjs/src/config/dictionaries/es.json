@@ -41,6 +41,8 @@
     "main_nav_products": "Productos",
     "main_nav_blog": "Blog",
     "main_nav_documentation": "Documentación",
+    "main_nav_home": "INICIO",
+    "main_nav_about": "ACERCA DE",
     "login": "Iniciar sesión",
     "signup": "Regístrate",
     "contributors": {
@@ -409,6 +411,9 @@
   "footer": {
     "title": "Pandora's",
     "slogan": "El futuro de la inversión en activos del mundo real.",
-    "copyright": "© 2025 Pandora's Foundation. Todos los derechos reservados."
+    "copyright": "© 2025 Pandora's Foundation. Todos los derechos reservados.",
+    "white_paper": "LIBRO BLANCO",
+    "support": "SOPORTE",
+    "terms_privacy": "TÉRMINOS | PRIVACIDAD"
   }
 }

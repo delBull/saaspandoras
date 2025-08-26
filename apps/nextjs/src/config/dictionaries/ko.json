@@ -41,6 +41,8 @@
     "main_nav_products": "제품",
     "main_nav_blog": "블로그",
     "main_nav_documentation": "문서",
+    "main_nav_home": "HOME",
+    "main_nav_about": "ABOUT",
     "login": "로그인",
     "signup": "가입하기",
     "contributors": {
@@ -409,6 +411,9 @@
   "footer": {
     "title": "Pandora's",
     "slogan": "실물 자산 투자의 미래.",
-    "copyright": "© 2025 Pandora's Foundation. 모든 권리 보유."
+    "copyright": "© 2025 Pandora's Foundation. 모든 권리 보유.",
+    "white_paper": "WHITE PAPER",
+    "support": "SUPPORT",
+    "terms_privacy": "TERMS | PRIVACY"
   }
 }
