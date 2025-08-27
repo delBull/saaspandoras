@@ -11,6 +11,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@saasfly/ui/dialog";
+import { LucideIcon, ClipboardCheck, FileText, Box, UploadCloud, Activity } from "lucide-react";
+
 
 // --- Card Component ---
 function MarketplaceCard({ 
@@ -79,7 +81,7 @@ export function ActivosClient({ dict }: { dict: any }) {
                       <Info className="h-5 w-5 text-gray-400 hover:text-gray-200" />
                     </button>
                   </DialogTrigger>
-                  <DialogContent className="fixed left-[50%] top-[50%] max-h-[85vh] w-[90vw] max-w-[800px] translate-x-[-50%] translate-y-[-50%] rounded-2xl bg-white dark:bg-neutral-900 p-8 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] overflow-y-auto">
+                  <DialogContent className="fixed left-[50%] top-[50%] max-h-[85vh] w-[90vw] max-w-[800px] translate-x-[-50%] translate-y-[-50%] rounded-2xl bg-white dark:bg-neutral-900 p-8 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-1/2 data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-1/2 overflow-y-auto">
                     <DialogTitle className="sr-only">{dict.activos.info_modal.title}</DialogTitle>
                     <div className="space-y-8">
                       <div>
@@ -100,6 +102,9 @@ export function ActivosClient({ dict }: { dict: any }) {
           </div>
         </motion.div>
 
+        <h2 className="text-3xl font-shadows text-left mb-4 mt-4">
+          Clasificación de proyectos en proceso de tokenización
+        </h2>
         <motion.div
           variants={containerVariants}
           initial="hidden"
@@ -133,6 +138,8 @@ export function ActivosClient({ dict }: { dict: any }) {
           />
         </div>
 
+        <TokenizationProcess dict={dict} />
+
       </div>
     </div>
   );
@@ -160,6 +167,82 @@ function InfoSection({ title, content, alignment = 'left' }: { title: string, co
     </motion.div>
   );
 }
+
+// --- Tokenization Process Section ---
+// --- Tokenization Process Section ---
+function ProcessStep({ icon: Icon, title, description }: { icon: LucideIcon; title: string; description: string; }) {
+  return (
+    <div className="relative flex items-center gap-6 p-6 rounded-lg border border-gray-700/80">
+      <motion.div
+        className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-800 text-lime-300"
+        whileHover={{ scale: 1.2, rotate: 15 }}
+        transition={{ type: "spring", stiffness: 300 }}
+      >
+        <Icon className="h-6 w-6" />
+      </motion.div>
+      <div>
+        <h3 className="text-xl font-bold text-white">{title}</h3>
+        <p className="mt-1 text-gray-300">{description}</p>
+      </div>
+    </div>
+  );
+}
+
+function TokenizationProcess({ dict }: { dict: any }) {
+  const tokenizationProcessData = dict.activos?.tokenization_process || {
+    title_part1: "",
+    title_part2: "",
+    subtitle: "",
+    steps: [],
+  };
+
+  const processSteps = [
+    {
+      icon: ClipboardCheck,
+      title: tokenizationProcessData.steps[0]?.title || "",
+      description: tokenizationProcessData.steps[0]?.description || "",
+    },
+    {
+      icon: FileText,
+      title: tokenizationProcessData.steps[1]?.title || "",
+      description: tokenizationProcessData.steps[1]?.description || "",
+    },
+    {
+      icon: Box,
+      title: tokenizationProcessData.steps[2]?.title || "",
+      description: tokenizationProcessData.steps[2]?.description || "",
+    },
+    {
+      icon: UploadCloud,
+      title: tokenizationProcessData.steps[3]?.title || "",
+      description: tokenizationProcessData.steps[3]?.description || "",
+    },
+    {
+      icon: Activity,
+      title: tokenizationProcessData.steps[4]?.title || "",
+      description: tokenizationProcessData.steps[4]?.description || "",
+    },
+  ];
+
+  return (
+    <div className="my-44 grid md:grid-cols-2 gap-16 items-start">
+      <div className="md:text-left sticky top-0 pt-20">
+        <h2 className="text-4xl font-bold text-white">
+          {tokenizationProcessData.title_part1} <span className="font-shadows">{tokenizationProcessData.title_part2}</span>
+        </h2>
+        <p className="mt-4 text-lg text-gray-300">
+          {tokenizationProcessData.subtitle}
+        </p>
+      </div>
+      <div className="grid gap-8 pt-20">
+        {processSteps.map((step, index) => (
+          <ProcessStep key={index} icon={step.icon} title={step.title} description={step.description} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 
 // --- Animation Variants ---
 const containerVariants: Variants = {
