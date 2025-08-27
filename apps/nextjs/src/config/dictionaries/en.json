@@ -470,5 +470,112 @@
           }
         ]
       }
-  }
+  },
+    "about": {
+      "title": "About Pandora's Foundation: Digitizing Real-World Value",
+      "the_big_why": {
+        "title": "Our Big Why",
+        "p1": "In a world where the best investment opportunities are often reserved for a few, billions of dollars in value remain trapped in illiquid assets like real estate and startups. Complexity, bureaucracy, and high barriers to entry prevent most people from participating in their growth.",
+        "p2": "Pandora's Foundation was born from a fundamental question: What if we could unlock that value? What if we could make investing in an apartment building or a promising startup as simple as buying a stock?",
+        "p3": "Our 'big why' is the democratization of access to wealth. We believe in a financial future where anyone, from anywhere, can invest in tangible, high-growth assets safely, transparently, and efficiently, all through the power of blockchain technology."
+      },
+      "our_mission": {
+        "title": "Our Mission",
+        "content": "Our mission is to build and operate the most robust technological, legal, and financial infrastructure for the tokenization of Real-World Assets (RWA). We connect owners of high-quality assets with a global community of investors, generating liquidity for the former and competitive yield opportunities for the latter. We do this through a platform that ensures security, regulatory compliance, and an exceptional user experience."
+      },
+      "what_we_do": {
+        "title": "What We Do",
+        "intro": "Pandora's Foundation is an end-to-end tokenization platform. Currently, our main focus is the real estate sector, but we are expanding our model to include startups in the medium term.",
+        "services_title": "Our comprehensive service covers:",
+        "services": [
+          {
+            "title": "Advisory and Legal Structuring",
+            "description": "We create the legal and fiduciary framework to convert a physical asset into a series of digital tokens representing its value."
+          },
+          {
+            "title": "Technological Development",
+            "description": "We program and audit the smart contracts that govern the ownership, management, and transfer of the tokens."
+          },
+          {
+            "title": "Value-Added Services",
+            "description": "We offer key services such as project incubation, due diligence, digital marketing, and community management to ensure the success of each tokenization."
+          }
+        ]
+      },
+      "our_current_position": {
+        "title": "Our Current Position",
+        "intro": "We are not just an idea; we are a growing reality. As of today, Pandora's Foundation has:",
+        "points": [
+          "A basic tokenization platform already operational.",
+          "A solidly established legal and brand structure.",
+          "Four signed clients who are ready to start their tokenization processes on our platform."
+        ]
+      },
+      "the_team": {
+        "title": "The Team Behind Pandora's",
+        "intro": "We have a management and operational team that covers all critical areas for success:",
+        "areas": [
+          {
+            "title": "Leadership and Strategy (CEO, COO)",
+            "description": "Business vision and operational efficiency."
+          },
+          {
+            "title": "Technology and Product (CTO, CPO, Developers)",
+            "description": "Experts in blockchain, smart contracts, and the development of secure and scalable platforms."
+          },
+          {
+            "title": "Finance and Legal (CFO, Legal Representative)",
+            "description": "Specialists in financial management, regulatory compliance, and crypto-asset structuring."
+          },
+          {
+            "title": "Marketing and Sales (CMO, Executives)",
+            "description": "A dedicated team to build our brand, attract new projects, and manage our network of agents (TXAgents)."
+          }
+        ]
+      },
+      "strategic_allies": {
+        "title": "Our Strategic Allies",
+        "intro": "We understand that trust is the cornerstone of finance. Therefore, we have built an ecosystem of alliances with leaders in their respective fields to ensure maximum security and compliance:",
+        "categories": [
+          {
+            "name": "Blockchain Technology",
+            "partners": "We integrate decentralized oracles like Chainlink and payment gateways like Transak and MoonPay for seamless operation."
+          },
+          {
+            "name": "Audit and Security",
+            "partners": "We collaborate with firms like CertiK and PeckShield for security and smart contract audits, and we use secure contract libraries from OpenZeppelin."
+          },
+          {
+            "name": "Compliance (KYC/AML)",
+            "partners": "We use identity verification services from leaders like Sumsub and Jumio."
+          },
+          {
+            "name": "Legal and Financial Advisory",
+            "partners": "We are backed by law firms like Basham, Ringe y Correa and have the support of financial audit firms like EY."
+          },
+          {
+            "name": "Commercial Alliances",
+            "partners": "We are members of the Mexican Association of Real Estate Professionals (AMPI) and the CMIC to stay at the forefront of the real estate sector."
+          }
+        ]
+      },
+      "roadmap": {
+        "title": "Future Vision - Our Roadmap",
+        "intro": "We are in a phase of accelerated growth with a clear plan for the coming months.",
+        "timeline": [
+          {
+            "year": "2025",
+            "description": "We will launch our enhanced DApp, complete the first tokenizations for our initial clients, and begin paying the first profits to investors."
+          },
+          {
+            "year": "2026",
+            "description": "We will expand to new key markets like Guadalajara and Monterrey and launch our first 'Pandoras Pro' pilot for the tokenization of a startup, turning it into a DAO."
+          }
+        ]
+      },
+      "cta": {
+        "title": "Join the Digital Asset Revolution",
+        "content": "Whether you are an asset owner seeking liquidity, an investor looking for new opportunities, or a potential partner who shares our vision, we want to hear from you."
+      }
+    }
 }

@@ -81,15 +81,7 @@ export interface Dictionary {
       desc: string;
     };
   };
-  properties: {
-    realestate: {
-      id: string;
-      title: string;
-      short: string;
-      desc: string;
-      cta: string;
-    };
-  };
+  
   benefits_market: {
     main_title: string;
     main_description: string; 
@@ -273,6 +265,61 @@ export interface Dictionary {
     white_paper: string;
     support: string;
     terms_privacy: string;
+  };
+  about: {
+    title: string;
+    the_big_why: {
+      title: string;
+      p1: string;
+      p2: string;
+      p3: string;
+    };
+    our_mission: {
+      title: string;
+      content: string;
+    };
+    what_we_do: {
+      title: string;
+      intro: string;
+      services_title: string;
+      services: {
+        title: string;
+        description: string;
+      }[];
+    };
+    our_current_position: {
+      title: string;
+      intro: string;
+      points: string[];
+    };
+    the_team: {
+      title: string;
+      intro: string;
+      areas: {
+        title: string;
+        description: string;
+      }[];
+    };
+    strategic_allies: {
+      title: string;
+      intro: string;
+      categories: {
+        name: string;
+        partners: string;
+      }[];
+    };
+    roadmap: {
+      title: string;
+      intro: string;
+      timeline: {
+        year: string;
+        description: string;
+      }[];
+    };
+    cta: {
+      title: string;
+      content: string;
+    };
   };
 }
 
