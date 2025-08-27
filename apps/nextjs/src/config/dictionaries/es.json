@@ -417,8 +417,8 @@
     "terms_privacy": "TÉRMINOS | PRIVACIDAD"
   },
   "activos": {
-    "title": "Marketplace de Activos Digitales",
-    "subtitle": "Explora oportunidades de inversión únicas en el mundo digital.",
+    "title": "Descubre oportunidades respaldadas y transparentes",
+    "subtitle": "En Pandoras, cada activo disponible ha pasado por un exhaustivo proceso de auditoría, tokenización y due diligence. Esto asegura que solo proyectos viables, auditados y con potencial de crecimiento real formen parte de nuestra plataforma.",
     "assets": {
       "casa_bella": { "tag": "REAL ESTATE", "title": "Casa Bella", "description": "Una villa de lujo con vista al mar y acabados de alta gama." },
       "vista_horizonte": { "tag": "REAL ESTATE", "title": "Vista Horizonte", "description": "La mejor vista de la Bahía en un lugar maravilloso." },
@@ -431,6 +431,16 @@
       "title": "Sobre Nuestro Marketplace",
       "paragraph1": "Nuestro marketplace conecta a inversionistas con activos reales y digitales tokenizados, ofreciendo una nueva forma de participar en la economía global. Aquí no solo exploras oportunidades: accedes a proyectos inmobiliarios, startups y negocios respaldados por bienes tangibles y estructuras legales sólidas. Cada inversión está gestionada con transparencia blockchain, protegiendo tu capital y facilitando la liquidez a través de stablecoins y herramientas DeFi.",
       "paragraph2": "Con Pandoras, invertir deja de ser exclusivo para grandes corporativos: ahora puedes diversificar tu portafolio, participar desde montos accesibles y recibir rendimientos generados por la economía real. Nuestra plataforma te guía de principio a fin: desde la selección y análisis de proyectos hasta la gestión de tus activos tokenizados, todo dentro de un ecosistema seguro, regulado y diseñado para crecer contigo."
+    },
+    "info_sections": {
+      "section1": {
+        "title": "Toma el control de tu futuro financiero",
+        "content": "Selecciona un activo, revisa su información y comienza tu proceso de inversión en cuestión de minutos. Cada proyecto está acompañado de métricas claras y actualizadas para que tomes decisiones con confianza."
+      },
+      "section2": {
+        "title": "Transparencia y seguimiento continuo",
+        "content": "Realizamos auditorías periódicas y ofrecemos un sistema de monitoreo en tiempo real que garantiza la calidad de cada inversión. Así, tu portafolio crece respaldado por datos y seguridad comprobada."
+      }
     }
   }
 }

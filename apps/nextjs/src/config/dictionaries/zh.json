@@ -1,139 +1,139 @@
 {
   "price": {
-    "title": "透明且实惠的定价！",
-    "properties_title": "プロパティ",
+    "title": "透明且实惠的价格！",
+    "properties_title": "属性",
     "slogan": "全速开始投资！",
-    "monthly_bill": "每月计费",
-    "annual_bill": "年度计费",
-    "annual_info": "年末结算",
-    "monthly_info": "每月结算",
+    "monthly_bill": "按月计费",
+    "annual_bill": "按年计费",
+    "annual_info": "年底计费",
+    "monthly_info": "按月计费",
     "mo": "/月",
-    "contact": "请联系支持团队。",
-    "contact_2": "在计费前免费试用我们的订阅服务。",
+    "contact": "联系我们的支持团队。",
+    "contact_2": "在您被计费之前免费试用我们的订阅。",
     "faq": "常见问题",
-    "faq_detail": "查看我们的常见问题（FAQ），快速获得常见问题的答案。如需进一步帮助，请随时联系我们获取个性化支持。",
+    "faq_detail": "浏览我们的完整常见问题解答，快速找到常见问题的答案。如果您需要进一步的帮助，请随时与我们联系以获得个性化支持。",
     "signup": "注册",
     "upgrade": "升级",
     "manage_subscription": "管理订阅",
-    "go_to_dashboard": "前往仪表板"
+    "go_to_dashboard": "转到仪表板"
   },
   "marketing": {
-    "introducing": "介绍 Pandoras",
-    "title": "轻松安全地投资独家房产 ",
-    "sub_title": "获取具有独家机会的数字股份从未如此简单",
-    "get_started": "如何？",
+    "introducing": "Pandora's 介绍",
+    "title": "轻松安全地投资独家房产",
+    "sub_title": "获得具有独家机会的数字股票从未如此简单",
+    "get_started": "如何操作？",
     "hero_supertitle": "投资的未来，新时代",
-    "hero_title": "房地产包容性投资",
+    "hero_title": "对有形资产的包容性投资",
     "hero_subtitle": "将您的参与代币化，获得实际回报，并加入一个没有中介的新时代。",
-    "hero_cta1": "现在开始",
+    "hero_cta1": "立即开始",
     "hero_cta2": "运作方式",
-    "hero_cta3": "为什么选择潘多拉？",
+    "hero_cta3": "为什么选择 Pandora's？",
     "view_on_github": "在 GitHub 上查看",
     "explore_product": "探索产品",
-    "features": "功能",
-    "sub_features": "区块链驱动：简化技术，为创新项目降低成本。",
-    "k8s_features": "快速简便的开发",
+    "features": "特点",
+    "sub_features": "由区块链提供支持：简化技术并降低创新项目的成本。",
+    "k8s_features": "快速简单的开发",
     "devops_features": "轻松启动项目",
-    "price_features": "生产环境下高性价比",
+    "price_features": "在生产环境中具有成本效益",
     "main_nav_business": "申请",
     "main_nav_assets": "资产",
-    "main_nav_invest": "Stake",
+    "main_nav_invest": "质押",
     "main_nav_products": "产品",
     "main_nav_blog": "博客",
     "main_nav_documentation": "文档",
-    "main_nav_home": "HOME",
-    "main_nav_about": "ABOUT",
+    "main_nav_home": "主页",
+    "main_nav_about": "关于",
     "login": "登录",
     "signup": "注册",
     "contributors": {
-      "contributors_desc": "随着越来越多的房地产和初创公司加入，许多人从 Pandora 中受益",
+      "contributors_desc": "许多人从 Pandora's 中受益，同时更多的房产和",
       "developers_first": "",
-      "developers_second": ""
+      "developers_second": "正在增加"
     },
     "right_side": {
       "deploy_on_vercel_title": "有形与数字的融合",
-      "deploy_on_vercel_desc": "Pandoras 是一个平台，使您能够轻松、安全地投资房地产和投资项目。",
-      "ship_on_cloudflare_title": "怎么？",
-      "ship_on_cloudflare_desc": "获取数字股份，赋予您获得独家机会并有可能获得额外收入。",
-      "showcase_title": "我们正在改变传统投资的获取方式",
-      "showcase_desc": "以适合您的资本，进入高价值资产的投资。"
+      "deploy_on_vercel_desc": "Pandoras 是一个让您可以轻松安全地投资房地产和投资项目的平台。",
+      "ship_on_cloudflare_title": "如何操作？",
+      "ship_on_cloudflare_desc": "获取数字股票，让您可以获得独家机会和赚取额外收入的可能性。",
+      "showcase_title": "我们改变了传统投资的准入方式",
+      "showcase_desc": "以适合您的资本投资高价值资产。"
     },
     "features_grid": {
-      "monorepo_title": "获取您的下一个房产",
-      "monorepo_desc": "注册并获取您的免费数字股份，使您能够投资独家房产。",
+      "monorepo_title": "获取您的下一处房产",
+      "monorepo_desc": "注册并获取您的免费数字股票，让您可以投资独家房产。",
       "i18n_title": "以特价投资",
-      "i18n_desc": "凭借您的股份，您可以在我们的预售期间以特价投资。每笔投资代表项目价值的一部分。",
-      "payments_title": "赚取并增长",
-      "payments_desc": "通过您的投资，您将获得独家福利，例如租金收入和将您的投资转化为完全所有权的机会。",
+      "i18n_desc": "凭借您的股票，您可以在早期阶段以特价投资。每项投资都代表项目价值的一部分。",
+      "payments_title": "赚钱和成长",
+      "payments_desc": "通过您的投资，您将获得独家优惠，例如租金收入和将您的投资转换为完全所有权的机会。",
       "nextauth_title": "",
       "nextauth_desc": ""
     },
     "investment_steps": {
-      "title": "投资就是这么简单 →",
+      "title": "投资就像 → 一样简单",
       "steps": [
         {
-          "title": "获取免费参与权",
-          "content": "使用可解锁平台的免费密码立即可访问。",
-          "caption": "注册并获取免费的数字参与权，让您能够投资高端物业。"
+          "title": "获取您的免费股票",
+          "content": "使用免费的通行密钥即时访问，为您解锁平台。",
+          "caption": "注册并获取您的免费数字股票，让您可以投资独家房产。"
         },
         {
-          "title": "特价投资",
-          "content": "在合法合规的预售期间以优惠价格进行投资。",
-          "caption": "在销售期间使用您的参与权进行特价投资。"
+          "title": "以特价投资",
+          "content": "在合法且受监管的预售期间以优惠价格投资。",
+          "caption": "在我们的预售期间使用您的股票以特价投资。"
         },
         {
-          "title": "获得收益与成长",
-          "content": "从第一天起就通过租金、资本收益和共同所有权的可能性赚取收益。",
+          "title": "赚钱和成长",
+          "content": "从第一天起就通过租金、资本收益和共同所有权的可能性赚钱。",
           "caption": "通过您的投资，您将获得独家优惠。"
         }
       ]
     },
     "dashboard": {
-      "config_panel": "平台配置和工作流程管理面板",
-      "investments_panel": "实时收益和当前投资概况"
+      "config_panel": "配置面板和平台流程",
+      "investments_panel": "活跃投资和实时回报"
     },
     "sponsor": {
       "title": "准备好改变您的投资方式了吗？",
-      "donate": "获取您的下一个房产",
-      "subtitle": "立即成为 Pandora's 的一员，进入真实数字资产的新时代"
+      "donate": "获取您的下一处房产",
+      "subtitle": "立即成为 Pandora's 的一员，进入数字实物资产的新时代"
     },
     "video": {
-      "first_text": "获得代表部分资产的数字份额，",
-      "second_text1": "参与专属现实世界资产的 ",
+      "first_text": "获取代表房产价值一部分的数字股票，",
+      "second_text1": "参与独家实物资产",
       "time_text": "投资",
       "second_text2": "",
       "academic_backing": {
-        "title": "数据与学术支持",
-        "subtitle": "由于实体市场的数字化转型，到2030年，可代币化资产预计将达到26万亿美元。"
+        "title": "数据和学术支持",
+        "subtitle": "由于实体市场的数字化转型，可代币化资产预计到 2030 年将达到 6 万亿美元。"
       }
     },
     "transform_token": {
-      "title": "享受专属权益",
-      "desc": "累积更多股份并获得独特特权，赚取租金收入，享受将投资转换为完整所有权的机会。",
-      "more_details": "了解更多",
+      "title": "享受独家优惠",
+      "desc": "积累更多股票，获得独特特权，赚取租金收入，并享受将您的投资转换为完全所有权的可能性。",
+      "more_details": "更多详情",
       "close": "关闭",
       "part1_title": "解锁独家特权",
-      "part1_content": "想象一下，您购买的每一份股份不仅代表着您的投资，还为您打开了一扇通往独家特权世界的大门。随着时间的推移，随着您积累更多股份，您将获得参加特别活动、享受个性化支持以及获取关于我们高端开发项目的重要信息的机会。这一优势使您成为一个精选社区的成员，享受只有最忠诚的投资者才能获得的独特体验。",
-      "part2_title": "赚取租金收益并获取完整所有权机会",
-      "part2_content": "除了特权外，您的股份还可以为您带来租金收益，因为该房产在租赁期间会产生收入。当您达到一定数量的股份时，您将有机会将投资转换为完整所有权，使您的股份变成高价值的实物资产。这种方式不仅能让您立即获益，还能在项目成功和增值的过程中实现长期收益。"
+      "part1_content": "想象一下，您获得的每股股票不仅代表您的投资，还为您打开了通往独家特权世界的大门。随着时间的推移，当您积累更多股票时，您将可以参加特别活动、获得个性化支持以及有关我们优质开发项目的特权信息。这项优惠使您成为精选社区的一员，您的投资将为您提供仅为我们最忠实的会员保留的独特体验。",
+      "part2_title": "赚取租金收入和完全所有权机会",
+      "part2_content": "除了特权之外，您的股票还允许您赚取租金收入，因为房产在租赁期间会产生收入。当您达到一定数量的股票时，您将有机会将您的投资转换为完全所有权，将您的参与转换为有形的高价值资产。这种方法为您提供即时和长期的利益，由项目的成功和增值驱动。"
     },
     "people_comment": {
-      "title": "用户评价",
-      "desc": "不仅仅听我们说，看看真实用户对 Pandoras 的评价。"
+      "title": "人们在说什么",
+      "desc": "不要只相信我们的话。以下是真实用户对 Pandoras 的评价。"
     },
     "what_is_pandoras": {
-      "title": "什么是Pandora’s Finance？",
-      "description": "Pandora’s将房地产和初创公司等实体资产，转化为易于接触的数字机遇。无中介机构，由法律信托、区块链技术和金融未来愿景提供支持。",
-      "feature_1": "合法合规",
-      "feature_2": "全球化和包容性准入",
-      "feature_3": "代币化的实体资产"
+      "title": "什么是 Pandora’s Finance？",
+      "description": "Pandora’s 将实物资产（房地产和初创公司）转变为可访问的数字机会。没有中介，由法律信托、区块链技术和金融未来的愿景提供支持。",
+      "feature_1": "合法且受监管",
+      "feature_2": "全球包容性访问",
+      "feature_3": "代币化的实物资产"
     },
     "problem_we_solve": {
       "title": "我们解决的问题",
-      "problem_1": "高额的投资和中介费用导致成本增加。",
-      "problem_2": "有限的流动性：房产出售耗时。",
+      "problem_1": "高额资金和中介机构使投资更加昂贵。",
+      "problem_2": "流动性有限：房产需要时间才能出售。",
       "problem_3": "传统流程缺乏透明度和可追溯性。",
-      "solution": "潘多拉的解决方案：便捷、流动、安全的投资。"
+      "solution": "Pandora’s 的解决方案：可访问、流动性强且安全的投资。"
     },
     "benefits_market": {
       "main_title": "强大的优势",
@@ -142,10 +142,10 @@
       "ventajas_description0": "",
       "ventajas_title1": "建立信任",
       "ventajas_description1": "",
-      "ventajas_title2": "数据与学术支持",
-      "ventajas_description2": "“由于实体市场的数字化转型，到2030年，可代币化资产预计将达到26万亿美元。”（来源：G2 Learn）",
+      "ventajas_title2": "数据和学术支持",
+      "ventajas_description2": "“由于实体市场的数字化转型，可代币化资产预计到 2030 年将达到 26 万亿美元。”（来源：G2 Learn）",
       "ventajas_title3": "不可阻挡的趋势",
-      "ventajas_description3": "到2030年，全球房地产代币化市场可能超过3万亿美元，占全球房地产资产的15%。潘多라让您从今天起就可以参与到这场运动中来"
+      "ventajas_description3": "到 2030 年，全球房地产代币化市场可能超过 3 万亿美元，占全球房地产资产的 15%。Pandora’s 让您从今天起就可以参与其中"
     },
     "skeleton_one": {
       "items": [
@@ -156,7 +156,7 @@
           "title": "全球数字市场的高流动性。"
         },
         {
-          "title": "区块链实现完全可追溯性。"
+          "title": "区块链的完全可追溯性。"
         },
         {
           "title": "房地产和创业领域的多元化。"
@@ -166,45 +166,45 @@
     "skeleton_two": {
       "items": [
         {
-          "title": "正式合法"
+          "title": "正式合法性"
         },
         {
-          "title": "坚实的技术（区块链）"
+          "title": "可靠的技术（区块链）"
         },
         {
-          "title": "代币化的真实资产"
+          "title": "代币化的实物资产"
         },
         {
-          "title": "交易完全透明"
+          "title": "交易的完全透明度"
         }
       ]
     },
     "academic_backing": {
-      "title": "数据与学术支持",
-      "subtitle": "“由于实体市场的数字化转型，到2030年，可代币化资产预计将达到26万亿美元。”（来源：G2 Learn）"
+      "title": "数据和学术支持",
+      "subtitle": "由于实体市场的数字化转型，可代币化资产预计到 2030 年将达到 6 万亿美元。"
     },
     "faq": {
       "title": "常见问题",
       "faqs": [
         {
-          "question": "什么是Pandora's Finance？它是如何运作的？",
-          "answer": "这是一个投资房地产和初创公司股份的平台：您注册后，获得访问权限，并参与有法律支持的投资回合。"
+          "question": "什么是 Pandora’s Finance？它如何运作？",
+          "answer": "这是一个投资房地产和初创公司股份的平台：您注册，获得访问权，并参与有法律支持的投资回合。"
         },
         {
-          "question": "我如何投资？需要多少资金？",
-          "answer": "注册，获取您的访问权限，然后选择一个项目。最低投资额因项目而异；您可以根据每个项目的情况使用法定货币或稳定币支付。"
+          "question": "我如何投资？需要多少钱？",
+          "answer": "注册，领取您的访问权限，然后选择一个项目。最低金额因报价而异；您可以根据每个项目使用法定货币或稳定币支付。"
         },
         {
-          "question": "你们如何保护我的资金？",
-          "answer": "资金由信托/托管机构保管，操作在具有多重签名验证的智能合约上进行；每个项目的法律结构都有详细说明。"
+          "question": "你们如何保护我的钱？",
+          "answer": "资金存放在信托/托管中，操作在具有多重签名验证的智能合约上进行；法律结构在每个报价中都有详细说明。"
         },
         {
-          "question": "我可以期待什么样的回报？有什么风险？",
-          "answer": "回报取决于项目（租金、增值、出售）。风险包括建筑、市场、监管和流动性风险。不提供任何保证。"
+          "question": "我可以期待什么回报？有什么风险？",
+          "answer": "回报取决于项目（租金、增值、出售）。风险包括建筑、市场、监管和流动性。没有保证。"
         },
         {
-          "question": "我何时以及如何收到回报？或者我能退出吗？",
-          "answer": "付款根据项目时间表进行（例如，每季度或项目结束时）。在满足特定条件和可能产生罚款的情况下，可以通过二级市场或转让提前退出。"
+          "question": "我什么时候以及如何获得回报或退出？",
+          "answer": "付款遵循项目的时间表（例如，每季度或在交割时）。允许通过二级市场或转让提前退出，但须遵守条件和可能的罚款。"
         }
       ]
     }
@@ -212,45 +212,45 @@
   "login": {
     "back": "返回",
     "welcome_back": "欢迎回来",
-    "signin_title": "请输入您的邮箱以登录账号",
-    "singup_title": "还没有账号？立即注册。",
-    "signin_email": "使用邮箱登录",
-    "signin_others": "或使用其他方式继续",
+    "signin_title": "输入您的电子邮件以登录您的帐户",
+    "singup_title": "没有帐户？立即注册。",
+    "signin_email": "使用电子邮件登录",
+    "signin_others": "或继续使用",
     "signup": "注册",
-    "privacy": "仅保存您的邮箱和头像。",
+    "privacy": "只会存储您的电子邮件和个人资料图片。",
     "signup_github": "使用 GitHub 注册",
     "signup_google": "使用 Google 注册"
   },
   "common": {
-    "copyright": "© ${currentYear} Pandora's Foundation 是 MXHUB 生态系统区块链 S.A. de C.V. 的品牌。",
+    "copyright": "© ${currentYear} Pandora's Foundation 是 MXHUB Ecosystem Blockchain S.A. de C.V. 的一个品牌。",
     "dashboard": {
       "main_nav_documentation": "文档",
       "main_nav_support": "支持",
       "sidebar_nav_clusters": "项目",
       "sidebar_nav_billing": "计费",
       "sidebar_nav_settings": "设置",
-      "title_text": "创建并管理您的项目。",
-      "marketing_introducing": "潘多拉介绍",
+      "title_text": "创建和管理您的项目。",
+      "marketing_introducing": "Pandora's 介绍",
       "portfolio": "投资组合",
       "tickets": "票据",
       "action": "操作",
       "all_investments": "所有投资",
       "real_estate": "房地产",
-      "startups": "创业公司",
-      "scaleups": "扩张公司"
+      "startups": "初创公司",
+      "scaleups": "成长期公司"
     }
   },
   "business": {
     "k8s": {
       "new_cluster": "新项目",
       "no_cluster_title": "未创建任何项目",
-      "no_cluster_content": "您还没有创建任何项目。立即开始创建吧。"
+      "no_cluster_content": "您尚未创建任何项目。开始创建一个。"
     },
     "billing": {
       "billing": "计费",
       "content": "管理您的订阅和计费详情",
-      "noSubscription": "您尚未订阅任何计划。",
-      "subscriptionInfo": "您目前订阅的是 <strong>{plan}</strong> 计划。您的订阅将在 {date} 更新。",
+      "noSubscription": "您未订阅任何计划。",
+      "subscriptionInfo": "您当前使用的是 <strong>{plan}</strong> 计划。您的订阅将于 {date} 续订。",
       "manage_subscription": "管理订阅",
       "upgrade": "升级"
     }
@@ -259,178 +259,188 @@
     "dashboard": "仪表板",
     "billing": "计费",
     "settings": "设置",
-    "sign_out": "退出登录"
+    "sign_out": "退出"
   },
   "terms": {
-    "title": "使用条款",
-    "lastUpdate": "最后更新：2025年3月",
-    "tabTerms": "使用条款",
+    "title": "条款和条件",
+    "lastUpdate": "最后更新：2025 年 3 月",
+    "tabTerms": "条款和条件",
     "tabPrivacy": "隐私政策",
     "sections": {
       "welcome": {
-        "title": "欢迎来到Pandora's Foundation",
-        "content": "本使用条款规范了我们的数字平台和DApp（可在https://dapp.pandoras.foundation/获得）以及房地产权利代币化服务、房地产参与权购买和数字权利的访问和使用。"
+        "title": "欢迎来到 Pandora's Foundation",
+        "content": "这些条款和条件管辖对我们的数字平台和 DApp 的访问和使用，该平台和 DApp 可在 https://dapp.pandoras.foundation/ 上获得，以及代币化服务、房地产参与购买和数字权利。"
       },
       "definitions": {
         "title": "定义",
         "items": [
-          "平台：Pandoras提供的DApp和数字服务",
-          "用户：访问和使用服务的自然人或法人",
-          "房地产权利（NFT）：授予购买房地产参与权的数字资产",
-          "房地产参与权：代表房地产资产的数字份额",
-          "代币化：在区块链上将实物资产表示为数字代币的过程"
+          "平台：Pandoras 的 DApp 和数字服务。",
+          "用户：访问和使用服务的自然人或法人。",
+          "房地产权利 (NFT)：授予购买房地产参与权的数字资产。",
+          "房地产参与：代表房地产资产的数字分数。",
+          "代币化：通过数字代币在区块链上代表实物资产的过程。"
         ]
       },
       "usage": {
         "title": "平台使用",
         "items": [
-          "平台允许免费获取房地产权利（NFT），这授予购买特定项目房地产参与权的权利",
-          "用户必须拥有兼容的数字钱包才能与平台交互",
-          "Pandoras不是投资顾问，也不对平台上的投资回报提供任何保证"
+          "平台允许您免费获取房地产权利 (NFT)，从而可以购买选定项目中的房地产参与权。",
+          "用户必须拥有兼容的数字钱包才能与平台交互。",
+          "Pandoras 不是财务顾问，不保证在平台上进行的投资的盈利能力。"
         ]
       },
       "responsibility": {
-        "title": "责任和免责声明",
+        "title": "责任和保修免责声明",
         "items": [
-          "Pandoras对平台上数字化资产的损失、风险或价值波动不承担责任",
-          "平台在区块链上运营，所有交易一经确认即不可撤销或修改",
-          "用户同意拥有房地产权利（NFT）并不等同于拥有实物房产",
-          "平台保留在不事先通知的情况下修改、更新或暂停任何服务的权利"
+          "Pandoras 不对平台上数字化资产的损失、风险或价值波动负责。",
+          "平台在区块链上运行，因此所有交易一旦确认便不可逆转且无法修改。",
+          "用户接受，拥有房地产权利 (NFT) 并不等同于拥有实物财产。",
+          "平台保留随时修改、更新或暂停任何服务的权利，恕不另行通知。"
         ]
       },
       "requirements": {
         "title": "用户要求",
         "items": [
-          "必须年满18周岁才能使用平台",
-          "同意遵守居住国的税收法规",
-          "如果发现可疑活动，Pandoras保留拒绝用户访问的权利"
+          "必须年满 18 岁才能使用平台。",
+          "同意遵守其居住国的税收法规。",
+          "如果检测到可疑活动，Pandoras 保留拒绝任何用户访问的权利。"
         ]
       },
       "payments": {
-        "title": "支付和费用",
+        "title": "付款和费用",
         "items": [
-          "支付仅通过加密货币或认可的方式进行",
-          "Pandoras可能对某些服务收取费用",
-          "代币或参与权购买完成后不予退款"
+          "付款仅以加密货币或经批准的方式进行。",
+          "Pandoras 可能会对使用某些服务收取费用。",
+          "一旦完成代币或参与的购买，概不退款。"
         ]
       },
       "dataProtection": {
         "title": "数据保护和安全",
         "items": [
-          "个人数据根据我们的隐私政策进行处理",
-          "用户负责其账户和凭证的安全",
-          "Pandoras对因用户疏忽导致的未经授权访问不承担责任"
+          "个人数据根据我们的隐私政策进行处理。",
+          "用户对其帐户和凭据安全负责。",
+          "Pandoras 不对因用户疏忽造成的未经授权的访问负责。"
         ]
       },
       "law": {
         "title": "适用法律和管辖权",
         "items": [
-          "本条款受墨西哥法律管辖",
-          "任何争议将在墨西哥城有管辖权的法院解决"
+          "这些条款受墨西哥法律管辖。",
+          "任何争议将在墨西哥墨西哥城的有管辖权的法院解决。"
         ]
       }
     },
     "acceptance": {
-      "title": "条款接受",
-      "content": "使用平台即表示您确认已阅读并理解本使用条款和隐私政策，并无条件同意遵守。"
+      "title": "条款和条件接受",
+      "content": "使用平台即表示您承认已阅读并理解这些条款和隐私政策，并毫无保留地接受其合规性。"
     }
   },
   "privacy": {
     "title": "隐私政策",
-    "lastUpdate": "最后更新：2025年3月",
-    "introduction": "在Pandora's，我们致力于保护用户的隐私。本隐私政策说明了我们在您使用平台时如何收集、使用和保护您的个人信息。",
+    "lastUpdate": "最后更新：2025 年 3 月",
+    "introduction": "在 Pandora's，我们致力于保护用户的隐私。本隐私政策描述了当您使用我们的平台时，我们如何收集、使用和保护您的个人信息。",
     "sections": {
       "collection": {
-        "title": "信息收集",
+        "title": "我们收集的信息",
         "items": [
-          "个人信息：姓名、电子邮件地址、数字钱包地址",
-          "交易信息：购买历史和交易记录",
-          "技术数据：IP地址、浏览器类型、cookie数据"
+          "个人信息：姓名、电子邮件、数字钱包地址。",
+          "交易信息：购买历史和动向。",
+          "技术数据：IP 地址、浏览器类型、Cookie 数据。"
         ]
       },
       "usage": {
-        "title": "信息使用",
+        "title": "信息的使用",
         "items": [
-          "处理交易和管理用户账户",
-          "提高平台安全性和功能性",
-          "发送变更和更新通知",
-          "遵守适用的法律和税收法规"
+          "处理交易和管理用户帐户。",
+          "提高平台的安全性和功能性。",
+          "发送有关更改和更新的通信。",
+          "遵守适用的法律和税务法规。"
         ]
       },
       "protection": {
         "title": "信息保护",
         "items": [
-          "我们实施技术和组织安全措施",
-          "区块链上的信息不可更改且透明",
-          "未经同意不向第三方出售个人信息"
+          "我们实施技术和组织安全措施。",
+          "存储在区块链上的信息是不可变且透明的。",
+          "未经同意，我们不会将个人信息出售给第三方。"
         ]
       },
       "rights": {
         "title": "用户权利",
         "items": [
-          "访问、修改或删除您存储的个人信息",
-          "申请注销账户",
-          "选择不接收促销通信"
+          "访问、修改或删除您存储的个人信息。",
+          "请求取消帐户。",
+          "选择不接收促销通信。"
         ]
       },
       "cookies": {
-        "title": "Cookie和追踪技术",
+        "title": "Cookie 和跟踪技术",
         "items": [
-          "我们使用cookie改善用户体验",
-          "确保会话认证的安全性和持久性",
-          "行为和导航分析"
+          "我们使用 Cookie 来改善用户体验。",
+          "安全和持久的会話身份验证。",
+          "行为和导航分析。"
         ]
       },
       "transfers": {
         "title": "国际数据传输",
-        "content": "由于区块链技术的去中心化特性，某些数据可能在墨西哥境外处理。我们确保在所有司法管辖区遵守适用的数据保护法规。"
+        "content": "由于区块链技术的去中心化性质，某些数据可能会在墨西哥境外处理。我们确保在所有司法管辖区遵守适用的数据保护法规。"
       },
       "changes": {
-        "title": "隐私政策变更",
-        "content": "我们可能随时更新本政策。重大变更将通过平台或电子邮件通知用户。"
+        "title": "隐私政策的变更",
+        "content": "我们可能随时更新本政策。重要变更将通过平台或电子邮件通知用户。"
       },
       "contact": {
-        "title": "联系我们",
-        "content": "如有数据隐私相关的问题或请求，请联系：",
+        "title": "联系方式",
+        "content": "有关数据隐私的问题或请求，请通过以下方式与我们联系：",
         "email": "support@pandoras.foundation"
       }
     }
   },
   "invest": {
-    "title": "亲友投资池",
-    "description": "投资我们的私人池。资金将被锁定6个月。投资前请阅读条款。",
-    "cap": "全局池上限（CAP）：",
-    "total": "已投资总额",
+    "title": "家人和朋友投资池",
+    "description": "投资我们的私人池。资金锁定 6 个月。投资前请阅读条款。",
+    "cap": "全球池上限：",
+    "total": "总投资额",
     "available": "可用空间",
-    "shares": "您在池中的份额（shares）",
-    "equivalent": "等值USDC金额",
-    "toinvest": "投资金额（USDC）",
-    "subtitle": "投资该池",
-    "balance": "您的USDC余额（测试网）"
+    "shares": "您在池中的头寸（股份）",
+    "equivalent": "USDC 中的等值价值",
+    "toinvest": "投资金额 (USDC)",
+    "subtitle": "投资池",
+    "balance": "您的 USDC 余额（测试网）"
   },
   "footer": {
     "title": "Pandora's",
-    "slogan": "真实世界资产投资的未来。",
-    "copyright": "© 2025 Pandora's Foundation. 版权所有。",
-    "white_paper": "WHITE PAPER",
-    "support": "SUPPORT",
-    "terms_privacy": "TERMS | PRIVACY"
+    "slogan": "实物资产投资的未来。",
+    "copyright": "© 2025 Pandora's Foundation. 保留所有权利。",
+    "white_paper": "白皮书",
+    "support": "支持",
+    "terms_privacy": "条款 | 隐私"
   },
   "activos": {
-    "title": "数字资产市场",
-    "subtitle": "在数字世界中探索独特的投资机会。",
+    "title": "发现有支持且透明的机会",
+    "subtitle": "在Pandoras，每项可用资产都经过了详尽的审计、代币化和尽职调查过程。这确保了只有可行的、经过审计的、具有真正增长潜力的项目才能成为我们平台的一部分。",
     "assets": {
-      "casa_bella": { "tag": "房地产", "title": "卡萨贝拉", "description": "享有海景和高端装修的豪华别墅。" },
-      "vista_horizonte": { "tag": "房地产", "title": "维斯塔地平线", "description": "在一个美妙的地方欣赏海湾的最佳景色。" },
-      "narai": { "tag": "房地产", "title": "纳莱", "description": "拥有海景、舒适和豪华的公寓。" },
+      "casa_bella": { "tag": "房地产", "title": "美丽之家", "description": "享有海景和高端装修的豪华别墅。" },
+      "vista_horizonte": { "tag": "房地产", "title": "地平线景观", "description": "在一个美妙的地方欣赏海湾的最佳景色。" },
+      "narai": { "tag": "房地产", "title": "纳莱", "description": "享有海景、舒适和豪华的公寓。" },
       "startup_ia": { "tag": "初创公司", "title": "人工智能初创公司", "description": "用人工智能彻底改变市场。" },
       "fintech": { "tag": "初创公司", "title": "创新金融科技", "description": "提供全新的支付解决方案。" },
       "ecommerce": { "tag": "初创公司", "title": "可持续电子商务", "description": "具有巨大增长潜力的可持续时尚。" }
     },
     "info_modal": {
       "title": "关于我们的市场",
-      "paragraph1": "我们的市场将投资者与真实和代币化的数字资产联系起来，提供了一种参与全球经济的新方式。在这里，您不仅可以探索机会，还可以接触到由有形资产和坚实的法律结构支持的房地产项目、初创公司和企业。每项投资都通过区块链的透明度进行管理，保护您的资本，并通过稳定币和DeFi工具促进流动性。",
-      "paragraph2": "有了Pandoras，投资不再是大型企业的专属：现在您可以实现投资组合的多样化，以可及的金额参与，并获得实体经济产生的回报。我们的平台从头到尾为您提供指导：从项目选择和分析到代币化资产的管理，一切都在一个安全、受监管且旨在与您共同成长的生态系统中进行。"
+      "paragraph1": "我们的市场将投资者与实物和代币化的数字资产联系起来，提供一种参与全球经济的新方式。在这里，您不仅可以探索机会：您还可以访问由有形资产和坚实的法律结构支持的房地产项目、初创公司和企业。每项投资都通过区块链透明度进行管理，保护您的资本并通过稳定币和 DeFi 工具促进流动性。",
+      "paragraph2": "有了 Pandoras，投资不再是大公司的专属：现在您可以分散您的投资组合，以可承受的金额参与，并获得实体经济产生的回报。我们的平台从头到尾为您提供指导：从项目选择和分析到代币化资产的管理，所有这些都在一个安全、受监管的生态系统中进行，旨在与您共同成长。"
+    },
+    "info_sections": {
+      "section1": {
+        "title": "掌控您的财务未来",
+        "content": "选择一项资产，查看其信息，并在几分钟内开始您的投资过程。每个项目都附有清晰和更新的指标，因此您可以自信地做出决策。"
+      },
+      "section2": {
+        "title": "透明度和持续监控",
+        "content": "我们进行定期审计，并提供实时监控系统，以保证每项投资的质量。因此，您的投资组合在数据和经过验证的安全性的支持下不断增长。"
+      }
     }
   }
 }
