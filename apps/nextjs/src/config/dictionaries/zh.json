@@ -419,6 +419,7 @@
   "activos": {
     "title": "发现有支持且透明的机会",
     "subtitle": "在Pandoras，每项可用资产都经过了详尽的审计、代币化和尽职调查过程。这确保了只有可行的、经过审计的、具有真正增长潜力的项目才能成为我们平台的一部分。",
+    "clasification": "代币化过程中的项目分类",
     "assets": {
       "casa_bella": { "tag": "房地产", "title": "美丽之家", "description": "享有海景和高端装修的豪华别墅。" },
       "vista_horizonte": { "tag": "房地产", "title": "地平线景观", "description": "在一个美妙的地方欣赏海湾的最佳景色。" },

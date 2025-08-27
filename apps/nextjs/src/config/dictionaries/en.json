@@ -419,6 +419,7 @@
   "activos": {
     "title": "Discover backed and transparent opportunities",
     "subtitle": "At Pandoras, every available asset has undergone an exhaustive process of auditing, tokenization, and due diligence. This ensures that only viable, audited projects with real growth potential are part of our platform.",
+    "clasification": "Classification of projects in the process of tokenization",
     "assets": {
       "casa_bella": { "tag": "REAL ESTATE", "title": "Casa Bella", "description": "A luxury villa with sea views and high-end finishes." },
       "vista_horizonte": { "tag": "REAL ESTATE", "title": "Vista Horizonte", "description": "The best view of the Bay in a wonderful place." },
