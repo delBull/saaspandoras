@@ -30,6 +30,7 @@ const publicRoute = [
   "/(\\w{2}/)?pricing(.*)",
   "/(\\w{2}/)?privacy(.*)",
   "/(\\w{2}/)?assets(.*)",
+  "/(\\w{2}/)?activos(.*)",
   "/(\\w{2}/)?invest(.*)",
   "^/\\w{2}$",
 ];
@@ -141,7 +142,7 @@ const authMiddleware = withAuth(
         // Handle relative URLs
         if (callbackUrl.startsWith("/")) {
           // Add locale prefix if missing
-          if (!/^\/[a-z]{2}\//.test(callbackUrl)) {
+          if (!/^\[a-z]{2}\//.test(callbackUrl)) {
             return NextResponse.redirect(
               new URL(`/${locale}${callbackUrl}`, req.url),
             );
