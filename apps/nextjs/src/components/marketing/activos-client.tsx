@@ -103,7 +103,7 @@ export function ActivosClient({ dict }: { dict: any }) {
         </motion.div>
 
         <h2 className="text-3xl font-shadows text-left mb-4 mt-4">
-          Clasificación de proyectos en proceso de tokenización
+          {dict.activos.clasification}
         </h2>
         <motion.div
           variants={containerVariants}
@@ -168,23 +168,51 @@ function InfoSection({ title, content, alignment = 'left' }: { title: string, co
   );
 }
 
-// --- Tokenization Process Section ---
+
 // --- Tokenization Process Section ---
 function ProcessStep({ icon: Icon, title, description }: { icon: LucideIcon; title: string; description: string; }) {
   return (
-    <div className="relative flex items-center gap-6 p-6 rounded-lg border border-gray-700/80">
+    <motion.div
+      className="relative flex items-center gap-6 p-6 rounded-md border border-gray-700/80"
+      initial="rest"
+      whileHover="hover"
+    >
       <motion.div
-        className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-800 text-lime-300"
-        whileHover={{ scale: 1.2, rotate: 15 }}
+        className="flex h-12 w-12 items-center justify-center rounded-lg text-lime-200"
+        variants={{
+          rest: { scale: 1, rotate: 0 },
+          hover: { scale: 1.2, rotate: 15 },
+        }}
         transition={{ type: "spring", stiffness: 300 }}
       >
-        <Icon className="h-6 w-6" />
+        <Icon className="h-10 w-10" />
       </motion.div>
       <div>
-        <h3 className="text-xl font-bold text-white">{title}</h3>
+        <div className="relative inline-block">
+          <motion.div
+            className="absolute inset-0 bg-lime-200"
+            style={{ originX: 0, zIndex: 0 }}
+            variants={{
+              rest: { scaleX: 0 },
+              hover: { scaleX: 1 },
+            }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+          />
+          <motion.h3
+            className="relative text-xl font-mono font-bold px-1"
+            style={{ zIndex: 1 }}
+            variants={{
+              rest: { color: "#FFFFFF" },
+              hover: { color: "#000000" },
+            }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+          >
+            {title}
+          </motion.h3>
+        </div>
         <p className="mt-1 text-gray-300">{description}</p>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -228,7 +256,7 @@ function TokenizationProcess({ dict }: { dict: any }) {
     <div className="my-44 grid md:grid-cols-2 gap-16 items-start">
       <div className="md:text-left sticky top-0 pt-20">
         <h2 className="text-4xl font-bold text-white">
-          {tokenizationProcessData.title_part1} <span className="font-shadows">{tokenizationProcessData.title_part2}</span>
+          {tokenizationProcessData.title_part1} <span className="font-shadows text-5xl text-[#7b1b74]">{tokenizationProcessData.title_part2}</span>
         </h2>
         <p className="mt-4 text-lg text-gray-300">
           {tokenizationProcessData.subtitle}

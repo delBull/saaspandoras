@@ -419,6 +419,7 @@
   "activos": {
     "title": "Descubre oportunidades respaldadas y transparentes",
     "subtitle": "En Pandoras, cada activo disponible ha pasado por un exhaustivo proceso de auditoría, tokenización y due diligence. Esto asegura que solo proyectos viables, auditados y con potencial de crecimiento real formen parte de nuestra plataforma.",
+    "clasification": "Clasificación de proyectos en proceso de tokenización",
     "assets": {
       "casa_bella": { "tag": "REAL ESTATE", "title": "Casa Bella", "description": "Una villa de lujo con vista al mar y acabados de alta gama." },
       "vista_horizonte": { "tag": "REAL ESTATE", "title": "Vista Horizonte", "description": "La mejor vista de la Bahía en un lugar maravilloso." },
