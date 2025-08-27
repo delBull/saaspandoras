@@ -14,7 +14,7 @@ export const getMarketingConfig = async ({
     mainNav: [
       {
         title: dict.marketing.main_nav_assets,
-        href: `/pricing`,
+        href: `/activos`,
         external: false,
       },
       {
