@@ -38,7 +38,7 @@ export const SiteFooter: React.FC<{ dict: Dictionary }> = ({ dict }) => {
                             <div className="grid grid-cols-3 gap-4">
                                 <Link href="/" className="font-mono text-white text-sm hover:text-gray-100 transition-colors hover:underline-offset-1 hover:underline z-50">{dict.marketing.main_nav_home}</Link>
                                 <Link href="#" className="font-mono text-white text-sm hover:text-gray-100 transition-colors hover:underline-offset-1 hover:underline z-50">{dict.marketing.main_nav_about}</Link>
-                                <Link href="/pricing" className="font-mono bg-white text-black py-1 rounded-sm text-sm text-center hover:bg-gray-100 transition-colors z-50">{dict.marketing.main_nav_assets}</Link>
+                                <Link href="/activos" className="font-mono bg-white text-black py-1 rounded-sm text-sm text-center hover:bg-gray-100 transition-colors z-50">{dict.marketing.main_nav_assets}</Link>
                             </div>
                             <h2 ref={ref} style={{ fontSize }} className="w-full text-center font-mono font-bold uppercase mb-4 whitespace-nowrap scale-y-150">{dict.footer.title}</h2>
                             {/*<p className="text-gray-400 max-w-sm mb-6">{dict.slogan}</p>*/}

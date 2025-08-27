@@ -254,7 +254,7 @@ function TokenizationProcess({ dict }: { dict: any }) {
 
   return (
     <div className="my-44 grid md:grid-cols-2 gap-16 items-start">
-      <div className="md:text-left sticky top-0 pt-20">
+      <div className="md:text-left sticky top-0 pt-20 z-10 bg-black/80 backdrop-blur-sm">
         <h2 className="text-4xl font-bold text-white">
           {tokenizationProcessData.title_part1} <span className="font-shadows text-5xl text-[#7b1b74]">{tokenizationProcessData.title_part2}</span>
         </h2>
