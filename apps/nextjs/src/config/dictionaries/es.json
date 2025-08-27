@@ -433,14 +433,41 @@
       "paragraph2": "Con Pandoras, invertir deja de ser exclusivo para grandes corporativos: ahora puedes diversificar tu portafolio, participar desde montos accesibles y recibir rendimientos generados por la economía real. Nuestra plataforma te guía de principio a fin: desde la selección y análisis de proyectos hasta la gestión de tus activos tokenizados, todo dentro de un ecosistema seguro, regulado y diseñado para crecer contigo."
     },
     "info_sections": {
-      "section1": {
-        "title": "Toma el control de tu futuro financiero",
-        "content": "Selecciona un activo, revisa su información y comienza tu proceso de inversión en cuestión de minutos. Cada proyecto está acompañado de métricas claras y actualizadas para que tomes decisiones con confianza."
+        "section1": {
+          "title": "Toma el control de tu futuro financiero",
+          "content": "Selecciona un activo, revisa su información y comienza tu proceso de inversión en cuestión de minutos. Cada proyecto está acompañado de métricas claras y actualizadas para que tomes decisiones con confianza."
+        },
+        "section2": {
+          "title": "Transparencia y seguimiento continuo",
+          "content": "Realizamos auditorías periódicas y ofrecemos un sistema de monitoreo en tiempo real que garantiza la calidad de cada inversión. Así, tu portafolio crece respaldado por datos y seguridad comprobada."
+        }
       },
-      "section2": {
-        "title": "Transparencia y seguimiento continuo",
-        "content": "Realizamos auditorías periódicas y ofrecemos un sistema de monitoreo en tiempo real que garantiza la calidad de cada inversión. Así, tu portafolio crece respaldado por datos y seguridad comprobada."
+      "tokenization_process": {
+        "title_part1": "De proyecto a oportunidad ",
+        "title_part2": "tokenizada",
+        "subtitle": "Transparencia, análisis y tecnología blockchain al servicio de tu inversión",
+        "steps": [
+          {
+            "title": "Evaluación inicial y selección",
+            "description": "Analizamos cada proyecto candidato (inmuebles, startups, empresas) con criterios de viabilidad financiera, impacto y proyección."
+          },
+          {
+            "title": "Due Diligence y legalidad",
+            "description": "Verificamos documentos, cumplimiento regulatorio y estructura legal para garantizar que cada activo cumpla con las normas aplicables."
+          },
+          {
+            "title": "Tokenización y respaldo en RWA",
+            "description": "Convertimos el activo en unidades digitales seguras mediante contratos inteligentes auditados, respaldados por bienes tangibles."
+          },
+          {
+            "title": "Publicación en la plataforma",
+            "description": "Una vez aprobado, el proyecto se integra al marketplace para que los inversores puedan participar de forma directa y segura."
+          },
+          {
+            "title": "Monitoreo y rendimiento continuo",
+            "description": "Supervisamos la evolución de cada proyecto, asegurando transparencia, pagos programados y reportes actualizados."
+          }
+        ]
       }
-    }
   }
 }
