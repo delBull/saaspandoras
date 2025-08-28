@@ -222,7 +222,7 @@
     "signup_google": "Regístrate con Google"
   },
   "common": {
-    "copyright": "© ${currentYear} Pandora's Foundation es una marca de MXHUB Ecosistema Blockchain S.A. de C.V.",
+    "copyright": "© ${currentYear} Pandora's inanceoundation es una marca de MXHUB Ecosistema Blockchain S.A. de C.V.",
     "dashboard": {
       "main_nav_documentation": "Documentación",
       "main_nav_support": "Soporte",
@@ -268,8 +268,8 @@
     "tabPrivacy": "Política de Privacidad",
     "sections": {
       "welcome": {
-        "title": "Bienvenido a Pandora's Foundation",
-        "content": "Estos términos y condiciones regulan el acceso y uso de nuestra plataforma digital y DApp, disponible en https://dapp.pandoras.foundation/, así como los servicios de tokenización, compra de participaciones inmobiliarias y derechos digitales."
+        "title": "Bienvenido a Pandora's Finance",
+        "content": "Estos términos y condiciones regulan el acceso y uso de nuestra plataforma digital y DApp, disponible en https://dapp.pandoras.finance/, así como los servicios de tokenización, compra de participaciones inmobiliarias y derechos digitales."
       },
       "definitions": {
         "title": "Definiciones",
@@ -392,7 +392,7 @@
       "contact": {
         "title": "Contacto",
         "content": "Para dudas o solicitudes sobre la privacidad de los datos, contáctenos en:",
-        "email": "correo@pandoras.foundation"
+        "email": "correo@pandoras.inanceoundation"
       }
     }
   },
@@ -411,7 +411,7 @@
   "footer": {
     "title": "Pandora's",
     "slogan": "El futuro de la inversión en activos del mundo real.",
-    "copyright": "© 2025 Pandora's Foundation. Todos los derechos reservados.",
+    "copyright": "© 2025 Pandora's Finance. Todos los derechos reservados.",
     "white_paper": "LIBRO BLANCO",
     "support": "SOPORTE",
     "terms_privacy": "TÉRMINOS | PRIVACIDAD"
@@ -472,11 +472,11 @@
       }
   },
   "about": {
-    "title": "Sobre Pandora's Foundation: Digitalizando el Valor del Mundo Real",
+    "title": "Sobre Pandora's Finance: Digitalizando el Valor del Mundo Real",
     "the_big_why": {
       "title": "Nuestro Gran Porqué / The Big Why",
       "p1": "En un mundo donde las mejores oportunidades de inversión a menudo están reservadas para unos pocos, miles de millones de dólares en valor permanecen atrapados en activos ilíquidos como bienes raíces y empresas emergentes. La complejidad, la burocracia y las altas barreras de entrada impiden que la mayoría de las personas puedan participar en su crecimiento.",
-      "p2": "Pandora's Foundation nació de una pregunta fundamental: ¿Y si pudiéramos desbloquear ese valor? ¿Y si pudiéramos hacer que invertir en un edificio de apartamentos o en una startup prometedora fuera tan sencillo como comprar una acción?",
+      "p2": "Pandora's Finance nació de una pregunta fundamental: ¿Y si pudiéramos desbloquear ese valor? ¿Y si pudiéramos hacer que invertir en un edificio de apartamentos o en una startup prometedora fuera tan sencillo como comprar una acción?",
       "p3": "Nuestro \"gran porqué\" es la democratización del acceso a la riqueza. Creemos en un futuro financiero donde cualquier persona, desde cualquier lugar, pueda invertir en activos tangibles y de alto crecimiento de forma segura, transparente y eficiente, todo a través del poder de la tecnología blockchain."
     },
     "our_mission": {
@@ -485,7 +485,7 @@
     },
     "what_we_do": {
       "title": "¿Qué Hacemos?",
-      "intro": "Pandora's Foundation es una plataforma de tokenización de extremo a extremo. Actualmente, nuestro enfoque principal es el sector de bienes raíces , pero estamos expandiendo nuestro modelo para incluir startups a mediano plazo.",
+      "intro": "Pandora's Finance es una plataforma de tokenización de extremo a extremo. Actualmente, nuestro enfoque principal es el sector de bienes raíces , pero estamos expandiendo nuestro modelo para incluir startups a mediano plazo.",
       "services_title": "Nuestro servicio integral abarca:",
       "services": [
         {
@@ -504,7 +504,7 @@
     },
     "our_current_position": {
       "title": "Nuestra Posición Actual",
-      "intro": "No somos solo una idea; somos una realidad en crecimiento. A día de hoy, Pandora's Foundation cuenta con:",
+      "intro": "No somos solo una idea; somos una realidad en crecimiento. A día de hoy, Pandora's Finance cuenta con:",
       "points": [
         "Una plataforma de tokenización básica ya operativa.",
         "Una estructura legal y de marca sólidamente establecida.",

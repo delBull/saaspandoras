@@ -21,9 +21,9 @@ export function PricingCards({ dict }: { dict?: Dictionary }) {
           Email{" "}
           <a
             className="font-medium text-primary hover:underline"
-            href="mailto:support@pandoras.foundation"
+            href="mailto:support@pandoras.finance"
           >
-            support@pandoras.foundation
+            support@pandoras.finance
           </a>{" "}
         </Balancer>
       </p>

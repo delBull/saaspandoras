@@ -222,7 +222,7 @@
     "signup_google": "Google로 가입"
   },
   "common": {
-    "copyright": "© ${currentYear} Pandora's Foundation은 MXHUB Ecosystem Blockchain S.A. de C.V.의 브랜드입니다.",
+    "copyright": "© ${currentYear} Pandora's Finance은 MXHUB Ecosystem Blockchain S.A. de C.V.의 브랜드입니다.",
     "dashboard": {
       "main_nav_documentation": "문서",
       "main_nav_support": "지원",
@@ -268,8 +268,8 @@
     "tabPrivacy": "개인정보 처리방침",
     "sections": {
       "welcome": {
-        "title": "Pandora's Foundation에 오신 것을 환영합니다",
-        "content": "이 이용 약관은 https://dapp.pandoras.foundation/에서 제공되는 당사의 디지털 플랫폼 및 DApp에 대한 액세스 및 사용과 토큰화 서비스, 부동산 참여 구매 및 디지털 권리를 규정합니다."
+        "title": "Pandora's inanceoundation에 오신 것을 환영합니다",
+        "content": "이 이용 약관은 https://dapp.pandoras.finance/에서 제공되는 당사의 디지털 플랫폼 및 DApp에 대한 액세스 및 사용과 토큰화 서비스, 부동산 참여 구매 및 디지털 권리를 규정합니다."
       },
       "definitions": {
         "title": "정의",
@@ -392,7 +392,7 @@
       "contact": {
         "title": "연락처",
         "content": "데이터 개인정보에 대한 질문이나 요청이 있는 경우 다음으로 문의하십시오.",
-        "email": "support@pandoras.foundation"
+        "email": "support@pandoras.finance"
       }
     }
   },
@@ -411,7 +411,7 @@
   "footer": {
     "title": "Pandora's",
     "slogan": "실물 자산 투자의 미래.",
-    "copyright": "© 2025 Pandora's Foundation. All rights reserved.",
+    "copyright": "© 2025 Pandora's Finance. All rights reserved.",
     "white_paper": "백서",
     "support": "지원",
     "terms_privacy": "약관 | 개인정보 보호"
