@@ -21,6 +21,7 @@ export function ConnectWalletButton() {
       onClick={() =>
         connect({
           client,
+          chain,
           showThirdwebBranding: false, 
           size: "compact",
           wallets: [
