@@ -32,6 +32,7 @@ const publicRoute = [
   "/(\\w{2}/)?assets(.*)",
   "/(\\w{2}/)?activos(.*)",
   "/(\\w{2}/)?invest(.*)",
+  "/(\\w{2}/)?about(.*)",
   "^/\\w{2}$",
 ];
 
