@@ -1,5 +1,7 @@
 require("@nomicfoundation/hardhat-toolbox");
+require("dotenv").config();
 
+/** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
   solidity: {
     version: "0.8.20",
@@ -13,5 +15,9 @@ module.exports = {
   },
   networks: {
     hardhat: {},
+    base: {
+      url: "https://mainnet.base.org",
+      accounts: [process.env.PRIVATE_KEY],
+    },
   },
 };

@@ -10,7 +10,7 @@ import { PANDORAS_KEY_ABI } from "~/lib/pandoras-key-abi";
 import { SuccessNFTCard } from "./success-nft-card";
 import { MintingProgressModal } from "./minting-progress-modal";
 
-const PANDORAS_KEY_CONTRACT_ADDRESS = "0x720F378209a5c68F8657080A28ea6452518f67b0";
+const PANDORAS_KEY_CONTRACT_ADDRESS = "0xA6694331d22C3b0dD2d550a2f320D601bE17FBba";
 
 export function NFTGatingMint() {
   const account = useActiveAccount();

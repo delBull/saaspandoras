@@ -34,8 +34,8 @@ export function ConnectWalletButton() {
                   "passkey"
                 ],
               },
-              smartAccount: {
-                chain,
+              executionMode: {
+                mode: "EIP7702",
                 sponsorGas: true,
               },
             }),
