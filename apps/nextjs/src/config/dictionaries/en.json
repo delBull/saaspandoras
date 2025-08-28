@@ -1,4 +1,11 @@
 {
+  "whitepaper": {
+    "sections": "Whitepaper Sections",
+    "search": "Search",
+    "search_placeholder": "Search in whitepaper...",
+    "ai_search_soon": "AI-powered search coming soon.",
+    "on_this_page": "On this page"
+  },
   "price": {
     "title": "Transparent and Affordable Pricing!",
     "properties_title": "Properties",
@@ -508,7 +515,7 @@
         "points": [
           "A basic tokenization platform already operational.",
           "A solidly established legal and brand structure.",
-          "Four signed clients who are ready to start their tokenization processes on our platform."
+          "Signed clients who are ready to start their tokenization processes on our platform."
         ]
       },
       "the_team": {
@@ -539,7 +546,7 @@
         "categories": [
           {
             "name": "Blockchain Technology",
-            "partners": "We integrate decentralized oracles like Chainlink and payment gateways like Transak and MoonPay for seamless operation."
+            "partners": "We integrate decentralized oracles like Chainlink and payment gateways like Transak for seamless operation."
           },
           {
             "name": "Audit and Security",
@@ -547,15 +554,15 @@
           },
           {
             "name": "Compliance (KYC/AML)",
-            "partners": "We use identity verification services from leaders like Sumsub and Jumio."
+            "partners": "We use identity verification services from market leaders."
           },
           {
             "name": "Legal and Financial Advisory",
-            "partners": "We are backed by law firms like Basham, Ringe y Correa and have the support of financial audit firms like EY."
+            "partners": "We are backed by law firms to support us financially."
           },
           {
             "name": "Commercial Alliances",
-            "partners": "We are members of the Mexican Association of Real Estate Professionals (AMPI) and the CMIC to stay at the forefront of the real estate sector."
+            "partners": "We are members of the Mexican Association of Real Estate Professionals (AMPI) to stay at the forefront of the real estate sector."
           }
         ]
       },

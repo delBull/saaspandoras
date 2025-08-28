@@ -7,6 +7,7 @@ import { Mdx } from "~/components/content/mdx-components";
 import { WhitepaperLayout } from "~/components/whitepaper/layout";
 import { getTableOfContents } from "~/lib/toc";
 import { allWhitepapers } from ".contentlayer/generated";
+import { getDictionary } from "~/lib/get-dictionary";
 
 import "~/styles/mdx.css";
 
@@ -18,21 +19,30 @@ import { absoluteUrl } from "~/lib/utils";
 interface WhitepaperPageProps {
   params: Promise<{
     slug: string[];
+    lang: string;
   }>;
 }
 
-function getWhitepaperFromParams(params: { slug: string[] }) {
+function getWhitepaperFromParams(params: { slug: string[]; lang: string }) {
   const slug = params.slug?.join("/") || "";
+  const lang = params.lang;
   if (slug) {
-    const whitepaper = allWhitepapers.find((doc) => doc.slugAsParams === slug);
+    const whitepaper = allWhitepapers.find(
+      (doc) => doc.slugAsParams === slug && doc.locale === lang,
+    );
     return whitepaper;
   }
-  // If no slug, return the first paper
-  const sortedWhitepapers = allWhitepapers.sort((a, b) => a.title.localeCompare(b.title));
+  
+  const whitepapersForLang = allWhitepapers.filter((doc) => doc.locale === lang);
+  const sortedWhitepapers = whitepapersForLang.sort((a, b) =>
+    a.title.localeCompare(b.title),
+  );
   return sortedWhitepapers[0];
 }
 
-export async function generateMetadata(props: WhitepaperPageProps): Promise<Metadata> {
+export async function generateMetadata(
+  props: WhitepaperPageProps,
+): Promise<Metadata> {
   const params = await props.params;
   const whitepaper = getWhitepaperFromParams(params);
 
@@ -73,17 +83,17 @@ export async function generateMetadata(props: WhitepaperPageProps): Promise<Meta
   };
 }
 
-export function generateStaticParams(): {
-  slug: string[];
-}[] {
-  return allWhitepapers.map((doc) => ({
+export function generateStaticParams(): Promise<WhitepaperPageProps["params"][]> {
+  return Promise.resolve(allWhitepapers.map((doc) => ({
     slug: doc.slugAsParams.split("/"),
-  }));
+    lang: doc.locale,
+  })));
 }
 
 export default async function WhitepaperPage(props: WhitepaperPageProps) {
   const params = await props.params;
   const whitepaper = getWhitepaperFromParams(params);
+  const dict = await getDictionary(params.lang);
 
   if (!whitepaper) {
     notFound();
@@ -92,7 +102,7 @@ export default async function WhitepaperPage(props: WhitepaperPageProps) {
   const toc = await getTableOfContents(whitepaper.body.raw);
 
   return (
-    <WhitepaperLayout toc={toc}>
+    <WhitepaperLayout toc={toc} dict={dict.whitepaper}>
       <DocsPageHeader heading={whitepaper.title} text={whitepaper.description} />
       <Mdx code={whitepaper.body.code} />
     </WhitepaperLayout>

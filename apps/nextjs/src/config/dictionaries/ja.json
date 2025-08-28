@@ -1,4 +1,11 @@
 {
+  "whitepaper": {
+      "sections": "ホワイトペーパーのセクション",
+      "search": "検索",
+      "search_placeholder": "ホワイトペーパーを検索...",
+      "ai_search_soon": "AI検索は近日公開予定です。",
+      "on_this_page": "このページの内容"
+  },
   "price": {
     "title": "透明で手頃な価格設定！",
     "properties_title": "プロパティ",

@@ -1,4 +1,11 @@
 {
+  "whitepaper": {
+      "sections": "백서 섹션",
+      "search": "검색",
+      "search_placeholder": "백서에서 검색...",
+      "ai_search_soon": "AI 검색 기능이 곧 제공됩니다.",
+      "on_this_page": "이 페이지의 내용"
+  },
   "price": {
     "title": "투명하고 저렴한 가격!",
     "properties_title": "속성",

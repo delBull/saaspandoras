@@ -158,7 +158,24 @@ export const Whitepaper = defineDocumentType(() => ({
       type: "string",
     },
   },
-  computedFields: defaultComputedFields,
+  computedFields: {
+    slug: {
+      type: "string",
+      resolve: (doc) =>
+        `/${doc._raw.flattenedPath.split("/")[0]}/${doc._raw.flattenedPath
+          .split("/")
+          .slice(2)
+          .join("/")}`,
+    },
+    slugAsParams: {
+      type: "string",
+      resolve: (doc) => doc._raw.flattenedPath.split("/").slice(2).join("/"),
+    },
+    locale: {
+      type: "string",
+      resolve: (doc) => doc._raw.flattenedPath.split("/")[1],
+    },
+  },
 }));
 
 export default makeSource({
