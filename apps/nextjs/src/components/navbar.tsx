@@ -96,7 +96,9 @@ export function NavBar({
           <div className="flex items-center space-x-3">
             {items?.length ? (
               <nav className="hidden gap-6 md:flex">
-                {items.map((item, index) => {
+                {items
+                  .filter((item) => !item.hidden) // Add this filter
+                  .map((item, index) => {
                   if (item.external) {
                     return (
                       <a

@@ -145,9 +145,25 @@ export const Page = defineDocumentType(() => ({
   computedFields: defaultComputedFields,
 }));
 
+export const Whitepaper = defineDocumentType(() => ({
+  name: "Whitepaper",
+  filePathPattern: `whitepapers/**/*.mdx`,
+  contentType: "mdx",
+  fields: {
+    title: {
+      type: "string",
+      required: true,
+    },
+    description: {
+      type: "string",
+    },
+  },
+  computedFields: defaultComputedFields,
+}));
+
 export default makeSource({
   contentDirPath: "./src/content",
-  documentTypes: [Page, Doc, Guide, Post, Author],
+  documentTypes: [Page, Doc, Guide, Post, Author, Whitepaper],
   mdx: {
     remarkPlugins: [remarkGfm],
     rehypePlugins: [
