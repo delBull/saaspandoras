@@ -222,7 +222,7 @@
     "signup_google": "Googleでサインアップ"
   },
   "common": {
-    "copyright": "© ${currentYear} Pandora's FoundationはMXHUB Ecosystem Blockchain S.A. de C.V.のブランドです。",
+    "copyright": "© ${currentYear} Pandora's FinanceはMXHUB Ecosystem Blockchain S.A. de C.V.のブランドです。",
     "dashboard": {
       "main_nav_documentation": "ドキュメンテーション",
       "main_nav_support": "サポート",
@@ -268,8 +268,8 @@
     "tabPrivacy": "プライバシーポリシー",
     "sections": {
       "welcome": {
-        "title": "Pandora's Foundationへようこそ",
-        "content": "これらの利用規約は、https://dapp.pandoras.foundation/で利用可能な当社のデジタルプラットフォームおよびDAppへのアクセスと使用、ならびにトークン化サービス、不動産参加の購入、およびデジタル権利を規定します。"
+        "title": "Pandora's Financeへようこそ",
+        "content": "これらの利用規約は、https://dapp.pandoras.finance/で利用可能な当社のデジタルプラットフォームおよびDAppへのアクセスと使用、ならびにトークン化サービス、不動産参加の購入、およびデジタル権利を規定します。"
       },
       "definitions": {
         "title": "定義",
@@ -392,7 +392,7 @@
       "contact": {
         "title": "連絡先",
         "content": "データプライバシーに関する質問やリクエストについては、以下までお問い合わせください。",
-        "email": "support@pandoras.foundation"
+        "email": "support@pandoras.finance"
       }
     }
   },
@@ -411,7 +411,7 @@
   "footer": {
     "title": "Pandora's",
     "slogan": "実物資産投資の未来。",
-    "copyright": "© 2025 Pandora's Foundation. All rights reserved.",
+    "copyright": "© 2025 Pandora's inanceoundation. All rights reserved.",
     "white_paper": "ホワイトペーパー",
     "support": "サポート",
     "terms_privacy": "規約 | プライバシー"

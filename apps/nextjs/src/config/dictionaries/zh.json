@@ -222,7 +222,7 @@
     "signup_google": "使用 Google 注册"
   },
   "common": {
-    "copyright": "© ${currentYear} Pandora's Foundation 是 MXHUB Ecosystem Blockchain S.A. de C.V. 的一个品牌。",
+    "copyright": "© ${currentYear} Pandora's Finance 是 MXHUB Ecosystem Blockchain S.A. de C.V. 的一个品牌。",
     "dashboard": {
       "main_nav_documentation": "文档",
       "main_nav_support": "支持",
@@ -268,8 +268,8 @@
     "tabPrivacy": "隐私政策",
     "sections": {
       "welcome": {
-        "title": "欢迎来到 Pandora's Foundation",
-        "content": "这些条款和条件管辖对我们的数字平台和 DApp 的访问和使用，该平台和 DApp 可在 https://dapp.pandoras.foundation/ 上获得，以及代币化服务、房地产参与购买和数字权利。"
+        "title": "欢迎来到 Pandora's Finance",
+        "content": "这些条款和条件管辖对我们的数字平台和 DApp 的访问和使用，该平台和 DApp 可在 https://dapp.pandoras.finance/ 上获得，以及代币化服务、房地产参与购买和数字权利。"
       },
       "definitions": {
         "title": "定义",
@@ -392,7 +392,7 @@
       "contact": {
         "title": "联系方式",
         "content": "有关数据隐私的问题或请求，请通过以下方式与我们联系：",
-        "email": "support@pandoras.foundation"
+        "email": "support@pandoras.finance"
       }
     }
   },
@@ -411,7 +411,7 @@
   "footer": {
     "title": "Pandora's",
     "slogan": "实物资产投资的未来。",
-    "copyright": "© 2025 Pandora's Foundation. 保留所有权利。",
+    "copyright": "© 2025 Pandora's Finance. 保留所有权利。",
     "white_paper": "白皮书",
     "support": "支持",
     "terms_privacy": "条款 | 隐私"

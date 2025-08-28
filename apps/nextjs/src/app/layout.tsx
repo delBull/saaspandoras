@@ -72,7 +72,7 @@ export const metadata = {
   ],
   authors: [
     {
-      name: "Pandora's Foundation",
+      name: "Pandora's Finance",
       url: siteConfig.url,
     },
   ],

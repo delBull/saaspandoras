@@ -222,7 +222,7 @@
     "signup_google": "Sign Up with Google"
   },
   "common": {
-    "copyright": "© ${currentYear} Pandora's Foundation is a brand of MXHUB Ecosystem Blockchain S.A. de C.V.",
+    "copyright": "© ${currentYear} Pandora's Finance is a brand of MXHUB Ecosystem Blockchain S.A. de C.V.",
     "dashboard": {
       "main_nav_documentation": "Documentation",
       "main_nav_support": "Support",
@@ -268,8 +268,8 @@
     "tabPrivacy": "Privacy Policy",
     "sections": {
       "welcome": {
-        "title": "Welcome to Pandora's Foundation",
-        "content": "These terms and conditions govern the access and use of our digital platform and DApp, available at https://dapp.pandoras.foundation/, as well as tokenization services, real estate participation purchases, and digital rights."
+        "title": "Welcome to Pandora's Finance",
+        "content": "These terms and conditions govern the access and use of our digital platform and DApp, available at https://dapp.pandoras.finance/, as well as tokenization services, real estate participation purchases, and digital rights."
       },
       "definitions": {
         "title": "Definitions",
@@ -392,7 +392,7 @@
       "contact": {
         "title": "Contact",
         "content": "For questions or requests about data privacy, please contact us at:",
-        "email": "support@pandoras.foundation"
+        "email": "support@pandoras.finance"
       }
     }
   },
@@ -411,7 +411,7 @@
   "footer": {
     "title": "Pandora's",
     "slogan": "The future of real-world asset investment.",
-    "copyright": "© 2025 Pandora's Foundation. All rights reserved.",
+    "copyright": "© 2025 Pandora's Finance. All rights reserved.",
     "white_paper": "WHITE PAPER",
     "support": "SUPPORT",
     "terms_privacy": "TERMS | PRIVACY"
@@ -472,11 +472,11 @@
       }
   },
     "about": {
-      "title": "About Pandora's Foundation: Digitizing Real-World Value",
+      "title": "About Pandora's Finance: Digitizing Real-World Value",
       "the_big_why": {
         "title": "Our Big Why",
         "p1": "In a world where the best investment opportunities are often reserved for a few, billions of dollars in value remain trapped in illiquid assets like real estate and startups. Complexity, bureaucracy, and high barriers to entry prevent most people from participating in their growth.",
-        "p2": "Pandora's Foundation was born from a fundamental question: What if we could unlock that value? What if we could make investing in an apartment building or a promising startup as simple as buying a stock?",
+        "p2": "Pandora's Finance was born from a fundamental question: What if we could unlock that value? What if we could make investing in an apartment building or a promising startup as simple as buying a stock?",
         "p3": "Our 'big why' is the democratization of access to wealth. We believe in a financial future where anyone, from anywhere, can invest in tangible, high-growth assets safely, transparently, and efficiently, all through the power of blockchain technology."
       },
       "our_mission": {
@@ -485,7 +485,7 @@
       },
       "what_we_do": {
         "title": "What We Do",
-        "intro": "Pandora's Foundation is an end-to-end tokenization platform. Currently, our main focus is the real estate sector, but we are expanding our model to include startups in the medium term.",
+        "intro": "Pandora's Finance is an end-to-end tokenization platform. Currently, our main focus is the real estate sector, but we are expanding our model to include startups in the medium term.",
         "services_title": "Our comprehensive service covers:",
         "services": [
           {
@@ -504,7 +504,7 @@
       },
       "our_current_position": {
         "title": "Our Current Position",
-        "intro": "We are not just an idea; we are a growing reality. As of today, Pandora's Foundation has:",
+        "intro": "We are not just an idea; we are a growing reality. As of today, Pandora's Finance has:",
         "points": [
           "A basic tokenization platform already operational.",
           "A solidly established legal and brand structure.",
