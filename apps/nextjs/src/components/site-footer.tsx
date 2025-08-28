@@ -45,8 +45,8 @@ export const SiteFooter: React.FC<{ dict: Dictionary }> = ({ dict }) => {
                          </div>
                         <div className="border border-dashed border-gray-700 rounded-md px-6 py-6 mt-8">
                             <div className="flex justify-between mb-12">
-                                <Link href="#" className="font-mono text-sm hover:text-white transition-colors">{dict.footer.white_paper}</Link>
-                                <Link href="#" className="font-mono text-sm hover:text-white transition-colors">{dict.footer.support}</Link>
+                                <Link href="/whitepaper/1-introduction" className="font-mono text-sm hover:text-white transition-colors">{dict.footer.white_paper}</Link>
+                                <Link href="#" className="font-mono text-sm hover:text-white transition-colors disabled">{dict.footer.support}</Link>
                             </div>
                             <div className="flex flex-col sm:flex-row justify-between text-xs text-gray-500">
                                 <p className="font-mono mb-2 sm:mb-0">{dict.footer.copyright}</p>

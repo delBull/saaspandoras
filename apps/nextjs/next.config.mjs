@@ -1,3 +1,7 @@
+
+
+import { withContentlayer } from "next-contentlayer2";
+
 // @ts-check
 import "./src/env.mjs";
 
@@ -54,4 +58,4 @@ const config = {
   output: "standalone",
 };
 
-export default withNextDevtools(withMDX()(config));
+export default withContentlayer(withNextDevtools(withMDX()(config)));

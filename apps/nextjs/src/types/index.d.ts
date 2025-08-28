@@ -450,6 +450,7 @@ export interface NavItem {
   title: string;
   href: string;
   disabled?: boolean;
+  hidden?: boolean;
   tooltip?: string;
 }
 

@@ -66,13 +66,13 @@ const components = {
   ),
   a: ({ className, ...props }) => (
     <a
-      className={cn("font-medium underline underline-offset-4", className)}
+      className={cn("font-medium text-primary underline underline-offset-4", className)}
       {...props}
     />
   ),
   p: ({ className, ...props }) => (
     <p
-      className={cn("leading-7 [&:not(:first-child)]:mt-6", className)}
+      className={cn("leading-7 text-muted-foreground [&:not(:first-child)]:mt-6", className)}
       {...props}
     />
   ),

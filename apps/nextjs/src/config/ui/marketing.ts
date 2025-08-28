@@ -16,11 +16,19 @@ export const getMarketingConfig = async ({
         title: dict.marketing.main_nav_assets,
         href: `/activos`,
         external: false,
+        hidden: false,
+      },
+      {
+        title: "Whitepaper",
+        href: `/whitepaper/1-introduction`,
+        external: true,
+        hidden: true,
       },
       {
         title: dict.marketing.main_nav_invest,
         href: `https://minter.pandoras.finance`,
         external: true,
+        hidden: false,
       },
       {
         title: dict.marketing.main_nav_documentation,
@@ -28,6 +36,7 @@ export const getMarketingConfig = async ({
         disabled: true,
         tooltip: "Coming Soon",
         external: false,
+        hidden: false,
       },
       {
         title: dict.marketing.main_nav_business,
@@ -35,6 +44,7 @@ export const getMarketingConfig = async ({
         disabled: true,
         tooltip: "Coming Soon",
         external: false,
+        hidden: false,
       },
     ],
   };
