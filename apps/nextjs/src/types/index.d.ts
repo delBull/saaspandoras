@@ -2,6 +2,20 @@ import type * as Lucide from "lucide-react";
 import type { Customer } from "@saasfly/db";
 
 export interface Dictionary {
+  whitepaper: {
+    sections: string;
+    search: string;
+    search_placeholder: string;
+    ai_search_soon: string;
+    on_this_page: string;
+  };
+  whitepaper: {
+    sections: string;
+    search: string;
+    search_placeholder: string;
+    ai_search_soon: string;
+    on_this_page: string;
+  };
   price: {
     title: string;
     properties_title: string;

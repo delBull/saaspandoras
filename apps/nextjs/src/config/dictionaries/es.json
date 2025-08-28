@@ -1,4 +1,11 @@
 {
+  "whitepaper": {
+    "sections": "Secciones del Whitepaper",
+    "search": "Buscar",
+    "search_placeholder": "Buscar en el whitepaper...",
+    "ai_search_soon": "Búsqueda con IA próximamente.",
+    "on_this_page": "En esta página"
+  },
   "price": {
     "title": "¡Precios transparentes y accesibles!",
     "properties_title": "Propiedades",
@@ -508,7 +515,7 @@
       "points": [
         "Una plataforma de tokenización básica ya operativa.",
         "Una estructura legal y de marca sólidamente establecida.",
-        "Cuatro clientes firmados que están listos para iniciar sus procesos de tokenización en nuestra plataforma."
+        "Clientes firmados que están listos para iniciar sus procesos de tokenización en nuestra plataforma."
       ]
     },
     "the_team": {
@@ -539,7 +546,7 @@
       "categories": [
         {
           "name": "Tecnología Blockchain",
-          "partners": "Integramos oráculos descentralizados como Chainlink y pasarelas de pago como Transak y MoonPay para una operación fluida."
+          "partners": "Integramos oráculos descentralizados como Chainlink y pasarelas de pago como Transak para una operación fluida."
         },
         {
           "name": "Auditoría y Seguridad",
@@ -547,15 +554,15 @@
         },
         {
           "name": "Cumplimiento (KYC/AML)",
-          "partners": "Utilizamos servicios de verificación de identidad de líderes como Sumsub y Jumio."
+          "partners": "Utilizamos servicios de verificación de identidad de líderes del mercado."
         },
         {
           "name": "Asesoría Legal y Financiera",
-          "partners": "Nos respaldan despachos como Basham, Ringe y Correa y contamos con el apoyo de firmas de auditoría financiera como EY."
+          "partners": "Nos respaldan despachos con apoyo de firmas y auditorías."
         },
         {
           "name": "Alianzas Comerciales",
-          "partners": "Somos miembros de la Asociación Mexicana de Profesionales Inmobiliarios (AMPI) y la CMIC para mantenernos a la vanguardia del sector inmobiliario."
+          "partners": "Somos miembros de la Asociación Mexicana de Profesionales Inmobiliarios (AMPI) para mantenernos a la vanguardia del sector inmobiliario."
         }
       ]
     },

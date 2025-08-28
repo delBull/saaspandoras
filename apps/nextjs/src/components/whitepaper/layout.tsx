@@ -6,23 +6,27 @@ import { usePathname } from 'next/navigation';
 
 import { DashboardTableOfContents } from '~/components/content/toc';
 import type { TableOfContents } from '~/lib/toc';
+import type { Dictionary } from "~/types";
 
 interface WhitepaperLayoutProps {
   children: React.ReactNode;
   toc: TableOfContents;
+  dict: Dictionary["whitepaper"];
 }
 
-export function WhitepaperLayout({ children, toc }: WhitepaperLayoutProps) {
+export function WhitepaperLayout({ children, toc, dict }: WhitepaperLayoutProps) {
   const pathname = usePathname();
   const lang = pathname.split('/')[1] ?? 'en';
-  const sortedWhitepapers = allWhitepapers.sort((a, b) => a.title.localeCompare(b.title));
+
+  const whitepapersForLang = allWhitepapers.filter((paper) => paper.locale === lang);
+  const sortedWhitepapers = whitepapersForLang.sort((a, b) => a.title.localeCompare(b.title));
 
   return (
     <div className="container mx-auto flex w-full max-w-screen-2xl gap-12 px-4 py-10 mb-20 sm:px-6 lg:px-8">
       {/* Left Sidebar - Main Navigation */}
       <aside className="hidden w-1/5 shrink-0 lg:block">
         <div className="sticky top-24">
-          <h3 className="mb-4 text-base font-semibold tracking-tight text-foreground">Secciones Whitepaper</h3>
+          <h3 className="mb-4 text-base font-semibold tracking-tight text-foreground">{dict.sections}</h3>
           <nav className="flex flex-col gap-1">
             {sortedWhitepapers.map((paper) => {
               const href = `/${lang}/whitepaper/${paper.slugAsParams}`;
@@ -47,20 +51,20 @@ export function WhitepaperLayout({ children, toc }: WhitepaperLayoutProps) {
       <main className="w-full min-w-0 lg:w-4/6">{children}</main>
 
       {/* Right Sidebar - Search & TOC */}
-      <aside className="hidden w-1/5 shrink-0 lg:block">
+      <aside className="hidden w-1/g shrink-0 lg:block">
         <div className="sticky top-24">
           <div className="mb-6">
-            <h4 className="mb-3 text-sm font-semibold">Search</h4>
+            <h4 className="mb-3 text-sm font-semibold">{dict.search}</h4>
             <input
               type="search"
-              placeholder="Search in whitepaper..."
+              placeholder={dict.search_placeholder}
               className="w-full rounded-md border border-border bg-background/50 px-3 py-2 text-sm transition-colors focus:border-primary focus:outline-none"
             />
             <p className="mt-2 text-xs text-muted-foreground">
-              AI-powered search coming soon.
+              {dict.ai_search_soon}
             </p>
           </div>
-          <h4 className="mb-3 text-sm font-semibold">On this page</h4>
+          <h4 className="mb-3 text-sm font-semibold">{dict.on_this_page}</h4>
           <DashboardTableOfContents toc={toc} />
         </div>
       </aside>

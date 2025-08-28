@@ -1,4 +1,11 @@
 {
+  "whitepaper": {
+      "sections": "白皮书章节",
+      "search": "搜索",
+      "search_placeholder": "在白皮书中搜索...",
+      "ai_search_soon": "AI 搜索功能即将推出。",
+      "on_this_page": "在本页"
+  },
   "price": {
     "title": "透明且实惠的价格！",
     "properties_title": "属性",
