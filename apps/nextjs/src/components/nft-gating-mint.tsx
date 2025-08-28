@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useActiveAccount, useSendTransaction } from "thirdweb/react";
 import { getContract, readContract, prepareContractCall } from "thirdweb";
-import { sepolia } from "thirdweb/chains";
+import { base } from "thirdweb/chains";
 import { client } from "~/lib/thirdweb-client";
 import { useToast } from "@saasfly/ui/use-toast";
 import { PANDORAS_KEY_ABI } from "~/lib/pandoras-key-abi";
@@ -32,7 +32,7 @@ export function NFTGatingMint() {
       try {
         const contract = getContract({
           client,
-          chain: sepolia,
+          chain: base,
           address: PANDORAS_KEY_CONTRACT_ADDRESS,
           abi: PANDORAS_KEY_ABI,
         });

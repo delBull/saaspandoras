@@ -2,7 +2,7 @@
 
 import { useActiveAccount } from "thirdweb/react";
 import { getContract, readContract } from "thirdweb";
-import { sepolia } from "thirdweb/chains";
+import { base } from "thirdweb/chains";
 import { client } from "~/lib/thirdweb-client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -28,7 +28,7 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
       try {
         const contract = getContract({
           client,
-          chain: sepolia,
+          chain: base,
           address: PANDORAS_KEY_CONTRACT_ADDRESS,
           abi: PANDORAS_KEY_ABI,
         });
