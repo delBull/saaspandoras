@@ -15,7 +15,7 @@ const PANDORAS_KEY_CONTRACT_ADDRESS = "0xA6694331d22C3b0dD2d550a2f320D601bE17FBb
 export function NFTGatingClient() {
   const account = useActiveAccount();
   const { toast } = useToast();
-  const { mutate: sendTransaction } = useSendTransaction();
+  const { mutate: sendTransaction, isPending } = useSendTransaction();
   
   const [mintingStep, setMintingStep] = useState("idle");
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
@@ -110,6 +110,7 @@ export function NFTGatingClient() {
     return (
       <MintingProgressModal
         step={mintingStep}
+        isMinting={isPending}
         alreadyOwned={mintingStep === "alreadyOwned"}
         onClose={() => {
           setMintingStep("idle");
@@ -121,3 +122,4 @@ export function NFTGatingClient() {
 
   return null;
 }
+
