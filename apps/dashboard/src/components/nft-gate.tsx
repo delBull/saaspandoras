@@ -61,6 +61,10 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
                           "passkey",
                         ],
                       },
+                      executionMode: {
+                        mode: "EIP7702",
+                        sponsorGas: true,
+                      },
                     }),
                     createWallet("io.metamask"),
                     createWallet("walletConnect"),
