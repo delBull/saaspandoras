@@ -1,9 +1,12 @@
+// app/layout.tsx
 'use client';
 
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@saasfly/ui/toaster";
 import { ThirdwebProvider } from "thirdweb/react";
+
+import { ThemeProvider } from "@/components/theme-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -13,15 +16,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThirdwebProvider
-          clientId="8a0dde1c971805259575cea5cb737530"
-          activeChain="base"
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem={false}
         >
-          {children}
-          <Toaster />
-        </ThirdwebProvider>
+          <ThirdwebProvider>
+            {children}
+            <Toaster />
+          </ThirdwebProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

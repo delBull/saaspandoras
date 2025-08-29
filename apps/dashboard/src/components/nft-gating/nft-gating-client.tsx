@@ -16,9 +16,8 @@ export function NFTGatingClient() {
   const account = useActiveAccount();
   const { toast } = useToast();
   const { mutate: sendTransaction, isPending } = useSendTransaction();
-  
+
   const [mintingStep, setMintingStep] = useState("idle");
-  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const hasStartedProcessing = useRef(false);
 
   useEffect(() => {
@@ -58,8 +57,7 @@ export function NFTGatingClient() {
 
           sendTransaction(transaction, {
             onSuccess: () => {
-              setMintingStep("success");
-              setShowSuccessAnimation(true);
+              setMintingStep("minting_success");
             },
             onError: (error) => {
               console.error("Failed to mint Pandora's Key", error);
@@ -71,7 +69,6 @@ export function NFTGatingClient() {
               setMintingStep("error");
             },
           });
-
         } else {
           setMintingStep("alreadyOwned");
         }
@@ -94,19 +91,19 @@ export function NFTGatingClient() {
     hasStartedProcessing.current = false;
   }, [account]);
 
-  if (mintingStep === "success" && showSuccessAnimation) {
+  if (mintingStep === "minting_success") {
     return (
       <SuccessNFTCard
         onAnimationComplete={() => {
-          setShowSuccessAnimation(false);
-          setMintingStep("idle");
-          hasStartedProcessing.current = false;
+          window.location.reload();
         }}
       />
     );
   }
 
-  if (mintingStep !== "idle" && mintingStep !== "success") {
+  const isModalVisible = mintingStep !== "idle" && mintingStep !== "minting_success";
+
+  if (isModalVisible) {
     return (
       <MintingProgressModal
         step={mintingStep}
