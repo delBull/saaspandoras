@@ -52,7 +52,7 @@ export function Sidebar({ totalBalance = 1267.45 }: SidebarProps) {
   const links = useMemo(
     () => [
       {
-        label: "Pandora's Pool",
+        label: "Overview",
         href: "/",
         icon: <HomeIcon className="h-5 w-5 shrink-0 text-gray-400" />,
       },
