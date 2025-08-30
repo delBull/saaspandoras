@@ -7,14 +7,11 @@ import {
 } from "thirdweb/react";
 import { createWallet, inAppWallet } from "thirdweb/wallets";
 import { getContract } from "thirdweb";
-import { base } from "thirdweb/chains";
 import { client } from "@/lib/thirdweb-client";
 import { PANDORAS_KEY_ABI } from "@/lib/pandoras-key-abi";
 import { NFTGatingClient } from "./nft-gating/nft-gating-client";
 import { Loader2 } from "lucide-react";
-
-const PANDORAS_KEY_CONTRACT_ADDRESS =
-  "0xA6694331d22C3b0dD2d550a2f320D601bE17FBba";
+import { config } from "@/config"; // Import the central config
 
 export function NFTGate({ children }: { children: React.ReactNode }) {
   const account = useActiveAccount();
@@ -22,8 +19,8 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
 
   const contract = getContract({
     client,
-    chain: base,
-    address: PANDORAS_KEY_CONTRACT_ADDRESS,
+    chain: config.chain, // Use chain from config
+    address: config.nftContractAddress, // Use NFT contract address from config
     abi: PANDORAS_KEY_ABI,
   });
 
@@ -49,7 +46,7 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
               onClick={() =>
                 connect({
                   client,
-                  chain: base,
+                  chain: config.chain, // Use chain from config for the connect modal
                   wallets: [
                     inAppWallet({
                       auth: {
