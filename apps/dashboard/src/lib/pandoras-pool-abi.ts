@@ -16,5 +16,5 @@ export const PANDORAS_POOL_ABI = [
     ],
     "stateMutability": "view",
     "type": "function"
-  }
-];
+  },
+] as const;
