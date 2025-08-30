@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Sidebar } from "./sidebar";
+import { NFTGate } from "./nft-gate"; // Import NFTGate
 import { cn } from "@/lib/utils";
 
 interface DashboardShellProps {
@@ -44,7 +45,9 @@ export function DashboardShell({
             {description && <p className="mt-2 text-gray-400">{description}</p>}
           </div>
         )}
-        <div className="max-w-7xl mx-auto">{children}</div>
+        <NFTGate>
+          <div className="max-w-7xl mx-auto">{children}</div>
+        </NFTGate>
       </main>
     </div>
   );

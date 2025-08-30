@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense } from "react";
+import React, { Suspense, useState, useEffect } from "react";
 import {
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
@@ -12,6 +12,7 @@ import { Table, TableHead, TableHeader, TableRow } from "@saasfly/ui/table";
 import { DashboardShell } from "@/components/shell";
 
 import { PromotionalBanner } from "@/components/promotional-banners";
+import { PandorasPoolRows } from "@/components/PandorasPoolRows";
 
 // Interface for token stats
 interface TokenStats {
@@ -42,7 +43,17 @@ async function getTokenStats(): Promise<TokenStats> {
   };
 }
 
-function StatsOverview({ stats }: { stats: TokenStats }) {
+function StatsOverview({ stats }: { stats: TokenStats | null }) {
+  if (!stats) {
+    // You can return a loading skeleton here
+    return (
+      <div className="animate-pulse space-y-1">
+        <div className="h-8 w-full rounded bg-gray-800/50"></div>
+        <div className="h-40 w-full rounded bg-gray-800/50"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-1">
       {/* Top Independent Stats */}
@@ -249,6 +260,7 @@ function InvestmentList({ dict }: { dict: any }) { // Changed dict: Dictionary t
                 </td>
               </tr>
             ))}
+            <PandorasPoolRows />
           </tbody>
         </Table>
       </div>
@@ -257,6 +269,12 @@ function InvestmentList({ dict }: { dict: any }) { // Changed dict: Dictionary t
 }
 
 export default function DashboardPage() {
+  const [tokenStats, setTokenStats] = useState<TokenStats | null>(null);
+
+  useEffect(() => {
+    getTokenStats().then(setTokenStats);
+  }, []);
+
   // Calculate total balance from investments
   const totalBalance = dummyInvestments.reduce((acc, inv) => {
     return acc + parseFloat(inv.amount.replace(",", ""));
@@ -264,8 +282,6 @@ export default function DashboardPage() {
 
   // TODO: Get wallet address from authentication
   const walletAddress = "delBull.blockchain";
-
-  const tokenStats = React.use(getTokenStats());
 
   return (
     <DashboardShell wallet={walletAddress} totalBalance={totalBalance}>
