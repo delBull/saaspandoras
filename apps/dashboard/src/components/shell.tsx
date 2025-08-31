@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 interface DashboardShellProps {
   children: React.ReactNode;
   wallet?: string;
-  totalBalance?: number;
+  // totalBalance?: number; // ELIMINADO
   title?: string;
   description?: string;
   className?: string;
@@ -15,7 +15,7 @@ interface DashboardShellProps {
 export function DashboardShell({
   children,
   wallet,
-  totalBalance, // La prop se recibe, pero ya no se pasa a Sidebar
+  // totalBalance, // ELIMINADO
   title,
   description,
   className,
@@ -29,7 +29,6 @@ export function DashboardShell({
         "overflow-hidden",
       )}
     >
-      {/* CORREGIDO: Se eliminó la prop 'totalBalance' que ya no es necesaria en Sidebar */}
       <Sidebar wallet={wallet} />
       <main
         className={cn(
