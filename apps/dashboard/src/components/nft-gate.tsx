@@ -8,14 +8,13 @@ import {
   useSendTransaction
 } from "thirdweb/react";
 import { createWallet, inAppWallet } from "thirdweb/wallets";
-import { getContract, readContract, prepareContractCall } from "thirdweb";
+import { getContract, prepareContractCall } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { PANDORAS_KEY_ABI } from "@/lib/pandoras-key-abi";
 import { config } from "@/config";
 
 import { MintingProgressModal } from "./nft-gating/minting-progress-modal";
 import { SuccessNFTCard } from "./nft-gating/success-nft-card";
-import { Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { InformationCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { useToast } from "@saasfly/ui/use-toast";
@@ -83,7 +82,6 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
       setGateStatus("awaiting_confirmation");
       void sendTransaction(transaction, {
         onSuccess: () => {
-          // CORREGIDO: Actualizamos ambos estados al tener éxito
           setGateStatus("success");
           setShowSuccessAnimation(true);
         },
@@ -101,14 +99,43 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
     }
   }, [account, hasKey, isLoadingKey, contract, sendTransaction, toast, gateStatus]);
 
-  // Reset del flag de procesamiento si la cuenta cambia (ej. desconexión)
   useEffect(() => {
     hasStartedProcessing.current = false;
   }, [account]);
 
-  const explanation = ( <motion.div /* Tu JSX de explicación no cambia */ >...</motion.div> );
+const explanation = (
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.2 }}
+      className="relative mt-4 text-sm text-gray-300 leading-relaxed bg-zinc-800/80 p-4 pr-8 rounded-lg border border-gray-700 max-w-md"
+    >
+      <button 
+        onClick={() => setShowInfo(false)}
+        className="absolute top-2 right-2 rounded-full text-gray-500 hover:text-white transition-colors"
+        aria-label="Cerrar información"
+      >
+        <XMarkIcon className="h-5 w-5" />
+      </button>
 
-  // --- LÓGICA DE RENDERIZADO ---
+      <b className="text-white">¿Por qué solo algunas wallets son recomendadas?</b>
+      <ul className="mt-4 list-disc pl-5 space-y-2 text-gray-400">
+        <li>
+          Solo wallets como <b>MetaMask</b> y <b>Social Login</b> (Email, Google, etc.) soportan la tecnología de "Smart Accounts" que nos permite pagar el gas por ti de forma segura.
+        </li>
+        <li>
+          Otras wallets (Phantom, 1inch, etc.) tienen restricciones técnicas que no permiten esta función por ahora.
+        </li>
+        <li>
+          Para obtener tu llave 100% gratis y sin fricción, te recomendamos conectar usando una de las opciones del modal.
+        </li>
+      </ul>
+      <div className="text-xs mt-3 text-gray-500 italic">
+        Esto es una limitación actual de la tecnología de las wallets, no un error de la aplicación.
+      </div>
+    </motion.div>
+  );
 
   if (!account) {
     return (
@@ -134,21 +161,18 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Si ya tiene la llave (verificado por el hook o por el estado), muestra el contenido del dashboard.
   if (hasKey || gateStatus === "alreadyOwned" || gateStatus === "has_key") {
     return <>{children}</>;
   }
   
-  // Si el minteo fue exitoso, muestra la tarjeta animada de éxito.
   if (gateStatus === "success" && showSuccessAnimation) {
     return <SuccessNFTCard onAnimationComplete={() => {
       setShowSuccessAnimation(false);
-      setGateStatus("has_key"); // Actualiza el estado para mostrar el contenido
+      setGateStatus("has_key"); 
       hasStartedProcessing.current = false;
     }} />;
   }
 
-  // Muestra el modal de progreso para todos los estados intermedios.
   if (gateStatus !== "idle" && gateStatus !== "success") {
     return (
       <MintingProgressModal 
