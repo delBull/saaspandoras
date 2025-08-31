@@ -10,11 +10,11 @@ const POOL_CONTRACT_ADDRESS = "0x4122d7a6f11286b881f8332d8c27debcc922b2fa"; // P
 const configurations = {
   base: {
     chain: base,
-    nftContractAddress: process.env.NEXT_PUBLIC_NFT_CONTRACT_ADDRESS_BASE || "",
+    nftContractAddress: process.env.NEXT_PUBLIC_NFT_CONTRACT_ADDRESS_BASE ?? "",
   },
   sepolia: {
     chain: sepolia,
-    nftContractAddress: process.env.NEXT_PUBLIC_NFT_CONTRACT_ADDRESS_SEPOLIA || "",
+    nftContractAddress: process.env.NEXT_PUBLIC_NFT_CONTRACT_ADDRESS_SEPOLIA ?? "",
   },
 };
 

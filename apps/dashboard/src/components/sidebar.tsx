@@ -8,8 +8,8 @@ import {
   HomeIcon,
   ArrowPathIcon,
   BanknotesIcon,
-  CreditCardIcon,
-  Cog6ToothIcon,
+  //CreditCardIcon,
+  //Cog6ToothIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   Bars3Icon,
@@ -31,9 +31,7 @@ interface SidebarProps {
   wallet?: string;
 }
 
-export function Sidebar({
-  totalBalance = 1267.45,
-}: SidebarProps) {
+export function Sidebar({}: SidebarProps) {
   const [isClient, setIsClient] = useState(false);
   useEffect(() => {
     setIsClient(true);
