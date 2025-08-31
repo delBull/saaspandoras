@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import ReactDOM from "react-dom";
-import { motion, Variants, AnimatePresence } from 'framer-motion';
+import { motion, Variants } from 'framer-motion';
 import Image from 'next/image';
 import { FramerConfetti } from '../framer-confetti';
 import { Shadows_Into_Light } from "next/font/google";
@@ -97,7 +97,7 @@ export function SuccessNFTCard({ onAnimationComplete }: SuccessNFTCardProps) {
           <div className="w-56 h-56 relative mb-4">
             <Image src="/images/pkey.png" layout="fill" objectFit="contain" alt="Pandora's Key" />
           </div>
-          <p className="text-center font-mono text-gray-300 px-4">Tu Pandora's Key ha sido creada y guardada de forma segura en tu billetera.</p>
+          <p className="text-center font-mono text-gray-300 px-4">Tu Pandora&apos;s Key ha sido creada y guardada de forma segura en tu billetera.</p>
       </motion.div>
     </div>
   );
