@@ -155,7 +155,7 @@ export default function DashboardPage() {
   const walletAddress = "delBull.blockchain";
 
   return (
-    <DashboardShell wallet={walletAddress} totalBalance={totalBalance}>
+    <DashboardShell wallet={walletAddress}>
       <StatsOverview stats={tokenStats} />
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 my-6">
         <PromotionalBanner title="Hemp Project" subtitle="Green GENESIS Become an early supporter" actionText="Soon do more with hemp!" variant="purple" imageUrl="/images/sem.jpeg" />
