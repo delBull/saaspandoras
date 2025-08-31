@@ -17,12 +17,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
 
-  // AVISO: Es una mejor práctica mover este useEffect a una página específica 
-  // (como page.tsx) para que no se muestre en TODAS las páginas de tu app.
   useEffect(() => {
     const timer = setTimeout(() => {
-      // 1. El contenido ya no tiene las clases de fondo
-      toast.info(
+      toast(
         <div className="flex font-mono items-center gap-3">
           <AlertTriangle className="h-5 w-5 text-zinc-900 shrink-0" />
           <div className="flex flex-col text-left">
@@ -34,20 +31,21 @@ export default function RootLayout({
             </span>
           </div>
         </div>,
-        // 2. Las clases de estilo se pasan como segundo argumento al toast
         {
-          className: 'border-none bg-gradient-to-br from-lime-400 to-emerald-500',
-          duration: 6000,
+          style: {
+            background: 'linear-gradient(to bottom right, #D9F99D, #4D7C0F)',
+            border: '1px solid #A3E635',
+          },
+          duration: 5000,
         }
       );
     }, 500);
 
     return () => clearTimeout(timer);
-  }, []); 
+  }, []);
 
   return (
     <html lang="en" suppressHydrationWarning>
-      {/* Se añade el gradiente de fondo principal a la aplicación */}
       <body className={`${inter.className} bg-gradient-to-b from-zinc-950 to-black text-white`}>
         <ThemeProvider
           attribute="class"
@@ -56,7 +54,6 @@ export default function RootLayout({
         >
           <ThirdwebProvider>
             {children}
-            {/* Se añade el Toaster con la configuración correcta */}
             <Toaster theme="dark" richColors position="top-center" />
           </ThirdwebProvider>
         </ThemeProvider>

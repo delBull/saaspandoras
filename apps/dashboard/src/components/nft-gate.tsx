@@ -37,8 +37,8 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
-          <h2 className="text-2xl font-bold">Access Restricted</h2>
-          <p className="mt-2 text-gray-600">
+          <h2 className="text-2xl font-mono font-bold">Access Restricted</h2>
+          <p className="mt-2 font-mono text-gray-400">
             Please connect your wallet to verify your access key.
           </p>
           <div className="mt-4">
@@ -46,7 +46,7 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
               onClick={() =>
                 connect({
                   client,
-                  chain: config.chain, // Use chain from config for the connect modal
+                  chain: config.chain,
                   wallets: [
                     inAppWallet({
                       auth: {
@@ -69,7 +69,7 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
                 })
               }
               disabled={isConnecting}
-              className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
+              className="bg-gradient-to-r from-lime-300 to-lime-400 text-gray-800 py-2 px-4 rounded-md hover:bg-lime-500"
             >
               {isConnecting ? "Connecting..." : "Connect Wallet"}
             </button>
