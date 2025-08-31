@@ -44,42 +44,38 @@ export function Sidebar({ totalBalance = 1267.45 }: SidebarProps) {
   const { disconnect } = useDisconnect();
   const userIsAdmin = isAdmin(account?.address);
 
-  // --- ENLACES DE NAVEGACIÓN ---
   const links = useMemo(
     () => [
       {
         label: "Overview",
         href: "/",
         icon: <HomeIcon className="h-5 w-5 shrink-0 text-gray-400" />,
-        disabled: false, // El único enlace activo
+        disabled: false,
       },
       {
         label: "Applicants",
-        href: "#", // CORREGIDO: Cambiado para no navegar
+        href: "#",
         icon: <UserGroupIcon className="h-5 w-5 shrink-0 text-gray-400" />,
-        comingSoon: true, // CORREGIDO: Añadido
-        disabled: true,   // CORREGIDO: Añadido
+        comingSoon: true,
+        disabled: true,
       },
       {
         label: "Invest",
-        href: "#", // CORREGIDO: Cambiado para no navegar
+        href: "#",
         icon: <ArrowPathIcon className="h-5 w-5 shrink-0 text-gray-400" />,
-        comingSoon: true, // CORREGIDO: Añadido
-        disabled: true,   // CORREGIDO: Añadido
+        comingSoon: true,
+        disabled: true,
       },
       {
         label: "Pool",
         href: "#",
         icon: <BanknotesIcon className="h-5 w-5 shrink-0 text-gray-400" />,
         comingSoon: true,
-        disabled: true,   // CORREGIDO: Añadido
+        disabled: true,
       },
     ],
     [],
   );
-  
-  // ELIMINADO: Se elimina el array de settingsLinks para ocultarlos
-  // const settingsLinks = useMemo(() => [ ... ]);
 
   return (
     <>
@@ -88,7 +84,6 @@ export function Sidebar({ totalBalance = 1267.45 }: SidebarProps) {
         animate={{ width: open ? "20rem" : "6rem" }}
         className="relative hidden h-screen flex-col border-r border-gray-800 bg-zinc-900 px-2 pt-20 md:flex"
       >
-        {/* Logo */}
         <Link href="/" className="z-50">
           <div className="absolute top-12 left-0 right-0 flex justify-center">
             <motion.div animate={{ opacity: open ? 1 : 0, display: open ? "block" : "none" }}>
@@ -100,7 +95,6 @@ export function Sidebar({ totalBalance = 1267.45 }: SidebarProps) {
           </div>
         </Link>
 
-        {/* Botón para abrir/cerrar */}
         <button
           onClick={() => setOpen(!open)}
           className="absolute -right-3 top-1/2 z-50 flex h-20 w-5 -translate-y-1/2 items-center justify-center rounded-md border-2 border-l-0 border-gray-800 bg-zinc-900 text-gray-400 transition-colors duration-200 hover:text-white"
@@ -108,7 +102,6 @@ export function Sidebar({ totalBalance = 1267.45 }: SidebarProps) {
           {open ? <ChevronLeftIcon className="h-4 w-4" /> : <ChevronRightIcon className="h-4 w-4" />}
         </button>
 
-        {/* Sección de la Billetera */}
         <div className="mx-2 mt-6 rounded-lg border border-gray-700 bg-gray-800/50 p-2">
           <div className="flex items-center space-x-1">
             <motion.span animate={{ width: open ? "auto" : "2rem" }} className="overflow-hidden whitespace-nowrap font-mono text-xs text-gray-400">
@@ -120,23 +113,19 @@ export function Sidebar({ totalBalance = 1267.45 }: SidebarProps) {
           </div>
         </div>
 
-        {/* Navegación y acciones */}
         <nav className="mt-4 flex flex-1 flex-col justify-between">
-            {/* Sección superior de enlaces */}
             <div className="flex flex-col gap-2">
                 {links.map((link) => (
                     <Link 
                       key={link.label} 
-                      href={link.disabled ? "#" : link.href} // Previene la navegación si está deshabilitado
+                      href={link.disabled ? "#" : link.href}
                       className={cn(
                         "relative flex items-center rounded-lg py-2 text-gray-400 transition-all duration-200",
                         open ? "px-4" : "w-full justify-center",
-                        // CORREGIDO: Lógica de estilos condicional
                         link.disabled 
-                          ? "cursor-not-allowed opacity-60" // Estilos si está deshabilitado
-                          : "hover:bg-gray-800/50 hover:text-white" // Estilos si está habilitado
+                          ? "cursor-not-allowed opacity-60"
+                          : "hover:bg-gray-800/50 hover:text-white"
                       )}
-                      // Previene el click completamente en enlaces deshabilitados
                       onClick={(e) => link.disabled && e.preventDefault()}
                     >
                         {link.icon}
@@ -152,10 +141,7 @@ export function Sidebar({ totalBalance = 1267.45 }: SidebarProps) {
                 ))}
             </div>
 
-            {/* Sección inferior de enlaces y acciones */}
             <div className="mb-4 flex flex-col gap-2">
-                {/* ELIMINADO: El mapeo de 'settingsLinks' se ha borrado */}
-                
                 {isClient && (
                     <>
                         {userIsAdmin && (
@@ -190,7 +176,90 @@ export function Sidebar({ totalBalance = 1267.45 }: SidebarProps) {
       </motion.div>
 
       {/* --- SIDEBAR MÓVIL --- */}
-      {/* (Sin cambios) */}
+      <button onClick={() => setMobileOpen(true)} className="fixed top-4 left-4 z-20 rounded-lg p-2 text-gray-400 shadow-lg transition-colors duration-200 hover:text-white md:hidden">
+        <Bars3Icon className="h-8 w-8" />
+      </button>
+      <AnimatePresence>
+        {mobileOpen && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMobileOpen(false)} className="fixed inset-0 z-40 bg-black/50 md:hidden" />
+            <motion.div
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", bounce: 0, duration: 0.3 }}
+              className="fixed inset-y-0 left-0 z-50 flex w-full max-w-xs flex-col bg-zinc-900 px-2 pt-12 md:hidden"
+            >
+              <button
+                onClick={() => setMobileOpen(false)}
+                className="absolute top-4 right-4 z-50 rounded-lg p-1 text-gray-400 transition-colors duration-200 hover:text-white"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+              
+              <div className="mx-2 mt-6 rounded-lg border border-gray-700 bg-gray-800/50 p-2">
+                <div className="flex items-center space-x-1">
+                  <span className="overflow-hidden whitespace-nowrap font-mono text-xs text-gray-400">C:\\PANDORAS\\</span>
+                  <span className="truncate font-mono text-xs text-lime-400">{isClient ? (account?.address ?? "Not Connected") : "Loading..."}</span>
+                </div>
+              </div>
+
+              <nav className="mt-4 flex flex-1 flex-col justify-between px-2">
+                <div className="flex flex-col gap-2">
+                  {links.map((link) => (
+                    <Link
+                      key={`mobile-${link.label}`}
+                      href={link.disabled ? "#" : link.href}
+                      className={cn(
+                        "relative flex items-center rounded-lg py-2 px-4 text-gray-400 transition-all duration-200",
+                        link.disabled ? "cursor-not-allowed opacity-60" : "hover:bg-gray-800/50 hover:text-white"
+                      )}
+                      onClick={(e) => {
+                        if (link.disabled) e.preventDefault();
+                        else setMobileOpen(false); // Cierra el menú al navegar
+                      }}
+                    >
+                      {link.icon}
+                      <span className="ml-3 whitespace-nowrap font-medium">{link.label}</span>
+                      {link.comingSoon && <span className="ml-auto text-xs text-gray-500">coming soon</span>}
+                    </Link>
+                  ))}
+                </div>
+
+                <div className="mb-4 flex flex-col gap-2">
+                  {isClient && (
+                    <>
+                      {userIsAdmin && (
+                        <div className="border-t border-gray-800 pt-2">
+                          <Link href="/admin" onClick={() => setMobileOpen(false)} className="relative flex items-center rounded-lg py-2 px-4 text-red-500 transition-all duration-200 hover:bg-red-900/50 hover:text-white">
+                            <ShieldCheckIcon className="h-5 w-5 shrink-0" />
+                            <span className="ml-3 whitespace-nowrap font-bold">Admin</span>
+                          </Link>
+                        </div>
+                      )}
+                      {account && (
+                        <div className="border-t border-gray-800 pt-2">
+                          <button
+                            onClick={() => {
+                              if (wallet) disconnect(wallet);
+                              setMobileOpen(false);
+                            }}
+                            disabled={!wallet}
+                            className="relative flex w-full items-center rounded-lg py-2 px-4 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white disabled:opacity-50"
+                          >
+                            <ArrowLeftOnRectangleIcon className="h-5 w-5 shrink-0" />
+                            <span className="ml-3 whitespace-nowrap font-medium">Disconnect</span>
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </nav>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </>
   );
 }
