@@ -24,7 +24,7 @@ export function DashboardShell({
     <div
       className={cn(
         "fixed inset-0",
-        "flex bg-gray-950",
+        "flex bg-gradient-to-tr from-gray-950 to-black",
         "border-zinc-900",
         "overflow-hidden",
       )}
@@ -34,7 +34,7 @@ export function DashboardShell({
         className={cn(
           "flex-1 relative",
           "h-screen overflow-y-auto",
-          "p-12 bg-gray-950",
+          "p-12 bg-gradient-to-br from-gray-950 to-fuchsia-950/30 via-fuchsia-950/40",
           "rounded-tl-[4rem]",
           className,
         )}
