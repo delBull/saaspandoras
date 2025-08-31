@@ -1,18 +1,27 @@
-import React from "react";
+'use client';
+
+import React, { useEffect, useState } from "react";
+import ReactDOM from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { AdvancedLoader } from "./AdvancedLoader";
 
 interface MintingProgressModalProps {
   step: string;
-  onClose: () => void; // This will be called by AdvancedLoader on complete
-  isMinting?: boolean; // Make optional
+  onClose: () => void;
+  isMinting?: boolean;
   alreadyOwned?: boolean;
 }
 
-export function MintingProgressModal({ step, onClose, isMinting = true, alreadyOwned = false }: MintingProgressModalProps) { // Add default value
+export function MintingProgressModal({ step, onClose, isMinting = true, alreadyOwned = false }: MintingProgressModalProps) {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const isVisible = step !== "idle" && step !== "success";
 
-  return (
+  const modalContent = (
     <AnimatePresence>
       {isVisible && (
         <motion.div
@@ -28,4 +37,10 @@ export function MintingProgressModal({ step, onClose, isMinting = true, alreadyO
       )}
     </AnimatePresence>
   );
+
+  if (isMounted) {
+    return ReactDOM.createPortal(modalContent, document.body);
+  }
+
+  return null;
 }
