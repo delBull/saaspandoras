@@ -60,6 +60,14 @@ export function MobileNav({ items, children, menuItemClick }: MobileNavProps) {
               </Link>
             ),
           )}
+                      <Link
+                        href="/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 border-t-2 items-center text-sm font-bold transition-colors hover:text-foreground/80 text-lime-300"
+                        >
+                        dApp
+                      </Link>
         </nav>
         {children}
       </div>
