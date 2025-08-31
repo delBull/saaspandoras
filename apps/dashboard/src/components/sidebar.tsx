@@ -28,9 +28,12 @@ import { isAdmin } from "@/lib/auth";
 
 interface SidebarProps {
   totalBalance?: number;
+  wallet?: string;
 }
 
-export function Sidebar({ totalBalance = 1267.45 }: SidebarProps) {
+export function Sidebar({
+  totalBalance = 1267.45,
+}: SidebarProps) {
   const [isClient, setIsClient] = useState(false);
   useEffect(() => {
     setIsClient(true);
