@@ -1,9 +1,10 @@
-import { type SidebarNavItem } from "~/types/nav";
+import { type SidebarNavItem } from "~/types";
 
 interface DashboardConfig {
   sidebarNav: SidebarNavItem[];
 }
 
+{/*
 export const getDashboardConfig = async ({ params }: any) => {
   // const dict = await getDictionary(params.lang);
 
@@ -31,3 +32,4 @@ export const getDashboardConfig = async ({ params }: any) => {
   };
   return dashboardConfig;
 };
+*/}
