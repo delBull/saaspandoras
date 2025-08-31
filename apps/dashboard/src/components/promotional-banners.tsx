@@ -3,12 +3,14 @@
 import { motion } from "framer-motion";
 import React, { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 interface BannerProps {
   title: string;
   subtitle: string;
   actionText: string;
   variant: "purple" | "green" | "red";
+  imageUrl?: string;
 }
 
 interface RelativeCoordinates {
@@ -57,6 +59,7 @@ export function PromotionalBanner({
   subtitle,
   actionText,
   variant,
+  imageUrl,
 }: BannerProps) {
   const [showGradient, setShowGradient] = useState(false);
   const [mousePosition, setMousePosition] = useState<RelativeCoordinates>({
@@ -79,17 +82,17 @@ export function PromotionalBanner({
 
   const contentContainerClasses = [
     "relative h-full w-full rounded-xl p-6",
-    "bg-zinc-900/90 backdrop-blur-sm",
+    "bg-gradient-to-t from-black/70 via-black/40 to-transparent",
     "flex flex-col justify-between",
     "transition-all duration-300",
-  ] as const;
+  ].join(" ");
 
   const gradientOverlayClasses = [
     "absolute inset-0 opacity-0 transition-opacity duration-300 rounded-xl",
     "bg-gradient-to-r",
     variantStyles[variant],
     showGradient ? "opacity-10" : "",
-  ] as const;
+  ].join(" ");
 
   return (
     <motion.div
@@ -99,6 +102,15 @@ export function PromotionalBanner({
       onMouseMove={handleMouseMove}
       className="relative w-full aspect-[1.1/1] rounded-xl overflow-hidden"
     >
+      {imageUrl && (
+        <Image
+          src={imageUrl}
+          alt={title}
+          fill
+          className="object-cover transition-transform duration-500 group-hover:scale-105 opacity-30"
+          style={{ zIndex: 0 }}
+        />
+      )}
       {/* Glow Effect Layer */}
       <div
         className="absolute inset-0 transition-opacity duration-300"
@@ -113,22 +125,16 @@ export function PromotionalBanner({
       />
 
       {/* Gradient Border */}
-      <div className="absolute inset-0 p-[1px] rounded-xl bg-gradient-to-r from-white/10 to-white/5">
+      <div className="absolute inset-0 p-[1px] rounded-xl bg-gradient-to-r from-white/10 to-white/5" style={{ zIndex: 3 }}>
         {/* Content Container */}
-        <div
-          className={cn(contentContainerClasses.join(" ")) as unknown as string}
-        >
+        <div className={cn(contentContainerClasses)}>
           <div>
             <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
             <p className="text-sm text-gray-300/90 mb-4">{subtitle}</p>
           </div>
 
           {/* Gradient Overlay */}
-          <div
-            className={
-              cn(gradientOverlayClasses.join(" ")) as unknown as string
-            }
-          />
+          <div className={cn(gradientOverlayClasses)} />
 
           <button
             className={

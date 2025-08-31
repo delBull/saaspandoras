@@ -57,6 +57,7 @@ function StatsOverview({ stats }: { stats: TokenStats | null }) {
     <div className="space-y-1">
       {/* Top Independent Stats */}
       <div className="flex gap-2">
+        {/*
         <div className="rounded-lg border pl-3 pr-3 border-slate-800">
           <h3 className="text-xs font-medium text-gray-400">Holders</h3>
           <div className="flex items-baseline">
@@ -65,16 +66,19 @@ function StatsOverview({ stats }: { stats: TokenStats | null }) {
             </p>
           </div>
         </div>
+        */}
         <div className="rounded-lg border border-slate-800 pl-3 pr-3">
           <h3 className="text-xs font-medium text-gray-400">PBOX Price</h3>
           <div className="flex items-baseline">
             <p className="text-sm font-semibold font-mono text-white">
-              ${stats.price}
+              {/*${stats.price}*/}
+              coming soon
             </p>
           </div>
         </div>
       </div>
       {/* Main Stats Row */}
+      {/*
       <div className="md:grid md:grid-cols-3 justify-between">
         <div className="rounded-l-lg bg-zinc-900 opacity-85 p-6 z-10">
           <h3 className="text-sm font-medium text-gray-400 text-center">
@@ -113,17 +117,18 @@ function StatsOverview({ stats }: { stats: TokenStats | null }) {
               {stats.treasuryChange}%
             </p>
           </div>
-        </div>
+        </div> 
       </div>
+      */}
     </div>
   );
 }
 interface Investment { id: string; name: string; amount: string; tickets: string; currency: string; }
 const dummyInvestments: Investment[] = [
-  { id: "1", name: "Narai", amount: "1,233.58", tickets: "2 Tickets", currency: "USDT" },
-  { id: "2", name: "USDC", amount: "558.24", tickets: "1 Ticket", currency: "USDT" },
-  { id: "3", name: "FTM", amount: "779", tickets: "3 Tickets", currency: "USDT" },
-  { id: "4", name: "AGOD-FTM LP 362 LP", amount: "466.47", tickets: "1 Ticket", currency: "USDT" },
+  // { id: "1", name: "Narai", amount: "1,233.58", tickets: "2 Tickets", currency: "USDT" },
+  // { id: "2", name: "USDC", amount: "558.24", tickets: "1 Ticket", currency: "USDT" },
+  // { id: "3", name: "FTM", amount: "779", tickets: "3 Tickets", currency: "USDT" },
+  // { id: "4", name: "AGOD-FTM LP 362 LP", amount: "466.47", tickets: "1 Ticket", currency: "USDT" },
 ];
 function InvestmentList({ dict }: { dict: any }) { 
   return (
@@ -230,9 +235,24 @@ export default function DashboardPage() {
     <DashboardShell wallet={walletAddress} totalBalance={totalBalance}>
       <StatsOverview stats={tokenStats} />
       <div className="grid gap-4 md:grid-cols-3 lg-grid-cols-3 my-6">
-        <PromotionalBanner title="Hemp Project" subtitle="Green GENESIS Become an early supporter" actionText="Do more with hemp!" variant="purple" />
-        <PromotionalBanner title="Mining Project" subtitle="Ever dream about being a miner?" actionText="Soon to be launched" variant="green" />
-        <PromotionalBanner title="RA Wallet" subtitle="Best blockchain wallet, rewards like no other" actionText="Win by holding" variant="red" />
+        <PromotionalBanner 
+          title="Hemp Project" 
+          subtitle="Green GENESIS Become an early supporter" 
+          actionText="Soon do more with hemp!" 
+          variant="purple"
+          imageUrl="/images/sem.jpeg" />
+        <PromotionalBanner 
+          title="web3 Casino Project" 
+          subtitle="Ever dream about owning a casino?" 
+          actionText="Soon to be launched" 
+          variant="green"
+          imageUrl="/images/blockbunny.jpg" />
+        <PromotionalBanner 
+          title="Narai Loft" 
+          subtitle="Want a loft with ocean view?" 
+          actionText="Own it soon!" 
+          variant="red"
+          imageUrl="/images/narailoft.jpg" />
       </div>
       <Suspense fallback={<div className="divide-border-200 divide-y rounded-md border p-4"><div className="h-24 animate-pulse rounded bg-muted" /></div>}>
         <InvestmentList dict={{}} />
