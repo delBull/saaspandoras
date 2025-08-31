@@ -8,7 +8,7 @@ import { ChevronRightIcon } from "@heroicons/react/24/solid";
 import { config } from "@/config";
 import Image from "next/image";
 
-const NO_FUNDS_ICON = "/icons/no-funds.svg";
+const NO_FUNDS_ICON = "/images/pkey.png";
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 export function PandorasPoolRows() {
@@ -17,7 +17,6 @@ export function PandorasPoolRows() {
   const contract = getContract({
     client,
     chain: config.chain,
-    // CORREGIDO: Se usa el operador '??' en lugar de '||'
     address: config.poolContractAddress ?? ZERO_ADDRESS,
     abi: PANDORAS_POOL_ABI,
   });
@@ -25,14 +24,12 @@ export function PandorasPoolRows() {
   const { data: stats, isLoading } = useReadContract({
     contract: contract,
     method: "getUserStats",
-    // CORREGIDO: Se usa el operador '??' en lugar de '||'
     params: [account?.address ?? ZERO_ADDRESS],
     queryOptions: {
       enabled: !!account && !!config.poolContractAddress,
     },
   });
 
-  // ... (El resto de tu código no cambia)
   if (!account) { return ( <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400">Conecta tu wallet para ver tus inversiones.</td></tr> ); }
   if (isLoading) { return ( <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400">Cargando datos de blockchain...</td></tr> ); }
   if (!stats) { return ( <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400">No hay datos de inversión para tu cuenta.</td></tr> ); }
@@ -46,9 +43,14 @@ export function PandorasPoolRows() {
             <Image src={NO_FUNDS_ICON} alt="Sin inversión" width={56} height={56} className="mb-3 opacity-70" />
             <div className="mb-2 font-semibold text-lg text-gray-300">Aún no tienes inversiones en Pandora&apos;s Pool</div>
             <div className="text-sm mb-4 text-gray-400">Invierte con ETH o USDC para ver tus posiciones aquí.</div>
-            <button className="bg-lime-700 text-white px-4 py-2 rounded hover:bg-lime-600 text-sm transition" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-              Ir a invertir
-            </button>
+              <a 
+                href="https://minter.pandoras.finance"
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="bg-lime-700 text-white px-4 py-2 rounded hover:bg-lime-600 text-sm transition text-center"
+                >
+                  Ir a invertir
+              </a>
           </div>
         </td>
       </tr>

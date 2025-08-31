@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 interface DashboardShellProps {
   children: React.ReactNode;
   wallet?: string;
-  // totalBalance?: number; // ELIMINADO
+  userName?: string;
   title?: string;
   description?: string;
   className?: string;
@@ -15,7 +15,7 @@ interface DashboardShellProps {
 export function DashboardShell({
   children,
   wallet,
-  // totalBalance, // ELIMINADO
+  userName,
   title,
   description,
   className,
@@ -29,7 +29,7 @@ export function DashboardShell({
         "overflow-hidden",
       )}
     >
-      <Sidebar wallet={wallet} />
+      <Sidebar wallet={wallet} userName={userName} />
       <main
         className={cn(
           "flex-1 relative",

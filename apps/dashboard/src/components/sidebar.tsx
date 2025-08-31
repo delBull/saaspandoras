@@ -9,13 +9,12 @@ import { cn } from "@saasfly/ui";
 import { useActiveAccount, useDisconnect, useActiveWallet } from "thirdweb/react";
 import { isAdmin } from "@/lib/auth";
 
-// CORREGIDO: La interfaz de props ahora solo define lo que se usa.
 interface SidebarProps {
   wallet?: string;
+  userName?: string;
 }
 
-// CORREGIDO: La función ahora acepta y desestructura la prop 'wallet'.
-export function Sidebar({ wallet: walletProp }: SidebarProps) {
+export function Sidebar({ wallet: walletProp, userName }: SidebarProps) {
   const [isClient, setIsClient] = useState(false);
   useEffect(() => { setIsClient(true); }, []);
 
@@ -27,40 +26,96 @@ export function Sidebar({ wallet: walletProp }: SidebarProps) {
   const { disconnect } = useDisconnect();
   const userIsAdmin = isAdmin(account?.address);
   
-  const links = useMemo( () => [ { label: "Overview", href: "/", icon: <HomeIcon className="h-5 w-5 shrink-0 text-gray-400" />, disabled: false, }, { label: "Applicants", href: "#", icon: <UserGroupIcon className="h-5 w-5 shrink-0 text-gray-400" />, comingSoon: true, disabled: true, }, { label: "Invest", href: "#", icon: <ArrowPathIcon className="h-5 w-5 shrink-0 text-gray-400" />, comingSoon: true, disabled: true, }, { label: "Pool", href: "#", icon: <BanknotesIcon className="h-5 w-5 shrink-0 text-gray-400" />, comingSoon: true, disabled: true, }, ], [], );
+  const links = useMemo( () => [ { 
+    label: "Overview", 
+    href: "/", 
+    icon: <HomeIcon className="h-5 w-5 shrink-0 font-mono text-gray-400" />, 
+    disabled: false, 
+  }, 
+  { 
+    label: "Applicants", 
+    href: "#", 
+    icon: <UserGroupIcon className="h-5 w-5 shrink-0 font-mono text-gray-400" />, 
+    comingSoon: true, 
+    disabled: true, 
+  }, 
+  { 
+    label: "Invest", 
+    href: "#", 
+    icon: <ArrowPathIcon className="h-5 w-5 shrink-0 font-mono text-gray-400" />, 
+    comingSoon: true, 
+    disabled: true, 
+  }, 
+  { 
+    label: "Pool", 
+    href: "#", 
+    icon: <BanknotesIcon className="h-5 w-5 shrink-0 font-mono text-gray-400" />, 
+    comingSoon: true, 
+    disabled: true, 
+  }, 
+], 
+[], 
+);
+
+  const logoVariants = {
+    hidden: { opacity: 0, scale: 0.95, y: -10 },
+    visible: { opacity: 1, scale: 1, y: 0 },
+  };
 
   return (
     <>
       <motion.div
+        transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }}
         animate={{ width: open ? "20rem" : "6rem" }}
         className="relative hidden h-screen flex-col border-r border-gray-800 bg-zinc-900 px-2 pt-20 md:flex"
       >
         <Link href="/" className="z-50">
-          <div className="absolute top-12 left-0 right-0 flex justify-center">
-            <motion.div animate={{ opacity: open ? 1 : 0, display: open ? "block" : "none" }}>
-              <Image src="/images/logo_finance.png" width={256} height={64} alt="Logo Finance" />
-            </motion.div>
-            <motion.div animate={{ opacity: open ? 0 : 1, display: open ? "none" : "block" }}>
-              <Image src="/images/logo_green.png" width={32} height={32} alt="Logo" className="h-8 w-8" />
-            </motion.div>
+          <div className="absolute top-12 left-0 right-0 flex justify-center items-center h-8">
+            <AnimatePresence initial={false}>
+              {open ? (
+                <motion.div
+                  key="logo-largo"
+                  initial="hidden"
+                  animate="visible"
+                  exit="hidden"
+                  variants={logoVariants}
+                  transition={{ type: "tween", ease: "easeInOut", duration: 0.2 }}
+                >
+                  <Image src="/images/logo_finance.png" width={256} height={64} alt="Logo Finance" />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="logo-corto"
+                  initial="hidden"
+                  animate="visible"
+                  exit="hidden"
+                  variants={logoVariants}
+                  transition={{ type: "tween", ease: "easeInOut", duration: 0.2 }}
+                >
+                  <Image src="/images/logo_green.png" width={32} height={32} alt="Logo" className="h-8 w-8" />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </Link>
 
         <button
           onClick={() => setOpen(!open)}
-          className="absolute -right-3 top-1/2 z-50 flex h-20 w-5 -translate-y-1/2 items-center justify-center rounded-md border-2 border-l-0 border-gray-800 bg-zinc-900 text-gray-400 transition-colors duration-200 hover:text-white"
+          className="absolute -right-3 top-1/2 z-50 flex h-20 w-5 -translate-y-1/2 items-center justify-center rounded-md border-2 border-l-0 border-gray-800 bg-zinc-900 font-mono text-gray-400 transition-colors duration-200 hover:text-white"
         >
           {open ? <ChevronLeftIcon className="h-4 w-4" /> : <ChevronRightIcon className="h-4 w-4" />}
         </button>
 
         <div className="mx-2 mt-6 rounded-lg border border-gray-700 bg-gray-800/50 p-2">
           <div className="flex items-center space-x-1">
-            <motion.span animate={{ width: open ? "auto" : "2rem" }} className="overflow-hidden whitespace-nowrap font-mono text-xs text-gray-400">
-              {open ? "C:\\PANDORAS\\" : "C:\\"}
+            <motion.span animate={{ width: open ? "auto" : "2rem" }} className="overflow-hidden whitespace-nowrap font-mono text-xs text-gray-400 flex-shrink-0">
+              {open
+                ? (isClient && account ? 'C:\\USER\\' : 'C:\\PANDORAS\\')
+                : 'C:\\'
+              }
             </motion.span>
             <motion.span animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0 }} className="truncate font-mono text-xs text-lime-400">
-              {/* CORREGIDO: Muestra la prop 'wallet' si existe, si no, usa la del hook. */}
-              {isClient ? (walletProp ?? account?.address ?? "Not Connected") : "Loading..."}
+              {isClient ? (userName ?? walletProp ?? account?.address ?? "Not Connected") : "Loading..."}
             </motion.span>
           </div>
         </div>
@@ -75,7 +130,7 @@ export function Sidebar({ wallet: walletProp }: SidebarProps) {
                       onClick={(e) => link.disabled && e.preventDefault()}
                     >
                         {link.icon}
-                        <motion.span animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0, marginLeft: open ? "0.75rem" : "0" }} className="whitespace-nowrap font-medium">
+                        <motion.span animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0, marginLeft: open ? "0.75rem" : "0" }} className="whitespace-nowrap font-medium font-mono">
                             {link.label}
                         </motion.span>
                         {link.comingSoon && open && (
@@ -140,10 +195,11 @@ export function Sidebar({ wallet: walletProp }: SidebarProps) {
               
               <div className="mx-2 mt-6 rounded-lg border border-gray-700 bg-gray-800/50 p-2">
                 <div className="flex items-center space-x-1">
-                  <span className="overflow-hidden whitespace-nowrap font-mono text-xs text-gray-400">C:\\PANDORAS\\</span>
+                  <span className="overflow-hidden whitespace-nowrap font-mono text-xs text-gray-400 flex-shrink-0">
+                    {isClient && account ? 'C:\\USER\\' : 'C:\\PANDORAS\\'}
+                  </span>
                   <span className="truncate font-mono text-xs text-lime-400">
-                    {/* CORREGIDO: Se aplica la misma lógica para la vista móvil. */}
-                    {isClient ? (walletProp ?? account?.address ?? "Not Connected") : "Loading..."}
+                    {isClient ? (userName ?? walletProp ?? account?.address ?? "Not Connected") : "Loading..."}
                   </span>
                 </div>
               </div>

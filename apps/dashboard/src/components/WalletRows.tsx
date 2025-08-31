@@ -56,12 +56,32 @@ export function WalletRows() {
       setLoading(false);
     };
 
-    // CORREGIDO: Se añade 'void' para manejar la promesa correctamente.
     void fetchBalances();
   }, [address]);
 
-  if (!address) { return ( <tr> <td colSpan={4} className="px-4 py-8 text-center text-gray-400"> Conecta tu wallet para ver tus saldos disponibles. </td> </tr> ); }
-  if (loading || eth === null || usdc === null) { return ( <tr> <td colSpan={4} className="px-4 py-8 text-center text-gray-400"> Cargando saldos de tu wallet... </td> </tr> ); }
+  if (!address) {
+    return (
+      <>
+        <tr>
+          <td colSpan={4} className="px-4 py-8 text-center text-gray-400">
+            Conecta tu wallet para ver tus saldos disponibles.
+          </td>
+        </tr>
+      </>
+    );
+  }
+  
+  if (loading || eth === null || usdc === null) {
+    return (
+      <>
+        <tr>
+          <td colSpan={4} className="px-4 py-8 text-center text-gray-400">
+            Cargando saldos de tu wallet...
+          </td>
+        </tr>
+      </>
+    );
+  }
   
   return (
     <>
