@@ -161,7 +161,7 @@ export function NavBar({
               href="/"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center text-lg font-bold transition-colors hover:text-foreground/80 sm:text-sm text-lime-300"
+              className="hidden md:flex items-center text-lg font-bold transition-colors hover:text-foreground/80 sm:text-sm text-lime-300"
               >
               dApp
             </Link>

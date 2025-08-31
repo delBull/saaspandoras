@@ -41,20 +41,7 @@ export function MainNav({ items, children, params: { lang } }: MainNavProps) {
             height={50}
             priority
           />
-          {/*
-          <div className="text-xl">
-            <span className="text-lime-300">Pandora&apos;s</span>{" "}
-            <span className="text-gray-100">Foundation</span>
-          </div>
-          */}
         </Link>
-        {/*
-        <Link href="https://pandoras.foundation" target="_blank" className="ml-4 hidden md:flex lg:flex xl:flex">
-          <DocumentGuide>
-            {marketing?.introducing ?? "Introducing Pandora's"}
-          </DocumentGuide>
-        </Link>
-        */}
       </div>
 
       <button
