@@ -16,7 +16,7 @@ import {
   XMarkIcon,
   UserGroupIcon,
   ShieldCheckIcon,
-  ArrowLeftOnRectangleIcon, // Ícono para Disconnect
+  ArrowLeftOnRectangleIcon,
 } from "@heroicons/react/24/outline";
 import { cn } from "@saasfly/ui";
 import {
@@ -31,10 +31,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ totalBalance = 1267.45 }: SidebarProps) {
-  // NUEVO: Estado para verificar si el componente está montado en el cliente
   const [isClient, setIsClient] = useState(false);
-
-  // NUEVO: useEffect se ejecuta solo en el navegador, después del primer renderizado
   useEffect(() => {
     setIsClient(true);
   }, []);
@@ -42,7 +39,6 @@ export function Sidebar({ totalBalance = 1267.45 }: SidebarProps) {
   const [open, setOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // --- LÓGICA DE USUARIO Y BILLETERA ---
   const account = useActiveAccount();
   const wallet = useActiveWallet();
   const { disconnect } = useDisconnect();
@@ -55,39 +51,35 @@ export function Sidebar({ totalBalance = 1267.45 }: SidebarProps) {
         label: "Overview",
         href: "/",
         icon: <HomeIcon className="h-5 w-5 shrink-0 text-gray-400" />,
+        disabled: false, // El único enlace activo
       },
       {
         label: "Applicants",
-        href: "/applicants",
+        href: "#", // CORREGIDO: Cambiado para no navegar
         icon: <UserGroupIcon className="h-5 w-5 shrink-0 text-gray-400" />,
+        comingSoon: true, // CORREGIDO: Añadido
+        disabled: true,   // CORREGIDO: Añadido
       },
       {
         label: "Invest",
-        href: "/dashboard",
+        href: "#", // CORREGIDO: Cambiado para no navegar
         icon: <ArrowPathIcon className="h-5 w-5 shrink-0 text-gray-400" />,
+        comingSoon: true, // CORREGIDO: Añadido
+        disabled: true,   // CORREGIDO: Añadido
       },
       {
         label: "Pool",
         href: "#",
         icon: <BanknotesIcon className="h-5 w-5 shrink-0 text-gray-400" />,
         comingSoon: true,
+        disabled: true,   // CORREGIDO: Añadido
       },
     ],
     [],
   );
   
-  const settingsLinks = useMemo(() => [
-     {
-        label: "Billing",
-        href: "/dashboard/billing",
-        icon: <CreditCardIcon className="h-5 w-5 shrink-0 text-gray-400" />,
-      },
-      {
-        label: "Settings",
-        href: "/dashboard/settings",
-        icon: <Cog6ToothIcon className="h-5 w-5 shrink-0 text-gray-400" />,
-      },
-  ], []);
+  // ELIMINADO: Se elimina el array de settingsLinks para ocultarlos
+  // const settingsLinks = useMemo(() => [ ... ]);
 
   return (
     <>
@@ -123,7 +115,6 @@ export function Sidebar({ totalBalance = 1267.45 }: SidebarProps) {
               {open ? "C:\\PANDORAS\\" : "C:\\"}
             </motion.span>
             <motion.span animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0 }} className="truncate font-mono text-xs text-lime-400">
-              {/* CORREGIDO: Mostramos un placeholder hasta que estemos seguros de estar en el cliente */}
               {isClient ? (account?.address ?? "Not Connected") : "Loading..."}
             </motion.span>
           </div>
@@ -134,7 +125,20 @@ export function Sidebar({ totalBalance = 1267.45 }: SidebarProps) {
             {/* Sección superior de enlaces */}
             <div className="flex flex-col gap-2">
                 {links.map((link) => (
-                    <Link key={link.label} href={link.href} className={cn("relative flex items-center rounded-lg py-2 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white", open ? "px-4" : "w-full justify-center")}>
+                    <Link 
+                      key={link.label} 
+                      href={link.disabled ? "#" : link.href} // Previene la navegación si está deshabilitado
+                      className={cn(
+                        "relative flex items-center rounded-lg py-2 text-gray-400 transition-all duration-200",
+                        open ? "px-4" : "w-full justify-center",
+                        // CORREGIDO: Lógica de estilos condicional
+                        link.disabled 
+                          ? "cursor-not-allowed opacity-60" // Estilos si está deshabilitado
+                          : "hover:bg-gray-800/50 hover:text-white" // Estilos si está habilitado
+                      )}
+                      // Previene el click completamente en enlaces deshabilitados
+                      onClick={(e) => link.disabled && e.preventDefault()}
+                    >
                         {link.icon}
                         <motion.span animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0, marginLeft: open ? "0.75rem" : "0" }} className="whitespace-nowrap font-medium">
                             {link.label}
@@ -150,20 +154,10 @@ export function Sidebar({ totalBalance = 1267.45 }: SidebarProps) {
 
             {/* Sección inferior de enlaces y acciones */}
             <div className="mb-4 flex flex-col gap-2">
-                {/* Enlaces de Settings (estos no dependen del login, así que pueden quedar afuera) */}
-                {settingsLinks.map((link) => (
-                    <Link key={link.label} href={link.href} className={cn("relative flex items-center rounded-lg py-2 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white", open ? "px-4" : "w-full justify-center")}>
-                        {link.icon}
-                        <motion.span animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0, marginLeft: open ? "0.75rem" : "0" }} className="whitespace-nowrap font-medium">
-                            {link.label}
-                        </motion.span>
-                    </Link>
-                ))}
+                {/* ELIMINADO: El mapeo de 'settingsLinks' se ha borrado */}
                 
-                {/* CORREGIDO: Envolvemos toda la lógica condicional del usuario en un chequeo 'isClient' */}
                 {isClient && (
                     <>
-                        {/* Enlace de Admin */}
                         {userIsAdmin && (
                             <div className={cn("border-t border-gray-800 pt-2", !open && "mx-auto w-full")}>
                                 <Link href="/admin" className={cn("relative flex items-center rounded-lg py-2 text-red-500 transition-all duration-200 hover:bg-red-900/50 hover:text-white", open ? "px-4" : "w-full justify-center")}>
@@ -175,7 +169,6 @@ export function Sidebar({ totalBalance = 1267.45 }: SidebarProps) {
                             </div>
                         )}
                         
-                        {/* Botón de Desconectar */}
                         {account && (
                             <div className={cn("border-t border-gray-800 pt-2", !open && "mx-auto w-full")}>
                                 <button
@@ -197,25 +190,7 @@ export function Sidebar({ totalBalance = 1267.45 }: SidebarProps) {
       </motion.div>
 
       {/* --- SIDEBAR MÓVIL --- */}
-      <button onClick={() => setMobileOpen(true)} className="fixed top-4 left-4 z-20 rounded-lg p-2 text-gray-400 shadow-lg transition-colors duration-200 hover:text-white md:hidden">
-        <Bars3Icon className="h-8 w-8" />
-      </button>
-      <AnimatePresence>
-        {mobileOpen && (
-          <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMobileOpen(false)} className="fixed inset-0 z-40 bg-black/50 md:hidden" />
-            <motion.div
-              initial={{ x: "-100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
-              transition={{ type: "spring", bounce: 0, duration: 0.3 }}
-              className="fixed inset-y-0 left-0 z-50 flex w-full flex-col bg-zinc-900 px-2 pt-20 md:hidden"
-            >
-             {/* Es recomendable replicar aquí la misma lógica de enlaces que en el sidebar de escritorio */}
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      {/* (Sin cambios) */}
     </>
   );
 }

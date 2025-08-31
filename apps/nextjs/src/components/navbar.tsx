@@ -97,7 +97,7 @@ export function NavBar({
             {items?.length ? (
               <nav className="hidden gap-6 md:flex">
                 {items
-                  .filter((item) => !item.hidden) // Add this filter
+                  .filter((item) => !item.hidden)
                   .map((item, index) => {
                   if (item.external) {
                     return (
@@ -151,20 +151,20 @@ export function NavBar({
                     </Link>
                   );
                 })}
-                <Link
-                  href="http://localhost:3001"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center text-lg font-bold transition-colors hover:text-foreground/80 sm:text-sm text-lime-300"
-                >
-                  dApp
-                </Link>
               </nav>
             ) : null}
             {rightElements}
             <div className="hidden md:block w-[1px] h-8 bg-accent" />
             <LocaleChange url={basePath} />
             <ConnectWalletButton />
+            <Link
+              href="/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center text-lg font-bold transition-colors hover:text-foreground/80 sm:text-sm text-lime-300"
+              >
+              dApp
+            </Link>
           </div>
         </div>
       </header>
