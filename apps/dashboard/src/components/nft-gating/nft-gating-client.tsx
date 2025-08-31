@@ -16,56 +16,32 @@ export function NFTGatingClient() {
   const account = useActiveAccount();
   const { toast } = useToast();
   const { mutate: sendTransaction, isPending } = useSendTransaction();
-
   const [mintingStep, setMintingStep] = useState("idle");
   const hasStartedProcessing = useRef(false);
 
   useEffect(() => {
     const checkAndMint = async () => {
-      if (!account || !account.address || hasStartedProcessing.current) return;
+      // CORREGIDO: Se usa el encadenamiento opcional '?.'
+      if (!account?.address || hasStartedProcessing.current) return;
 
       hasStartedProcessing.current = true;
       setMintingStep("checking_key");
       const address = account.address;
-
+      
       try {
-        const contract = getContract({
-          client,
-          chain: base,
-          address: PANDORAS_KEY_CONTRACT_ADDRESS,
-          abi: PANDORAS_KEY_ABI,
-        });
-
-        const hasKey = await readContract({
-          contract,
-          method: "isGateHolder",
-          params: [address],
-        });
+        const contract = getContract({ client, chain: base, address: PANDORAS_KEY_CONTRACT_ADDRESS, abi: PANDORAS_KEY_ABI });
+        const hasKey = await readContract({ contract, method: "isGateHolder", params: [address] });
 
         if (!hasKey) {
-          toast({
-            title: "First-time user detected!",
-            description: "Please confirm the transaction in your wallet to mint your free access key.",
-          });
+          toast({ title: "First-time user detected!", description: "Please confirm the transaction in your wallet to mint your free access key." });
           setMintingStep("awaiting_confirmation");
 
-          const transaction = prepareContractCall({
-            contract,
-            method: "freeMint",
-            params: [],
-          });
-
+          const transaction = prepareContractCall({ contract, method: "freeMint", params: [] });
           sendTransaction(transaction, {
-            onSuccess: () => {
-              setMintingStep("minting_success");
-            },
+            onSuccess: () => { setMintingStep("minting_success"); },
             onError: (error) => {
               console.error("Failed to mint Pandora's Key", error);
-              toast({
-                title: "Minting Failed",
-                description: "There was an error minting your access key. Please try again.",
-                variant: "destructive",
-              });
+              toast({ title: "Minting Failed", description: "There was an error minting your access key. Please try again.", variant: "destructive" });
               setMintingStep("error");
             },
           });
@@ -74,49 +50,21 @@ export function NFTGatingClient() {
         }
       } catch (error) {
         console.error("Failed to check Pandora's Key", error);
-        toast({
-          title: "Verification Error",
-          description: "Could not verify if you have an access key. Please try reconnecting.",
-          variant: "destructive",
-        });
+        toast({ title: "Verification Error", description: "Could not verify if you have an access key. Please try reconnecting.", variant: "destructive" });
         setMintingStep("error");
       }
     };
 
-    checkAndMint();
+    // CORREGIDO: Se añade 'void' para manejar la promesa.
+    void checkAndMint();
   }, [account, toast, sendTransaction]);
 
-  // Reset processing flag when account changes
-  useEffect(() => {
-    hasStartedProcessing.current = false;
-  }, [account]);
+  useEffect(() => { hasStartedProcessing.current = false; }, [account]);
 
-  if (mintingStep === "minting_success") {
-    return (
-      <SuccessNFTCard
-        onAnimationComplete={() => {
-          window.location.reload();
-        }}
-      />
-    );
-  }
-
+  if (mintingStep === "minting_success") { return ( <SuccessNFTCard onAnimationComplete={() => { window.location.reload(); }} /> ); }
+  
   const isModalVisible = mintingStep !== "idle" && mintingStep !== "minting_success";
-
-  if (isModalVisible) {
-    return (
-      <MintingProgressModal
-        step={mintingStep}
-        isMinting={isPending}
-        alreadyOwned={mintingStep === "alreadyOwned"}
-        onClose={() => {
-          setMintingStep("idle");
-          hasStartedProcessing.current = false;
-        }}
-      />
-    );
-  }
-
+  if (isModalVisible) { return ( <MintingProgressModal step={mintingStep} isMinting={isPending} alreadyOwned={mintingStep === "alreadyOwned"} onClose={() => { setMintingStep("idle"); hasStartedProcessing.current = false; }} /> ); }
+  
   return null;
 }
-

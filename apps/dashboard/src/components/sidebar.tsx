@@ -4,26 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  HomeIcon,
-  ArrowPathIcon,
-  BanknotesIcon,
-  //CreditCardIcon,
-  //Cog6ToothIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  Bars3Icon,
-  XMarkIcon,
-  UserGroupIcon,
-  ShieldCheckIcon,
-  ArrowLeftOnRectangleIcon,
-} from "@heroicons/react/24/outline";
+import { HomeIcon, ArrowPathIcon, BanknotesIcon, ChevronLeftIcon, ChevronRightIcon, Bars3Icon, XMarkIcon, UserGroupIcon, ShieldCheckIcon, ArrowLeftOnRectangleIcon } from "@heroicons/react/24/outline";
 import { cn } from "@saasfly/ui";
-import {
-  useActiveAccount,
-  useDisconnect,
-  useActiveWallet,
-} from "thirdweb/react";
+import { useActiveAccount, useDisconnect, useActiveWallet } from "thirdweb/react";
 import { isAdmin } from "@/lib/auth";
 
 interface SidebarProps {
@@ -31,56 +14,20 @@ interface SidebarProps {
   wallet?: string;
 }
 
-export function Sidebar({}: SidebarProps) {
+// CORREGIDO: Se elimina la desestructuración vacía '{}' y las props no usadas.
+export function Sidebar() {
   const [isClient, setIsClient] = useState(false);
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
+  useEffect(() => { setIsClient(true); }, []);
   const [open, setOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
-
   const account = useActiveAccount();
   const wallet = useActiveWallet();
   const { disconnect } = useDisconnect();
   const userIsAdmin = isAdmin(account?.address);
-
-  const links = useMemo(
-    () => [
-      {
-        label: "Overview",
-        href: "/",
-        icon: <HomeIcon className="h-5 w-5 shrink-0 text-gray-400" />,
-        disabled: false,
-      },
-      {
-        label: "Applicants",
-        href: "#",
-        icon: <UserGroupIcon className="h-5 w-5 shrink-0 text-gray-400" />,
-        comingSoon: true,
-        disabled: true,
-      },
-      {
-        label: "Invest",
-        href: "#",
-        icon: <ArrowPathIcon className="h-5 w-5 shrink-0 text-gray-400" />,
-        comingSoon: true,
-        disabled: true,
-      },
-      {
-        label: "Pool",
-        href: "#",
-        icon: <BanknotesIcon className="h-5 w-5 shrink-0 text-gray-400" />,
-        comingSoon: true,
-        disabled: true,
-      },
-    ],
-    [],
-  );
+  const links = useMemo( () => [ { label: "Overview", href: "/", icon: <HomeIcon className="h-5 w-5 shrink-0 text-gray-400" />, disabled: false, }, { label: "Applicants", href: "#", icon: <UserGroupIcon className="h-5 w-5 shrink-0 text-gray-400" />, comingSoon: true, disabled: true, }, { label: "Invest", href: "#", icon: <ArrowPathIcon className="h-5 w-5 shrink-0 text-gray-400" />, comingSoon: true, disabled: true, }, { label: "Pool", href: "#", icon: <BanknotesIcon className="h-5 w-5 shrink-0 text-gray-400" />, comingSoon: true, disabled: true, }, ], [], );
 
   return (
     <>
-      {/* --- SIDEBAR DE ESCRITORIO --- */}
       <motion.div
         animate={{ width: open ? "20rem" : "6rem" }}
         className="relative hidden h-screen flex-col border-r border-gray-800 bg-zinc-900 px-2 pt-20 md:flex"
@@ -175,8 +122,6 @@ export function Sidebar({}: SidebarProps) {
             </div>
         </nav>
       </motion.div>
-
-      {/* --- SIDEBAR MÓVIL --- */}
       <button onClick={() => setMobileOpen(true)} className="fixed top-4 left-4 z-20 rounded-lg p-2 text-gray-400 shadow-lg transition-colors duration-200 hover:text-white md:hidden">
         <Bars3Icon className="h-8 w-8" />
       </button>
@@ -211,14 +156,8 @@ export function Sidebar({}: SidebarProps) {
                     <Link
                       key={`mobile-${link.label}`}
                       href={link.disabled ? "#" : link.href}
-                      className={cn(
-                        "relative flex items-center rounded-lg py-2 px-4 text-gray-400 transition-all duration-200",
-                        link.disabled ? "cursor-not-allowed opacity-60" : "hover:bg-gray-800/50 hover:text-white"
-                      )}
-                      onClick={(e) => {
-                        if (link.disabled) e.preventDefault();
-                        else setMobileOpen(false); // Cierra el menú al navegar
-                      }}
+                      className={cn( "relative flex items-center rounded-lg py-2 px-4 text-gray-400 transition-all duration-200", link.disabled ? "cursor-not-allowed opacity-60" : "hover:bg-gray-800/50 hover:text-white" )}
+                      onClick={(e) => { if (link.disabled) e.preventDefault(); else setMobileOpen(false); }}
                     >
                       {link.icon}
                       <span className="ml-3 whitespace-nowrap font-medium">{link.label}</span>
@@ -241,10 +180,7 @@ export function Sidebar({}: SidebarProps) {
                       {account && (
                         <div className="border-t border-gray-800 pt-2">
                           <button
-                            onClick={() => {
-                              if (wallet) disconnect(wallet);
-                              setMobileOpen(false);
-                            }}
+                            onClick={() => { if (wallet) disconnect(wallet); setMobileOpen(false); }}
                             disabled={!wallet}
                             className="relative flex w-full items-center rounded-lg py-2 px-4 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white disabled:opacity-50"
                           >

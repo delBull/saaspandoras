@@ -1,16 +1,9 @@
 'use client';
 
 import React, { Suspense, useState, useEffect } from "react";
-import {
-  ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon,
-  ChevronRightIcon,
-} from "@heroicons/react/24/solid";
-
+import { ChevronRightIcon } from "@heroicons/react/24/solid";
 import { Table, TableHead, TableHeader, TableRow } from "@saasfly/ui/table";
-
 import { DashboardShell } from "@/components/shell";
-
 import { PromotionalBanner } from "@/components/promotional-banners";
 import { PandorasPoolRows } from "@/components/PandorasPoolRows";
 import { WalletRows } from "@/components/WalletRows";
@@ -21,7 +14,6 @@ import {
   useSwitchActiveWalletChain 
 } from "thirdweb/react";
 import { config } from "@/config";
-
 
 // Interface for token stats
 interface TokenStats {
@@ -55,82 +47,24 @@ function StatsOverview({ stats }: { stats: TokenStats | null }) {
 
   return (
     <div className="space-y-1">
-      {/* Top Independent Stats */}
       <div className="flex gap-2">
-        {/*
-        <div className="rounded-lg border pl-3 pr-3 border-slate-800">
-          <h3 className="text-xs font-medium text-gray-400">Holders</h3>
-          <div className="flex items-baseline">
-            <p className="text-sm font-semibold font-mono text-white">
-              {stats.holders}
-            </p>
-          </div>
-        </div>
-        */}
         <div className="rounded-lg border border-slate-800 pl-3 pr-3">
           <h3 className="text-xs font-medium text-gray-400">PBOX Price</h3>
           <div className="flex items-baseline">
             <p className="text-sm font-semibold font-mono text-white">
-              {/*${stats.price}*/}
               coming soon
             </p>
           </div>
         </div>
       </div>
-      {/* Main Stats Row */}
-      {/*
-      <div className="md:grid md:grid-cols-3 justify-between">
-        <div className="rounded-l-lg bg-zinc-900 opacity-85 p-6 z-10">
-          <h3 className="text-sm font-medium text-gray-400 text-center">
-            Circulating Supply
-          </h3>
-          <div className="mt-2 flex items-baseline justify-center">
-            <p className="text-3xl font-semibold font-mono text-white">
-              {stats.circulatingSupply} ₿
-            </p>
-          </div>
-        </div>
-        <div className="bg-zinc-900 opacity-85 p-6 z-10">
-          <h3 className="text-sm font-medium text-gray-400 text-center">
-            Liquidity
-          </h3>
-          <div className="mt-2 flex items-baseline justify-center">
-            <p className="text-3xl font-semibold font-mono text-white">
-              ${stats.liquidity}
-            </p>
-            <p className="ml-2 flex items-center text-sm text-red-400">
-              <ArrowTrendingDownIcon className="h-4 w-4" />
-              {Math.abs(stats.liquidityChange)}%
-            </p>
-          </div>
-        </div>
-        <div className="rounded-r-smlg bg-zinc-900 opacity-85 p-6 z-10">
-          <h3 className="text-sm font-medium text-gray-400 text-center">
-            Treasury
-          </h3>
-          <div className="mt-2 flex items-baseline justify-center">
-            <p className="text-3xl font-semibold font-mono text-white">
-              ${stats.treasury}
-            </p>
-            <p className="ml-2 flex items-center text-sm text-green-400">
-              <ArrowTrendingUpIcon className="h-4 w-4" />
-              {stats.treasuryChange}%
-            </p>
-          </div>
-        </div> 
-      </div>
-      */}
     </div>
   );
 }
 interface Investment { id: string; name: string; amount: string; tickets: string; currency: string; }
-const dummyInvestments: Investment[] = [
-  // { id: "1", name: "Narai", amount: "1,233.58", tickets: "2 Tickets", currency: "USDT" },
-  // { id: "2", name: "USDC", amount: "558.24", tickets: "1 Ticket", currency: "USDT" },
-  // { id: "3", name: "FTM", amount: "779", tickets: "3 Tickets", currency: "USDT" },
-  // { id: "4", name: "AGOD-FTM LP 362 LP", amount: "466.47", tickets: "1 Ticket", currency: "USDT" },
-];
-function InvestmentList({ dict }: { dict: any }) { 
+const dummyInvestments: Investment[] = [];
+
+// CORREGIDO: Se elimina la prop 'dict' que no se estaba usando.
+function InvestmentList() { 
   return (
     <div className="divide-y divide-gray-800 rounded-lg bg-zinc-900">
       <div className="p-4 mt-8">
@@ -157,7 +91,6 @@ function InvestmentList({ dict }: { dict: any }) {
             </div>
           </div>
         </div>
-
         <Table className="divide-y divide-gray-800">
           <TableHeader>
             <TableRow className="hover:bg-gray-800/50">
@@ -185,7 +118,6 @@ function InvestmentList({ dict }: { dict: any }) {
   );
 }
 
-
 export default function DashboardPage() {
   const [tokenStats, setTokenStats] = useState<TokenStats | null>(null);
 
@@ -193,36 +125,27 @@ export default function DashboardPage() {
   const activeChain = useActiveWalletChain();
   const switchChain = useSwitchActiveWalletChain();
 
-  // --- useEffect con Lógica de Depuración Avanzada ---
   useEffect(() => {
-    // Estos logs nos dirán exactamente qué está viendo tu aplicación
-    console.log("--- Chequeo de Red ---");
-    console.log("Cuenta Activa (account):", account);
-    console.log("Red Activa (activeChain):", activeChain);
-    console.log("Red Requerida (config.chain):", config.chain);
-    
-    if (account && activeChain) {
-        console.log(`Comparando ID Red Activa (${activeChain.id}) con ID Red Requerida (${config.chain.id})`);
-        console.log("Resultado de la comparación (debe ser 'true' para pedir cambio):", Number(activeChain.id) !== Number(config.chain.id));
-    }
-    
-    // Comparamos los IDs como números para evitar errores de tipo (ej: "8453" vs 8453)
     if (account && activeChain && Number(activeChain.id) !== Number(config.chain.id)) {
-      console.log(`¡Red incorrecta! Solicitando cambio de '${activeChain.name}' a '${config.chain.name}'.`);
-      
-      switchChain(config.chain).catch((err: any) => {
+      // CORREGIDO: Se maneja la promesa con 'void' para el linter.
+      void switchChain(config.chain).catch((err: unknown) => { // CORREGIDO: Se usa 'unknown' en lugar de 'any'.
         console.error("El usuario rechazó el cambio de red o hubo un error:", err);
       });
-    } else if (account && activeChain) {
-        console.log("La red es correcta. No se necesita cambio.");
     }
-    console.log("--- Fin del Chequeo de Red ---");
-
   }, [account, activeChain, switchChain]);
 
-
+  // CORREGIDO: Se maneja la promesa de forma robusta con una función async.
   useEffect(() => {
-    getTokenStats().then(setTokenStats);
+    const fetchStats = async () => {
+      try {
+        const stats = await getTokenStats();
+        setTokenStats(stats);
+      } catch (error) {
+        console.error("Error al obtener las estadísticas del token:", error);
+      }
+    };
+
+    void fetchStats(); // Se usa 'void' para indicar al linter que se maneja la promesa intencionadamente.
   }, []);
 
   const totalBalance = dummyInvestments.reduce((acc, inv) => {
@@ -234,28 +157,13 @@ export default function DashboardPage() {
   return (
     <DashboardShell wallet={walletAddress} totalBalance={totalBalance}>
       <StatsOverview stats={tokenStats} />
-      <div className="grid gap-4 md:grid-cols-3 lg-grid-cols-3 my-6">
-        <PromotionalBanner 
-          title="Hemp Project" 
-          subtitle="Green GENESIS Become an early supporter" 
-          actionText="Soon do more with hemp!" 
-          variant="purple"
-          imageUrl="/images/sem.jpeg" />
-        <PromotionalBanner 
-          title="web3 Casino Project" 
-          subtitle="Ever dream about owning a casino?" 
-          actionText="Soon to be launched" 
-          variant="green"
-          imageUrl="/images/blockbunny.jpg" />
-        <PromotionalBanner 
-          title="Narai Loft" 
-          subtitle="Want a loft with ocean view?" 
-          actionText="Own it soon!" 
-          variant="red"
-          imageUrl="/images/narailoft.jpg" />
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 my-6">
+        <PromotionalBanner title="Hemp Project" subtitle="Green GENESIS Become an early supporter" actionText="Soon do more with hemp!" variant="purple" imageUrl="/images/sem.jpeg" />
+        <PromotionalBanner title="web3 Casino Project" subtitle="Ever dream about owning a casino?" actionText="Soon to be launched" variant="green" imageUrl="/images/blockbunny.jpg" />
+        <PromotionalBanner title="Narai Loft" subtitle="Want a loft with ocean view?" actionText="Own it soon!" variant="red" imageUrl="/images/narailoft.jpg" />
       </div>
       <Suspense fallback={<div className="divide-border-200 divide-y rounded-md border p-4"><div className="h-24 animate-pulse rounded bg-muted" /></div>}>
-        <InvestmentList dict={{}} />
+        <InvestmentList /> {/* CORREGIDO: Ya no se pasa la prop 'dict' */}
       </Suspense>
     </DashboardShell>
   );

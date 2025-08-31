@@ -1,22 +1,15 @@
 'use client';
 
 import { usePathname, useRouter } from "next/navigation";
-
 import { Button } from "@saasfly/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@saasfly/ui/dropdown-menu";
-
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@saasfly/ui/dropdown-menu";
 import { i18n } from "~/config/i18n-config";
 
-interface Props {
-  url: string;
-}
+// CORREGIDO: Se elimina 'url' de la interfaz porque no se usa.
+interface Props {}
 
-export function LocaleChange({ url }: Props) {
+// CORREGIDO: Se elimina 'url' de los parámetros de la función.
+export function LocaleChange({}: Props) {
   const pathName = usePathname();
   const router = useRouter();
 
