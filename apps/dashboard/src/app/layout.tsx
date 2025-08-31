@@ -24,7 +24,7 @@ export default function RootLayout({
           <AlertTriangle className="h-5 w-5 text-zinc-900 shrink-0" />
           <div className="flex flex-col text-left">
             <span className="text-zinc-900 font-semibold">
-              Alerta: ¡Verifica que estás en dapp.pandoras.finance!
+              Alerta: ¡Verifica que estás en dash.pandoras.finance!
             </span>
             <span className="text-gray-800 text-sm">
               Para operar, conéctate a la red de Base.
