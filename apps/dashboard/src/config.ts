@@ -1,35 +1,39 @@
 import { base, sepolia } from "thirdweb/chains";
 
-// 1. Lee la variable de entorno para determinar la red activa.
+// --- 1. Lee todas las variables de entorno necesarias ---
 const chainName = process.env.NEXT_PUBLIC_CHAIN_NAME;
+const nftContractAddress = process.env.NEXT_PUBLIC_NFT_CONTRACT_ADDRESS;
+const poolContractAddress = process.env.NEXT_PUBLIC_POOL_CONTRACT_ADDRESS;
 
-// 2. Define la dirección FIJA para el contrato del Pool que se usa en el dashboard.
-const POOL_CONTRACT_ADDRESS = "0x4122d7a6f11286b881f8332d8c27debcc922b2fa"; // Pool Mainnet
-
-// 3. Define las configuraciones DINÁMICAS para PandorasKey en cada red.
-const configurations = {
-  base: {
-    chain: base,
-    nftContractAddress: process.env.NEXT_PUBLIC_NFT_CONTRACT_ADDRESS_BASE ?? "",
-  },
-  sepolia: {
-    chain: sepolia,
-    nftContractAddress: process.env.NEXT_PUBLIC_NFT_CONTRACT_ADDRESS_SEPOLIA ?? "",
-  },
-};
-
-// 4. Selecciona la configuración activa (por defecto 'sepolia' para desarrollo).
-const activeConfigKey = chainName === "base" ? "base" : "sepolia";
-const activeChainConfig = configurations[activeConfigKey];
-
-// 5. Combina la configuración de red activa con la dirección fija del pool y exporta.
-export const config = {
-  chain: activeChainConfig.chain,
-  nftContractAddress: activeChainConfig.nftContractAddress,
-  poolContractAddress: POOL_CONTRACT_ADDRESS,
-};
-
-// 6. Valida que la configuración sea correcta.
-if (!config.chain || !config.nftContractAddress) {
-  throw new Error(`Configuration not valid for chain: ${chainName}. Check your environment variables for the PandorasKey address.`);
+// --- 2. Valida que las variables de entorno existan ---
+// Si alguna de estas variables falta, el build fallará con un error claro.
+if (!chainName) {
+  throw new Error("ERROR: La variable de entorno NEXT_PUBLIC_CHAIN_NAME no está configurada.");
 }
+if (!nftContractAddress) {
+  throw new Error("ERROR: La variable de entorno NEXT_PUBLIC_NFT_CONTRACT_ADDRESS no está configurada.");
+}
+if (!poolContractAddress) {
+  throw new Error("ERROR: La variable de entorno NEXT_PUBLIC_POOL_CONTRACT_ADDRESS no está configurada.");
+}
+
+// --- 3. Define un mapa de las cadenas que tu dApp soporta ---
+const supportedChains = {
+  base: base,
+  sepolia: sepolia,
+};
+
+// --- 4. Selecciona el objeto de la cadena activa ---
+// Hacemos un type assertion para poder buscar con una variable string.
+const activeChainObject = (supportedChains as Record<string, any>)[chainName];
+
+if (!activeChainObject) {
+  throw new Error(`Configuración no válida para la red: "${chainName}". Revisa el valor de NEXT_PUBLIC_CHAIN_NAME. Valores soportados: 'base', 'sepolia'.`);
+}
+
+// --- 5. Exporta la configuración final y 100% dinámica ---
+export const config = {
+  chain: activeChainObject,
+  nftContractAddress: nftContractAddress,
+  poolContractAddress: poolContractAddress,
+};
