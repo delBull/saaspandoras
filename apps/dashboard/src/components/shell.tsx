@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Sidebar } from "./sidebar";
-import { NFTGate } from "./nft-gate"; // Import NFTGate
+import { NFTGate } from "./nft-gate";
 import { cn } from "@/lib/utils";
 
 interface DashboardShellProps {
@@ -15,7 +15,7 @@ interface DashboardShellProps {
 export function DashboardShell({
   children,
   wallet,
-  totalBalance,
+  totalBalance, // La prop se recibe, pero ya no se pasa a Sidebar
   title,
   description,
   className,
@@ -29,7 +29,8 @@ export function DashboardShell({
         "overflow-hidden",
       )}
     >
-      <Sidebar wallet={wallet} totalBalance={totalBalance} />
+      {/* CORREGIDO: Se eliminó la prop 'totalBalance' que ya no es necesaria en Sidebar */}
+      <Sidebar wallet={wallet} />
       <main
         className={cn(
           "flex-1 relative",

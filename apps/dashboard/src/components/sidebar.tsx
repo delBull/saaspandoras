@@ -9,21 +9,24 @@ import { cn } from "@saasfly/ui";
 import { useActiveAccount, useDisconnect, useActiveWallet } from "thirdweb/react";
 import { isAdmin } from "@/lib/auth";
 
+// CORREGIDO: La interfaz de props ahora solo define lo que se usa.
 interface SidebarProps {
-  totalBalance?: number;
   wallet?: string;
 }
 
-// CORREGIDO: Se elimina la desestructuración vacía '{}' y las props no usadas.
-export function Sidebar() {
+// CORREGIDO: La función ahora acepta y desestructura la prop 'wallet'.
+export function Sidebar({ wallet: walletProp }: SidebarProps) {
   const [isClient, setIsClient] = useState(false);
   useEffect(() => { setIsClient(true); }, []);
+
   const [open, setOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
+
   const account = useActiveAccount();
   const wallet = useActiveWallet();
   const { disconnect } = useDisconnect();
   const userIsAdmin = isAdmin(account?.address);
+  
   const links = useMemo( () => [ { label: "Overview", href: "/", icon: <HomeIcon className="h-5 w-5 shrink-0 text-gray-400" />, disabled: false, }, { label: "Applicants", href: "#", icon: <UserGroupIcon className="h-5 w-5 shrink-0 text-gray-400" />, comingSoon: true, disabled: true, }, { label: "Invest", href: "#", icon: <ArrowPathIcon className="h-5 w-5 shrink-0 text-gray-400" />, comingSoon: true, disabled: true, }, { label: "Pool", href: "#", icon: <BanknotesIcon className="h-5 w-5 shrink-0 text-gray-400" />, comingSoon: true, disabled: true, }, ], [], );
 
   return (
@@ -56,7 +59,8 @@ export function Sidebar() {
               {open ? "C:\\PANDORAS\\" : "C:\\"}
             </motion.span>
             <motion.span animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0 }} className="truncate font-mono text-xs text-lime-400">
-              {isClient ? (account?.address ?? "Not Connected") : "Loading..."}
+              {/* CORREGIDO: Muestra la prop 'wallet' si existe, si no, usa la del hook. */}
+              {isClient ? (walletProp ?? account?.address ?? "Not Connected") : "Loading..."}
             </motion.span>
           </div>
         </div>
@@ -67,13 +71,7 @@ export function Sidebar() {
                     <Link 
                       key={link.label} 
                       href={link.disabled ? "#" : link.href}
-                      className={cn(
-                        "relative flex items-center rounded-lg py-2 text-gray-400 transition-all duration-200",
-                        open ? "px-4" : "w-full justify-center",
-                        link.disabled 
-                          ? "cursor-not-allowed opacity-60"
-                          : "hover:bg-gray-800/50 hover:text-white"
-                      )}
+                      className={cn( "relative flex items-center rounded-lg py-2 text-gray-400 transition-all duration-200", open ? "px-4" : "w-full justify-center", link.disabled ? "cursor-not-allowed opacity-60" : "hover:bg-gray-800/50 hover:text-white")}
                       onClick={(e) => link.disabled && e.preventDefault()}
                     >
                         {link.icon}
@@ -136,17 +134,17 @@ export function Sidebar() {
               transition={{ type: "spring", bounce: 0, duration: 0.3 }}
               className="fixed inset-y-0 left-0 z-50 flex w-full max-w-xs flex-col bg-zinc-900 px-2 pt-12 md:hidden"
             >
-              <button
-                onClick={() => setMobileOpen(false)}
-                className="absolute top-4 right-4 z-50 rounded-lg p-1 text-gray-400 transition-colors duration-200 hover:text-white"
-              >
+              <button onClick={() => setMobileOpen(false)} className="absolute top-4 right-4 z-50 rounded-lg p-1 text-gray-400 transition-colors duration-200 hover:text-white" >
                 <XMarkIcon className="h-6 w-6" />
               </button>
               
               <div className="mx-2 mt-6 rounded-lg border border-gray-700 bg-gray-800/50 p-2">
                 <div className="flex items-center space-x-1">
                   <span className="overflow-hidden whitespace-nowrap font-mono text-xs text-gray-400">C:\\PANDORAS\\</span>
-                  <span className="truncate font-mono text-xs text-lime-400">{isClient ? (account?.address ?? "Not Connected") : "Loading..."}</span>
+                  <span className="truncate font-mono text-xs text-lime-400">
+                    {/* CORREGIDO: Se aplica la misma lógica para la vista móvil. */}
+                    {isClient ? (walletProp ?? account?.address ?? "Not Connected") : "Loading..."}
+                  </span>
                 </div>
               </div>
 
