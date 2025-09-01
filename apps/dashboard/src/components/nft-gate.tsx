@@ -8,7 +8,7 @@ import {
   useSendTransaction
 } from "thirdweb/react";
 import { createWallet, inAppWallet } from "thirdweb/wallets";
-import { getContract, readContract, prepareContractCall } from "thirdweb";
+import { getContract, prepareContractCall } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { PANDORAS_KEY_ABI } from "@/lib/pandoras-key-abi";
 import { config } from "@/config";
