@@ -8,7 +8,7 @@ import {
   useSendTransaction
 } from "thirdweb/react";
 import { createWallet, inAppWallet } from "thirdweb/wallets";
-import { getContract, prepareContractCall } from "thirdweb";
+import { getContract, readContract, prepareContractCall } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { PANDORAS_KEY_ABI } from "@/lib/pandoras-key-abi";
 import { config } from "@/config";
@@ -26,8 +26,6 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   const [showInfo, setShowInfo] = useState(false);
-  
-  // CORREGIDO: Usamos el mismo patrón de dos estados que en el componente funcional
   const [gateStatus, setGateStatus] = useState("idle");
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const hasStartedProcessing = useRef(false);
@@ -57,13 +55,11 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
       return;
     }
     
-    // Si el hook ya nos dice que tiene la llave, terminamos el proceso.
     if (!isLoadingKey && hasKey) {
         setGateStatus("alreadyOwned");
         return;
     }
 
-    // Si el hook termina y nos dice que NO tiene la llave, iniciamos el minteo.
     if (!isLoadingKey && !hasKey) {
       hasStartedProcessing.current = true;
       setGateStatus("needs_mint");
@@ -103,39 +99,7 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
     hasStartedProcessing.current = false;
   }, [account]);
 
-const explanation = (
-    <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{ duration: 0.2 }}
-      className="relative mt-4 text-sm text-gray-300 leading-relaxed bg-zinc-800/80 p-4 pr-8 rounded-lg border border-gray-700 max-w-md"
-    >
-      <button 
-        onClick={() => setShowInfo(false)}
-        className="absolute top-2 right-2 rounded-full text-gray-500 hover:text-white transition-colors"
-        aria-label="Cerrar información"
-      >
-        <XMarkIcon className="h-5 w-5" />
-      </button>
-
-      <b className="text-white">¿Por qué solo algunas wallets son recomendadas?</b>
-      <ul className="mt-4 list-disc pl-5 space-y-2 text-gray-400">
-        <li>
-          Solo wallets como <b>MetaMask</b> y <b>Social Login</b> (Email, Google, etc.) soportan la tecnología de "Smart Accounts" que nos permite pagar el gas por ti de forma segura.
-        </li>
-        <li>
-          Otras wallets (Phantom, 1inch, etc.) tienen restricciones técnicas que no permiten esta función por ahora.
-        </li>
-        <li>
-          Para obtener tu llave 100% gratis y sin fricción, te recomendamos conectar usando una de las opciones del modal.
-        </li>
-      </ul>
-      <div className="text-xs mt-3 text-gray-500 italic">
-        Esto es una limitación actual de la tecnología de las wallets, no un error de la aplicación.
-      </div>
-    </motion.div>
-  );
+  const explanation = ( <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className="relative mt-4 text-sm text-gray-300 leading-relaxed bg-zinc-800/80 p-4 pr-8 rounded-lg border border-gray-700 max-w-md" > <button onClick={() => setShowInfo(false)} className="absolute top-2 right-2 rounded-full text-gray-500 hover:text-white transition-colors" aria-label="Cerrar información" > <XMarkIcon className="h-5 w-5" /> </button> <b className="text-white">¿Por qué solo algunas wallets son recomendadas?</b> <ul className="mt-4 list-disc pl-5 space-y-2 text-gray-400"> <li> Solo wallets como <b>MetaMask</b> y <b>Social Login</b> (Email, Google, etc.) soportan la tecnología de &quot;Smart Accounts&quot; que nos permite pagar el gas por ti de forma segura. </li> <li> Otras wallets (Phantom, 1inch, etc.) tienen restricciones técnicas que no permiten esta función por ahora. </li> <li> Para obtener tu llave 100% gratis y sin fricción, te recomendamos conectar usando una de las opciones del modal. </li> </ul> <div className="text-xs mt-3 text-gray-500 italic"> Esto es una limitación actual de la tecnología de las wallets, no un error de la aplicación. </div> </motion.div> );
 
   if (!account) {
     return (
@@ -161,7 +125,8 @@ const explanation = (
     );
   }
 
-  if (hasKey || gateStatus === "alreadyOwned" || gateStatus === "has_key") {
+  // CORREGIDO: Se cambia 'hasKey' por 'hasKey === true' para ser más explícito y satisfacer al linter.
+  if (hasKey === true || gateStatus === "alreadyOwned" || gateStatus === "has_key") {
     return <>{children}</>;
   }
   
@@ -187,6 +152,5 @@ const explanation = (
     );
   }
   
-  // Como fallback, no muestra nada si no encaja en ningún estado.
   return null;
 }

@@ -2,7 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import ReactDOM from "react-dom";
-import { motion, Variants } from 'framer-motion';
+// CORREGIDO: Se separa la importación de valores y tipos.
+import { motion } from 'framer-motion';
+import type { Variants } from 'framer-motion';
 import Image from 'next/image';
 import { FramerConfetti } from '../framer-confetti';
 import { Shadows_Into_Light } from "next/font/google";
@@ -38,16 +40,16 @@ export function SuccessNFTCard({ onAnimationComplete }: SuccessNFTCardProps) {
     } else if (animationState === 'enter') {
       timer = setTimeout(() => {
         setAnimationState('hold');
-      }, 500); // Duración de la animación de entrada
+      }, 500);
     } else if (animationState === 'hold') {
       timer = setTimeout(() => {
         setAnimationState('exit');
-      }, 5000); // 5 segundos de espera (puedes ajustar este valor)
+      }, 5000);
     } else if (animationState === 'exit') {
-      setVisible(false); // Detiene el confeti
+      setVisible(false);
       timer = setTimeout(() => {
-        onAnimationComplete(); // Llama a la función para actualizar el estado en NFTGate
-      }, 2500); // Duración de la animación de salida
+        onAnimationComplete();
+      }, 2500);
     }
 
     return () => clearTimeout(timer);
