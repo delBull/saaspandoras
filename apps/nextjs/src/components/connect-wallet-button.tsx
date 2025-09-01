@@ -89,6 +89,10 @@ export function ConnectWalletButton() {
           auth: {
             options: ["email", "google", "apple", "facebook", "passkey"],
           },
+          executionMode: { 
+            mode: "EIP7702", 
+            sponsorGas: true, 
+          }, 
         }),
         createWallet("io.metamask"),
       ],
