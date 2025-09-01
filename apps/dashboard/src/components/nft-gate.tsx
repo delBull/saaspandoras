@@ -125,7 +125,6 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // CORREGIDO: Se cambia 'hasKey' por 'hasKey === true' para ser más explícito y satisfacer al linter.
   if (hasKey === true || gateStatus === "alreadyOwned" || gateStatus === "has_key") {
     return <>{children}</>;
   }

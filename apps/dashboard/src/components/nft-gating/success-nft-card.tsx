@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import ReactDOM from "react-dom";
-// CORREGIDO: Se separa la importación de valores y tipos.
 import { motion } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import Image from 'next/image';

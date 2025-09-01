@@ -6,14 +6,16 @@ import { cn } from "@saasfly/ui";
 import { siteConfig } from "~/config/site";
 import { useLockBody } from "~/hooks/use-lock-body";
 import type { MainNavItem } from "~/types";
+import { LocaleChange } from "./locale-change";
 
 interface MobileNavProps {
   items: MainNavItem[];
   children?: React.ReactNode;
   menuItemClick?: () => void;
+  url: string;
 }
 
-export function MobileNav({ items, children, menuItemClick }: MobileNavProps) {
+export function MobileNav({ items, children, menuItemClick, url }: MobileNavProps) {
   useLockBody();
   return (
     <div
@@ -60,15 +62,20 @@ export function MobileNav({ items, children, menuItemClick }: MobileNavProps) {
               </Link>
             ),
           )}
-                      <Link
-                        href="/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 border-t-2 items-center text-sm font-bold transition-colors hover:text-foreground/80 text-lime-300"
-                        >
-                        dApp
-                      </Link>
         </nav>
+          <div className="flex flex-row items-center space-x-4 border-t border-border pt-4">
+            <Link
+              href="https://dash.pandoras.finance"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2 items-center text-sm font-bold transition-colors hover:text-foreground/80 text-lime-300"
+            >
+              dApp
+            </Link>
+          <div className="p-2">
+            <LocaleChange url={url} />
+          </div>
+          </div>
         {children}
       </div>
     </div>
