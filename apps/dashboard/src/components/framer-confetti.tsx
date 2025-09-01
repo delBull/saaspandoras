@@ -21,7 +21,6 @@ export function FramerConfetti({
   const hasTriggered = useRef(false);
 
   useEffect(() => {
-    // CORREGIDO: La función se mueve DENTRO del useEffect para resolver el error de dependencias.
     const triggerConfetti = () => {
       const explosionSettings = {
         S: { velocity: 5, decay: 0.95 },
@@ -30,7 +29,6 @@ export function FramerConfetti({
         XL: { velocity: 60, decay: 0.95 },
       }[explosion];
 
-      // CORREGIDO: Se añade 'void' para manejar la promesa.
       void confetti({
         particleCount: Math.floor(200 * (amount / 100)),
         spread: coverArea,
@@ -48,7 +46,7 @@ export function FramerConfetti({
       triggerConfetti();
       hasTriggered.current = true;
     }
-  }, [explosion, amount, coverArea, colors, zIndex]); // Se añaden las props como dependencias por buena práctica
+  }, [explosion, amount, coverArea, colors, zIndex]);
 
   return null;
 }

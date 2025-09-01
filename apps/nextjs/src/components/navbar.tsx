@@ -155,10 +155,12 @@ export function NavBar({
             ) : null}
             {rightElements}
             <div className="hidden md:block w-[1px] h-8 bg-accent" />
-            <LocaleChange url={basePath} />
+            <div className="hidden md:flex items-center">
+              <LocaleChange url={basePath} />
+            </div>
             <ConnectWalletButton />
             <Link
-              href="/"
+              href="https://dash.pandoras.finance"
               target="_blank"
               rel="noopener noreferrer"
               className="hidden md:flex items-center text-lg font-bold transition-colors hover:text-foreground/80 sm:text-sm text-lime-300"
