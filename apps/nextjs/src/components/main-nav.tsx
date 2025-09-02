@@ -62,7 +62,7 @@ export function MainNav({ items, children, params: { lang } }: MainNavProps) {
         <span className="font-bold">Menu</span>
       </button>
       {showMobileMenu && items && (
-        <MobileNav items={items} menuItemClick={handleMenuItemClick}>
+        <MobileNav url={`/${lang}`} items={items} menuItemClick={handleMenuItemClick}>
           {children}
         </MobileNav>
       )}

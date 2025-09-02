@@ -28,7 +28,7 @@ export function AboutPandoras({ dict }: { dict: any }) {
               alt="Pandora's Key"
               width={800}
               height={800}
-              className="rounded-lg object-cover w-full md:w-2/3 h-auto"
+              className="hidden md:block rounded-lg object-cover w-full md:w-2/3 h-auto"
             />
           </motion.div>
         {/* First Row */}

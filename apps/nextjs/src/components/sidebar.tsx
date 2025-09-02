@@ -10,6 +10,8 @@ import {
   ChevronRightIcon,
   Bars3Icon,
   XMarkIcon,
+  // NUEVO: Se importa el ícono de doble flecha
+  ChevronDoubleRightIcon,
 } from "@heroicons/react/24/outline";
 import Image from "next/image";
 import { useState } from "react";
@@ -253,20 +255,24 @@ export function Sidebar({
         </motion.div>
       </motion.div>
 
-      {/* Mobile Hamburger Button */}
+      {/* --- Botón de Menú Móvil (Nuevo Diseño de Pestaña) --- */}
       <button
         onClick={() => setMobileOpen(true)}
         className={cn(
-          "md:hidden fixed",
-          "top-2 left-2",
-          "p-2 rounded-lg",
-          "text-gray-400 hover:text-white",
-          "transition-colors duration-200",
-          "z-10",
-          "shadow-lg",
+          "md:hidden fixed z-10",
+          // Posición centrada verticalmente y pegada a la izquierda
+          "top-1/2 -translate-y-1/2 left-0",
+          // Nueva forma y estilo de "tirador"
+          "flex items-center justify-center h-24 w-6",
+          "bg-zinc-800 border-y border-r border-gray-700",
+          "rounded-r-lg shadow-lg",
+          // Estilos de interacción
+          "text-gray-500 hover:text-white hover:bg-zinc-700",
+          "transition-all duration-200"
         )}
       >
-        <Bars3Icon className="h-8 w-8" />
+        {/* Se reemplaza el ícono de hamburguesa por flechas */}
+        <ChevronDoubleRightIcon className="h-5 w-5" />
       </button>
 
       {/* Mobile Sidebar */}
@@ -308,8 +314,7 @@ export function Sidebar({
                 <XMarkIcon className="h-6 w-6" />
               </button>
 
-              {/* Mobile Content - Same as Desktop but always expanded */}
-              {/* Your existing content but forced to expanded state */}
+              {/* Mobile Content */}
               <div className="bg-gray-800/50 rounded-lg p-2 mx-2 mt-6 border border-gray-700">
                 <div className="flex flex-col space-y-1">
                   <div className="flex items-center space-x-1">
@@ -322,8 +327,6 @@ export function Sidebar({
                   </div>
                 </div>
               </div>
-
-              {/* Balance Section */}
               <div className="border-b border-gray-800 w-full px-4 pb-2 overflow-hidden">
                 <div className="flex flex-col items-center">
                   <Image
@@ -343,8 +346,6 @@ export function Sidebar({
                   </div>
                 </div>
               </div>
-
-              {/* Navigation Links */}
               <div className="mt-8 flex flex-col gap-2 flex-1">
                 {links.map((link, idx) => (
                   <a
@@ -358,7 +359,7 @@ export function Sidebar({
                     )}
                   >
                     {link.icon}
-                    <span className="font-medium whitespace-nowrap">
+                    <span className="font-medium whitespace-nowrap ml-3">
                       {link.label}
                     </span>
                     {link.comingSoon && (
@@ -369,8 +370,6 @@ export function Sidebar({
                   </a>
                 ))}
               </div>
-
-              {/* Services Section */}
               <div className="px-4 mb-4">
                 <div className="border-t border-gray-800 pt-4">
                   <h3 className="text-gray-300 mb-2 px-4">SERVICES</h3>
@@ -387,8 +386,6 @@ export function Sidebar({
                     </div>
                   </div>
                 </div>
-
-                {/* Bottom Logo */}
                 <div className="flex justify-center mt-8">
                   <Image
                     src="/images/onlybox2.png"

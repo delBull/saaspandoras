@@ -21,6 +21,7 @@ export function MobileNav({ items, children, menuItemClick, url }: MobileNavProp
     <div
       className={cn(
         "fixed inset-0 top-16 z-50 grid h-[calc(100vh-4rem)] grid-flow-row auto-rows-max overflow-auto p-6 pb-32 shadow-md animate-in slide-in-from-bottom-80 md:hidden",
+        "bg-black/55 backdrop-blur-sm"
       )}
     >
       <div className="relative z-20 grid gap-6 rounded-md bg-popover p-4 text-popover-foreground shadow-md">
@@ -63,19 +64,20 @@ export function MobileNav({ items, children, menuItemClick, url }: MobileNavProp
             ),
           )}
         </nav>
-          <div className="flex flex-row items-center space-x-4 border-t border-border pt-4">
-            <Link
-              href="https://dash.pandoras.finance"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-2 items-center text-sm font-bold transition-colors hover:text-foreground/80 text-lime-300"
-            >
-              dApp
-            </Link>
-          <div className="p-2">
+        <div className="flex flex-row items-center justify-between border-t border-border pt-4">
+          <Link
+            href="https://dash.pandoras.finance"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-2 text-sm font-bold text-zinc-900 transition-colors rounded-sm bg-gradient-to-r from-lime-200 to-lime-300 hover:opacity-90"
+          >
+            dApp
+          </Link>
+          
+          <div>
             <LocaleChange url={url} />
           </div>
-          </div>
+        </div>
         {children}
       </div>
     </div>

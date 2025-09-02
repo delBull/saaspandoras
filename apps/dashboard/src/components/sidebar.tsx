@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { HomeIcon, ArrowPathIcon, BanknotesIcon, ChevronLeftIcon, ChevronRightIcon, Bars3Icon, XMarkIcon, UserGroupIcon, ShieldCheckIcon, ArrowLeftOnRectangleIcon } from "@heroicons/react/24/outline";
+import { HomeIcon, ArrowPathIcon, BanknotesIcon, ChevronLeftIcon, ChevronRightIcon, Bars3Icon, XMarkIcon, UserGroupIcon, ShieldCheckIcon, ArrowLeftOnRectangleIcon, ChevronDoubleRightIcon } from "@heroicons/react/24/outline";
 import { cn } from "@saasfly/ui";
 import { useActiveAccount, useDisconnect, useActiveWallet } from "thirdweb/react";
 import { isAdmin } from "@/lib/auth";
@@ -53,9 +53,7 @@ export function Sidebar({ wallet: walletProp, userName }: SidebarProps) {
     comingSoon: true, 
     disabled: true, 
   }, 
-], 
-[], 
-);
+], [], );
 
   const logoVariants = {
     hidden: { opacity: 0, scale: 0.95, y: -10 },
@@ -114,7 +112,7 @@ export function Sidebar({ wallet: walletProp, userName }: SidebarProps) {
                 : 'C:\\'
               }
             </motion.span>
-            <motion.span animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0 }} className="truncate font-mono text-xs text-lime-400">
+            <motion.span animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0 }} className="truncate font-mono text-xs text-lime-400 min-w-0">
               {isClient ? (userName ?? walletProp ?? account?.address ?? "Not Connected") : "Loading..."}
             </motion.span>
           </div>
@@ -175,9 +173,22 @@ export function Sidebar({ wallet: walletProp, userName }: SidebarProps) {
             </div>
         </nav>
       </motion.div>
-      <button onClick={() => setMobileOpen(true)} className="fixed top-4 left-4 z-20 rounded-lg p-2 text-gray-400 shadow-lg transition-colors duration-200 hover:text-white md:hidden">
-        <Bars3Icon className="h-8 w-8" />
+      
+      <button
+        onClick={() => setMobileOpen(true)}
+        className={cn(
+          "md:hidden fixed z-10",
+          "top-1/2 -translate-y-1/2 left-0",
+          "flex items-center justify-center h-24 w-6",
+          "bg-zinc-800 border-y border-r border-gray-700",
+          "rounded-r-lg shadow-lg",
+          "text-gray-500 hover:text-white hover:bg-zinc-700",
+          "transition-all duration-200"
+        )}
+      >
+        <ChevronDoubleRightIcon className="h-5 w-5" />
       </button>
+
       <AnimatePresence>
         {mobileOpen && (
           <>
@@ -198,7 +209,7 @@ export function Sidebar({ wallet: walletProp, userName }: SidebarProps) {
                   <span className="overflow-hidden whitespace-nowrap font-mono text-xs text-gray-400 flex-shrink-0">
                     {isClient && account ? 'C:\\USER\\' : 'C:\\PANDORAS\\'}
                   </span>
-                  <span className="truncate font-mono text-xs text-lime-400">
+                  <span className="truncate font-mono text-xs text-lime-400 min-w-0">
                     {isClient ? (userName ?? walletProp ?? account?.address ?? "Not Connected") : "Loading..."}
                   </span>
                 </div>
