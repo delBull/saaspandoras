@@ -81,6 +81,7 @@ export function ConnectWalletButton() {
   const handleConnect = () => {
     connect({
       client,
+      showAllWallets: false,
       chain,
       showThirdwebBranding: false,
       size: "compact",
@@ -95,7 +96,6 @@ export function ConnectWalletButton() {
           }, 
         }),
         createWallet("io.metamask"),
-        createWallet("walletConnect"),
       ],
     });
   };
