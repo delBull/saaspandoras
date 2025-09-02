@@ -1,148 +1,208 @@
 'use client';
 
-import React, { Suspense, useState, useEffect } from "react";
-import { ChevronRightIcon } from "@heroicons/react/24/solid";
-import { Table, TableHead, TableHeader, TableRow } from "@saasfly/ui/table";
-import { DashboardShell } from "@/components/shell";
-import { PromotionalBanner } from "@/components/promotional-banners";
-import { PandorasPoolRows } from "@/components/PandorasPoolRows";
-import { WalletRows } from "@/components/WalletRows";
-
+import React, { useState, useEffect } from "react";
 import { 
   useActiveAccount, 
   useActiveWalletChain, 
-  useSwitchActiveWalletChain 
+  useSwitchActiveWalletChain,
+  useReadContract
 } from "thirdweb/react";
 import { config } from "@/config";
+import { PromotionalBanner } from "@/components/promotional-banners";
+import { DashboardShell } from "@/components/shell";
+import { getContract } from "thirdweb";
+import { PANDORAS_POOL_ABI } from "@/lib/pandoras-pool-abi";
+import { QrCodeIcon, UserGroupIcon, ArrowPathIcon, BanknotesIcon, LockClosedIcon, Squares2X2Icon } from "@heroicons/react/24/outline";
+import Image from "next/image";
+import { client } from "@/lib/thirdweb-client";
+import { motion, AnimatePresence } from "framer-motion";
+import useEmblaCarousel from 'embla-carousel-react'; 
 
-interface TokenStats { 
-  marketcap: string; 
-  circulatingSupply: string; 
-  holders: string; 
-  price: string; 
-  liquidity: string; 
-  treasury: string; 
-  marketcapChange: number; 
-  liquidityChange: number; 
-  treasuryChange: number; 
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+
+// --- Componente: Cabecera para Móvil ---
+function MobileHeader({ userName, walletAddress }: { userName: string | null; walletAddress?: string }) {
+  return (
+    <div className="flex md:hidden items-center justify-between w-full mb-6">
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center">
+           <Image
+              src="/images/logo_green.png"
+              width={20}
+              height={20}
+              alt="User"
+            />
+        </div>
+        <span className="font-mono text-sm font-semibold text-white">
+          {userName ?? (walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : "Not Connected")}
+        </span>
+      </div>
+    </div>
+  );
 }
 
-async function getTokenStats(): Promise<TokenStats> { 
-  await new Promise((resolve) => setTimeout(resolve, 500)); 
-  return { 
-    marketcap: "29.80M", 
-    circulatingSupply: "9.00", 
-    holders: "82K", 
-    price: "244.25", 
-    liquidity: "2.00M", 
-    treasury: "1.0M", 
-    marketcapChange: 1.25, 
-    liquidityChange: -0.15, 
-    treasuryChange: 1.25, 
-  }; 
-
+// --- Componente: Balance Total ---
+function TotalBalance({ total }: { total: number }) {
+  return (
+    <div className="text-center my-4 md:my-6">
+      <h1 className="text-5xl md:text-6xl font-bold text-white tracking-tighter">
+        ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      </h1>
+      <p className="text-sm font-semibold text-red-400 mt-2">Total Investments</p>
+    </div>
+  );
 }
-function StatsOverview({ stats }: { stats: TokenStats | null }) { if (!stats) { return ( 
-  <div className="animate-pulse space-y-1">
-    <div className="h-8 w-full rounded bg-gray-800/50"></div>
-    <div className="h-40 w-full rounded bg-gray-800/50"></div></div> 
-    ); 
-  }
 
-  return ( 
-    <div className="space-y-1">
-      <div className="flex gap-2 justify-end">
-        <div className="rounded-lg border border-slate-800 pl-3 pr-3">
-          <h3 className="text-xs font-medium text-gray-400">PBOX Price</h3>
-          <div className="flex items-baseline">
-            <p className="text-sm font-semibold font-mono text-white">coming soon</p>
-          </div>
+// --- Componente: Botones de Acción ---
+function ActionButton({ icon, label, disabled = false }: { icon: React.ReactNode, label: string, disabled?: boolean }) {
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <button 
+        disabled={disabled}
+        className="w-20 h-20 bg-zinc-800 rounded-lg flex items-center justify-center transition-colors hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {icon}
+      </button>
+      <span className="text-xs font-semibold text-gray-300">{label}</span>
+    </div>
+  );
+}
+
+// --- Componente: Banners Promocionales ---
+function BannersSection() {
+  const [emblaRef] = useEmblaCarousel({ 
+    align: 'start',
+    skipSnaps: true,
+  });
+
+  const initialBanners = [
+    { id: 1, title: "Hemp Project", subtitle: "Green GENESIS Become an early supporter", actionText: "Do more with hemp!", variant: "purple", imageUrl:"/images/sem.jpeg" },
+    { id: 2, title: "Mining Project", subtitle: "Ever dream about being a miner?", actionText: "Soon to be launched", variant: "green", imageUrl: "/images/blockbunny.jpg" },
+    { id: 3, title: "RA Wallet", subtitle: "Best blockchain wallet, rewards like no other", actionText: "Win by holding", variant: "red", imageUrl: "/images/narailoft.jpg" },
+  ] as const;
+
+  type BannerData = typeof initialBanners[number];
+  const [displayedBanners, setDisplayedBanners] = useState<readonly BannerData[]>(initialBanners);
+
+  const handleClose = (idToClose: number) => {
+    setDisplayedBanners(prevBanners => prevBanners.filter(b => b.id !== idToClose));
+  };
+  
+  if (displayedBanners.length === 0) return null;
+
+  return (
+    <div className="my-6">
+      <div className="hidden md:grid md:grid-cols-3 gap-4">
+        <AnimatePresence>
+          {displayedBanners.map((banner) => (
+            <motion.div
+              key={banner.id}
+              layout
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ type: "spring" }}
+            >
+              <PromotionalBanner {...banner} onClose={() => handleClose(banner.id)} />
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+      
+      <div className="md:hidden overflow-hidden" ref={emblaRef}>
+        <div className="flex -ml-4">
+          <AnimatePresence>
+            {displayedBanners.map((banner) => (
+              <motion.div
+                key={banner.id}
+                layout
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ x: -300, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="flex-none w-[90%] pl-4"
+              >
+                <PromotionalBanner {...banner} onClose={() => handleClose(banner.id)} />
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       </div>
-    </div> 
-  ); 
+    </div>
+  );
 }
 
-interface Investment { 
-  id: string; 
-  name: string; 
-  amount: string; 
-  tickets: string; 
-  currency: string; 
+// NUEVO: Componente para una fila de activo genérica
+function AssetRow({ icon, name, cryptoAmount, usdAmount }: { icon: string, name: string, cryptoAmount: string, usdAmount: string }) {
+  return (
+    <div className="flex items-center justify-between p-3 transition-colors hover:bg-zinc-800/50 rounded-lg cursor-pointer">
+      <div className="flex items-center gap-4">
+        <Image src={icon} alt={name} width={40} height={40} className="rounded-full" />
+        <div>
+          <p className="font-bold text-white">{name}</p>
+          <p className="text-sm font-mono text-gray-400">{cryptoAmount}</p>
+        </div>
+      </div>
+      <div className="text-right">
+        <p className="font-mono font-semibold text-white">{usdAmount}</p>
+      </div>
+    </div>
+  );
 }
 
-const dummyInvestments: Investment[] = [];
-
-function InvestmentList() { 
-  return ( 
-    <div className="divide-y divide-gray-800 rounded-lg bg-zinc-900">
-      <div className="p-4 mt-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-          <div className="flex space-x-4 md:space-x-8">
-            <span className="text-sm font-medium text-gray-400">Portfolio</span>
-            <span className="text-sm font-medium text-gray-400">Tickets</span>
-            <span className="text-sm font-medium text-gray-400">Action</span>
-            </div>
-            <div className="relative">
-              <select
-              defaultValue="all"
-              className="w-full md:w-auto appearance-none bg-zinc-900 text-white text-sm rounded-lg px-4 py-2 pr-12 pl-4 border border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[180px] cursor-pointer font-medium"
-              >
-                <option value="all">All Investments</option>
-                <option value="real-estate">Real Estate</option>
-                <option value="startups">Startups</option>
-                <option value="scaleups">Scaleups</option>
-                </select>
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-                </div>
-              </div>
-              </div>
-                    <Table className="divide-y divide-gray-800">
-                      <TableHeader>
-                        <TableRow className="hover:bg-gray-800/50">
-              <TableHead className="w-[200px] text-gray-400">Name</TableHead>
-              <TableHead className="text-gray-400">Amount</TableHead>
-              <TableHead className="text-gray-400">Tickets</TableHead>
-              <TableHead className="text-gray-400">Action</TableHead>
-            </TableRow>
-                      </TableHeader>
-                      <tbody className="divide-y divide-gray-800">
-            {dummyInvestments.map((investment) => (
-              <tr key={investment.id} className="hover:bg-gray-800/50">
-                <td className="px-4 py-4 text-white">{investment.name}</td>
-                <td className="px-4 py-4 text-white">{investment.amount} {investment.currency}</td>
-                <td className="px-4 py-4 text-white flex items-center">{investment.tickets}<ChevronRightIcon className="h-4 w-4 ml-2 text-gray-400" /></td>
-                <td className="px-4 py-4"><button className="text-lime-300 hover:text-lime-200">View Details</button></td>
-              </tr>
-            ))}
-                        <WalletRows />
-                        <PandorasPoolRows />
-                      </tbody>
-                    </Table>
-                </div>
-              </div> 
-            ); 
-          }
+// NUEVO: Componente para las sub-pestañas de la segunda sección
+function SecondaryTabs({ activeTab, setActiveTab }: { activeTab: string, setActiveTab: (tab: string) => void }) {
+  const tabs = ["Access", "Tokens"];
+  return (
+    <div className="flex items-center gap-4">
+      {tabs.map(tab => (
+        <button
+          key={tab}
+          onClick={() => setActiveTab(tab)}
+          className={`pb-2 text-sm font-bold transition-colors ${activeTab === tab ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
+        >
+          {tab}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 async function fetchUserName(address: string): Promise<string | null> {
   if (address.toLowerCase() === "0xdd2fd4581271e230360230f9337d5c0430bf44c0") {
-    await new Promise(resolve => setTimeout(resolve, 300)); 
+    await new Promise(resolve => setTimeout(resolve, 300));
     return "vitalik.eth";
   }
   return null;
 }
 
-
+// --- Página Principal del Dashboard ---
 export default function DashboardPage() {
-  const [tokenStats, setTokenStats] = useState<TokenStats | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
-
+  const [secondaryTab, setSecondaryTab] = useState("Access");
   const account = useActiveAccount();
   const activeChain = useActiveWalletChain();
   const switchChain = useSwitchActiveWalletChain();
+  
+  const contract = getContract({
+    client,
+    chain: config.chain,
+    address: config.poolContractAddress ?? ZERO_ADDRESS,
+    abi: PANDORAS_POOL_ABI,
+  });
+
+  const { data: poolStats, isLoading: isLoadingPool } = useReadContract({
+    contract: contract,
+    method: "getUserStats",
+    params: [account?.address ?? ZERO_ADDRESS],
+    queryOptions: {
+      enabled: !!account && !!config.poolContractAddress,
+    },
+  });
+
+  const ethAmount = poolStats ? Number(poolStats[0]) / 1e18 : 0;
+  const usdcAmount = poolStats ? Number(poolStats[1]) / 1e6 : 0;
+  const totalInvestmentValue = usdcAmount + (ethAmount * 3000);
 
   useEffect(() => {
     if (account && activeChain && Number(activeChain.id) !== Number(config.chain.id)) {
@@ -162,30 +222,60 @@ export default function DashboardPage() {
     }
   }, [account?.address]);
 
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const stats = await getTokenStats();
-        setTokenStats(stats);
-      } catch (error) {
-        console.error("Error al obtener las estadísticas del token:", error);
-      }
-    };
-    void fetchStats();
-  }, []);
-
   return (
     <DashboardShell wallet={account?.address} userName={userName ?? undefined}>
-      <StatsOverview stats={tokenStats} />
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 my-6">
-        <PromotionalBanner title="Hemp Project" subtitle="Green GENESIS Become an early supporter" actionText="Soon do more with hemp!" variant="purple" imageUrl="/images/sem.jpeg" />
-        <PromotionalBanner title="web3 Casino Project" subtitle="Ever dream about owning a casino?" actionText="Soon to be launched" variant="green" imageUrl="/images/blockbunny.jpg" />
-        <PromotionalBanner title="Narai Loft" subtitle="Want a loft with ocean view?" actionText="Own it soon!" variant="red" imageUrl="/images/narailoft.jpg" />
+      <MobileHeader userName={userName} walletAddress={account?.address} />
+      <TotalBalance total={totalInvestmentValue} />
+
+      <div className="md:hidden grid grid-cols-4 gap-4 px-4 my-6">
+        <ActionButton icon={<QrCodeIcon className="w-6 h-6 text-gray-300"/>} label="Receive" />
+        <ActionButton icon={<UserGroupIcon className="w-6 h-6 text-gray-300"/>} label="Applicants" disabled />
+        <ActionButton icon={<ArrowPathIcon className="w-6 h-6 text-gray-300"/>} label="Invest" disabled />
+        <ActionButton icon={<BanknotesIcon className="w-6 h-6 text-gray-300"/>} label="Pool" disabled />
       </div>
-      <Suspense fallback={<div className="divide-border-200 divide-y rounded-md border p-4"><div className="h-24 animate-pulse rounded bg-muted" /></div>}>
-        <InvestmentList />
-      </Suspense>
+
+      <BannersSection />
+      
+      <div className="mt-8 flex flex-col gap-8">
+        <div className="flex flex-col gap-2">
+          <h3 className="text-base font-bold text-gray-400 px-4">Shares</h3>
+          <div className="flex flex-col gap-1 p-2 rounded-lg bg-zinc-900">
+            {isLoadingPool ? (
+              <div className="p-4 text-center text-gray-400">Cargando...</div>
+            ) : totalInvestmentValue > 0 ? (
+              <AssetRow
+                icon="/images/pkey.png"
+                name="Pandora's Invest. Pool"
+                cryptoAmount="ETH & USDC"
+                usdAmount={`$${totalInvestmentValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              />
+            ) : (
+              <div className="p-4 text-center text-sm text-gray-500">No tienes inversiones en esta categoría.</div>
+            )}
+          </div>
+        </div>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between border-b border-zinc-800 px-4">
+            <SecondaryTabs activeTab={secondaryTab} setActiveTab={setSecondaryTab} />
+          </div>
+          <div className="p-2">
+            {secondaryTab === "Access" && (
+              <div className="p-8 text-center text-gray-500 rounded-lg bg-zinc-900">
+                <LockClosedIcon className="w-10 h-10 mx-auto mb-2" />
+                <p className="font-bold">Llaves de Acceso</p>
+                <p className="text-sm">Tus NFTs de acceso se listarán aquí.</p>
+              </div>
+            )}
+            {secondaryTab === "Tokens" && (
+              <div className="p-8 text-center text-gray-500 rounded-lg bg-zinc-900">
+                <Squares2X2Icon className="w-10 h-10 mx-auto mb-2" />
+                <p className="font-bold">Tokens</p>
+                <p className="text-sm">Tus tokens de utilidad se mostrarán aquí.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </DashboardShell>
   );
 }
