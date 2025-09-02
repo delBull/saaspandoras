@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { HomeIcon, ArrowPathIcon, BanknotesIcon, ChevronLeftIcon, ChevronRightIcon, Bars3Icon, XMarkIcon, UserGroupIcon, ShieldCheckIcon, ArrowLeftOnRectangleIcon, ChevronDoubleRightIcon } from "@heroicons/react/24/outline";
+import { HomeIcon, ArrowPathIcon, BanknotesIcon, ChevronLeftIcon, ChevronRightIcon, XMarkIcon, UserGroupIcon, ShieldCheckIcon, ArrowLeftOnRectangleIcon, ChevronDoubleRightIcon } from "@heroicons/react/24/outline";
 import { cn } from "@saasfly/ui";
 import { useActiveAccount, useDisconnect, useActiveWallet } from "thirdweb/react";
 import { isAdmin } from "@/lib/auth";
