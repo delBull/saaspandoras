@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import { ChevronRightIcon } from "@heroicons/react/24/solid";
 
 const NO_FUNDS_ICON = "/images/pkey.png";
 
