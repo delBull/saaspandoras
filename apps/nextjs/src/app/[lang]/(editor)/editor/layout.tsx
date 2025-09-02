@@ -5,7 +5,6 @@ import { notFound } from "next/navigation";
 import { MainNav } from "~/components/main-nav";
 import { DashboardNav } from "~/components/nav";
 import { SiteFooter } from "~/components/site-footer";
-import { UserAccountNav } from "~/components/user-account-nav";
 import type { Locale } from "~/config/i18n-config";
 import { getDashboardConfig } from "~/config/ui/dashboard";
 import { getDictionary } from "~/lib/get-dictionary";
@@ -19,20 +18,11 @@ interface EditLayoutProps {
 
 export default async function DashboardLayout(props: EditLayoutProps) {
   const params = await props.params;
-
   const { lang } = params;
-
   const { children } = props;
-
-  // const user = await getCurrentUser();
   const dict = await getDictionary(lang);
 
   const dashboardConfig = await getDashboardConfig({ params: { lang } });
-  /*
-  if (!user) {
-    return notFound();
-  }
-  */
 
   return (
     <div className="flex min-h-screen flex-col space-y-6">
