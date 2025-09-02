@@ -59,7 +59,7 @@ function ActionButton({ icon, label, disabled = false }: { icon: React.ReactNode
     <div className="flex flex-col items-center gap-2">
       <button 
         disabled={disabled}
-        className="w-20 h-20 bg-zinc-800 rounded-lg flex items-center justify-center transition-colors hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-16 h-16 bg-zinc-800 rounded-lg flex items-center justify-center transition-colors hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {icon}
       </button>
