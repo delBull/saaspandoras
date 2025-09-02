@@ -95,6 +95,7 @@ export function ConnectWalletButton() {
           }, 
         }),
         createWallet("io.metamask"),
+        createWallet("walletConnect"),
       ],
     });
   };

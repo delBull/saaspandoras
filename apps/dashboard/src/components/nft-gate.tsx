@@ -125,7 +125,12 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
                           sponsorGas: true, 
                         }, 
                       }), 
-                      createWallet("io.metamask"), ], })}
+                      createWallet("io.metamask"),
+                      createWallet("walletConnect"), 
+                  ], 
+                }
+              )
+            }
                 disabled={isConnecting}
                 className="bg-gradient-to-r from-lime-300 to-lime-400 text-gray-800 py-2 px-6 rounded-md hover:opacity-90 font-semibold transition"
               >
