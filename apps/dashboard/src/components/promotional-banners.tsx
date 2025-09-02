@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import React, { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { XMarkIcon } from "@heroicons/react/24/solid";
 
 interface BannerProps {
   title: string;
@@ -11,6 +12,7 @@ interface BannerProps {
   actionText: string;
   variant: "purple" | "green" | "red";
   imageUrl?: string;
+  onClose?: () => void;
 }
 
 interface RelativeCoordinates {
@@ -60,6 +62,7 @@ export function PromotionalBanner({
   actionText,
   variant,
   imageUrl,
+  onClose,
 }: BannerProps) {
   const [showGradient, setShowGradient] = useState(false);
   const [mousePosition, setMousePosition] = useState<RelativeCoordinates>({
@@ -100,8 +103,18 @@ export function PromotionalBanner({
       onHoverStart={() => setShowGradient(true)}
       onHoverEnd={() => setShowGradient(false)}
       onMouseMove={handleMouseMove}
-      className="relative w-full aspect-[1.1/1] rounded-xl overflow-hidden"
+      className="relative w-full aspect-[2.5/1] md:aspect-[1.1/1] rounded-xl overflow-hidden"
     >
+      {onClose && (
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 z-20 p-1 bg-black/30 rounded-full text-gray-300 hover:text-white hover:bg-black/50 transition-colors"
+          aria-label="Cerrar banner"
+        >
+          <XMarkIcon className="h-4 w-4" />
+        </button>
+      )}
+
       {imageUrl && (
         <Image
           src={imageUrl}
@@ -111,7 +124,6 @@ export function PromotionalBanner({
           style={{ zIndex: 0 }}
         />
       )}
-      {/* Glow Effect Layer */}
       <div
         className="absolute inset-0 transition-opacity duration-300"
         style={{
@@ -120,22 +132,16 @@ export function PromotionalBanner({
             600px at ${mousePosition.x}px ${mousePosition.y}px,
             rgba(255, 255, 255, 0.15),
             transparent 40%
-          )` as React.CSSProperties["backgroundImage"],
+          )`,
         }}
       />
-
-      {/* Gradient Border */}
       <div className="absolute inset-0 p-[1px] rounded-xl bg-gradient-to-r from-white/10 to-white/5" style={{ zIndex: 3 }}>
-        {/* Content Container */}
         <div className={cn(contentContainerClasses)}>
           <div>
             <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
             <p className="text-sm text-gray-300/90 mb-4">{subtitle}</p>
           </div>
-
-          {/* Gradient Overlay */}
           <div className={cn(gradientOverlayClasses)} />
-
           <button
             className={
               cn(
