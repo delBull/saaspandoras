@@ -1,10 +1,7 @@
 'use client';
 
-import React, { useState } from "react";
-import { 
-  useActiveAccount,
-  useReadContract
-} from "thirdweb/react";
+import React, { useState, useEffect } from "react";
+import { useActiveAccount, useReadContract } from "thirdweb/react";
 import Link from "next/link";
 import { config } from "@/config";
 import { PromotionalBanner } from "@/components/promotional-banners";
@@ -15,21 +12,17 @@ import { QrCodeIcon, UserGroupIcon, ArrowPathIcon, BanknotesIcon, LockClosedIcon
 import Image from "next/image";
 import { client } from "@/lib/thirdweb-client";
 import { motion, AnimatePresence } from "framer-motion";
-import useEmblaCarousel from 'embla-carousel-react';
+import useEmblaCarousel from 'embla-carousel-react'; 
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
+// --- Sub-componentes ---
 function MobileHeader({ userName, walletAddress }: { userName: string | null; walletAddress?: string }) {
   return (
-    <div className="hidden items-center justify-between w-full mb-6">
+    <div className="flex md:hidden items-center justify-between w-full mb-6">
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center">
-           <Image
-              src="/images/logo_green.png"
-              width={20}
-              height={20}
-              alt="User"
-            />
+           <Image src="/images/logo_green.png" width={20} height={20} alt="User" />
         </div>
         <span className="font-mono text-sm font-semibold text-white">
           {userName ?? (walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : "Not Connected")}
@@ -55,15 +48,7 @@ function ActionButton({ icon, label, disabled = false, href }: { icon: React.Rea
   const content = <>{icon}</>;
   return (
     <div className="flex flex-col items-center gap-1">
-      {href && !disabled ? (
-        <Link href={href} className={commonClasses}>
-          {content}
-        </Link>
-      ) : (
-        <button disabled={disabled} className={commonClasses}>
-          {content}
-        </button>
-      )}
+      {href && !disabled ? ( <Link href={href} className={commonClasses}>{content}</Link> ) : ( <button disabled={disabled} className={commonClasses}>{content}</button> )}
       <span className="text-xs font-semibold text-gray-300 text-center">{label}</span>
     </div>
   );
@@ -71,69 +56,21 @@ function ActionButton({ icon, label, disabled = false, href }: { icon: React.Rea
 
 function BannersSection() {
   const [emblaRef] = useEmblaCarousel({ align: 'start', skipSnaps: true, });
-  const initialBanners = [
-    { id: 1, title: "Hemp Project", subtitle: "Green GENESIS Become an early supporter", actionText: "Do more with hemp!", variant: "purple", imageUrl:"/images/sem.jpeg" },
-    { id: 2, title: "Mining Project", subtitle: "Ever dream about being a miner?", actionText: "Soon to be launched", variant: "green", imageUrl: "/images/blockbunny.jpg" },
-    { id: 3, title: "RA Wallet", subtitle: "Best blockchain wallet, rewards like no other", actionText: "Win by holding", variant: "red", imageUrl: "/images/narailoft.jpg" },
-  ] as const;
+  const initialBanners = [ { id: 1, title: "Hemp Project", subtitle: "Green GENESIS Become an early supporter", actionText: "Do more with hemp!", variant: "purple", imageUrl:"/images/sem.jpeg" }, { id: 2, title: "Mining Project", subtitle: "Ever dream about being a miner?", actionText: "Soon to be launched", variant: "green", imageUrl: "/images/blockbunny.jpg" }, { id: 3, title: "RA Wallet", subtitle: "Best blockchain wallet, rewards like no other", actionText: "Win by holding", variant: "red", imageUrl: "/images/narailoft.jpg" }, ] as const;
   type BannerData = typeof initialBanners[number];
   const [displayedBanners, setDisplayedBanners] = useState<readonly BannerData[]>(initialBanners);
   const handleClose = (idToClose: number) => { setDisplayedBanners(prevBanners => prevBanners.filter(b => b.id !== idToClose)); };
   if (displayedBanners.length === 0) return null;
-  return (
-    <div className="my-6">
-      <div className="hidden md:grid md:grid-cols-3 gap-4">
-        <AnimatePresence>
-          {displayedBanners.map((banner) => ( <motion.div key={banner.id} layout initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} transition={{ type: "spring" }}> <PromotionalBanner {...banner} onClose={() => handleClose(banner.id)} /> </motion.div> ))}
-        </AnimatePresence>
-      </div>
-      <div className="md:hidden overflow-hidden" ref={emblaRef}>
-        <div className="flex -ml-4">
-          <AnimatePresence>
-            {displayedBanners.map((banner) => ( <motion.div key={banner.id} layout initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ x: -300, opacity: 0 }} transition={{ duration: 0.3 }} className="flex-none w-[90%] pl-4"> <PromotionalBanner {...banner} onClose={() => handleClose(banner.id)} /> </motion.div> ))}
-          </AnimatePresence>
-        </div>
-      </div>
-    </div>
-  );
+  return ( <div className="my-6"> <div className="hidden md:grid md:grid-cols-3 gap-4"> <AnimatePresence> {displayedBanners.map((banner) => ( <motion.div key={banner.id} layout initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} transition={{ type: "spring" }}> <PromotionalBanner {...banner} onClose={() => handleClose(banner.id)} /> </motion.div> ))} </AnimatePresence> </div> <div className="md:hidden overflow-hidden" ref={emblaRef}> <div className="flex -ml-4"> <AnimatePresence> {displayedBanners.map((banner) => ( <motion.div key={banner.id} layout initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ x: -300, opacity: 0 }} transition={{ duration: 0.3 }} className="flex-none w-[90%] pl-4"> <PromotionalBanner {...banner} onClose={() => handleClose(banner.id)} /> </motion.div> ))} </AnimatePresence> </div> </div> </div> );
 }
 
 function AssetRow({ icon, name, cryptoAmount, usdAmount }: { icon: string, name: string, cryptoAmount: string, usdAmount: string }) {
-  return (
-    <div className="flex items-center justify-between p-3 transition-colors hover:bg-zinc-800/50 rounded-lg cursor-pointer">
-      <div className="flex items-center gap-4">
-        <Image src={icon} alt={name} width={40} height={40} className="rounded-full" />
-        <div>
-          <p className="font-bold text-white">{name}</p>
-          <p className="text-sm font-mono text-gray-400">{cryptoAmount}</p>
-        </div>
-      </div>
-      <div className="text-right">
-        <p className="font-mono font-semibold text-white">{usdAmount}</p>
-      </div>
-    </div>
-  );
+  return ( <div className="flex items-center justify-between p-3 transition-colors hover:bg-zinc-800/50 rounded-lg cursor-pointer"> <div className="flex items-center gap-4"> <Image src={icon} alt={name} width={40} height={40} className="rounded-full" /> <div> <p className="font-bold text-white">{name}</p> <p className="text-sm font-mono text-gray-400">{cryptoAmount}</p> </div> </div> <div className="text-right"> <p className="font-mono font-semibold text-white">{usdAmount}</p> </div> </div> );
 }
 
 function SecondaryTabs({ activeTab, setActiveTab }: { activeTab: string, setActiveTab: (tab: string) => void }) {
   const tabs = ["Access", "Tokens"];
-  return (
-    <div className="flex items-center gap-4">
-      {tabs.map(tab => (
-        <button key={tab} onClick={() => setActiveTab(tab)} className={`pb-2 text-sm font-bold transition-colors ${activeTab === tab ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}>
-          {tab}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-async function fetchUserName(address: string): Promise<string | null> {
-  if (address.toLowerCase() === "0xdd2fd4581271e230360230f9337d5c0430bf44c0") {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return "vitalik.eth";
-  }
-  return null;
+  return ( <div className="flex items-center gap-4"> {tabs.map(tab => ( <button key={tab} onClick={() => setActiveTab(tab)} className={`pb-2 text-sm font-bold transition-colors ${activeTab === tab ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}> {tab} </button> ))} </div> );
 }
 
 export default function DashboardPage() {
@@ -148,6 +85,7 @@ export default function DashboardPage() {
   const totalInvestmentValue = usdcAmount + (ethAmount * 3000);
 
   return (
+    // Se elimina el DashboardShell. La función ahora devuelve un Fragmento <>.
     <>
       <MobileHeader userName={null} walletAddress={account?.address} />
       <TotalBalance total={totalInvestmentValue} />

@@ -12,7 +12,6 @@ import { getContract, prepareContractCall } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { PANDORAS_KEY_ABI } from "@/lib/pandoras-key-abi";
 import { config } from "@/config";
-import Image from "next/image";
 
 import { MintingProgressModal } from "./nft-gating/minting-progress-modal";
 import { SuccessNFTCard } from "./nft-gating/success-nft-card";
