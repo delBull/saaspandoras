@@ -12,12 +12,14 @@ import { getContract, prepareContractCall } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { PANDORAS_KEY_ABI } from "@/lib/pandoras-key-abi";
 import { config } from "@/config";
+import Image from "next/image";
 
 import { MintingProgressModal } from "./nft-gating/minting-progress-modal";
 import { SuccessNFTCard } from "./nft-gating/success-nft-card";
+import { useToast } from "@saasfly/ui/use-toast";
+import { Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { InformationCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
-import { useToast } from "@saasfly/ui/use-toast";
 
 export function NFTGate({ children }: { children: React.ReactNode }) {
   const account = useActiveAccount();
@@ -94,12 +96,25 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
       });
     }
   }, [account, hasKey, isLoadingKey, contract, sendTransaction, toast, gateStatus]);
-
+  
   useEffect(() => {
     hasStartedProcessing.current = false;
   }, [account]);
 
-  const explanation = ( <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className="relative mt-4 text-sm text-gray-300 leading-relaxed bg-zinc-800 p-4 pr-8 rounded-lg border border-gray-700 max-w-md" > <button onClick={() => setShowInfo(false)} className="absolute top-2 right-2 rounded-full text-gray-500 hover:text-white transition-colors" aria-label="Cerrar información" > <XMarkIcon className="h-5 w-5" /> </button> <b className="text-white">¿Por qué solo algunas wallets son recomendadas?</b> <ul className="mt-4 list-disc pl-5 space-y-2 text-gray-400"> <li> Solo wallets como <b>MetaMask</b> y <b>Social Login</b> (Email, Google, etc.) soportan la tecnología de &quot;Smart Accounts&quot; que nos permite pagar el gas por ti de forma segura. </li> <li> Otras wallets (Phantom, 1inch, etc.) tienen restricciones técnicas que no permiten esta función por ahora. </li> <li> Para obtener tu llave 100% gratis y sin fricción, te recomendamos conectar usando una de las opciones del modal. </li> </ul> <div className="text-xs mt-3 text-gray-500 italic"> Esto es una limitación actual de la tecnología de las wallets, no un error de la aplicación. </div> </motion.div> );
+  const explanation = (
+    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }} className="relative mt-4 text-sm text-gray-300 leading-relaxed bg-zinc-800/80 p-4 pr-8 rounded-lg border border-gray-700 max-w-md text-left" >
+      <button onClick={() => setShowInfo(false)} className="absolute top-2 right-2 p-1 rounded-full text-gray-500 hover:text-white hover:bg-zinc-700 transition-colors" aria-label="Cerrar información" >
+        <XMarkIcon className="h-4 w-4" />
+      </button>
+      <b className="text-white">¿Por qué solo algunas wallets son recomendadas?</b>
+      <ul className="mt-2 list-disc pl-5 space-y-2 text-gray-400">
+        <li> Solo wallets como <b>MetaMask</b> y <b>Social Login</b> soportan la tecnología que nos permite pagar el gas por ti de forma segura. </li>
+        <li> Otras wallets tienen restricciones técnicas que no permiten esta función por ahora. </li>
+      </ul>
+    </motion.div>
+  );
+
+  // --- LÓGICA DE RENDERIZADO ---
 
   if (!account) {
     return (
@@ -109,29 +124,11 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
           <p className="mt-2 font-mono text-gray-400"> Conecta tu wallet para verificar tu llave de acceso. </p>
           <div className="mt-6 flex flex-col items-center gap-2">
             <div className="flex items-center gap-3">
-              <button onClick={() => setShowInfo(v => !v)} className="p-2 rounded-full text-gray-500 hover:text-gray-300 hover:bg-zinc-800 transition-colors" aria-label="Mostrar información sobre wallets compatibles" > <InformationCircleIcon className="h-6 w-6" /> </button>
+              <button onClick={() => setShowInfo(v => !v)} className="p-2 rounded-full text-gray-500 hover:text-gray-300 hover:bg-zinc-800 transition-colors" aria-label="Mostrar información sobre wallets compatibles" >
+                <InformationCircleIcon className="h-6 w-6" />
+              </button>
               <button
-                onClick={() => connect({ 
-                  client,
-                  showAllWallets: false, 
-                  chain: config.chain, 
-                  showThirdwebBranding: false, 
-                  size: "compact", 
-                  wallets: [ 
-                    inAppWallet({ 
-                      auth: { 
-                        options: ["email", "google", "apple", "facebook", "passkey"], 
-                        }, 
-                        executionMode: { 
-                          mode: "EIP7702", 
-                          sponsorGas: true, 
-                        }, 
-                      }), 
-                      createWallet("io.metamask"),
-                  ], 
-                }
-              )
-            }
+                onClick={() => connect({ client, chain: config.chain, wallets: [ inAppWallet({ auth: { options: ["email", "google", "apple", "facebook", "passkey"], }, executionMode: { mode: "EIP7702", sponsorGas: true, }, }), createWallet("io.metamask"), ], })}
                 disabled={isConnecting}
                 className="bg-gradient-to-r from-lime-300 to-lime-400 text-gray-800 py-2 px-6 rounded-md hover:opacity-90 font-semibold transition"
               >
@@ -145,10 +142,14 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (hasKey === true || gateStatus === "alreadyOwned" || gateStatus === "has_key") {
-    return <>{children}</>;
+  if (isLoadingKey && gateStatus !== 'success' && !hasStartedProcessing.current) {
+    return (
+        <div className="flex items-center justify-center h-full">
+            <Loader2 className="w-12 h-12 animate-spin" />
+        </div>
+    );
   }
-  
+
   if (gateStatus === "success" && showSuccessAnimation) {
     return <SuccessNFTCard onAnimationComplete={() => {
       setShowSuccessAnimation(false);
@@ -157,12 +158,16 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
     }} />;
   }
 
-  if (gateStatus !== "idle" && gateStatus !== "success") {
+  if (hasKey === true || gateStatus === "alreadyOwned" || gateStatus === "has_key") {
+    return <>{children}</>;
+  }
+  
+  if (gateStatus !== "idle" && gateStatus !== "success" && gateStatus !== "has_key") {
     return (
       <MintingProgressModal 
         step={gateStatus}
         isMinting={isMinting}
-        alreadyOwned={gateStatus === "alreadyOwned"}
+        alreadyOwned={false}
         onClose={() => {
           setGateStatus("idle");
           hasStartedProcessing.current = false;
