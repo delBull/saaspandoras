@@ -31,6 +31,12 @@ export function Sidebar({ wallet: walletProp, userName }: SidebarProps) {
     href: "/", 
     icon: <HomeIcon className="h-5 w-5 shrink-0 font-mono text-gray-400" />, 
     disabled: false, 
+  },
+  { 
+    label: "Swap", 
+    href: "/swap", 
+    icon: <ArrowPathIcon className="h-5 w-5 shrink-0 font-mono text-gray-400" />, 
+    disabled: false,
   }, 
   { 
     label: "Applicants", 
