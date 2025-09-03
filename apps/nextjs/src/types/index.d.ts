@@ -511,12 +511,6 @@ export interface MarketingConfig {
   mainNav: MainNavItem[];
 }
 
-export interface DashboardConfig {
-  mainNav: MainNavItem[];
-  sidebarNav: SidebarNavItem[];
-  marketing: Record<string, string>;
-}
-
 export interface SubscriptionPlan {
   title?: string;
   description?: string;

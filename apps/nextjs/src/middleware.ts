@@ -14,6 +14,7 @@ const noNeedProcessRoute = [
   ".*\\.mp4",
   ".*\\.png",
   ".*\\.jpg",
+  ".*\\.svg",
   ".*\\.pdf",
   ".*\\.opengraph-image.png",
   "/__next_devtools__/client(.*)",

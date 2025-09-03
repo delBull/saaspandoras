@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Shadows_Into_Light } from "next/font/google";
-import { cn } from '~/lib/utils';
+import { HeroTypewriter } from './HeroTypewriter';
 
 const shadowsIntoLight = Shadows_Into_Light({
   subsets: ["latin"],
@@ -249,16 +249,8 @@ export const ShimmerDotHero = ({ dict }: ShimmerDotHeroProps) => {
         animation={{ animate: true, speed: 20 }}
         radius={10}
       />
-      <div className="relative z-10 flex flex-col items-center">
-        <div className="mb-4 text-md text-center font-mono font-semibold uppercase tracking-wider text-gray-400">
-          {dict.marketing.hero_supertitle}
-        </div>
-        <h1 className="max-w-4xl bg-gradient-to-br from-white to-gray-400 bg-clip-text text-center text-4xl font-semibold text-transparent dark:text-zinc-100 md:text-5xl xl:text-6xl leading-tight">
-          {dict.marketing.hero_title}
-        </h1>
-        <p className={cn("my-6 max-w-2xl text-center text-2xl text-neutral-400 md:text-3xl", shadowsIntoLight.className)}>
-          {dict.marketing.hero_subtitle}
-        </p>
+      <div className="relative z-10 flex flex-col items-left">
+        <HeroTypewriter />
       </div>
     </section>
   );

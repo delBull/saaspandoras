@@ -66,10 +66,16 @@ export const FaqSection: React.FC<FaqSectionProps> = ({ dict }) => {
   const [currentTime, setCurrentTime] = useState("");
 
   useEffect(() => {
-    setCurrentTime(new Date().toLocaleTimeString(undefined, {
-      hour: 'numeric',
-      minute: '2-digit',
-    }));
+    const timer = setInterval(() => {
+      setCurrentTime(new Date().toLocaleTimeString(undefined, {
+        hour: 'numeric',
+        minute: '2-digit',
+      }));
+    }, 1000);
+
+    return () => {
+      clearInterval(timer);
+    };
   }, []);
 
   const handleToggle = (index: number) => {
