@@ -21,8 +21,7 @@
     "faq_detail": "Explore our full FAQ for quick answers to common questions. If you need further assistance, feel free to contact us for personalized support.",
     "signup": "Sign Up",
     "upgrade": "Upgrade",
-    "manage_subscription": "Manage Subscription",
-    "go_to_dashboard": "Go to Dashboard"
+    "manage_subscription": "Manage Subscription"
   },
   "marketing": {
     "introducing": "Introducing Pandora's",
@@ -101,7 +100,7 @@
     },
     "sponsor": {
       "title": "Ready to transform the way you invest?",
-      "donate": "Get your next property",
+      "donate": "Diversify across different assets",
       "subtitle": "Become part of Pandora's today and access a new era of real digital assets"
     },
     "video": {
@@ -263,11 +262,10 @@
     }
   },
   "dropdown": {
-    "dashboard": "Dashboard",
-    "billing": "Billing",
-    "settings": "Settings",
-    "sign_out": "Sign Out"
-  },
+        "billing": "Billing",
+        "settings": "Settings",
+        "sign_out": "Sign Out"
+      },
   "terms": {
     "title": "Terms and Conditions",
     "lastUpdate": "Last Updated: March 2025",
@@ -418,7 +416,7 @@
   "footer": {
     "title": "Pandora's",
     "slogan": "The future of real-world asset investment.",
-    "copyright": "© 2025 Pandora's Finance. All rights reserved.",
+    "copyright": "© 2025 Pandora's Finance.",
     "white_paper": "WHITE PAPER",
     "support": "SUPPORT",
     "terms_privacy": "TERMS | PRIVACY"

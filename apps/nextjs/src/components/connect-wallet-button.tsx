@@ -2,11 +2,10 @@
 
 import { useConnectModal, useActiveWallet } from "thirdweb/react";
 import { createWallet, inAppWallet } from "thirdweb/wallets";
-import React, { useState, useEffect } from "react"; // Se añade useEffect
+import React, { useState, useEffect } from "react";
 import { client } from "~/lib/thirdweb-client";
 import { chain } from "~/lib/thirdweb-chain";
 import { motion, AnimatePresence } from "framer-motion";
-// NUEVO: Se importa el ícono X para el botón de cierre
 import { InformationCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 const FREEMINT_WALLETS = [
@@ -19,26 +18,21 @@ export function ConnectWalletButton() {
   const wallet = useActiveWallet();
   const [showInfo, setShowInfo] = useState(false);
 
-  // NUEVO: useEffect para manejar el cierre con la tecla "Escape"
   useEffect(() => {
-    // Definimos la función que se ejecutará al presionar una tecla
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setShowInfo(false); // Cierra el panel de info
+        setShowInfo(false);
       }
     };
 
-    // Solo añadimos el "escuchador" de eventos si el panel está visible
     if (showInfo) {
       document.addEventListener('keydown', handleKeyDown);
     }
 
-    // Función de limpieza: se ejecuta cuando el componente se desmonta o 'showInfo' cambia.
-    // Es crucial para evitar que el "escuchador" se quede activo innecesariamente.
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [showInfo]); // Este efecto depende del estado de 'showInfo'
+  }, [showInfo]);
 
   if (wallet) {
     return null;
@@ -50,7 +44,7 @@ export function ConnectWalletButton() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.2 }}
-      className="relative mt-[30rem] md:mt-80 text-sm text-gray-300 leading-relaxed bg-zinc-800/80 p-4 pr-8 rounded-lg border border-gray-700 max-w-md"
+      className="relative mt-[30rem] md:mt-80 text-sm text-gray-300 leading-relaxed bg-zinc-800 p-4 pr-8 rounded-lg border border-gray-700 max-w-md"
     >
       <button 
         onClick={() => setShowInfo(false)}

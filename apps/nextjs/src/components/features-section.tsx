@@ -3,7 +3,6 @@ import React from "react";
 import { cn } from "~/lib/utils";
 import createGlobe from "cobe";
 import { useEffect, useRef } from "react";
-//import { motion } from "framer-motion";
 import { IconBrandYoutubeFilled, IconShieldCheck, IconGavel, IconEye, IconFileCheck } from "@tabler/icons-react";
 import { Shadows_Into_Light } from "next/font/google";
 
@@ -167,7 +166,7 @@ export const SkeletonOne = ({ items = [] }: { items?: SkeletonOneItem[] }) => {
             }}
             >
             <div className="absolute inset-0 w-full h-full bg-gradient-to-b from-black/10 to-transparent -translate-y-full group-hover:translate-y-0 transition-transform duration-700 ease-out blur-lg"></div>
-            <p className="relative z-10 text-neutral-200 text-sm font-mono">
+            <p className="relative z-10 text-neutral-200 text-xs font-mono">
               {item.title}
             </p>
           </div>

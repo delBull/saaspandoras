@@ -33,7 +33,7 @@ export default async function MarketingLayout(props: {
       </Suspense>
       <ModalProvider dict={dict.login} />
       <main className="flex-1">{children}</main>
-      <SiteFooter dict={dict} />
+      <SiteFooter dict={dict} params={{ lang }} />
     </div>
   );
 }
