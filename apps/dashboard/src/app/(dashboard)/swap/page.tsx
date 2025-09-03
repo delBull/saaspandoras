@@ -105,7 +105,7 @@ export default function SwapPage() {
   }, []);
 
   return (
-    <div className="relative w-full max-w-md mx-auto">
+    <div className="pt-10 relative w-full max-w-md mx-auto">
       <div className="mb-6 text-center">
           <h1 className="text-3xl font-bold text-white">Swap & Bridge</h1>
           <p className="mt-2 text-gray-400">
