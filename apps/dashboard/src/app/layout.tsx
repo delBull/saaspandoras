@@ -1,48 +1,34 @@
 'use client';
 
-import { Inter } from "next/font/google";
 import "./globals.css";
-import { useEffect } from "react";
-import { Toaster, toast } from "sonner"; 
-import { AlertTriangle } from "lucide-react";
-import { ThirdwebProvider } from "thirdweb/react";
-
+import { Inter } from "next/font/google";
+import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 
+// NUEVO: Imports para la configuración global de thirdweb
+import { ThirdwebProvider, AutoConnect } from "thirdweb/react";
+import { createWallet, inAppWallet } from "thirdweb/wallets";
+import { client } from "@/lib/thirdweb-client";
+
 const inter = Inter({ subsets: ["latin"] });
+
+// NUEVO: Definimos las wallets que soportará el AutoConnect
+const supportedWallets = [
+  inAppWallet({
+    auth: {
+      options: ["email", "google", "apple", "facebook", "passkey"],
+    },
+  }),
+  createWallet("io.metamask"),
+];
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      toast(
-        <div className="flex font-mono items-center gap-3">
-          <AlertTriangle className="h-5 w-5 text-zinc-900 shrink-0" />
-          <div className="flex flex-col text-left">
-            <span className="text-zinc-900 font-semibold">
-              Alerta: ¡Verifica que estás en dash.pandoras.finance!
-            </span>
-            <span className="text-gray-800 text-sm">
-              Para operar, conéctate a la red de Base.
-            </span>
-          </div>
-        </div>,
-        {
-          style: {
-            background: 'linear-gradient(to bottom right, #D9F99D, #4D7C0F)',
-            border: '1px solid #A3E635',
-          },
-          duration: 5000,
-        }
-      );
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, []);
+  // ELIMINADO: El toast de alerta se movió al layout del dashboard,
+  // para que solo aparezca en esa sección.
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -53,6 +39,11 @@ export default function RootLayout({
           enableSystem={false}
         >
           <ThirdwebProvider>
+            {/* NUEVO: El componente invisible que maneja la auto-conexión global */}
+            <AutoConnect
+              client={client}
+              wallets={supportedWallets}
+            />
             {children}
             <Toaster theme="dark" richColors position="top-center" />
           </ThirdwebProvider>

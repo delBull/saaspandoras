@@ -6,8 +6,11 @@ import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { HomeIcon, ArrowPathIcon, BanknotesIcon, ChevronLeftIcon, ChevronRightIcon, XMarkIcon, UserGroupIcon, ShieldCheckIcon, ArrowLeftOnRectangleIcon, ChevronDoubleRightIcon } from "@heroicons/react/24/outline";
 import { cn } from "@saasfly/ui";
-import { useActiveAccount, useDisconnect, useActiveWallet } from "thirdweb/react";
+import { useActiveAccount, useDisconnect, useActiveWallet, useConnectModal } from "thirdweb/react";
+import { createWallet, inAppWallet } from "thirdweb/wallets";
 import { isAdmin } from "@/lib/auth";
+import { config } from "@/config";
+import { client } from "@/lib/thirdweb-client";
 
 interface SidebarProps {
   wallet?: string;
@@ -23,6 +26,7 @@ export function Sidebar({ wallet: walletProp, userName }: SidebarProps) {
 
   const account = useActiveAccount();
   const wallet = useActiveWallet();
+  const { connect, isConnecting } = useConnectModal();
   const { disconnect } = useDisconnect();
   const userIsAdmin = isAdmin(account?.address);
   
@@ -31,35 +35,30 @@ export function Sidebar({ wallet: walletProp, userName }: SidebarProps) {
     href: "/", 
     icon: <HomeIcon className="h-5 w-5 shrink-0 font-mono text-gray-400" />, 
     disabled: false, 
-  },
-  { 
+  }, { 
     label: "Swap", 
     href: "/swap", 
     icon: <ArrowPathIcon className="h-5 w-5 shrink-0 font-mono text-gray-400" />, 
     disabled: false,
-  }, 
-  { 
+  }, { 
     label: "Applicants", 
     href: "#", 
     icon: <UserGroupIcon className="h-5 w-5 shrink-0 font-mono text-gray-400" />, 
     comingSoon: true, 
     disabled: true, 
-  }, 
-  { 
+  }, { 
     label: "Invest", 
     href: "#", 
     icon: <ArrowPathIcon className="h-5 w-5 shrink-0 font-mono text-gray-400" />, 
     comingSoon: true, 
     disabled: true, 
-  }, 
-  { 
+  }, { 
     label: "Pool", 
     href: "#", 
     icon: <BanknotesIcon className="h-5 w-5 shrink-0 font-mono text-gray-400" />, 
     comingSoon: true, 
     disabled: true, 
-  }, 
-], [], );
+  }, ], [], );
 
   const logoVariants = {
     hidden: { opacity: 0, scale: 0.95, y: -10 },
@@ -76,29 +75,7 @@ export function Sidebar({ wallet: walletProp, userName }: SidebarProps) {
         <Link href="/" className="z-50">
           <div className="absolute top-12 left-0 right-0 flex justify-center items-center h-8">
             <AnimatePresence initial={false}>
-              {open ? (
-                <motion.div
-                  key="logo-largo"
-                  initial="hidden"
-                  animate="visible"
-                  exit="hidden"
-                  variants={logoVariants}
-                  transition={{ type: "tween", ease: "easeInOut", duration: 0.2 }}
-                >
-                  <Image src="/images/logo_finance.png" width={256} height={64} alt="Logo Finance" />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="logo-corto"
-                  initial="hidden"
-                  animate="visible"
-                  exit="hidden"
-                  variants={logoVariants}
-                  transition={{ type: "tween", ease: "easeInOut", duration: 0.2 }}
-                >
-                  <Image src="/images/logo_green.png" width={32} height={32} alt="Logo" className="h-8 w-8" />
-                </motion.div>
-              )}
+              {open ? ( <motion.div key="logo-largo" initial="hidden" animate="visible" exit="hidden" variants={logoVariants} transition={{ type: "tween", ease: "easeInOut", duration: 0.2 }}> <Image src="/images/logo_finance.png" width={256} height={64} alt="Logo Finance" /> </motion.div> ) : ( <motion.div key="logo-corto" initial="hidden" animate="visible" exit="hidden" variants={logoVariants} transition={{ type: "tween", ease: "easeInOut", duration: 0.2 }}> <Image src="/images/logo_green.png" width={32} height={32} alt="Logo" className="h-8 w-8" /> </motion.div> )}
             </AnimatePresence>
           </div>
         </Link>
@@ -109,73 +86,88 @@ export function Sidebar({ wallet: walletProp, userName }: SidebarProps) {
         >
           {open ? <ChevronLeftIcon className="h-4 w-4" /> : <ChevronRightIcon className="h-4 w-4" />}
         </button>
-
-        <div className="mx-2 mt-6 rounded-lg border border-gray-700 bg-gray-800/50 p-2">
-          <div className="flex items-center space-x-1">
-            <motion.span animate={{ width: open ? "auto" : "2rem" }} className="overflow-hidden whitespace-nowrap font-mono text-xs text-gray-400 flex-shrink-0">
-              {open
-                ? (isClient && account ? 'C:\\USER\\' : 'C:\\PANDORAS\\')
-                : 'C:\\'
-              }
-            </motion.span>
-            <motion.span animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0 }} className="truncate font-mono text-xs text-lime-400 min-w-0">
-              {isClient ? (userName ?? walletProp ?? account?.address ?? "Not Connected") : "Loading..."}
-            </motion.span>
-          </div>
+        
+        <div className="mt-6 mx-2">
+          {isClient && !account ? (
+            <div className="w-full rounded-lg border border-gray-700 bg-gray-800/50 p-2 flex flex-col items-center gap-2">
+              <div className="flex items-center space-x-1 w-full">
+                <motion.span animate={{ width: open ? "auto" : "2rem" }} className="overflow-hidden whitespace-nowrap font-mono text-xs text-gray-400 flex-shrink-0">
+                  {open ? 'C:\\PANDORAS\\' : 'C:\\'}
+                </motion.span>
+                <motion.span animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0 }} className="truncate font-mono text-xs text-red-500 min-w-0">
+                  Not Connected
+                </motion.span>
+              </div>
+              <motion.div animate={{ opacity: open ? 1 : 0, height: open ? "auto" : 0 }} className="overflow-hidden w-full">
+                  <button
+                    onClick={() => connect({ 
+                      client, 
+                      chain: config.chain,
+                      showThirdwebBranding: false, 
+                      wallets: [ 
+                        inAppWallet({ 
+                          auth: { 
+                            options: ["email", "google", "apple", "facebook", "passkey"], 
+                          }, 
+                          executionMode: { 
+                            mode: "EIP7702",
+                            sponsorGas: true, 
+                          }, 
+                        }), 
+                        createWallet("io.metamask"), 
+                      ], 
+                    })}
+                    disabled={isConnecting}
+                    className="w-full bg-gradient-to-r from-lime-300 to-lime-400 text-gray-800 py-2 px-4 rounded-md hover:opacity-90 font-semibold transition text-sm"
+                  >
+                    {isConnecting ? "Conectando..." : "Connect Wallet"}
+                  </button>
+              </motion.div>
+            </div>
+          ) : (
+            <div className="w-full rounded-lg border border-gray-700 bg-gray-800/50 p-2">
+                <div className="flex items-center space-x-1">
+                    <motion.span animate={{ width: open ? "auto" : "2rem" }} className="overflow-hidden whitespace-nowrap font-mono text-xs text-gray-400 flex-shrink-0">
+                    {open ? 'C:\\USER\\' : 'C:\\'}
+                    </motion.span>
+                    <motion.span animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0 }} className="truncate font-mono text-xs text-lime-400 min-w-0">
+                    {isClient ? (userName ?? walletProp ?? account?.address ?? "...") : "..."}
+                    </motion.span>
+                </div>
+            </div>
+          )}
         </div>
 
         <nav className="mt-4 flex flex-1 flex-col justify-between">
             <div className="flex flex-col gap-2">
-                {links.map((link) => (
-                    <Link 
-                      key={link.label} 
-                      href={link.disabled ? "#" : link.href}
-                      className={cn( "relative flex items-center rounded-lg py-2 text-gray-400 transition-all duration-200", open ? "px-4" : "w-full justify-center", link.disabled ? "cursor-not-allowed opacity-60" : "hover:bg-gray-800/50 hover:text-white")}
-                      onClick={(e) => link.disabled && e.preventDefault()}
-                    >
-                        {link.icon}
-                        <motion.span animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0, marginLeft: open ? "0.75rem" : "0" }} className="whitespace-nowrap font-medium font-mono">
-                            {link.label}
-                        </motion.span>
-                        {link.comingSoon && open && (
-                            <motion.span animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0 }} className="ml-auto text-xs text-gray-500">
-                            coming soon
-                            </motion.span>
-                        )}
-                    </Link>
-                ))}
+                {links.map((link) => ( <Link key={link.label} href={link.disabled ? "#" : link.href} className={cn( "relative flex items-center rounded-lg py-2 text-gray-400 transition-all duration-200", open ? "px-4" : "w-full justify-center", link.disabled ? "cursor-not-allowed opacity-60" : "hover:bg-gray-800/50 hover:text-white")} onClick={(e) => link.disabled && e.preventDefault()} > {link.icon} <motion.span animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0, marginLeft: open ? "0.75rem" : "0" }} className="whitespace-nowrap font-medium font-mono"> {link.label} </motion.span> {link.comingSoon && open && ( <motion.span animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0 }} className="ml-auto text-xs text-gray-500"> coming soon </motion.span> )} </Link> ))}
             </div>
-
+            
             <div className="mb-4 flex flex-col gap-2">
-                {isClient && (
-                    <>
-                        {userIsAdmin && (
-                            <div className={cn("border-t border-gray-800 pt-2", !open && "mx-auto w-full")}>
-                                <Link href="/admin" className={cn("relative flex items-center rounded-lg py-2 text-red-500 transition-all duration-200 hover:bg-red-900/50 hover:text-white", open ? "px-4" : "w-full justify-center")}>
-                                    <ShieldCheckIcon className="h-5 w-5 shrink-0" />
-                                    <motion.span animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0, marginLeft: open ? "0.75rem" : "0" }} className="whitespace-nowrap font-bold">
-                                        Admin
-                                    </motion.span>
-                                </Link>
-                            </div>
-                        )}
-                        
-                        {account && (
-                            <div className={cn("border-t border-gray-800 pt-2", !open && "mx-auto w-full")}>
-                                <button
-                                    onClick={() => wallet && disconnect(wallet)}
-                                    disabled={!wallet}
-                                    className={cn("relative flex w-full items-center rounded-lg py-2 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white disabled:opacity-50", open ? "px-4" : "justify-center")}
-                                >
-                                    <ArrowLeftOnRectangleIcon className="h-5 w-5 shrink-0" />
-                                    <motion.span animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0, marginLeft: open ? "0.75rem" : "0" }} className="whitespace-nowrap font-medium">
-                                        Disconnect
-                                    </motion.span>
-                                </button>
-                            </div>
-                        )}
-                    </>
+                {isClient && account && (
+                  <div className={cn("border-t border-gray-800 pt-2", !open && "mx-auto w-full")}>
+                      <button
+                          onClick={() => wallet && disconnect(wallet)}
+                          disabled={!wallet}
+                          className={cn("relative flex w-full items-center rounded-lg py-2 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white disabled:opacity-50", open ? "px-4" : "justify-center")}
+                      >
+                          <ArrowLeftOnRectangleIcon className="h-5 w-5 shrink-0" />
+                          <motion.span animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0, marginLeft: open ? "0.75rem" : "0" }} className="whitespace-nowrap font-medium">
+                              Disconnect
+                          </motion.span>
+                      </button>
+                  </div>
                 )}
+                 {isClient && userIsAdmin && (
+                   <div className={cn("border-t border-gray-800 pt-2", !open && "mx-auto w-full")}>
+                      <Link href="/admin" className={cn("relative flex items-center rounded-lg py-2 text-red-500 transition-all duration-200 hover:bg-red-900/50 hover:text-white", open ? "px-4" : "w-full justify-center")}>
+                          <ShieldCheckIcon className="h-5 w-5 shrink-0" />
+                          <motion.span animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0, marginLeft: open ? "0.75rem" : "0" }} className="whitespace-nowrap font-bold">
+                              Admin
+                          </motion.span>
+                      </Link>
+                  </div>
+                 )}
             </div>
         </nav>
       </motion.div>
@@ -210,57 +202,75 @@ export function Sidebar({ wallet: walletProp, userName }: SidebarProps) {
                 <XMarkIcon className="h-6 w-6" />
               </button>
               
-              <div className="mx-2 mt-6 rounded-lg border border-gray-700 bg-gray-800/50 p-2">
-                <div className="flex items-center space-x-1">
-                  <span className="overflow-hidden whitespace-nowrap font-mono text-xs text-gray-400 flex-shrink-0">
-                    {isClient && account ? 'C:\\USER\\' : 'C:\\PANDORAS\\'}
-                  </span>
-                  <span className="truncate font-mono text-xs text-lime-400 min-w-0">
-                    {isClient ? (userName ?? walletProp ?? account?.address ?? "Not Connected") : "Loading..."}
-                  </span>
-                </div>
+              <div className="mt-6 mx-2">
+                {isClient && !account ? (
+                  <div className="w-full rounded-lg border border-gray-700 bg-gray-800/50 p-2 flex flex-col items-center gap-2">
+                    <div className="flex items-center space-x-1 w-full">
+                      <span className="font-mono text-xs text-gray-400 flex-shrink-0">C:\PANDORAS\</span>
+                      <span className="truncate font-mono text-xs text-red-500 min-w-0">Not Connected</span>
+                    </div>
+                    <div className="w-full">
+                        <button
+                          onClick={() => connect({ 
+                            client, 
+                            chain: config.chain,
+                            showThirdwebBranding: false, 
+                            wallets: [ 
+                              inAppWallet({ 
+                                auth: { 
+                                  options: ["email", "google", "apple", "facebook", "passkey"], 
+                                }, 
+                                executionMode: { 
+                                  mode: "EIP7702", 
+                                  sponsorGas: true, 
+                                }, 
+                              }), 
+                              createWallet("io.metamask"), ], })}
+                          disabled={isConnecting}
+                          className="w-full bg-gradient-to-r from-lime-300 to-lime-400 text-gray-800 py-2 px-4 rounded-md hover:opacity-90 font-semibold transition text-sm"
+                        >
+                          {isConnecting ? "Conectando..." : "Connect Wallet"}
+                        </button>
+                    </div>
+                  </div>
+                ) : (
+                  // --- ESTADO CONECTADO (MÓVIL) ---
+                  <div className="w-full rounded-lg border border-gray-700 bg-gray-800/50 p-2">
+                      <div className="flex items-center space-x-1">
+                          <span className="font-mono text-xs text-gray-400 flex-shrink-0">C:\USER\</span>
+                          <span className="truncate font-mono text-xs text-lime-400 min-w-0">
+                            {isClient ? (userName ?? walletProp ?? account?.address ?? "...") : "..."}
+                          </span>
+                      </div>
+                  </div>
+                )}
               </div>
 
               <nav className="mt-4 flex flex-1 flex-col justify-between px-2">
                 <div className="flex flex-col gap-2">
-                  {links.map((link) => (
-                    <Link
-                      key={`mobile-${link.label}`}
-                      href={link.disabled ? "#" : link.href}
-                      className={cn( "relative flex items-center rounded-lg py-2 px-4 text-gray-400 transition-all duration-200", link.disabled ? "cursor-not-allowed opacity-60" : "hover:bg-gray-800/50 hover:text-white" )}
-                      onClick={(e) => { if (link.disabled) e.preventDefault(); else setMobileOpen(false); }}
-                    >
-                      {link.icon}
-                      <span className="ml-3 whitespace-nowrap font-medium">{link.label}</span>
-                      {link.comingSoon && <span className="ml-auto text-xs text-gray-500">coming soon</span>}
-                    </Link>
-                  ))}
+                  {links.map((link) => ( <Link key={`mobile-${link.label}`} href={link.disabled ? "#" : link.href} className={cn( "relative flex items-center rounded-lg py-2 px-4 text-gray-400 transition-all duration-200", link.disabled ? "cursor-not-allowed opacity-60" : "hover:bg-gray-800/50 hover:text-white" )} onClick={(e) => { if (link.disabled) e.preventDefault(); else setMobileOpen(false); }} > {link.icon} <span className="ml-3 whitespace-nowrap font-medium">{link.label}</span> {link.comingSoon && <span className="ml-auto text-xs text-gray-500">coming soon</span>} </Link> ))}
                 </div>
 
                 <div className="mb-4 flex flex-col gap-2">
-                  {isClient && (
-                    <>
-                      {userIsAdmin && (
-                        <div className="border-t border-gray-800 pt-2">
-                          <Link href="/admin" onClick={() => setMobileOpen(false)} className="relative flex items-center rounded-lg py-2 px-4 text-red-500 transition-all duration-200 hover:bg-red-900/50 hover:text-white">
-                            <ShieldCheckIcon className="h-5 w-5 shrink-0" />
-                            <span className="ml-3 whitespace-nowrap font-bold">Admin</span>
-                          </Link>
-                        </div>
-                      )}
-                      {account && (
-                        <div className="border-t border-gray-800 pt-2">
-                          <button
-                            onClick={() => { if (wallet) disconnect(wallet); setMobileOpen(false); }}
-                            disabled={!wallet}
-                            className="relative flex w-full items-center rounded-lg py-2 px-4 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white disabled:opacity-50"
-                          >
-                            <ArrowLeftOnRectangleIcon className="h-5 w-5 shrink-0" />
-                            <span className="ml-3 whitespace-nowrap font-medium">Disconnect</span>
-                          </button>
-                        </div>
-                      )}
-                    </>
+                  {isClient && account && (
+                    <div className="border-t border-gray-800 pt-2">
+                      <button
+                        onClick={() => { if (wallet) disconnect(wallet); setMobileOpen(false); }}
+                        disabled={!wallet}
+                        className="relative flex w-full items-center rounded-lg py-2 px-4 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white disabled:opacity-50"
+                      >
+                        <ArrowLeftOnRectangleIcon className="h-5 w-5 shrink-0" />
+                        <span className="ml-3 whitespace-nowrap font-medium">Disconnect</span>
+                      </button>
+                    </div>
+                  )}
+                  {isClient && userIsAdmin && (
+                    <div className="border-t border-gray-800 pt-2">
+                      <Link href="/admin" onClick={() => setMobileOpen(false)} className="relative flex items-center rounded-lg py-2 px-4 text-red-500 transition-all duration-200 hover:bg-red-900/50 hover:text-white">
+                        <ShieldCheckIcon className="h-5 w-5 shrink-0" />
+                        <span className="ml-3 whitespace-nowrap font-bold">Admin</span>
+                      </Link>
+                    </div>
                   )}
                 </div>
               </nav>
