@@ -38,7 +38,7 @@ const publicRoute = [
   "^/\\w{2}$",
 ];
 
-const protectedRoutes = ["/(\\w{2}/)?dashboard(.*)", "/(\\w{2}/)?admin(.*)"];
+const protectedRoutes = ["/(\\w{2}/)?admin(.*)"];
 
 const authRoutes = [
   "/api/auth(.*)",

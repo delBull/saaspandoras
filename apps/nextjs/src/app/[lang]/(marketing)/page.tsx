@@ -11,7 +11,6 @@ import { VideoScroll } from "~/components/video-scroll";
 import { FeaturesSectionDemo } from "~/components/features-section";
 import { ShimmerDotHero } from "~/components/ShimmerDotHero";
 import { FaqSection } from "~/components/faq-section";
-import { HeroTypewriter } from "~/components/HeroTypewriter";
 
 export default async function IndexPage(props: {
   params: Promise<{

@@ -3,9 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname, useSelectedLayoutSegment } from "next/navigation";
-
 import { cn } from "@saasfly/ui";
-
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { MainNav } from "./main-nav";
 import { LocaleChange } from "~/components/locale-change";

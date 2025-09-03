@@ -1,6 +1,6 @@
 import { getDictionary } from "~/lib/get-dictionary";
 import type { Locale } from "~/config/i18n-config";
-import InvestClientWrapper from './invest-client-wrapper'; // Import the new client component
+import InvestClientWrapper from './invest-client-wrapper'; 
 
 export default async function Page(props: {
   params: Promise<{ lang: Locale }>;
