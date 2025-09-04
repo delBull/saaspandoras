@@ -11,13 +11,20 @@ import { client } from "@/lib/thirdweb-client";
 import { parseUnits, formatUnits } from "viem";
 import { base, defineChain } from "thirdweb/chains";
 import { TokenImage } from './TokenImage';
+import { useDisplayAmount } from '@/hooks/useDisplayAmount';
+import { useMarketRate } from '@/hooks/useMarketRate';
+import { BadgeChain } from './BadgeChain';
+
+// Componentes de UI
 import { Button } from "@saasfly/ui/button";
 import { Input } from "@saasfly/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@saasfly/ui/sheet";
 import { ScrollArea } from "@saasfly/ui/scroll-area";
 import { toast } from "sonner";
-import { ArrowDownIcon, Loader2 } from "lucide-react";
+import { ArrowDownIcon, Loader2, SearchIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
+// --- Tipos, Hooks y Datos ---
 const TOKENLIST_URL = "https://tokens.uniswap.org";
 
 interface Token {
@@ -33,6 +40,7 @@ interface TokenListResponse {
   tokens: Token[];
 }
 
+// Hook para cargar y filtrar la lista de tokens dinámicamente
 function useTokenList(chainId: number) {
   const [tokens, setTokens] = useState<Token[]>([]);
   useEffect(() => {
@@ -50,30 +58,36 @@ function useTokenList(chainId: number) {
   }, [chainId]);
   return tokens;
 }
-function TokenSelector({ tokens, onSelect, searchTerm, setSearchTerm }: { tokens: Token[]; currentSelection: string; onSelect: (token: Token) => void; searchTerm: string; setSearchTerm: (t: string) => void; }) {
+
+// Sub-Componente: Selector de Tokens con búsqueda
+function TokenSelector({ tokens, currentSelection, onSelect, searchTerm, setSearchTerm }: { tokens: Token[]; currentSelection: string; onSelect: (token: Token) => void; searchTerm: string; setSearchTerm: (t: string) => void; }) {
   const popularTokens = ['ETH', 'USDC', 'WETH', 'DAI'];
   const popularTokenData = popularTokens.map(symbol => tokens.find(t => t.symbol === symbol)).filter(Boolean) as Token[];
 
   const filteredTokens = tokens.filter(
-      (token) => (token.symbol.toLowerCase().includes(searchTerm.trim().toLowerCase()) ||
+      (token) => token.address !== currentSelection &&
+      (token.symbol.toLowerCase().includes(searchTerm.trim().toLowerCase()) ||
        token.name.toLowerCase().includes(searchTerm.trim().toLowerCase()))
   );
 
   return (
-    <div className="grid h-full grid-rows-[auto_auto_auto_1fr] gap-2 p-5">
+    <div className="grid h-full grid-rows-[auto_auto_auto_1fr] gap-4 p-4">
       <SheetHeader>
         <SheetTitle>Seleccionar Token</SheetTitle>
       </SheetHeader>
-      <Input
-        placeholder="Buscar por nombre o símbolo"
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className="my-4 bg-zinc-800 border-zinc-700"
-        aria-label="Buscar token"
-      />
-        <div className="p-4">
+      <div className="relative">
+        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+        <Input
+          placeholder="Buscar por nombre o símbolo"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full bg-zinc-800 border-zinc-700 pl-8"
+          aria-label="Buscar token"
+        />
+      </div>
+      <div>
           <p className="text-xs font-semibold text-gray-500 mb-2">Tokens Populares</p>
-          <div className="grid grid-cols-4 md:grid-cols-5 gap-2">
+          <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
               {popularTokenData.map(token => (
                   <button key={token.address} onClick={() => onSelect(token)} className="flex flex-col items-center gap-1.5 p-2 rounded-lg hover:bg-zinc-800 transition-colors">
                       <TokenImage src={token.logoURI} alt={token.symbol} size={32} className="rounded-full" />
@@ -82,20 +96,10 @@ function TokenSelector({ tokens, onSelect, searchTerm, setSearchTerm }: { tokens
               ))}
           </div>
       </div>
-      <ScrollArea className="row-start-4 overflow-y-auto">
+      <ScrollArea className="overflow-y-auto">
         <div className="flex flex-col gap-1 pr-2">
-          {filteredTokens.length === 0 && (
-            <div className="text-gray-500 text-center py-4">
-              No se encontraron tokens.
-            </div>
-          )}
           {filteredTokens.map((token) => (
-            <button
-              key={token.address}
-              onClick={() => onSelect(token)}
-              className="flex items-center gap-4 p-2 rounded-lg hover:bg-lime-800/20 transition-colors text-left"
-              aria-label={`Seleccionar ${token.symbol}`}
-            >
+            <button key={token.address} onClick={() => onSelect(token)} className="flex items-center gap-4 p-2 rounded-lg hover:bg-lime-800/20 transition-colors text-left" aria-label={`Seleccionar ${token.symbol}`}>
               <TokenImage src={token.logoURI} alt={token.symbol} size={36} className="rounded-full" />
               <div>
                 <p className="font-bold text-white">{token.symbol}</p>
@@ -109,6 +113,7 @@ function TokenSelector({ tokens, onSelect, searchTerm, setSearchTerm }: { tokens
   );
 }
 
+// --- Componente Principal del Swap ---
 export function CustomSwap() {
   const account = useActiveAccount();
   const [fromAmount, setFromAmount] = useState("");
@@ -129,10 +134,7 @@ export function CustomSwap() {
     }
   }, [tokenList, fromToken, toToken]);
   
-  const { data: balance } = useWalletBalance({ 
-    client, address: account?.address ?? "", 
-    chain: fromToken?.chainId ? defineChain(fromToken.chainId) : undefined, 
-    tokenAddress: fromToken?.address });
+  const { data: balance } = useWalletBalance({ client, address: account?.address ?? "", chain: fromToken?.chainId ? defineChain(fromToken.chainId) : undefined, tokenAddress: fromToken?.address });
 
   const isInvalidAmount = !fromAmount || isNaN(Number(fromAmount)) || Number(fromAmount) <= 0;
   const isSameToken = fromToken?.address === toToken?.address;
@@ -140,76 +142,50 @@ export function CustomSwap() {
   const isReadyForQuote = account && fromToken && toToken && !isInvalidAmount && !isSameToken && !isInsufficientBalance;
 
   const fromAmountBaseUnits = useMemo(() => {
-    if (!fromAmount || !fromToken || Number(fromAmount) <= 0) return "0";
+    if (!fromToken || !fromAmount || Number(fromAmount) <= 0) return "0";
     try {
       return parseUnits(fromAmount, fromToken.decimals).toString();
     } catch { return "0"; }
   }, [fromAmount, fromToken]);
 
-  const swapParams = isReadyForQuote ? { 
-    client, 
-    fromAddress: account.address, 
-    toAddress: account.address, 
-    fromTokenAddress: fromToken.address, 
-    toTokenAddress: toToken.address, 
-    fromChainId: fromToken.chainId, 
-    toChainId: toToken.chainId, 
-    fromAmount: fromAmountBaseUnits } : undefined;
+  const swapParams = isReadyForQuote ? { client, fromAddress: account.address, toAddress: account.address, fromTokenAddress: fromToken.address, toTokenAddress: toToken.address, fromChainId: fromToken.chainId, toChainId: toToken.chainId, fromAmount: fromAmountBaseUnits } : undefined;
 
   const { data: quote, isLoading: isQuoting } = useBuyWithCryptoQuote(swapParams);
   const { mutateAsync: sendTx, isPending: isSendingTransaction } = useSendTransaction();
   
-  const prevToAmount = useRef("0.0");
-  const displayToAmount = useMemo(() => {
-    if (!quote || !toToken) return "0.0";
-    
-    let rawAmount: bigint | undefined = undefined;
+  const displayToAmount = useDisplayAmount(quote, toToken);
+  const isCrossChain = fromToken && toToken && fromToken.chainId !== toToken.chainId;
 
-    if ("toAmount" in quote && typeof quote.toAmount === "bigint") {
-      rawAmount = quote.toAmount;
-    } else if (
-      "toToken" in quote && 
-      typeof quote.toToken === 'object' && 
-      quote.toToken && 
-      "amount" in quote.toToken && 
-      typeof (quote.toToken as { amount?: unknown }).amount === "bigint"
-    ) {
-      rawAmount = (quote.toToken as { amount: bigint }).amount;
-    }
+  const marketRate = useMarketRate(fromToken?.symbol, toToken?.symbol);
+  const quotedAmount = parseFloat(displayToAmount.replace(/,/g, ''));
+  const expectedAmount = useMemo(() => {
+    if (!marketRate || isInvalidAmount) return 0;
+    return Number(fromAmount) * marketRate;
+  }, [fromAmount, marketRate, isInvalidAmount]);
+  
+  const priceImpact = (expectedAmount > 0 && quotedAmount > 0) ? Math.abs(1 - (quotedAmount / expectedAmount)) : 0;
+  const isQuoteUnrealistic = priceImpact > 0.15 && fromAmount !== "";
 
-    if (rawAmount) {
-      const formatted = formatUnits(rawAmount, toToken.decimals);
-      return Number(formatted).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 });
-    }
-    
-    return "0.0";
-  }, [quote, toToken]);
-
+  const prevDisplayAmount = useRef("0.0");
   useEffect(() => {
-    if (displayToAmount !== prevToAmount.current) {
+    if (displayToAmount !== prevDisplayAmount.current) {
       setAnimateColor(true);
       const timer = setTimeout(() => setAnimateColor(false), 500);
-      prevToAmount.current = displayToAmount;
+      prevDisplayAmount.current = displayToAmount;
       return () => clearTimeout(timer);
     }
   }, [displayToAmount]);
   
   useEffect(() => {
-    if (isInvalidAmount && Number(fromAmount) > 0) setError("Ingresa un monto válido.");
-    else if (isSameToken) setError("Debes escoger tokens diferentes.");
+    if (isSameToken) setError("Debes escoger tokens diferentes.");
     else if (isInsufficientBalance) setError("No tienes suficiente saldo.");
     else setError(null);
-  }, [isInvalidAmount, isSameToken, isInsufficientBalance, fromAmount]);
+  }, [isSameToken, isInsufficientBalance]);
 
   const handleSwap = async () => {
-    if (error) {
-      toast.error(error);
-      return;
-    }
-    if (!quote?.transactionRequest || !account) {
-      toast.error("No hay ruta disponible para este par de tokens.");
-      return;
-    }
+    if (error) { toast.error(error); return; }
+    if (isQuoteUnrealistic) { toast.error("La cotización es muy diferente al precio de mercado."); return; }
+    if (!quote?.transactionRequest || !account) { toast.error("No hay ruta disponible para este par."); return; }
     try {
       await sendTx(quote.transactionRequest);
       toast.success("Swap realizado correctamente!");
@@ -230,37 +206,30 @@ export function CustomSwap() {
 
   const buttonText = () => {
     if (!account) return "Conectar Wallet";
-    if (error && fromAmount) return error;
+    if (isInvalidAmount) return "Ingresa un monto";
+    if (error) return error;
     if (isQuoting) return "Obteniendo cotización...";
     if (isSendingTransaction) return "Procesando...";
+    if (isQuoteUnrealistic) return "Cotización Inválida";
     if (!quote && isReadyForQuote) return "Ruta no disponible";
     return "Intercambiar";
   };
   
   return (
-    <div className="flex flex-col gap-2 p-0 md:p-4 rounded-2xl">
+    <div className="flex flex-col gap-2 p-2 md:p-4 rounded-2xl bg-black/20">
       <Sheet open={!!isTokenModalOpen} onOpenChange={(isOpen) => !isOpen && setTokenModalOpen(null)}>
-        <SheetContent className="bg-zinc-900 border-none text-white p-0 flex flex-col
-          md:max-w-md w-full md:rounded-2xl
-          inset-x-0 bottom-0 md:inset-auto rounded-t-2xl h-[85vh] md:h-auto md:max-h-[600px]
-        ">
-          <TokenSelector
-            tokens={tokenList}
-            onSelect={handleTokenSelect}
-            currentSelection={isTokenModalOpen === 'from' ? toToken?.address ?? "" : fromToken?.address ?? ""}
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-          />
+        <SheetContent className="bg-zinc-900 border-none text-white p-0 flex flex-col md:max-w-md md:rounded-2xl inset-x-0 bottom-0 md:inset-auto rounded-t-2xl h-[85vh] md:h-auto md:max-h-[600px]">
+          <TokenSelector tokens={tokenList} onSelect={handleTokenSelect} currentSelection={isTokenModalOpen === 'from' ? toToken?.address ?? "" : fromToken?.address ?? ""} searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
         </SheetContent>
       </Sheet>
+      
+      {isCrossChain && ( <div className="flex items-center justify-center gap-2 mb-2 p-2 bg-zinc-800/50 rounded-lg"> <BadgeChain chainId={fromToken.chainId} /> <span className="font-bold text-base text-gray-400">→</span> <BadgeChain chainId={toToken.chainId} /> <span className="ml-2 text-xs text-orange-400 font-semibold"> ¡Atención: Swap cross-chain! </span> </div> )}
 
       <div className="bg-zinc-800 p-4 rounded-xl space-y-1">
         <div className="flex justify-between items-center"><span className="text-xs text-gray-400">Desde</span><span className="text-xs text-gray-500">Saldo: {balance ? parseFloat(balance.displayValue).toFixed(4) : '0.0'} {fromToken?.symbol}</span></div>
         <div className="flex items-center gap-2">
-          <Input aria-label="Cantidad a intercambiar" type="number" placeholder="0.0" value={fromAmount} onChange={(e) => setFromAmount(e.target.value)} className="w-full text-3xl font-mono text-white focus:outline-none border-none p-0 h-auto bg-transparent" />
-          <Button onClick={handleMax} variant="ghost" className="text-xs px-3 py-1 h-auto text-lime-400 hover:text-lime-300" disabled={!balance || !account}>
-            MAX
-            </Button>
+          <Input aria-label="Cantidad a intercambiar" type="text" inputMode="decimal" placeholder="0.0" value={fromAmount} onChange={(e) => { const val = e.target.value.replace(",","."); if (val === "" || new RegExp(`^\\d*(\\.\\d{0,${fromToken?.decimals ?? 6}})?$`).test(val)) { setFromAmount(val); } }} className="w-full text-3xl font-mono text-white focus:outline-none border-none p-0 h-auto bg-transparent" />
+          <Button onClick={handleMax} variant="ghost" className="text-xs px-3 py-1 h-auto text-lime-400 hover:text-lime-300" disabled={!balance || !account}> MAX </Button>
           <Button aria-label={`Seleccionar token origen (${fromToken?.symbol ?? ""})`} onClick={() => setTokenModalOpen("from")} variant="secondary" className="flex items-center gap-2 rounded-full font-semibold">
             {fromToken && (<TokenImage src={fromToken.logoURI} alt={fromToken.symbol ?? 'token'} size={24} className="rounded-full" />)} {fromToken?.symbol ?? "..."}
           </Button>
@@ -272,8 +241,17 @@ export function CustomSwap() {
       <div className="bg-zinc-800 p-4 rounded-xl space-y-1">
         <span className="text-xs text-gray-400">Hasta</span>
         <div className="flex items-center gap-4">
-          <div className={"w-full text-3xl font-mono transition-colors " + (animateColor ? "text-lime-400" : "text-gray-400")} aria-live="polite">
-            {isQuoting ? <Loader2 className="animate-spin h-8 w-8" /> : displayToAmount}
+          <div className={"w-full text-3xl font-mono transition-colors " + (animateColor ? "text-lime-400" : isQuoteUnrealistic ? "text-orange-500" : "text-gray-400")} aria-live="polite">
+            {isQuoting ? <Loader2 className="animate-spin h-8 w-8" /> 
+             : isQuoteUnrealistic ? (
+              <span className="text-lg">
+                Cotización Irreal
+                <span className="block text-xs text-gray-400 mt-1">
+                  Esperado: ~{expectedAmount.toLocaleString('en-US', {maximumFractionDigits: 4})} {toToken?.symbol}
+                </span>
+              </span>
+             )
+             : displayToAmount }
           </div>
           <Button aria-label={`Seleccionar token destino (${toToken?.symbol ?? ""})`} onClick={() => setTokenModalOpen("to")} variant="secondary" className="flex items-center gap-2 rounded-full font-semibold">
             {toToken && (<TokenImage src={toToken.logoURI} alt={toToken.symbol ?? 'token'} size={24} className="rounded-full" />)} 
@@ -284,11 +262,21 @@ export function CustomSwap() {
       
       <Button
         onClick={handleSwap}
-        disabled={!!error || isQuoting || isSendingTransaction || !quote}
+        disabled={!!error || isQuoting || isSendingTransaction || !quote || isQuoteUnrealistic}
         className="w-full mt-4 py-6 rounded-2xl font-bold text-lg text-zinc-900 bg-gradient-to-r from-lime-200 to-lime-300 transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {buttonText()}
       </Button>
+
+      {process.env.NODE_ENV === "development" && quote && (
+        <div className="mt-4">
+          <p className="text-xs text-zinc-400">Datos del Quote (solo en desarrollo):</p>
+          <pre className="text-xs text-yellow-400 bg-black/30 rounded p-2 overflow-x-auto max-h-32 mt-1">
+            {JSON.stringify(quote, (key, value) => 
+              typeof value === 'bigint' ? value.toString() : value, 2)}
+          </pre>
+        </div>
+      )}
     </div>
   );
 }
