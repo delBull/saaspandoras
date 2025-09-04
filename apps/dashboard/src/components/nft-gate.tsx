@@ -67,7 +67,7 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
       
       toast({
         title: "¡Bienvenido por primera vez!",
-        description: "Confirma en tu wallet para mintear tu llave de acceso gratuita.",
+        description: "Confirma en tu wallet para mintear tu llave de acceso.",
       });
 
       const transaction = prepareContractCall({
