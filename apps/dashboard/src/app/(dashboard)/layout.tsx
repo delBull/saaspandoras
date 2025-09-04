@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from 'next/navigation';
 import { useActiveAccount } from "thirdweb/react";
 
-// La función para obtener el nombre de usuario ahora vive en el layout
 async function fetchUserName(address: string): Promise<string | null> {
   if (address.toLowerCase() === "0xdd2fd4581271e230360230f9337d5c0430bf44c0") {
     await new Promise(resolve => setTimeout(resolve, 300));
@@ -21,8 +20,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const account = useActiveAccount();
   const [userName, setUserName] = useState<string | null>(null);
 
-  // La lógica para obtener el userName y el 'account' vive aquí
-  // para pasárselos al DashboardShell (y por ende, al Sidebar).
   useEffect(() => {
     if (account?.address) {
       void fetchUserName(account.address).then(name => {
@@ -47,8 +44,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Suspense
               fallback={
                 <div className="p-8 animate-pulse space-y-4">
-                  <div className="h-8 w-1/3 rounded bg-zinc-800" />
-                  <div className="h-64 w-full rounded bg-zinc-800" />
+                  <div className="h-8 w-1/3 rounded bg-fuchsia-950" />
+                  <div className="h-64 w-full rounded bg-fuchsia-950" />
                 </div>
               }
             >
