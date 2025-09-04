@@ -2,11 +2,12 @@
 
 import React, { useMemo, useState } from "react";
 import {
+  BuyWidget,
   PayEmbed,
   useActiveWalletChain,
 } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
-import { defineChain } from "thirdweb/chains";
+import { base, defineChain } from "thirdweb/chains";
 import {
   Sheet,
   SheetContent,
@@ -116,13 +117,14 @@ export default function SwapPage() {
       <TestnetBanner />
       <div className="flex flex-col items-center">
         <React.Suspense fallback={ <div className="text-center text-gray-600 py-8"> Cargando swap... </div> }>
-          <PayEmbed
+          <BuyWidget
             client={client}
-            theme="dark"
-            connectOptions={{ 
-                chain: defaultChain,
-                connectModal: { showThirdwebBranding: false }
-            }}
+            title="Obtén Fondos"
+            buttonLabel="Pagar"
+            paymentMethods={["crypto", "card"]}
+            chain={base}
+            amount="0.003"
+            showThirdwebBranding={false}
           />
         </React.Suspense>
       </div>
