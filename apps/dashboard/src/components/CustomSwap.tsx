@@ -8,7 +8,7 @@ import {
   useWalletBalance,
 } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
-import { parseUnits, formatUnits } from "viem";
+import { parseUnits } from "viem";
 import { base, defineChain } from "thirdweb/chains";
 import { TokenImage } from './TokenImage';
 import { useDisplayAmount } from '@/hooks/useDisplayAmount';
@@ -22,7 +22,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@saasfly/ui/sheet"
 import { ScrollArea } from "@saasfly/ui/scroll-area";
 import { toast } from "sonner";
 import { ArrowDownIcon, Loader2, SearchIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 // --- Tipos, Hooks y Datos ---
 const TOKENLIST_URL = "https://tokens.uniswap.org";

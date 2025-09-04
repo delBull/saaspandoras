@@ -1,7 +1,16 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
+// ELIMINADO: 'toast' no se usaba en este archivo.
+// import { toast } from "sonner";
+
+// NUEVO: Se define una interfaz para la respuesta de la API de Coingecko.
+// Esto elimina todos los errores de tipo 'unsafe'.
+interface CoinGeckoPriceResponse {
+  [id: string]: {
+    usd: number;
+  };
+}
 
 export function useMarketRate(
   fromSymbol: string | undefined,
@@ -31,17 +40,13 @@ export function useMarketRate(
 
     fetch(url)
       .then((r) => r.json())
-      .then((data) => {
-        if (!data || !data[fromId]?.usd || !data[toId]?.usd) {
-          setRate(null);
-          return;
-        }
-        
-        const fromUsd = data[fromId].usd;
-        const toUsd = data[toId].usd;
+      .then((data: CoinGeckoPriceResponse) => { // Se aplica el tipo a 'data'
+        // CORREGIDO: Se usa encadenamiento opcional para más seguridad.
+        const fromUsd = data[fromId]?.usd;
+        const toUsd = data[toId]?.usd;
 
-        if (fromUsd > 0) {
-          setRate(fromUsd / toUsd); // Ratio de precios: cuántos 'toToken' obtienes por 1 'fromToken'
+        if (fromUsd && toUsd && toUsd > 0) {
+          setRate(fromUsd / toUsd);
         } else {
           setRate(null);
         }
