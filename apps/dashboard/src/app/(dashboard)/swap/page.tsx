@@ -94,7 +94,6 @@ function HelpSheet({ open, onOpenChange }: { open: boolean, onOpenChange: (open:
 export default function SwapPage() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
-  // La variable se calcula aquí...
   const feeCaption = useMemo(() => {
     if (!FEE_BPS || !FEE_RECIPIENT) return null;
     return (
@@ -106,15 +105,16 @@ export default function SwapPage() {
   }, []);
 
   return (
-    <div className="pt-10 relative w-full max-w-md mx-auto">
+    <div className="pt-10 relative w-full">
       <div className="mb-6 text-center">
           <h1 className="text-3xl font-bold text-white">Swap & Bridge</h1>
           <p className="mt-2 text-gray-400">
             Intercambia y puentea tokens entre redes EVM con la mejor tasa disponible.
           </p>
       </div>
+      <div className="max-w-md mx-auto">
       <TestnetBanner />
-      <div className="bg-gradient-to-br from-[#18181b] to-[#23272d] rounded-2xl p-3 md:p-4 shadow-2xl border-2 border-lime-300/10">
+      <div className="flex flex-col items-center">
         <React.Suspense fallback={ <div className="text-center text-gray-600 py-8"> Cargando swap... </div> }>
           <PayEmbed
             client={client}
@@ -131,6 +131,7 @@ export default function SwapPage() {
       </div>
       <Disclaimer />
       <HelpLink onOpen={() => setIsHelpOpen(true)} />
+      </div>
       <HelpSheet open={isHelpOpen} onOpenChange={setIsHelpOpen} />
     </div>
   );
