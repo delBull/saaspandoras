@@ -9,7 +9,7 @@ import {
 } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
 import { parseUnits, formatUnits } from "viem";
-import { base, sepolia, defineChain } from "thirdweb/chains";
+import { base, defineChain } from "thirdweb/chains";
 import { TokenImage } from './TokenImage';
 
 // Componentes de UI
@@ -19,6 +19,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@saasfly/ui/sheet"
 import { ScrollArea } from "@saasfly/ui/scroll-area";
 import { toast } from "sonner";
 import { ArrowDownIcon, Loader2 } from "lucide-react";
+import Image from "next/image";
 
 // --- Tipos, Hooks y Datos ---
 const TOKENLIST_URL = "https://tokens.uniswap.org";
@@ -149,8 +150,14 @@ export function CustomSwap() {
 
     if ("toAmount" in quote && typeof quote.toAmount === "bigint") {
       rawAmount = quote.toAmount;
-    } else if ("toToken" in quote && typeof (quote as any).toToken?.amount === "bigint") {
-      rawAmount = (quote as any).toToken.amount;
+    } else if (
+      "toToken" in quote && 
+      typeof quote.toToken === 'object' && 
+      quote.toToken && 
+      "amount" in quote.toToken && 
+      typeof (quote.toToken as { amount?: unknown }).amount === "bigint"
+    ) {
+      rawAmount = (quote.toToken as { amount: bigint }).amount;
     }
 
     if (rawAmount) {
