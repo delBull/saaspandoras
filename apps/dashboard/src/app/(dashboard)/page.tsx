@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useActiveAccount, useReadContract } from "thirdweb/react";
 import Link from "next/link";
 import { config } from "@/config";
@@ -63,10 +63,11 @@ function BannersSection() {
   if (displayedBanners.length === 0) return null;
   return ( <div className="my-6"> <div className="hidden md:grid md:grid-cols-3 gap-4"> <AnimatePresence> {displayedBanners.map((banner) => ( <motion.div key={banner.id} layout initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} transition={{ type: "spring" }}> <PromotionalBanner {...banner} onClose={() => handleClose(banner.id)} /> </motion.div> ))} </AnimatePresence> </div> <div className="md:hidden overflow-hidden" ref={emblaRef}> <div className="flex -ml-4"> <AnimatePresence> {displayedBanners.map((banner) => ( <motion.div key={banner.id} layout initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ x: -300, opacity: 0 }} transition={{ duration: 0.3 }} className="flex-none w-[90%] pl-4"> <PromotionalBanner {...banner} onClose={() => handleClose(banner.id)} /> </motion.div> ))} </AnimatePresence> </div> </div> </div> );
 }
-
-function AssetRow({ icon, name, cryptoAmount, usdAmount }: { icon: string, name: string, cryptoAmount: string, usdAmount: string }) {
-  return ( <div className="flex items-center justify-between p-3 transition-colors hover:bg-zinc-800/50 rounded-lg cursor-pointer"> <div className="flex items-center gap-4"> <Image src={icon} alt={name} width={40} height={40} className="rounded-full" /> <div> <p className="font-bold text-white">{name}</p> <p className="text-sm font-mono text-gray-400">{cryptoAmount}</p> </div> </div> <div className="text-right"> <p className="font-mono font-semibold text-white">{usdAmount}</p> </div> </div> );
-}
+  {/*
+    function AssetRow({ icon, name, cryptoAmount, usdAmount }: { icon: string, name: string, cryptoAmount: string, usdAmount: string }) {
+    return ( <div className="flex items-center justify-between p-3 transition-colors hover:bg-zinc-800/50 rounded-lg cursor-pointer"> <div className="flex items-center gap-4"> <Image src={icon} alt={name} width={40} height={40} className="rounded-full" /> <div> <p className="font-bold text-white">{name}</p> <p className="text-sm font-mono text-gray-400">{cryptoAmount}</p> </div> </div> <div className="text-right"> <p className="font-mono font-semibold text-white">{usdAmount}</p> </div> </div> );
+    }
+  */}
 
 function SecondaryTabs({ activeTab, setActiveTab }: { activeTab: string, setActiveTab: (tab: string) => void }) {
   const tabs = ["Access", "Tokens"];
@@ -85,7 +86,6 @@ export default function DashboardPage() {
   const totalInvestmentValue = usdcAmount + (ethAmount * 3000);
 
   return (
-    // Se elimina el DashboardShell. La función ahora devuelve un Fragmento <>.
     <>
       <MobileHeader userName={null} walletAddress={account?.address} />
       <TotalBalance total={totalInvestmentValue} />
