@@ -19,7 +19,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@saasfly/ui/sheet"
 import { ScrollArea } from "@saasfly/ui/scroll-area";
 import { toast } from "sonner";
 import { ArrowDownIcon, Loader2 } from "lucide-react";
-import Image from "next/image";
 
 // --- Tipos, Hooks y Datos ---
 const TOKENLIST_URL = "https://tokens.uniswap.org";
