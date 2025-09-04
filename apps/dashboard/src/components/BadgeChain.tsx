@@ -20,8 +20,8 @@ const CHAIN_COLORS: Record<number, string> = {
 };
 
 export function BadgeChain({ chainId, className }: { chainId: number; className?: string; }) {
-  const name = CHAIN_NAMES[chainId] || `Chain ${chainId}`;
-  const color = CHAIN_COLORS[chainId] || "bg-gray-400 text-black";
+  const name = CHAIN_NAMES[chainId] ?? `Chain ${chainId}`;
+  const color = CHAIN_COLORS[chainId] ?? "bg-gray-400 text-black";
   return (
     <span
       className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${color} ${className || ""}`}

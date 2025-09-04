@@ -3,26 +3,28 @@
 import { useMemo } from "react";
 import { formatUnits } from "viem";
 
-// Busca recursivamente la primera clave de 'amount' que sea un número entero grande
+// Se usa 'unknown' en lugar de 'any' para forzar la verificación de tipos.
 function findBigIntLike(
-  obj: any,
+  obj: unknown,
   keys = ["toAmountWei", "toAmountMinWei", "amountWei", "toAmount", "expectedOutput", "amount", "value"],
   maxDepth = 5,
 ): string | undefined {
   if (!obj || typeof obj !== "object" || maxDepth < 0) {
     return undefined;
   }
+
   for (const k of Object.keys(obj)) {
+    const value = (obj as Record<string, unknown>)[k];
     if (
       keys.includes(k) &&
-      obj[k] != null &&
-      typeof obj[k] !== "object" &&
-      String(obj[k]).match(/^\d+$/)
+      value != null &&
+      typeof value !== "object" &&
+      String(value).match(/^\d+$/)
     ) {
-      return String(obj[k]);
+      return String(value);
     }
-    if (typeof obj[k] === "object") {
-      const res = findBigIntLike(obj[k], keys, maxDepth - 1);
+    if (typeof value === "object") {
+      const res = findBigIntLike(value, keys, maxDepth - 1);
       if (res !== undefined) return res;
     }
   }
@@ -31,10 +33,11 @@ function findBigIntLike(
 
 interface DisplayToken {
   decimals: number;
+  symbol?: string;
 }
 
 export function useDisplayAmount(
-  quote: any,
+  quote: unknown, // Se cambia 'any' por 'unknown'
   toToken: DisplayToken | null,
   fallbackMsg = "0.0"
 ) {
