@@ -11,8 +11,6 @@ import { client } from "@/lib/thirdweb-client";
 import { parseUnits, formatUnits } from "viem";
 import { base, defineChain } from "thirdweb/chains";
 import { TokenImage } from './TokenImage';
-
-// Componentes de UI
 import { Button } from "@saasfly/ui/button";
 import { Input } from "@saasfly/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@saasfly/ui/sheet";
@@ -20,7 +18,6 @@ import { ScrollArea } from "@saasfly/ui/scroll-area";
 import { toast } from "sonner";
 import { ArrowDownIcon, Loader2 } from "lucide-react";
 
-// --- Tipos, Hooks y Datos ---
 const TOKENLIST_URL = "https://tokens.uniswap.org";
 
 interface Token {
@@ -53,17 +50,17 @@ function useTokenList(chainId: number) {
   }, [chainId]);
   return tokens;
 }
+function TokenSelector({ tokens, onSelect, searchTerm, setSearchTerm }: { tokens: Token[]; currentSelection: string; onSelect: (token: Token) => void; searchTerm: string; setSearchTerm: (t: string) => void; }) {
+  const popularTokens = ['ETH', 'USDC', 'WETH', 'DAI'];
+  const popularTokenData = popularTokens.map(symbol => tokens.find(t => t.symbol === symbol)).filter(Boolean) as Token[];
 
-// --- Sub-Componente: Selector de Tokens ---
-function TokenSelector({ tokens, currentSelection, onSelect, searchTerm, setSearchTerm }: { tokens: Token[]; currentSelection: string; onSelect: (token: Token) => void; searchTerm: string; setSearchTerm: (t: string) => void; }) {
   const filteredTokens = tokens.filter(
-      (token) => token.address !== currentSelection &&
-      (token.symbol.toLowerCase().includes(searchTerm.trim().toLowerCase()) ||
+      (token) => (token.symbol.toLowerCase().includes(searchTerm.trim().toLowerCase()) ||
        token.name.toLowerCase().includes(searchTerm.trim().toLowerCase()))
   );
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="grid h-full grid-rows-[auto_auto_auto_1fr] gap-2 p-5">
       <SheetHeader>
         <SheetTitle>Seleccionar Token</SheetTitle>
       </SheetHeader>
@@ -74,8 +71,19 @@ function TokenSelector({ tokens, currentSelection, onSelect, searchTerm, setSear
         className="my-4 bg-zinc-800 border-zinc-700"
         aria-label="Buscar token"
       />
-      <ScrollArea className="flex-1">
-        <div className="flex flex-col gap-1">
+        <div className="p-4">
+          <p className="text-xs font-semibold text-gray-500 mb-2">Tokens Populares</p>
+          <div className="grid grid-cols-4 md:grid-cols-5 gap-2">
+              {popularTokenData.map(token => (
+                  <button key={token.address} onClick={() => onSelect(token)} className="flex flex-col items-center gap-1.5 p-2 rounded-lg hover:bg-zinc-800 transition-colors">
+                      <TokenImage src={token.logoURI} alt={token.symbol} size={32} className="rounded-full" />
+                      <span className="text-xs font-bold text-white">{token.symbol}</span>
+                  </button>
+              ))}
+          </div>
+      </div>
+      <ScrollArea className="row-start-4 overflow-y-auto">
+        <div className="flex flex-col gap-1 pr-2">
           {filteredTokens.length === 0 && (
             <div className="text-gray-500 text-center py-4">
               No se encontraron tokens.
@@ -101,7 +109,6 @@ function TokenSelector({ tokens, currentSelection, onSelect, searchTerm, setSear
   );
 }
 
-// --- Componente Principal del Swap ---
 export function CustomSwap() {
   const account = useActiveAccount();
   const [fromAmount, setFromAmount] = useState("");
@@ -233,13 +240,17 @@ export function CustomSwap() {
   return (
     <div className="flex flex-col gap-2 p-0 md:p-4 rounded-2xl">
       <Sheet open={!!isTokenModalOpen} onOpenChange={(isOpen) => !isOpen && setTokenModalOpen(null)}>
-        <SheetContent className="bg-zinc-900 border-l-zinc-800 text-white">
-          <TokenSelector 
-          tokens={tokenList} 
-          onSelect={handleTokenSelect} 
-          currentSelection={isTokenModalOpen === 'from' ? toToken?.address ?? "" : fromToken?.address ?? ""} 
-          searchTerm={searchTerm} 
-          setSearchTerm={setSearchTerm} />
+        <SheetContent className="bg-zinc-900 border-none text-white p-0 flex flex-col
+          md:max-w-md w-full md:rounded-2xl
+          inset-x-0 bottom-0 md:inset-auto rounded-t-2xl h-[85vh] md:h-auto md:max-h-[600px]
+        ">
+          <TokenSelector
+            tokens={tokenList}
+            onSelect={handleTokenSelect}
+            currentSelection={isTokenModalOpen === 'from' ? toToken?.address ?? "" : fromToken?.address ?? ""}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+          />
         </SheetContent>
       </Sheet>
 
