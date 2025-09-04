@@ -8,7 +8,7 @@ import {
   useWalletBalance,
 } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
-import { parseUnits, formatUnits } from "viem";
+import { parseUnits, formatUnits, encodeFunctionData } from "viem";
 import { base, defineChain } from "thirdweb/chains";
 import { TokenImage } from './TokenImage';
 import { BadgeChain } from './BadgeChain';
@@ -23,6 +23,18 @@ import { ArrowDownIcon, Loader2, SearchIcon } from "lucide-react";
 
 // --- Tipos, Hooks y Datos ---
 const TOKENLIST_URL = "https://tokens.uniswap.org";
+
+const erc20Abi = [
+  {
+    "inputs": [
+      { "name": "_spender", "type": "address" },
+      { "name": "_value", "type": "uint256" }
+    ],
+    "name": "approve",
+    "outputs": [{ "name": "", "type": "bool" }],
+    "type": "function"
+  }
+] as const;
 
 interface Token {
   name: string;
@@ -120,6 +132,7 @@ export function CustomSwap() {
   const [toToken, setToToken] = useState<Token | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [animateColor, setAnimateColor] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
   
   const activeChainId = base.id;
   const tokenList = useTokenList(activeChainId);
@@ -182,12 +195,38 @@ export function CustomSwap() {
 
   const handleSwap = async () => {
     if (error) { toast.error(error); return; }
-    if (!quote?.transactionRequest || !account) { toast.error("No hay ruta disponible para este par."); return; }
+    if (!quote || !account) { toast.error("No hay ruta disponible para este par."); return; }
+
     try {
+      if (quote.approvalData) {
+        setIsApproving(true);
+        toast.info("Se requiere aprobación para gastar tus tokens.");
+
+        const { spenderAddress, amountWei, tokenAddress } = quote.approvalData;
+
+        const approvalTx = {
+          to: tokenAddress,
+          chain: defineChain(quote.approvalData.chainId),
+          client: client,
+          data: encodeFunctionData({
+            abi: erc20Abi,
+            functionName: 'approve',
+            args: [spenderAddress, BigInt(amountWei)]
+          }),
+        };
+
+        await sendTx(approvalTx);
+        
+        toast.success("Aprobación exitosa. Ahora confirma el swap.");
+        setIsApproving(false);
+      }
+
       await sendTx(quote.transactionRequest);
       toast.success("Swap realizado correctamente!");
       setFromAmount("");
+
     } catch (err) {
+      setIsApproving(false);
       console.error("Swap fallido", err);
       toast.error("El swap falló. Revisa tu wallet o la consola.");
     }
@@ -204,6 +243,7 @@ export function CustomSwap() {
   const buttonText = (): string => {
     if (isInvalidAmount) return "Ingresa un monto";
     if (error) return error;
+    if (isApproving) return "Aprobando...";
     if (isQuoting) return "Obteniendo cotización...";
     if (isSendingTransaction) return "Procesando...";
     if (!quote && isReadyForQuote) return "Ruta no disponible";
@@ -223,7 +263,7 @@ export function CustomSwap() {
       <div className="bg-zinc-800 p-4 rounded-xl space-y-1">
         <div className="flex justify-between items-center"><span className="text-xs text-gray-400">Desde</span><span className="text-xs text-gray-500">Saldo: {balance ? parseFloat(balance.displayValue).toFixed(4) : '0.0'} {fromToken?.symbol}</span></div>
         <div className="flex items-center gap-2">
-          <Input aria-label="Cantidad a intercambiar" type="text" inputMode="decimal" placeholder="0.0" value={fromAmount} onChange={(e) => { const val = e.target.value.replace(",","."); if (val === "" || new RegExp(`^\\d*(\\.\\d{0,${fromToken?.decimals ?? 6}})?$`).test(val)) { setFromAmount(val); } }} className="w-full text-3xl font-mono text-white focus:outline-none border-none p-0 h-auto bg-transparent" />
+          <Input aria-label="Cantidad a intercambiar" type="text" inputMode="decimal" placeholder="0.0" value={fromAmount} onChange={(e) => { const val = e.target.value.replace(",","."); if (val === "" || new RegExp(`^\d*(\.\d{0,${fromToken?.decimals ?? 6}})?$`).test(val)) { setFromAmount(val); } }} className="w-full text-3xl font-mono text-white focus:outline-none border-none p-0 h-auto bg-transparent" />
           <Button onClick={handleMax} variant="ghost" className="text-xs px-3 py-1 h-auto text-lime-400 hover:text-lime-300" disabled={!balance || !account}> MAX </Button>
           <Button aria-label={`Seleccionar token origen (${fromToken?.symbol ?? ""})`} onClick={() => setTokenModalOpen("from")} variant="secondary" className="flex items-center gap-2 rounded-full font-semibold">
             {fromToken && (<TokenImage src={fromToken.logoURI} alt={fromToken.symbol ?? 'token'} size={24} className="rounded-full" />)} {fromToken?.symbol ?? "..."}
@@ -249,7 +289,7 @@ export function CustomSwap() {
       {account ? (
         <Button
           onClick={handleSwap}
-          disabled={!!error || isQuoting || isSendingTransaction || !quote}
+          disabled={!!error || isQuoting || isApproving || isSendingTransaction || !quote}
           className="w-full mt-4 py-6 rounded-2xl font-bold text-lg text-zinc-900 bg-gradient-to-r from-lime-200 to-lime-300 transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {buttonText()}
