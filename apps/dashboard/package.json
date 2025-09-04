@@ -8,7 +8,8 @@
     "dev": "next dev",
     "lint": "next lint --quiet",
     "format": "prettier --write '**/*.{js,cjs,mjs,ts,tsx,md,json}'",
-    "start": "next start"
+    "start": "next start",
+    "update:token-hosts": "node generar-dominios.js"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
