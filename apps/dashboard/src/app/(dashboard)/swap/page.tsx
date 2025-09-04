@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { CustomSwap } from "@/components/CustomSwap";
 
 // REINTEGRADO: Imports necesarios para el Disclaimer y el HelpSheet
