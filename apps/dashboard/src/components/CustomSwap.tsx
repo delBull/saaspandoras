@@ -9,9 +9,9 @@ import {
 } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
 import { parseUnits, formatUnits } from "viem";
-import { base, defineChain } from "thirdweb/chains";
+import { base, sepolia, defineChain } from "thirdweb/chains";
 import { TokenImage } from './TokenImage';
-import Image from "next/image";
+
 // Componentes de UI
 import { Button } from "@saasfly/ui/button";
 import { Input } from "@saasfly/ui/input";
@@ -20,10 +20,10 @@ import { ScrollArea } from "@saasfly/ui/scroll-area";
 import { toast } from "sonner";
 import { ArrowDownIcon, Loader2 } from "lucide-react";
 
-// --- Tipos y Hooks Personalizados ---
+// --- Tipos, Hooks y Datos ---
 const TOKENLIST_URL = "https://tokens.uniswap.org";
 
-type Token = {
+interface Token {
   name: string;
   address: string;
   symbol: string;
@@ -32,28 +32,26 @@ type Token = {
   logoURI: string;
 };
 
+interface TokenListResponse {
+  tokens: Token[];
+}
+
 function useTokenList(chainId: number) {
   const [tokens, setTokens] = useState<Token[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
   useEffect(() => {
     async function fetchTokens() {
-      setIsLoading(true);
       try {
         const res = await fetch(TOKENLIST_URL);
-        const data = await res.json();
-        setTokens((data.tokens as Token[]).filter((t) => t.chainId === chainId));
+        const data = await res.json() as TokenListResponse;
+        setTokens(data.tokens.filter((t) => t.chainId === chainId));
       } catch {
         setTokens([]);
         toast.error("Error al cargar la lista de tokens");
-      } finally {
-        setIsLoading(false);
       }
     }
     void fetchTokens();
   }, [chainId]);
-
-  return { tokens, isLoading };
+  return tokens;
 }
 
 // --- Sub-Componente: Selector de Tokens ---
@@ -115,16 +113,16 @@ export function CustomSwap() {
   const [animateColor, setAnimateColor] = useState(false);
   
   const activeChainId = base.id;
-  const { tokens: tokenList } = useTokenList(activeChainId);
+  const tokenList = useTokenList(activeChainId);
 
   useEffect(() => {
     if (tokenList.length > 1 && !fromToken && !toToken) {
-      setFromToken(tokenList.find(t => t.symbol === 'USDC') || tokenList[1]!);
-      setToToken(tokenList.find(t => t.symbol === 'ETH') || tokenList[0]!);
+      setFromToken(tokenList.find(t => t.symbol === 'USDC') ?? tokenList[1]!);
+      setToToken(tokenList.find(t => t.symbol === 'ETH') ?? tokenList[0]!);
     }
   }, [tokenList, fromToken, toToken]);
   
-  const { data: balance } = useWalletBalance({ client, address: account?.address || "", chain: fromToken?.chainId ? defineChain(fromToken.chainId) : undefined, tokenAddress: fromToken?.address });
+  const { data: balance } = useWalletBalance({ client, address: account?.address ?? "", chain: fromToken?.chainId ? defineChain(fromToken.chainId) : undefined, tokenAddress: fromToken?.address });
 
   const isInvalidAmount = !fromAmount || isNaN(Number(fromAmount)) || Number(fromAmount) <= 0;
   const isSameToken = fromToken?.address === toToken?.address;
@@ -146,10 +144,21 @@ export function CustomSwap() {
   const prevToAmount = useRef("0.0");
   const displayToAmount = useMemo(() => {
     if (!quote || !toToken) return "0.0";
-    const rawAmount = (quote as any).toAmount ?? (quote as any).toToken?.amount;
-    if (!rawAmount || !toToken.decimals) return "0.0";
-    const formatted = formatUnits(BigInt(rawAmount), toToken.decimals);
-    return Number(formatted).toFixed(6);
+    
+    let rawAmount: bigint | undefined = undefined;
+
+    if ("toAmount" in quote && typeof quote.toAmount === "bigint") {
+      rawAmount = quote.toAmount;
+    } else if ("toToken" in quote && typeof (quote as any).toToken?.amount === "bigint") {
+      rawAmount = (quote as any).toToken.amount;
+    }
+
+    if (rawAmount) {
+      const formatted = formatUnits(rawAmount, toToken.decimals);
+      return Number(formatted).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 });
+    }
+    
+    return "0.0";
   }, [quote, toToken]);
 
   useEffect(() => {
@@ -218,8 +227,7 @@ export function CustomSwap() {
           <Input aria-label="Cantidad a intercambiar" type="number" placeholder="0.0" value={fromAmount} onChange={(e) => setFromAmount(e.target.value)} className="w-full text-3xl font-mono text-white focus:outline-none border-none p-0 h-auto bg-transparent" />
           <Button onClick={handleMax} variant="ghost" className="text-xs px-3 py-1 h-auto text-lime-400 hover:text-lime-300" disabled={!balance || !account}>MAX</Button>
           <Button aria-label={`Seleccionar token origen (${fromToken?.symbol ?? ""})`} onClick={() => setTokenModalOpen("from")} variant="secondary" className="flex items-center gap-2 rounded-full font-semibold">
-            {fromToken && (<TokenImage src={fromToken.logoURI} alt={fromToken.symbol} size={24} className="rounded-full" />)} 
-            {fromToken?.symbol ?? "..."}
+            {fromToken && (<TokenImage src={fromToken.logoURI} alt={fromToken.symbol ?? 'token'} size={24} className="rounded-full" />)} {fromToken?.symbol ?? "..."}
           </Button>
         </div>
       </div>
@@ -233,7 +241,7 @@ export function CustomSwap() {
             {isQuoting ? <Loader2 className="animate-spin h-8 w-8" /> : displayToAmount}
           </div>
           <Button aria-label={`Seleccionar token destino (${toToken?.symbol ?? ""})`} onClick={() => setTokenModalOpen("to")} variant="secondary" className="flex items-center gap-2 rounded-full font-semibold">
-            {toToken && (<TokenImage src={toToken.logoURI} alt={toToken.symbol} size={24} className="rounded-full" />)} 
+            {toToken && (<TokenImage src={toToken.logoURI} alt={toToken.symbol ?? 'token'} size={24} className="rounded-full" />)} 
             {toToken?.symbol ?? "..."}
           </Button>
         </div>

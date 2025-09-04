@@ -21,7 +21,7 @@ export function useTokenLogo(
     if (uri.startsWith("ipfs://")) {
       const path = uri.replace("ipfs://", "");
       // Aseguramos que el gatewayIdx no se salga de los límites del array
-      resolved = (IPFS_GATEWAYS[gatewayIdx] || IPFS_GATEWAYS[0]) + path;
+      resolved = (IPFS_GATEWAYS[gatewayIdx] ?? IPFS_GATEWAYS[0]) + path;
     } else {
       resolved = uri;
     }
