@@ -81,9 +81,9 @@ function HelpSheet({ open, onOpenChange }: { open: boolean, onOpenChange: (open:
                             <h4 className="font-bold text-white">¿Qué es un Bridge?</h4>
                             <p className="text-xs mt-1">Un &quot;bridge&quot; o puente te permite mover tus tokens de una blockchain a otra. Por ejemplo, mover USDC desde la red de Ethereum a la red de Base. Esto es útil para usar tus fondos en diferentes ecosistemas.</p>
                         </div>
-                        <div><h4 className="font-bold text-white">¿Por qué mi transacción tarda?</h4><p className="text-xs mt-1">Los tiempos de transacción dependen de la congestión de la red blockchain. Las transacciones de tipo "bridge" pueden tardar varios minutos, ya que involucran operaciones complejas en dos redes diferentes.</p></div>
+                        <div><h4 className="font-bold text-white">¿Por qué mi transacción tarda?</h4><p className="text-xs mt-1">Los tiempos de transacción dependen de la congestión de la red blockchain. Las transacciones de tipo &quot;bridge&quot; pueden tardar varios minutos, ya que involucran operaciones complejas en dos redes diferentes.</p></div>
                         <div><h4 className="font-bold text-white">¿Quién paga las tarifas de red (Gas)?</h4><p className="text-xs mt-1">El usuario que realiza el swap es quien paga las tarifas de gas. Estas tarifas son un costo de la red blockchain, no de nuestra plataforma. Nuestro sistema busca la ruta más económica para minimizar este costo.</p></div>
-                         <div className="md:col-span-2"><h4 className="font-bold text-white">Contacto y Soporte</h4><p className="text-xs mt-1">Si tienes problemas o dudas que no se resuelven aquí, puedes contactarnos en nuestro <a href="#" className="underline text-lime-400">Discord</a> o enviarnos un email a <a href="mailto:soporte@pandoras.finance" className="underline text-lime-400">soporte@pandoras.finance</a>.</p></div>
+                         <div className="md:col-span-2"><h4 className="font-bold text-white">Contacto y Soporte</h4><p className="text-xs mt-1">Si tienes problemas o dudas que no se resuelven aquí, puedes contactarnos en nuestro <a href="/" className="underline text-lime-400">Discord.</a></p></div>
                     </div>
                 </ScrollArea>
             </SheetContent>
@@ -94,6 +94,7 @@ function HelpSheet({ open, onOpenChange }: { open: boolean, onOpenChange: (open:
 export default function SwapPage() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
+  // La variable se calcula aquí...
   const feeCaption = useMemo(() => {
     if (!FEE_BPS || !FEE_RECIPIENT) return null;
     return (
@@ -126,7 +127,7 @@ export default function SwapPage() {
         </React.Suspense>
       </div>
       <div className="mt-6 mb-2 text-xs text-center text-gray-400 px-4">
-        <span>Se cobra una comisión de 0.5% por swap, configurada en tu dashboard de thirdweb.</span>
+        {feeCaption}
       </div>
       <Disclaimer />
       <HelpLink onOpen={() => setIsHelpOpen(true)} />
