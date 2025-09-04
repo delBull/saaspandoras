@@ -1,16 +1,8 @@
 'use client';
 
 import { useEffect, useState } from "react";
-// ELIMINADO: 'toast' no se usaba en este archivo.
-// import { toast } from "sonner";
 
-// NUEVO: Se define una interfaz para la respuesta de la API de Coingecko.
-// Esto elimina todos los errores de tipo 'unsafe'.
-interface CoinGeckoPriceResponse {
-  [id: string]: {
-    usd: number;
-  };
-}
+type CoinGeckoPriceResponse = Record<string, { usd: number }>;
 
 export function useMarketRate(
   fromSymbol: string | undefined,
@@ -40,8 +32,7 @@ export function useMarketRate(
 
     fetch(url)
       .then((r) => r.json())
-      .then((data: CoinGeckoPriceResponse) => { // Se aplica el tipo a 'data'
-        // CORREGIDO: Se usa encadenamiento opcional para más seguridad.
+      .then((data: CoinGeckoPriceResponse) => {
         const fromUsd = data[fromId]?.usd;
         const toUsd = data[toId]?.usd;
 
