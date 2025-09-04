@@ -4,12 +4,10 @@ import "./globals.css";
 import { Inter } from "next/font/google";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
-import { ThirdwebProvider, AutoConnect } from "thirdweb/react";
+import { ThirdwebProvider } from "thirdweb/react";
 import { createWallet, inAppWallet } from "thirdweb/wallets";
-import { client } from "@/lib/thirdweb-client";
 
 const inter = Inter({ subsets: ["latin"] });
-
 
 const supportedWallets = [
   inAppWallet({
@@ -38,7 +36,7 @@ export default function RootLayout({
           defaultTheme="dark"
           enableSystem={false}
         >
-          <ThirdwebProvider wallets={supportedWallets}>
+          <ThirdwebProvider {...{ wallets: supportedWallets } as any}>
             {children}
             <Toaster theme="dark" richColors position="top-center" />
           </ThirdwebProvider>
