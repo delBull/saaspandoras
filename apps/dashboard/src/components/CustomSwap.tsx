@@ -8,11 +8,9 @@ import {
   useWalletBalance,
 } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
-import { parseUnits } from "viem";
+import { parseUnits, formatUnits } from "viem";
 import { base, defineChain } from "thirdweb/chains";
 import { TokenImage } from './TokenImage';
-import { useDisplayAmount } from '@/hooks/useDisplayAmount';
-import { useMarketRate } from '@/hooks/useMarketRate';
 import { BadgeChain } from './BadgeChain';
 
 // Componentes de UI
@@ -140,30 +138,31 @@ export function CustomSwap() {
   const isInsufficientBalance = fromAmount && balance?.value && fromToken ? (parseUnits(fromAmount, fromToken.decimals) > balance.value) : false;
   const isReadyForQuote = account && fromToken && toToken && !isInvalidAmount && !isSameToken && !isInsufficientBalance;
 
-  const fromAmountBaseUnits = useMemo(() => {
-    if (!fromToken || !fromAmount || Number(fromAmount) <= 0) return "0";
-    try {
-      return parseUnits(fromAmount, fromToken.decimals).toString();
-    } catch { return "0"; }
-  }, [fromAmount, fromToken]);
-
-  const swapParams = isReadyForQuote ? { client, fromAddress: account.address, toAddress: account.address, fromTokenAddress: fromToken.address, toTokenAddress: toToken.address, fromChainId: fromToken.chainId, toChainId: toToken.chainId, fromAmount: fromAmountBaseUnits } : undefined;
+  const swapParams = isReadyForQuote ? { client, fromAddress: account.address, toAddress: account.address, fromTokenAddress: fromToken.address, toTokenAddress: toToken.address, fromChainId: fromToken.chainId, toChainId: toToken.chainId, fromAmount: fromAmount } : undefined;
 
   const { data: quote, isLoading: isQuoting } = useBuyWithCryptoQuote(swapParams);
   const { mutateAsync: sendTx, isPending: isSendingTransaction } = useSendTransaction();
   
-  const displayToAmount = useDisplayAmount(quote, toToken);
-  const isCrossChain = fromToken && toToken && fromToken.chainId !== toToken.chainId;
+  const displayToAmount = useMemo(() => {
+    if (!quote || !toToken) {
+      return "0.00";
+    }
+    try {
+      const formatted = formatUnits(
+        BigInt(quote.swapDetails.toAmountWei),
+        toToken.decimals
+      );
+      return parseFloat(formatted).toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 6,
+      });
+    } catch (e) {
+      console.error("Error formatting display amount:", e);
+      return "0.00";
+    }
+  }, [quote, toToken]);
 
-  const marketRate = useMarketRate(fromToken?.symbol, toToken?.symbol);
-  const quotedAmount = parseFloat(displayToAmount.replace(/,/g, ''));
-  const expectedAmount = useMemo(() => {
-    if (!marketRate || isInvalidAmount) return 0;
-    return Number(fromAmount) * marketRate;
-  }, [fromAmount, marketRate, isInvalidAmount]);
-  
-  const priceImpact = (expectedAmount > 0 && quotedAmount > 0) ? Math.abs(1 - (quotedAmount / expectedAmount)) : 0;
-  const isQuoteUnrealistic = priceImpact > 0.15 && fromAmount !== "";
+  const isCrossChain = fromToken && toToken && fromToken.chainId !== toToken.chainId;
 
   const prevDisplayAmount = useRef("0.0");
   useEffect(() => {
@@ -183,7 +182,6 @@ export function CustomSwap() {
 
   const handleSwap = async () => {
     if (error) { toast.error(error); return; }
-    if (isQuoteUnrealistic) { toast.error("La cotización es muy diferente al precio de mercado."); return; }
     if (!quote?.transactionRequest || !account) { toast.error("No hay ruta disponible para este par."); return; }
     try {
       await sendTx(quote.transactionRequest);
@@ -204,12 +202,10 @@ export function CustomSwap() {
   };
 
   const buttonText = (): string => {
-    if (!account) return "Conectar Wallet";
     if (isInvalidAmount) return "Ingresa un monto";
     if (error) return error;
     if (isQuoting) return "Obteniendo cotización...";
     if (isSendingTransaction) return "Procesando...";
-    if (isQuoteUnrealistic) return "Cotización Inválida";
     if (!quote && isReadyForQuote) return "Ruta no disponible";
     return "Intercambiar";
   };
@@ -240,17 +236,8 @@ export function CustomSwap() {
       <div className="bg-zinc-800 p-4 rounded-xl space-y-1">
         <span className="text-xs text-gray-400">Hasta</span>
         <div className="flex items-center gap-4">
-          <div className={"w-full text-3xl font-mono transition-colors " + (animateColor ? "text-lime-400" : isQuoteUnrealistic ? "text-orange-500" : "text-gray-400")} aria-live="polite">
-            {isQuoting ? <Loader2 className="animate-spin h-8 w-8" /> 
-             : isQuoteUnrealistic ? (
-              <span className="text-lg">
-                Cotización Irreal
-                <span className="block text-xs text-gray-400 mt-1">
-                  Esperado: ~{expectedAmount.toLocaleString('en-US', {maximumFractionDigits: 4})} {toToken?.symbol}
-                </span>
-              </span>
-             )
-             : displayToAmount }
+          <div className={"w-full text-3xl font-mono transition-colors " + (animateColor ? "text-lime-400" : "text-gray-400")} aria-live="polite">
+            {isQuoting ? <Loader2 className="animate-spin h-8 w-8" /> : displayToAmount }
           </div>
           <Button aria-label={`Seleccionar token destino (${toToken?.symbol ?? ""})`} onClick={() => setTokenModalOpen("to")} variant="secondary" className="flex items-center gap-2 rounded-full font-semibold">
             {toToken && (<TokenImage src={toToken.logoURI} alt={toToken.symbol ?? 'token'} size={24} className="rounded-full" />)} 
@@ -259,13 +246,22 @@ export function CustomSwap() {
         </div>
       </div>
       
-      <Button
-        onClick={handleSwap}
-        disabled={!!error || isQuoting || isSendingTransaction || !quote || isQuoteUnrealistic}
-        className="w-full mt-4 py-6 rounded-2xl font-bold text-lg text-zinc-900 bg-gradient-to-r from-lime-200 to-lime-300 transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {buttonText()}
-      </Button>
+      {account ? (
+        <Button
+          onClick={handleSwap}
+          disabled={!!error || isQuoting || isSendingTransaction || !quote}
+          className="w-full mt-4 py-6 rounded-2xl font-bold text-lg text-zinc-900 bg-gradient-to-r from-lime-200 to-lime-300 transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {buttonText()}
+        </Button>
+      ) : (
+        <Button
+          disabled={true}
+          className="w-full mt-4 py-6 rounded-2xl font-bold text-lg text-zinc-900 bg-gradient-to-r from-lime-200 to-lime-300 transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Conectar Wallet
+        </Button>
+      )}
 
       {process.env.NODE_ENV === "development" && quote && (
         <div className="mt-4">
