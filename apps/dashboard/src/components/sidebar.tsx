@@ -176,15 +176,15 @@ export function Sidebar({ wallet: walletProp, userName }: SidebarProps) {
         onClick={() => setMobileOpen(true)}
         className={cn(
           "md:hidden fixed z-10",
-          "top-1/2 -translate-y-1/2 left-0",
-          "flex items-center justify-center h-24 w-6",
+          "top-3 left-0",
+          "flex items-center justify-center h-16 w-5",
           "bg-zinc-800 border-y border-r border-gray-700",
           "rounded-r-lg shadow-lg",
           "text-gray-500 hover:text-white hover:bg-zinc-700",
           "transition-all duration-200"
         )}
       >
-        <ChevronDoubleRightIcon className="h-5 w-5" />
+        <ChevronDoubleRightIcon className="h-4 w-4" />
       </button>
 
       <AnimatePresence>

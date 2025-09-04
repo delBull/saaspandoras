@@ -122,7 +122,10 @@ export function CustomSwap() {
     }
   }, [tokenList, fromToken, toToken]);
   
-  const { data: balance } = useWalletBalance({ client, address: account?.address ?? "", chain: fromToken?.chainId ? defineChain(fromToken.chainId) : undefined, tokenAddress: fromToken?.address });
+  const { data: balance } = useWalletBalance({ 
+    client, address: account?.address ?? "", 
+    chain: fromToken?.chainId ? defineChain(fromToken.chainId) : undefined, 
+    tokenAddress: fromToken?.address });
 
   const isInvalidAmount = !fromAmount || isNaN(Number(fromAmount)) || Number(fromAmount) <= 0;
   const isSameToken = fromToken?.address === toToken?.address;
@@ -136,7 +139,15 @@ export function CustomSwap() {
     } catch { return "0"; }
   }, [fromAmount, fromToken]);
 
-  const swapParams = isReadyForQuote ? { client, fromAddress: account.address, toAddress: account.address, fromTokenAddress: fromToken.address, toTokenAddress: toToken.address, fromChainId: fromToken.chainId, toChainId: toToken.chainId, fromAmount: fromAmountBaseUnits } : undefined;
+  const swapParams = isReadyForQuote ? { 
+    client, 
+    fromAddress: account.address, 
+    toAddress: account.address, 
+    fromTokenAddress: fromToken.address, 
+    toTokenAddress: toToken.address, 
+    fromChainId: fromToken.chainId, 
+    toChainId: toToken.chainId, 
+    fromAmount: fromAmountBaseUnits } : undefined;
 
   const { data: quote, isLoading: isQuoting } = useBuyWithCryptoQuote(swapParams);
   const { mutateAsync: sendTx, isPending: isSendingTransaction } = useSendTransaction();
@@ -220,10 +231,15 @@ export function CustomSwap() {
   };
   
   return (
-    <div className="flex flex-col gap-2 p-2 md:p-4 rounded-2xl bg-black/20">
+    <div className="flex flex-col gap-2 p-0 md:p-4 rounded-2xl">
       <Sheet open={!!isTokenModalOpen} onOpenChange={(isOpen) => !isOpen && setTokenModalOpen(null)}>
         <SheetContent className="bg-zinc-900 border-l-zinc-800 text-white">
-          <TokenSelector tokens={tokenList} onSelect={handleTokenSelect} currentSelection={isTokenModalOpen === 'from' ? toToken?.address ?? "" : fromToken?.address ?? ""} searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+          <TokenSelector 
+          tokens={tokenList} 
+          onSelect={handleTokenSelect} 
+          currentSelection={isTokenModalOpen === 'from' ? toToken?.address ?? "" : fromToken?.address ?? ""} 
+          searchTerm={searchTerm} 
+          setSearchTerm={setSearchTerm} />
         </SheetContent>
       </Sheet>
 
@@ -231,7 +247,9 @@ export function CustomSwap() {
         <div className="flex justify-between items-center"><span className="text-xs text-gray-400">Desde</span><span className="text-xs text-gray-500">Saldo: {balance ? parseFloat(balance.displayValue).toFixed(4) : '0.0'} {fromToken?.symbol}</span></div>
         <div className="flex items-center gap-2">
           <Input aria-label="Cantidad a intercambiar" type="number" placeholder="0.0" value={fromAmount} onChange={(e) => setFromAmount(e.target.value)} className="w-full text-3xl font-mono text-white focus:outline-none border-none p-0 h-auto bg-transparent" />
-          <Button onClick={handleMax} variant="ghost" className="text-xs px-3 py-1 h-auto text-lime-400 hover:text-lime-300" disabled={!balance || !account}>MAX</Button>
+          <Button onClick={handleMax} variant="ghost" className="text-xs px-3 py-1 h-auto text-lime-400 hover:text-lime-300" disabled={!balance || !account}>
+            MAX
+            </Button>
           <Button aria-label={`Seleccionar token origen (${fromToken?.symbol ?? ""})`} onClick={() => setTokenModalOpen("from")} variant="secondary" className="flex items-center gap-2 rounded-full font-semibold">
             {fromToken && (<TokenImage src={fromToken.logoURI} alt={fromToken.symbol ?? 'token'} size={24} className="rounded-full" />)} {fromToken?.symbol ?? "..."}
           </Button>
@@ -256,7 +274,7 @@ export function CustomSwap() {
       <Button
         onClick={handleSwap}
         disabled={!!error || isQuoting || isSendingTransaction || !quote}
-        className="w-full mt-4 py-6 rounded-2xl font-bold text-lg text-zinc-900 bg-gradient-to-r from-lime-300 to-lime-400 transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full mt-4 py-6 rounded-2xl font-bold text-lg text-zinc-900 bg-gradient-to-r from-lime-200 to-lime-300 transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {buttonText()}
       </Button>
