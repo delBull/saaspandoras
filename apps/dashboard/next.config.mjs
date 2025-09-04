@@ -12,22 +12,10 @@ const config = {
 images: {
   remotePatterns: [
   // Añade aquí cualquier dominio que SIEMPRE quieras tener manualmente
-      {
-        protocol: "https",
-        hostname: "raw.githubusercontent.com",
-      },
-      {
-        protocol: "https",
-        hostname: "ipfs.io",
-      },
-      {
-        protocol: "https",
-        hostname: "cloudflare-ipfs.com",
-      },
-      {
-        protocol: "https",
-        hostname: "cloudflare-ipfs.com",
-      },
+      { protocol: "https", hostname: "raw.githubusercontent.com" },
+      { protocol: "https", hostname: "ipfs.io" },
+      { protocol: "https", hostname: "cloudflare-ipfs.com" },
+      { protocol: "https", hostname: "dweb.link" },
       // START: AUTO-GENERATED HOSTNAMES
       { protocol: 'https', hostname: 'arbitrum.foundation' },
       { protocol: 'https', hostname: 'assets.coingecko.com' },

@@ -10,8 +10,8 @@ import {
 import { client } from "@/lib/thirdweb-client";
 import { parseUnits, formatUnits } from "viem";
 import { base, defineChain } from "thirdweb/chains";
+import { TokenImage } from './TokenImage';
 import Image from "next/image";
-
 // Componentes de UI
 import { Button } from "@saasfly/ui/button";
 import { Input } from "@saasfly/ui/input";
@@ -90,13 +90,7 @@ function TokenSelector({ tokens, currentSelection, onSelect, searchTerm, setSear
               className="flex items-center gap-4 p-2 rounded-lg hover:bg-lime-800/20 transition-colors text-left"
               aria-label={`Seleccionar ${token.symbol}`}
             >
-              <Image
-                src={token.logoURI}
-                alt={token.symbol}
-                width={36}
-                height={36}
-                onError={(e) => { e.currentTarget.src = "/images/default-token.png"; }} // Fallback image
-              />
+              <TokenImage src={token.logoURI} alt={token.symbol} size={36} className="rounded-full" />
               <div>
                 <p className="font-bold text-white">{token.symbol}</p>
                 <p className="text-xs text-gray-400">{token.name}</p>
@@ -224,7 +218,8 @@ export function CustomSwap() {
           <Input aria-label="Cantidad a intercambiar" type="number" placeholder="0.0" value={fromAmount} onChange={(e) => setFromAmount(e.target.value)} className="w-full text-3xl font-mono text-white focus:outline-none border-none p-0 h-auto bg-transparent" />
           <Button onClick={handleMax} variant="ghost" className="text-xs px-3 py-1 h-auto text-lime-400 hover:text-lime-300" disabled={!balance || !account}>MAX</Button>
           <Button aria-label={`Seleccionar token origen (${fromToken?.symbol ?? ""})`} onClick={() => setTokenModalOpen("from")} variant="secondary" className="flex items-center gap-2 rounded-full font-semibold">
-            {fromToken && (<Image src={fromToken.logoURI} alt={fromToken.symbol} width={24} height={24} onError={(e) => { e.currentTarget.src = "/images/default-token.png"; }} />)} {fromToken?.symbol ?? "..."}
+            {fromToken && (<TokenImage src={fromToken.logoURI} alt={fromToken.symbol} size={24} className="rounded-full" />)} 
+            {fromToken?.symbol ?? "..."}
           </Button>
         </div>
       </div>
@@ -238,7 +233,8 @@ export function CustomSwap() {
             {isQuoting ? <Loader2 className="animate-spin h-8 w-8" /> : displayToAmount}
           </div>
           <Button aria-label={`Seleccionar token destino (${toToken?.symbol ?? ""})`} onClick={() => setTokenModalOpen("to")} variant="secondary" className="flex items-center gap-2 rounded-full font-semibold">
-            {toToken && (<Image src={toToken.logoURI} alt={toToken.symbol} width={24} height={24} onError={(e) => { e.currentTarget.src = "/images/default-token.png"; }}/>)} {toToken?.symbol ?? "..."}
+            {toToken && (<TokenImage src={toToken.logoURI} alt={toToken.symbol} size={24} className="rounded-full" />)} 
+            {toToken?.symbol ?? "..."}
           </Button>
         </div>
       </div>
