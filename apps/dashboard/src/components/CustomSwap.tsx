@@ -203,7 +203,7 @@ export function CustomSwap() {
     setSearchTerm("");
   };
 
-  const buttonText = () => {
+  const buttonText = (): string => {
     if (!account) return "Conectar Wallet";
     if (isInvalidAmount) return "Ingresa un monto";
     if (error) return error;

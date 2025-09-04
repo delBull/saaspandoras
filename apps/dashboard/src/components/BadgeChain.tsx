@@ -24,7 +24,7 @@ export function BadgeChain({ chainId, className }: { chainId: number; className?
   const color = CHAIN_COLORS[chainId] ?? "bg-gray-400 text-black";
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${color} ${className || ""}`}
+      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${color} ${className ?? ""}`}
     >
       {name}
     </span>
