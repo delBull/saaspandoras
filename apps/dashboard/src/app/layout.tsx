@@ -38,11 +38,7 @@ export default function RootLayout({
           defaultTheme="dark"
           enableSystem={false}
         >
-          <ThirdwebProvider>
-            <AutoConnect
-              client={client}
-              wallets={supportedWallets} 
-            />
+          <ThirdwebProvider wallets={supportedWallets}>
             {children}
             <Toaster theme="dark" richColors position="top-center" />
           </ThirdwebProvider>
