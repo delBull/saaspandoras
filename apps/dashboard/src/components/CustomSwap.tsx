@@ -271,8 +271,18 @@ export function CustomSwap() {
         <div className="mt-4">
           <p className="text-xs text-zinc-400">Datos del Quote (solo en desarrollo):</p>
           <pre className="text-xs text-yellow-400 bg-black/30 rounded p-2 overflow-x-auto max-h-32 mt-1">
-            {JSON.stringify(quote, (key, value) => 
-              typeof value === 'bigint' ? value.toString() : value, 2)}
+            {JSON.stringify(
+              quote,
+              (key, value) => {
+                if (typeof value === "bigint") {
+                  return value.toString();
+                }
+                // This is a deliberate unsafe return for debugging purposes.
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+                return value;
+              },
+              2
+            )}
           </pre>
         </div>
       )}
