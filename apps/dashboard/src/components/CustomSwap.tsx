@@ -9,6 +9,7 @@ import {
   useWaitForReceipt,
   useActiveWalletChain
 } from "thirdweb/react";
+import type { BuyWithCryptoQuote } from "thirdweb/pay";
 import { client } from "@/lib/thirdweb-client";
 import { parseUnits, formatUnits, encodeFunctionData } from "viem";
 import { base, defineChain } from "thirdweb/chains";
@@ -17,7 +18,6 @@ import { TokenImage } from './TokenImage';
 import { useDisplayAmount } from '@/hooks/useDisplayAmount';
 import { useMarketRate } from '@/hooks/useMarketRate';
 import { BadgeChain } from './BadgeChain';
-
 // Componentes de UI
 import { Button } from "@saasfly/ui/button";
 import { Input } from "@saasfly/ui/input";
@@ -35,23 +35,6 @@ const TESTNET_IDS = [ 11155111, 84532, 421614, 534351, 80001, 5, 97 ];
 interface Token { name: string; address: string; symbol: string; decimals: number; chainId: number; logoURI: string; };
 interface TokenListResponse { tokens: Token[]; }
 
-interface BuyWithCryptoQuote {
-  approvalData: { spenderAddress: `0x${string}`; amountWei: string; tokenAddress: `0x${string}`; chainId: number; } | null;
-  transactionRequest: any;
-  swapDetails: {
-    toAmountMinWei?: string;
-    slippageBPS?: number;
-    estimated?: {
-      gasCostUSDCents?: number;
-    };
-  };
-  // Añadimos estas propiedades opcionales para el hook useDisplayAmount
-  toAmount?: string | bigint;
-  toToken?: {
-      amount?: string | bigint;
-  };
-}
-
 function useTokenList(chainId: number) {
   const [tokens, setTokens] = useState<Token[]>([]);
   useEffect(() => {
@@ -60,10 +43,7 @@ function useTokenList(chainId: number) {
         const res = await fetch(TOKENLIST_URL);
         const data = await res.json() as TokenListResponse;
         setTokens(data.tokens.filter((t: Token) => t.chainId === chainId));
-      } catch {
-        setTokens([]);
-        toast.error("Error al cargar la lista de tokens");
-      }
+      } catch { setTokens([]); toast.error("Error al cargar la lista de tokens"); }
     }
     void fetchTokens();
   }, [chainId]);
@@ -71,11 +51,12 @@ function useTokenList(chainId: number) {
 }
 
 // --- Sub-componentes para el nuevo flujo de Swap ---
-interface ReviewModalProps { isOpen: boolean; onOpenChange: (open: boolean) => void; onConfirm: () => void; fromToken: Token | null; toToken: Token | null; fromAmount: string; displayToAmount: string; quote: any; isSwapping: boolean; }
+interface ReviewModalProps { isOpen: boolean; onOpenChange: (open: boolean) => void; onConfirm: () => void; fromToken: Token | null; toToken: Token | null; fromAmount: string; displayToAmount: string; quote: BuyWithCryptoQuote | null; isSwapping: boolean; }
 function ReviewModal({ isOpen, onOpenChange, onConfirm, fromToken, toToken, fromAmount, displayToAmount, quote, isSwapping }: ReviewModalProps) {
   if (!fromToken || !toToken || !quote) return null;
+  // Ahora los accesos son 100% seguros porque usamos el tipo oficial
   const minAmount = quote.swapDetails?.toAmountMinWei ? formatUnits(BigInt(quote.swapDetails.toAmountMinWei), toToken.decimals) : "0.0";
-  const slippage = quote.swapDetails?.slippageBPS ? (quote.swapDetails.slippageBPS / 100).toFixed(2) : "0.00";
+  const slippage = quote.swapDetails?.maxSlippageBPS ? (quote.swapDetails.maxSlippageBPS / 100).toFixed(2) : "0.00";
   const gasCost = quote.swapDetails?.estimated?.gasCostUSDCents ? (quote.swapDetails.estimated.gasCostUSDCents / 100).toFixed(4) : "0.0000";
 
   return (
@@ -172,20 +153,28 @@ export function CustomSwap() {
   const { data: quote, isLoading: isQuoting } = useBuyWithCryptoQuote(swapParams);
   const { mutateAsync: sendTx, isPending: isSendingTransaction } = useSendTransaction();
   
-  const { data: receipt, isLoading: isWaitingForConfirmation } = useWaitForReceipt({ 
-    client, 
-    transactionHash: txHash!,
-    chain: defineChain(fromToken!.chainId),
-    queryOptions: {
-      enabled: !!txHash && !!fromToken?.chainId,
-    }
-  });
+  const { data: receipt, isLoading: isWaitingForConfirmation } = useWaitForReceipt(
+    txHash && fromToken
+      ? {
+          client,
+          transactionHash: txHash,
+          chain: defineChain(fromToken.chainId),
+        }
+      : undefined,
+  );
   
   useEffect(() => {
     if (!txHash) return;
-    if (isWaitingForConfirmation) { setNetworkStatus("pending"); } 
-    else if (receipt) { setNetworkStatus("success"); setSwapStep("success"); }
-    else if (!isWaitingForConfirmation && !receipt) { setNetworkStatus("error"); setSwapStep("error"); setErrorMessage("La transacción falló o fue rechazada en la red."); }
+    if (isWaitingForConfirmation) {
+      setNetworkStatus("pending");
+    } else if (receipt) {
+      setNetworkStatus("success");
+      setSwapStep("success");
+    } else if (!isWaitingForConfirmation && txHash) {
+      setNetworkStatus("error");
+      setSwapStep("error");
+      setErrorMessage("La transacción falló o fue rechazada en la red.");
+    }
   }, [receipt, isWaitingForConfirmation, txHash]);
 
   const displayToAmount = useDisplayAmount(quote, toToken);
@@ -283,7 +272,17 @@ export function CustomSwap() {
         </SheetContent>
       </Sheet>
 
-      <ReviewModal isOpen={swapStep === 'review'} onOpenChange={(isOpen: boolean) => !isOpen && setSwapStep('form')} onConfirm={executeSwap} isSwapping={isSendingTransaction} {...{ fromToken, toToken, fromAmount, displayToAmount, quote }} />
+      <ReviewModal 
+        isOpen={swapStep === 'review'} 
+        onOpenChange={(isOpen: boolean) => !isOpen && setSwapStep('form')} 
+        onConfirm={executeSwap}
+        isSwapping={isSendingTransaction}
+        fromToken={fromToken}
+        toToken={toToken}
+        fromAmount={fromAmount}
+        displayToAmount={displayToAmount}
+        quote={quote ?? null}
+      />
       <ProgressModal 
         isOpen={swapStep === 'swapping'} 
         // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -291,7 +290,13 @@ export function CustomSwap() {
         {...{ approvingStatus, swapStatus, networkStatus }} 
       />
       {(swapStep === 'success' || swapStep === 'error') && (
-        <ResultModal isOpen={true} onOpenChange={resetSwap} variant={swapStep} message={errorMessage ?? "Tu swap se ha completado y confirmado en la red."} txHash={txHash} />
+        <ResultModal 
+          isOpen={true} 
+          onOpenChange={resetSwap} 
+          variant={swapStep} 
+          message={errorMessage ?? "Tu swap se ha completado y confirmado en la red."} 
+          txHash={txHash}
+        />
       )}
       
       {isCrossChain && fromToken && toToken && ( <div className="flex items-center justify-center gap-2 mb-2 p-2 bg-zinc-800/50 rounded-lg"> <BadgeChain chainId={fromToken.chainId} /> <span className="font-bold text-base text-gray-400">→</span> <BadgeChain chainId={toToken.chainId} /> <span className="ml-2 text-xs text-orange-400 font-semibold"> ¡Atención: Swap cross-chain! </span> </div> )}
