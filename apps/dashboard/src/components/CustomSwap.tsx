@@ -35,6 +35,23 @@ const TESTNET_IDS = [ 11155111, 84532, 421614, 534351, 80001, 5, 97 ];
 interface Token { name: string; address: string; symbol: string; decimals: number; chainId: number; logoURI: string; };
 interface TokenListResponse { tokens: Token[]; }
 
+interface BuyWithCryptoQuote {
+  approvalData: { spenderAddress: `0x${string}`; amountWei: string; tokenAddress: `0x${string}`; chainId: number; } | null;
+  transactionRequest: any;
+  swapDetails: {
+    toAmountMinWei?: string;
+    slippageBPS?: number;
+    estimated?: {
+      gasCostUSDCents?: number;
+    };
+  };
+  // Añadimos estas propiedades opcionales para el hook useDisplayAmount
+  toAmount?: string | bigint;
+  toToken?: {
+      amount?: string | bigint;
+  };
+}
+
 function useTokenList(chainId: number) {
   const [tokens, setTokens] = useState<Token[]>([]);
   useEffect(() => {
@@ -267,7 +284,12 @@ export function CustomSwap() {
       </Sheet>
 
       <ReviewModal isOpen={swapStep === 'review'} onOpenChange={(isOpen: boolean) => !isOpen && setSwapStep('form')} onConfirm={executeSwap} isSwapping={isSendingTransaction} {...{ fromToken, toToken, fromAmount, displayToAmount, quote }} />
-      <ProgressModal isOpen={swapStep === 'swapping'} onOpenChange={() => {}} {...{ approvingStatus, swapStatus, networkStatus }} />
+      <ProgressModal 
+        isOpen={swapStep === 'swapping'} 
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        onOpenChange={() => {}} 
+        {...{ approvingStatus, swapStatus, networkStatus }} 
+      />
       {(swapStep === 'success' || swapStep === 'error') && (
         <ResultModal isOpen={true} onOpenChange={resetSwap} variant={swapStep} message={errorMessage ?? "Tu swap se ha completado y confirmado en la red."} txHash={txHash} />
       )}
