@@ -21,7 +21,7 @@
         "sooner": "^1.1.4",
         "tailwind-merge": "^3.3.1",
         "tailwindcss-animate": "^1.0.7",
-        "thirdweb": "^5.105.35",
+        "thirdweb": "^5.105.35"
       },
       "devDependencies": {
         "@turbo/gen": "1.13.3",
@@ -31,8 +31,8 @@
         "prettier": "3.2.5",
         "tailwind-config-viewer": "^2.0.4",
         "turbo": "1.13.3",
-        "typescript": "5.4.5",
-      },
+        "typescript": "5.4.5"
+      }
     },
     "apps/dashboard": {
       "name": "@saasfly/dashboard",
@@ -68,7 +68,7 @@
         "tailwindcss-animate": "^1.0.7",
         "thirdweb": "^5.105.41",
         "vaul": "0.9.0",
-        "zod": "3.22.4",
+        "zod": "3.22.4"
       },
       "devDependencies": {
         "@saasfly/eslint-config": "workspace:*",
@@ -83,8 +83,8 @@
         "postcss": "8.4.34",
         "prettier": "3.2.5",
         "tailwindcss": "3.4.1",
-        "typescript": "5.4.5",
-      },
+        "typescript": "5.4.5"
+      }
     },
     "apps/nextjs": {
       "name": "@saasfly/nextjs",
@@ -134,10 +134,10 @@
         "superjson": "2.2.1",
         "tailwind-merge": "^3.3.1",
         "tailwindcss-animate": "^1.0.7",
-        "thirdweb": "^5.105.35",
+        "thirdweb": "^5.105.41",
         "vaul": "0.9.0",
         "zod": "3.22.4",
-        "zustand": "4.5.0",
+        "zustand": "4.5.0"
       },
       "devDependencies": {
         "@next-devtools/core": "0.2.0",
@@ -168,8 +168,8 @@
         "remark-gfm": "4.0.0",
         "tailwindcss": "3.4.1",
         "typescript": "5.4.5",
-        "unist-util-visit": "5.0.0",
-      },
+        "unist-util-visit": "5.0.0"
+      }
     },
     "packages/api": {
       "name": "@saasfly/api",
@@ -183,7 +183,7 @@
         "dinero.js": "2.0.0-alpha.14",
         "superjson": "2.2.1",
         "zod": "3.22.4",
-        "zod-form-data": "2.0.2",
+        "zod-form-data": "2.0.2"
       },
       "devDependencies": {
         "@saasfly/eslint-config": "workspace:*",
@@ -191,15 +191,15 @@
         "@saasfly/typescript-config": "workspace:*",
         "eslint": "8.57.0",
         "prettier": "3.2.5",
-        "typescript": "5.4.5",
-      },
+        "typescript": "5.4.5"
+      }
     },
     "packages/db": {
       "name": "@saasfly/db",
       "version": "0.1.0",
       "dependencies": {
         "@vercel/postgres-kysely": "0.8.0",
-        "kysely": "0.27.3",
+        "kysely": "0.27.3"
       },
       "devDependencies": {
         "@saasfly/eslint-config": "workspace:*",
@@ -211,15 +211,15 @@
         "prettier": "3.2.5",
         "prisma": "5.9.1",
         "prisma-kysely": "1.7.1",
-        "typescript": "5.4.5",
-      },
+        "typescript": "5.4.5"
+      }
     },
     "packages/shared": {
       "name": "@saasfly/shared",
       "version": "0.1.0",
       "dependencies": {
         "@saasfly/ui": "workspace:*",
-        "resend": "2.1.0",
+        "resend": "2.1.0"
       },
       "devDependencies": {
         "@saasfly/eslint-config": "workspace:*",
@@ -227,8 +227,8 @@
         "@saasfly/typescript-config": "workspace:*",
         "eslint": "8.57.0",
         "prettier": "3.2.5",
-        "typescript": "5.4.5",
-      },
+        "typescript": "5.4.5"
+      }
     },
     "packages/stripe": {
       "name": "@saasfly/stripe",
@@ -236,7 +236,7 @@
       "dependencies": {
         "@saasfly/db": "workspace:*",
         "@t3-oss/env-nextjs": "0.8.0",
-        "stripe": "14.15.0",
+        "stripe": "14.15.0"
       },
       "devDependencies": {
         "@saasfly/eslint-config": "workspace:*",
@@ -244,8 +244,8 @@
         "@saasfly/typescript-config": "workspace:*",
         "eslint": "8.57.0",
         "prettier": "3.2.5",
-        "typescript": "5.4.5",
-      },
+        "typescript": "5.4.5"
+      }
     },
     "packages/ui": {
       "name": "@saasfly/ui",
@@ -294,7 +294,7 @@
         "tailwind-merge": "^3.3.1",
         "three": "0.163.0",
         "three-globe": "2.31.0",
-        "zod": "3.22.4",
+        "zod": "3.22.4"
       },
       "devDependencies": {
         "@saasfly/eslint-config": "workspace:*",
@@ -312,8 +312,8 @@
         "react-hook-form": "7.50.1",
         "tailwindcss": "3.4.1",
         "tailwindcss-animate": "^1.0.7",
-        "typescript": "5.4.5",
-      },
+        "typescript": "5.4.5"
+      }
     },
     "tooling/eslint-config": {
       "name": "@saasfly/eslint-config",
@@ -328,14 +328,14 @@
         "eslint-plugin-import": "2.29.1",
         "eslint-plugin-jsx-a11y": "6.8.0",
         "eslint-plugin-react": "7.34.1",
-        "eslint-plugin-react-hooks": "4.6.0",
+        "eslint-plugin-react-hooks": "4.6.0"
       },
       "devDependencies": {
         "@saasfly/prettier-config": "workspace:*",
         "@saasfly/typescript-config": "workspace:*",
         "eslint": "8.57.0",
-        "typescript": "5.4.5",
-      },
+        "typescript": "5.4.5"
+      }
     },
     "tooling/prettier-config": {
       "name": "@saasfly/prettier-config",
@@ -343,12 +343,12 @@
       "dependencies": {
         "@ianvs/prettier-plugin-sort-imports": "4.2.1",
         "prettier": "3.2.5",
-        "prettier-plugin-tailwindcss": "0.5.13",
+        "prettier-plugin-tailwindcss": "0.5.13"
       },
       "devDependencies": {
         "@saasfly/typescript-config": "workspace:*",
-        "typescript": "5.4.5",
-      },
+        "typescript": "5.4.5"
+      }
     },
     "tooling/tailwind-config": {
       "name": "@saasfly/tailwind-config",
@@ -356,7 +356,7 @@
       "dependencies": {
         "autoprefixer": "10.4.17",
         "postcss": "8.4.34",
-        "tailwindcss": "3.4.1",
+        "tailwindcss": "3.4.1"
       },
       "devDependencies": {
         "@saasfly/eslint-config": "workspace:*",
@@ -364,13 +364,13 @@
         "@saasfly/typescript-config": "workspace:*",
         "eslint": "8.57.0",
         "prettier": "3.2.5",
-        "typescript": "5.4.5",
-      },
+        "typescript": "5.4.5"
+      }
     },
     "tooling/typescript-config": {
       "name": "@saasfly/typescript-config",
-      "version": "0.0.1",
-    },
+      "version": "0.0.1"
+    }
   },
   "packages": {
     "@account-abstraction/contracts": ["@account-abstraction/contracts@0.5.0", "", {}, "sha512-CKyS9Zh5rcYUM+4B6TlaB9+THHzJ+6TY3tWF5QofqvFpqGNvIhF8ddy6wyCmqZw6TB74/yYv7cYD/RarVudfDg=="],
@@ -8607,6 +8607,6 @@
 
     "hardhat/@ethersproject/abi/@ethersproject/hash/@ethersproject/abstract-signer/@ethersproject/abstract-provider/@ethersproject/transactions/@ethersproject/signing-key/elliptic": ["elliptic@6.6.1", "", { "dependencies": { "bn.js": "^4.11.9", "brorand": "^1.1.0", "hash.js": "^1.0.0", "hmac-drbg": "^1.0.1", "inherits": "^2.0.4", "minimalistic-assert": "^1.0.1", "minimalistic-crypto-utils": "^1.0.1" } }, "sha512-RaddvvMatK2LJHqFJ+YA4WysVN5Ita9E35botqIYspQ4TkRAlCicdzKOjlyv/1Za5RyTNn7di//eEV0uTAfe3g=="],
 
-    "hardhat/@ethersproject/abi/@ethersproject/hash/@ethersproject/abstract-signer/@ethersproject/abstract-provider/@ethersproject/transactions/@ethersproject/signing-key/elliptic/bn.js": ["bn.js@4.12.2", "", {}, "sha512-n4DSx829VRTRByMRGdjQ9iqsN0Bh4OolPsFnaZBLcbi8iXcB+kJ9s7EnRt4wILZNV3kPLHkRVfOc/HvhC3ovDw=="],
+    "hardhat/@ethersproject/abi/@ethersproject/hash/@ethersproject/abstract-signer/@ethersproject/abstract-provider/@ethersproject/transactions/@ethersproject/signing-key/elliptic/bn.js": ["bn.js@4.12.2", "", {}, "sha512-n4DSx829VRTRByMRGdjQ9iqsN0Bh4OolPsFnaZBLcbi8iXcB+kJ9s7EnRt4wILZNV3kPLHkRVfOc/HvhC3ovDw=="]
   }
 }
