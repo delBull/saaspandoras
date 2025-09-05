@@ -6,50 +6,36 @@ import {
   useSendTransaction,
   useActiveAccount,
   useWalletBalance,
+  useWaitForReceipt,
+  useActiveWalletChain
 } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
 import { parseUnits, formatUnits, encodeFunctionData } from "viem";
 import { base, defineChain } from "thirdweb/chains";
+import { prepareTransaction } from "thirdweb";
 import { TokenImage } from './TokenImage';
+import { useDisplayAmount } from '@/hooks/useDisplayAmount';
+import { useMarketRate } from '@/hooks/useMarketRate';
 import { BadgeChain } from './BadgeChain';
+import { cn } from "@/lib/utils";
 
 // Componentes de UI
 import { Button } from "@saasfly/ui/button";
 import { Input } from "@saasfly/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@saasfly/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@saasfly/ui/sheet";
 import { ScrollArea } from "@saasfly/ui/scroll-area";
 import { toast } from "sonner";
-import { ArrowDownIcon, Loader2, SearchIcon } from "lucide-react";
+import { ArrowDownIcon, Loader2, SearchIcon, CheckCircle, XCircle, Info } from "lucide-react";
 
-// --- Tipos, Hooks y Datos ---
+// --- Tipos, Hooks, Datos y ABI Mínimo ---
 const TOKENLIST_URL = "https://tokens.uniswap.org";
+const erc20Abi = [{"inputs":[{"name":"spender","type":"address"},{"name":"amount","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"}] as const;
+const TESTNET_IDS = [ 11155111, 84532, 421614, 534351, 80001, 5, 97 ];
 
-const erc20Abi = [
-  {
-    "inputs": [
-      { "name": "_spender", "type": "address" },
-      { "name": "_value", "type": "uint256" }
-    ],
-    "name": "approve",
-    "outputs": [{ "name": "", "type": "bool" }],
-    "type": "function"
-  }
-] as const;
+interface Token { name: string; address: string; symbol: string; decimals: number; chainId: number; logoURI: string; };
+interface TokenListResponse { tokens: Token[]; }
 
-interface Token {
-  name: string;
-  address: string;
-  symbol: string;
-  decimals: number;
-  chainId: number;
-  logoURI: string;
-};
-
-interface TokenListResponse {
-  tokens: Token[];
-}
-
-// Hook para cargar y filtrar la lista de tokens dinámicamente
 function useTokenList(chainId: number) {
   const [tokens, setTokens] = useState<Token[]>([]);
   useEffect(() => {
@@ -57,7 +43,7 @@ function useTokenList(chainId: number) {
       try {
         const res = await fetch(TOKENLIST_URL);
         const data = await res.json() as TokenListResponse;
-        setTokens(data.tokens.filter((t) => t.chainId === chainId));
+        setTokens(data.tokens.filter((t: Token) => t.chainId === chainId));
       } catch {
         setTokens([]);
         toast.error("Error al cargar la lista de tokens");
@@ -68,56 +54,59 @@ function useTokenList(chainId: number) {
   return tokens;
 }
 
-// Sub-Componente: Selector de Tokens con búsqueda
+// --- Sub-componentes para el nuevo flujo de Swap ---
+interface ReviewModalProps { isOpen: boolean; onOpenChange: (open: boolean) => void; onConfirm: () => void; fromToken: Token | null; toToken: Token | null; fromAmount: string; displayToAmount: string; quote: any; isSwapping: boolean; }
+function ReviewModal({ isOpen, onOpenChange, onConfirm, fromToken, toToken, fromAmount, displayToAmount, quote, isSwapping }: ReviewModalProps) {
+  if (!fromToken || !toToken || !quote) return null;
+  const minAmount = quote.swapDetails?.toAmountMinWei ? formatUnits(BigInt(quote.swapDetails.toAmountMinWei), toToken.decimals) : "0.0";
+  const slippage = quote.swapDetails?.slippageBPS ? (quote.swapDetails.slippageBPS / 100).toFixed(2) : "0.00";
+  const gasCost = quote.swapDetails?.estimated?.gasCostUSDCents ? (quote.swapDetails.estimated.gasCostUSDCents / 100).toFixed(4) : "0.0000";
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
+        <DialogHeader><DialogTitle className="text-xl">Revisar Transacción</DialogTitle><DialogDescription>Confirma los detalles antes de swappear.</DialogDescription></DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="flex justify-between items-center bg-zinc-800 p-3 rounded-lg"><div><p className="text-sm text-gray-400">Pagas</p><p className="text-2xl font-bold">{fromAmount}</p></div><div className="text-right"><div className="flex items-center gap-2 justify-end"><TokenImage src={fromToken.logoURI} alt={fromToken.symbol} size={24} className="rounded-full"/><span className="font-bold text-xl">{fromToken.symbol}</span></div><BadgeChain chainId={fromToken.chainId} /></div></div>
+          <div className="flex justify-center"><ArrowDownIcon className="w-6 h-6 text-gray-500" /></div>
+          <div className="flex justify-between items-center bg-zinc-800 p-3 rounded-lg"><div><p className="text-sm text-gray-400">Recibes (Estimado)</p><p className="text-2xl font-bold">{displayToAmount}</p></div><div className="text-right"><div className="flex items-center gap-2 justify-end"><TokenImage src={toToken.logoURI} alt={toToken.symbol} size={24} className="rounded-full"/><span className="font-bold text-xl">{toToken.symbol}</span></div><BadgeChain chainId={toToken.chainId} /></div></div>
+          <div className="text-xs text-gray-400 space-y-1 pt-4 border-t border-zinc-800"><div className="flex justify-between"><p>Mínimo garantizado:</p><p>{parseFloat(minAmount).toFixed(6)} {toToken.symbol}</p></div><div className="flex justify-between"><p>Slippage:</p><p>{slippage}%</p></div><div className="flex justify-between"><p>Tarifa de Red Estimada:</p><p>~${gasCost} USD</p></div></div>
+        </div>
+        <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSwapping}>Cancelar</Button><Button onClick={onConfirm} className="bg-lime-400 text-black hover:bg-lime-500" disabled={isSwapping}>{isSwapping ? <Loader2 className="animate-spin" /> : "Confirmar Swap"}</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ProgressStep({ title, status }: { title: string; status: 'pending' | 'success' | 'error' | 'skipped'; }) {
+  const statusIcons = { pending: <Loader2 className="animate-spin h-5 w-5 text-gray-400" />, success: <CheckCircle className="h-5 w-5 text-green-500" />, error: <XCircle className="h-5 w-5 text-red-500" />, skipped: <Info className="h-5 w-5 text-gray-500" /> };
+  const statusText = { pending: "Pendiente...", success: "Completado", error: "Error", skipped: "Omitido" };
+  return ( <div className="flex items-center justify-between text-sm"><p>{title}</p><div className="flex items-center gap-2">{statusIcons[status]}<span className="text-gray-400 w-24 text-right">{statusText[status]}</span></div></div> );
+}
+
+function ProgressModal({ isOpen, onOpenChange, approvingStatus, swapStatus, networkStatus }: { isOpen: boolean; onOpenChange: (isOpen: boolean) => void; approvingStatus: 'pending' | 'success' | 'error' | 'skipped'; swapStatus: 'pending' | 'success' | 'error'; networkStatus: 'pending' | 'success' | 'error'; }) {
+  return ( <Dialog open={isOpen} onOpenChange={onOpenChange}><DialogContent className="bg-zinc-900 border-zinc-800 text-white"><DialogHeader><DialogTitle>Procesando Swap</DialogTitle></DialogHeader><div className="space-y-4 py-4"><ProgressStep title="1. Aprobando token" status={approvingStatus} /><ProgressStep title="2. Ejecutando swap" status={swapStatus} /><ProgressStep title="3. Esperando confirmación" status={networkStatus} /></div></DialogContent></Dialog> );
+}
+
+function ResultModal({ isOpen, onOpenChange, variant, message, txHash }: { isOpen: boolean; onOpenChange: (isOpen: boolean) => void; variant: 'success' | 'error'; message: string | null; txHash: `0x${string}` | null; }) {
+  const explorerUrl = txHash ? `https://basescan.org/tx/${txHash}` : '#';
+  return ( <Dialog open={isOpen} onOpenChange={onOpenChange}><DialogContent className="bg-zinc-900 border-zinc-800 text-white"><DialogHeader className="items-center text-center">{variant === 'success' ? <CheckCircle className="h-16 w-16 text-green-500 mb-4" /> : <XCircle className="h-16 w-16 text-red-500 mb-4" />}<DialogTitle className="text-2xl">{variant === 'success' ? "Swap Exitoso" : "Error en el Swap"}</DialogTitle><DialogDescription>{message}</DialogDescription></DialogHeader>{txHash && ( <div className="text-center pt-4"><a href={explorerUrl} target="_blank" rel="noopener noreferrer" className="text-lime-400 hover:underline text-sm">Ver en Block Explorer</a></div> )}<DialogFooter className="mt-4"><Button onClick={() => onOpenChange(false)} className="w-full">Cerrar</Button></DialogFooter></DialogContent></Dialog> );
+}
+
 function TokenSelector({ tokens, currentSelection, onSelect, searchTerm, setSearchTerm }: { tokens: Token[]; currentSelection: string; onSelect: (token: Token) => void; searchTerm: string; setSearchTerm: (t: string) => void; }) {
   const popularTokens = ['ETH', 'USDC', 'WETH', 'DAI'];
   const popularTokenData = popularTokens.map(symbol => tokens.find(t => t.symbol === symbol)).filter(Boolean) as Token[];
-
   const filteredTokens = tokens.filter(
       (token) => token.address !== currentSelection &&
       (token.symbol.toLowerCase().includes(searchTerm.trim().toLowerCase()) ||
        token.name.toLowerCase().includes(searchTerm.trim().toLowerCase()))
   );
-
   return (
     <div className="grid h-full grid-rows-[auto_auto_auto_1fr] gap-4 p-4">
-      <SheetHeader>
-        <SheetTitle>Seleccionar Token</SheetTitle>
-      </SheetHeader>
-      <div className="relative">
-        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-        <Input
-          placeholder="Buscar por nombre o símbolo"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full bg-zinc-800 border-zinc-700 pl-8"
-          aria-label="Buscar token"
-        />
-      </div>
-      <div>
-          <p className="text-xs font-semibold text-gray-500 mb-2">Tokens Populares</p>
-          <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
-              {popularTokenData.map(token => (
-                  <button key={token.address} onClick={() => onSelect(token)} className="flex flex-col items-center gap-1.5 p-2 rounded-lg hover:bg-zinc-800 transition-colors">
-                      <TokenImage src={token.logoURI} alt={token.symbol} size={32} className="rounded-full" />
-                      <span className="text-xs font-bold text-white">{token.symbol}</span>
-                  </button>
-              ))}
-          </div>
-      </div>
-      <ScrollArea className="overflow-y-auto">
-        <div className="flex flex-col gap-1 pr-2">
-          {filteredTokens.map((token) => (
-            <button key={token.address} onClick={() => onSelect(token)} className="flex items-center gap-4 p-2 rounded-lg hover:bg-lime-800/20 transition-colors text-left" aria-label={`Seleccionar ${token.symbol}`}>
-              <TokenImage src={token.logoURI} alt={token.symbol} size={36} className="rounded-full" />
-              <div>
-                <p className="font-bold text-white">{token.symbol}</p>
-                <p className="text-xs text-gray-400">{token.name}</p>
-              </div>
-            </button>
-          ))}
-        </div>
-      </ScrollArea>
+      <SheetHeader><SheetTitle>Seleccionar Token</SheetTitle></SheetHeader>
+      <div className="relative"><SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" /><Input placeholder="Buscar por nombre o símbolo" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-zinc-800 border-zinc-700 pl-8" aria-label="Buscar token" /></div>
+      <div><p className="text-xs font-semibold text-gray-500 mb-2">Tokens Populares</p><div className="grid grid-cols-4 sm:grid-cols-5 gap-2">{popularTokenData.map(token => (<button key={token.address} onClick={() => onSelect(token)} className="flex flex-col items-center gap-1.5 p-2 rounded-lg hover:bg-zinc-800 transition-colors"><TokenImage src={token.logoURI} alt={token.symbol} size={32} className="rounded-full" /><span className="text-xs font-bold text-white">{token.symbol}</span></button>))}</div></div>
+      <ScrollArea className="overflow-y-auto"><div className="flex flex-col gap-1 pr-2">{filteredTokens.map((token) => (<button key={token.address} onClick={() => onSelect(token)} className="flex items-center gap-4 p-2 rounded-lg hover:bg-lime-800/20 transition-colors text-left" aria-label={`Seleccionar ${token.symbol}`}><TokenImage src={token.logoURI} alt={token.symbol} size={36} className="rounded-full" /><div><p className="font-bold text-white">{token.symbol}</p><p className="text-xs text-gray-400">{token.name}</p></div></button>))}</div></ScrollArea>
     </div>
   );
 }
@@ -125,6 +114,7 @@ function TokenSelector({ tokens, currentSelection, onSelect, searchTerm, setSear
 // --- Componente Principal del Swap ---
 export function CustomSwap() {
   const account = useActiveAccount();
+  const activeChain = useActiveWalletChain();
   const [fromAmount, setFromAmount] = useState("");
   const [isTokenModalOpen, setTokenModalOpen] = useState<"from" | "to" | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -132,8 +122,13 @@ export function CustomSwap() {
   const [toToken, setToToken] = useState<Token | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [animateColor, setAnimateColor] = useState(false);
-  const [isApproving, setIsApproving] = useState(false);
-  
+  const [swapStep, setSwapStep] = useState<'form' | 'review' | 'swapping' | 'success' | 'error'>('form');
+  const [approvingStatus, setApprovingStatus] = useState<'pending' | 'success' | 'error' | 'skipped'>('pending');
+  const [swapStatus, setSwapStatus] = useState<'pending' | 'success' | 'error'>('pending');
+  const [networkStatus, setNetworkStatus] = useState<'pending' | 'success' | 'error'>('pending');
+  const [txHash, setTxHash] = useState<`0x${string}` | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const activeChainId = base.id;
   const tokenList = useTokenList(activeChainId);
 
@@ -146,36 +141,49 @@ export function CustomSwap() {
   
   const { data: balance } = useWalletBalance({ client, address: account?.address ?? "", chain: fromToken?.chainId ? defineChain(fromToken.chainId) : undefined, tokenAddress: fromToken?.address });
 
+  const fromAmountBaseUnits = useMemo(() => {
+    if (!fromToken || !fromAmount || Number(fromAmount) <= 0) return 0n;
+    try { return parseUnits(fromAmount, fromToken.decimals); } catch { return 0n; }
+  }, [fromAmount, fromToken]);
+
   const isInvalidAmount = !fromAmount || isNaN(Number(fromAmount)) || Number(fromAmount) <= 0;
   const isSameToken = fromToken?.address === toToken?.address;
-  const isInsufficientBalance = fromAmount && balance?.value && fromToken ? (parseUnits(fromAmount, fromToken.decimals) > balance.value) : false;
+  const isInsufficientBalance = fromAmount && balance?.value && fromToken ? (fromAmountBaseUnits > balance.value) : false;
   const isReadyForQuote = account && fromToken && toToken && !isInvalidAmount && !isSameToken && !isInsufficientBalance;
 
-  const swapParams = isReadyForQuote ? { client, fromAddress: account.address, toAddress: account.address, fromTokenAddress: fromToken.address, toTokenAddress: toToken.address, fromChainId: fromToken.chainId, toChainId: toToken.chainId, fromAmount: fromAmount } : undefined;
+  const swapParams = isReadyForQuote ? { client, fromAddress: account.address, toAddress: account.address, fromTokenAddress: fromToken.address, toTokenAddress: toToken.address, fromChainId: fromToken.chainId, toChainId: toToken.chainId, fromAmount: fromAmountBaseUnits.toString() } : undefined;
 
   const { data: quote, isLoading: isQuoting } = useBuyWithCryptoQuote(swapParams);
   const { mutateAsync: sendTx, isPending: isSendingTransaction } = useSendTransaction();
   
-  const displayToAmount = useMemo(() => {
-    if (!quote || !toToken) {
-      return "0.00";
+  const { data: receipt, isLoading: isWaitingForConfirmation } = useWaitForReceipt({ 
+    client, 
+    transactionHash: txHash!,
+    chain: defineChain(fromToken!.chainId),
+    queryOptions: {
+      enabled: !!txHash && !!fromToken?.chainId,
     }
-    try {
-      const formatted = formatUnits(
-        BigInt(quote.swapDetails.toAmountWei),
-        toToken.decimals
-      );
-      return parseFloat(formatted).toLocaleString("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 6,
-      });
-    } catch (e) {
-      console.error("Error formatting display amount:", e);
-      return "0.00";
-    }
-  }, [quote, toToken]);
+  });
+  
+  useEffect(() => {
+    if (!txHash) return;
+    if (isWaitingForConfirmation) { setNetworkStatus("pending"); } 
+    else if (receipt) { setNetworkStatus("success"); setSwapStep("success"); }
+    else if (!isWaitingForConfirmation && !receipt) { setNetworkStatus("error"); setSwapStep("error"); setErrorMessage("La transacción falló o fue rechazada en la red."); }
+  }, [receipt, isWaitingForConfirmation, txHash]);
 
+  const displayToAmount = useDisplayAmount(quote, toToken);
   const isCrossChain = fromToken && toToken && fromToken.chainId !== toToken.chainId;
+
+  const marketRate = useMarketRate(fromToken?.symbol, toToken?.symbol);
+  const isTestnet = activeChain ? TESTNET_IDS.includes(activeChain.id) : false;
+  const quotedAmount = parseFloat(displayToAmount.replace(/,/g, ''));
+  const expectedAmount = useMemo(() => {
+    if (!marketRate || isInvalidAmount) return 0;
+    return Number(fromAmount) * marketRate;
+  }, [fromAmount, marketRate, isInvalidAmount]);
+  const priceImpact = (expectedAmount > 0 && quotedAmount > 0) ? Math.abs(1 - (quotedAmount / expectedAmount)) : 0;
+  const isQuoteUnrealistic = !isTestnet && priceImpact > 0.15 && fromAmount !== "";
 
   const prevDisplayAmount = useRef("0.0");
   useEffect(() => {
@@ -193,45 +201,45 @@ export function CustomSwap() {
     else setError(null);
   }, [isSameToken, isInsufficientBalance]);
 
-  const handleSwap = async () => {
+  const handleReview = () => {
     if (error) { toast.error(error); return; }
+    if (isQuoteUnrealistic) { toast.error("La cotización es muy diferente al precio de mercado."); return; }
     if (!quote || !account) { toast.error("No hay ruta disponible para este par."); return; }
+    setSwapStep('review');
+  };
 
+  const executeSwap = async () => {
+    if (!quote || !account || !fromToken) return;
+    setSwapStep('swapping');
+    setApprovingStatus('pending'); setSwapStatus('pending'); setNetworkStatus('pending');
     try {
       if (quote.approvalData) {
-        setIsApproving(true);
-        toast.info("Se requiere aprobación para gastar tus tokens.");
-
-        const { spenderAddress, amountWei, tokenAddress } = quote.approvalData;
-
-        const approvalTx = {
-          to: tokenAddress,
-          chain: defineChain(quote.approvalData.chainId),
-          client: client,
-          data: encodeFunctionData({
-            abi: erc20Abi,
-            functionName: 'approve',
-            args: [spenderAddress, BigInt(amountWei)]
-          }),
-        };
-
+        const { spenderAddress, amountWei, tokenAddress, chainId } = quote.approvalData;
+        const approvalTx = prepareTransaction({ to: tokenAddress, chain: defineChain(chainId), client, data: encodeFunctionData({ abi: erc20Abi, functionName: 'approve', args: [spenderAddress, BigInt(amountWei)] }) });
         await sendTx(approvalTx);
-        
-        toast.success("Aprobación exitosa. Ahora confirma el swap.");
-        setIsApproving(false);
+        setApprovingStatus('success');
+      } else {
+        setApprovingStatus('skipped');
       }
-
-      await sendTx(quote.transactionRequest);
-      toast.success("Swap realizado correctamente!");
-      setFromAmount("");
-
+      const txResult = await sendTx(quote.transactionRequest);
+      setSwapStatus('success');
+      setTxHash(txResult.transactionHash);
     } catch (err) {
-      setIsApproving(false);
       console.error("Swap fallido", err);
-      toast.error("El swap falló. Revisa tu wallet o la consola.");
+      const friendlyMessage = "La transacción falló. Es posible que la hayas rechazado.";
+      setErrorMessage(friendlyMessage);
+      if (approvingStatus === 'pending') setApprovingStatus('error');
+      else setSwapStatus('error');
+      setNetworkStatus('error');
+      setSwapStep('error');
     }
   };
 
+  const resetSwap = () => {
+    setSwapStep('form'); setFromAmount(''); setTxHash(null); setErrorMessage(null);
+    setApprovingStatus('pending'); setSwapStatus('pending'); setNetworkStatus('pending');
+  };
+  
   const handleMax = () => { if (balance) setFromAmount(balance.displayValue); };
   const handleTokenSelect = (token: Token) => {
     if (isTokenModalOpen === "from") setFromToken(token);
@@ -241,29 +249,36 @@ export function CustomSwap() {
   };
 
   const buttonText = (): string => {
-    if (isInvalidAmount) return "Ingresa un monto";
+    if (!account) return "Conectar Wallet";
+    if (isInvalidAmount && fromAmount) return "Ingresa un monto válido";
     if (error) return error;
-    if (isApproving) return "Aprobando...";
     if (isQuoting) return "Obteniendo cotización...";
     if (isSendingTransaction) return "Procesando...";
+    if (isQuoteUnrealistic) return "Cotización Inválida";
     if (!quote && isReadyForQuote) return "Ruta no disponible";
-    return "Intercambiar";
+    return "Revisar Swap";
   };
   
   return (
     <div className="flex flex-col gap-2 p-2 md:p-4 rounded-2xl bg-black/20">
-      <Sheet open={!!isTokenModalOpen} onOpenChange={(isOpen) => !isOpen && setTokenModalOpen(null)}>
+      <Sheet open={!!isTokenModalOpen} onOpenChange={(isOpen: boolean) => !isOpen && setTokenModalOpen(null)}>
         <SheetContent className="bg-zinc-900 border-none text-white p-0 flex flex-col md:max-w-md md:rounded-2xl inset-x-0 bottom-0 md:inset-auto rounded-t-2xl h-[85vh] md:h-auto md:max-h-[600px]">
           <TokenSelector tokens={tokenList} onSelect={handleTokenSelect} currentSelection={isTokenModalOpen === 'from' ? toToken?.address ?? "" : fromToken?.address ?? ""} searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
         </SheetContent>
       </Sheet>
+
+      <ReviewModal isOpen={swapStep === 'review'} onOpenChange={(isOpen: boolean) => !isOpen && setSwapStep('form')} onConfirm={executeSwap} isSwapping={isSendingTransaction} {...{ fromToken, toToken, fromAmount, displayToAmount, quote }} />
+      <ProgressModal isOpen={swapStep === 'swapping'} onOpenChange={() => {}} {...{ approvingStatus, swapStatus, networkStatus }} />
+      {(swapStep === 'success' || swapStep === 'error') && (
+        <ResultModal isOpen={true} onOpenChange={resetSwap} variant={swapStep} message={errorMessage ?? "Tu swap se ha completado y confirmado en la red."} txHash={txHash} />
+      )}
       
-      {isCrossChain && ( <div className="flex items-center justify-center gap-2 mb-2 p-2 bg-zinc-800/50 rounded-lg"> <BadgeChain chainId={fromToken.chainId} /> <span className="font-bold text-base text-gray-400">→</span> <BadgeChain chainId={toToken.chainId} /> <span className="ml-2 text-xs text-orange-400 font-semibold"> ¡Atención: Swap cross-chain! </span> </div> )}
+      {isCrossChain && fromToken && toToken && ( <div className="flex items-center justify-center gap-2 mb-2 p-2 bg-zinc-800/50 rounded-lg"> <BadgeChain chainId={fromToken.chainId} /> <span className="font-bold text-base text-gray-400">→</span> <BadgeChain chainId={toToken.chainId} /> <span className="ml-2 text-xs text-orange-400 font-semibold"> ¡Atención: Swap cross-chain! </span> </div> )}
 
       <div className="bg-zinc-800 p-4 rounded-xl space-y-1">
         <div className="flex justify-between items-center"><span className="text-xs text-gray-400">Desde</span><span className="text-xs text-gray-500">Saldo: {balance ? parseFloat(balance.displayValue).toFixed(4) : '0.0'} {fromToken?.symbol}</span></div>
         <div className="flex items-center gap-2">
-          <Input aria-label="Cantidad a intercambiar" type="text" inputMode="decimal" placeholder="0.0" value={fromAmount} onChange={(e) => { const val = e.target.value.replace(",","."); if (val === "" || new RegExp(`^\\d*(\\.{\\d{0,${fromToken?.decimals ?? 6}}})?$`).test(val)) { setFromAmount(val); } }} className="w-full text-3xl font-mono text-white focus:outline-none border-none p-0 h-auto bg-transparent" />
+          <Input aria-label="Cantidad a intercambiar" type="text" inputMode="decimal" placeholder="0.0" value={fromAmount} onChange={(e) => { const val = e.target.value.replace(",","."); if (val === "" || new RegExp(`^\\d*(\\.\\d{0,${fromToken?.decimals ?? 6}})?$`).test(val)) { setFromAmount(val); } }} className="w-full text-3xl font-mono text-white focus:outline-none border-none p-0 h-auto bg-transparent" />
           <Button onClick={handleMax} variant="ghost" className="text-xs px-3 py-1 h-auto text-lime-400 hover:text-lime-300" disabled={!balance || !account}> MAX </Button>
           <Button aria-label={`Seleccionar token origen (${fromToken?.symbol ?? ""})`} onClick={() => setTokenModalOpen("from")} variant="secondary" className="flex items-center gap-2 rounded-full font-semibold">
             {fromToken && (<TokenImage src={fromToken.logoURI} alt={fromToken.symbol ?? 'token'} size={24} className="rounded-full" />)} {fromToken?.symbol ?? "..."}
@@ -276,8 +291,8 @@ export function CustomSwap() {
       <div className="bg-zinc-800 p-4 rounded-xl space-y-1">
         <span className="text-xs text-gray-400">Hasta</span>
         <div className="flex items-center gap-4">
-          <div className={"w-full text-3xl font-mono transition-colors " + (animateColor ? "text-lime-400" : "text-gray-400")} aria-live="polite">
-            {isQuoting ? <Loader2 className="animate-spin h-8 w-8" /> : displayToAmount }
+          <div className={"w-full text-3xl font-mono transition-colors " + (animateColor ? "text-lime-400" : isQuoteUnrealistic ? "text-orange-500" : "text-gray-400")} aria-live="polite">
+            {isQuoting ? <Loader2 className="animate-spin h-8 w-8" /> : isQuoteUnrealistic ? ( <span className="text-lg"> Cotización Irreal <span className="block text-xs text-gray-400 mt-1"> Esperado: ~{expectedAmount.toLocaleString('en-US', {maximumFractionDigits: 4})} {toToken?.symbol} </span> </span> ) : displayToAmount }
           </div>
           <Button aria-label={`Seleccionar token destino (${toToken?.symbol ?? ""})`} onClick={() => setTokenModalOpen("to")} variant="secondary" className="flex items-center gap-2 rounded-full font-semibold">
             {toToken && (<TokenImage src={toToken.logoURI} alt={toToken.symbol ?? 'token'} size={24} className="rounded-full" />)} 
@@ -288,39 +303,21 @@ export function CustomSwap() {
       
       {account ? (
         <Button
-          onClick={handleSwap}
-          disabled={!!error || isQuoting || isApproving || isSendingTransaction || !quote}
+          onClick={handleReview}
+          disabled={!!error || isQuoting || isSendingTransaction || !quote || isQuoteUnrealistic}
           className="w-full mt-4 py-6 rounded-2xl font-bold text-lg text-zinc-900 bg-gradient-to-r from-lime-200 to-lime-300 transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {buttonText()}
         </Button>
       ) : (
         <Button
-          disabled={true}
-          className="w-full mt-4 py-6 rounded-2xl font-bold text-lg text-zinc-900 bg-gradient-to-r from-lime-200 to-lime-300 transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+         onClick={() => {
+            // Lógica para conectar la wallet
+        }}
+         className="w-full mt-4 py-6 rounded-2xl font-bold text-lg text-zinc-900 bg-gradient-to-r from-lime-200 to-lime-300 transition-opacity hover:opacity-90"
         >
-          Conectar Wallet
-        </Button>
-      )}
-
-      {process.env.NODE_ENV === "development" && quote && (
-        <div className="mt-4">
-          <p className="text-xs text-zinc-400">Datos del Quote (solo en desarrollo):</p>
-          <pre className="text-xs text-yellow-400 bg-black/30 rounded p-2 overflow-x-auto max-h-32 mt-1">
-            {JSON.stringify(
-              quote,
-              (key, value) => {
-                if (typeof value === "bigint") {
-                  return value.toString();
-                }
-                // This is a deliberate unsafe return for debugging purposes.
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-                return value;
-              },
-              2
-            )}
-          </pre>
-        </div>
+          {buttonText()}
+          </Button>
       )}
     </div>
   );
