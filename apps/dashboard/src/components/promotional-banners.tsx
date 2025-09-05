@@ -84,7 +84,7 @@ export function PromotionalBanner({
   };
 
   const contentContainerClasses = [
-    "relative h-full w-full rounded-xl p-6",
+    "relative h-full w-full rounded-xl p-4",
     "bg-gradient-to-t from-black/70 via-black/40 to-transparent",
     "flex flex-col justify-between",
     "transition-all duration-300",
@@ -103,7 +103,7 @@ export function PromotionalBanner({
       onHoverStart={() => setShowGradient(true)}
       onHoverEnd={() => setShowGradient(false)}
       onMouseMove={handleMouseMove}
-      className="relative w-full aspect-[2.5/1] md:aspect-[1.1/1] rounded-xl overflow-hidden"
+      className="relative w-full aspect-[2/1] md:aspect-[1.1/1] rounded-xl overflow-hidden"
     >
       {onClose && (
         <button

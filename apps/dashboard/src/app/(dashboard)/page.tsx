@@ -19,9 +19,9 @@ const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 // --- Sub-componentes ---
 function MobileHeader({ userName, walletAddress }: { userName: string | null; walletAddress?: string }) {
   return (
-    <div className="flex md:hidden items-center justify-between w-full mb-6">
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center">
+    <div className="flex md:hidden items-center justify-between w-full mt-5 ml-5">
+      <div className="flex items-center gap-2">
+        <div className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center">
            <Image src="/images/logo_green.png" width={20} height={20} alt="User" />
         </div>
         <span className="font-mono text-sm font-semibold text-white">
@@ -34,20 +34,20 @@ function MobileHeader({ userName, walletAddress }: { userName: string | null; wa
 
 function TotalBalance({ total }: { total: number }) {
   return (
-    <div className="text-center my-4 md:my-6">
+    <div className="text-left mt-2 ml-5 md:my-6">
       <h1 className="text-5xl md:text-6xl font-bold text-white tracking-tighter">
         ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
       </h1>
-      <p className="text-sm font-semibold text-red-400 mt-2">Total Investments</p>
+      <p className="text-xs font-mono font-semibold text-red-400 mt-2">Total Investments</p>
     </div>
   );
 }
 
 function ActionButton({ icon, label, disabled = false, href }: { icon: React.ReactNode, label: string, disabled?: boolean, href?: string }) {
-  const commonClasses = "w-16 h-16 bg-zinc-800 rounded-lg flex items-center justify-center transition-colors hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed";
+  const commonClasses = "w-20 h-20 bg-zinc-800 rounded-lg flex items-center justify-center transition-colors hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed";
   const content = <>{icon}</>;
   return (
-    <div className="flex flex-col items-center gap-1">
+    <div className="flex flex-col items-center">
       {href && !disabled ? ( <Link href={href} className={commonClasses}>{content}</Link> ) : ( <button disabled={disabled} className={commonClasses}>{content}</button> )}
       <span className="text-xs font-semibold text-gray-300 text-center">{label}</span>
     </div>
@@ -61,13 +61,29 @@ function BannersSection() {
   const [displayedBanners, setDisplayedBanners] = useState<readonly BannerData[]>(initialBanners);
   const handleClose = (idToClose: number) => { setDisplayedBanners(prevBanners => prevBanners.filter(b => b.id !== idToClose)); };
   if (displayedBanners.length === 0) return null;
-  return ( <div className="my-6"> <div className="hidden md:grid md:grid-cols-3 gap-4"> <AnimatePresence> {displayedBanners.map((banner) => ( <motion.div key={banner.id} layout initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} transition={{ type: "spring" }}> <PromotionalBanner {...banner} onClose={() => handleClose(banner.id)} /> </motion.div> ))} </AnimatePresence> </div> <div className="md:hidden overflow-hidden" ref={emblaRef}> <div className="flex -ml-4"> <AnimatePresence> {displayedBanners.map((banner) => ( <motion.div key={banner.id} layout initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ x: -300, opacity: 0 }} transition={{ duration: 0.3 }} className="flex-none w-[90%] pl-4"> <PromotionalBanner {...banner} onClose={() => handleClose(banner.id)} /> </motion.div> ))} </AnimatePresence> </div> </div> </div> );
+  return ( 
+  <div className="my-5"> 
+    <div className="hidden md:grid md:grid-cols-3 gap-2"> 
+      <AnimatePresence> 
+        {displayedBanners.map((banner) => ( 
+          <motion.div key={banner.id} layout initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} transition={{ type: "spring" }}> 
+          <PromotionalBanner {...banner} onClose={() => handleClose(banner.id)} /> 
+          </motion.div> ))} 
+          </AnimatePresence> 
+          </div> 
+          <div className="md:hidden overflow-hidden" ref={emblaRef}> 
+            <div className="flex -ml-4"> 
+              <AnimatePresence> 
+                {displayedBanners.map((banner) => ( 
+                  <motion.div key={banner.id} layout initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ x: -300, opacity: 0 }} transition={{ duration: 0.3 }} className="flex-none w-[90%] pl-4"> 
+                  <PromotionalBanner {...banner} onClose={() => handleClose(banner.id)} /> 
+                  </motion.div> ))} 
+                  </AnimatePresence> 
+                  </div> 
+                  </div> 
+                  </div> 
+                  );
 }
-  {/*
-    function AssetRow({ icon, name, cryptoAmount, usdAmount }: { icon: string, name: string, cryptoAmount: string, usdAmount: string }) {
-    return ( <div className="flex items-center justify-between p-3 transition-colors hover:bg-zinc-800/50 rounded-lg cursor-pointer"> <div className="flex items-center gap-4"> <Image src={icon} alt={name} width={40} height={40} className="rounded-full" /> <div> <p className="font-bold text-white">{name}</p> <p className="text-sm font-mono text-gray-400">{cryptoAmount}</p> </div> </div> <div className="text-right"> <p className="font-mono font-semibold text-white">{usdAmount}</p> </div> </div> );
-    }
-  */}
 
 function SecondaryTabs({ activeTab, setActiveTab }: { activeTab: string, setActiveTab: (tab: string) => void }) {
   const tabs = ["Access", "Tokens"];
@@ -89,11 +105,11 @@ export default function DashboardPage() {
     <>
       <MobileHeader userName={null} walletAddress={account?.address} />
       <TotalBalance total={totalInvestmentValue} />
-      <div className="grid grid-cols-4 px-4 my-6 md:hidden">
-        <ActionButton icon={<QrCodeIcon className="w-6 h-6 text-gray-300"/>} label="Receive" />
-        <ActionButton href="/swap" icon={<ArrowPathIcon className="w-6 h-6 text-gray-300"/>} label="Swap" />
-        <ActionButton icon={<UserGroupIcon className="w-6 h-6 text-gray-300"/>} label="Applicants" disabled />
-        <ActionButton icon={<BanknotesIcon className="w-6 h-6 text-gray-300"/>} label="Pool" disabled />
+      <div className="grid grid-cols-4 my-6 md:hidden">
+        <ActionButton icon={<QrCodeIcon className="w-8 h-8 text-gray-300"/>} label="Receive" />
+        <ActionButton href="/swap" icon={<ArrowPathIcon className="w-8 h-8 text-gray-300"/>} label="Swap" />
+        <ActionButton icon={<UserGroupIcon className="w-8 h-8 text-gray-300"/>} label="Applicants" disabled />
+        <ActionButton icon={<BanknotesIcon className="w-8 h-8 text-gray-300"/>} label="Pool" disabled />
       </div>
       <BannersSection />
       <div className="mt-8 flex flex-col gap-8">
