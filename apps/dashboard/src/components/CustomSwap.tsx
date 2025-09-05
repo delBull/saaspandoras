@@ -17,7 +17,6 @@ import { TokenImage } from './TokenImage';
 import { useDisplayAmount } from '@/hooks/useDisplayAmount';
 import { useMarketRate } from '@/hooks/useMarketRate';
 import { BadgeChain } from './BadgeChain';
-import { cn } from "@/lib/utils";
 
 // Componentes de UI
 import { Button } from "@saasfly/ui/button";
