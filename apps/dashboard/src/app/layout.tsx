@@ -36,6 +36,7 @@ export default function RootLayout({
           defaultTheme="dark"
           enableSystem={false}
         >
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           <ThirdwebProvider {...{ wallets: supportedWallets } as any}>
             {children}
             <Toaster theme="dark" richColors position="top-center" />
