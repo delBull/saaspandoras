@@ -7,14 +7,12 @@ import {
   useActiveAccount,
   useWalletBalance,
   useWaitForReceipt,
-  useActiveWalletChain,
   useConnectModal
 } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
 import { parseUnits, formatUnits, encodeFunctionData } from "viem";
-import { base, defineChain } from "thirdweb/chains";
+import { defineChain } from "thirdweb/chains";
 import { prepareTransaction } from "thirdweb";
-import { TokenImage } from './TokenImage';
 import { useMarketRate } from '@/hooks/useMarketRate';
 import { BadgeChain } from './BadgeChain';
 import { useSwapAnalytics } from "@/hooks/useSwapAnalytics";
@@ -70,7 +68,6 @@ function useTokenList(chainId: number) {
 // --- Componente Principal del Swap ---
 export function CustomSwap() {
   const account = useActiveAccount();
-  const activeChain = useActiveWalletChain();
   const { connect } = useConnectModal();
   const [fromAmount, setFromAmount] = useState("");
   const [isTokenModalOpen, setTokenModalOpen] = useState<"from" | "to" | null>(null);
@@ -125,21 +122,19 @@ export function CustomSwap() {
   
   const swapParams = isReadyForQuote ? { 
     client, 
-    fromAddress: account.address, 
-    toAddress: account.address, 
+    fromAddress: account.address,
+    toAddress: account.address,
     fromTokenAddress: fromToken.address, 
     toTokenAddress: toToken.address, 
-    fromChainId: fromToken.chainId, 
-    toChainId: toToken.chainId, 
-    fromAmount: fromAmountBaseUnits.toString(),
-    // Añadimos el fee recipient y el porcentaje en BPS (Basis Points)
-    // 50 BPS = 0.5%
+    fromAmount: fromAmount,
+    toChainId: toToken.chainId,
+    fromChainId: fromToken.chainId,
     feeBps: 50,
     feeRecipient: FEE_WALLET,
   } : undefined;
 
-  const { data: quote, isLoading: isQuoting } = useBuyWithCryptoQuote(swapParams);
-  const { mutateAsync: sendTx, isPending: isSendingTransaction } = useSendTransaction();
+  const { data: quote, isLoading: isQuoteLoading } = useBuyWithCryptoQuote(swapParams);
+  const { mutateAsync: sendTx, isPending: isSwapping } = useSendTransaction();
   
   const { data: receipt, isLoading: isWaitingForConfirmation } = useWaitForReceipt(
     txHash && fromToken
@@ -173,7 +168,7 @@ export function CustomSwap() {
 
   // Quoted amount (from aggregator) en decimales humanos
   const quotedAmountAsNumber = useMemo(() => {
-    if (!quote?.swapDetails?.toAmountWei || !toToken?.decimals) return null;
+    if (!quote?.swapDetails.toAmountWei || !toToken?.decimals) return null;
     try {
       return parseFloat(formatUnits(BigInt(quote.swapDetails.toAmountWei), toToken.decimals));
     } catch {
@@ -196,7 +191,7 @@ export function CustomSwap() {
 
   // Rate de mercado: puede ser null/N/A y eso está OK para UX
   const marketRate = useMarketRate(fromToken ?? undefined, toToken ?? undefined);
-  const isTestnet = activeChain ? TESTNET_IDS.includes(activeChain.id) : false;
+  const isTestnet = fromToken ? TESTNET_IDS.includes(fromToken.chainId) : false;
 
   // Expected amount en humanos. Si no hay rate, es null.
   const expectedAmount = useMemo(() => {
@@ -272,7 +267,7 @@ export function CustomSwap() {
   });
 
   const executeSwap = async () => {
-    if (!quote || !account || !fromToken) return;
+    if (!quote || !account) return;
     setSwapStep('swapping');
     setApprovingStatus('pending'); setSwapStatus('pending'); setNetworkStatus('pending');
     try {
@@ -289,11 +284,8 @@ export function CustomSwap() {
       setTxHash(txResult.transactionHash);
     } catch (err) {
       console.error("Swap fallido", err);
-      const friendlyMessage = "La transacción falló. Es posible que la hayas rechazado.";
+      const friendlyMessage = "La transacción falló. Es posible que la hayas rechazado o que la cotización haya expirado.";
       setErrorMessage(friendlyMessage);
-      if (approvingStatus === 'pending') setApprovingStatus('error');
-      else setSwapStatus('error');
-      setNetworkStatus('error');
       setSwapStep('error');
     }
   };
@@ -315,9 +307,9 @@ export function CustomSwap() {
     if (!account) return "Conectar Wallet";
     if (isInvalidAmount && fromAmount) return "Ingresa un monto válido";
     if (error) return error;
-    if (isQuoting) return "Obteniendo cotización...";
-    if (isSendingTransaction) return "Procesando...";
+    if (isQuoteLoading) return "Obteniendo cotización...";
     if (isQuoteUnrealistic) return "Cotización Inválida";
+    if (isSwapping) return "Confirmando en wallet...";
     if (!quote && isReadyForQuote) return "Ruta no disponible";
     return "Revisar Swap";
   };
@@ -334,7 +326,7 @@ export function CustomSwap() {
         isOpen={swapStep === 'review'} 
         onOpenChange={(isOpen: boolean) => !isOpen && setSwapStep('form')} 
         onConfirm={() => void executeSwap()}
-        isSwapping={isSendingTransaction}
+        isSwapping={isSwapping}
         fromToken={fromToken}
         toToken={toToken}
         fromAmount={fromAmount}
@@ -393,13 +385,13 @@ export function CustomSwap() {
         chains={SUPPORTED_CHAINS}
         isAmountReadOnly={true}
         amountComponent={
-          isQuoting ? <Skeleton className="h-8 w-24 bg-zinc-700" /> :
+          isQuoteLoading ? <Skeleton className="h-8 w-24 bg-zinc-700" /> :
           (isQuoteUnrealistic && marketRate !== null) ? <span className="text-lg text-orange-500">Cotización Irreal</span> :
           <span className={`transition-colors ${animateColor ? "text-lime-400" : "text-white"}`}>{displayToAmount}</span>
         }
       />
       
-      {!marketRate && fromAmount && !isQuoting && (
+      {!marketRate && fromAmount && !isQuoteLoading && (
         <div className="text-center text-xs text-orange-400 font-semibold mt-2 p-2 bg-orange-900/30 rounded-lg">
           Advertencia: No hay tasa de mercado de referencia disponible. El valor mostrado es solo la estimación del agregador.
         </div>
@@ -408,7 +400,7 @@ export function CustomSwap() {
       {account ? (
         <Button
           onClick={handleReview}
-          disabled={!!error || isQuoting || isSendingTransaction || !quote || (isQuoteUnrealistic && marketRate !== null)}
+          disabled={!!error || isQuoteLoading || isSwapping || !quote || (isQuoteUnrealistic && marketRate !== null)}
           className="w-full mt-4 py-6 rounded-2xl font-bold text-lg text-zinc-900 bg-gradient-to-r from-lime-200 to-lime-300 transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {buttonText()}
