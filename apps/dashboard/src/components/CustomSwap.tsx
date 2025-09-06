@@ -451,25 +451,23 @@ export function CustomSwap() {
         </Button>
       ) : (
         <Button
-         onClick={() => {
-            connect({ 
-              client, 
-              chain: config.chain,
-              showThirdwebBranding: false, 
-              wallets: [ 
-                inAppWallet({ 
-                  auth: { 
-                    options: ["email", "google", "apple", "facebook", "passkey"], 
-                  }, 
-                  executionMode: { 
-                    mode: "EIP7702",
-                    sponsorGas: true, 
-                  }, 
-                }), 
-                createWallet("io.metamask"), 
-              ], 
-            })
-        }}
+         onClick={() => void connect({
+            client,
+            chain: config.chain,
+            showThirdwebBranding: false,
+            wallets: [
+              inAppWallet({
+                auth: {
+                  options: ["email", "google", "apple", "facebook", "passkey"],
+                },
+                executionMode: {
+                  mode: "EIP7702",
+                  sponsorGas: true,
+                },
+              }),
+              createWallet("io.metamask"),
+            ],
+          })}
          className="w-full mt-4 py-6 rounded-2xl font-bold text-lg text-zinc-900 bg-gradient-to-r from-lime-200 to-lime-300 transition-opacity hover:opacity-90"
         >
           {buttonText()}
