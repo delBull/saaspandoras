@@ -52,31 +52,38 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
   });
 
   useEffect(() => {
-    if (!account?.address || hasStartedProcessing.current) {
+    // No ejecutar lógica si no hay cuenta o si ya hay un proceso de minteo en curso.
+    if (!account || hasStartedProcessing.current) {
       return;
     }
     
-    if (!isLoadingKey && hasKey) {
+    // Si la wallet ya tiene la llave, marcamos el estado y terminamos.
+    if (!isLoadingKey && hasKey === true) {
         setGateStatus("alreadyOwned");
         return;
     }
 
-    if (!isLoadingKey && !hasKey) {
+    // Si estamos seguros de que no tiene la llave y el estado es 'idle' (inicial o reseteado),
+    // iniciamos el proceso de minteo automático.
+    if (!isLoadingKey && hasKey === false && gateStatus === 'idle') {
       hasStartedProcessing.current = true;
-      setGateStatus("needs_mint");
       
       toast({
         title: "¡Bienvenido por primera vez!",
         description: "Confirma en tu wallet para mintear tu llave de acceso.",
       });
 
+      // Preparamos la transacción para el minteo gratuito.
       const transaction = prepareContractCall({
         contract,
         method: "freeMint",
         params: [],
       });
       
+      // Actualizamos el estado para mostrar el modal de progreso.
       setGateStatus("awaiting_confirmation");
+
+      // Enviamos la transacción y manejamos éxito/error.
       void sendTransaction(transaction, {
         onSuccess: () => {
           setGateStatus("success");
@@ -90,13 +97,14 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
             variant: "destructive",
           });
           setGateStatus("error");
-          hasStartedProcessing.current = false;
+          // hasStartedProcessing se resetea en el onClose del modal para permitir reintentos.
         },
       });
     }
   }, [account, hasKey, isLoadingKey, contract, sendTransaction, toast, gateStatus]);
   
   useEffect(() => {
+    // Este efecto resetea el bloqueo de "proceso iniciado" si el usuario cambia de cuenta.
     hasStartedProcessing.current = false;
   }, [account]);
 
