@@ -107,100 +107,56 @@ export function useMarketRate(
 ): RateResult {
   const [rate, setRate] = useState<RateResult>(null);
 
-useEffect(() => { if (!fromToken || !toToken) { setRate(null); return; }
+  useEffect(() => {
+    const fromKey = fromToken ? `${fromToken.symbol.toUpperCase()}-${fromToken.chainId}` : null;
+    const toKey = toToken ? `${toToken.symbol.toUpperCase()}-${toToken.chainId}` : null;
+    const fromMapped = fromKey ? TOKEN_MAP[fromKey] : null;
+    const toMapped = toKey ? TOKEN_MAP[toKey] : null;
 
-const fromKey = `${fromToken.symbol.toUpperCase()}-${fromToken.chainId}`;
-const toKey = `${toToken.symbol.toUpperCase()}-${toToken.chainId}`;
-const fromMapped = TOKEN_MAP[fromKey];
-const toMapped = TOKEN_MAP[toKey];
+    if (!fromToken || !toToken || !fromMapped || !toMapped) {
+      setRate(null);
+      return;
+    }
 
-if (!fromMapped?.address || !toMapped?.address) {
-  setRate(null);
-  return;
-}
-
-const bothMainnet =
-  fromToken.chainId === 1 &&
-  toToken.chainId === 1 &&
-  !!fromMapped.coingeckoId &&
-  !!toMapped.coingeckoId;
-
-if (bothMainnet) {
-  const url = `https://api.coingecko.com/api/v3/simple/price?ids=${fromMapped.coingeckoId},${toMapped.coingeckoId}&vs_currencies=usd`;
-  void fetch(url)
-    .then(r => r.json() as Promise<CoinGeckoPriceResponse>)
-    .then((data) => {
-      const fromUsd = data[fromMapped.coingeckoId!]?.usd;
-      const toUsd = data[toMapped.coingeckoId!]?.usd;
-      if (fromUsd && toUsd && toUsd > 0) setRate(fromUsd / toUsd);
-      else setRate(null);
-    })
-    .catch(() => setRate(null));
-  return;
-}
-
-const fromPlatform = getPlatform(fromToken.chainId);
-const toPlatform = getPlatform(toToken.chainId);
-
-if (
-  fromPlatform && toPlatform &&
-  fromPlatform === toPlatform &&
-  fromMapped.address &&
-  toMapped.address
-) {
-  const url = `https://api.coingecko.com/api/v3/simple/token_price/${fromPlatform}?contract_addresses=${fromMapped.address},${toMapped.address}&vs_currencies=usd`;
-  void fetch(url)
-    .then(r => r.json() as Promise<CoinGeckoPriceResponse>)
-    .then((data) => {
-      const fromUsd = data[fromMapped.address.toLowerCase()]?.usd;
-      const toUsd = data[toMapped.address.toLowerCase()]?.usd;
-      if (fromUsd && toUsd && toUsd > 0) setRate(fromUsd / toUsd);
-      else setRate(null);
-    })
-    .catch(() => setRate(null));
-  return;
-}
-
-const fetchMixed = async () => {
-    // La cláusula de guarda anterior asegura que fromMapped y toMapped están definidos.
-    // TypeScript puede inferir esto porque `fetchMixed` es una expresión de función (const) y no se eleva (hoisted).
-    try {
-      let fromUsd: number | undefined;
-      let toUsd: number | undefined;
-
-      if (fromPlatform && fromMapped.address) {
-        const url = `https://api.coingecko.com/api/v3/simple/token_price/${fromPlatform}?contract_addresses=${fromMapped.address}&vs_currencies=usd`;
-        const data = await fetch(url).then(r => r.json()) as CoinGeckoPriceResponse;
-        fromUsd = data[fromMapped.address.toLowerCase()]?.usd;
-      } else if (fromMapped.coingeckoId) {
-        const url = `https://api.coingecko.com/api/v3/simple/price?ids=${fromMapped.coingeckoId}&vs_currencies=usd`;
-        const data = await fetch(url).then(r => r.json()) as CoinGeckoPriceResponse;
-        fromUsd = data[fromMapped.coingeckoId]?.usd;
+    const fetchPrice = async (token: TokenInfo, mappedToken: { address: string; coingeckoId?: string }): Promise<number | undefined> => {
+      const platform = getPlatform(token.chainId);
+      
+      // Prioriza la búsqueda por ID de coingecko si está disponible (más directo para tokens nativos como ETH)
+      if (mappedToken.coingeckoId) {
+        const url = `https://api.coingecko.com/api/v3/simple/price?ids=${mappedToken.coingeckoId}&vs_currencies=usd`;
+        const data = await fetch(url).then(r => r.json() as Promise<CoinGeckoPriceResponse>);
+        return data[mappedToken.coingeckoId]?.usd;
+      }
+      
+      // Si no, busca por dirección de contrato en la plataforma específica
+      if (platform && mappedToken.address) {
+        const url = `https://api.coingecko.com/api/v3/simple/token_price/${platform}?contract_addresses=${mappedToken.address}&vs_currencies=usd`;
+        const data = await fetch(url).then(r => r.json() as Promise<CoinGeckoPriceResponse>);
+        return data[mappedToken.address.toLowerCase()]?.usd;
       }
 
-      if (toPlatform && toMapped.address) {
-        const url = `https://api.coingecko.com/api/v3/simple/token_price/${toPlatform}?contract_addresses=${toMapped.address}&vs_currencies=usd`;
-        const data = await fetch(url).then(r => r.json()) as CoinGeckoPriceResponse;
-        toUsd = data[toMapped.address.toLowerCase()]?.usd;
-      } else if (toMapped.coingeckoId) {
-        const url = `https://api.coingecko.com/api/v3/simple/price?ids=${toMapped.coingeckoId}&vs_currencies=usd`;
-        const data = await fetch(url).then(r => r.json()) as CoinGeckoPriceResponse;
-        toUsd = data[toMapped.coingeckoId]?.usd;
-      }
+      return undefined;
+    };
 
-      if (fromUsd && toUsd && toUsd > 0) {
-        setRate(fromUsd / toUsd);
-      } else {
+    const fetchAllPrices = async () => {
+      try {
+        const [fromUsd, toUsd] = await Promise.all([
+          fetchPrice(fromToken, fromMapped),
+          fetchPrice(toToken, toMapped),
+        ]);
+
+        if (fromUsd && toUsd && toUsd > 0) {
+          setRate(fromUsd / toUsd);
+        } else {
+          setRate(null);
+        }
+      } catch {
         setRate(null);
       }
-    } catch {
-      setRate(null);
-    }
-  };
+    };
 
-// Usamos una IIFE (Immediately Invoked Function Expression) para manejar la función asíncrona.
-void fetchMixed();
+    void fetchAllPrices();
+  }, [fromToken, toToken]);
 
-}, [fromToken, toToken]);
-
-return rate; }
+  return rate;
+}
