@@ -47,7 +47,7 @@ export default function AdminDashboardPage() {
 
   const totalVolume = mySwaps.reduce((a, s) => a + (s.status === 'success' ? s.fromAmountUsd : 0), 0);
   const totalFees = mySwaps.reduce((a, s) => a + (s.status === 'success' ? s.feeUsd : 0), 0);
-  const feeWallet = process.env.NEXT_PUBLIC_SWAP_FEE_WALLET || "N/A";
+  const feeWallet = process.env.NEXT_PUBLIC_SWAP_FEE_WALLET ?? "N/A";
 
   return (
     <section className="py-24">
@@ -90,7 +90,7 @@ export default function AdminDashboardPage() {
                         {mySwaps.map((s) => (
                         <tr key={s.txHash} className="border-b border-zinc-800 hover:bg-zinc-900">
                             <td className="py-2">
-                                <a href={`#`} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                                <a href={`/`} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
                                     {s.txHash.slice(0, 8)}...{s.txHash.slice(-6)}
                                 </a>
                             </td>

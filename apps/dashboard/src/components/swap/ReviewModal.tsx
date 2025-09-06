@@ -36,9 +36,9 @@ export interface ReviewModalProps {
 export function ReviewModal({ isOpen, onOpenChange, onConfirm, fromToken, toToken, fromAmount, displayToAmount, quote, isSwapping, expectedAmount, quotedAmount, priceImpact, marketRate, }: ReviewModalProps) {
   if (!fromToken || !toToken || !quote) return null;
   // Ahora los accesos son 100% seguros porque usamos el tipo oficial
-  const minAmount = quote.swapDetails?.toAmountMinWei ? formatUnits(BigInt(quote.swapDetails.toAmountMinWei), toToken.decimals) : "0.0";
-  const slippage = quote.swapDetails?.maxSlippageBPS ? (quote.swapDetails.maxSlippageBPS / 100).toFixed(2) : "0.00";
-  const gasCost = quote.swapDetails?.estimated?.gasCostUSDCents ? (quote.swapDetails.estimated.gasCostUSDCents / 100).toFixed(4) : "0.0000";
+  const minAmount = quote.swapDetails.toAmountMinWei ? formatUnits(BigInt(quote.swapDetails.toAmountMinWei), toToken.decimals) : "0.0";
+  const slippage = quote.swapDetails.maxSlippageBPS ? (quote.swapDetails.maxSlippageBPS / 100).toFixed(2) : "0.00";
+  const gasCost = quote.swapDetails.estimated?.gasCostUSDCents ? (quote.swapDetails.estimated.gasCostUSDCents / 100).toFixed(4) : "0.0000";
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
