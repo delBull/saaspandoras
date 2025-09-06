@@ -376,7 +376,7 @@ export function CustomSwap() {
       <ReviewModal 
         isOpen={swapStep === 'review'} 
         onOpenChange={(isOpen: boolean) => !isOpen && setSwapStep('form')} 
-        onConfirm={executeSwap}
+        onConfirm={() => void executeSwap()}
         isSwapping={isSendingTransaction}
         fromToken={fromToken}
         toToken={toToken}

@@ -91,9 +91,15 @@ const TOKEN_MAP: Record<string, { address: string; coingeckoId?: string }> = {
   // Agrega otros mappings según tu app
 };
 
-type TokenInfo = { symbol: string; address: string; chainId: number; };
+interface TokenInfo { symbol: string; address: string; chainId: number; }
 
 type RateResult = number | null;
+
+interface CoinGeckoPriceResponse {
+  [id: string]: {
+    usd?: number;
+  };
+}
 
 function getPlatform(chainId: number): string | undefined { return COINGECKO_PLATFORMS[chainId]; }
 
@@ -110,7 +116,7 @@ const toKey = `${toToken.symbol.toUpperCase()}-${toToken.chainId}`;
 const fromMapped = TOKEN_MAP[fromKey];
 const toMapped = TOKEN_MAP[toKey];
 
-if (!fromMapped || !fromMapped.address || !toMapped || !toMapped.address) {
+if (!fromMapped?.address || !toMapped?.address) {
   setRate(null);
   return;
 }
@@ -123,8 +129,8 @@ const bothMainnet =
 
 if (bothMainnet) {
   const url = `https://api.coingecko.com/api/v3/simple/price?ids=${fromMapped.coingeckoId},${toMapped.coingeckoId}&vs_currencies=usd`;
-  fetch(url)
-    .then(r => r.json())
+  void fetch(url)
+    .then(r => r.json() as Promise<CoinGeckoPriceResponse>)
     .then((data) => {
       const fromUsd = data[fromMapped.coingeckoId!]?.usd;
       const toUsd = data[toMapped.coingeckoId!]?.usd;
@@ -145,8 +151,8 @@ if (
   toMapped.address
 ) {
   const url = `https://api.coingecko.com/api/v3/simple/token_price/${fromPlatform}?contract_addresses=${fromMapped.address},${toMapped.address}&vs_currencies=usd`;
-  fetch(url)
-    .then(r => r.json())
+  void fetch(url)
+    .then(r => r.json() as Promise<CoinGeckoPriceResponse>)
     .then((data) => {
       const fromUsd = data[fromMapped.address.toLowerCase()]?.usd;
       const toUsd = data[toMapped.address.toLowerCase()]?.usd;
@@ -166,21 +172,21 @@ const fetchMixed = async () => {
 
       if (fromPlatform && fromMapped.address) {
         const url = `https://api.coingecko.com/api/v3/simple/token_price/${fromPlatform}?contract_addresses=${fromMapped.address}&vs_currencies=usd`;
-        const data = await fetch(url).then(r => r.json());
+        const data = await fetch(url).then(r => r.json()) as CoinGeckoPriceResponse;
         fromUsd = data[fromMapped.address.toLowerCase()]?.usd;
       } else if (fromMapped.coingeckoId) {
         const url = `https://api.coingecko.com/api/v3/simple/price?ids=${fromMapped.coingeckoId}&vs_currencies=usd`;
-        const data = await fetch(url).then(r => r.json());
+        const data = await fetch(url).then(r => r.json()) as CoinGeckoPriceResponse;
         fromUsd = data[fromMapped.coingeckoId]?.usd;
       }
 
       if (toPlatform && toMapped.address) {
         const url = `https://api.coingecko.com/api/v3/simple/token_price/${toPlatform}?contract_addresses=${toMapped.address}&vs_currencies=usd`;
-        const data = await fetch(url).then(r => r.json());
+        const data = await fetch(url).then(r => r.json()) as CoinGeckoPriceResponse;
         toUsd = data[toMapped.address.toLowerCase()]?.usd;
       } else if (toMapped.coingeckoId) {
         const url = `https://api.coingecko.com/api/v3/simple/price?ids=${toMapped.coingeckoId}&vs_currencies=usd`;
-        const data = await fetch(url).then(r => r.json());
+        const data = await fetch(url).then(r => r.json()) as CoinGeckoPriceResponse;
         toUsd = data[toMapped.coingeckoId]?.usd;
       }
 
