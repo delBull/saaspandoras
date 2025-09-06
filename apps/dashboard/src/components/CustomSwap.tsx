@@ -437,7 +437,7 @@ export function CustomSwap() {
       
       {!marketRate && fromAmount && !isQuoting && (
         <div className="text-center text-xs text-orange-400 font-semibold mt-2 p-2 bg-orange-900/30 rounded-lg">
-          Advertencia: No hay tasa de mercado de referencia disponible. El valor mostrado es solo la cotización del agregador.
+          Advertencia: No hay tasa de mercado de referencia disponible. El valor mostrado es solo la estimación del agregador.
         </div>
       )}
 
