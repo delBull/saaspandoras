@@ -7,7 +7,8 @@ import {
   useActiveAccount,
   useWalletBalance,
   useWaitForReceipt,
-  useActiveWalletChain
+  useActiveWalletChain,
+  useConnectModal
 } from "thirdweb/react";
 import type { BuyWithCryptoQuote } from "thirdweb/pay";
 import { client } from "@/lib/thirdweb-client";
@@ -15,7 +16,6 @@ import { parseUnits, formatUnits, encodeFunctionData } from "viem";
 import { base, defineChain } from "thirdweb/chains";
 import { prepareTransaction } from "thirdweb";
 import { TokenImage } from './TokenImage';
-import { useDisplayAmount } from '@/hooks/useDisplayAmount';
 import { useMarketRate } from '@/hooks/useMarketRate';
 import { BadgeChain } from './BadgeChain';
 // Componentes de UI
@@ -26,6 +26,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@saasfly/ui/sheet"
 import { ScrollArea } from "@saasfly/ui/scroll-area";
 import { toast } from "sonner";
 import { ArrowDownIcon, Loader2, SearchIcon, CheckCircle, XCircle, Info } from "lucide-react";
+import { createWallet, inAppWallet } from "thirdweb/wallets";
+import { config } from "@/config";
 
 // --- Tipos, Hooks, Datos y ABI Mínimo ---
 const TOKENLIST_URL = "https://tokens.uniswap.org";
@@ -51,8 +53,22 @@ function useTokenList(chainId: number) {
 }
 
 // --- Sub-componentes para el nuevo flujo de Swap ---
-interface ReviewModalProps { isOpen: boolean; onOpenChange: (open: boolean) => void; onConfirm: () => void; fromToken: Token | null; toToken: Token | null; fromAmount: string; displayToAmount: string; quote: BuyWithCryptoQuote | null; isSwapping: boolean; }
-function ReviewModal({ isOpen, onOpenChange, onConfirm, fromToken, toToken, fromAmount, displayToAmount, quote, isSwapping }: ReviewModalProps) {
+interface ReviewModalProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+  fromToken: Token | null;
+  toToken: Token | null;
+  fromAmount: string;
+  displayToAmount: string;
+  quote: BuyWithCryptoQuote | null;
+  isSwapping: boolean;
+  expectedAmount: number | null;
+  quotedAmount: number | null;
+  priceImpact: number | null;
+  marketRate: number | null;
+}
+function ReviewModal({ isOpen, onOpenChange, onConfirm, fromToken, toToken, fromAmount, displayToAmount, quote, isSwapping, expectedAmount, quotedAmount, priceImpact, marketRate, }: ReviewModalProps) {
   if (!fromToken || !toToken || !quote) return null;
   // Ahora los accesos son 100% seguros porque usamos el tipo oficial
   const minAmount = quote.swapDetails?.toAmountMinWei ? formatUnits(BigInt(quote.swapDetails.toAmountMinWei), toToken.decimals) : "0.0";
@@ -62,12 +78,42 @@ function ReviewModal({ isOpen, onOpenChange, onConfirm, fromToken, toToken, from
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
-        <DialogHeader><DialogTitle className="text-xl">Revisar Transacción</DialogTitle><DialogDescription>Confirma los detalles antes de swappear.</DialogDescription></DialogHeader>
+        <DialogHeader>
+          <DialogTitle className="text-xl">Revisar Transacción</DialogTitle>
+          <DialogDescription>
+            Confirma los detalles antes de swappear.
+            {!marketRate && (
+              <div style={{ color: "orange", fontWeight: "bold", marginTop: 12, }} >
+                Advertencia: No hay tasa de mercado de referencia disponible.
+              </div>
+            )}
+            {priceImpact !== null && priceImpact > 0.15 && (
+              <div style={{ color: "#fdba74", fontWeight: "bold", marginTop: 12, }} >
+                Impacto estimado mayor al 15%. Verifica la cotización real antes de firmar.
+              </div>
+            )}
+          </DialogDescription>
+        </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="flex justify-between items-center bg-zinc-800 p-3 rounded-lg"><div><p className="text-sm text-gray-400">Pagas</p><p className="text-2xl font-bold">{fromAmount}</p></div><div className="text-right"><div className="flex items-center gap-2 justify-end"><TokenImage src={fromToken.logoURI} alt={fromToken.symbol} size={24} className="rounded-full"/><span className="font-bold text-xl">{fromToken.symbol}</span></div><BadgeChain chainId={fromToken.chainId} /></div></div>
           <div className="flex justify-center"><ArrowDownIcon className="w-6 h-6 text-gray-500" /></div>
           <div className="flex justify-between items-center bg-zinc-800 p-3 rounded-lg"><div><p className="text-sm text-gray-400">Recibes (Estimado)</p><p className="text-2xl font-bold">{displayToAmount}</p></div><div className="text-right"><div className="flex items-center gap-2 justify-end"><TokenImage src={toToken.logoURI} alt={toToken.symbol} size={24} className="rounded-full"/><span className="font-bold text-xl">{toToken.symbol}</span></div><BadgeChain chainId={toToken.chainId} /></div></div>
-          <div className="text-xs text-gray-400 space-y-1 pt-4 border-t border-zinc-800"><div className="flex justify-between"><p>Mínimo garantizado:</p><p>{parseFloat(minAmount).toFixed(6)} {toToken.symbol}</p></div><div className="flex justify-between"><p>Slippage:</p><p>{slippage}%</p></div><div className="flex justify-between"><p>Tarifa de Red Estimada:</p><p>~${gasCost} USD</p></div></div>
+          <div className="text-xs text-gray-400 space-y-1 pt-4 border-t border-zinc-800">
+            <div className="flex justify-between"><p>Mínimo garantizado:</p><p>{parseFloat(minAmount).toFixed(6)} {toToken.symbol}</p></div>
+            <div className="flex justify-between"><p>Slippage:</p><p>{slippage}%</p></div>
+            <div className="flex justify-between"><p>Tarifa de Red Estimada:</p><p>~${gasCost} USD</p></div>
+            <div className="flex mt-2">
+              <span className={ priceImpact !== null && priceImpact > 0.15 ? "text-orange-400 font-bold" : "text-green-400" } >
+                Impacto estimado:{" "}
+                {priceImpact !== null ? (priceImpact * 100).toFixed(2) + "%" : "N/A"}
+              </span>
+            </div>
+            <div style={{ fontSize: 10, color: "#9ca3af" }}>
+              <div> Referencia CoinGecko:{" "} {marketRate !== null ? marketRate.toPrecision(7) : "N/A"} </div>
+              <div> Esperado:{" "} {expectedAmount !== null ? expectedAmount.toLocaleString("en-US", { maximumFractionDigits: 8, }) : "N/A"}{" "} {toToken.symbol} </div>
+              <div> Cotizado:{" "} {quotedAmount !== null ? quotedAmount.toLocaleString("en-US", { maximumFractionDigits: 8, }) : "N/A"}{" "} {toToken.symbol} </div>
+            </div>
+          </div>
         </div>
         <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSwapping}>Cancelar</Button><Button onClick={onConfirm} className="bg-lime-400 text-black hover:bg-lime-500" disabled={isSwapping}>{isSwapping ? <Loader2 className="animate-spin" /> : "Confirmar Swap"}</Button></DialogFooter>
       </DialogContent>
@@ -82,7 +128,14 @@ function ProgressStep({ title, status }: { title: string; status: 'pending' | 's
 }
 
 function ProgressModal({ isOpen, onOpenChange, approvingStatus, swapStatus, networkStatus }: { isOpen: boolean; onOpenChange: (isOpen: boolean) => void; approvingStatus: 'pending' | 'success' | 'error' | 'skipped'; swapStatus: 'pending' | 'success' | 'error'; networkStatus: 'pending' | 'success' | 'error'; }) {
-  return ( <Dialog open={isOpen} onOpenChange={onOpenChange}><DialogContent className="bg-zinc-900 border-zinc-800 text-white"><DialogHeader><DialogTitle>Procesando Swap</DialogTitle></DialogHeader><div className="space-y-4 py-4"><ProgressStep title="1. Aprobando token" status={approvingStatus} /><ProgressStep title="2. Ejecutando swap" status={swapStatus} /><ProgressStep title="3. Esperando confirmación" status={networkStatus} /></div></DialogContent></Dialog> );
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
+        <DialogHeader><DialogTitle>Procesando Swap</DialogTitle><DialogDescription>Tu transacción se está procesando en la blockchain. Por favor, no cierres esta ventana.</DialogDescription></DialogHeader>
+        <div className="space-y-4 py-4"><ProgressStep title="1. Aprobando token" status={approvingStatus} /><ProgressStep title="2. Ejecutando swap" status={swapStatus} /><ProgressStep title="3. Esperando confirmación" status={networkStatus} /></div>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 function ResultModal({ isOpen, onOpenChange, variant, message, txHash }: { isOpen: boolean; onOpenChange: (isOpen: boolean) => void; variant: 'success' | 'error'; message: string | null; txHash: `0x${string}` | null; }) {
@@ -108,10 +161,12 @@ function TokenSelector({ tokens, currentSelection, onSelect, searchTerm, setSear
   );
 }
 
+
 // --- Componente Principal del Swap ---
 export function CustomSwap() {
   const account = useActiveAccount();
   const activeChain = useActiveWalletChain();
+  const { connect } = useConnectModal();
   const [fromAmount, setFromAmount] = useState("");
   const [isTokenModalOpen, setTokenModalOpen] = useState<"from" | "to" | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -177,18 +232,64 @@ export function CustomSwap() {
     }
   }, [receipt, isWaitingForConfirmation, txHash]);
 
-  const displayToAmount = useDisplayAmount(quote, toToken);
+  // --- Cálculos de Montos y Price Impact ---
+  // 1. Montos SIEMPRE en decimales humanos (nunca base units/wei):
+
+  // input usuario en humano decimal (string → número)
+  const fromAmountDecimal = Number(fromAmount);
+
+  // Quoted amount (from aggregator) en decimales humanos
+  const quotedAmountAsNumber = useMemo(() => {
+    if (!quote?.swapDetails?.toAmountWei || !toToken?.decimals) return null;
+    try {
+      return parseFloat(formatUnits(BigInt(quote.swapDetails.toAmountWei), toToken.decimals));
+    } catch {
+      return null;
+    }
+  }, [quote, toToken]);
+
+  // formatea para la UI (solo para mostrar)
+  const displayToAmount = useMemo(() => {
+    if (quotedAmountAsNumber !== null && quotedAmountAsNumber > 0) {
+      return quotedAmountAsNumber.toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 6,
+      });
+    }
+    return "0.0";
+  }, [quotedAmountAsNumber]);
+  
   const isCrossChain = fromToken && toToken && fromToken.chainId !== toToken.chainId;
 
-  const marketRate = useMarketRate(fromToken?.symbol, toToken?.symbol);
+  // Rate de mercado: puede ser null/N/A y eso está OK para UX
+  const marketRate = useMarketRate(fromToken ?? undefined, toToken ?? undefined);
   const isTestnet = activeChain ? TESTNET_IDS.includes(activeChain.id) : false;
-  const quotedAmount = parseFloat(displayToAmount.replace(/,/g, ''));
+
+  // Expected amount en humanos. Si no hay rate, es null.
   const expectedAmount = useMemo(() => {
-    if (!marketRate || isInvalidAmount) return 0;
-    return Number(fromAmount) * marketRate;
-  }, [fromAmount, marketRate, isInvalidAmount]);
-  const priceImpact = (expectedAmount > 0 && quotedAmount > 0) ? Math.abs(1 - (quotedAmount / expectedAmount)) : 0;
-  const isQuoteUnrealistic = !isTestnet && priceImpact > 0.15 && fromAmount !== "";
+    if (!marketRate || isNaN(fromAmountDecimal) || fromAmountDecimal <= 0) return null;
+    return fromAmountDecimal * marketRate;
+  }, [fromAmountDecimal, marketRate]);
+
+  // Price Impact seguro: solo si ambos montos existen
+  const priceImpact = useMemo(() => {
+    if (
+      expectedAmount !== null &&
+      quotedAmountAsNumber !== null &&
+      expectedAmount > 0 &&
+      quotedAmountAsNumber > 0
+    ) {
+      return Math.abs(1 - quotedAmountAsNumber / expectedAmount);
+    }
+    return null;
+  }, [expectedAmount, quotedAmountAsNumber]);
+
+  // Nueva lógica para impedir bloqueo:
+  const isQuoteUnrealistic =
+    !isTestnet &&
+    priceImpact !== null &&
+    priceImpact > 0.15 &&
+    fromAmount !== "";
 
   const prevDisplayAmount = useRef("0.0");
   useEffect(() => {
@@ -208,7 +309,7 @@ export function CustomSwap() {
 
   const handleReview = () => {
     if (error) { toast.error(error); return; }
-    if (isQuoteUnrealistic) { toast.error("La cotización es muy diferente al precio de mercado."); return; }
+    if (isQuoteUnrealistic && marketRate !== null) { toast.error("La cotización es muy diferente al precio de mercado."); return; }
     if (!quote || !account) { toast.error("No hay ruta disponible para este par."); return; }
     setSwapStep('review');
   };
@@ -282,11 +383,18 @@ export function CustomSwap() {
         fromAmount={fromAmount}
         displayToAmount={displayToAmount}
         quote={quote ?? null}
+        expectedAmount={expectedAmount}
+        quotedAmount={quotedAmountAsNumber}
+        priceImpact={priceImpact}
+        marketRate={marketRate}
       />
       <ProgressModal 
         isOpen={swapStep === 'swapping'} 
+        // Se usa una función vacía intencionalmente para prevenir que el usuario
+        // cierre el modal mientras la transacción está en progreso.
+        // Esto mejora la UX al evitar cierres accidentales.
         // eslint-disable-next-line @typescript-eslint/no-empty-function
-        onOpenChange={() => {}} 
+        onOpenChange={() => {}}
         {...{ approvingStatus, swapStatus, networkStatus }} 
       />
       {(swapStep === 'success' || swapStep === 'error') && (
@@ -317,8 +425,8 @@ export function CustomSwap() {
       <div className="bg-zinc-800 p-4 rounded-xl space-y-1">
         <span className="text-xs text-gray-400">Hasta</span>
         <div className="flex items-center gap-4">
-          <div className={"w-full text-3xl font-mono transition-colors " + (animateColor ? "text-lime-400" : isQuoteUnrealistic ? "text-orange-500" : "text-gray-400")} aria-live="polite">
-            {isQuoting ? <Loader2 className="animate-spin h-8 w-8" /> : isQuoteUnrealistic ? ( <span className="text-lg"> Cotización Irreal <span className="block text-xs text-gray-400 mt-1"> Esperado: ~{expectedAmount.toLocaleString('en-US', {maximumFractionDigits: 4})} {toToken?.symbol} </span> </span> ) : displayToAmount }
+          <div className={"w-full text-3xl font-mono transition-colors " + (animateColor ? "text-lime-400" : (isQuoteUnrealistic && marketRate !== null) ? "text-orange-500" : "text-gray-400")} aria-live="polite">
+            {isQuoting ? <Loader2 className="animate-spin h-8 w-8" /> : (isQuoteUnrealistic && marketRate !== null) ? ( <span className="text-lg"> Cotización Irreal <span className="block text-xs text-gray-400 mt-1"> Esperado: ~{expectedAmount?.toLocaleString('en-US', {maximumFractionDigits: 4})} {toToken?.symbol} </span> </span> ) : displayToAmount }
           </div>
           <Button aria-label={`Seleccionar token destino (${toToken?.symbol ?? ""})`} onClick={() => setTokenModalOpen("to")} variant="secondary" className="flex items-center gap-2 rounded-full font-semibold">
             {toToken && (<TokenImage src={toToken.logoURI} alt={toToken.symbol ?? 'token'} size={24} className="rounded-full" />)} 
@@ -327,10 +435,16 @@ export function CustomSwap() {
         </div>
       </div>
       
+      {!marketRate && fromAmount && !isQuoting && (
+        <div className="text-center text-xs text-orange-400 font-semibold mt-2 p-2 bg-orange-900/30 rounded-lg">
+          Advertencia: No hay tasa de mercado de referencia disponible. El valor mostrado es solo la cotización del agregador.
+        </div>
+      )}
+
       {account ? (
         <Button
           onClick={handleReview}
-          disabled={!!error || isQuoting || isSendingTransaction || !quote || isQuoteUnrealistic}
+          disabled={!!error || isQuoting || isSendingTransaction || !quote || (isQuoteUnrealistic && marketRate !== null)}
           className="w-full mt-4 py-6 rounded-2xl font-bold text-lg text-zinc-900 bg-gradient-to-r from-lime-200 to-lime-300 transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {buttonText()}
@@ -338,7 +452,23 @@ export function CustomSwap() {
       ) : (
         <Button
          onClick={() => {
-            // Lógica para conectar la wallet
+            connect({ 
+              client, 
+              chain: config.chain,
+              showThirdwebBranding: false, 
+              wallets: [ 
+                inAppWallet({ 
+                  auth: { 
+                    options: ["email", "google", "apple", "facebook", "passkey"], 
+                  }, 
+                  executionMode: { 
+                    mode: "EIP7702",
+                    sponsorGas: true, 
+                  }, 
+                }), 
+                createWallet("io.metamask"), 
+              ], 
+            })
         }}
          className="w-full mt-4 py-6 rounded-2xl font-bold text-lg text-zinc-900 bg-gradient-to-r from-lime-200 to-lime-300 transition-opacity hover:opacity-90"
         >
