@@ -95,11 +95,9 @@ interface TokenInfo { symbol: string; address: string; chainId: number; }
 
 type RateResult = number | null;
 
-interface CoinGeckoPriceResponse {
-  [id: string]: {
-    usd?: number;
-  };
-}
+type CoinGeckoPriceResponse = Record<string, {
+  usd?: number;
+}>;
 
 function getPlatform(chainId: number): string | undefined { return COINGECKO_PLATFORMS[chainId]; }
 
