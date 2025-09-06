@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { HomeIcon, ArrowPathIcon, BanknotesIcon, ChevronLeftIcon, ChevronRightIcon, XMarkIcon, UserGroupIcon, ShieldCheckIcon, ArrowLeftOnRectangleIcon, ChevronDoubleRightIcon } from "@heroicons/react/24/outline";
+import { HomeIcon, ArrowPathIcon, BanknotesIcon, ChevronLeftIcon, ChevronRightIcon, XMarkIcon, UserGroupIcon, ShieldCheckIcon, ArrowLeftOnRectangleIcon, ChevronDoubleRightIcon, ChartPieIcon } from "@heroicons/react/24/outline";
 import { cn } from "@saasfly/ui";
 import { useActiveAccount, useDisconnect, useActiveWallet, useConnectModal } from "thirdweb/react";
 import { createWallet, inAppWallet } from "thirdweb/wallets";
@@ -29,7 +29,7 @@ export function Sidebar({ wallet: walletProp, userName }: SidebarProps) {
   const { connect, isConnecting } = useConnectModal();
   const { disconnect } = useDisconnect();
   const userIsAdmin = isAdmin(account?.address);
-  
+
   const links = useMemo( () => [ { 
     label: "Overview", 
     href: "/", 
@@ -57,8 +57,18 @@ export function Sidebar({ wallet: walletProp, userName }: SidebarProps) {
     href: "#", 
     icon: <BanknotesIcon className="h-5 w-5 shrink-0 font-mono text-gray-400" />, 
     comingSoon: true, 
-    disabled: true, 
-  }, ], [], );
+    disabled: true,
+  },
+  // Enlace condicional para el admin
+  ...(userIsAdmin ? [{
+    label: "Dashboard",
+    href: "/admin",
+    icon: <ChartPieIcon className="h-5 w-5 shrink-0 font-mono text-lime-400" />,
+    disabled: false,
+    admin: true,
+  }] : []),
+
+], [userIsAdmin] );
 
   const logoVariants = {
     hidden: { opacity: 0, scale: 0.95, y: -10 },
@@ -140,7 +150,19 @@ export function Sidebar({ wallet: walletProp, userName }: SidebarProps) {
 
         <nav className="mt-4 flex flex-1 flex-col justify-between">
             <div className="flex flex-col gap-2">
-                {links.map((link) => ( <Link key={link.label} href={link.disabled ? "#" : link.href} className={cn( "relative flex items-center rounded-lg py-2 text-gray-400 transition-all duration-200", open ? "px-4" : "w-full justify-center", link.disabled ? "cursor-not-allowed opacity-60" : "hover:bg-gray-800/50 hover:text-white")} onClick={(e) => link.disabled && e.preventDefault()} > {link.icon} <motion.span animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0, marginLeft: open ? "0.75rem" : "0" }} className="whitespace-nowrap font-medium font-mono"> {link.label} </motion.span> {link.comingSoon && open && ( <motion.span animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0 }} className="ml-auto text-xs text-gray-500"> coming soon </motion.span> )} </Link> ))}
+                {links.map((link) => (
+                  <Link
+                    key={link.label}
+                    href={link.disabled ? "#" : link.href}
+                    className={cn(
+                      "relative flex items-center rounded-lg py-2 text-gray-400 transition-all duration-200",
+                      open ? "px-4" : "w-full justify-center",
+                      link.disabled ? "cursor-not-allowed opacity-60" : "hover:bg-gray-800/50 hover:text-white",
+                      link.admin && "font-bold text-lime-400 hover:bg-lime-900/50 hover:text-lime-300"
+                    )}
+                    onClick={(e) => link.disabled && e.preventDefault()}
+                  > {link.icon} <motion.span animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0, marginLeft: open ? "0.75rem" : "0" }} className="whitespace-nowrap font-medium font-mono"> {link.label} </motion.span> {link.comingSoon && open && ( <motion.span animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0 }} className="ml-auto text-xs text-gray-500"> coming soon </motion.span> )} </Link>
+                ))}
             </div>
             
             <div className="mb-4 flex flex-col gap-2">
@@ -248,7 +270,20 @@ export function Sidebar({ wallet: walletProp, userName }: SidebarProps) {
 
               <nav className="mt-4 flex flex-1 flex-col justify-between px-2">
                 <div className="flex flex-col gap-2">
-                  {links.map((link) => ( <Link key={`mobile-${link.label}`} href={link.disabled ? "#" : link.href} className={cn( "relative flex items-center rounded-lg py-2 px-4 text-gray-400 transition-all duration-200", link.disabled ? "cursor-not-allowed opacity-60" : "hover:bg-gray-800/50 hover:text-white" )} onClick={(e) => { if (link.disabled) e.preventDefault(); else setMobileOpen(false); }} > {link.icon} <span className="ml-3 whitespace-nowrap font-medium">{link.label}</span> {link.comingSoon && <span className="ml-auto text-xs text-gray-500">coming soon</span>} </Link> ))}
+                  {links.map((link) => (
+                    <Link
+                      key={`mobile-${link.label}`}
+                      href={link.disabled ? "#" : link.href}
+                      className={cn(
+                        "relative flex items-center rounded-lg py-2 px-4 text-gray-400 transition-all duration-200",
+                        link.disabled ? "cursor-not-allowed opacity-60" : "hover:bg-gray-800/50 hover:text-white",
+                        link.admin && "font-bold text-lime-400 hover:bg-lime-900/50 hover:text-lime-300"
+                      )}
+                      onClick={(e) => { if (link.disabled) e.preventDefault(); else setMobileOpen(false); }}
+                    >
+                      {link.icon} <span className="ml-3 whitespace-nowrap font-medium">{link.label}</span> {link.comingSoon && <span className="ml-auto text-xs text-gray-500">coming soon</span>}
+                    </Link>
+                  ))}
                 </div>
 
                 <div className="mb-4 flex flex-col gap-2">
