@@ -24,14 +24,13 @@ import { ResultModal } from './swap/ResultModal';
 import { TokenSelector } from './swap/TokenSelector';
 import { Skeleton } from "@saasfly/ui/skeleton";
 import { Button } from "@saasfly/ui/button";
-import { Input } from "@saasfly/ui/input";
 import { Sheet, SheetContent } from "@saasfly/ui/sheet";
 import { toast } from "sonner";
-import { ArrowDownIcon, Loader2 } from "lucide-react";
+import { ArrowDownIcon } from "lucide-react";
 import { createWallet, inAppWallet } from "thirdweb/wallets";
 import { config } from "@/config";
 
-const FEE_WALLET = process.env.NEXT_PUBLIC_SWAP_FEE_WALLET || "0x00c9f7EE6d1808C09B61E561Af6c787060BFE7C9";
+const FEE_WALLET = process.env.NEXT_PUBLIC_SWAP_FEE_WALLET ?? "0x00c9f7EE6d1808C09B61E561Af6c787060BFE7C9";
 // --- Tipos, Hooks, Datos y ABI Mínimo ---
 const TOKENLIST_URL = "https://tokens.uniswap.org";
 const erc20Abi = [{"inputs":[{"name":"spender","type":"address"},{"name":"amount","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"}] as const;
@@ -381,6 +380,7 @@ export function CustomSwap() {
         selectedToken={toToken}
         onTokenSelect={() => setTokenModalOpen("to")}
         amount={displayToAmount}
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
         onAmountChange={() => {}} // No-op
         chains={SUPPORTED_CHAINS}
         isAmountReadOnly={true}
