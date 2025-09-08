@@ -218,6 +218,9 @@ export function CustomSwap() {
     priceImpact > 0.15 &&
     fromAmount !== "";
 
+  // Additional validation for very large amounts that might cause 400 errors
+  const isAmountTooLarge = fromAmount && Number(fromAmount) > 10000; // Arbitrary threshold, adjust based on testing
+
   const prevDisplayAmount = useRef("0.0");
   useEffect(() => {
     if (displayToAmount !== prevDisplayAmount.current) {
@@ -281,9 +284,21 @@ export function CustomSwap() {
       const txResult = await sendTx(quote.transactionRequest);
       setSwapStatus('success');
       setTxHash(txResult.transactionHash);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Swap fallido", err);
-      const friendlyMessage = "La transacción falló. Es posible que la hayas rechazado o que la cotización haya expirado.";
+      let friendlyMessage = "La transacción falló. Es posible que la hayas rechazado o que la cotización haya expirado.";
+      
+      // Handle specific Thirdweb/aggregator errors
+      if (err.message?.includes('0x7939f424') || err.message?.includes('InsufficientLiquidity')) {
+        friendlyMessage = "Liquidez insuficiente en la ruta seleccionada. Intenta con una cantidad menor o cambia los tokens.";
+      } else if (err.message?.includes('400') || err.message?.includes('amount is too high')) {
+        friendlyMessage = "La cantidad es demasiado alta para esta ruta. Prueba con un monto más pequeño.";
+      } else if (err.message?.includes('No route is available')) {
+        friendlyMessage = "No hay ruta disponible para este par de tokens. Verifica la liquidez o prueba otros tokens.";
+      } else if (err.message?.includes('User rejected')) {
+        friendlyMessage = "Transacción rechazada por el usuario.";
+      }
+      
       setErrorMessage(friendlyMessage);
       setSwapStep('error');
     }
@@ -308,6 +323,7 @@ export function CustomSwap() {
     if (error) return error;
     if (isQuoteLoading) return "Obteniendo cotización...";
     if (isQuoteUnrealistic) return "Cotización Inválida";
+    if (isAmountTooLarge) return "Monto demasiado alto";
     if (isSwapping) return "Confirmando en wallet...";
     if (!quote && isReadyForQuote) return "Ruta no disponible";
     return "Revisar Swap";

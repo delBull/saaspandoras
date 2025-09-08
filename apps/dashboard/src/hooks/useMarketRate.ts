@@ -30,8 +30,8 @@ const TOKEN_MAP: Record<string, { address: string; coingeckoId?: string }> = {
   // Polygon (137)
   "ETH-137": { address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" },
   "WETH-137": { address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619" },
-  "USDC-137": { address: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174" },
-  "DAI-137": { address: "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063" },
+  "USDC-137": { address: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", coingeckoId: "usd-coin" },
+  "DAI-137": { address: "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063", coingeckoId: "dai" },
 
   // Optimism (10)
   "ETH-10": { address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" },
@@ -120,19 +120,41 @@ export function useMarketRate(
 
     const fetchPrice = async (token: TokenInfo, mappedToken: { address: string; coingeckoId?: string }): Promise<number | undefined> => {
       const platform = getPlatform(token.chainId);
+      console.log(`Fetching price for ${token.symbol} on chain ${token.chainId}, platform: ${platform}, mapping:`, mappedToken);
       
-      // Prioriza la búsqueda por ID de coingecko si está disponible (más directo para tokens nativos como ETH)
-      if (mappedToken.coingeckoId) {
-        const url = `https://api.coingecko.com/api/v3/simple/price?ids=${mappedToken.coingeckoId}&vs_currencies=usd`;
-        const data = await fetch(url).then(r => r.json() as Promise<CoinGeckoPriceResponse>);
-        return data[mappedToken.coingeckoId]?.usd;
-      }
-      
-      // Si no, busca por dirección de contrato en la plataforma específica
-      if (platform && mappedToken.address) {
-        const url = `https://api.coingecko.com/api/v3/simple/token_price/${platform}?contract_addresses=${mappedToken.address}&vs_currencies=usd`;
-        const data = await fetch(url).then(r => r.json() as Promise<CoinGeckoPriceResponse>);
-        return data[mappedToken.address.toLowerCase()]?.usd;
+      try {
+        // Prioriza la búsqueda por ID de coingecko si está disponible (más directo para tokens nativos como ETH)
+        if (mappedToken.coingeckoId) {
+          const url = `https://api.coingecko.com/api/v3/simple/price?ids=${mappedToken.coingeckoId}&vs_currencies=usd`;
+          console.log(`CoinGecko URL (ID): ${url}`);
+          const res = await fetch(url);
+          if (!res.ok) {
+            console.error(`CoinGecko API error for ID ${mappedToken.coingeckoId}: ${res.status} ${res.statusText}`);
+            return undefined;
+          }
+          const data = await res.json() as CoinGeckoPriceResponse;
+          const price = data[mappedToken.coingeckoId]?.usd;
+          console.log(`Price for ${mappedToken.coingeckoId}: ${price}`);
+          return price;
+        }
+        
+        // Si no, busca por dirección de contrato en la plataforma específica
+        if (platform && mappedToken.address) {
+          const url = `https://api.coingecko.com/api/v3/simple/token_price/${platform}?contract_addresses=${mappedToken.address}&vs_currencies=usd`;
+          console.log(`CoinGecko URL (contract): ${url}`);
+          const res = await fetch(url);
+          if (!res.ok) {
+            console.error(`CoinGecko API error for contract ${mappedToken.address} on ${platform}: ${res.status} ${res.statusText}`);
+            return undefined;
+          }
+          const data = await res.json() as CoinGeckoPriceResponse;
+          const price = data[mappedToken.address.toLowerCase()]?.usd;
+          console.log(`Price for ${mappedToken.address} on ${platform}: ${price}`);
+          return price;
+        }
+      } catch (error) {
+        console.error(`Error fetching price for ${token.symbol}-${token.chainId}:`, error);
+        return undefined;
       }
 
       return undefined;
@@ -145,12 +167,18 @@ export function useMarketRate(
           fetchPrice(toToken, toMapped),
         ]);
 
+        console.log(`Fetched prices - From: ${fromUsd}, To: ${toUsd}`);
+
         if (fromUsd && toUsd && toUsd > 0) {
-          setRate(fromUsd / toUsd);
+          const calculatedRate = fromUsd / toUsd;
+          console.log(`Calculated market rate: ${calculatedRate}`);
+          setRate(calculatedRate);
         } else {
+          console.warn(`Cannot calculate rate: fromUsd=${fromUsd}, toUsd=${toUsd}`);
           setRate(null);
         }
-      } catch {
+      } catch (error) {
+        console.error('Error in fetchAllPrices:', error);
         setRate(null);
       }
     };
