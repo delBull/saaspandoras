@@ -39,7 +39,7 @@ export function ReviewModal({ isOpen, onOpenChange, onConfirm, fromToken, toToke
   const minAmount = quote.swapDetails.toAmountMinWei ? formatUnits(BigInt(quote.swapDetails.toAmountMinWei), toToken.decimals) : "0.0";
   const slippageBps = quote.swapDetails.maxSlippageBPS ?? 50; // Default 0.5%
   const slippage = (slippageBps / 100).toFixed(2);
-  const gasCostCents = quote.swapDetails.estimated?.gasCostUSDCents ?? 1; // Default ~$0.01
+  const gasCostCents = quote.swapDetails.estimated?.gasCostUSDCents ?? 1;
   const gasCost = (gasCostCents / 100).toFixed(4);
 
   return (
