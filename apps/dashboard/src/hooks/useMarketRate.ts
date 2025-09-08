@@ -25,70 +25,55 @@ const TOKEN_MAP: Record<string, { address: string; coingeckoId?: string }> = {
   "ETH-1": { address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", coingeckoId: "ethereum" },
   "WETH-1": { address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", coingeckoId: "weth" },
   "USDC-1": { address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", coingeckoId: "usd-coin" },
+  "USDT-1": { address: "0xdAC17F958D2ee523a2206206994597C13D831ec7", coingeckoId: "tether" },
   "DAI-1": { address: "0x6B175474E89094C44Da98b954EedeAC495271d0F", coingeckoId: "dai" },
+  "WBTC-1": { address: "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599", coingeckoId: "wrapped-bitcoin" },
 
   // Polygon (137)
   "ETH-137": { address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" },
-  "WETH-137": { address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619" },
+  "WETH-137": { address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619", coingeckoId: "weth" },
   "MATIC-137": { address: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270", coingeckoId: "matic-network" },
   "POL-137": { address: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270", coingeckoId: "pol" },
   "USDC-137": { address: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", coingeckoId: "usd-coin" },
+  "USDT-137": { address: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", coingeckoId: "tether" },
   "DAI-137": { address: "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063", coingeckoId: "dai" },
-
-  // Optimism (10)
-  "ETH-10": { address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" },
-  "WETH-10": { address: "0x4200000000000000000000000000000000000006" },
-  "USDC-10": { address: "0x7F5c764cBc14f9669B88837ca1490cCa17c31607" },
-  "DAI-10": { address: "0xda10009cBd5D07dd0CeCc66161FC93D7c9000da1" },
-
-  // Arbitrum One (42161)
-  "ETH-42161": { address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" },
-  "WETH-42161": { address: "0x82af49447d8a07e3bd95bd0d56f35241523fbab1" },
-  "USDC-42161": { address: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831" },
-  "DAI-42161": { address: "0xda10009cBd5D07dd0CeCc66161FC93D7c9000da1" },
+  "WBTC-137": { address: "0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6", coingeckoId: "wrapped-bitcoin" },
 
   // Base (8453)
   "ETH-8453": { address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" },
-  "WETH-8453": { address: "0x4200000000000000000000000000000000000006" },
-  "USDC-8453": { address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" },
+  "WETH-8453": { address: "0x4200000000000000000000000000000000000006", coingeckoId: "weth" },
+  "USDC-8453": { address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", coingeckoId: "usd-coin" },
+  "USDT-8453": { address: "0x2aeb6c9d4a9a94d7c3e2d3d3d3d3d3d3d3d3d3d3", coingeckoId: "tether" },
+  "DAI-8453": { address: "0x50c5725949A6F0c72E6C4A641F24049A917DB0Cb", coingeckoId: "dai" },
+  "WBTC-8453": { address: "0x2aeb6c9d4a9a94d7c3e2d3d3d3d3d3d3d3d3d3d3", coingeckoId: "wrapped-bitcoin" },
+
+  // Optimism (10)
+  "ETH-10": { address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" },
+  "WETH-10": { address: "0x4200000000000000000000000000000000000006", coingeckoId: "weth" },
+  "USDC-10": { address: "0x7F5c764cBc14f9669B88837ca1490cCa17c31607", coingeckoId: "usd-coin" },
+  "USDT-10": { address: "0x94b008aA00579C1307B0EF2c499aD98a8ce58e58", coingeckoId: "tether" },
+  "DAI-10": { address: "0xda10009cBd5D07dd0CeCc66161FC93D7c9000da1", coingeckoId: "dai" },
+
+  // Arbitrum One (42161)
+  "ETH-42161": { address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" },
+  "WETH-42161": { address: "0x82af49447d8a07e3bd95bd0d56f35241523fbab1", coingeckoId: "weth" },
+  "USDC-42161": { address: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831", coingeckoId: "usd-coin" },
+  "USDT-42161": { address: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9", coingeckoId: "tether" },
+  "DAI-42161": { address: "0xda10009cBd5D07dd0CeCc66161FC93D7c9000da1", coingeckoId: "dai" },
 
   // Binance Smart Chain (56)
-  "ETH-56": { address: "0x2170Ed0880ac9A755fd29B2688956BD959F933F8" },
-  "USDC-56": { address: "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d" },
-  "DAI-56": { address: "0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3" },
+  "ETH-56": { address: "0x2170Ed0880ac9A755fd29B2688956BD959F933F8", coingeckoId: "ethereum" },
+  "WETH-56": { address: "0x2170Ed0880ac9A755fd29B2688956BD959F933F8", coingeckoId: "weth" },
+  "USDC-56": { address: "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d", coingeckoId: "usd-coin" },
+  "USDT-56": { address: "0x55d398326f99059fF775485246999027B3197955", coingeckoId: "tether" },
+  "DAI-56": { address: "0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3", coingeckoId: "dai" },
 
   // Avalanche (43114)
-  "WETH-43114": { address: "0x49D5c2BdFfac6CE2BFdB6640F4F80f226bc10bAB" },
-  "USDC-43114": { address: "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E" },
-  "DAI-43114": { address: "0xd586E7F844cEa2F87f50152665BCbc2C279D8d70" },
-
-  // zkSync Era Mainnet (324)
-  "ETH-324": { address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" },
-  "WETH-324": { address: "0x5aea5775959fbc2557cc8789bc1bf90a239d9a91" },
-  "USDC-324": { address: "0x3355df6D4c9C3035724Fd0e3914dE96A5a83aaf4" },
-  "DAI-324": { address: "0x4C40aB6f92cD1cD6F4Ee347E4Ea3A204d4c1c6eE" },
-
-  // Polygon zkEVM (1101)
-  "ETH-1101": { address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" },
-  "WETH-1101": { address: "0x0bD8C3c6f93c3b1d5867B31BdD4093f17ecCe2B5" },
-  "USDC-1101": { address: "0xA8CE8aee21bE376A0D2cA0dA53B78a7eADeD6c05" },
-  "DAI-1101": { address: "0x7b6e361F87AebD2113E0C6602322eA74ca6b4590" },
-
-  // Linea (59144)
-  "ETH-59144": { address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" },
-  "WETH-59144": { address: "0xb23C20EFcE6e24Acca0Cef9B7B7aA196b84EC942" },
-  "USDC-59144": { address: "0xA219439258ca9d6A15eAFFF05c90Af0bDcBB0b11" },
-
-  // Gnosis/xDAI (100)
-  "WETH-100": { address: "0x6a023ccd1ff6f2045c3309768ead9e68f978f6e1" },
-  "USDC-100": { address: "0xddafbb505ad214d7b80b1f830fcccc89b60fb7a3" },
-  "DAI-100": { address: "0x44fa8e6f47987339850636f88629646662444217" },
-
-  // Fantom (250)
-  "ETH-250": { address: "0x74B23882a30290451A17c44f4F05243B6b58C76d" },
-  "WETH-250": { address: "0x21be370d5312f44cb42ce377bc9b8a0cef1a4c83" },
-  "USDC-250": { address: "0x04068da6c83afcfa0e13ba15a6696662335d5b75" },
-  "DAI-250": { address: "0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E" },
+  "ETH-43114": { address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" },
+  "WETH-43114": { address: "0x49D5c2BdFfac6CE2BFdB6640F4F80f226bc10bAB", coingeckoId: "weth" },
+  "USDC-43114": { address: "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E", coingeckoId: "usd-coin" },
+  "USDT-43114": { address: "0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7", coingeckoId: "tether" },
+  "DAI-43114": { address: "0xd586E7F844cEa2F87f50152665BCbc2C279D8d70", coingeckoId: "dai" },
 
   // Agrega otros mappings según tu app
 };
@@ -110,12 +95,17 @@ export function useMarketRate(
   const [rate, setRate] = useState<RateResult>(null);
 
   useEffect(() => {
+    console.log('useMarketRate effect triggered', { fromToken, toToken });
+    
     const fromKey = fromToken ? `${fromToken.symbol.toUpperCase()}-${fromToken.chainId}` : null;
     const toKey = toToken ? `${toToken.symbol.toUpperCase()}-${toToken.chainId}` : null;
     const fromMapped = fromKey ? TOKEN_MAP[fromKey] : null;
     const toMapped = toKey ? TOKEN_MAP[toKey] : null;
 
+    console.log('Market rate mapping keys:', { fromKey, toKey, fromMapped, toMapped });
+
     if (!fromToken || !toToken || !fromMapped || !toMapped) {
+      console.log('Market rate: missing tokens or mappings, setting null');
       setRate(null);
       return;
     }

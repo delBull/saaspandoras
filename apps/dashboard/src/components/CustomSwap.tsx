@@ -1,8 +1,8 @@
+
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
-  useBuyWithCryptoQuote,
   useSendTransaction,
   useActiveAccount,
   useWalletBalance,
@@ -16,12 +16,14 @@ import { prepareTransaction } from "thirdweb";
 import { useMarketRate } from '@/hooks/useMarketRate';
 import { BadgeChain } from './BadgeChain';
 import { useSwapAnalytics } from "@/hooks/useSwapAnalytics";
+import { Bridge } from "thirdweb";
 // Componentes de UI
 import { ReviewModal } from './swap/ReviewModal';
 import { ChainAndTokenInput } from './swap/ChainAndTokenInput';
 import { ProgressModal } from './swap/ProgressModal';
 import { ResultModal } from './swap/ResultModal';
 import { TokenSelector } from './swap/TokenSelector';
+import { TokenRoutes } from './swap/TokenRoutes';
 import { Skeleton } from "@saasfly/ui/skeleton";
 import { Button } from "@saasfly/ui/button";
 import { Sheet, SheetContent } from "@saasfly/ui/sheet";
@@ -41,7 +43,6 @@ const SUPPORTED_CHAINS = [
   { id: 137, name: "Polygon" },
   { id: 10, name: "Optimism" },
   { id: 42161, name: "Arbitrum" },
-  { id: 56, name: "BNB Chain" },
   { id: 43114, name: "Avalanche" },
 ];
 
@@ -53,10 +54,48 @@ function useTokenList(chainId: number) {
   useEffect(() => {
     async function fetchTokens() {
       try {
+        console.log(`Fetching tokens for chain ${chainId} from: ${TOKENLIST_URL}`);
         const res = await fetch(TOKENLIST_URL);
-        const data = await res.json() as TokenListResponse;
-        setTokens(data.tokens.filter((t: Token) => t.chainId === chainId));
-      } catch { setTokens([]); toast.error("Error al cargar la lista de tokens"); }
+        if (!res.ok) {
+          console.error(`Failed to fetch token list: ${res.status} ${res.statusText}`);
+          // Fallback to default tokens for basic functionality
+          const defaultTokens: Token[] = [
+            { name: "USD Coin", address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", symbol: "USDC", decimals: 6, chainId: chainId, logoURI: "https://tokens.uniswap.org/images/USDC.svg" },
+            { name: "Wrapped ETH", address: "0x4200000000000000000000000000000000000006", symbol: "WETH", decimals: 18, chainId: chainId, logoURI: "https://tokens.uniswap.org/images/WETH.svg" },
+            { name: "DAI", address: "0x50c5725949A6F0c72E6C4A641F24049A917DB0Cb", symbol: "DAI", decimals: 18, chainId: chainId, logoURI: "https://tokens.uniswap.org/images/DAI.svg" },
+          ];
+          console.log(`Using fallback tokens for chain ${chainId}`);
+          setTokens(defaultTokens);
+          return;
+        }
+        const data = await res.json();
+        console.log('Token list response structure:', Object.keys(data));
+        // Handle different response formats
+        const tokenList = Array.isArray(data.tokens) ? data.tokens : Array.isArray(data) ? data : [];
+        const filteredTokens = tokenList.filter((t: any) => Number(t.chainId) === chainId) as Token[];
+        console.log(`Loaded ${filteredTokens.length} tokens for chain ${chainId} from total ${tokenList.length}`);
+        if (filteredTokens.length === 0) {
+          console.warn(`No tokens found for chain ${chainId}, using fallback`);
+          // Add fallback tokens if no chain-specific tokens found
+          const fallbackTokens: Token[] = [
+            { name: "USD Coin", address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", symbol: "USDC", decimals: 6, chainId: chainId, logoURI: "https://tokens.uniswap.org/images/USDC.svg" },
+            { name: "Wrapped ETH", address: "0x4200000000000000000000000000000000000006", symbol: "WETH", decimals: 18, chainId: chainId, logoURI: "https://tokens.uniswap.org/images/WETH.svg" },
+          ];
+          setTokens(fallbackTokens);
+        } else {
+          setTokens(filteredTokens);
+        }
+      } catch (error) {
+        console.error(`Error fetching tokens:`, error);
+        // Fallback to default tokens
+        const defaultTokens: Token[] = [
+          { name: "USD Coin", address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", symbol: "USDC", decimals: 6, chainId: chainId, logoURI: "https://tokens.uniswap.org/images/USDC.svg" },
+          { name: "Wrapped ETH", address: "0x4200000000000000000000000000000000000006", symbol: "WETH", decimals: 18, chainId: chainId, logoURI: "https://tokens.uniswap.org/images/WETH.svg" },
+        ];
+        console.log(`Using fallback tokens for chain ${chainId} due to error`);
+        setTokens(defaultTokens);
+        toast.error("Error al cargar la lista de tokens, usando tokens por defecto");
+      }
     }
     void fetchTokens();
   }, [chainId]);
@@ -75,6 +114,7 @@ export function CustomSwap() {
   const [fromChainId, setFromChainId] = useState(SUPPORTED_CHAINS[0]!.id);
   const [toChainId, setToChainId] = useState(SUPPORTED_CHAINS[0]!.id);
   const [toToken, setToToken] = useState<Token | null>(null);
+  const [availableRoutes, setAvailableRoutes] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [animateColor, setAnimateColor] = useState(false);
   const [swapStep, setSwapStep] = useState<'form' | 'review' | 'swapping' | 'success' | 'error'>('form');
@@ -132,8 +172,39 @@ export function CustomSwap() {
     feeRecipient: FEE_WALLET,
   } : undefined;
 
-  const { data: quote, isLoading: isQuoteLoading } = useBuyWithCryptoQuote(swapParams);
+  const [quote, setQuote] = useState<any>(null);
+  const [isQuoteLoading, setIsQuoteLoading] = useState(false);
   const { mutateAsync: sendTx, isPending: isSwapping } = useSendTransaction();
+
+  // Use Bridge.Buy.prepare for quote
+  useEffect(() => {
+    async function fetchQuote() {
+      if (!isReadyForQuote) {
+        setQuote(null);
+        return;
+      }
+      setIsQuoteLoading(true);
+      try {
+        const preparedQuote = await Bridge.Buy.prepare({
+          originChainId: fromToken!.chainId,
+          originTokenAddress: fromToken!.address,
+          destinationChainId: toToken!.chainId,
+          destinationTokenAddress: toToken!.address,
+          amount: parseUnits(fromAmount, fromToken!.decimals),
+          sender: account!.address,
+          receiver: account!.address,
+          client,
+        });
+        setQuote(preparedQuote);
+      } catch (error) {
+        console.error('Error getting buy quote:', error);
+        setQuote(null);
+      } finally {
+        setIsQuoteLoading(false);
+      }
+    }
+    void fetchQuote();
+  }, [fromToken, toToken, fromAmount, account, isReadyForQuote]);
   
   const { data: receipt, isLoading: isWaitingForConfirmation } = useWaitForReceipt(
     txHash && fromToken
@@ -273,17 +344,29 @@ export function CustomSwap() {
     setSwapStep('swapping');
     setApprovingStatus('pending'); setSwapStatus('pending'); setNetworkStatus('pending');
     try {
-      if (quote.approvalData) {
-        const { spenderAddress, amountWei, tokenAddress, chainId } = quote.approvalData;
-        const approvalTx = prepareTransaction({ to: tokenAddress, chain: defineChain(chainId), client, data: encodeFunctionData({ abi: erc20Abi, functionName: 'approve', args: [spenderAddress, BigInt(amountWei)] }) });
-        await sendTx(approvalTx);
-        setApprovingStatus('success');
-      } else {
-        setApprovingStatus('skipped');
+      // Execute the quote steps
+      for (const step of quote.steps) {
+        for (const transaction of step.transactions) {
+          if (transaction.action === "approval") {
+            const approvalTx = prepareTransaction({
+              to: transaction.to,
+              chain: defineChain(transaction.chainId),
+              client,
+              data: transaction.data
+            });
+            await sendTx(approvalTx);
+            setApprovingStatus('success');
+          } else {
+            const txResult = await sendTx(transaction);
+            if (transaction.action === "buy") {
+              setTxHash(txResult.transactionHash);
+              setSwapStatus('success');
+            }
+          }
+        }
       }
-      const txResult = await sendTx(quote.transactionRequest);
-      setSwapStatus('success');
-      setTxHash(txResult.transactionHash);
+      setNetworkStatus('success');
+      setSwapStep('success');
     } catch (err: any) {
       console.error("Swap fallido", err);
       let friendlyMessage = "La transacción falló. Es posible que la hayas rechazado o que la cotización haya expirado.";
