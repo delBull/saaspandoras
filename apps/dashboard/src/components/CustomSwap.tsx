@@ -128,7 +128,7 @@ export function CustomSwap() {
     fromAmount: fromAmount,
     toChainId: toToken.chainId,
     fromChainId: fromToken.chainId,
-    feeBps: 50,
+    feeBps: 10,
     feeRecipient: FEE_WALLET,
   } : undefined;
 

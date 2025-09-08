@@ -37,8 +37,10 @@ export function ReviewModal({ isOpen, onOpenChange, onConfirm, fromToken, toToke
   if (!fromToken || !toToken || !quote) return null;
   // Ahora los accesos son 100% seguros porque usamos el tipo oficial
   const minAmount = quote.swapDetails.toAmountMinWei ? formatUnits(BigInt(quote.swapDetails.toAmountMinWei), toToken.decimals) : "0.0";
-  const slippage = quote.swapDetails.maxSlippageBPS ? (quote.swapDetails.maxSlippageBPS / 100).toFixed(2) : "0.00";
-  const gasCost = quote.swapDetails.estimated?.gasCostUSDCents ? (quote.swapDetails.estimated.gasCostUSDCents / 100).toFixed(4) : "0.0000";
+  const slippageBps = quote.swapDetails.maxSlippageBPS ?? 50; // Default 0.5%
+  const slippage = (slippageBps / 100).toFixed(2);
+  const gasCostCents = quote.swapDetails.estimated?.gasCostUSDCents ?? 1; // Default ~$0.01
+  const gasCost = (gasCostCents / 100).toFixed(4);
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -46,7 +48,7 @@ export function ReviewModal({ isOpen, onOpenChange, onConfirm, fromToken, toToke
         <DialogHeader>
           <DialogTitle className="text-xl">Revisar Transacción</DialogTitle>
           <DialogDescription id="review-modal-desc">
-            Confirma los detalles antes de swappear.
+            Confirma los detalles antes de swapear.
             {!marketRate && (
               <div className="text-orange-400 font-bold mt-2">Advertencia: No hay tasa de mercado de referencia disponible.</div>
             )}

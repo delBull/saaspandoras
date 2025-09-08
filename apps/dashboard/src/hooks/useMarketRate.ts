@@ -30,6 +30,8 @@ const TOKEN_MAP: Record<string, { address: string; coingeckoId?: string }> = {
   // Polygon (137)
   "ETH-137": { address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" },
   "WETH-137": { address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619" },
+  "MATIC-137": { address: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270", coingeckoId: "matic-network" },
+  "POL-137": { address: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270", coingeckoId: "pol" },
   "USDC-137": { address: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", coingeckoId: "usd-coin" },
   "DAI-137": { address: "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063", coingeckoId: "dai" },
 

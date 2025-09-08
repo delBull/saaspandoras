@@ -16,12 +16,16 @@ interface Token {
 }
 
 export function TokenSelector({ tokens, currentSelection, onSelect, searchTerm, setSearchTerm }: { tokens: Token[]; currentSelection: string; onSelect: (token: Token) => void; searchTerm: string; setSearchTerm: (t: string) => void; }) {
-  const popularTokens = ['ETH', 'USDC', 'WETH', 'DAI'];
-  const popularTokenData = popularTokens.map(symbol => tokens.find(t => t.symbol === symbol)).filter(Boolean) as Token[];
+  const popularTokens = ['ETH', 'USDC', 'WETH', 'DAI', 'USDT', 'WBTC'];
+  const popularTokenData = popularTokens
+    .map(symbol => tokens.find(t => t.symbol === symbol))
+    .filter(Boolean)
+    .slice(0, 6) as Token[]; // Limit to 6 for UI
   const filteredTokens = tokens.filter(
       (token) => token.address !== currentSelection &&
       (token.symbol.toLowerCase().includes(searchTerm.trim().toLowerCase()) ||
-       token.name.toLowerCase().includes(searchTerm.trim().toLowerCase()))
+       token.name.toLowerCase().includes(searchTerm.trim().toLowerCase()) ||
+       token.address.toLowerCase().includes(searchTerm.trim().toLowerCase()))
   );
   return (
     <div className="grid h-full grid-rows-[auto_auto_auto_1fr] gap-4 p-4">
