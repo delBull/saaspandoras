@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import useQuote, { type UniswapQuote } from "@/hooks/useQuote"; // eslint-disable-line
+import useQuote, { type UniswapQuote } from "@/hooks/useQuote";
 import type { Token } from "@/types/token";
 import { UNISWAP_V3_SWAP_ROUTER_02_ADDRESSES, type SupportedChainId } from "@/lib/uniswap-v3-constants";
 import { exactInputSingle } from "thirdweb/extensions/uniswap";
@@ -36,7 +36,6 @@ import { ArrowDownIcon } from "lucide-react";
 import { createWallet, inAppWallet } from "thirdweb/wallets";
 import { config } from "@/config";
 
-const FEE_WALLET = process.env.NEXT_PUBLIC_SWAP_FEE_WALLET ?? "0x00c9f7EE6d1808C09B61E561Af6c787060BFE7C9";
 const TOKENLIST_URL = "https://tokens.uniswap.org";
 const TESTNET_IDS = [ 11155111, 84532, 421614, 534351, 80001, 5, 97 ];
 const SUPPORTED_CHAINS = [
@@ -157,7 +156,7 @@ export function CustomSwap() {
   const isSameToken = fromToken?.address === toToken?.address;
   const isInsufficientBalance = fromAmount && balance?.value && fromToken ? (fromAmountBaseUnits > balance.value) : false;
   const isReadyForQuote = account && fromToken && toToken && !isInvalidAmount && !isSameToken && !isInsufficientBalance;
-  const [bridgeQuote, setBridgeQuote] = useState<Awaited<ReturnType<typeof Bridge.Sell.quote>> | null>(null);
+  const [bridgeQuote, setBridgeQuote] = useState<Awaited<ReturnType<typeof Bridge.Sell.quote>> | null>(null); // eslint-disable-line
   const [isBridgeQuoteLoading, setIsBridgeQuoteLoading] = useState(false);
   const { loading: uniswapQuoteLoading, fee: uniswapFee, outputAmount: uniswapOutputAmount } = useQuote({
     chainId: fromChainId as SupportedChainId,
@@ -223,7 +222,7 @@ export function CustomSwap() {
       }
     };
     void fetchBridgeQuote();
-  }, [fromToken, toToken, fromAmount, account, isReadyForQuote, availableRoutes, fromAmountBaseUnits]);
+  }, [fromToken, toToken, fromAmount, account, isReadyForQuote, availableRoutes, fromAmountBaseUnits, client]);
   
   const { data: receipt, isLoading: isWaitingForConfirmation } = useWaitForReceipt(
     txHash && fromToken
@@ -293,7 +292,7 @@ export function CustomSwap() {
     if (isSameChain && uniswapOutputAmount && uniswapOutputAmount > 0n) {
       return { outputAmount: uniswapOutputAmount, fee: uniswapFee };
     }
-    return bridgeQuote as any; // Cast to any to satisfy multiple component prop types
+    return bridgeQuote;
   }, [isSameChain, uniswapOutputAmount, uniswapFee, bridgeQuote]);
 
   // Rate de mercado: puede ser null/N/A y eso está OK para UX
@@ -364,7 +363,7 @@ export function CustomSwap() {
     fromToken,
     toToken,
     fromAmount,
-    quote: currentQuote,
+    quote: currentQuote as any, // Cast to any to satisfy analytics hook
     marketRate,
     txStatus: 'success',
   });
@@ -376,7 +375,7 @@ export function CustomSwap() {
     fromToken,
     toToken,
     fromAmount,
-    quote: currentQuote,
+    quote: currentQuote as any, // Cast to any to satisfy analytics hook
     marketRate,
     txStatus: 'error',
   });
@@ -492,7 +491,7 @@ export function CustomSwap() {
     <div className="flex flex-col gap-2 p-2 md:p-4 rounded-2xl bg-black/20">
       <Sheet open={!!isTokenModalOpen} onOpenChange={(isOpen: boolean) => !isOpen && setTokenModalOpen(null)}>
         <SheetContent className="bg-zinc-900 border-none text-white p-0 flex flex-col md:max-w-md md:rounded-2xl inset-x-0 bottom-0 md:inset-auto rounded-t-2xl h-[85vh] md:h-auto md:max-h-[600px]">
-          <TokenSelector tokens={activeTokenList} onSelect={handleTokenSelect as (token: any) => void} currentSelection={isTokenModalOpen === 'from' ? toToken?.address ?? "" : fromToken?.address ?? ""} searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+          <TokenSelector tokens={activeTokenList} onSelect={handleTokenSelect} currentSelection={isTokenModalOpen === 'from' ? toToken?.address ?? "" : fromToken?.address ?? ""} searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
         </SheetContent>
       </Sheet>
 
@@ -505,7 +504,7 @@ export function CustomSwap() {
         toToken={toToken}
         fromAmount={fromAmount}
         displayToAmount={displayToAmount}
-        quote={currentQuote}
+        quote={currentQuote as any}
         fee={isSameChain ? uniswapFee : undefined}
         expectedAmount={expectedAmount}
         quotedAmount={quotedAmountAsNumber}
