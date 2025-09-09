@@ -94,7 +94,7 @@ export default function useQuote({ chainId, tokenIn, tokenOut, amount }: { chain
 
         const quoterContract = getThirdwebContract({ address: UNISWAP_V3_QUOTER_V2_ADDRESSES[chainId], chainId });
 
-        const results: bigint[] = await Promise.all(
+        const results = await Promise.all(
           pools.map(async (pool: GetUniswapV3PoolResult) => {
             const quoteTx: PreparedTransaction = quoteExactInputSingle({
               contract: quoterContract,
@@ -106,7 +106,7 @@ export default function useQuote({ chainId, tokenIn, tokenOut, amount }: { chain
             });
             try {
               const simulation = await simulateTransaction({ transaction: quoteTx });
-              return simulation.result;
+              return simulation.result as bigint;
             } catch (e) {
               console.error("Quote simulation failed for pool", pool.poolFee, e);
               return 0n;
@@ -115,7 +115,7 @@ export default function useQuote({ chainId, tokenIn, tokenOut, amount }: { chain
         );
 
         // Find max output
-        const maxOutput = results.reduce((max, current) => current > max ? current : max, 0n);
+        const maxOutput = results.reduce((max, current) => (current ?? 0n) > max ? (current ?? 0n) : max, 0n);
         const bestPoolIndex = results.findIndex(r => r === maxOutput);
         const bestFee = pools[bestPoolIndex]?.poolFee ?? 0;
 
