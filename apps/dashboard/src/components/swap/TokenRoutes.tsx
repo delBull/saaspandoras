@@ -15,22 +15,17 @@ interface Token {
   logoURI?: string;
 }
 
-interface Route {
-  originToken: Token;
-  destinationToken: Token;
-}
-
 interface TokenRoutesProps {
   fromChainId: number;
   toChainId: number;
   fromToken: Token | null;
   toToken: Token | null;
-  onRoutesChange: (routes: Route[]) => void;
+  onRoutesChange: (routes: Bridge.Route[]) => void;
   onTokenChange: (token: Token) => void;
 }
 
 export function TokenRoutes({ fromChainId, toChainId, fromToken, toToken, onRoutesChange, onTokenChange }: TokenRoutesProps) {
-  const [availableRoutes, setAvailableRoutes] = useState<Route[]>([]);
+  const [availableRoutes, setAvailableRoutes] = useState<Bridge.Route[]>([]);
   const [isLoadingRoutes, setIsLoadingRoutes] = useState(false);
   const [tokens, setTokens] = useState<Token[]>([]);
 
@@ -42,22 +37,23 @@ export function TokenRoutes({ fromChainId, toChainId, fromToken, toToken, onRout
           limit: 100,
           client,
         });
-        // Map Thirdweb TokenWithPrices to our Token interface
-        const mappedTokens = allTokens.map((t: any) => ({
+        // Map Thirdweb tokens to our Token interface
+        const mappedTokens = allTokens.map((t) => ({
           name: t.name,
           address: t.address,
           symbol: t.symbol,
           decimals: t.decimals,
           chainId: t.chainId,
-          logoURI: t.iconUri,
-        })) as Token[];
+          logoURI: t.iconUri, // iconUri is the correct property from thirdweb
+          image: t.iconUri,
+        }));
         setTokens(mappedTokens);
       } catch (error) {
         console.error('Error fetching tokens:', error);
         toast.error('Error loading tokens');
       }
     }
-    fetchTokens();
+    void fetchTokens();
   }, []);
 
   // Fetch available routes using Bridge.routes
@@ -80,12 +76,8 @@ export function TokenRoutes({ fromChainId, toChainId, fromToken, toToken, onRout
         });
         
         console.log(`Found ${routes.length} routes for ${fromToken!.symbol} -> ${toToken!.symbol}`);
-        const routeObjects = routes.map(route => ({
-          originToken: fromToken!,
-          destinationToken: toToken!,
-        }));
-        setAvailableRoutes(routeObjects);
-        onRoutesChange(routeObjects);
+        setAvailableRoutes(routes);
+        onRoutesChange(routes);
       } catch (error) {
         console.error('Error fetching routes:', error);
         toast.error('No routes available for this pair');
@@ -95,20 +87,15 @@ export function TokenRoutes({ fromChainId, toChainId, fromToken, toToken, onRout
         setIsLoadingRoutes(false);
       }
     }
-    fetchRoutes();
-  }, [fromToken, toToken]);
+    void fetchRoutes();
+  }, [fromToken, toToken, onRoutesChange]);
 
   // Handle token selection from Bridge.tokens
-  const handleTokenSelect = (selectedToken: any) => {
+  const handleTokenSelect = (selectedToken: Token) => {
     const token: Token = {
-      name: selectedToken.name,
-      address: selectedToken.address,
-      symbol: selectedToken.symbol,
-      decimals: selectedToken.decimals,
-      chainId: selectedToken.chainId,
-      logoURI: selectedToken.iconUri || '',
+      ...selectedToken
     };
-    onTokenChange(token);
+    onTokenChange(token); // onTokenChange expects our internal Token type
   };
 
   if (isLoadingRoutes) {
@@ -171,12 +158,12 @@ export function TokenRoutes({ fromChainId, toChainId, fromToken, toToken, onRout
           <h3 className="font-medium mb-2">Available Routes ({availableRoutes.length})</h3>
           <div className="space-y-2">
             {availableRoutes.map((route, index) => (
-              <div key={index} className="p-3 bg-green-50 rounded border">
-                <p className="font-medium">
+              <div key={index} className="p-3 bg-green-50/10 text-white rounded border border-green-500/20">
+                <p className="font-medium"> 
                   {route.originToken.symbol} ({route.originToken.name}) →{" "}
                   {route.destinationToken.symbol} ({route.destinationToken.name})
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-400">
                   Chain: {defineChain(route.originToken.chainId).name} →{" "}
                   {defineChain(route.destinationToken.chainId).name}
                 </p>

@@ -2,23 +2,22 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import useQuote from "@/hooks/useQuote";
+import useQuote, { type UniswapQuote } from "@/hooks/useQuote"; // eslint-disable-line
 import type { Token } from "@/types/token";
-import { UNISWAP_V3_SWAP_ROUTER_02_ADDRESSES, SupportedChainId } from "@/lib/uniswap-v3-constants";
+import { UNISWAP_V3_SWAP_ROUTER_02_ADDRESSES, type SupportedChainId } from "@/lib/uniswap-v3-constants";
 import { exactInputSingle } from "thirdweb/extensions/uniswap";
 import { approve as thirdwebApprove, allowance as thirdwebAllowance } from "thirdweb/extensions/erc20";
 import getThirdwebContract from "@/lib/get-contract";
 import {
-  useSendTransaction,
   useActiveAccount,
   useWalletBalance,
   useWaitForReceipt,
+  useSendTransaction,
   useConnectModal
 } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
 import { parseUnits, formatUnits } from "viem";
 import { defineChain } from "thirdweb/chains";
-import { prepareTransaction } from "thirdweb";
 import { useMarketRate } from '@/hooks/useMarketRate';
 import { BadgeChain } from './BadgeChain';
 import { useSwapAnalytics } from "@/hooks/useSwapAnalytics";
@@ -38,9 +37,7 @@ import { createWallet, inAppWallet } from "thirdweb/wallets";
 import { config } from "@/config";
 
 const FEE_WALLET = process.env.NEXT_PUBLIC_SWAP_FEE_WALLET ?? "0x00c9f7EE6d1808C09B61E561Af6c787060BFE7C9";
-// --- Tipos, Hooks, Datos y ABI Mínimo ---
 const TOKENLIST_URL = "https://tokens.uniswap.org";
-const erc20Abi = [{"inputs":[{"name":"spender","type":"address"},{"name":"amount","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"}] as const;
 const TESTNET_IDS = [ 11155111, 84532, 421614, 534351, 80001, 5, 97 ];
 const SUPPORTED_CHAINS = [
   { id: 8453, name: "Base" },
@@ -50,8 +47,6 @@ const SUPPORTED_CHAINS = [
   { id: 42161, name: "Arbitrum" },
   { id: 43114, name: "Avalanche" },
 ];
-
-interface TokenListResponse { tokens: Token[]; }
 
 function useTokenList(chainId: number) {
   const [tokens, setTokens] = useState<Token[]>([]);
@@ -72,12 +67,12 @@ function useTokenList(chainId: number) {
           setTokens(defaultTokens);
           return;
         }
-        const data = await res.json();
+        const data: { tokens: Token[] } = await res.json() as { tokens: Token[] };
         console.log('Token list response structure:', Object.keys(data));
         // Handle different response formats
-        const tokenList = Array.isArray(data.tokens) ? data.tokens : Array.isArray(data) ? data : [];
-        const filteredTokens = tokenList.filter((t: any) => Number(t.chainId) === chainId) as Token[];
-        console.log(`Loaded ${filteredTokens.length} tokens for chain ${chainId} from total ${tokenList.length}`);
+        const tokenList = data.tokens ?? [];
+        const filteredTokens = tokenList.filter((t) => Number(t.chainId) === chainId);
+        console.log(`Loaded ${filteredTokens.length} tokens for chain ${chainId} from total ${tokenList.length || 0}`);
         if (filteredTokens.length === 0) {
           console.warn(`No tokens found for chain ${chainId}, using fallback`);
           // Add fallback tokens if no chain-specific tokens found
@@ -118,7 +113,7 @@ export function CustomSwap() {
   const [fromChainId, setFromChainId] = useState(SUPPORTED_CHAINS[0]!.id);
   const [toChainId, setToChainId] = useState(SUPPORTED_CHAINS[0]!.id);
   const [toToken, setToToken] = useState<Token | null>(null);
-  const [availableRoutes, setAvailableRoutes] = useState<any[]>([]);
+  const [availableRoutes, setAvailableRoutes] = useState<Bridge.Route[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [animateColor, setAnimateColor] = useState(false);
   const [swapStep, setSwapStep] = useState<'form' | 'review' | 'swapping' | 'success' | 'error'>('form');
@@ -162,21 +157,7 @@ export function CustomSwap() {
   const isSameToken = fromToken?.address === toToken?.address;
   const isInsufficientBalance = fromAmount && balance?.value && fromToken ? (fromAmountBaseUnits > balance.value) : false;
   const isReadyForQuote = account && fromToken && toToken && !isInvalidAmount && !isSameToken && !isInsufficientBalance;
-  
-  const swapParams = isReadyForQuote ? { 
-    client, 
-    fromAddress: account.address,
-    toAddress: account.address,
-    fromTokenAddress: fromToken.address, 
-    toTokenAddress: toToken.address, 
-    fromAmount: fromAmount,
-    toChainId: toToken.chainId,
-    fromChainId: fromToken.chainId,
-    feeBps: 10,
-    feeRecipient: FEE_WALLET,
-  } : undefined;
-
-  const [bridgeQuote, setBridgeQuote] = useState<any>(null);
+  const [bridgeQuote, setBridgeQuote] = useState<Awaited<ReturnType<typeof Bridge.Sell.quote>> | null>(null);
   const [isBridgeQuoteLoading, setIsBridgeQuoteLoading] = useState(false);
   const { loading: uniswapQuoteLoading, fee: uniswapFee, outputAmount: uniswapOutputAmount } = useQuote({
     chainId: fromChainId as SupportedChainId,
@@ -312,7 +293,7 @@ export function CustomSwap() {
     if (isSameChain && uniswapOutputAmount && uniswapOutputAmount > 0n) {
       return { outputAmount: uniswapOutputAmount, fee: uniswapFee };
     }
-    return bridgeQuote;
+    return bridgeQuote as any; // Cast to any to satisfy multiple component prop types
   }, [isSameChain, uniswapOutputAmount, uniswapFee, bridgeQuote]);
 
   // Rate de mercado: puede ser null/N/A y eso está OK para UX
@@ -462,18 +443,18 @@ export function CustomSwap() {
       }
       setNetworkStatus('success');
       setSwapStep('success');
-    } catch (err: any) {
+    } catch (err) {
       console.error("Swap fallido", err);
       let friendlyMessage = "La transacción falló. Es posible que la hayas rechazado o que la cotización haya expirado.";
       
       // Handle specific errors
-      if (err.message?.includes('0x7939f424') || err.message?.includes('InsufficientLiquidity')) {
+      if (err instanceof Error && (err.message.includes('0x7939f424') || err.message.includes('InsufficientLiquidity'))) {
         friendlyMessage = "Liquidez insuficiente en la ruta seleccionada. Intenta con una cantidad menor o cambia los tokens.";
-      } else if (err.message?.includes('400') || err.message?.includes('amount is too high')) {
+      } else if (err instanceof Error && (err.message.includes('400') || err.message.includes('amount is too high'))) {
         friendlyMessage = "La cantidad es demasiado alta para esta ruta. Prueba con un monto más pequeño.";
-      } else if (err.message?.includes('No route is available')) {
+      } else if (err instanceof Error && err.message.includes('No route is available')) {
         friendlyMessage = "No hay ruta disponible para este par de tokens. Verifica la liquidez o prueba otros tokens.";
-      } else if (err.message?.includes('User rejected')) {
+      } else if (err instanceof Error && err.message.includes('User rejected')) {
         friendlyMessage = "Transacción rechazada por el usuario.";
       }
       
@@ -488,7 +469,7 @@ export function CustomSwap() {
   };
   
   const handleMax = () => { if (balance) setFromAmount(balance.displayValue); };
-  const handleTokenSelect = (token: Token) => {
+  const handleTokenSelect = (token: Token): void => {
     if (isTokenModalOpen === "from") setFromToken(token);
     if (isTokenModalOpen === "to") setToToken(token);
     setTokenModalOpen(null); 
@@ -511,7 +492,7 @@ export function CustomSwap() {
     <div className="flex flex-col gap-2 p-2 md:p-4 rounded-2xl bg-black/20">
       <Sheet open={!!isTokenModalOpen} onOpenChange={(isOpen: boolean) => !isOpen && setTokenModalOpen(null)}>
         <SheetContent className="bg-zinc-900 border-none text-white p-0 flex flex-col md:max-w-md md:rounded-2xl inset-x-0 bottom-0 md:inset-auto rounded-t-2xl h-[85vh] md:h-auto md:max-h-[600px]">
-          <TokenSelector tokens={activeTokenList as Token[]} onSelect={handleTokenSelect as any} currentSelection={isTokenModalOpen === 'from' ? toToken?.address ?? "" : fromToken?.address ?? ""} searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+          <TokenSelector tokens={activeTokenList} onSelect={handleTokenSelect as (token: any) => void} currentSelection={isTokenModalOpen === 'from' ? toToken?.address ?? "" : fromToken?.address ?? ""} searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
         </SheetContent>
       </Sheet>
 
@@ -524,7 +505,7 @@ export function CustomSwap() {
         toToken={toToken}
         fromAmount={fromAmount}
         displayToAmount={displayToAmount}
-        quote={currentQuote ?? null}
+        quote={currentQuote}
         fee={isSameChain ? uniswapFee : undefined}
         expectedAmount={expectedAmount}
         quotedAmount={quotedAmountAsNumber}
