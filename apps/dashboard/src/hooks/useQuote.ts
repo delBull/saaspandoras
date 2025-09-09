@@ -86,19 +86,22 @@ export default function useQuote({ chainId, tokenIn, tokenOut, amount }: { chain
             return null;
           });
 
-          const results = await Promise.all(promises);
-          pools = results.filter((p): p is GetUniswapV3PoolResult => p !== null);
+          const poolResults = await Promise.all(promises);
+          pools = poolResults.filter((p): p is GetUniswapV3PoolResult => p !== null);
         }
   
         if (pools.length === 0) {
-          toast.error("No path found for this token pair");
+          // No mostrar toast aquí, el componente decidirá si es un error o no.
+          // Simplemente nos aseguramos de que no hay cotización.
+          setOutputAmount(undefined);
+          setFee(undefined);
           setLoading(false);
           return;
         }
 
         const quoterContract = getThirdwebContract({ address: UNISWAP_V3_QUOTER_V2_ADDRESSES[chainId], chainId });
 
-        const results = await Promise.all(
+        const quoteResults = await Promise.all(
           pools.map(async (pool: GetUniswapV3PoolResult) => {
             const quoteTx: PreparedTransaction = quoteExactInputSingle({
               contract: quoterContract,
@@ -122,8 +125,8 @@ export default function useQuote({ chainId, tokenIn, tokenOut, amount }: { chain
         );
 
         // Find max output
-        const maxOutput = results.reduce((max: bigint, current) => (current ?? 0n) > max ? (current ?? 0n) : max, 0n);
-        const bestPoolIndex = results.findIndex(r => r === maxOutput);
+        const maxOutput = quoteResults.reduce((max: bigint, current) => (current ?? 0n) > max ? (current ?? 0n) : max, 0n);
+        const bestPoolIndex = quoteResults.findIndex(r => r === maxOutput);
         const bestFee = pools[bestPoolIndex]?.poolFee ?? 0;
 
         if (maxOutput === 0n) {
