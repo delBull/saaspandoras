@@ -46,7 +46,7 @@ export default function useQuote({ chainId, tokenIn, tokenOut, amount }: { chain
     const refreshQuote = async () => {
       // Type guard to ensure chainId is supported
       const isSupportedChain = (id: number): id is SupportedChainId => {
-        return Object.values(UNISWAP_V3_QUOTER_V2_ADDRESSES).hasOwnProperty(id);
+        return Object.prototype.hasOwnProperty.call(UNISWAP_V3_QUOTER_V2_ADDRESSES, id);
       };
 
       if (!tokenIn || !tokenOut || !amount || !isSupportedChain(chainId)) {
