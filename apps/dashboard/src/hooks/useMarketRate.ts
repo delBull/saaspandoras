@@ -45,6 +45,7 @@ const TOKEN_MAP: Record<string, { address: string; coingeckoId?: string }> = {
   "USDC-8453": { address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", coingeckoId: "usd-coin" },
   "USDT-8453": { address: "0x2aeb6c9d4a9a94d7c3e2d3d3d3d3d3d3d3d3d3d3", coingeckoId: "tether" },
   "DAI-8453": { address: "0x50c5725949A6F0c72E6C4A641F24049A917DB0Cb", coingeckoId: "dai" },
+  "MORPHO-8453": { address: "0x789190466E21a8b78b802786684c8410800318E4", coingeckoId: "morpho" },
   "WBTC-8453": { address: "0x2aeb6c9d4a9a94d7c3e2d3d3d3d3d3d3d3d3d3d3", coingeckoId: "wrapped-bitcoin" },
 
   // Optimism (10)
