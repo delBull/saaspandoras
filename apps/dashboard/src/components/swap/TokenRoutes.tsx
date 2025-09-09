@@ -5,6 +5,8 @@ import { Bridge } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { defineChain } from "thirdweb/chains";
 import { toast } from "sonner";
+import Image from 'next/image';
+
 
 interface Token {
   name: string;
@@ -121,7 +123,14 @@ export function TokenRoutes({ fromChainId, toChainId, fromToken, toToken, onRout
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    <img src={token.logoURI} alt={token.symbol} className="w-6 h-6 rounded" onError={(e) => e.currentTarget.src = '/default-token.png'} />
+                    <Image
+                      src={token.logoURI || '/default-token.png'} // Proporciona una imagen por defecto
+                      alt={token.symbol}
+                      width={24}
+                      height={24}
+                      className="w-6 h-6 rounded-full"
+                      onError={(e) => e.currentTarget.src = '/default-token.png'} // Fallback por si la URL de la imagen falla
+                    />
                     <span>{token.symbol} - {token.name}</span>
                   </div>
                 </button>
@@ -143,7 +152,14 @@ export function TokenRoutes({ fromChainId, toChainId, fromToken, toToken, onRout
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    <img src={token.logoURI} alt={token.symbol} className="w-6 h-6 rounded" onError={(e) => e.currentTarget.src = '/default-token.png'} />
+                    <Image
+                      src={token.logoURI || '/default-token.png'} // Proporciona una imagen por defecto
+                      alt={token.symbol}
+                      width={24}
+                      height={24}
+                      className="w-6 h-6 rounded-full"
+                      onError={(e) => e.currentTarget.src = '/default-token.png'} // Fallback por si la URL de la imagen falla
+                    />
                     <span>{token.symbol} - {token.name}</span>
                   </div>
                 </button>
