@@ -2,6 +2,12 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
+import useQuote from "@/hooks/useQuote";
+import type { Token } from "@/types/token";
+import { UNISWAP_V3_SWAP_ROUTER_02_ADDRESSES, SupportedChainId } from "@/lib/uniswap-v3-constants";
+import { exactInputSingle } from "thirdweb/extensions/uniswap";
+import { approve as thirdwebApprove, allowance as thirdwebAllowance } from "thirdweb/extensions/erc20";
+import getThirdwebContract from "@/lib/get-contract";
 import {
   useSendTransaction,
   useActiveAccount,
@@ -10,7 +16,7 @@ import {
   useConnectModal
 } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
-import { parseUnits, formatUnits, encodeFunctionData } from "viem";
+import { parseUnits, formatUnits } from "viem";
 import { defineChain } from "thirdweb/chains";
 import { prepareTransaction } from "thirdweb";
 import { useMarketRate } from '@/hooks/useMarketRate';
@@ -23,7 +29,6 @@ import { ChainAndTokenInput } from './swap/ChainAndTokenInput';
 import { ProgressModal } from './swap/ProgressModal';
 import { ResultModal } from './swap/ResultModal';
 import { TokenSelector } from './swap/TokenSelector';
-import { TokenRoutes } from './swap/TokenRoutes';
 import { Skeleton } from "@saasfly/ui/skeleton";
 import { Button } from "@saasfly/ui/button";
 import { Sheet, SheetContent } from "@saasfly/ui/sheet";
@@ -46,7 +51,6 @@ const SUPPORTED_CHAINS = [
   { id: 43114, name: "Avalanche" },
 ];
 
-interface Token { name: string; address: string; symbol: string; decimals: number; chainId: number; logoURI: string; };
 interface TokenListResponse { tokens: Token[]; }
 
 function useTokenList(chainId: number) {
@@ -60,9 +64,9 @@ function useTokenList(chainId: number) {
           console.error(`Failed to fetch token list: ${res.status} ${res.statusText}`);
           // Fallback to default tokens for basic functionality
           const defaultTokens: Token[] = [
-            { name: "USD Coin", address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", symbol: "USDC", decimals: 6, chainId: chainId, logoURI: "https://tokens.uniswap.org/images/USDC.svg" },
-            { name: "Wrapped ETH", address: "0x4200000000000000000000000000000000000006", symbol: "WETH", decimals: 18, chainId: chainId, logoURI: "https://tokens.uniswap.org/images/WETH.svg" },
-            { name: "DAI", address: "0x50c5725949A6F0c72E6C4A641F24049A917DB0Cb", symbol: "DAI", decimals: 18, chainId: chainId, logoURI: "https://tokens.uniswap.org/images/DAI.svg" },
+            { name: "USD Coin", address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", symbol: "USDC", decimals: 6, chainId: chainId, logoURI: "https://tokens.uniswap.org/images/USDC.svg", image: "https://tokens.uniswap.org/images/USDC.svg" },
+            { name: "Wrapped ETH", address: "0x4200000000000000000000000000000000000006", symbol: "WETH", decimals: 18, chainId: chainId, logoURI: "https://tokens.uniswap.org/images/WETH.svg", image: "https://tokens.uniswap.org/images/WETH.svg" },
+            { name: "DAI", address: "0x50c5725949A6F0c72E6C4A641F24049A917DB0Cb", symbol: "DAI", decimals: 18, chainId: chainId, logoURI: "https://tokens.uniswap.org/images/DAI.svg", image: "https://tokens.uniswap.org/images/DAI.svg" },
           ];
           console.log(`Using fallback tokens for chain ${chainId}`);
           setTokens(defaultTokens);
@@ -78,8 +82,8 @@ function useTokenList(chainId: number) {
           console.warn(`No tokens found for chain ${chainId}, using fallback`);
           // Add fallback tokens if no chain-specific tokens found
           const fallbackTokens: Token[] = [
-            { name: "USD Coin", address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", symbol: "USDC", decimals: 6, chainId: chainId, logoURI: "https://tokens.uniswap.org/images/USDC.svg" },
-            { name: "Wrapped ETH", address: "0x4200000000000000000000000000000000000006", symbol: "WETH", decimals: 18, chainId: chainId, logoURI: "https://tokens.uniswap.org/images/WETH.svg" },
+            { name: "USD Coin", address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", symbol: "USDC", decimals: 6, chainId: chainId, logoURI: "https://tokens.uniswap.org/images/USDC.svg", image: "https://tokens.uniswap.org/images/USDC.svg" },
+            { name: "Wrapped ETH", address: "0x4200000000000000000000000000000000000006", symbol: "WETH", decimals: 18, chainId: chainId, logoURI: "https://tokens.uniswap.org/images/WETH.svg", image: "https://tokens.uniswap.org/images/WETH.svg" },
           ];
           setTokens(fallbackTokens);
         } else {
@@ -89,8 +93,8 @@ function useTokenList(chainId: number) {
         console.error(`Error fetching tokens:`, error);
         // Fallback to default tokens
         const defaultTokens: Token[] = [
-          { name: "USD Coin", address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", symbol: "USDC", decimals: 6, chainId: chainId, logoURI: "https://tokens.uniswap.org/images/USDC.svg" },
-          { name: "Wrapped ETH", address: "0x4200000000000000000000000000000000000006", symbol: "WETH", decimals: 18, chainId: chainId, logoURI: "https://tokens.uniswap.org/images/WETH.svg" },
+          { name: "USD Coin", address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", symbol: "USDC", decimals: 6, chainId: chainId, logoURI: "https://tokens.uniswap.org/images/USDC.svg", image: "https://tokens.uniswap.org/images/USDC.svg" },
+          { name: "Wrapped ETH", address: "0x4200000000000000000000000000000000000006", symbol: "WETH", decimals: 18, chainId: chainId, logoURI: "https://tokens.uniswap.org/images/WETH.svg", image: "https://tokens.uniswap.org/images/WETH.svg" },
         ];
         console.log(`Using fallback tokens for chain ${chainId} due to error`);
         setTokens(defaultTokens);
@@ -172,39 +176,73 @@ export function CustomSwap() {
     feeRecipient: FEE_WALLET,
   } : undefined;
 
-  const [quote, setQuote] = useState<any>(null);
-  const [isQuoteLoading, setIsQuoteLoading] = useState(false);
+  const [bridgeQuote, setBridgeQuote] = useState<any>(null);
+  const [isBridgeQuoteLoading, setIsBridgeQuoteLoading] = useState(false);
+  const { loading: uniswapQuoteLoading, fee: uniswapFee, outputAmount: uniswapOutputAmount } = useQuote({
+    chainId: fromChainId as SupportedChainId,
+    tokenIn: fromToken ?? undefined,
+    tokenOut: toToken ?? undefined,
+    amount: fromAmountBaseUnits,
+  });
   const { mutateAsync: sendTx, isPending: isSwapping } = useSendTransaction();
 
-  // Use Bridge.Buy.prepare for quote
+  const isSameChain = fromChainId === toChainId;
+
+  // Route validation for Bridge
+  // MODIFICACIÓN: Ahora busca rutas de Bridge SIEMPRE que no haya una cotización de Uniswap
   useEffect(() => {
-    async function fetchQuote() {
-      if (!isReadyForQuote) {
-        setQuote(null);
-        return;
-      }
-      setIsQuoteLoading(true);
+    if (!isReadyForQuote || (isSameChain && uniswapOutputAmount && uniswapOutputAmount > 0n)) {
+      setAvailableRoutes([]); // No buscar rutas de bridge si ya tenemos una de Uniswap
+      return;
+    }
+    async function fetchRoutes() {
       try {
-        const preparedQuote = await Bridge.Buy.prepare({
+        const routes = await Bridge.routes({
           originChainId: fromToken!.chainId,
           originTokenAddress: fromToken!.address,
           destinationChainId: toToken!.chainId,
           destinationTokenAddress: toToken!.address,
-          amount: parseUnits(fromAmount, fromToken!.decimals),
-          sender: account!.address,
-          receiver: account!.address,
           client,
         });
-        setQuote(preparedQuote);
+        setAvailableRoutes(routes);
+        console.log(`Found ${routes.length} Bridge routes for ${fromToken!.symbol} -> ${toToken!.symbol}`);
       } catch (error) {
-        console.error('Error getting buy quote:', error);
-        setQuote(null);
-      } finally {
-        setIsQuoteLoading(false);
+        console.error('Error fetching routes:', error);
+        setAvailableRoutes([]);
+        toast.error('No routes available for this pair');
       }
     }
-    void fetchQuote();
-  }, [fromToken, toToken, fromAmount, account, isReadyForQuote]);
+    void fetchRoutes();
+  }, [fromToken, toToken, isReadyForQuote, isSameChain, uniswapOutputAmount]);
+
+  // Fetch Bridge quote if routes available
+  useEffect(() => {
+    if (!isReadyForQuote || availableRoutes.length === 0) {
+      setBridgeQuote(null);
+      return;
+    }
+    setIsBridgeQuoteLoading(true);
+    const fetchBridgeQuote = async () => {
+      try {
+        // CORRECCIÓN: Usar Bridge.Sell.quote para un flujo de "swap"
+        const preparedQuote = await Bridge.Sell.quote({
+          originChainId: fromToken!.chainId,
+          originTokenAddress: fromToken!.address,
+          destinationChainId: toToken!.chainId,
+          destinationTokenAddress: toToken!.address,
+          amount: fromAmountBaseUnits, // Cantidad en su unidad más pequeña (wei)
+          client,
+        });
+        setBridgeQuote(preparedQuote);
+      } catch (error) {
+        console.error('Error getting bridge quote:', error);
+        setBridgeQuote(null);
+      } finally {
+        setIsBridgeQuoteLoading(false);
+      }
+    };
+    void fetchBridgeQuote();
+  }, [fromToken, toToken, fromAmount, account, isReadyForQuote, availableRoutes]);
   
   const { data: receipt, isLoading: isWaitingForConfirmation } = useWaitForReceipt(
     txHash && fromToken
@@ -238,13 +276,21 @@ export function CustomSwap() {
 
   // Quoted amount (from aggregator) en decimales humanos
   const quotedAmountAsNumber = useMemo(() => {
-    if (!quote?.swapDetails.toAmountWei || !toToken?.decimals) return null;
-    try {
-      return parseFloat(formatUnits(BigInt(quote.swapDetails.toAmountWei), toToken.decimals));
-    } catch {
-      return null;
+    if (isSameChain && uniswapOutputAmount && toToken?.decimals) {
+      try {
+        return parseFloat(formatUnits(uniswapOutputAmount, toToken.decimals));
+      } catch {
+        return null; 
+      }
+    } else if (bridgeQuote?.destinationAmount && toToken?.decimals) {
+      try { // This is for the bridge quote
+        return parseFloat(formatUnits(bridgeQuote.destinationAmount, toToken.decimals));
+      } catch {
+        return null;
+      }
     }
-  }, [quote, toToken]);
+    return null;
+  }, [uniswapOutputAmount, bridgeQuote, toToken, isSameChain]);
 
   // formatea para la UI (solo para mostrar)
   const displayToAmount = useMemo(() => {
@@ -258,6 +304,8 @@ export function CustomSwap() {
   }, [quotedAmountAsNumber]);
   
   const isCrossChain = fromToken && toToken && fromToken.chainId !== toToken.chainId;
+  const quoteLoading = isSameChain ? uniswapQuoteLoading : isBridgeQuoteLoading;
+  const currentQuote = isSameChain ? { outputAmount: uniswapOutputAmount, fee: uniswapFee } : bridgeQuote;
 
   // Rate de mercado: puede ser null/N/A y eso está OK para UX
   const marketRate = useMarketRate(fromToken ?? undefined, toToken ?? undefined);
@@ -303,15 +351,21 @@ export function CustomSwap() {
   }, [displayToAmount]);
   
   useEffect(() => {
-    if (isSameToken) setError("Debes escoger tokens diferentes.");
-    else if (isInsufficientBalance) setError("No tienes suficiente saldo.");
+    if (isSameToken) {
+      setError("Debes escoger tokens diferentes.");
+    }
+    else if (isInsufficientBalance) {
+      setError("No tienes suficiente saldo.");
+    }
     else setError(null);
   }, [isSameToken, isInsufficientBalance]);
 
   const handleReview = () => {
     if (error) { toast.error(error); return; }
     if (isQuoteUnrealistic && marketRate !== null) { toast.error("La cotización es muy diferente al precio de mercado."); return; }
-    if (!quote || !account) { toast.error("No hay ruta disponible para este par."); return; }
+    if (isSameChain && !uniswapOutputAmount) { toast.error("No hay ruta disponible para este par."); return; }
+    if (!isSameChain && (availableRoutes.length === 0 || !bridgeQuote)) { toast.error("No hay ruta disponible para este par."); return; }
+    if (!currentQuote || !account) { toast.error("No hay ruta disponible para este par."); return; }
     setSwapStep('review');
   };
 
@@ -322,7 +376,7 @@ export function CustomSwap() {
     fromToken,
     toToken,
     fromAmount,
-    quote,
+    quote: currentQuote,
     marketRate,
     txStatus: 'success',
   });
@@ -334,36 +388,70 @@ export function CustomSwap() {
     fromToken,
     toToken,
     fromAmount,
-    quote,
+    quote: currentQuote,
     marketRate,
     txStatus: 'error',
   });
 
   const executeSwap = async () => {
-    if (!quote || !account) return;
+    if (!currentQuote || !account) return;
     setSwapStep('swapping');
     setApprovingStatus('pending'); setSwapStatus('pending'); setNetworkStatus('pending');
     try {
-      // Execute the quote steps
-      for (const step of quote.steps) {
-        for (const transaction of step.transactions) {
-          if (transaction.action === "approval") {
-            const approvalTx = prepareTransaction({
-              to: transaction.to,
-              chain: defineChain(transaction.chainId),
-              client,
-              data: transaction.data
-            });
-            await sendTx(approvalTx);
-            setApprovingStatus('success');
-          } else {
-            const txResult = await sendTx(transaction);
-            if (transaction.action === "buy") {
+      if (isSameChain) {
+        // Same-chain Uniswap V3 swap
+        const inputTokenContract = getThirdwebContract({ address: fromToken!.address, chainId: fromChainId });
+        const allowance = await thirdwebAllowance({ contract: inputTokenContract, owner: account.address as `0x${string}`, spender: UNISWAP_V3_SWAP_ROUTER_02_ADDRESSES[fromChainId as SupportedChainId] });
+        if (allowance < fromAmountBaseUnits) {
+          const approveTx = thirdwebApprove({ contract: inputTokenContract, spender: UNISWAP_V3_SWAP_ROUTER_02_ADDRESSES[fromChainId as SupportedChainId], amountWei: fromAmountBaseUnits });
+          await sendTx(approveTx);
+          setApprovingStatus('success');
+        }
+        const routerContract = getThirdwebContract({ address: UNISWAP_V3_SWAP_ROUTER_02_ADDRESSES[fromChainId as SupportedChainId], chainId: fromChainId });
+        const swapTx = exactInputSingle({
+          contract: routerContract,
+          params: {
+            tokenIn: fromToken!.address,
+            tokenOut: toToken!.address,
+            fee: uniswapFee!,
+            recipient: account.address,
+            deadline: BigInt(Math.floor(Date.now() / 1000) + 60 * 20),
+            amountIn: fromAmountBaseUnits,
+            amountOutMinimum: 0n,
+            sqrtPriceLimitX96: 0n,
+          }
+        });
+        const txResult = await sendTx(swapTx);
+        setTxHash(txResult.transactionHash);
+        setSwapStatus('success');
+      } else {
+        // Cross-chain Bridge
+        // CORRECCIÓN: Preparar y enviar la transacción del Bridge
+        const preparedQuote = await Bridge.Sell.prepare({
+          originChainId: fromToken!.chainId,
+          originTokenAddress: fromToken!.address,
+          destinationChainId: toToken!.chainId,
+          destinationTokenAddress: toToken!.address,
+          sender: account.address,
+          receiver: account.address,
+          amount: fromAmountBaseUnits,
+          client,
+        });
+
+        // La documentación indica que debemos ejecutar las transacciones en orden.
+        for (const step of preparedQuote.steps) {
+          for (const tx of step.transactions) {
+            if (tx.action === "approval") {
+              setApprovingStatus('pending');
+              await sendTx(tx);
+              setApprovingStatus('success');
+            } else if (tx.action === "sell") {
+              const txResult = await sendTx(tx);
               setTxHash(txResult.transactionHash);
-              setSwapStatus('success');
             }
           }
         }
+        setSwapStatus('success');
       }
       setNetworkStatus('success');
       setSwapStep('success');
@@ -371,7 +459,7 @@ export function CustomSwap() {
       console.error("Swap fallido", err);
       let friendlyMessage = "La transacción falló. Es posible que la hayas rechazado o que la cotización haya expirado.";
       
-      // Handle specific Thirdweb/aggregator errors
+      // Handle specific errors
       if (err.message?.includes('0x7939f424') || err.message?.includes('InsufficientLiquidity')) {
         friendlyMessage = "Liquidez insuficiente en la ruta seleccionada. Intenta con una cantidad menor o cambia los tokens.";
       } else if (err.message?.includes('400') || err.message?.includes('amount is too high')) {
@@ -404,11 +492,11 @@ export function CustomSwap() {
     if (!account) return "Conectar Wallet";
     if (isInvalidAmount && fromAmount) return "Ingresa un monto válido";
     if (error) return error;
-    if (isQuoteLoading) return "Obteniendo cotización...";
+    if (quoteLoading) return "Obteniendo cotización...";
     if (isQuoteUnrealistic) return "Cotización Inválida";
     if (isAmountTooLarge) return "Monto demasiado alto";
     if (isSwapping) return "Confirmando en wallet...";
-    if (!quote && isReadyForQuote) return "Ruta no disponible";
+    if (!currentQuote && isReadyForQuote) return "Ruta no disponible";
     return "Revisar Swap";
   };
   
@@ -416,7 +504,7 @@ export function CustomSwap() {
     <div className="flex flex-col gap-2 p-2 md:p-4 rounded-2xl bg-black/20">
       <Sheet open={!!isTokenModalOpen} onOpenChange={(isOpen: boolean) => !isOpen && setTokenModalOpen(null)}>
         <SheetContent className="bg-zinc-900 border-none text-white p-0 flex flex-col md:max-w-md md:rounded-2xl inset-x-0 bottom-0 md:inset-auto rounded-t-2xl h-[85vh] md:h-auto md:max-h-[600px]">
-          <TokenSelector tokens={activeTokenList} onSelect={handleTokenSelect} currentSelection={isTokenModalOpen === 'from' ? toToken?.address ?? "" : fromToken?.address ?? ""} searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+          <TokenSelector tokens={activeTokenList as Token[]} onSelect={handleTokenSelect as any} currentSelection={isTokenModalOpen === 'from' ? toToken?.address ?? "" : fromToken?.address ?? ""} searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
         </SheetContent>
       </Sheet>
 
@@ -429,7 +517,8 @@ export function CustomSwap() {
         toToken={toToken}
         fromAmount={fromAmount}
         displayToAmount={displayToAmount}
-        quote={quote ?? null}
+        quote={currentQuote ?? null}
+        fee={isSameChain ? uniswapFee : undefined}
         expectedAmount={expectedAmount}
         quotedAmount={quotedAmountAsNumber}
         priceImpact={priceImpact}
@@ -484,13 +573,13 @@ export function CustomSwap() {
         chains={SUPPORTED_CHAINS}
         isAmountReadOnly={true}
         amountComponent={
-          isQuoteLoading ? <Skeleton className="h-8 w-24 bg-zinc-700" /> :
+          quoteLoading ? <Skeleton className="h-8 w-24 bg-zinc-700" /> :
           (isQuoteUnrealistic && marketRate !== null) ? <span className="text-lg text-orange-500">Cotización Irreal</span> :
           <span className={`transition-colors ${animateColor ? "text-lime-400" : "text-white"}`}>{displayToAmount}</span>
         }
       />
       
-      {!marketRate && fromAmount && !isQuoteLoading && (
+      {!marketRate && fromAmount && !quoteLoading && quotedAmountAsNumber === null && (
         <div className="text-center text-xs text-orange-400 font-semibold mt-2 p-2 bg-orange-900/30 rounded-lg">
           Advertencia: No hay tasa de mercado de referencia disponible. El valor mostrado es solo la estimación del agregador.
         </div>
@@ -499,7 +588,7 @@ export function CustomSwap() {
       {account ? (
         <Button
           onClick={handleReview}
-          disabled={!!error || isQuoteLoading || isSwapping || !quote || (isQuoteUnrealistic && marketRate !== null)}
+          disabled={!!error || quoteLoading || isSwapping || !currentQuote || (isQuoteUnrealistic && marketRate !== null)}
           className="w-full mt-4 py-6 rounded-2xl font-bold text-lg text-zinc-900 bg-gradient-to-r from-lime-200 to-lime-300 transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {buttonText()}

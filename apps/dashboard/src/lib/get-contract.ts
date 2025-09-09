@@ -1,0 +1,9 @@
+import { getContract } from "thirdweb";
+import { defineChain } from "thirdweb/chains";
+import { client } from "./thirdweb-client";
+import { Address } from "thirdweb";
+
+export default function getThirdwebContract({ address, chainId, abi }: { address: Address, chainId: number, abi?: any[] }) {
+  const chain = defineChain(chainId);
+  return getContract({ address, client, chain, abi });
+}
