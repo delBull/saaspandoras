@@ -1,20 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { simulateTransaction, readContract } from "thirdweb";
+import { simulateTransaction, readContract, type PreparedTransaction } from "thirdweb";
 import { quoteExactInputSingle } from "thirdweb/extensions/uniswap";
 import getThirdwebContract from "@/lib/get-contract";
-import { UNISWAP_V3_FACTORY_ADDRESS, UNISWAP_V3_QUOTER_V2_ADDRESSES, SupportedChainId } from "@/lib/uniswap-v3-constants";
-type Token = {
+import { UNISWAP_V3_FACTORY_ADDRESS, UNISWAP_V3_QUOTER_V2_ADDRESSES, type SupportedChainId } from "@/lib/uniswap-v3-constants";
+import type { GetUniswapV3PoolResult } from "thirdweb/extensions/uniswap";
+import { toast } from "sonner";
+
+interface Token {
   address: `0x${string}`;
   symbol: string;
   decimals: number;
   image: string;
-};
-import { toast } from "sonner";
-import { GetUniswapV3PoolResult } from "thirdweb/extensions/uniswap";
-
-const poolCache = new Map();
+}
 
 const factoryAbi = [
   {
@@ -30,13 +29,13 @@ const factoryAbi = [
   }
 ] as const;
 
-type QuoteResult = {
+export interface UniswapQuote {
   loading: boolean;
   fee?: number;
   outputAmount?: bigint;
-};
+}
 
-export default function useQuote({ chainId, tokenIn, tokenOut, amount }: { chainId: SupportedChainId, tokenIn?: Token, tokenOut?: Token, amount?: bigint }): QuoteResult {
+export default function useQuote({ chainId, tokenIn, tokenOut, amount }: { chainId: SupportedChainId, tokenIn?: Token, tokenOut?: Token, amount?: bigint }): UniswapQuote {
   const [loading, setLoading] = useState(false);
   const [fee, setFee] = useState<number | undefined>();
   const [outputAmount, setOutputAmount] = useState<bigint | undefined>();
@@ -55,11 +54,9 @@ export default function useQuote({ chainId, tokenIn, tokenOut, amount }: { chain
       setLoading(true);
       try {
         const factoryContract = getThirdwebContract({ address: UNISWAP_V3_FACTORY_ADDRESS, chainId, abi: factoryAbi as any });
-        const key = `${tokenIn.address}:${tokenOut.address}:${chainId}`;
         let pools: GetUniswapV3PoolResult[] = [];
-        if (poolCache.has(key)) {
-          pools = poolCache.get(key) as GetUniswapV3PoolResult[];
-        } else {
+        
+        if (pools.length === 0) { // Simple cache avoidance for now
           const fees = [500, 3000, 10000];
           const promises = fees.map(async (fee) => {
             try {
@@ -76,10 +73,10 @@ export default function useQuote({ chainId, tokenIn, tokenOut, amount }: { chain
               if (poolAddress && poolAddress !== ZERO_ADDRESS) {
                 return { poolAddress: poolAddress, poolFee: fee };
               }
-            } catch (e: any) {
+            } catch (e: unknown) {
               // Gracefully ignore the AbiDecodingZeroDataError, as it simply means the pool doesn't exist for this fee.
-              if (!e.message.includes("AbiDecodingZeroDataError")) {
-                console.warn(`Failed to get pool for fee ${fee} on chain ${chainId}:`, e);
+              if (e instanceof Error && !e.message.includes("AbiDecodingZeroDataError") && !e.message.includes("client.request is not a function")) {
+                console.warn(`Failed to get pool for fee ${fee} on chain ${chainId}:`, e.message);
               }
             }
             return null;
@@ -87,7 +84,6 @@ export default function useQuote({ chainId, tokenIn, tokenOut, amount }: { chain
 
           const results = await Promise.all(promises);
           pools = results.filter((p): p is GetUniswapV3PoolResult => p !== null);
-          poolCache.set(key, pools);
         }
   
         if (pools.length === 0) {
@@ -100,7 +96,7 @@ export default function useQuote({ chainId, tokenIn, tokenOut, amount }: { chain
 
         const results: bigint[] = await Promise.all(
           pools.map(async (pool: GetUniswapV3PoolResult) => {
-            const quoteTx = quoteExactInputSingle({
+            const quoteTx: PreparedTransaction = quoteExactInputSingle({
               contract: quoterContract,
               tokenIn: tokenIn.address,
               amountIn: amount,
@@ -138,7 +134,9 @@ export default function useQuote({ chainId, tokenIn, tokenOut, amount }: { chain
       }
     };
 
-    const delayExecId = setTimeout(refreshQuote, 500);
+    const delayExecId = setTimeout(() => {
+      void refreshQuote();
+    }, 500);
     return () => clearTimeout(delayExecId);
   }, [tokenIn, tokenOut, amount, chainId]);
 
