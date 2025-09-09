@@ -3,17 +3,9 @@
 import { Input } from "@saasfly/ui/input";
 import { SheetHeader, SheetTitle } from "@saasfly/ui/sheet";
 import { ScrollArea } from "@saasfly/ui/scroll-area";
-import { SearchIcon } from "lucide-react";
+import { SearchIcon } from "lucide-react"; 
+import type { Token } from "@/types/token";
 import { TokenImage } from '../TokenImage';
-
-interface Token {
-  name: string;
-  address: string;
-  symbol: string;
-  decimals: number;
-  chainId: number;
-  logoURI: string;
-}
 
 export function TokenSelector({ tokens, currentSelection, onSelect, searchTerm, setSearchTerm }: { tokens: Token[]; currentSelection: string; onSelect: (token: Token) => void; searchTerm: string; setSearchTerm: (t: string) => void; }) {
   const popularTokens = ['ETH', 'USDC', 'WETH', 'DAI', 'USDT', 'WBTC'];
