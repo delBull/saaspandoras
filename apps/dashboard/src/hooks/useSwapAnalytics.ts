@@ -4,11 +4,11 @@ import { useEffect } from "react";
 import { track } from "@vercel/analytics/react";
 import sha256 from "crypto-js/sha256";
 
-type GenericQuote = {
+interface GenericQuote {
   // Bridge quote from Bridge.Sell.quote has destinationAmount
   destinationAmount?: bigint;
   outputAmount?: bigint; // For Uniswap quote
-};
+}
 
 interface Token {
   address: string;

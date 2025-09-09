@@ -22,8 +22,8 @@ interface BridgeQuoteWithEstimated extends BridgePreparedQuote {
 }
 
 // Type guard to check if the quote is a bridge quote with the estimated property
-function isBridgeQuote(quote: any): quote is BridgeQuoteWithEstimated {
-  return quote && typeof quote === 'object' && 'estimated' in quote;
+function isBridgeQuote(quote: unknown): quote is BridgeQuoteWithEstimated {
+  return !!quote && typeof quote === 'object' && 'estimated' in quote;
 }
 
 export interface ReviewModalProps {
