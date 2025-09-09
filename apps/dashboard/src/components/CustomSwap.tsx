@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import useQuote from "@/hooks/useQuote";
 import type { Token } from "@/types/token";
 import { UNISWAP_V3_SWAP_ROUTER_02_ADDRESSES, type SupportedChainId } from "@/lib/uniswap-v3-constants";
@@ -46,6 +46,44 @@ const SUPPORTED_CHAINS = [
   { id: 42161, name: "Arbitrum" },
   { id: 43114, name: "Avalanche" },
 ];
+
+const QUOTE_EXPIRY_MS = 2 * 60 * 1000; // 2 minutos
+
+function isQuoteExpired(quote: { fetchedAt?: number } | null | undefined): boolean {
+  if (!quote || !quote.fetchedAt) {
+    return true; // Si no hay cotización o no tiene timestamp, se considera expirada.
+  }
+  return Date.now() - quote.fetchedAt > QUOTE_EXPIRY_MS;
+}
+
+// --- Helper de Validación para Transacciones de Bridge ---
+type BridgeTx = {
+  value?: unknown;
+  to?: string;
+  from?: string;
+  data?: string;
+  action?: string;
+};
+
+// Solución de Thirdweb: Función de validación robusta
+function validateBridgeTx(tx: BridgeTx): {
+  ok: boolean;
+  error?: string;
+} {
+  if (
+    tx.value === undefined ||
+    tx.value === null ||
+    (typeof tx.value !== 'bigint' && (typeof tx.value !== 'number' || isNaN(tx.value)))
+  ) {
+    return { ok: false, error: "El monto (value) es inválido o está ausente." };
+  }
+
+  if (!tx.to || typeof tx.to !== "string" || !/^0x[a-fA-F0-9]{40}$/.test(tx.to)) {
+    return { ok: false, error: "La dirección de destino ('to') es inválida o está ausente." };
+  }
+
+  return { ok: true };
+}
 
 function useTokenList(chainId: number) {
   const [tokens, setTokens] = useState<Token[]>([]);
@@ -155,8 +193,10 @@ export function CustomSwap() {
   const isInvalidAmount = !fromAmount || isNaN(Number(fromAmount)) || Number(fromAmount) <= 0;
   const isSameToken = fromToken?.address === toToken?.address;
   const isInsufficientBalance = fromAmount && balance?.value && fromToken ? (fromAmountBaseUnits > balance.value) : false;
-  const isReadyForQuote = account && fromToken && toToken && !isInvalidAmount && !isSameToken && !isInsufficientBalance;
-  const [bridgeQuote, setBridgeQuote] = useState<Awaited<ReturnType<typeof Bridge.Sell.quote>> | null>(null);
+  const isReadyForQuote = !!(account && fromToken && toToken && !isInvalidAmount && !isSameToken && !isInsufficientBalance);
+  
+  // Estado para la cotización del bridge con marca de tiempo
+  const [bridgeQuote, setBridgeQuote] = useState<(Awaited<ReturnType<typeof Bridge.Sell.quote>> & { fetchedAt: number }) | null>(null);
   const [isBridgeQuoteLoading, setIsBridgeQuoteLoading] = useState(false);
   const { loading: uniswapQuoteLoading, fee: uniswapFee, outputAmount: uniswapOutputAmount } = useQuote({
     chainId: fromChainId,
@@ -167,9 +207,8 @@ export function CustomSwap() {
   const { mutateAsync: sendTx, isPending: isSwapping } = useSendTransaction();
 
   const isSameChain = fromChainId === toChainId;
-
-  // Route validation for Bridge
-  // MODIFICACIÓN: Ahora busca rutas de Bridge SIEMPRE que no haya una cotización de Uniswap
+  const isCrossChain = fromToken && toToken && fromToken.chainId !== toToken.chainId;
+  
   useEffect(() => {
     if (!isReadyForQuote || (isSameChain && uniswapOutputAmount && uniswapOutputAmount > 0n)) {
       setAvailableRoutes([]); // No buscar rutas de bridge si ya tenemos una de Uniswap
@@ -194,35 +233,45 @@ export function CustomSwap() {
     }
     void fetchRoutes();
   }, [fromToken, toToken, isReadyForQuote, isSameChain, uniswapOutputAmount]);
-  // Fetch Bridge quote if routes available
-  useEffect(() => {
+
+  // Solución de Thirdweb: Exponer fetchBridgeQuote con useCallback
+  const fetchBridgeQuote = useCallback(async () => {
     if (!isReadyForQuote || availableRoutes.length === 0) {
       setBridgeQuote(null);
       return;
     }
     setIsBridgeQuoteLoading(true);
-    const fetchBridgeQuote = async () => {
-      try {
-        // CORRECCIÓN: Usar Bridge.Sell.quote para un flujo de "swap"
-        const preparedQuote = await Bridge.Sell.quote({
-          originChainId: fromToken!.chainId,
-          originTokenAddress: fromToken!.address,
-          destinationChainId: toToken!.chainId,
-          destinationTokenAddress: toToken!.address,
-          amount: fromAmountBaseUnits, // Cantidad en su unidad más pequeña (wei)
-          client,
-        });
-        setBridgeQuote(preparedQuote);
-      } catch (error) {
-        console.error('Error getting bridge quote:', error);
-        setBridgeQuote(null);
-      } finally {
-        setIsBridgeQuoteLoading(false);
-      }
-    };
+    try {
+      const preparedQuote = await Bridge.Sell.quote({
+        originChainId: fromToken!.chainId,
+        originTokenAddress: fromToken!.address,
+        destinationChainId: toToken!.chainId,
+        destinationTokenAddress: toToken!.address,
+        amount: fromAmountBaseUnits,
+        client,
+      });
+      // Añadir marca de tiempo a la cotización
+      setBridgeQuote({ ...preparedQuote, fetchedAt: Date.now() });
+    } catch (error) {
+      console.error('Error getting bridge quote:', error);
+      setBridgeQuote(null);
+    } finally {
+      setIsBridgeQuoteLoading(false);
+    }
+  }, [isReadyForQuote, availableRoutes.length, fromToken, toToken, fromAmountBaseUnits]);
+
+  // Solución de Thirdweb: Llamar a fetchBridgeQuote cuando los inputs cambian
+  useEffect(() => {
     void fetchBridgeQuote();
-  }, [fromToken, toToken, fromAmount, account, isReadyForQuote, availableRoutes, fromAmountBaseUnits]);
+  }, [fetchBridgeQuote]);
   
+  // Solución de Thirdweb: Refresco de Cotización Post-Aprobación
+  useEffect(() => {
+    if (approvingStatus === 'success' && !isSameChain) {
+      toast.info("Actualizando cotización después de la aprobación...");
+      void fetchBridgeQuote();
+    }
+  }, [approvingStatus, isSameChain, fetchBridgeQuote]);
   const { data: receipt, isLoading: isWaitingForConfirmation } = useWaitForReceipt(
     txHash && fromToken
       ? {
@@ -282,7 +331,6 @@ export function CustomSwap() {
     return "0.0";
   }, [quotedAmountAsNumber]);
   
-  const isCrossChain = fromToken && toToken && fromToken.chainId !== toToken.chainId;
   const quoteLoading = isSameChain ? uniswapQuoteLoading : isBridgeQuoteLoading;
   
   // This is the core logic fix. We determine which quote to use.
@@ -351,6 +399,14 @@ export function CustomSwap() {
     if (error) { toast.error(error); return; }
     if (isQuoteUnrealistic && marketRate !== null) { toast.error("La cotización es muy diferente al precio de mercado."); return; }
     // Simplified check: if there's no valid currentQuote, there's no path.
+    // Solución de Thirdweb: Verificar si la cotización ha expirado
+    if (bridgeQuote && Date.now() - bridgeQuote.fetchedAt > 2 * 60 * 1000) { // 2 minutos
+      toast.error(
+        "La cotización ha expirado. Por favor, actualiza antes de continuar.",
+      );
+      void fetchBridgeQuote(); // Refrescar automáticamente
+      return;
+    }
     if (!currentQuote || !account) { toast.error("No hay ruta disponible para este par."); return; }
     setSwapStep('review');
   };
@@ -385,8 +441,21 @@ export function CustomSwap() {
     setApprovingStatus('pending'); setSwapStatus('pending'); setNetworkStatus('pending');
     try {
       if (isSameChain) {
+        // --- INICIO: Bloque de protección (Guard Clauses) ---
+        if (!fromToken || !toToken) {
+          toast.error("Debes seleccionar ambos tokens antes de continuar.");
+          setSwapStep('form'); // Volver al formulario
+          return;
+        }
+        if (typeof uniswapFee !== "number") {
+          toast.error("No se pudo obtener una tarifa válida para el pool. Intenta de nuevo.");
+          setSwapStep('form'); // Volver al formulario
+          return;
+        }
+        // --- FIN: Bloque de protección ---
+
         // Same-chain Uniswap V3 swap
-        const inputTokenContract = getThirdwebContract({ address: fromToken!.address, chainId: fromChainId });
+        const inputTokenContract = getThirdwebContract({ address: fromToken.address, chainId: fromChainId });
         const allowance = await thirdwebAllowance({ contract: inputTokenContract, owner: account.address as `0x${string}`, spender: UNISWAP_V3_SWAP_ROUTER_02_ADDRESSES[fromChainId as SupportedChainId] });
         if (allowance < fromAmountBaseUnits) {
           const approveTx = thirdwebApprove({ contract: inputTokenContract, spender: UNISWAP_V3_SWAP_ROUTER_02_ADDRESSES[fromChainId as SupportedChainId], amountWei: fromAmountBaseUnits });
@@ -396,10 +465,10 @@ export function CustomSwap() {
         const routerContract = getThirdwebContract({ address: UNISWAP_V3_SWAP_ROUTER_02_ADDRESSES[fromChainId as SupportedChainId], chainId: fromChainId });
         const swapTx = exactInputSingle({
           contract: routerContract,
-          params: { // The ! is safe here because we check fromToken and toToken before calling
-            tokenIn: fromToken!.address,
-            tokenOut: toToken!.address,
-            fee: uniswapFee!,
+          params: {
+            tokenIn: fromToken.address,
+            tokenOut: toToken.address,
+            fee: uniswapFee,
             recipient: account.address as `0x${string}`,
             deadline: BigInt(Math.floor(Date.now() / 1000) + 60 * 20), // 20 minutes from now
             amountIn: fromAmountBaseUnits,
@@ -426,7 +495,16 @@ export function CustomSwap() {
 
         // La documentación indica que debemos ejecutar las transacciones en orden.
         for (const step of preparedQuote.steps) {
+          // Solución de Thirdweb: Usar la validación ANTES de enviar la tx
           for (const tx of step.transactions) {
+            const validation = validateBridgeTx(tx);
+            if (!validation.ok) {
+              console.error("Validación de transacción fallida:", validation.error, tx);
+              setErrorMessage(`Falló el swap: ${validation.error} Por favor, vuelve a cotizar.`);
+              setSwapStep('error');
+              return; // Detiene la ejecución
+            }
+
             if (tx.action === "approval") {
               setApprovingStatus('pending');
               await sendTx(tx);
@@ -509,6 +587,9 @@ export function CustomSwap() {
         quotedAmount={quotedAmountAsNumber}
         priceImpact={priceImpact}
         marketRate={marketRate}
+        isQuoteExpired={isCrossChain ? isQuoteExpired(bridgeQuote) : false}
+        onRefreshQuote={fetchBridgeQuote}
+        isRefreshingQuote={isBridgeQuoteLoading}
       />
       <ProgressModal 
         isOpen={swapStep === 'swapping'} 

@@ -41,9 +41,12 @@ export interface ReviewModalProps {
   priceImpact: number | null;
   marketRate: number | null;
   fee?: number;
+  isQuoteExpired?: boolean;
+  onRefreshQuote?: () => void;
+  isRefreshingQuote?: boolean;
 }
 
-export function ReviewModal({ isOpen, onOpenChange, onConfirm, fromToken, toToken, fromAmount, displayToAmount, quote, isSwapping, expectedAmount, quotedAmount, priceImpact, marketRate, fee, }: ReviewModalProps) {
+export function ReviewModal({ isOpen, onOpenChange, onConfirm, fromToken, toToken, fromAmount, displayToAmount, quote, isSwapping, expectedAmount, quotedAmount, priceImpact, marketRate, fee, isQuoteExpired, onRefreshQuote, isRefreshingQuote }: ReviewModalProps) {
   if (!fromToken || !toToken || !quote) return null;
   let minAmount = "0.0";
   let slippage = "0.5";
@@ -63,7 +66,7 @@ export function ReviewModal({ isOpen, onOpenChange, onConfirm, fromToken, toToke
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-zinc-900 border-zinc-800 text-white" aria-describedby="review-modal-desc">
+      <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
         <DialogHeader>
           <DialogTitle className="text-xl">Revisar Transacción</DialogTitle>
           <DialogDescription id="review-modal-desc">
@@ -76,6 +79,14 @@ export function ReviewModal({ isOpen, onOpenChange, onConfirm, fromToken, toToke
             )}
           </DialogDescription>
         </DialogHeader>
+        {isQuoteExpired && (
+          <div className="bg-orange-900/40 text-orange-300 rounded-lg px-3 py-2 mb-3 font-bold text-xs text-center flex items-center justify-between">
+            <span>La cotización ha expirado.</span>
+            <Button onClick={onRefreshQuote} disabled={isRefreshingQuote} size="sm" className="bg-orange-500 hover:bg-orange-600 text-white">
+              {isRefreshingQuote ? <Loader2 className="animate-spin" /> : "Actualizar"}
+            </Button>
+          </div>
+        )}
         <div className="space-y-4 py-4">
           <div className="flex justify-between items-center bg-zinc-800 p-3 rounded-lg"><div><p className="text-sm text-gray-400">Pagas</p><p className="text-2xl font-bold">{fromAmount}</p></div><div className="text-right"><div className="flex items-center gap-2 justify-end"><TokenImage src={fromToken.logoURI || fromToken.image} alt={fromToken.symbol} size={24} className="rounded-full"/><span className="font-bold text-xl">{fromToken.symbol}</span></div><BadgeChain chainId={fromToken.chainId} /></div></div>
           <div className="flex justify-center"><ArrowDownIcon className="w-6 h-6 text-gray-500" /></div>
@@ -89,7 +100,7 @@ export function ReviewModal({ isOpen, onOpenChange, onConfirm, fromToken, toToke
             <div style={{ fontSize: 10, color: "#9ca3af" }}><div> Referencia CoinGecko:{" "} {marketRate !== null ? marketRate.toPrecision(7) : "N/A"} </div><div> Esperado:{" "} {expectedAmount !== null ? expectedAmount.toLocaleString("en-US", { maximumFractionDigits: 8, }) : "N/A"}{" "} {toToken.symbol} </div><div> Cotizado:{" "} {quotedAmount !== null ? quotedAmount.toLocaleString("en-US", { maximumFractionDigits: 8, }) : "N/A"}{" "} {toToken.symbol} </div></div>
           </div>
         </div>
-        <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSwapping}>Cancelar</Button><Button onClick={onConfirm} className="bg-lime-400 text-black hover:bg-lime-500" disabled={isSwapping}>{isSwapping ? <Loader2 className="animate-spin" /> : "Confirmar Swap"}</Button></DialogFooter>
+        <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSwapping}>Cancelar</Button><Button onClick={onConfirm} className="bg-lime-400 text-black hover:bg-lime-500" disabled={isSwapping || isQuoteExpired}>{isSwapping ? <Loader2 className="animate-spin" /> : "Confirmar Swap"}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );

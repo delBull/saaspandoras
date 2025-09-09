@@ -96,78 +96,75 @@ export function useMarketRate(
   const [rate, setRate] = useState<RateResult>(null);
 
   useEffect(() => {
-    console.log('useMarketRate effect triggered', { fromToken, toToken });
-    
+    let isCancelled = false;
+
     const fromKey = fromToken ? `${fromToken.symbol.toUpperCase()}-${fromToken.chainId}` : null;
     const toKey = toToken ? `${toToken.symbol.toUpperCase()}-${toToken.chainId}` : null;
     const fromMapped = fromKey ? TOKEN_MAP[fromKey] : null;
     const toMapped = toKey ? TOKEN_MAP[toKey] : null;
 
-    console.log('Market rate mapping keys:', { fromKey, toKey, fromMapped, toMapped });
-
     if (!fromToken || !toToken || !fromMapped || !toMapped) {
-      console.log('Market rate: missing tokens or mappings, setting null');
       setRate(null);
       return;
     }
 
-    const fetchPrice = async (token: TokenInfo, mappedToken: { address: string; coingeckoId?: string }): Promise<number | undefined> => {
+    const fetchPrice = async (token: TokenInfo, mappedToken: { address: string; coingeckoId?: string }): Promise<{ usd: number } | null> => {
       const platform = getPlatform(token.chainId);
-      console.log(`Fetching price for ${token.symbol} on chain ${token.chainId}, platform: ${platform}, mapping:`, mappedToken);
       
       try {
-        // Prioriza la búsqueda por ID de coingecko si está disponible (más directo para tokens nativos como ETH)
         if (mappedToken.coingeckoId) {
           const url = `https://api.coingecko.com/api/v3/simple/price?ids=${mappedToken.coingeckoId}&vs_currencies=usd`;
-          console.log(`CoinGecko URL (ID): ${url}`);
           const res = await fetch(url);
           if (!res.ok) {
-            console.error(`CoinGecko API error for ID ${mappedToken.coingeckoId}: ${res.status} ${res.statusText}`);
-            return undefined;
+            throw new Error(`CoinGecko API error for ID ${mappedToken.coingeckoId}: ${res.status}`);
           }
           const data = await res.json() as CoinGeckoPriceResponse;
           const price = data[mappedToken.coingeckoId]?.usd;
-          console.log(`Price for ${mappedToken.coingeckoId}: ${price}`);
-          return price;
+          if (typeof price === 'number' && isFinite(price)) {
+            return { usd: price };
+          }
+          return null;
         }
         
-        // Si no, busca por dirección de contrato en la plataforma específica
         if (platform && mappedToken.address) {
           const url = `https://api.coingecko.com/api/v3/simple/token_price/${platform}?contract_addresses=${mappedToken.address}&vs_currencies=usd`;
-          console.log(`CoinGecko URL (contract): ${url}`);
           const res = await fetch(url);
           if (!res.ok) {
-            console.error(`CoinGecko API error for contract ${mappedToken.address} on ${platform}: ${res.status} ${res.statusText}`);
-            return undefined;
+            throw new Error(`CoinGecko API error for contract ${mappedToken.address} on ${platform}: ${res.status}`);
           }
           const data = await res.json() as CoinGeckoPriceResponse;
           const price = data[mappedToken.address.toLowerCase()]?.usd;
-          console.log(`Price for ${mappedToken.address} on ${platform}: ${price}`);
-          return price;
+          if (typeof price === 'number' && isFinite(price)) {
+            return { usd: price };
+          }
+          return null;
         }
       } catch (error) {
-        console.error(`Error fetching price for ${token.symbol}-${token.chainId}:`, error);
-        return undefined;
+        console.warn(`Could not fetch price for ${token.symbol}-${token.chainId}:`, error);
+        return null;
       }
 
-      return undefined;
+      return null;
     };
 
     const fetchAllPrices = async () => {
+      setRate(null); // Reset rate on new fetch
       try {
-        const [fromUsd, toUsd] = await Promise.all([
+        const [fromRes, toRes] = await Promise.all([
           fetchPrice(fromToken, fromMapped),
           fetchPrice(toToken, toMapped),
         ]);
 
-        console.log(`Fetched prices - From: ${fromUsd}, To: ${toUsd}`);
+        if (isCancelled) return;
 
-        if (fromUsd && toUsd && toUsd > 0) {
-          const calculatedRate = fromUsd / toUsd;
-          console.log(`Calculated market rate: ${calculatedRate}`);
-          setRate(calculatedRate);
+        if (fromRes && toRes && toRes.usd > 0) {
+          const calculatedRate = fromRes.usd / toRes.usd;
+          if (isFinite(calculatedRate)) {
+            setRate(calculatedRate);
+          } else {
+            setRate(null);
+          }
         } else {
-          console.warn(`Cannot calculate rate: fromUsd=${fromUsd}, toUsd=${toUsd}`);
           setRate(null);
         }
       } catch (error) {
@@ -177,6 +174,10 @@ export function useMarketRate(
     };
 
     void fetchAllPrices();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [fromToken, toToken]);
 
   return rate;
