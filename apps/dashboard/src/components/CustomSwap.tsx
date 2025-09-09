@@ -160,8 +160,8 @@ export function CustomSwap() {
   const [isBridgeQuoteLoading, setIsBridgeQuoteLoading] = useState(false);
   const { loading: uniswapQuoteLoading, fee: uniswapFee, outputAmount: uniswapOutputAmount } = useQuote({
     chainId: fromChainId,
-    tokenIn: fromToken, // Now accepts Token | null
-    tokenOut: toToken, // Now accepts Token | null
+    tokenIn: fromToken,
+    tokenOut: toToken,
     amount: fromAmountBaseUnits
   });
   const { mutateAsync: sendTx, isPending: isSwapping } = useSendTransaction();
