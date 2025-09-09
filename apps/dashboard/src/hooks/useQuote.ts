@@ -53,7 +53,7 @@ export default function useQuote({ chainId, tokenIn, tokenOut, amount }: { chain
 
       setLoading(true);
       try {
-        const factoryContract = getThirdwebContract({ address: UNISWAP_V3_FACTORY_ADDRESS, chainId, abi: factoryAbi });
+        const factoryContract = getThirdwebContract({ address: UNISWAP_V3_FACTORY_ADDRESS, chainId, abi: factoryAbi as any });
         let pools: GetUniswapV3PoolResult[] = [];
         
         if (pools.length === 0) { // Simple cache avoidance for now
@@ -105,8 +105,8 @@ export default function useQuote({ chainId, tokenIn, tokenOut, amount }: { chain
               sqrtPriceLimitX96: 0n,
             });
             try {
-              const simulation: { result: bigint } = await simulateTransaction({ transaction: quoteTx });
-              return simulation.result as bigint;
+              const simulation = await simulateTransaction({ transaction: quoteTx });
+              return simulation.result;
             } catch (e) {
               console.error("Quote simulation failed for pool", pool.poolFee, e);
               return 0n;
@@ -134,7 +134,7 @@ export default function useQuote({ chainId, tokenIn, tokenOut, amount }: { chain
       }
     };
 
-    const delayExecId = setTimeout(() => { // eslint-disable-line
+    const delayExecId = setTimeout(() => {
       void refreshQuote();
     }, 500);
     return () => clearTimeout(delayExecId);
