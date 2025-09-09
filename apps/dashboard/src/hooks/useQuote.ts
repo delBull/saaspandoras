@@ -53,7 +53,7 @@ export default function useQuote({ chainId, tokenIn, tokenOut, amount }: { chain
 
       setLoading(true);
       try {
-        const factoryContract = getThirdwebContract({ address: UNISWAP_V3_FACTORY_ADDRESS, chainId, abi: factoryAbi as any });
+        const factoryContract = getThirdwebContract({ address: UNISWAP_V3_FACTORY_ADDRESS, chainId, abi: factoryAbi });
         let pools: GetUniswapV3PoolResult[] = [];
         
         if (pools.length === 0) { // Simple cache avoidance for now
@@ -105,7 +105,10 @@ export default function useQuote({ chainId, tokenIn, tokenOut, amount }: { chain
               sqrtPriceLimitX96: 0n,
             });
             try {
-              const simulation = await simulateTransaction({ transaction: quoteTx });
+              // The result of simulateTransaction can be of various types, we ensure it's a bigint.
+              const simulation = await simulateTransaction({ transaction: quoteTx }) as { result: bigint };
+              // It's safer to check if result exists and is a bigint.
+              if (typeof simulation.result === 'bigint')
               return simulation.result as bigint;
             } catch (e) {
               console.error("Quote simulation failed for pool", pool.poolFee, e);
@@ -115,7 +118,7 @@ export default function useQuote({ chainId, tokenIn, tokenOut, amount }: { chain
         );
 
         // Find max output
-        const maxOutput = results.reduce((max, current) => (current ?? 0n) > max ? (current ?? 0n) : max, 0n);
+        const maxOutput = results.reduce((max: bigint, current) => (current ?? 0n) > max ? (current ?? 0n) : max, 0n);
         const bestPoolIndex = results.findIndex(r => r === maxOutput);
         const bestFee = pools[bestPoolIndex]?.poolFee ?? 0;
 
