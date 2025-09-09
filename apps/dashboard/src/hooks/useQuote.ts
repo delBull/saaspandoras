@@ -35,7 +35,7 @@ export interface UniswapQuote {
   outputAmount?: bigint;
 }
 
-export default function useQuote({ chainId, tokenIn, tokenOut, amount }: { chainId: SupportedChainId, tokenIn?: Token, tokenOut?: Token, amount?: bigint }): UniswapQuote {
+export default function useQuote({ chainId, tokenIn, tokenOut, amount }: { chainId: number, tokenIn?: Token | null, tokenOut?: Token | null, amount?: bigint }): UniswapQuote {
   const [loading, setLoading] = useState(false);
   const [fee, setFee] = useState<number | undefined>();
   const [outputAmount, setOutputAmount] = useState<bigint | undefined>();
@@ -44,7 +44,12 @@ export default function useQuote({ chainId, tokenIn, tokenOut, amount }: { chain
 
   useEffect(() => {
     const refreshQuote = async () => {
-      if (!tokenIn || !tokenOut || !amount) {
+      // Type guard to ensure chainId is supported
+      const isSupportedChain = (id: number): id is SupportedChainId => {
+        return Object.values(UNISWAP_V3_QUOTER_V2_ADDRESSES).hasOwnProperty(id);
+      };
+
+      if (!tokenIn || !tokenOut || !amount || !isSupportedChain(chainId)) {
         setFee(undefined);
         setOutputAmount(undefined);
         setLoading(false);
