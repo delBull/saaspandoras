@@ -162,7 +162,7 @@ export function CustomSwap() {
     chainId: fromChainId as SupportedChainId,
     tokenIn: fromToken ?? undefined,
     tokenOut: toToken ?? undefined,
-    amount: fromAmountBaseUnits,
+    amount: fromAmountBaseUnits
   });
   const { mutateAsync: sendTx, isPending: isSwapping } = useSendTransaction();
 
@@ -362,7 +362,7 @@ export function CustomSwap() {
     fromToken,
     toToken,
     fromAmount,
-    quote: currentQuote as any,
+    quote: currentQuote,
     marketRate,
     txStatus: 'success',
   });
@@ -374,7 +374,7 @@ export function CustomSwap() {
     fromToken,
     toToken,
     fromAmount,
-    quote: currentQuote as any,
+    quote: currentQuote,
     marketRate,
     txStatus: 'error',
   });
@@ -396,10 +396,10 @@ export function CustomSwap() {
         const routerContract = getThirdwebContract({ address: UNISWAP_V3_SWAP_ROUTER_02_ADDRESSES[fromChainId as SupportedChainId], chainId: fromChainId });
         const swapTx = exactInputSingle({
           contract: routerContract,
-          params: {
-            tokenIn: fromToken!.address as `0x${string}`,
-            tokenOut: toToken!.address as `0x${string}`,
-            fee: uniswapFee as number,
+          params: { // The ! is safe here because we check fromToken and toToken before calling
+            tokenIn: fromToken!.address,
+            tokenOut: toToken!.address,
+            fee: uniswapFee!,
             recipient: account.address as `0x${string}`,
             deadline: BigInt(Math.floor(Date.now() / 1000) + 60 * 20), // 20 minutes from now
             amountIn: fromAmountBaseUnits,

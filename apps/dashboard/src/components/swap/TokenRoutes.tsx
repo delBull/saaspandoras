@@ -124,12 +124,12 @@ export function TokenRoutes({ fromChainId, toChainId, fromToken, toToken, onRout
                 >
                   <div className="flex items-center gap-2">
                     <Image
-                      src={token.logoURI || '/default-token.png'} // Proporciona una imagen por defecto
+                      src={token.logoURI ?? '/default-token.png'} 
                       alt={token.symbol}
                       width={24}
                       height={24}
                       className="w-6 h-6 rounded-full"
-                      onError={(e) => e.currentTarget.src = '/default-token.png'} // Fallback por si la URL de la imagen falla
+                      onError={(e) => e.currentTarget.src = '/default-token.png'} 
                     />
                     <span>{token.symbol} - {token.name}</span>
                   </div>
@@ -153,12 +153,12 @@ export function TokenRoutes({ fromChainId, toChainId, fromToken, toToken, onRout
                 >
                   <div className="flex items-center gap-2">
                     <Image
-                      src={token.logoURI || '/default-token.png'} // Proporciona una imagen por defecto
+                      src={token.logoURI ?? '/default-token.png'} 
                       alt={token.symbol}
                       width={24}
                       height={24}
                       className="w-6 h-6 rounded-full"
-                      onError={(e) => e.currentTarget.src = '/default-token.png'} // Fallback por si la URL de la imagen falla
+                      onError={(e) => e.currentTarget.src = '/default-token.png'}
                     />
                     <span>{token.symbol} - {token.name}</span>
                   </div>
