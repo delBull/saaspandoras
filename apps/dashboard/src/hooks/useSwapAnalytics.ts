@@ -1,11 +1,17 @@
 'use client';
 
 import { useEffect } from "react";
-import { track } from "@vercel/analytics";
+import { track } from "@vercel/analytics/react";
 import sha256 from "crypto-js/sha256";
-import type { BuyWithCryptoQuote } from "thirdweb/pay"; // Asegúrate de tener @types/crypto-js instalado
+
+type GenericQuote = {
+  // Bridge quote from Bridge.Sell.quote has destinationAmount
+  destinationAmount?: bigint;
+  outputAmount?: bigint; // For Uniswap quote
+};
 
 interface Token {
+  address: string;
   symbol: string;
   chainId: number;
 }
@@ -16,7 +22,7 @@ interface UseSwapAnalyticsProps {
   fromToken: Token | null;
   toToken: Token | null;
   fromAmount: string;
-  quote: BuyWithCryptoQuote | null | undefined;
+  quote: GenericQuote | null | undefined;
   marketRate: number | null;
   txStatus?: "success" | "error" | "pending";
 }
@@ -41,7 +47,8 @@ export function useSwapAnalytics({
       toToken: toToken?.symbol ?? "N/A",
       toChain: toToken?.chainId ?? 0,
       fromAmount,
-      toAmount: quote?.swapDetails?.toAmountWei ?? null,
+      // Vercel Analytics doesn't support bigint, so we convert it to string.
+      toAmount: (quote?.destinationAmount ?? quote?.outputAmount)?.toString() ?? null,
       txStatus: txStatus ?? "N/A",
     });
   }, [event, address, fromToken, toToken, fromAmount, quote, marketRate, txStatus]);

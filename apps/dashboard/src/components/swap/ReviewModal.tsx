@@ -1,6 +1,6 @@
 'use client';
 
-import type { PreparedTransaction } from "thirdweb";
+import type { Bridge } from "thirdweb";
 import type { Token } from "@/types/token";
 import { formatUnits } from "viem";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@saasfly/ui/dialog";
@@ -9,21 +9,21 @@ import { ArrowDownIcon, Loader2 } from "lucide-react";
 import { TokenImage } from '../TokenImage';
 import { BadgeChain } from '../BadgeChain';
 
-// Define a type that matches the structure of the object from Bridge.prepare
-interface BridgePreparedQuote {
-  transaction: PreparedTransaction;
-  toAmount: {
-    amount: string;
-    amountWei: bigint;
-    token: Token;
-    amountUSD: string;
-  };
+// Use the actual type from the thirdweb SDK for better type safety
+type BridgePreparedQuote = Awaited<ReturnType<typeof Bridge.Sell.quote>>;
+
+// Define a type for the estimated part of the bridge quote for type guarding
+interface BridgeQuoteWithEstimated extends BridgePreparedQuote {
   estimated: {
-    gasCostsUSD: string;
     toAmountMin: string;
-    toAmountMinWei: bigint;
+    gasCostUSD: string;
   };
-  maxSlippageBPS: number;
+  maxSlippage: number;
+}
+
+// Type guard to check if the quote is a bridge quote with the estimated property
+function isBridgeQuote(quote: any): quote is BridgeQuoteWithEstimated {
+  return quote && typeof quote === 'object' && 'estimated' in quote;
 }
 
 export interface ReviewModalProps {
@@ -34,7 +34,7 @@ export interface ReviewModalProps {
   toToken: Token | null;
   fromAmount: string;
   displayToAmount: string;
-  quote: BridgePreparedQuote | { outputAmount: bigint; fee: number } | null;
+  quote: BridgePreparedQuote | { outputAmount: bigint; fee?: number } | null;
   isSwapping: boolean;
   expectedAmount: number | null;
   quotedAmount: number | null;
@@ -48,12 +48,12 @@ export function ReviewModal({ isOpen, onOpenChange, onConfirm, fromToken, toToke
   let minAmount = "0.0";
   let slippage = "0.5";
   let gasCost = "0.01";
-  // Check for a property unique to the Bridge quote to help TypeScript narrow the type
-  if (quote && 'transaction' in quote) { 
-    minAmount = quote.estimated.toAmountMinWei ? formatUnits(quote.estimated.toAmountMinWei, toToken.decimals) : "0.0";
-    const slippageBps = quote.maxSlippageBPS ?? 50;
+  // Use the type guard to safely access properties
+  if (isBridgeQuote(quote)) { 
+    minAmount = formatUnits(BigInt(quote.estimated.toAmountMin), toToken.decimals);
+    const slippageBps = quote.maxSlippage;
     slippage = (slippageBps / 100).toFixed(2);
-    gasCost = quote.estimated.gasCostsUSD ? parseFloat(quote.estimated.gasCostsUSD).toFixed(4) : "0.01";
+    gasCost = parseFloat(quote.estimated.gasCostUSD).toFixed(4);
   } else {
     // Uniswap quote
     minAmount = displayToAmount; // Use estimated for min in simple case
