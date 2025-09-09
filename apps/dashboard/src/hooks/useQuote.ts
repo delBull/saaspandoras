@@ -109,7 +109,7 @@ export default function useQuote({ chainId, tokenIn, tokenOut, amount }: { chain
               const simulation = await simulateTransaction({ transaction: quoteTx }) as { result: bigint };
               // It's safer to check if result exists and is a bigint.
               if (typeof simulation.result === 'bigint')
-              return simulation.result as bigint;
+              return simulation.result;
             } catch (e) {
               console.error("Quote simulation failed for pool", pool.poolFee, e);
               return 0n;

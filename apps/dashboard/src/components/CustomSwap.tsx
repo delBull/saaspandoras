@@ -162,7 +162,7 @@ export function CustomSwap() {
     chainId: fromChainId as SupportedChainId,
     tokenIn: fromToken ?? undefined,
     tokenOut: toToken ?? undefined,
-    amount: fromAmountBaseUnits
+    amount: fromAmountBaseUnits,
   });
   const { mutateAsync: sendTx, isPending: isSwapping } = useSendTransaction();
 
@@ -503,7 +503,7 @@ export function CustomSwap() {
         toToken={toToken}
         fromAmount={fromAmount}
         displayToAmount={displayToAmount}
-        quote={currentQuote as any}
+        quote={currentQuote}
         fee={isSameChain ? uniswapFee : undefined}
         expectedAmount={expectedAmount}
         quotedAmount={quotedAmountAsNumber}
