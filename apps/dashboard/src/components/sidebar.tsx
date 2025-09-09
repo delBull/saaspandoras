@@ -62,7 +62,7 @@ export function Sidebar({ wallet: walletProp, userName }: SidebarProps) {
   // Enlace condicional para el admin
   ...(userIsAdmin ? [{
     label: "Dashboard",
-    href: "/admin",
+    href: "/admin/dashboard",
     icon: <ChartPieIcon className="h-5 w-5 shrink-0 font-mono text-lime-400" />,
     disabled: false,
     admin: true,

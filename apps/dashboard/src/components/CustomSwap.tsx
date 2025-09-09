@@ -242,7 +242,7 @@ export function CustomSwap() {
       }
     };
     void fetchBridgeQuote();
-  }, [fromToken, toToken, fromAmount, account, isReadyForQuote, availableRoutes]);
+  }, [fromToken, toToken, fromAmount, account, isReadyForQuote, availableRoutes, fromAmountBaseUnits]);
   
   const { data: receipt, isLoading: isWaitingForConfirmation } = useWaitForReceipt(
     txHash && fromToken
@@ -305,7 +305,15 @@ export function CustomSwap() {
   
   const isCrossChain = fromToken && toToken && fromToken.chainId !== toToken.chainId;
   const quoteLoading = isSameChain ? uniswapQuoteLoading : isBridgeQuoteLoading;
-  const currentQuote = isSameChain ? { outputAmount: uniswapOutputAmount, fee: uniswapFee } : bridgeQuote;
+  
+  // This is the core logic fix. We determine which quote to use.
+  // Prioritize Uniswap V3 if available, otherwise use the Bridge quote.
+  const currentQuote = useMemo(() => {
+    if (isSameChain && uniswapOutputAmount && uniswapOutputAmount > 0n) {
+      return { outputAmount: uniswapOutputAmount, fee: uniswapFee };
+    }
+    return bridgeQuote;
+  }, [isSameChain, uniswapOutputAmount, uniswapFee, bridgeQuote]);
 
   // Rate de mercado: puede ser null/N/A y eso está OK para UX
   const marketRate = useMarketRate(fromToken ?? undefined, toToken ?? undefined);
@@ -363,8 +371,7 @@ export function CustomSwap() {
   const handleReview = () => {
     if (error) { toast.error(error); return; }
     if (isQuoteUnrealistic && marketRate !== null) { toast.error("La cotización es muy diferente al precio de mercado."); return; }
-    if (isSameChain && !uniswapOutputAmount) { toast.error("No hay ruta disponible para este par."); return; }
-    if (!isSameChain && (availableRoutes.length === 0 || !bridgeQuote)) { toast.error("No hay ruta disponible para este par."); return; }
+    // Simplified check: if there's no valid currentQuote, there's no path.
     if (!currentQuote || !account) { toast.error("No hay ruta disponible para este par."); return; }
     setSwapStep('review');
   };
