@@ -65,22 +65,21 @@ export default function useQuote({ chainId, tokenIn, tokenOut, amount }: { chain
           const fees = [500, 3000, 10000];
           const promises = fees.map(async (fee) => {
             try {
-              // CORRECCIÓN: Usar la función readContract de Thirdweb, que ya conoce el client.
               const poolAddress = await readContract({
                 contract: factoryContract,
                 method: "function getPool(address, address, uint24) view returns (address)",
                 params: [tokenIn.address, tokenOut.address, fee]
               });
-              // The AbiDecodingZeroDataError happens when the pool doesn't exist and the contract returns '0x'.
-              // A valid pool address will be a non-zero address.
-              // We check for the zero address to be safe.
+
+              // A valid pool address will be a non-zero address. We check for the zero address to be safe.
               const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
               if (poolAddress && poolAddress !== ZERO_ADDRESS) {
                 return { poolAddress: poolAddress, poolFee: fee };
               }
             } catch (e: unknown) {
-              // Gracefully ignore the AbiDecodingZeroDataError, as it simply means the pool doesn't exist for this fee.
-              if (e instanceof Error && !e.message.includes("AbiDecodingZeroDataError") && !e.message.includes("client.request is not a function")) {
+              // Gracefully ignore errors if a pool doesn't exist. The `readContract` call might throw if it gets '0x'.
+              // We only log unexpected errors.
+              if (e instanceof Error && !e.message.includes("Cannot decode zero data")) {
                 console.warn(`Failed to get pool for fee ${fee} on chain ${chainId}:`, e.message);
               }
             }
