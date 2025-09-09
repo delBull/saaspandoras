@@ -1,6 +1,6 @@
-import { Address } from "thirdweb";
+import type { Address } from "thirdweb";
 
-export const UNISWAP_V3_FACTORY_ADDRESS: Address = "0x1F98431c8aD98523631AE4a59f267346ea31F984" as const;
+export const UNISWAP_V3_FACTORY_ADDRESS: Address = "0x1F98431c8aD98523631AE4a59f267346ea31F984";
 
 export const UNISWAP_V3_QUOTER_V2_ADDRESSES = {
   1: "0x61fFE014bA17989E743c5F6cB21bF9697530B21e" as Address, // Ethereum

@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import useQuote, { type UniswapQuote } from "@/hooks/useQuote";
+import useQuote from "@/hooks/useQuote";
 import type { Token } from "@/types/token";
 import { UNISWAP_V3_SWAP_ROUTER_02_ADDRESSES, type SupportedChainId } from "@/lib/uniswap-v3-constants";
 import { exactInputSingle } from "thirdweb/extensions/uniswap";
@@ -156,7 +156,7 @@ export function CustomSwap() {
   const isSameToken = fromToken?.address === toToken?.address;
   const isInsufficientBalance = fromAmount && balance?.value && fromToken ? (fromAmountBaseUnits > balance.value) : false;
   const isReadyForQuote = account && fromToken && toToken && !isInvalidAmount && !isSameToken && !isInsufficientBalance;
-  const [bridgeQuote, setBridgeQuote] = useState<Awaited<ReturnType<typeof Bridge.Sell.quote>> | null>(null); // eslint-disable-line
+  const [bridgeQuote, setBridgeQuote] = useState<Awaited<ReturnType<typeof Bridge.Sell.quote>> | null>(null);
   const [isBridgeQuoteLoading, setIsBridgeQuoteLoading] = useState(false);
   const { loading: uniswapQuoteLoading, fee: uniswapFee, outputAmount: uniswapOutputAmount } = useQuote({
     chainId: fromChainId as SupportedChainId,
@@ -194,7 +194,6 @@ export function CustomSwap() {
     }
     void fetchRoutes();
   }, [fromToken, toToken, isReadyForQuote, isSameChain, uniswapOutputAmount]);
-
   // Fetch Bridge quote if routes available
   useEffect(() => {
     if (!isReadyForQuote || availableRoutes.length === 0) {
@@ -222,7 +221,7 @@ export function CustomSwap() {
       }
     };
     void fetchBridgeQuote();
-  }, [fromToken, toToken, fromAmount, account, isReadyForQuote, availableRoutes, fromAmountBaseUnits, client]);
+  }, [fromToken, toToken, fromAmount, account, isReadyForQuote, availableRoutes, fromAmountBaseUnits]);
   
   const { data: receipt, isLoading: isWaitingForConfirmation } = useWaitForReceipt(
     txHash && fromToken
@@ -292,7 +291,7 @@ export function CustomSwap() {
     if (isSameChain && uniswapOutputAmount && uniswapOutputAmount > 0n) {
       return { outputAmount: uniswapOutputAmount, fee: uniswapFee };
     }
-    return bridgeQuote;
+    return bridgeQuote as any;
   }, [isSameChain, uniswapOutputAmount, uniswapFee, bridgeQuote]);
 
   // Rate de mercado: puede ser null/N/A y eso está OK para UX
@@ -363,7 +362,7 @@ export function CustomSwap() {
     fromToken,
     toToken,
     fromAmount,
-    quote: currentQuote as any, // Cast to any to satisfy analytics hook
+    quote: currentQuote,
     marketRate,
     txStatus: 'success',
   });
@@ -375,7 +374,7 @@ export function CustomSwap() {
     fromToken,
     toToken,
     fromAmount,
-    quote: currentQuote as any, // Cast to any to satisfy analytics hook
+    quote: currentQuote,
     marketRate,
     txStatus: 'error',
   });
@@ -491,7 +490,7 @@ export function CustomSwap() {
     <div className="flex flex-col gap-2 p-2 md:p-4 rounded-2xl bg-black/20">
       <Sheet open={!!isTokenModalOpen} onOpenChange={(isOpen: boolean) => !isOpen && setTokenModalOpen(null)}>
         <SheetContent className="bg-zinc-900 border-none text-white p-0 flex flex-col md:max-w-md md:rounded-2xl inset-x-0 bottom-0 md:inset-auto rounded-t-2xl h-[85vh] md:h-auto md:max-h-[600px]">
-          <TokenSelector tokens={activeTokenList} onSelect={handleTokenSelect} currentSelection={isTokenModalOpen === 'from' ? toToken?.address ?? "" : fromToken?.address ?? ""} searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+          <TokenSelector tokens={activeTokenList} onSelect={handleTokenSelect as any} currentSelection={isTokenModalOpen === 'from' ? toToken?.address ?? "" : fromToken?.address ?? ""} searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
         </SheetContent>
       </Sheet>
 
@@ -504,7 +503,7 @@ export function CustomSwap() {
         toToken={toToken}
         fromAmount={fromAmount}
         displayToAmount={displayToAmount}
-        quote={currentQuote as any}
+        quote={currentQuote}
         fee={isSameChain ? uniswapFee : undefined}
         expectedAmount={expectedAmount}
         quotedAmount={quotedAmountAsNumber}
