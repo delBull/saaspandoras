@@ -4,6 +4,7 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import useQuote from "@/hooks/useQuote";
 import type { Token } from "@/types/token";
+import type { RouteResult } from "@/types/routes";
 import { UNISWAP_V3_SWAP_ROUTER_02_ADDRESSES, type SupportedChainId } from "@/lib/uniswap-v3-constants";
 import { exactInputSingle } from "thirdweb/extensions/uniswap";
 import { approve as thirdwebApprove, allowance as thirdwebAllowance } from "thirdweb/extensions/erc20";
@@ -19,6 +20,8 @@ import { client } from "@/lib/thirdweb-client";
 import { parseUnits, formatUnits } from "viem";
 import { defineChain } from "thirdweb/chains";
 import { useMarketRate } from '@/hooks/useMarketRate';
+import { showUnwrapPromptIfNeeded } from "@/lib/unwrap";
+import { useTxConfirmation } from "@/hooks/useTxConfirmation";
 import { BadgeChain } from './BadgeChain';
 import { useSwapAnalytics } from "@/hooks/useSwapAnalytics";
 import { Bridge } from "thirdweb";
@@ -161,6 +164,10 @@ export function CustomSwap() {
   const [networkStatus, setNetworkStatus] = useState<'pending' | 'success' | 'error'>('pending');
   const [txHash, setTxHash] = useState<`0x${string}` | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  
+  // Estado para el prompt de unwrap
+  const [unwrapPrompt, setUnwrapPrompt] = useState<{ prompt: string; cta: string; action: () => Promise<`0x${string}`> } | null>(null);
+  const [unwrapTxHash, setUnwrapTxHash] = useState<`0x${string}` | null>(null);
 
   const fromTokenList = useTokenList(fromChainId);
   const toTokenList = useTokenList(toChainId);
@@ -168,13 +175,13 @@ export function CustomSwap() {
 
   useEffect(() => {
     if (fromTokenList.length > 0 && !fromToken) {
-      setFromToken(fromTokenList.find(t => t.symbol === 'USDC') ?? fromTokenList[0] ?? null);
+      setFromToken(fromTokenList.find(t => t.symbol === 'USDC') || fromTokenList[0] || null);
     }
   }, [fromTokenList, fromToken]);
   
   useEffect(() => {
     if (toTokenList.length > 0 && !toToken) {
-      setToToken(toTokenList.find(t => t.symbol === 'ETH') ?? toTokenList[0] ?? null);
+      setToToken(toTokenList.find(t => t.symbol === 'ETH') || toTokenList[0] || null);
     }
   }, [toTokenList, toToken]);
 
@@ -200,7 +207,7 @@ export function CustomSwap() {
   // Estado para la cotización del bridge con marca de tiempo
   const [bridgeQuote, setBridgeQuote] = useState<(Awaited<ReturnType<typeof Bridge.Sell.quote>> & { fetchedAt: number }) | null>(null);
   const [isBridgeQuoteLoading, setIsBridgeQuoteLoading] = useState(false);
-  const { loading: uniswapQuoteLoading, fee: uniswapFee, outputAmount: uniswapOutputAmount } = useQuote({
+  const { loading: uniswapQuoteLoading, fee: uniswapFee, outputAmount: uniswapOutputAmount, quoteError: uniswapQuoteError, feeResults: uniswapFeeResults } = useQuote({
     chainId: fromChainId,
     tokenIn: fromToken,
     tokenOut: toToken,
@@ -300,6 +307,20 @@ export function CustomSwap() {
     }
   }, [receipt, isWaitingForConfirmation, txHash]);
 
+  // Hook para monitorear la transacción de unwrap
+  useTxConfirmation({
+    hash: unwrapTxHash,
+    chainId: toChainId,
+    onConfirm: () => {
+      toast.success("¡Unwrap completado! Tu saldo de token nativo ha sido actualizado.");
+      // Aquí podrías forzar un refetch del balance del token nativo si fuera necesario.
+      // Por ejemplo, llamando a una función que actualice el estado del balance.
+      setUnwrapPrompt(null); // Ocultar el prompt
+      setUnwrapTxHash(null); // Limpiar el hash
+    },
+  });
+
+
   // --- Cálculos de Montos y Price Impact ---
   // 1. Montos SIEMPRE en decimales humanos (nunca base units/wei):
 
@@ -345,6 +366,24 @@ export function CustomSwap() {
     }
     return bridgeQuote;
   }, [isSameChain, uniswapOutputAmount, uniswapFee, bridgeQuote]);
+
+  // --- Lógica de Rutas Unificada ---
+  const routeResults: RouteResult[] = useMemo(() => {
+    const results: RouteResult[] = [];
+    if (isSameChain) {
+      return uniswapFeeResults;
+    }
+    // Para cross-chain, creamos un resultado de ruta a partir del bridgeQuote
+    if (bridgeQuote) {
+      results.push({
+        provider: "Bridge",
+        label: "Thirdweb Bridge",
+        output: bridgeQuote.destinationAmount,
+        ok: true, // Asumimos que si hay quote, la ruta es OK
+      });
+    }
+    return results;
+  }, [isSameChain, uniswapFeeResults, bridgeQuote]);
 
   // Rate de mercado: puede ser null/N/A y eso está OK para UX
   const marketRate = useMarketRate(fromToken ?? undefined, toToken ?? undefined);
@@ -536,6 +575,26 @@ export function CustomSwap() {
         setSwapStatus('success');
       }
       setNetworkStatus('success');
+
+      // --- Lógica de Auto-Unwrap Post-Swap ---
+      if (toToken && !isSameChain) {
+        // Type guard to ensure currentQuote is a bridge quote
+        const isBridgeQuote = (q: typeof currentQuote): q is (Awaited<ReturnType<typeof Bridge.Sell.quote>> & { fetchedAt: number }) => {
+          return q !== null && 'destinationAmount' in q;
+        }
+
+        const prompt = await showUnwrapPromptIfNeeded({
+          owner: account.address as `0x${string}`,
+          chainId: toToken.chainId,
+          amount: isBridgeQuote(currentQuote) ? currentQuote.destinationAmount : 0n,
+          activeAccount: account,
+        });
+        if (prompt) {
+          setUnwrapPrompt(prompt);
+        }
+      }
+      // --- Fin Lógica de Auto-Unwrap ---
+
       setSwapStep('success');
     } catch (err) {
       console.error("Swap fallido", err);
@@ -562,6 +621,17 @@ export function CustomSwap() {
     setApprovingStatus('pending'); setSwapStatus('pending'); setNetworkStatus('pending');
   };
   
+  const handleUnwrap = async () => {
+    if (!unwrapPrompt) return;
+    try {
+      toast.loading("Procesando unwrap...");
+      const hash = await unwrapPrompt.action();
+      setUnwrapTxHash(hash);
+    } catch (error) {
+      toast.error("El unwrap falló. Por favor, inténtalo de nuevo.");
+      console.error("Unwrap failed:", error);
+    }
+  };
   const handleMax = () => { if (balance) setFromAmount(balance.displayValue); };
   const handleTokenSelect = (token: Token): void => {
     if (isTokenModalOpen === "from") setFromToken(token);
@@ -670,10 +740,44 @@ export function CustomSwap() {
         </div>
       )}
 
+      {/* --- Overlay Universal de Rutas --- */}
+      {(uniswapQuoteError || (isCrossChain && routeResults.length === 0 && isReadyForQuote && !isBridgeQuoteLoading)) && (
+        <div className="p-2 mt-2 bg-orange-900/30 rounded font-mono text-xs text-orange-200">
+          <p>{uniswapQuoteError || "No se encontraron rutas de bridge."}</p>
+          {routeResults.length > 0 && (
+            <ul>
+              {routeResults.map((r, idx) => (
+                <li key={idx}>
+                  {r.label}
+                  {r.fee ? ` (${(r.fee / 10000).toFixed(2)}%)` : ""}:{" "}
+                  <b>
+                    {r.ok ? "LIQUIDEZ" : r.error ? "ERR" : "0"}
+                  </b>
+                  {r.output > 0n
+                    ? ` | Output: ${formatUnits(r.output, toToken?.decimals ?? 18)}`
+                    : ""}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {/* --- Prompt para Unwrap --- */}
+      {unwrapPrompt && !unwrapTxHash && (
+        <div className="p-3 mt-2 bg-emerald-900/40 text-emerald-300 rounded-lg font-mono text-xs text-center space-y-2">
+          <p>{unwrapPrompt.prompt}</p>
+          <Button onClick={handleUnwrap} size="sm" className="bg-emerald-500 hover:bg-emerald-600 text-white">
+            {unwrapPrompt.cta}
+          </Button>
+        </div>
+      )}
+      {unwrapTxHash && <div className="p-2 mt-2 text-center text-xs text-yellow-400">Esperando confirmación del unwrap...</div>}
+
       {account ? (
         <Button
           onClick={handleReview}
-          disabled={!!error || quoteLoading || isSwapping || !currentQuote || (isQuoteUnrealistic && marketRate !== null)}
+          disabled={!!error || quoteLoading || isSwapping || !currentQuote || (isQuoteUnrealistic && marketRate !== null) || !routeResults.some(r => r.ok)}
           className="w-full mt-4 py-6 rounded-2xl font-bold text-lg text-zinc-900 bg-gradient-to-r from-lime-200 to-lime-300 transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {buttonText()}

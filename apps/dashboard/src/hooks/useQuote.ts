@@ -1,154 +1,154 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { Token } from "@/types/token";
 import { simulateTransaction, readContract, type PreparedTransaction } from "thirdweb";
 import { quoteExactInputSingle } from "thirdweb/extensions/uniswap";
 import getThirdwebContract from "@/lib/get-contract";
-import { UNISWAP_V3_FACTORY_ADDRESS, UNISWAP_V3_QUOTER_V2_ADDRESSES, type SupportedChainId } from "@/lib/uniswap-v3-constants";
-import type { GetUniswapV3PoolResult } from "thirdweb/extensions/uniswap";
-import { toast } from "sonner";
-
-interface Token {
-  address: `0x${string}`;
-  symbol: string;
-  decimals: number;
-  image: string;
-}
-
-const factoryAbi = [
-  {
-    "inputs": [
-      { "internalType": "address", "name": "tokenA", "type": "address" },
-      { "internalType": "address", "name": "tokenB", "type": "address" },
-      { "internalType": "uint24", "name": "fee", "type": "uint24" }
-    ],
-    "name": "getPool",
-    "outputs": [{ "internalType": "address", "name": "pool", "type": "address" }],
-    "stateMutability": "view",
-    "type": "function"
-  }
-] as const;
+import type { RouteResult } from "@/types/routes";
+import {
+  UNISWAP_V3_FACTORY_ADDRESS,
+  UNISWAP_V3_QUOTER_V2_ADDRESSES,
+  type SupportedChainId,
+} from "@/lib/uniswap-v3-constants";
+import { normalizeNativeToWrappedAddress } from "@/lib/normalizeToken";
 
 export interface UniswapQuote {
   loading: boolean;
   fee?: number;
   outputAmount?: bigint;
+  feeResults: RouteResult[];
+  quoteError: string | null;
 }
 
-export default function useQuote({ chainId, tokenIn, tokenOut, amount }: { chainId: number, tokenIn?: Token | null, tokenOut?: Token | null, amount?: bigint }): UniswapQuote {
+export default function useQuote({
+  chainId,
+  tokenIn,
+  tokenOut,
+  amount,
+}: {
+  chainId: number;
+  tokenIn?: Token | null;
+  tokenOut?: Token | null;
+  amount?: bigint;
+}): UniswapQuote {
   const [loading, setLoading] = useState(false);
   const [fee, setFee] = useState<number | undefined>();
   const [outputAmount, setOutputAmount] = useState<bigint | undefined>();
+  const [feeResults, setFeeResults] = useState<RouteResult[]>([]);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
 
-  // Skip for Base if needed, but since Uniswap V3 is supported, proceed
 
   useEffect(() => {
     const refreshQuote = async () => {
-      // Type guard to ensure chainId is supported
+      const feesToTry = [500, 3000, 10000];
+      setLoading(true);
+      setQuoteError(null);
+      setFeeResults([]);
+
       const isSupportedChain = (id: number): id is SupportedChainId => {
         return Object.prototype.hasOwnProperty.call(UNISWAP_V3_QUOTER_V2_ADDRESSES, id);
       };
 
       if (!tokenIn || !tokenOut || !amount || !isSupportedChain(chainId)) {
-        setFee(undefined);
-        setOutputAmount(undefined);
         setLoading(false);
         return;
       }
 
-      setLoading(true);
+      const normalizedTokenInAddr = normalizeNativeToWrappedAddress(tokenIn, chainId);
+      const normalizedTokenOutAddr = normalizeNativeToWrappedAddress(tokenOut, chainId);
+
       try {
         const factoryContract = getThirdwebContract({ address: UNISWAP_V3_FACTORY_ADDRESS, chainId, abi: factoryAbi });
-        let pools: GetUniswapV3PoolResult[] = [];
-        
-        if (pools.length === 0) { // Simple cache avoidance for now
-          const fees = [500, 3000, 10000];
-          const promises = fees.map(async (fee) => {
-            try {
-              const poolAddress = await readContract({
-                contract: factoryContract,
-                method: "function getPool(address, address, uint24) view returns (address)",
-                params: [tokenIn.address, tokenOut.address, fee]
-              });
+        const pools: { poolFee: number; poolAddress: string }[] = [];
 
-              // A valid pool address will be a non-zero address. We check for the zero address to be safe.
-              const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
-              if (poolAddress && poolAddress !== ZERO_ADDRESS) {
-                return { poolAddress: poolAddress, poolFee: fee };
-              }
-            } catch (e: unknown) {
-              // Gracefully ignore errors if a pool doesn't exist. The `readContract` call might throw if it gets '0x'.
-              // We only log unexpected errors.
-              if (e instanceof Error && !e.message.includes("Cannot decode zero data")) {
-                console.warn(`Failed to get pool for fee ${fee} on chain ${chainId}:`, e.message);
-              }
+        for (const fee of feesToTry) {
+          try {
+            const poolAddress = await readContract({
+              contract: factoryContract,
+              method: "function getPool(address, address, uint24) view returns (address)",
+              params: [normalizedTokenInAddr, normalizedTokenOutAddr, fee],
+            });
+            if (poolAddress && poolAddress !== "0x0000000000000000000000000000000000000000") {
+              pools.push({ poolFee: fee, poolAddress });
             }
-            return null;
-          });
-
-          const poolResults = await Promise.all(promises);
-          pools = poolResults.filter((p): p is GetUniswapV3PoolResult => p !== null);
-        }
-  
-        if (pools.length === 0) {
-          // No mostrar toast aquí, el componente decidirá si es un error o no.
-          // Simplemente nos aseguramos de que no hay cotización.
-          setOutputAmount(undefined);
-          setFee(undefined);
-          setLoading(false);
-          return;
+          } catch {
+            // Pool no existe para ese fee, se ignora.
+          }
         }
 
+        const results: RouteResult[] = [];
         const quoterContract = getThirdwebContract({ address: UNISWAP_V3_QUOTER_V2_ADDRESSES[chainId], chainId });
 
-        const quoteResults = await Promise.all(
-          pools.map(async (pool: GetUniswapV3PoolResult) => {
+        for (const { poolFee } of pools) {
+          try {
             const quoteTx: PreparedTransaction = quoteExactInputSingle({
               contract: quoterContract,
-              tokenIn: tokenIn.address,
+              tokenIn: normalizedTokenInAddr,
               amountIn: amount,
-              tokenOut: tokenOut.address,
-              fee: pool.poolFee,
+              tokenOut: normalizedTokenOutAddr,
+              fee: poolFee,
               sqrtPriceLimitX96: 0n,
             });
-            try {
-              // The result of simulateTransaction can be of various types, we ensure it's a bigint.
-              const simulation = await simulateTransaction({ transaction: quoteTx }) as { result: bigint };
-              // It's safer to check if result exists and is a bigint.
-              if (typeof simulation.result === 'bigint')
-              return simulation.result;
-            } catch (e) {
-              console.error("Quote simulation failed for pool", pool.poolFee, e);
-              return 0n;
-            }
-          })
-        );
-
-        // Find max output
-        const maxOutput = quoteResults.reduce((max: bigint, current) => (current ?? 0n) > max ? (current ?? 0n) : max, 0n);
-        const bestPoolIndex = quoteResults.findIndex(r => r === maxOutput);
-        const bestFee = pools[bestPoolIndex]?.poolFee ?? 0;
-
-        if (maxOutput === 0n) {
-          toast.error("No valid quote found for this pair");
-          return;
+            const simulation = (await simulateTransaction({ transaction: quoteTx })) as { result: bigint };
+            results.push({
+              provider: "UniswapV3",
+              label: `Uniswap V3 ${poolFee / 10000}%`,
+              fee: poolFee,
+              output: simulation.result,
+              ok: true,
+            });
+          } catch (err) {
+            results.push({
+              provider: "UniswapV3",
+              label: `Uniswap V3 ${poolFee / 10000}%`,
+              fee: poolFee,
+              output: 0n,
+              ok: false,
+              error: err,
+            });
+          }
         }
 
-        setOutputAmount(maxOutput);
-        setFee(bestFee);
+        setFeeResults(results);
+        console.log("Resultados de simulación Uniswap V3:", results);
+
+        const validPools = results.filter((x) => x.ok && x.output > 0n);
+
+        if (validPools.length === 0) {
+          setQuoteError("No hay pools Uniswap V3 con liquidez para este par/monto. Prueba otro par, monto o usa un bridge.");
+          setFee(undefined);
+          setOutputAmount(undefined);
+        } else {
+          const bestResult = validPools.reduce((a, b) => (a.output > b.output ? a : b));
+          setFee(bestResult.fee);
+          setOutputAmount(bestResult.output);
+        }
       } catch (error) {
-        console.error("Error refreshing quote:", error);
-        toast.error("Failed to fetch quote");
+        setQuoteError("Algo falló al cotizar en Uniswap: " + (error instanceof Error ? error.message : ""));
       } finally {
         setLoading(false);
       }
     };
-
     const delayExecId = setTimeout(() => {
       void refreshQuote();
     }, 500);
     return () => clearTimeout(delayExecId);
   }, [tokenIn, tokenOut, amount, chainId]);
 
-  return { loading, fee, outputAmount };
+  return { loading, fee, outputAmount, feeResults, quoteError };
 }
+
+const factoryAbi = [
+  {
+    inputs: [
+      { internalType: "address", name: "tokenA", type: "address" },
+      { internalType: "address", name: "tokenB", type: "address" },
+      { internalType: "uint24", name: "fee", type: "uint24" },
+    ],
+    name: "getPool",
+    outputs: [{ internalType: "address", name: "pool", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+] as const;
