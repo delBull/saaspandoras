@@ -57,13 +57,13 @@ function isQuoteExpired(quote: { fetchedAt?: number } | null | undefined): boole
 }
 
 // --- Helper de Validación para Transacciones de Bridge ---
-type BridgeTx = {
+interface BridgeTx {
   value?: unknown;
   to?: string;
   from?: string;
   data?: string;
   action?: string;
-};
+}
 
 // Solución de Thirdweb: Función de validación robusta
 function validateBridgeTx(tx: BridgeTx): {
@@ -166,13 +166,13 @@ export function CustomSwap() {
 
   useEffect(() => {
     if (fromTokenList.length > 0 && !fromToken) {
-      setFromToken(fromTokenList.find(t => t.symbol === 'USDC') ?? fromTokenList[0]!);
+      setFromToken(fromTokenList.find(t => t.symbol === 'USDC') || fromTokenList[0] || null);
     }
   }, [fromTokenList, fromToken]);
   
   useEffect(() => {
     if (toTokenList.length > 0 && !toToken) {
-      setToToken(toTokenList.find(t => t.symbol === 'ETH') ?? toTokenList[0]!);
+      setToToken(toTokenList.find(t => t.symbol === 'ETH') || toTokenList[0] || null);
     }
   }, [toTokenList, toToken]);
 
@@ -216,15 +216,16 @@ export function CustomSwap() {
     }
     async function fetchRoutes() {
       try {
+        if (!fromToken || !toToken) return; // Guard clause
         const routes = await Bridge.routes({
-          originChainId: fromToken!.chainId,
-          originTokenAddress: fromToken!.address,
-          destinationChainId: toToken!.chainId,
-          destinationTokenAddress: toToken!.address,
+          originChainId: fromToken.chainId,
+          originTokenAddress: fromToken.address,
+          destinationChainId: toToken.chainId,
+          destinationTokenAddress: toToken.address,
           client,
         });
         setAvailableRoutes(routes);
-        console.log(`Found ${routes.length} Bridge routes for ${fromToken!.symbol} -> ${toToken!.symbol}`);
+        console.log(`Found ${routes.length} Bridge routes for ${fromToken.symbol} -> ${toToken.symbol}`);
       } catch (error) {
         console.error('Error fetching routes:', error);
         setAvailableRoutes([]);
@@ -242,11 +243,12 @@ export function CustomSwap() {
     }
     setIsBridgeQuoteLoading(true);
     try {
+      if (!fromToken || !toToken) return; // Guard clause
       const preparedQuote = await Bridge.Sell.quote({
-        originChainId: fromToken!.chainId,
-        originTokenAddress: fromToken!.address,
-        destinationChainId: toToken!.chainId,
-        destinationTokenAddress: toToken!.address,
+        originChainId: fromToken.chainId,
+        originTokenAddress: fromToken.address,
+        destinationChainId: toToken.chainId,
+        destinationTokenAddress: toToken.address,
         amount: fromAmountBaseUnits,
         client,
       });
@@ -277,7 +279,7 @@ export function CustomSwap() {
       ? {
           client,
           transactionHash: txHash,
-          chain: defineChain(fromToken.chainId),
+          chain: defineChain(fromToken.chainId), // fromToken is guaranteed here
         }
       : undefined,
   );
@@ -436,12 +438,22 @@ export function CustomSwap() {
   });
 
   const executeSwap = async () => {
-    if (!currentQuote || !account) return;
+    // GUARDS universales
+    if (!currentQuote) {
+      toast.error("No hay ruta disponible para este par.");
+      setSwapStep("form");
+      return;
+    }
+    if (!account) {
+      toast.error("Debes conectar tu wallet.");
+      setSwapStep("form");
+      return;
+    }
+
     setSwapStep('swapping');
     setApprovingStatus('pending'); setSwapStatus('pending'); setNetworkStatus('pending');
     try {
       if (isSameChain) {
-        // --- INICIO: Bloque de protección (Guard Clauses) ---
         if (!fromToken || !toToken) {
           toast.error("Debes seleccionar ambos tokens antes de continuar.");
           setSwapStep('form'); // Volver al formulario
@@ -452,7 +464,6 @@ export function CustomSwap() {
           setSwapStep('form'); // Volver al formulario
           return;
         }
-        // --- FIN: Bloque de protección ---
 
         // Same-chain Uniswap V3 swap
         const inputTokenContract = getThirdwebContract({ address: fromToken.address, chainId: fromChainId });
@@ -480,22 +491,27 @@ export function CustomSwap() {
         setTxHash(txResult.transactionHash);
         setSwapStatus('success');
       } else {
-        // Cross-chain Bridge
-        // CORRECCIÓN: Preparar y enviar la transacción del Bridge
+        // SWAP CROSS-CHAIN (Bridge)
+        if (!fromToken || !toToken) {
+          toast.error(
+            "Selecciona ambos tokens antes de swapear.",
+          );
+          setSwapStep("form");
+          return;
+        }
+
         const preparedQuote = await Bridge.Sell.prepare({
-          originChainId: fromToken!.chainId,
-          originTokenAddress: fromToken!.address,
-          destinationChainId: toToken!.chainId,
-          destinationTokenAddress: toToken!.address,
+          originChainId: fromToken.chainId,
+          originTokenAddress: fromToken.address,
+          destinationChainId: toToken.chainId,
+          destinationTokenAddress: toToken.address,
           sender: account.address,
           receiver: account.address,
           amount: fromAmountBaseUnits,
           client,
         });
 
-        // La documentación indica que debemos ejecutar las transacciones en orden.
         for (const step of preparedQuote.steps) {
-          // Solución de Thirdweb: Usar la validación ANTES de enviar la tx
           for (const tx of step.transactions) {
             const validation = validateBridgeTx(tx);
             if (!validation.ok) {
