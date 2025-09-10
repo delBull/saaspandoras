@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import type { TransactionReceipt } from "viem";
-import { createPublicClient, http } from "viem";
+import type { TransactionReceipt, Chain } from "viem";
+import { createPublicClient, http, type PublicClient } from "viem";
 import { mainnet, polygon, optimism, arbitrum, base, avalanche, bsc, fantom } from "viem/chains";
 
 // Mapeo de chainId a objeto de cadena de viem
-const chainMap: Record<number, any> = {
+const chainMap: Record<number, Chain> = {
   1: mainnet,
   10: optimism,
   137: polygon,
@@ -15,12 +15,12 @@ const chainMap: Record<number, any> = {
   43114: avalanche,
 };
 
-function getViemClient(chainId: number) {
+function getViemClient(chainId: number): PublicClient {
   const chain = chainMap[chainId];
   if (!chain) {
     throw new Error(`Chain con ID ${chainId} no está soportada por el hook de confirmación.`);
   }
-  return createPublicClient({ chain, transport: http() });
+  return createPublicClient({ chain, transport: http() }) as PublicClient;
 }
 
 /**
@@ -55,7 +55,7 @@ export function useTxConfirmation({
     const poll = async () => {
       if (stopped) return;
       try {
-        const viemClient = getViemClient(chainId);
+        const viemClient: PublicClient = getViemClient(chainId);
         const r = await viemClient.getTransactionReceipt({ hash });
         if (r) {
           if (r.status === "success") {

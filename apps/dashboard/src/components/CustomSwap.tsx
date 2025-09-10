@@ -39,7 +39,6 @@ import { ArrowDownIcon } from "lucide-react";
 import { createWallet, inAppWallet } from "thirdweb/wallets";
 import { config } from "@/config";
 
-const TOKENLIST_URL = "https://tokens.uniswap.org";
 const TESTNET_IDS = [ 11155111, 84532, 421614, 534351, 80001, 5, 97 ];
 const SUPPORTED_CHAINS = [
   { id: 8453, name: "Base" },
@@ -226,13 +225,13 @@ export function CustomSwap() {
 
   useEffect(() => {
     if (fromTokenList.length > 0 && !fromToken) {
-      setFromToken(fromTokenList.find(t => t.symbol === 'USDC') || fromTokenList[0] || null);
+      setFromToken(fromTokenList.find(t => t.symbol === 'USDC') ?? fromTokenList[0] ?? null);
     }
   }, [fromTokenList, fromToken]);
   
   useEffect(() => {
     if (toTokenList.length > 0 && !toToken) {
-      setToToken(toTokenList.find(t => t.symbol === 'ETH') || toTokenList[0] || null);
+      setToToken(toTokenList.find(t => t.symbol === 'ETH') ?? toTokenList[0] ?? null);
     }
   }, [toTokenList, toToken]);
 
@@ -799,9 +798,9 @@ export function CustomSwap() {
       )}
 
       {/* --- Overlay Universal de Rutas --- */}
-      {(uniswapQuoteError || (isCrossChain && routeResults.length === 0 && isReadyForQuote && !isBridgeQuoteLoading)) && (
+      {(uniswapQuoteError ?? (isCrossChain && routeResults.length === 0 && isReadyForQuote && !isBridgeQuoteLoading)) && (
         <div className="p-2 mt-2 bg-orange-900/30 rounded font-mono text-xs text-orange-200">
-          <p>{uniswapQuoteError || "No se encontraron rutas de bridge."}</p>
+          <p>{uniswapQuoteError ?? "No se encontraron rutas de bridge."}</p>
           {routeResults.length > 0 && (
             <ul>
               {routeResults.map((r, idx) => (

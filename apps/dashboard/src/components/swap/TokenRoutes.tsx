@@ -6,16 +6,7 @@ import { client } from "@/lib/thirdweb-client";
 import { defineChain } from "thirdweb/chains";
 import { toast } from "sonner";
 import Image from 'next/image';
-
-
-interface Token {
-  name: string;
-  address: string;
-  symbol: string;
-  decimals: number;
-  chainId: number;
-  logoURI?: string;
-}
+import type { Token } from "@/types/token";
 
 interface TokenRoutesProps {
   fromChainId: number;
@@ -42,7 +33,7 @@ export function TokenRoutes({ fromChainId, toChainId, fromToken, toToken, onRout
         // Map Thirdweb tokens to our Token interface
         const mappedTokens = allTokens.map((t) => ({
           name: t.name,
-          address: t.address,
+          address: t.address as `0x${string}`,
           symbol: t.symbol,
           decimals: t.decimals,
           chainId: t.chainId,
