@@ -68,8 +68,10 @@ export function useTxConfirmation({
           }
           stopped = true; // Detener el sondeo una vez que se obtiene un recibo
         }
-      } catch (e) { /* Seguir intentando */ }
-      if (!stopped) setTimeout(poll, pollingInterval);
+      } catch (e) {
+        /* Seguir intentando */
+      }
+      if (!stopped) setTimeout(() => void poll(), pollingInterval);
     };
 
     setStatus("pending");
