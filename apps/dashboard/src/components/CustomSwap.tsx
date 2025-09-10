@@ -49,9 +49,11 @@ const SUPPORTED_CHAINS = [
 
 const QUOTE_EXPIRY_MS = 2 * 60 * 1000; // 2 minutos
 
-function isQuoteExpired(quote: { fetchedAt?: number } | null | undefined): boolean {
-  if (!quote || !quote.fetchedAt) {
-    return true; // Si no hay cotización o no tiene timestamp, se considera expirada.
+function isQuoteExpired(
+  quote: { fetchedAt?: number } | null | undefined,
+): boolean {
+  if (!quote?.fetchedAt) {
+    return true;
   }
   return Date.now() - quote.fetchedAt > QUOTE_EXPIRY_MS;
 }
@@ -166,13 +168,13 @@ export function CustomSwap() {
 
   useEffect(() => {
     if (fromTokenList.length > 0 && !fromToken) {
-      setFromToken(fromTokenList.find(t => t.symbol === 'USDC') || fromTokenList[0] || null);
+      setFromToken(fromTokenList.find(t => t.symbol === 'USDC') ?? fromTokenList[0] ?? null);
     }
   }, [fromTokenList, fromToken]);
   
   useEffect(() => {
     if (toTokenList.length > 0 && !toToken) {
-      setToToken(toTokenList.find(t => t.symbol === 'ETH') || toTokenList[0] || null);
+      setToToken(toTokenList.find(t => t.symbol === 'ETH') ?? toTokenList[0] ?? null);
     }
   }, [toTokenList, toToken]);
 
