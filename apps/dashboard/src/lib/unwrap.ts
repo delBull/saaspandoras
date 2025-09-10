@@ -1,4 +1,4 @@
-import { getWalletBalance } from "thirdweb/wallets";
+import { getWalletBalance, type Account } from "thirdweb/wallets";
 import { client } from "./thirdweb-client";
 import { defineChain } from "thirdweb/chains";
 import { sendTransaction } from "thirdweb";
@@ -33,7 +33,7 @@ export async function showUnwrapPromptIfNeeded({
   owner: `0x${string}`;
   chainId: number;
   amount: bigint;
-  activeAccount: any; // El objeto de cuenta activa de thirdweb
+  activeAccount: Account; // TIPADO ESTRICTO aquí (sin "any")
 }): Promise<{ prompt: string; cta: string; action: () => Promise<`0x${string}`> } | null> {
   const unwrapInfo = UNWRAP_CONTRACTS[chainId];
   if (!unwrapInfo) return null;
@@ -68,7 +68,7 @@ export async function showUnwrapPromptIfNeeded({
           }],
         });
         const tx = prepareContractCall({ contract, method: unwrapInfo.unwrap, params: [amount] });
-        const { transactionHash } = await sendTransaction({ transaction: tx, account: activeAccount });
+        const { transactionHash }: { transactionHash: `0x${string}` } = await sendTransaction({ transaction: tx, account: activeAccount });
         return transactionHash;
       },
     };

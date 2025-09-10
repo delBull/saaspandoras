@@ -4,5 +4,5 @@ export interface RouteResult {
   fee?: number;
   output: bigint;
   ok: boolean;
-  error?: any;
+  error?: unknown;
 }

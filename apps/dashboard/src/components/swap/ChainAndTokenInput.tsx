@@ -3,16 +3,8 @@
 import { Button } from "@saasfly/ui/button";
 import { Input } from "@saasfly/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@saasfly/ui/select";
-import { TokenImage } from '../TokenImage';
-
-interface Token {
-  name: string;
-  address: string;
-  symbol: string;
-  decimals: number;
-  chainId: number;
-  logoURI?: string;
-}
+import { TokenImage } from "../TokenImage";
+import type { Token } from "@/types/token";
 
 interface Chain {
   id: number;

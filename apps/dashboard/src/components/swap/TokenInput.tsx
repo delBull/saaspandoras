@@ -2,16 +2,8 @@
 
 import { Input } from "@saasfly/ui/input";
 import { Button } from "@saasfly/ui/button";
-import { TokenImage } from '../TokenImage';
-
-interface Token {
-  name: string;
-  address: string;
-  symbol: string;
-  decimals: number;
-  chainId: number;
-  logoURI: string;
-}
+import { TokenImage } from "../TokenImage";
+import type { Token } from "@/types/token";
 
 export function TokenInput({
   label,
