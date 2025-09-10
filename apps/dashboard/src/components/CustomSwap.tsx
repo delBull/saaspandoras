@@ -90,52 +90,103 @@ function validateBridgeTx(tx: BridgeTx): {
   return { ok: true };
 }
 
+// --- Lógica Mejorada para Listas de Tokens ---
+
+const WRAPPED_COINS: Record<number, { address: string; name: string; symbol: string; logoURI: string; }> = {
+  1: { address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", name: "Ethereum", symbol: "WETH", logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/logo.png" },
+  137: { address: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270", name: "Polygon", symbol: "POL", logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/polygon/assets/0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270/logo.png" },
+  43114: { address: "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7", name: "Avalanche", symbol: "WAVAX", logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/avalanchec/assets/0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7/logo.png" },
+  56: { address: "0xBB4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", name: "BNB Chain", symbol: "WBNB", logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/binance/assets/0xBB4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c/logo.png" },
+  250: { address: "0x21be370d5312f44cb42ce377bc9b8a0cef1a4c83", name: "Fantom", symbol: "WFTM", logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/fantom/assets/0x21be370d5312f44cb42ce377bc9b8a0cef1a4c83/logo.png" },
+  42161: { address: "0x82af49447d8a07e3bd95bd0d56f35241523fbab1", name: "Arbitrum", symbol: "WETH", logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/arbitrum/assets/0x82af49447d8a07e3bd95bd0d56f35241523fbab1/logo.png" },
+  10: { address: "0x4200000000000000000000000000000000000006", name: "Optimism", symbol: "WETH", logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/optimism/assets/0x4200000000000000000000000000000000000006/logo.png" },
+  8453: { address: "0x4200000000000000000000000000000000000006", name: "Base", symbol: "WETH", logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/base/assets/0x4200000000000000000000000000000000000006/logo.png" },
+};
+
+const LEGACY_NATIVE: Record<number, string[]> = {
+  137: ["0x0000000000000000000000000000000000001010"], // MATIC/POL nativo
+};
+
+function patchTokenList(
+  tokens: Token[],
+  chainId: number,
+): Token[] {
+  // Filtra tokens legacy
+  let patched = tokens.filter(
+    (t) =>
+      !(LEGACY_NATIVE[chainId] ?? []).includes(
+        t.address.toLowerCase(),
+      ),
+  );
+
+  // Forzar la presencia del token "wrapped" principal si no está en la lista
+  const wrapped = WRAPPED_COINS[chainId];
+  if (
+    wrapped &&
+    !patched.some(
+      (t) =>
+        t.address.toLowerCase() ===
+        wrapped.address.toLowerCase(),
+    )
+  ) {
+    patched.unshift({
+      name: wrapped.name,
+      symbol: wrapped.symbol,
+      decimals: 18, // Asumimos 18 para la mayoría de los nativos
+      chainId,
+      address: wrapped.address as `0x${string}`,
+      logoURI: wrapped.logoURI,
+      image: wrapped.logoURI,
+    });
+  }
+
+  // Normalizar el nombre y símbolo del token principal
+  patched = patched.map((t) =>
+    t.address.toLowerCase() ===
+    wrapped?.address.toLowerCase()
+      ? {
+          ...t,
+          symbol: wrapped.symbol,
+          name: wrapped.name,
+          logoURI: wrapped.logoURI,
+          image: wrapped.logoURI,
+        }
+      : t,
+  );
+
+  // Eliminar duplicados
+  const uniqueTokens = patched.filter(
+    (token, idx, arr) =>
+      arr.findIndex(
+        (t) => t.address.toLowerCase() === token.address.toLowerCase(),
+      ) === idx,
+  );
+
+  return uniqueTokens;
+}
+
 function useTokenList(chainId: number) {
   const [tokens, setTokens] = useState<Token[]>([]);
   useEffect(() => {
     async function fetchTokens() {
+      // Usar Bridge.tokens de thirdweb para una lista curada y actualizada
       try {
-        console.log(`Fetching tokens for chain ${chainId} from: ${TOKENLIST_URL}`);
-        const res = await fetch(TOKENLIST_URL);
-        if (!res.ok) {
-          console.error(`Failed to fetch token list: ${res.status} ${res.statusText}`);
-          // Fallback to default tokens for basic functionality
-          const defaultTokens: Token[] = [
-            { name: "USD Coin", address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", symbol: "USDC", decimals: 6, chainId: chainId, logoURI: "https://tokens.uniswap.org/images/USDC.svg", image: "https://tokens.uniswap.org/images/USDC.svg" },
-            { name: "Wrapped ETH", address: "0x4200000000000000000000000000000000000006", symbol: "WETH", decimals: 18, chainId: chainId, logoURI: "https://tokens.uniswap.org/images/WETH.svg", image: "https://tokens.uniswap.org/images/WETH.svg" },
-            { name: "DAI", address: "0x50c5725949A6F0c72E6C4A641F24049A917DB0Cb", symbol: "DAI", decimals: 18, chainId: chainId, logoURI: "https://tokens.uniswap.org/images/DAI.svg", image: "https://tokens.uniswap.org/images/DAI.svg" },
-          ];
-          console.log(`Using fallback tokens for chain ${chainId}`);
-          setTokens(defaultTokens);
-          return;
-        }
-        const data: { tokens: Token[] } = await res.json() as { tokens: Token[] };
-        console.log('Token list response structure:', Object.keys(data));
-        // Handle different response formats
-        const tokenList = data.tokens ?? [];
-        const filteredTokens = tokenList.filter((t) => Number(t.chainId) === chainId);
-        console.log(`Loaded ${filteredTokens.length} tokens for chain ${chainId} from total ${tokenList.length || 0}`);
-        if (filteredTokens.length === 0) {
-          console.warn(`No tokens found for chain ${chainId}, using fallback`);
-          // Add fallback tokens if no chain-specific tokens found
-          const fallbackTokens: Token[] = [
-            { name: "USD Coin", address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", symbol: "USDC", decimals: 6, chainId: chainId, logoURI: "https://tokens.uniswap.org/images/USDC.svg", image: "https://tokens.uniswap.org/images/USDC.svg" },
-            { name: "Wrapped ETH", address: "0x4200000000000000000000000000000000000006", symbol: "WETH", decimals: 18, chainId: chainId, logoURI: "https://tokens.uniswap.org/images/WETH.svg", image: "https://tokens.uniswap.org/images/WETH.svg" },
-          ];
-          setTokens(fallbackTokens);
-        } else {
-          setTokens(filteredTokens);
-        }
+        const bridgeTokens = await Bridge.tokens({ client });
+        const mappedTokens = bridgeTokens.map((t) => ({
+          name: t.name,
+          address: t.address as `0x${string}`,
+          symbol: t.symbol,
+          decimals: t.decimals,
+          chainId: t.chainId,
+          logoURI: t.iconUri ?? "",
+          image: t.iconUri ?? "",
+        }));
+        const filtered = patchTokenList(mappedTokens.filter(t => t.chainId === chainId), chainId);
+        setTokens(filtered);
       } catch (error) {
-        console.error(`Error fetching tokens:`, error);
-        // Fallback to default tokens
-        const defaultTokens: Token[] = [
-          { name: "USD Coin", address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", symbol: "USDC", decimals: 6, chainId: chainId, logoURI: "https://tokens.uniswap.org/images/USDC.svg", image: "https://tokens.uniswap.org/images/USDC.svg" },
-          { name: "Wrapped ETH", address: "0x4200000000000000000000000000000000000006", symbol: "WETH", decimals: 18, chainId: chainId, logoURI: "https://tokens.uniswap.org/images/WETH.svg", image: "https://tokens.uniswap.org/images/WETH.svg" },
-        ];
-        console.log(`Using fallback tokens for chain ${chainId} due to error`);
-        setTokens(defaultTokens);
-        toast.error("Error al cargar la lista de tokens, usando tokens por defecto");
+        console.error("Error fetching bridge tokens:", error);
+        toast.error("No se pudieron cargar los tokens. Revisa la consola.");
+        setTokens([]);
       }
     }
     void fetchTokens();
@@ -698,7 +749,14 @@ export function CustomSwap() {
         />
       )}
       
-      {isCrossChain && fromToken && toToken && ( <div className="flex items-center justify-center gap-2 mb-2 p-2 bg-zinc-800/50 rounded-lg"> <BadgeChain chainId={fromToken.chainId} /> <span className="font-bold text-base text-gray-400">→</span> <BadgeChain chainId={toToken.chainId} /> <span className="ml-2 text-xs text-orange-400 font-semibold"> ¡Atención: Swap cross-chain! </span> </div> )}
+      {isCrossChain && fromToken && toToken && ( 
+        <div className="flex items-center justify-center gap-2 mb-2 p-2 bg-zinc-800/50 rounded-lg"> 
+        <BadgeChain chainId={fromToken.chainId} /> 
+        <span className="font-bold text-base text-gray-400">→</span> 
+        <BadgeChain chainId={toToken.chainId} /> 
+        <span className="ml-2 text-xs text-orange-400 font-semibold"> ¡Atención: Swap cross-chain! </span> 
+        </div> 
+      )}
 
       <ChainAndTokenInput
         label="Desde"

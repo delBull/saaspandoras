@@ -11,7 +11,7 @@ interface Token {
   symbol: string;
   decimals: number;
   chainId: number;
-  logoURI: string;
+  logoURI?: string;
 }
 
 interface Chain {
@@ -87,7 +87,7 @@ export function ChainAndTokenInput({
           </Select>
           <Button onClick={onTokenSelect} variant="secondary" className="flex items-center gap-2 rounded-full font-semibold h-auto py-1.5">
             {selectedToken ? (
-              <TokenImage src={selectedToken.logoURI} alt={selectedToken.symbol} size={24} className="rounded-full" />
+              <TokenImage src={selectedToken.logoURI ?? ''} alt={selectedToken.symbol} size={24} className="rounded-full" />
             ) : null}
             {selectedToken?.symbol ?? "Seleccionar"}
           </Button>
