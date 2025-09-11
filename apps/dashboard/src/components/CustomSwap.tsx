@@ -17,7 +17,7 @@ import {
   useConnectModal
 } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
-import { parseUnits, formatUnits, type TransactionSerializable } from "viem";
+import { parseUnits, formatUnits } from "viem";
 import { defineChain } from "thirdweb/chains";
 import { useMarketRate } from '@/hooks/useMarketRate';
 import { showUnwrapPromptIfNeeded } from "@/lib/unwrap";
