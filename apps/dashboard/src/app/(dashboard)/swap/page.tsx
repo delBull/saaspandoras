@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from "react";
-import { CustomSwap } from "@/components/CustomSwap";
+//import { Exchange } from "@/components/Exchange";
+import { CustomSwap } from "~/components/CustomSwap";
 
 // REINTEGRADO: Imports necesarios para el Disclaimer y el HelpSheet
 import {
@@ -18,10 +19,17 @@ import { cn } from "@/lib/utils";
 function Disclaimer() {
   return (
     <div className="mt-6 text-xs text-center text-gray-500 px-4 leading-relaxed">
+      <b>Aviso:</b> Esta funcionalidad es provista por Uniswap Labs. Las transacciones y tarifas están sujetas a sus términos y condiciones.
+      </div>
+   ); 
+ }
+      {/*
+    // Aviso del customSwap
+    <div className="mt-6 text-xs text-center text-gray-500 px-4 leading-relaxed">
       <b>Aviso Legal:</b> Este swap es ejecutado por protocolos y smart contracts externos a través de thirdweb. Las tasas, rutas y tiempos pueden variar. Haz tu propio research. No somos responsables por pérdidas o demoras.
-    </div>
-  );
-}
+      </div>
+      */}
+  
 
 // REINTEGRADO: Definición del componente HelpLink
 function HelpLink({ onOpen }: { onOpen: () => void }) {
@@ -71,10 +79,10 @@ export default function SwapPage() {
     <section className="flex flex-col items-center justify-start min-h-[70vh] py-32 md:py-32">
       <div className="relative w-full max-w-xl bg-gradient-to-br from-[#18181b] to-[#23272d] rounded-3xl md:rounded-[2.5rem] px-2 md:px-8 py-8 shadow-2xl border-2 border-lime-300/10 mx-auto">
         <h1 className="text-2xl md:text-4xl font-bold text-white text-center mb-3">
-          Swap & Bridge de Tokens
+          Exchange
         </h1>
         <p className="text-sm text-center text-gray-400 mb-6">
-          Intercambia y puentea tokens entre redes EVM con la mejor tasa disponible.
+          Intercambia tokens de forma segura a través del protocolo Uniswap
         </p>
         
         <CustomSwap />
