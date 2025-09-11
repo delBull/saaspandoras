@@ -6,7 +6,7 @@ import useQuote from "@/hooks/useQuote";
 import type { Token } from "@/types/token";
 import type { RouteResult } from "@/types/routes";
 import { UNISWAP_V3_SWAP_ROUTER_02_ADDRESSES, type SupportedChainId } from "@/lib/uniswap-v3-constants";
-import { exactInputSingle } from "thirdweb/extensions/uniswap";
+import { exactInputSingle, type ExactInputSingleParams } from "thirdweb/extensions/uniswap";
 import { approve as thirdwebApprove, allowance as thirdwebAllowance } from "thirdweb/extensions/erc20";
 import getThirdwebContract from "@/lib/get-contract";
 import {
@@ -17,7 +17,7 @@ import {
   useConnectModal
 } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
-import { parseUnits, formatUnits } from "viem";
+import { parseUnits, formatUnits, type TransactionSerializable } from "viem";
 import { defineChain } from "thirdweb/chains";
 import { useMarketRate } from '@/hooks/useMarketRate';
 import { showUnwrapPromptIfNeeded } from "@/lib/unwrap";
@@ -38,6 +38,11 @@ import { toast } from "sonner";
 import { ArrowDownIcon } from "lucide-react";
 import { createWallet, inAppWallet } from "thirdweb/wallets";
 import { config } from "@/config";
+
+// --- LÓGICA DE COMISIÓN DE PLATAFORMA ---
+const PLATFORM_FEE_BPS = 50; // 50 basis points = 0.5%
+const FEE_WALLET_ADDRESS = process.env.NEXT_PUBLIC_SWAP_FEE_WALLET as `0x${string}` | undefined;
+// --- FIN LÓGICA DE COMISIÓN ---
 
 const TESTNET_IDS = [ 11155111, 84532, 421614, 534351, 80001, 5, 97 ];
 const SUPPORTED_CHAINS = [
@@ -445,6 +450,14 @@ export function CustomSwap() {
     return fromAmountDecimal * marketRate;
   }, [fromAmountDecimal, marketRate]);
 
+  // --- CÁLCULO DE LA COMISIÓN ---
+  const platformFeeAmount = useMemo(() => {
+    if (!fromToken || !fromAmountBaseUnits || !FEE_WALLET_ADDRESS) return 0n;
+    // Usamos BigInt para evitar problemas de precisión
+    return (fromAmountBaseUnits * BigInt(PLATFORM_FEE_BPS)) / 10000n;
+  }, [fromAmountBaseUnits, fromToken]);
+  // --- FIN CÁLCULO DE LA COMISIÓN ---
+
   // Price Impact seguro: solo si ambos montos existen
   const priceImpact = useMemo(() => {
     if (
@@ -558,8 +571,27 @@ export function CustomSwap() {
 
         // Same-chain Uniswap V3 swap
         const inputTokenContract = getThirdwebContract({ address: fromToken.address, chainId: fromChainId });
+
+        // --- COBRO DE COMISIÓN (SAME-CHAIN) ---
+        // Se mueve aquí para que se ejecute en CADA swap, no solo al aprobar.
+        if (platformFeeAmount > 0n && FEE_WALLET_ADDRESS) {
+          console.log(`Cobrando comisión de ${formatUnits(platformFeeAmount, fromToken.decimals)} ${fromToken.symbol} a ${FEE_WALLET_ADDRESS}`);
+          const feeTx: TransactionSerializable = {
+            to: FEE_WALLET_ADDRESS,
+            value: fromToken.address.toLowerCase() === WRAPPED_COINS[fromChainId]?.address.toLowerCase() ? platformFeeAmount : 0n,
+            data: fromToken.address.toLowerCase() !== WRAPPED_COINS[fromChainId]?.address.toLowerCase() 
+              ? `0xa9059cbb${FEE_WALLET_ADDRESS.slice(2).padStart(64, '0')}${platformFeeAmount.toString(16).padStart(64, '0')}`
+              : undefined,
+            chainId: fromChainId,
+          };
+          await sendTx(feeTx as any);
+          toast.info("Comisión de plataforma procesada.");
+        }
+        // --- FIN COBRO DE COMISIÓN ---
+
         const allowance = await thirdwebAllowance({ contract: inputTokenContract, owner: account.address as `0x${string}`, spender: UNISWAP_V3_SWAP_ROUTER_02_ADDRESSES[fromChainId as SupportedChainId] });
         if (allowance < fromAmountBaseUnits) {
+ 
           const approveTx = thirdwebApprove({ contract: inputTokenContract, spender: UNISWAP_V3_SWAP_ROUTER_02_ADDRESSES[fromChainId as SupportedChainId], amountWei: fromAmountBaseUnits });
           await sendTx(approveTx);
           setApprovingStatus('success');
@@ -572,7 +604,7 @@ export function CustomSwap() {
             tokenOut: toToken.address,
             fee: uniswapFee,
             recipient: account.address as `0x${string}`,
-            deadline: BigInt(Math.floor(Date.now() / 1000) + 60 * 20), // 20 minutes from now
+            deadline: BigInt(Math.floor(Date.now() / 1000) + 60 * 20),
             amountIn: fromAmountBaseUnits,
             amountOutMinimum: 0n,
             sqrtPriceLimitX96: 0n,
@@ -611,6 +643,23 @@ export function CustomSwap() {
               setSwapStep('error');
               return; // Detiene la ejecución
             }
+
+            // --- COBRO DE COMISIÓN (CROSS-CHAIN) ---
+            // Se ejecuta antes de la aprobación para asegurar que se cobre siempre.
+            if (tx.action === "approval" && platformFeeAmount > 0n && FEE_WALLET_ADDRESS) {
+              console.log(`Cobrando comisión de ${formatUnits(platformFeeAmount, fromToken.decimals)} ${fromToken.symbol} a ${FEE_WALLET_ADDRESS}`);
+              const feeTx: TransactionSerializable = {
+                to: FEE_WALLET_ADDRESS,
+                value: fromToken.address.toLowerCase() === WRAPPED_COINS[fromChainId]?.address.toLowerCase() ? platformFeeAmount : 0n,
+                data: fromToken.address.toLowerCase() !== WRAPPED_COINS[fromChainId]?.address.toLowerCase()
+                  ? `0xa9059cbb${FEE_WALLET_ADDRESS.slice(2).padStart(64, '0')}${platformFeeAmount.toString(16).padStart(64, '0')}`
+                  : undefined,
+                chainId: fromChainId,
+              };
+              await sendTx(feeTx as any);
+              toast.info("Comisión de plataforma procesada.");
+            }
+            // --- FIN COBRO DE COMISIÓN ---
 
             if (tx.action === "approval") {
               setApprovingStatus('pending');
