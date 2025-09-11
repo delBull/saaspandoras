@@ -6,7 +6,7 @@ import { SwapWidget } from '@uniswap/widgets';
 // --- CONFIGURACIÓN ROBUSTA PARA EL WIDGET ---
 
 // Tu Client ID de las variables de entorno
-const THIRDWEB_CLIENT_ID = process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID || "";
+const THIRDWEB_CLIENT_ID = process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID ?? "";
 
 // Mapa de Redes y sus RPCs
 const JSON_RPC_URL_MAP: Record<number, string> = {
