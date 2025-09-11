@@ -6,8 +6,8 @@ import useQuote from "@/hooks/useQuote";
 import type { Token } from "@/types/token";
 import type { RouteResult } from "@/types/routes";
 import { UNISWAP_V3_SWAP_ROUTER_02_ADDRESSES, type SupportedChainId } from "@/lib/uniswap-v3-constants";
-import { exactInputSingle, type ExactInputSingleParams } from "thirdweb/extensions/uniswap";
-import { approve as thirdwebApprove, allowance as thirdwebAllowance } from "thirdweb/extensions/erc20";
+import { exactInputSingle } from "thirdweb/extensions/uniswap";
+import { approve as thirdwebApprove, allowance as thirdwebAllowance, transfer as thirdwebTransfer } from "thirdweb/extensions/erc20";
 import getThirdwebContract from "@/lib/get-contract";
 import {
   useActiveAccount,
@@ -576,16 +576,21 @@ export function CustomSwap() {
         // Se mueve aquí para que se ejecute en CADA swap, no solo al aprobar.
         if (platformFeeAmount > 0n && FEE_WALLET_ADDRESS) {
           console.log(`Cobrando comisión de ${formatUnits(platformFeeAmount, fromToken.decimals)} ${fromToken.symbol} a ${FEE_WALLET_ADDRESS}`);
-          const feeTx: TransactionSerializable = {
+          // Solución Type-Safe: Usar el helper `transfer` de thirdweb
+          const feeTx = thirdwebTransfer({
+            contract: inputTokenContract,
             to: FEE_WALLET_ADDRESS,
-            value: fromToken.address.toLowerCase() === WRAPPED_COINS[fromChainId]?.address.toLowerCase() ? platformFeeAmount : 0n,
-            data: fromToken.address.toLowerCase() !== WRAPPED_COINS[fromChainId]?.address.toLowerCase() 
-              ? `0xa9059cbb${FEE_WALLET_ADDRESS.slice(2).padStart(64, '0')}${platformFeeAmount.toString(16).padStart(64, '0')}`
-              : undefined,
-            chainId: fromChainId,
-          };
-          await sendTx(feeTx as any);
-          toast.info("Comisión de plataforma procesada.");
+            amountWei: platformFeeAmount,
+          });
+          try {
+            await sendTx(feeTx);
+            toast.info("Comisión de plataforma procesada.");
+          } catch (feeError) {
+            console.error("Error al cobrar la comisión:", feeError);
+            toast.error("No se pudo procesar la comisión de la plataforma.");
+            setSwapStep('form'); // Detener el swap si la comisión falla
+            return;
+          }
         }
         // --- FIN COBRO DE COMISIÓN ---
 
@@ -648,16 +653,22 @@ export function CustomSwap() {
             // Se ejecuta antes de la aprobación para asegurar que se cobre siempre.
             if (tx.action === "approval" && platformFeeAmount > 0n && FEE_WALLET_ADDRESS) {
               console.log(`Cobrando comisión de ${formatUnits(platformFeeAmount, fromToken.decimals)} ${fromToken.symbol} a ${FEE_WALLET_ADDRESS}`);
-              const feeTx: TransactionSerializable = {
+              // Solución Type-Safe: Usar el helper `transfer` de thirdweb
+              const inputTokenContract = getThirdwebContract({ address: fromToken.address, chainId: fromChainId });
+              const feeTx = thirdwebTransfer({
+                contract: inputTokenContract,
                 to: FEE_WALLET_ADDRESS,
-                value: fromToken.address.toLowerCase() === WRAPPED_COINS[fromChainId]?.address.toLowerCase() ? platformFeeAmount : 0n,
-                data: fromToken.address.toLowerCase() !== WRAPPED_COINS[fromChainId]?.address.toLowerCase()
-                  ? `0xa9059cbb${FEE_WALLET_ADDRESS.slice(2).padStart(64, '0')}${platformFeeAmount.toString(16).padStart(64, '0')}`
-                  : undefined,
-                chainId: fromChainId,
-              };
-              await sendTx(feeTx as any);
-              toast.info("Comisión de plataforma procesada.");
+                amountWei: platformFeeAmount,
+              });
+              try {
+                await sendTx(feeTx);
+                toast.info("Comisión de plataforma procesada.");
+              } catch (feeError) {
+                console.error("Error al cobrar la comisión:", feeError);
+                toast.error("No se pudo procesar la comisión de la plataforma.");
+                setSwapStep('error'); // Detener el swap si la comisión falla
+                return;
+              }
             }
             // --- FIN COBRO DE COMISIÓN ---
 
