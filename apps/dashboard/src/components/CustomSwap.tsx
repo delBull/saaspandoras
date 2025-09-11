@@ -113,9 +113,9 @@ function patchTokenList(
   // Filtra tokens legacy
   let patched = tokens.filter(
     (t) =>
-      !(LEGACY_NATIVE[chainId] ?? []).includes(
+      !(LEGACY_NATIVE[chainId]?.includes(
         t.address.toLowerCase(),
-      ),
+      )),
   );
 
   // Forzar la presencia del token "wrapped" principal si no está en la lista
@@ -180,7 +180,7 @@ function useTokenList(chainId: number) {
           logoURI: t.iconUri ?? "",
           image: t.iconUri ?? "",
         }));
-        const filtered = patchTokenList(mappedTokens.filter(t => t.chainId === chainId), chainId);
+        const filtered = patchTokenList(mappedTokens, chainId);
         setTokens(filtered);
       } catch (error) {
         console.error("Error fetching bridge tokens:", error);
