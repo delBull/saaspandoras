@@ -1,10 +1,6 @@
 'use client';
 
 import React, { useState } from "react";
-//import { Exchange } from "@/components/Exchange";
-import { CustomSwap } from "~/components/CustomSwap";
-
-// REINTEGRADO: Imports necesarios para el Disclaimer y el HelpSheet
 import {
   Sheet,
   SheetContent,
@@ -14,6 +10,7 @@ import {
 } from "@saasfly/ui/sheet";
 import { ScrollArea } from "@saasfly/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import UniswapClon from "~/components/uniswapclon";
 
 // REINTEGRADO: Definición del componente Disclaimer
 function Disclaimer() {
@@ -85,7 +82,7 @@ export default function SwapPage() {
           Intercambia tokens de forma segura a través del protocolo Uniswap
         </p>
         
-        <CustomSwap />
+        <UniswapClon />
         {/*
         <div className="mt-4 mb-1 text-xs text-center text-gray-400">
           <span>
