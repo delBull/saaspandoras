@@ -15,7 +15,11 @@ async function getProjectData(slug: string) {
     return project;
 }
 
-export default async function ProjectPage({ params }: { params: { slug: string } }) {
+interface ProjectPageProps {
+    params: { slug: string };
+}
+
+export default async function ProjectPage({ params }: ProjectPageProps) {
     const project = await getProjectData(params.slug);
 
     if (!project) {

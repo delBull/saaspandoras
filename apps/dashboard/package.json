@@ -9,7 +9,9 @@
     "lint": "next lint --quiet",
     "format": "prettier --write '**/*.{js,cjs,mjs,ts,tsx,md,json}'",
     "start": "next start",
-    "update:token-hosts": "node generar-dominios.js"
+    "update:token-hosts": "node generar-dominios.js",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
