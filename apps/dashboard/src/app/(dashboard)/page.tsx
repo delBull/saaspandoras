@@ -108,7 +108,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-4 my-6 md:hidden">
         <ActionButton icon={<QrCodeIcon className="w-8 h-8 text-gray-300"/>} label="Receive" />
         <ActionButton href="/swap" icon={<ArrowPathIcon className="w-8 h-8 text-gray-300"/>} label="Swap" disabled />
-        <ActionButton icon={<UserGroupIcon className="w-8 h-8 text-gray-300"/>} label="Applicants" disabled />
+        <ActionButton href="/applicants" icon={<UserGroupIcon className="w-8 h-8 text-gray-300"/>} label="Applicants" />
         <ActionButton icon={<BanknotesIcon className="w-8 h-8 text-gray-300"/>} label="Pool" disabled />
       </div>
       <BannersSection />
