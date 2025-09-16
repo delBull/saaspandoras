@@ -1,13 +1,18 @@
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
-import { MultiStepForm } from "./multi-step-form"; // CAMBIO: Importamos el componente correcto
+import { MultiStepForm } from "./multi-step-form";
 import { db } from "~/db";
 import { projects as projectsSchema } from "~/db/schema";
 import { eq } from "drizzle-orm";
 import { isAdmin } from "@/lib/auth";
 import { getAuth } from "@/lib/auth";
 
-export default async function EditProjectPage({ params }: { params: { id: string } }) {
+interface EditProjectPageProps {
+  params: { id: string };
+  searchParams: { [key: string]: string | string[] | undefined };
+}
+
+export default async function EditProjectPage({ params }: EditProjectPageProps) {
   const headersList = await headers();
   const { session } = await getAuth(headersList);
   const userIsAdmin = isAdmin(session?.userId);
