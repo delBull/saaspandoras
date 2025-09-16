@@ -131,17 +131,6 @@ const fullProjectSchema = z.object({
 
 export type FullProjectFormData = z.infer<typeof fullProjectSchema>;
 
-// Schema mínimo para admin "Save & Upload" (solo campos obligatorios)
-const adminQuickSchema = z.object({
-  title: z.string().min(3, "El título es requerido."),
-  description: z.string().min(10, "La descripción es requerida."),
-  targetAmount: z.coerce.number().min(0, "Debe ser un número positivo."),
-  status: z.enum(["pending", "approved", "live", "completed", "rejected"]),
-  businessCategory: z.string().optional(),
-  website: z.string().optional(),
-  verificationAgreement: z.boolean(),
-});
-
 interface MultiStepFormProps {
   project?: any;
   isEdit?: boolean;
@@ -161,62 +150,62 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
     resolver: zodResolver(fullProjectSchema),
     defaultValues: {
       // Sección 1
-      title: project?.title ?? "",
-      description: project?.description ?? "",
-      tagline: project?.tagline ?? "",
-      businessCategory: project?.businessCategory ?? "",
-      logoUrl: project?.logoUrl ?? "",
-      coverPhotoUrl: project?.coverPhotoUrl ?? "",
-      videoPitch: project?.videoPitch ?? "",
+      title: project?.title ?? undefined,
+      description: project?.description ?? undefined,
+      tagline: project?.tagline ?? undefined,
+      businessCategory: project?.businessCategory ?? undefined,
+      logoUrl: project?.logoUrl ?? undefined,
+      coverPhotoUrl: project?.coverPhotoUrl ?? undefined,
+      videoPitch: project?.videoPitch ?? undefined,
       
       // Sección 2
-      website: project?.website ?? "",
-      whitepaperUrl: project?.whitepaperUrl ?? "",
-      twitterUrl: project?.twitterUrl ?? "",
-      discordUrl: project?.discordUrl ?? "",
-      telegramUrl: project?.telegramUrl ?? "",
-      linkedinUrl: project?.linkedinUrl ?? "",
+      website: project?.website ?? undefined,
+      whitepaperUrl: project?.whitepaperUrl ?? undefined,
+      twitterUrl: project?.twitterUrl ?? undefined,
+      discordUrl: project?.discordUrl ?? undefined,
+      telegramUrl: project?.telegramUrl ?? undefined,
+      linkedinUrl: project?.linkedinUrl ?? undefined,
       
       // Sección 3
       targetAmount: Number(project?.targetAmount ?? 0),
       totalValuationUsd: Number(project?.totalValuationUsd ?? 0),
-      tokenType: project?.tokenType ?? "erc20",
+      tokenType: project?.tokenType ?? undefined,
       totalTokens: Number(project?.totalTokens ?? 0),
       tokensOffered: Number(project?.tokensOffered ?? 1),
       tokenPriceUsd: Number(project?.tokenPriceUsd ?? 0),
-      estimatedApy: project?.estimatedApy ?? "",
-      yieldSource: project?.yieldSource ?? "other",
-      lockupPeriod: project?.lockupPeriod ?? "",
-      fundUsage: project?.fundUsage ?? "",
+      estimatedApy: project?.estimatedApy ?? undefined,
+      yieldSource: project?.yieldSource ?? undefined,
+      lockupPeriod: project?.lockupPeriod ?? undefined,
+      fundUsage: project?.fundUsage ?? undefined,
       
       // Sección 4
-      teamMembers: project?.teamMembers ? JSON.parse(project.teamMembers) : [], // Parsear si viene de DB
-      advisors: project?.advisors ? JSON.parse(project.advisors) : [], // Parsear si viene de DB
-      tokenDistribution: project?.tokenDistribution ? JSON.parse(project.tokenDistribution) : { publicSale: 0, team: 0, treasury: 0, marketing: 0 }, // Parsear si viene de DB
-      contractAddress: project?.contractAddress ?? "",
-      treasuryAddress: project?.treasuryAddress ?? "",
+      teamMembers: project?.teamMembers ? JSON.parse(project.teamMembers as string) : [], // Parsear si viene de DB
+      advisors: project?.advisors ? JSON.parse(project.advisors as string) : [], // Parsear si viene de DB
+      tokenDistribution: project?.tokenDistribution ? JSON.parse(project.tokenDistribution as string) : { publicSale: 0, team: 0, treasury: 0, marketing: 0 }, // Parsear si viene de DB
+      contractAddress: project?.contractAddress ?? undefined,
+      treasuryAddress: project?.treasuryAddress ?? undefined,
       
       // Sección 5
-      legalStatus: project?.legalStatus ?? "",
-      valuationDocumentUrl: project?.valuationDocumentUrl ?? "",
-      fiduciaryEntity: project?.fiduciaryEntity ?? "",
-      dueDiligenceReportUrl: project?.dueDiligenceReportUrl ?? "",
+      legalStatus: project?.legalStatus ?? undefined,
+      valuationDocumentUrl: project?.valuationDocumentUrl ?? undefined,
+      fiduciaryEntity: project?.fiduciaryEntity ?? undefined,
+      dueDiligenceReportUrl: project?.dueDiligenceReportUrl ?? undefined,
       
       // Sección 6
       isMintable: project?.isMintable ?? false,
       isMutable: project?.isMutable ?? false,
-      updateAuthorityAddress: project?.updateAuthorityAddress ?? "",
+      updateAuthorityAddress: project?.updateAuthorityAddress ?? undefined,
       
       // Sección 7
-      applicantName: project?.applicantName ?? "",
-      applicantPosition: project?.applicantPosition ?? "",
-      applicantEmail: project?.applicantEmail ?? "",
-      applicantPhone: project?.applicantPhone ?? "",
+      applicantName: project?.applicantName ?? undefined,
+      applicantPosition: project?.applicantPosition ?? undefined,
+      applicantEmail: project?.applicantEmail ?? undefined,
+      applicantPhone: project?.applicantPhone ?? undefined,
       verificationAgreement: project?.verificationAgreement ?? false,
     },
   });
 
-  const { handleSubmit, watch, setValue, formState: { errors }, getValues, trigger } = methods;
+  const { handleSubmit, watch, setValue, formState: { errors }, trigger } = methods;
 
   // Cargar progreso desde localStorage
   useEffect(() => {
@@ -225,7 +214,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
     const savedData = localStorage.getItem("pandoras-project-form");
     if (savedData) {
       const parsed = JSON.parse(savedData);
-      Object.keys(parsed).forEach((key) => {
+      Object.keys(parsed).forEach((key: any) => {
         setValue(key as keyof FullProjectFormData, parsed[key]);
       });
       const savedStep = localStorage.getItem("pandoras-project-step");
@@ -324,7 +313,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
         throw new Error(errorData.message || "Error al guardar el proyecto");
       }
 
-      const result = await response.json();
+      await response.json();
       toast.success(`Proyecto ${isEdit ? "actualizado" : isPublic ? "enviado para revisión" : "creado y subido"} exitosamente!`);
       
       if (!isEdit) {

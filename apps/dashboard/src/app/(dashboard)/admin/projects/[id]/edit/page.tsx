@@ -8,11 +8,8 @@ import { isAdmin, getAuth } from "@/lib/auth";
 
 export default async function EditProjectPage({
   params,
-}: {
-  params: Promise<{ id: string }>;
-  searchParams?: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const { id } = await params;
+}: { params: { id: string } }) {
+  const { id } = params;
   const headersList = await headers();
   const { session } = await getAuth(headersList);
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@saasfly/ui/button";
 import { PlusIcon, EyeIcon, ArrowLeftIcon, ImageIcon, Loader2 } from "lucide-react";
 import Image from "next/image";
@@ -24,7 +23,6 @@ interface Project {
 }
 
 export default function ApplicantsPage() {
-  const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -38,7 +36,7 @@ export default function ApplicantsPage() {
         if (!response.ok) {
           throw new Error('Failed to fetch projects');
         }
-        const data = await response.json();
+        const data = await response.json() as Project[];
         setProjects(data);
       } catch (error) {
         console.error("Error fetching projects:", error);
@@ -47,7 +45,7 @@ export default function ApplicantsPage() {
         setLoading(false);
       }
     }
-    fetchProjects();
+    void fetchProjects();
   }, []);
 
   const handleApplyClick = () => {

@@ -67,9 +67,9 @@ export async function POST(request: Request) {
         fundUsage: parsedData.data.fundUsage || null,
 
         // --- Sección 4: JSONB (como Objetos/Arrays) y Strings ---
-        teamMembers: parsedData.data.teamMembers || [], // Como Array
-        advisors: parsedData.data.advisors || [], // Como Array
-        tokenDistribution: parsedData.data.tokenDistribution || {}, // Como Objeto
+        teamMembers: parsedData.data.teamMembers ?? [], // Como Array
+        advisors: parsedData.data.advisors ?? [], // Como Array
+        tokenDistribution: parsedData.data.tokenDistribution ?? {}, // Como Objeto
         contractAddress: parsedData.data.contractAddress || null,
         treasuryAddress: parsedData.data.treasuryAddress || null,
 

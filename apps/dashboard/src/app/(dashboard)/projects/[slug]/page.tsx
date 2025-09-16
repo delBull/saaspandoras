@@ -37,8 +37,8 @@ function safeJsonParse<T>(jsonString: string | null | undefined, defaultValue: T
   }
 }
 
-export default async function ProjectPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+export default async function ProjectPage({ params }: { params: { slug: string } }) {
+  const { slug } = params;
 
   const project = await getProjectData(slug);
 
@@ -121,6 +121,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                         <div className="aspect-video rounded-lg overflow-hidden">
                           <iframe
                             src={project.videoPitch.replace("watch?v=", "embed/")}
+                            title={`${project.title} Video Pitch`}
                             className="w-full h-full"
                             allowFullScreen
                           />
@@ -165,7 +166,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                       <UsersIcon className="w-5 h-5" /> Equipo y Asesores
                     </h2>
                     <div className="space-y-6">
-                      {teamMembers.length > 0 && (
+                      {teamMembers && teamMembers.length > 0 && (
                         <>
                           <h3 className="text-md font-semibold text-lime-400 mb-4">Equipo</h3>
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -190,7 +191,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                           </div>
                         </>
                       )}
-                      {advisors.length > 0 && (
+                      {advisors && advisors.length > 0 && (
                         <>
                           <h3 className="text-md font-semibold text-emerald-400 mb-4 mt-6">Asesores</h3>
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
