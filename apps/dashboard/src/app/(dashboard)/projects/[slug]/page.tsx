@@ -1,50 +1,75 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { MetricCard } from "~/components/projects/MetricCard";
-import { BanknotesIcon, ChartPieIcon, SparklesIcon, GlobeAltIcon, LinkIcon, CurrencyDollarIcon, UsersIcon, ShieldCheckIcon, ArrowRightIcon, EnvelopeIcon, ChatBubbleLeftIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
+import {
+  BanknotesIcon,
+  ChartPieIcon,
+  SparklesIcon,
+  GlobeAltIcon,
+  CurrencyDollarIcon,
+  UsersIcon,
+  ShieldCheckIcon,
+  ArrowRightIcon,
+  EnvelopeIcon,
+  ChatBubbleLeftIcon,
+  DocumentTextIcon,
+} from "@heroicons/react/24/outline";
 import { Button } from "@saasfly/ui/button";
 import { db } from "~/db";
 import { eq } from "drizzle-orm";
 import { projects } from "~/db/schema";
 
-// Hacemos que esta página sea un Server Component para fetching de datos
+// --- Fetch de datos ---
 async function getProjectData(slug: string) {
-    const project = await db.query.projects.findFirst({
-        where: eq(projects.slug, slug),
-    });
-    return project as any; // Type assertion temporal hasta actualizar tipos
+  const project = await db.query.projects.findFirst({
+    where: eq(projects.slug, slug),
+  });
+  return project;
 }
 
-interface ProjectPageProps {
-    params: { slug: string };
+// Helper para parsear JSON de forma segura
+function safeJsonParse<T>(jsonString: string | null | undefined, defaultValue: T): T {
+  if (!jsonString) return defaultValue;
+  try {
+    return JSON.parse(jsonString) as T;
+  } catch (e) {
+    return defaultValue;
+  }
 }
 
-export default async function ProjectPage({ params }: ProjectPageProps) {
-    const project = await getProjectData(params.slug);
+export default async function ProjectPage({ params }: { params: { slug: string } }) {
+  const { slug } = params; // No se necesita 'await' aquí
 
-    if (!project) {
-        notFound();
-    }
+  const project = await getProjectData(slug);
 
-    // Convertimos los valores de la DB (string) a números para los cálculos
-    const raisedAmount = Number(project.raisedAmount ?? 0);
-    const targetAmount = Number(project.targetAmount ?? 1); // Evitar división por cero
-    const returnsPaid = Number(project.returnsPaid ?? 0);
-    const socials = project.socials as { twitter?: string, email?: string };
-    
-    // Parse JSON fields
-    const teamMembers = (project.teamMembers as any[]) || [];
-    const advisors = (project.advisors as any[]) || [];
-    const tokenDistribution = (project.tokenDistribution as any) || {};
-    const allSocials = {
-      website: project.website,
-      twitter: project.twitterUrl || socials.twitter,
-      discord: project.discordUrl,
-      telegram: project.telegramUrl,
-      linkedin: project.linkedinUrl,
-    };
+  if (!project) {
+    notFound();
+  }
 
-    const raisedPercentage = (raisedAmount / targetAmount) * 100;
+  // --- Conversión de datos segura ---
+  const raisedAmount = Number(project.raisedAmount ?? 0);
+  const targetAmount = Number(project.targetAmount ?? 1);
+  const returnsPaid = Number(project.returnsPaid ?? 0);
+
+  const teamMembers: { name: string; position: string; linkedin?: string }[] = safeJsonParse(project.teamMembers as string | null, []);
+  const advisors: { name: string; profile: string; linkedin?: string }[] = safeJsonParse(project.advisors as string | null, []);
+  const tokenDistribution: Record<string, number> = safeJsonParse(project.tokenDistribution as string | null, {});
+  
+  // El campo 'socials' no existe en el schema, se construye a partir de otros campos
+  const socials = {
+    twitter: project.twitterUrl,
+    email: project.applicantEmail,
+  };
+
+  const allSocials = {
+    website: project.website,
+    twitter: project.twitterUrl || socials.twitter,
+    discord: project.discordUrl,
+    telegram: project.telegramUrl,
+    linkedin: project.linkedinUrl,
+  };
+
+  const raisedPercentage = (raisedAmount / targetAmount) * 100;
 
     return (
         <div className="max-w-4xl mx-auto py-8 md:py-12">
@@ -142,7 +167,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                     <div className="space-y-6">
                       {teamMembers.length > 0 && (
                         <>
-                          <h3 className="text-md font-semibold text-lime-400 mb-4">Equipo Principal</h3>
+                          <h3 className="text-md font-semibold text-lime-400 mb-4">Equipo</h3>
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {teamMembers.map((member: any, index: number) => (
                               <div key={index} className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
@@ -177,7 +202,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                                   </div>
                                   <div className="flex-1">
                                     <h4 className="font-semibold text-white text-sm">{advisor.name}</h4>
-                                    <p className="text-gray-400 text-xs">{advisor.position || 'Asesor'}</p>
+                                    <p className="text-gray-400 text-xs">{advisor.profile || 'Asesor'}</p>
                                     {advisor.linkedin && (
                                       <a href={advisor.linkedin} target="_blank" rel="noopener noreferrer" className="text-emerald-400 text-xs hover:underline mt-1 inline-block">
                                         LinkedIn →
