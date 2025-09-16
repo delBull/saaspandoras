@@ -1,12 +1,24 @@
 import { NextResponse } from "next/server";
+import { headers } from "next/headers";
 import { db } from "~/db";
 import { projects as projectsSchema } from "~/db/schema";
 import { projectApiSchema } from "@/lib/project-schema-api";
+import { getAuth, isAdmin } from "@/lib/auth";
 import slugify from "slugify";
 
 export async function POST(request: Request) {
+  const headersList = await headers();
+  const { session } = await getAuth(headersList);
+  const userIsAdmin = isAdmin(session?.userId);
+
+  if (!userIsAdmin) {
+    return NextResponse.json({ message: "No autorizado" }, { status: 403 });
+  }
+
   try {
     const body = await request.json();
+    // Los admins pueden tener un schema menos estricto si es necesario,
+    // pero por ahora usamos el mismo para consistencia.
     const parsedData = projectApiSchema.safeParse(body);
 
     if (!parsedData.success) {
@@ -16,8 +28,10 @@ export async function POST(request: Request) {
       );
     }
 
+    const { title } = parsedData.data;
+
     // Generar un slug único
-    let slug = slugify(parsedData.data.title, { lower: true, strict: true });
+    let slug = slugify(title, { lower: true, strict: true });
     const existingProject = await db.query.projects.findFirst({
       where: (projects, { eq }) => eq(projects.slug, slug),
     });
@@ -25,7 +39,7 @@ export async function POST(request: Request) {
       slug = `${slug}-${Date.now()}`;
     }
 
-    // Insertar en la base de datos con estado 'pending'
+    // Insertar en la base de datos con estado 'approved'
     const [newProject] = await db
       .insert(projectsSchema)
       // .values() espera un ARRAY de objetos
@@ -92,17 +106,15 @@ export async function POST(request: Request) {
         verificationAgreement: parsedData.data.verificationAgreement,
 
         // --- Campo de Estado: String (Enum) ---
-        status: "pending",
+        status: "approved",
       })
       .returning();
 
     return NextResponse.json(newProject, { status: 201 });
   } catch (error) {
-    console.error("Error al crear la aplicación del proyecto:", error);
+    console.error("Error al crear el proyecto (admin):", error);
     return NextResponse.json(
-      {
-        message: "Error interno del servidor.",
-      },
+      { message: "Error interno del servidor." },
       { status: 500 }
     );
   }

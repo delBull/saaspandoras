@@ -42,12 +42,12 @@ export function Sidebar({ wallet: walletProp, userName }: SidebarProps) {
     icon: <ArrowPathIcon className="h-5 w-5 shrink-0 font-mono text-gray-400" />, 
     disabled: true,
   }, 
-  { 
-    label: "Applicants", 
-    href: "#", 
+  {
+    label: "Applicants",
+    href: "/applicants",
     icon: <UserGroupIcon className="h-5 w-5 shrink-0 font-mono text-gray-400" />,
-    disabled: false, 
-  }, { 
+    disabled: false,
+  }, {
     label: "Invest", 
     href: "#", 
     icon: <ArrowPathIcon className="h-5 w-5 shrink-0 font-mono text-gray-400" />, 
