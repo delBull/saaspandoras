@@ -5,7 +5,6 @@ import { getAuth } from "@/lib/auth";
 import { isAdmin } from "@/lib/auth";
 import { db } from "~/db";
 import { desc } from "drizzle-orm";
-import type { InferSelectModel } from "drizzle-orm";
 import { projects as projectsTable } from "~/db/schema";
 import { ProjectActions } from "~/components/admin/ProjectActions";
 import { AdminTabs } from "~/components/admin/AdminTabs";
