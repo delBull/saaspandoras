@@ -7,11 +7,7 @@ import { eq } from "drizzle-orm";
 import { isAdmin } from "@/lib/auth";
 import { getAuth } from "@/lib/auth";
 
-interface EditProjectPageProps {
-  params: { id: string };
-}
-
-export default async function EditProjectPage({ params }: EditProjectPageProps) {
+export default async function EditProjectPage({ params }: { params: { id: string } }) {
   const headersList = await headers();
   const { session } = await getAuth(headersList);
   const userIsAdmin = isAdmin(session?.userId);
