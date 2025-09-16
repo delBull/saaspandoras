@@ -12,7 +12,6 @@ interface EditProjectPageProps {
 }
 
 export default async function EditProjectPage({ params }: EditProjectPageProps) {
-  const resolvedParams = await params;
   const headersList = await headers();
   const { session } = await getAuth(headersList);
   const userIsAdmin = isAdmin(session?.userId);
@@ -24,9 +23,9 @@ export default async function EditProjectPage({ params }: EditProjectPageProps) 
   let project = null;
 
   // Si no es "new", buscar el proyecto existente
-  if (resolvedParams.id !== "new") {
+  if (params.id !== "new") {
     try {
-      const projectId = parseInt(resolvedParams.id, 10);
+      const projectId = parseInt(params.id, 10);
       if (isNaN(projectId)) {
         notFound();
       }
