@@ -6,11 +6,15 @@ import { eq } from "drizzle-orm";
 import { isAdmin, getAuth } from "@/lib/auth";
 import { MultiStepForm } from "./multi-step-form";
 
-// Properly type the async params for Next.js 15
-export default async function ProjectPage({ params }: { params: { id: string } }) {
+interface ProjectPageProps {
+  params: { id: string };
+  searchParams: { [key: string]: string | string[] | undefined };
+}
+export default async function ProjectPage({ params }: ProjectPageProps) {
   const { id } = params;
 
-  const { session } = await getAuth();
+  const headersList = await headers();
+  const { session } = await getAuth(headersList);
 
   if (!await isAdmin(session?.userId)) notFound();
 
@@ -19,7 +23,6 @@ export default async function ProjectPage({ params }: { params: { id: string } }
     const projectId = Number(id);
     if (isNaN(projectId)) notFound();
 
-    // 2. Es más seguro y claro obtener el resultado en una variable.
     const result = await db
       .select()
       .from(projectsSchema)
