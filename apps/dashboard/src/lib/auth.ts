@@ -33,7 +33,7 @@ export async function isAdmin(address: string | null | undefined): Promise<boole
 }
 
 export function getAuth(headers?: MinimalHeaders) {
-  console.log('🔍 getAuth: Starting authentication check');
+  console.log('🔍 getAuth: AUTH FUNCTION CALLED FROM:', headers?.get('host'));
   let userAddress: string | null = null;
 
   // Método 1: Intentar desde cookies (desarrollo)

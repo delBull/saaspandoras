@@ -28,11 +28,21 @@ const MOCK_SWAPS = [
 ];
 
 export default async function AdminDashboardPage() {
+  console.log('📊 AdminDashboardPage: COMIENZA EJECUCIÓN');
+
   const headersList = await headers();
   const { session } = getAuth(headersList);
   const userIsAdmin = await isAdmin(session?.userId);
 
+  console.log('📊 AdminDashboardPage: Resultado:', {
+    hasSession: !!session,
+    sessionUserId: session?.userId,
+    userIsAdmin,
+    superAdminWallet: '0x00c9f7EE6d1808C09B61E561Af6c787060BFE7C9'
+  });
+
   if (!userIsAdmin) {
+    console.log('❌ AdminDashboardPage: ACCESO DENEGADO');
     return (
         <div className="flex items-center justify-center min-h-[70vh]">
             <div className="text-center p-8 bg-zinc-900 rounded-lg">
@@ -42,6 +52,8 @@ export default async function AdminDashboardPage() {
         </div>
     );
   }
+
+  console.log('✅ AdminDashboardPage: ACCESO PERMITIDO');
 
   // Fetching de datos del servidor
   const projects = (await db.query.projects.findMany({ orderBy: desc(projectsTable.createdAt) })) as Project[];
