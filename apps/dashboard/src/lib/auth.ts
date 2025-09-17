@@ -61,7 +61,7 @@ export function getAuth(headers?: MinimalHeaders) {
     const walletAddress = headers?.get('wallet-address');
     console.log('📡 getAuth: Checking headers - x-thirdweb-address:', thirdwebAddress, 'wallet-address:', walletAddress);
 
-    userAddress = thirdwebAddress || walletAddress || null;
+    userAddress = thirdwebAddress ?? walletAddress ?? null;
 
     if (userAddress) {
       userAddress = userAddress.toLowerCase();
