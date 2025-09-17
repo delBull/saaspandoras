@@ -46,7 +46,7 @@ export default async function AdminDashboardPage() {
     return (
         <div className="flex items-center justify-center min-h-[70vh]">
             <div className="text-center p-8 bg-zinc-900 rounded-lg">
-                <h2 className="text-2xl font-bold text-red-500">Acceso Denegado</h2>
+                <h2 className="text-2xl font-bold text-red-500">Acceso Restringido</h2>
                 <p className="text-gray-400 mt-2">Esta página es solo para administradores.</p>
             </div>
         </div>
