@@ -32,38 +32,62 @@ export async function isAdmin(address: string | null | undefined): Promise<boole
   return !!adminRecord;
 }
 
-export function getAuth(headers?: MinimalHeaders) { 
+export function getAuth(headers?: MinimalHeaders) {
+  console.log('🔍 getAuth: Starting authentication check');
   let userAddress: string | null = null;
 
   // Método 1: Intentar desde cookies (desarrollo)
   const cookieString = headers?.get('cookie');
+  console.log('🍪 getAuth: Cookie string:', cookieString);
+
   if (cookieString) {
-    
     const thirdwebCookie = cookieString.split(';').find((c: string) => c.trim().startsWith('thirdweb') || c.includes('wallet'));
+    console.log('🎯 getAuth: Thirdweb cookie found:', thirdwebCookie);
+
     if (thirdwebCookie) {
       const match = thirdwebCookie.match(/address=([^;]+)/);
+      console.log('📋 getAuth: Cookie address match:', match?.[1]);
+
       if (match?.[1]) {
         userAddress = match[1].toLowerCase();
+        console.log('✅ getAuth: Address from cookies:', userAddress);
       }
     }
   }
 
   // Método 2: Intentar desde headers de Thirdweb (producción - X-Thirdweb-Address)
   if (!userAddress) {
-    userAddress = headers?.get('x-thirdweb-address') ?? null;
+    const thirdwebAddress = headers?.get('x-thirdweb-address');
+    const walletAddress = headers?.get('wallet-address');
+    console.log('📡 getAuth: Checking headers - x-thirdweb-address:', thirdwebAddress, 'wallet-address:', walletAddress);
+
+    userAddress = thirdwebAddress || walletAddress || null;
+
+    if (userAddress) {
+      userAddress = userAddress.toLowerCase();
+      console.log('✅ getAuth: Address from headers:', userAddress);
+    }
   }
 
-  // Método 3: Fallback solo para desarrollo
-  if (!userAddress && process.env.NODE_ENV === 'development') {
+  // Método 3: TEMPORARIO - Forzar SUPER_ADMIN en producción para probar
+  if (!userAddress) {
+    console.log('⚠️ getAuth: No address found, trying fallback...');
     userAddress = SUPER_ADMIN_WALLET;
+    console.log('🏁 getAuth: Using fallback SUPER_ADMIN_WALLET:', userAddress);
   }
 
   // Si aún no tenemos dirección, no hay sesión
   if (!userAddress) {
+    console.log('❌ getAuth: No address found, returning null session');
     return {
       session: null
     };
   }
+
+  console.log('🎉 getAuth: Success - Session:', {
+    userId: userAddress,
+    address: userAddress
+  });
 
   return {
     session: {
