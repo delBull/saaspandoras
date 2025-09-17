@@ -6,12 +6,16 @@ import { SUPER_ADMIN_WALLET } from "./constants";
 
 export async function isAdmin(address: string | null | undefined): Promise<boolean> {
   if (!address) {
+    console.log('isAdmin: No address provided');
     return false;
   }
   const lowerCaseAddress = address.toLowerCase();
+  console.log('isAdmin: Checking address', lowerCaseAddress);
+  console.log('isAdmin: SUPER_ADMIN_WALLET', SUPER_ADMIN_WALLET);
 
   // El Super Admin siempre tiene acceso.
   if (lowerCaseAddress === SUPER_ADMIN_WALLET) {
+    console.log('isAdmin: SUPER_ADMIN match');
     return true;
   }
 
@@ -19,6 +23,7 @@ export async function isAdmin(address: string | null | undefined): Promise<boole
   const adminRecord = await db.query.administrators.findFirst({
     where: eq(administrators.walletAddress, lowerCaseAddress),
   });
+  console.log('isAdmin: DB admin record', adminRecord);
 
   return !!adminRecord;
 }
