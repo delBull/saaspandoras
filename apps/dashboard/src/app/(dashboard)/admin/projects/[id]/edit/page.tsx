@@ -6,14 +6,8 @@ import { eq } from "drizzle-orm";
 import { isAdmin, getAuth } from "@/lib/auth";
 import { MultiStepForm } from "./multi-step-form";
 
-// Definimos la interface de params inline
-interface ProjectPageProps {
-  params: { slug: string }; // o id si tu ruta usa [id]
-  searchParams?: { [key: string]: string | string[] | undefined };
-}
-
-export default async function ProjectPage({ params }: ProjectPageProps) {
-  const { slug } = params;
+export default async function ProjectPage({ params }: { params: { id: string } }) {
+  const { id } = params;
 
   const headersList = await headers();
   const { session } = await getAuth(headersList);
@@ -21,13 +15,16 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   if (!isAdmin(session?.userId)) notFound();
 
   let project = null;
-  if (slug !== "new") {
-    const [row] = await db
+  if (id !== "new") {
+    const projectId = parseInt(id, 10);
+    if (isNaN(projectId)) notFound();
+
+    [project] = await db
       .select()
       .from(projectsSchema)
-      .where(eq(projectsSchema.slug, slug))
+      .where(eq(projectsSchema.id, projectId))
       .limit(1);
-    project = row;
+
     if (!project) notFound();
   }
 
