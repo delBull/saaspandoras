@@ -6,8 +6,9 @@ import { eq } from "drizzle-orm";
 import { isAdmin, getAuth } from "@/lib/auth";
 import { MultiStepForm } from "./multi-step-form";
 
-export default async function ProjectPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+// NO tipamos los props; Next los infiere automáticamente
+export default async function ProjectPage({ params }: any) {
+  const { id } = params; // Next infiere correctamente string
 
   const headersList = await headers();
   const { session } = await getAuth(headersList);
