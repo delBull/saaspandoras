@@ -23,7 +23,7 @@ export function getAuth(headers?: Headers) {
       // Extrae address del cookie (simplificado - en producción parsear correctamente)
       try {
         const match = thirdwebCookie.match(/address=([^;]+)/);
-        if (match && match[1]) {
+        if (match?.[1]) {
           userAddress = match[1].toLowerCase();
         }
       } catch (e) {
