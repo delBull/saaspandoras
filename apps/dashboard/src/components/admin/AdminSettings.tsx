@@ -37,7 +37,7 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
 
       if (!response.ok) {
         const errorData = await response.json() as { message?: string };
-        throw new Error(errorData.message || "No se pudo añadir el administrador.");
+        throw new Error(errorData.message ?? "No se pudo añadir el administrador.");
       }
 
       const newAdmin = await response.json() as Admin;
@@ -62,7 +62,7 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
 
       if (!response.ok) {
         const errorData = await response.json() as { message?: string };
-        throw new Error(errorData.message || "No se pudo eliminar el administrador.");
+        throw new Error(errorData.message ?? "No se pudo eliminar el administrador.");
       }
 
       setAdmins(admins.filter(admin => admin.id !== id));
