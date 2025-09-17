@@ -10,6 +10,7 @@ import { MultiStepForm } from "./multi-step-form";
 export default async function ProjectPage({ params }: { params: { id: string } }) {
   const { id } = params;
 
+  // 1. getAuth no es asíncrono, por lo que no necesita 'await'.
   const headersList = await headers();
   const { session } = getAuth(headersList);
 
@@ -17,16 +18,20 @@ export default async function ProjectPage({ params }: { params: { id: string } }
 
   let project = null;
   if (id !== "new") {
-    const projectId = parseInt(id, 10);
+    const projectId = Number(id);
     if (isNaN(projectId)) notFound();
 
-    [project] = await db
+    // 2. Es más seguro y claro obtener el resultado en una variable.
+    const result = await db
       .select()
       .from(projectsSchema)
       .where(eq(projectsSchema.id, projectId))
       .limit(1);
 
-    if (!project) notFound();
+    project = result[0] ?? null;
+    if (!project) {
+      notFound();
+    }
   }
 
   return (
