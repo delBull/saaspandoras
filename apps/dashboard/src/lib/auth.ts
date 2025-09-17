@@ -67,14 +67,14 @@ export function getAuth(headers?: MinimalHeaders) {
     };
 
     // Mostrar todos los posibles headers
-    console.log('📡 getAuth: Available headers:', Object.entries(headerSources).filter(([key, value]) => value).map(([key, value]) => `${key}: ${value}`));
+    console.log('📡 getAuth: Available headers:', Object.entries(headerSources).filter(([_key, value]) => value).map(([key, value]) => `${key}: ${value}`));
 
     // Intentar encontrar una dirección en cualquier header
     userAddress = headerSources['x-thirdweb-address'] ??
                   headerSources['wallet-address'] ??
                   headerSources['x-wallet-address'] ??
-                  headerSources['account'] ??
-                  headerSources['address'] ??
+                  headerSources.account ??
+                  headerSources.address ??
                   null;
 
     if (userAddress) {
