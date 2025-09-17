@@ -40,7 +40,7 @@ export function getAuth(headers?: Headers) {
 
   // Método 2: Intentar desde headers de Thirdweb (producción - X-Thirdweb-Address)
   if (!userAddress) {
-    userAddress = headers?.get('x-thirdweb-address') || null;
+    userAddress = headers?.get('x-thirdweb-address') ?? null;
   }
 
   // Método 3: Fallback solo para desarrollo
