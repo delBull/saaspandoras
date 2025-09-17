@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from "@saasfly/ui/button";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 // --- Fix para TypeScript: Declarar el tipo global de window.ethereum ---
@@ -10,15 +11,15 @@ declare global { // --- TS fix: tipado window.ethereum en global para evitar TS2
       chainId?: string;
       request(args: {
         method: string;
-        params?: any[];
-      }): Promise<any>;
+        params?: unknown[];
+      }): Promise<unknown>;
       on(
         event: string,
-        handler: (...args: any[]) => void,
+        handler: (chainId: string) => void,
       ): void;
-      removeListener?(
+      removeListener(
         event: string,
-        handler: (...args: any[]) => void,
+        handler: (chainId: string) => void,
       ): void;
     };
   }
@@ -55,14 +56,15 @@ function useEvmChainId(): number | null {
     }
 
     // Manejador para cuando el usuario cambia de red en su wallet
-    const handleChainChanged = (id: string) =>
-      setChainId(parseInt(id, 16));
+    const handleChainChanged = (chainId: string) => {
+      setChainId(parseInt(chainId, 16));
+    };
 
     window.ethereum.on("chainChanged", handleChainChanged);
 
     // Limpiar el listener al desmontar el componente
     return () => {
-      window.ethereum?.removeListener?.("chainChanged", handleChainChanged);
+      window.ethereum?.removeListener("chainChanged", handleChainChanged);
     };
   }, []);
 
@@ -83,9 +85,9 @@ async function switchToBase() {
       method: "wallet_switchEthereumChain",
       params: [{ chainId: BASE_CHAIN_HEX }],
     });
-  } catch (switchError: any) {
+  } catch (switchError: unknown) {
     // Código 4902 indica que la red no está agregada a la wallet
-    if (switchError.code === 4902) {
+    if ((switchError as { code?: number }).code === 4902) {
       try {
         await window.ethereum.request({
           method: "wallet_addEthereumChain",
@@ -135,11 +137,12 @@ export function BaseNetworkGuard({
         aria-modal="true"
         aria-label="Red Base obligatoria"
       >
-        <img
+        <Image
           src="https://cryptologos.cc/logos/base-base-logo.png"
           alt="Base Logo"
+          width={64}
+          height={64}
           className="w-16 h-16 mb-3"
-          draggable={false}
         />
         <h2 className="text-xl sm:text-2xl font-bold text-orange-600 mb-2 text-center">
           Conéctate a la red Base

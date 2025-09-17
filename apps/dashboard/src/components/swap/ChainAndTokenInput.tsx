@@ -44,7 +44,6 @@ export function ChainAndTokenInput({
   onMax,
   disabled,
   isAmountReadOnly = false,
-  amountComponent,
   hideChainSelector = false,
 }: ChainAndTokenInputProps) {
   const selectedChain = chains.find(c => c.id === selectedChainId);
@@ -88,7 +87,7 @@ export function ChainAndTokenInput({
           placeholder="0.0"
           value={amount}
           onChange={(e) => onAmountChange(e.target.value.replace(/[^0-9.]/g, ''))}
-          disabled={disabled || isAmountReadOnly}
+          disabled={disabled ?? isAmountReadOnly}
           readOnly={isAmountReadOnly}
           className="w-full text-3xl font-mono text-white focus:outline-none border-none p-0 h-auto bg-transparent"
         />

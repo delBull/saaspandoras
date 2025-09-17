@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormContext, useWatch } from "react-hook-form";
+import { useFormContext } from "react-hook-form";
 import { useState, useRef } from "react";
 import type { FullProjectFormData } from "../multi-step-form";
 import { toast } from "sonner";
@@ -86,7 +86,7 @@ const FileUpload = ({ id, accept = "*", className = "", onChange, ...props }: Re
   </div>
 );
 
-const DocumentPreview = ({ filename, fileUrl, type = "pdf", className = "" }: {
+const DocumentPreview = ({ filename, fileUrl = "pdf", className = "" }: {
   filename: string;
   fileUrl: string;
   type?: "pdf" | "doc";
@@ -116,13 +116,9 @@ export function ProjectSection5() {
   const { register, watch, formState: { errors }, setValue } = useFormContext<FullProjectFormData>();
   const [valuationPreview, setValuationPreview] = useState<string | null>(null);
   const [dueDiligencePreview, setDueDiligencePreview] = useState<string | null>(null);
-  const valuationRef = useRef<HTMLInputElement>(null);
-  const dueDiligenceRef = useRef<HTMLInputElement>(null);
 
-  const legalStatus = watch("legalStatus") || "";
-  const valuationDocumentUrl = watch("valuationDocumentUrl") || "";
-  const fiduciaryEntity = watch("fiduciaryEntity") || "";
-  const dueDiligenceReportUrl = watch("dueDiligenceReportUrl") || "";
+  const valuationDocumentUrl = watch("valuationDocumentUrl") ?? "";
+  const dueDiligenceReportUrl = watch("dueDiligenceReportUrl") ?? "";
 
   // Manejo de upload documentos
   const handleDocumentUpload = (e: React.ChangeEvent<HTMLInputElement>, setPreview: (url: string) => void, setField: (url: string) => void) => {

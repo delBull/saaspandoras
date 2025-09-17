@@ -1,12 +1,12 @@
 "use client";
 
 import { Upload, Image as ImageIcon, Film, Tag } from "lucide-react";
+import Image from "next/image";
 
-import { useFormContext, useWatch } from "react-hook-form";
-import { useState, useRef } from "react";
+import { useFormContext } from "react-hook-form";
+import { useState } from "react";
 import type { FullProjectFormData } from "../multi-step-form";
 import { toast } from "sonner";
-import { businessCategoryEnum } from "~/db/schema";
 
 // Componentes UI reutilizados (mismo patrón que Section2)
 const Input = ({ id, type = "text", className = "", placeholder, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { placeholder?: string }) => (
@@ -97,9 +97,11 @@ const FileUpload = ({ id, accept = "image/*", className = "", ...props }: React.
 const ImagePreview = ({ src, alt, className = "" }: { src: string; alt: string; className?: string }) => (
   src ? (
     <div className={`relative rounded-lg overflow-hidden border border-zinc-700 ${className}`}>
-      <img 
-        src={src} 
+      <Image
+        src={src}
         alt={alt}
+        width={768}
+        height={192}
         className="w-full h-48 object-cover"
       />
       <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
@@ -113,15 +115,7 @@ export function ProjectSection1() {
   const { register, watch, formState: { errors }, setValue } = useFormContext<FullProjectFormData>();
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
-  const logoRef = useRef<HTMLInputElement>(null);
-  const coverRef = useRef<HTMLInputElement>(null);
 
-  const title = watch("title");
-  const description = watch("description");
-  const tagline = watch("tagline");
-  const businessCategory = watch("businessCategory");
-  const logoUrl = watch("logoUrl");
-  const coverPhotoUrl = watch("coverPhotoUrl");
   const videoPitch = watch("videoPitch");
 
   // Manejo de upload logo

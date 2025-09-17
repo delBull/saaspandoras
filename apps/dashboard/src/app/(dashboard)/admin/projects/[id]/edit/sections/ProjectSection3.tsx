@@ -1,9 +1,8 @@
 "use client";
 
-import { useFormContext, useWatch } from "react-hook-form";
-import { useState, useEffect } from "react";
+import { useFormContext } from "react-hook-form";
+import { useEffect } from "react";
 import type { FullProjectFormData } from "../multi-step-form";
-import { toast } from "sonner";
 import {
   DollarSign,
   Percent,
@@ -12,7 +11,6 @@ import {
   PieChart,
   Building
 } from "lucide-react";
-import { tokenTypeEnum, yieldSourceEnum } from "~/db/schema";
 
 // Componentes UI reutilizados (patrón consistente)
 const Input = ({ id, type = "text", className = "", placeholder, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { placeholder?: string }) => (
@@ -124,13 +122,12 @@ export function ProjectSection3() {
   const { register, watch, formState: { errors }, setValue } = useFormContext<FullProjectFormData>();
   
   // Watch fields for calculations
-  const targetAmount = watch("targetAmount") || 0;
-  const totalValuationUsd = watch("totalValuationUsd") || 0;
-  const tokenType = watch("tokenType") || "erc20";
-  const totalTokens = watch("totalTokens") || 0;
-  const tokensOffered = watch("tokensOffered") || 0;
-  const tokenPriceUsd = watch("tokenPriceUsd") || 0;
-  const estimatedApy = watch("estimatedApy") || "0";
+  const targetAmount = watch("targetAmount") ?? 0;
+  const totalValuationUsd = watch("totalValuationUsd") ?? 0;
+  const totalTokens = watch("totalTokens") ?? 0;
+  const tokensOffered = watch("tokensOffered") ?? 0;
+  const tokenPriceUsd = watch("tokenPriceUsd") ?? 0;
+  const estimatedApy = watch("estimatedApy") ?? "0";
   
   // Auto-calculate total funding amount
   const calculatedTotal = Number(tokensOffered) * Number(tokenPriceUsd);
@@ -158,7 +155,7 @@ export function ProjectSection3() {
     const value = e.target.value;
     // Allow only numbers and decimal point
     if (/^\d*\.?\d*$/.test(value) || value === '') {
-      setValue(field, value === '' ? 0 : Number(value) as any);
+      setValue(field, value === '' ? 0 : Number(value));
     }
   };
 

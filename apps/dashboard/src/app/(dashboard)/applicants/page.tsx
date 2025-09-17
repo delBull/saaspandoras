@@ -72,8 +72,8 @@ export default function ApplicantsPage() {
 
   // --- Project Card Component ---
   const ProjectCard = ({ project }: { project: Project }) => {
-    const targetAmount = Number(project.targetAmount || 0);
-    const raisedAmount = Number(project.raisedAmount || 0);
+    const targetAmount = Number(project.targetAmount ?? 0);
+    const raisedAmount = Number(project.raisedAmount ?? 0);
     const progress = targetAmount > 0 ? (raisedAmount / targetAmount) * 100 : 0;
 
     return (
@@ -223,7 +223,7 @@ export default function ApplicantsPage() {
         {projects.length === 0 && !loading && (
           <div className="text-center py-20">
             <p className="text-gray-400 text-xl mb-4">¡Aún no hay proyectos en la plataforma!</p>
-            <p className="text-gray-500">Usa el botón de "Aplicar Nuevo Proyecto" para ser el primero.</p>
+            <p className="text-gray-500">Usa el botón de &quot;Aplicar Nuevo Proyecto&quot; para ser el primero.</p>
           </div>
         )}
       </div>

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 // Helper para parsear JSON de forma segura desde un string
-const safeJsonParse = (path: (string | number)[]) => (val: unknown) => {
+const safeJsonParse = (val: unknown) => {
   if (typeof val !== "string") {
     // Si ya es un objeto (ej. en pruebas), lo dejamos pasar.
     return val;

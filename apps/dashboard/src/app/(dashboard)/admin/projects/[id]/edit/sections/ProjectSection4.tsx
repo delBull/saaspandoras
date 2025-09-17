@@ -1,16 +1,13 @@
 "use client";
 
-import { useFormContext, useFieldArray } from "react-hook-form";
+import { useFormContext, useFieldArray, UseFormReturn } from "react-hook-form";
 import type { FullProjectFormData } from "../multi-step-form";
 import { toast } from "sonner";
 import {
   Users,
   UserPlus,
   UserMinus,
-  Building,
   ShieldCheck,
-  Banknote,
-  ExternalLink,
   PieChart
 } from "lucide-react";
 
@@ -45,38 +42,19 @@ const Textarea = ({ id, className = "", placeholder, rows = 3, ...props }: React
   />
 );
 
-const Select = ({ id, className = "", children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { children: React.ReactNode }) => (
-  <select 
-    id={id}
-    className={`
-      w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-lg 
-      focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-transparent
-      transition-all duration-200 text-white
-      ${className}
-    `}
-    {...props}
-  >
-    {children}
-  </select>
-);
-
-const Label = ({ htmlFor, children, required = false, className = "" }: { 
-  htmlFor?: string; 
+const Label = ({ htmlFor, children, required = false, className = "" }: {
+  htmlFor?: string;
   children: React.ReactNode;
   required?: boolean;
   className?: string;
 }) => (
-  <label 
-    htmlFor={htmlFor} 
+  <label
+    htmlFor={htmlFor}
     className={`text-sm font-semibold text-white mb-2 flex items-center gap-1 ${className}`}
   >
     {children}
     {required && <span className="text-red-400 text-xs">*</span>}
   </label>
-);
-
-const ErrorMessage = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-red-400 text-xs mt-1">{children}</p>
 );
 
 const Button = ({ children, className = "", onClick, variant = "primary", type = "button", disabled = false }: {
@@ -107,7 +85,7 @@ const Button = ({ children, className = "", onClick, variant = "primary", type =
 const TeamMemberCard = ({ index, remove, register, className = "" }: {
   index: number;
   remove: (index: number) => void;
-  register: any; // Pasamos la función register
+  register: UseFormReturn<FullProjectFormData>["register"];
   className?: string;
 }) => (
   <div className={`bg-zinc-800/50 p-4 rounded-lg border border-zinc-700 ${className}`}>
@@ -129,7 +107,7 @@ const TeamMemberCard = ({ index, remove, register, className = "" }: {
         <Input
           id={`teamMembers.${index}.name`}
           placeholder="Juan Pérez"
-          {...register(`teamMembers.${index}.name` as const)}
+          {...register(`teamMembers.${index}.name` as keyof FullProjectFormData)}
         />
       </div>
       
@@ -138,7 +116,7 @@ const TeamMemberCard = ({ index, remove, register, className = "" }: {
         <Input
           id={`teamMembers.${index}.position`}
           placeholder="CEO & Fundador"
-          {...register(`teamMembers.${index}.position` as const)}
+          {...register(`teamMembers.${index}.position` as keyof FullProjectFormData)}
         />
       </div>
       
@@ -148,7 +126,7 @@ const TeamMemberCard = ({ index, remove, register, className = "" }: {
           id={`teamMembers.${index}.linkedin`}
           type="url"
           placeholder="https://linkedin.com/in/juan-perez"
-          {...register(`teamMembers.${index}.linkedin` as const)}
+          {...register(`teamMembers.${index}.linkedin` as keyof FullProjectFormData)}
         />
       </div>
       
@@ -157,7 +135,7 @@ const TeamMemberCard = ({ index, remove, register, className = "" }: {
         <Textarea
           id={`teamMembers.${index}.profile`}
           placeholder="Experiencia relevante, logros, por qué es la persona adecuada para este rol..."
-          {...register(`teamMembers.${index}.profile` as const)}
+          {...register(`teamMembers.${index}.profile` as keyof FullProjectFormData)}
           rows={3}
         />
       </div>
@@ -216,7 +194,7 @@ const DistributionInput = ({ label, value, onChange, total, className = "" }: {
 }
 
 export function ProjectSection4() {
-  const { register, control, formState: { errors }, watch, setValue } = useFormContext<FullProjectFormData>();
+  const { register, control, watch, setValue } = useFormContext<FullProjectFormData>();
   const { fields: teamFields, append: appendTeam, remove: removeTeam } = useFieldArray({
     control,
     name: "teamMembers"
@@ -226,8 +204,8 @@ export function ProjectSection4() {
     name: "advisors"
   });
 
-  const distribution = watch("tokenDistribution") || {};
-  const totalDistribution = Object.values(distribution).reduce((sum: number, val) => sum + (Number(val) || 0), 0);
+  const distribution = watch("tokenDistribution") ?? {};
+  const totalDistribution = Object.values(distribution).reduce((sum: number, val) => sum + (Number(val) ?? 0), 0);
 
   const handleDistributionChange = (key: keyof NonNullable<FullProjectFormData['tokenDistribution']>, value: number | undefined) => {
     const newDistribution = {

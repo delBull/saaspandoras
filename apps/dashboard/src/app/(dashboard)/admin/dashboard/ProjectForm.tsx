@@ -46,20 +46,6 @@ const Label = ({ htmlFor, children }: { htmlFor?: string, children: React.ReactN
   </label>
 );
 
-const Select = ({ children, onValueChange, value, ...props }: { children: React.ReactNode, onValueChange?: (value: string) => void, value?: string } & React.HTMLAttributes<HTMLSelectElement>) => (
-  <select
-    value={value}
-    onChange={(e) => onValueChange?.(e.target.value)}
-    className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-transparent"
-    {...props}
-  >
-    {children}
-  </select>
-);
-
-const SelectContent = ({ children }: { children: React.ReactNode }) => <>{children}</>;
-
-
 type Project = typeof projects.$inferSelect;
 
 const projectSchema = z.object({
@@ -85,7 +71,6 @@ export function ProjectForm({ project }: ProjectFormProps) {
   const {
     register,
     handleSubmit,
-    control,
     formState: { errors },
   } = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema),

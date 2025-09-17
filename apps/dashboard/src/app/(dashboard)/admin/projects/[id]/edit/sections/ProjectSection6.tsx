@@ -106,11 +106,11 @@ const SecurityFeature = ({
 };
 
 export function ProjectSection6() {
-  const { register, watch, formState: { errors }, setValue } = useFormContext<FullProjectFormData>();
+  const { watch, formState: { errors }, setValue } = useFormContext<FullProjectFormData>();
   
-  const isMintable = watch("isMintable") || false;
-  const isMutable = watch("isMutable") || false;
-  const updateAuthorityAddress = watch("updateAuthorityAddress") || "";
+  const isMintable = watch("isMintable") ?? false;
+  const isMutable = watch("isMutable") ?? false;
+  const updateAuthorityAddress = watch("updateAuthorityAddress") ?? "";
 
   const handleToggle = (field: "isMintable" | "isMutable") => (checked: boolean) => {
     setValue(field, checked);
@@ -219,7 +219,7 @@ export function ProjectSection6() {
                   <strong>Alto Riesgo:</strong> Tokens con metadatos mutables son considerados de alto riesgo:
                 </p>
                 <ul className="text-xs text-red-200 mt-1 space-y-1 ml-4">
-                  <li>• • Posibilidad de "rug pulls" mediante cambios de metadatos</li>
+                  <li>• • Posibilidad de &quot;rug pulls&quot; mediante cambios de metadatos</li>
                   <li>• • Dificultad para listar en DEX y marketplaces</li>
                   <li>• • Desconfianza general en la comunidad</li>
                   <li>• • Recomendación: Usa URIs inmutables o upgradeable proxies</li>
