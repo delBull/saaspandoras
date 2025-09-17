@@ -7,11 +7,11 @@ import { isAdmin, getAuth } from "@/lib/auth";
 import { MultiStepForm } from "./multi-step-form";
 
 interface ProjectPageProps {
-  params: { id: string };
-  searchParams: { [key: string]: string | string[] | undefined };
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 export default async function ProjectPage({ params }: ProjectPageProps) {
-  const { id } = params;
+  const { id } = await params;
 
   const headersList = await headers();
   const { session } = await getAuth(headersList);
