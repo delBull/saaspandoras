@@ -22,7 +22,7 @@ import {
 import { NATIVE_TOKEN_ADDRESS, Bridge } from "thirdweb";
 import { parseUnits, formatUnits } from "viem";
 import { defineChain } from "thirdweb/chains";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "../lib/thirdweb-client";
 
 // Tipos para el resultado del Bridge de Thirdweb para dar claridad a TypeScript
 interface BridgeQuote {
@@ -52,7 +52,7 @@ const USDC_TOKEN = {
 
 function useBridgeQuote({ amount }: { amount?: bigint }) {
   const [loading, setLoading] = useState(false);
-  const [quote, setQuote] = useState<BridgeQuote | null>(null);
+  const [quote, setQuote] = useState<BridgeQuote | null>(null); // Correctly typed state
   const [error, setError] = useState<string | null>(null);
   const account = useActiveAccount();
 
@@ -201,7 +201,7 @@ export default function UniswapClon() {
       // Ejecuta approvals primero si existen
       for (const step of prepared.steps ?? []) {
         const currentStep = step as RouteStep;
-        if (currentStep.action?.toLowerCase() === "approval") {
+        if (currentStep.action && currentStep.action.toLowerCase() === "approval") {
           setApprovalError(null);
           setApprovalPending(true);
           setApprovalDone(false);
@@ -225,7 +225,7 @@ export default function UniswapClon() {
       for (const step of prepared.steps ?? []) {
         const currentStep = step as RouteStep;
         if (
-          currentStep.action?.toLowerCase() === "sell" ||
+          (currentStep.action && currentStep.action.toLowerCase() === "sell") ||
           (!currentStep.action && Array.isArray(currentStep.transactions))
         ) {
           setSwapPending(true);
@@ -263,7 +263,7 @@ export default function UniswapClon() {
     } finally {
       setSwapping(false);
     }
-  }, [amountInWei, account, quote, sendTx, swapSuccess]);
+  }, [amountInWei, account, quote, sendTx, swapSuccess]); // Added missing dependency
 
   if (!account) {
     return (
@@ -318,7 +318,7 @@ export default function UniswapClon() {
               Saldo:{" "}
               {isBalanceLoading
                 ? "..."
-                : (ethBalance?.displayValue ?? "0.0")}{" "}
+                : String(ethBalance?.displayValue ?? "0.0")}{" "}
               ETH
             </p>
             <Button
@@ -335,7 +335,6 @@ export default function UniswapClon() {
             </Button>
           </div>
         </div>
-        {/* Output USDC */}
         <div className="space-y-2">
           <label htmlFor="quote-output" className="text-sm font-medium block">
             Recibirás aproximadamente
@@ -349,11 +348,8 @@ export default function UniswapClon() {
                 quoteLoading
                   ? ""
                   : quoteOut && quoteOut > 0n
-                    ? formatUnits(
-                        quoteOut,
-                        USDC_TOKEN.decimals,
-                      )
-                    : ""
+                    ? formatUnits(quoteOut, USDC_TOKEN.decimals)
+                    : "0"
               }
               className="flex-1 bg-gray-50"
               disabled
@@ -375,34 +371,31 @@ export default function UniswapClon() {
           )}
         </div>
         {/* Swap summary */}
-        {quote &&
-          quoteOut &&
-          amountInWei &&
-          quoteOut > 0n && (
-            <div className="text-xs text-gray-600 space-y-1 p-3 bg-gray-50 rounded">
-              <div>
-                <strong>Protocolo:</strong> thirdweb
-                Universal Bridge
-              </div>
-              <div>
-                <strong>Protección slippage:</strong>{" "}
-                automático
-              </div>
-              <div className="text-blue-600">
-                <strong>Rate:</strong> 1 ETH ≈{" "}
-                {(() => {
-                  try {
-                    const ethAmount = Number(formatUnits(amountInWei ?? 0n, ETH_TOKEN.decimals));
-                    const usdcAmount = Number(formatUnits(quoteOut ?? 0n, USDC_TOKEN.decimals));
-                    return ethAmount > 0 ? (usdcAmount / ethAmount).toFixed(2) : "-";
-                  } catch {
-                    return "-";
-                  }
-                })()}{" "}
-                USDC
-              </div>
+        {Boolean(quote && quoteOut && amountInWei && quoteOut > 0n) && (
+          <div className="text-xs text-gray-600 space-y-1 p-3 bg-gray-50 rounded">
+            <div>
+              <strong>Protocolo:</strong> thirdweb
+              Universal Bridge
             </div>
-          )}
+            <div>
+              <strong>Protección slippage:</strong>{" "}
+              automático
+            </div>
+            <div className="text-blue-600">
+              <strong>Rate:</strong> 1 ETH ≈{" "}
+              {(() => {
+                try {
+                  const ethAmount = Number(formatUnits(amountInWei ?? 0n, ETH_TOKEN.decimals));
+                  const usdcAmount = Number(formatUnits(quoteOut ?? 0n, USDC_TOKEN.decimals));
+                  return ethAmount > 0 ? String((usdcAmount / ethAmount).toFixed(2)) : "-";
+                } catch {
+                  return "-";
+                }
+              })()}{" "}
+              USDC
+            </div>
+          </div>
+        )}
         {/* Visual feedback por paso */}
         <Button
           onClick={handleSwap}
@@ -421,11 +414,10 @@ export default function UniswapClon() {
                   ? "Confirmando..."
                   : quoteLoading
                     ? "Buscando mejor precio..."
-                    : !canSwap ||
-                        !quoteOut ||
-                        quoteOut === 0n
-                      ? "Sin liquidez disponible"
-                      : `Swap ${amount || "0"} ETH → ${quoteOut ? formatUnits(quoteOut, USDC_TOKEN.decimals) : "0"} USDC`}
+                    : canSwap && quoteOut && quoteOut > 0n
+                      ? `Swap ${amount || "0"} ETH → ${formatUnits(quoteOut, USDC_TOKEN.decimals)} USDC`
+                      : "Sin liquidez disponible"
+          }
         </Button>
         {/* Estados visuales */}
         {approvalPending && (

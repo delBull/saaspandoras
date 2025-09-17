@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { FieldError } from "react-hook-form";
+import type { FieldError } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -41,9 +41,9 @@ interface Project {
   yieldSource?: string | null;
   lockupPeriod?: string | null;
   fundUsage?: string | null;
-  teamMembers?: unknown | null;
-  advisors?: unknown | null;
-  tokenDistribution?: unknown | null;
+  teamMembers?: unknown;
+  advisors?: unknown;
+  tokenDistribution?: unknown;
   contractAddress?: string | null;
   treasuryAddress?: string | null;
   legalStatus?: string | null;
@@ -229,8 +229,8 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       fundUsage: project?.fundUsage ?? undefined,
       
       // Sección 4
-      teamMembers: project?.teamMembers ? (JSON.parse(String(project.teamMembers)) as any[]) : [], // Parsear si viene de DB
-      advisors: project?.advisors ? (JSON.parse(String(project.advisors)) as any[]) : [], // Parsear si viene de DB
+      teamMembers: project?.teamMembers ? (JSON.parse(String(project.teamMembers)) as { name: string; position: string; linkedin?: string }[]) : [], // Parsear si viene de DB
+      advisors: project?.advisors ? (JSON.parse(String(project.advisors)) as { name: string; profile: string }[]) : [], // Parsear si viene de DB
       tokenDistribution: project?.tokenDistribution ? (JSON.parse(String(project.tokenDistribution)) as Record<string, number>) : { publicSale: 0, team: 0, treasury: 0, marketing: 0 }, // Parsear si viene de DB
       contractAddress: project?.contractAddress ?? undefined,
       treasuryAddress: project?.treasuryAddress ?? undefined,
@@ -348,8 +348,8 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
 
     const submitData = {
       ...data,
-      teamMembers: JSON.stringify(data.teamMembers || []),
-      advisors: JSON.stringify(data.advisors || []),
+      teamMembers: JSON.stringify(data.teamMembers ?? []),
+      advisors: JSON.stringify(data.advisors ?? []),
       tokenDistribution: JSON.stringify(finalDistribution),
     };
 
@@ -361,9 +361,9 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Error del servidor (400):", (errorData as any).errors); // Loguea el error real
-        throw new Error((errorData as any).message || "Error al guardar el proyecto");
+        const errorData: { message?: string, errors?: unknown } = await response.json();
+        console.error("Error del servidor (400):", errorData.errors); // Loguea el error real
+        throw new Error(errorData.message ?? "Error al guardar el proyecto");
       }
 
       await response.json();
@@ -404,8 +404,8 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
 
     const preparedData = {
       ...data,
-      teamMembers: JSON.stringify(data.teamMembers || []),
-      advisors: JSON.stringify(data.advisors || []),
+      teamMembers: JSON.stringify(data.teamMembers ?? []),
+      advisors: JSON.stringify(data.advisors ?? []),
       tokenDistribution: JSON.stringify(finalDistribution),
     };
 
@@ -417,9 +417,9 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData: { message?: string, errors?: unknown } = await response.json();
         console.error(`Error del servidor (${response.status}):`, errorData); // Loguea el error real y completo
-        throw new Error((errorData as any).message || "Error al guardar el proyecto");
+        throw new Error(errorData.message ?? "Error al guardar el proyecto");
       }
 
       toast.success("Proyecto creado y publicado rápidamente!");

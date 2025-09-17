@@ -334,7 +334,7 @@ export default function UniswapClon() {
               Saldo:{" "}
               {isBalanceLoading
                 ? "..."
-                : (ethBalance?.displayValue ?? "0.0")}{" "}
+                : String(ethBalance?.displayValue ?? "0.0")}{" "}
               ETH
             </p>
             <Button
@@ -365,11 +365,8 @@ export default function UniswapClon() {
                 quoteLoading
                   ? ""
                   : quoteOut && quoteOut > 0n
-                    ? formatUnits(
-                        quoteOut,
-                        USDC_TOKEN.decimals,
-                      )
-                    : ""
+                    ? formatUnits(quoteOut, USDC_TOKEN.decimals)
+                    : "0"
               }
               className="flex-1 bg-gray-50"
               disabled
@@ -391,34 +388,31 @@ export default function UniswapClon() {
           )}
         </div>
         {/* Swap summary */}
-        {quote &&
-          quoteOut &&
-          amountInWei &&
-          quoteOut > 0n && (
-            <div className="text-xs text-gray-600 space-y-1 p-3 bg-gray-50 rounded">
-              <div>
-                <strong>Protocolo:</strong> thirdweb
-                Universal Bridge
-              </div>
-              <div>
-                <strong>Protección slippage:</strong>{" "}
-                automático
-              </div>
-              <div className="text-blue-600">
-                <strong>Rate:</strong> 1 ETH ≈{" "}
-                {(() => {
-                  try {
-                    const ethAmount = Number(formatUnits(amountInWei ?? 0n, ETH_TOKEN.decimals));
-                    const usdcAmount = Number(formatUnits(quoteOut ?? 0n, USDC_TOKEN.decimals));
-                    return ethAmount > 0 ? (usdcAmount / ethAmount).toFixed(2) : "-";
-                  } catch {
-                    return "-";
-                  }
-                })()}{" "}
-                USDC
-              </div>
+        {Boolean(quote && quoteOut && amountInWei && quoteOut > 0n) && (
+          <div className="text-xs text-gray-600 space-y-1 p-3 bg-gray-50 rounded">
+            <div>
+              <strong>Protocolo:</strong> thirdweb
+              Universal Bridge
             </div>
-          )}
+            <div>
+              <strong>Protección slippage:</strong>{" "}
+              automático
+            </div>
+            <div className="text-blue-600">
+              <strong>Rate:</strong> 1 ETH ≈{" "}
+              {(() => {
+                try {
+                  const ethAmount = Number(formatUnits(amountInWei ?? 0n, ETH_TOKEN.decimals));
+                  const usdcAmount = Number(formatUnits(quoteOut ?? 0n, USDC_TOKEN.decimals));
+                  return ethAmount > 0 ? String((usdcAmount / ethAmount).toFixed(2)) : "-";
+                } catch {
+                  return "-";
+                }
+              })()}{" "}
+              USDC
+            </div>
+          </div>
+        )}
         <Button
           onClick={handleSwap}
           disabled={!canSwap || swapping || quoteLoading}
@@ -426,7 +420,7 @@ export default function UniswapClon() {
           size="lg"
           variant={canSwap ? "default" : "secondary"}
         >
-          {approvalPending
+          {(approvalPending
             ? "1. Firma el approval en tu wallet…"
             : approvalDone && !swapDone
               ? "2. Firma el swap ETH→USDC…"
@@ -436,11 +430,10 @@ export default function UniswapClon() {
                   ? "Confirmando..."
                   : quoteLoading
                     ? "Buscando mejor precio..."
-                    : !canSwap ||
-                        !quoteOut ||
-                        quoteOut === 0n
-                      ? "Sin liquidez disponible"
-                      : `Swap ${amount || "0"} ETH → ${quoteOut ? formatUnits(quoteOut, USDC_TOKEN.decimals) : "0"} USDC`}
+                    : canSwap && quoteOut
+                      ? `Swap ${amount || "0"} ETH → ${formatUnits(quoteOut, USDC_TOKEN.decimals)} USDC`
+                      : "Sin liquidez disponible"
+          )}
         </Button>
         {/* Estados visuales */}
         {approvalPending && (

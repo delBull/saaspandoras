@@ -8,7 +8,7 @@ import slugify from "slugify";
 
 export async function POST(request: Request) {
   const headersList = await headers();
-  const { session } = await getAuth(headersList);
+  const { session } = getAuth(headersList);
   const userIsAdmin = isAdmin(session?.userId);
 
   if (!userIsAdmin) {
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = await request.json();
+    const body: unknown = await request.json();
     // Los admins pueden tener un schema menos estricto si es necesario,
     // pero por ahora usamos el mismo para consistencia.
     const parsedData = projectApiSchema.safeParse(body);

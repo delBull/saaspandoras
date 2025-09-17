@@ -6,7 +6,7 @@ import slugify from "slugify";
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body: unknown = await request.json();
     const parsedData = projectApiSchema.safeParse(body);
 
     if (!parsedData.success) {
