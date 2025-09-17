@@ -320,7 +320,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       6: { isMintable: true, isMutable: true, updateAuthorityAddress: true },
       7: { applicantName: true, applicantPosition: true, applicantEmail: true, applicantPhone: true, verificationAgreement: true },
     };
-    return fieldMap[step] || {};
+    return fieldMap[step] ?? {};
   };
 
   // --- AÑADIDO: Manejador de errores de validación ---
@@ -361,7 +361,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       });
 
       if (!response.ok) {
-        const errorData: { message?: string, errors?: unknown } = await response.json();
+        const errorData = await response.json() as { message?: string, errors?: unknown };
         console.error("Error del servidor (400):", errorData.errors); // Loguea el error real
         throw new Error(errorData.message ?? "Error al guardar el proyecto");
       }
@@ -417,7 +417,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       });
 
       if (!response.ok) {
-        const errorData: { message?: string, errors?: unknown } = await response.json();
+        const errorData = await response.json() as { message?: string, errors?: unknown };
         console.error(`Error del servidor (${response.status}):`, errorData); // Loguea el error real y completo
         throw new Error(errorData.message ?? "Error al guardar el proyecto");
       }
