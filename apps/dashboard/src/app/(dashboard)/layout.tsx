@@ -11,7 +11,7 @@ export default async function DashboardLayout({
 }) {
 
   const headersList = await headers();
-  const { session } = await getAuth(headersList);
+  const { session } = getAuth(headersList);
   const userIsAdmin = await isAdmin(session?.userId);
   const userIsSuperAdmin = session?.userId?.toLowerCase() === SUPER_ADMIN_WALLET;
 
