@@ -12,7 +12,7 @@ const addAdminSchema = z.object({
 
 export async function GET() {
   const headersList = await headers();
-  const { session } = getAuth(headersList);
+  const { session } = await getAuth(headersList);
 
   if (!await isAdmin(session?.userId)) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
@@ -29,7 +29,7 @@ export async function GET() {
  */
 export async function POST(request: Request) {
   const headersList = await headers();
-  const { session } = getAuth(headersList);
+  const { session } = await getAuth(headersList);
 
   if (session?.userId?.toLowerCase() !== SUPER_ADMIN_WALLET) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });

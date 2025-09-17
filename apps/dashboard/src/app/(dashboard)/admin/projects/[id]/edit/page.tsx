@@ -7,12 +7,10 @@ import { isAdmin, getAuth } from "@/lib/auth";
 import { MultiStepForm } from "./multi-step-form";
 
 // Properly type the async params for Next.js 15
-export default async function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function ProjectPage({ params }: { params: { id: string } }) {
+  const { id } = params;
 
-  // 1. getAuth no es asíncrono, por lo que no necesita 'await'.
-  const headersList = await headers();
-  const { session } = getAuth(headersList);
+  const { session } = await getAuth();
 
   if (!await isAdmin(session?.userId)) notFound();
 
