@@ -1,13 +1,13 @@
 import { z } from "zod";
 
 // Helper para parsear JSON de forma segura desde un string
-const safeJsonParse = (val: unknown) => {
+const safeJsonParse = (val: unknown): unknown => {
   if (typeof val !== "string") {
     // Si ya es un objeto (ej. en pruebas), lo dejamos pasar.
     return val;
   }
   try {
-    return JSON.parse(val);
+    return JSON.parse(val) as unknown;
   } catch (e) {
     // Si el parseo falla, Zod se encargará del error.
     return val;
@@ -56,15 +56,15 @@ export const projectApiSchema = z.object({
 
   // Sección 4 (Campos que vienen como JSON string)
   teamMembers: z.preprocess(
-    safeJsonParse(["teamMembers"]),
+    safeJsonParse,
     z.array(z.object({ name: z.string().min(1), position: z.string().min(1), linkedin: z.string().url().optional().or(z.literal("")) })).optional()
   ),
   advisors: z.preprocess(
-    safeJsonParse(["advisors"]),
+    safeJsonParse,
     z.array(z.object({ name: z.string().min(1), profile: z.string().optional() })).optional()
   ),
   tokenDistribution: z.preprocess(
-    safeJsonParse(["tokenDistribution"]),
+    safeJsonParse,
     z.object({
         publicSale: z.coerce.number().min(0).max(100).optional(),
         team: z.coerce.number().min(0).max(100).optional(),

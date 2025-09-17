@@ -34,18 +34,20 @@ const Checkbox = ({ id, checked, onChange, className = "", children }: {
   className?: string;
   children: React.ReactNode;
 }) => (
-  <label className={`flex items-start gap-3 cursor-pointer p-3 bg-zinc-800/50 rounded-lg border border-zinc-700 hover:border-zinc-600 ${className}`}>
+  <div className={`flex items-start gap-3 p-3 bg-zinc-800/50 rounded-lg border border-zinc-700 hover:border-zinc-600 ${className}`}>
     <input
       id={id}
       type="checkbox"
       checked={checked}
       onChange={(e) => onChange(e.target.checked)}
-      className="rounded border-zinc-600 text-lime-500 focus:ring-lime-500 mt-0.5 w-4 h-4"
+      className="rounded border-zinc-600 text-lime-500 focus:ring-lime-500 mt-0.5 w-4 h-4 cursor-pointer"
     />
     <div className="flex-1">
-      <span className="text-sm text-white block">{children}</span>
+      <label htmlFor={id} className="text-sm text-white block cursor-pointer">
+        {children}
+      </label>
     </div>
-  </label>
+  </div>
 );
 
 const Label = ({ htmlFor, children, required = false, className = "" }: {
