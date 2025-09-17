@@ -55,17 +55,36 @@ export function getAuth(headers?: MinimalHeaders) {
     }
   }
 
-  // Método 2: Intentar desde headers de Thirdweb (producción - X-Thirdweb-Address)
+  // Método 2: Intentar desde headers de Thirdweb (producción)
   if (!userAddress) {
-    const thirdwebAddress = headers?.get('x-thirdweb-address');
-    const walletAddress = headers?.get('wallet-address');
-    console.log('📡 getAuth: Checking headers - x-thirdweb-address:', thirdwebAddress, 'wallet-address:', walletAddress);
+    // Headers comunes que Thirdweb podría usar
+    const headerSources = {
+      'x-thirdweb-address': headers?.get('x-thirdweb-address'),
+      'wallet-address': headers?.get('wallet-address'),
+      'x-wallet-address': headers?.get('x-wallet-address'),
+      'account': headers?.get('account'),
+      'address': headers?.get('address'),
+    };
 
-    userAddress = thirdwebAddress ?? walletAddress ?? null;
+    // Mostrar todos los posibles headers
+    console.log('📡 getAuth: Available headers:', Object.entries(headerSources).filter(([key, value]) => value).map(([key, value]) => `${key}: ${value}`));
+
+    // Intentar encontrar una dirección en cualquier header
+    userAddress = headerSources['x-thirdweb-address'] ??
+                  headerSources['wallet-address'] ??
+                  headerSources['x-wallet-address'] ??
+                  headerSources['account'] ??
+                  headerSources['address'] ??
+                  null;
 
     if (userAddress) {
       userAddress = userAddress.toLowerCase();
-      console.log('✅ getAuth: Address from headers:', userAddress);
+      console.log('✅ getAuth: Address found in headers:', userAddress);
+
+      // Verificar si es la SUPER_ADMIN
+      if (userAddress === SUPER_ADMIN_WALLET) {
+        console.log('🎯 getAuth: SUPER_ADMIN wallet detected!');
+      }
     }
   }
 
