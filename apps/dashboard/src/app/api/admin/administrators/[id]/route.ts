@@ -7,7 +7,8 @@ import { eq } from "drizzle-orm";
 import { getAuth } from "@/lib/auth";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const contextParams = await params;
   const headersList = await headers();
   const { session } = getAuth(headersList);
 
@@ -15,7 +16,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
   }
 
-  const adminId = parseInt(params.id, 10);
+  const adminId = parseInt(contextParams.id, 10);
   if (isNaN(adminId)) {
     return NextResponse.json({ message: "ID inválido" }, { status: 400 });
   }
