@@ -69,11 +69,10 @@ export function getAuth(headers?: MinimalHeaders) {
     }
   }
 
-  // Método 3: TEMPORARIO - Forzar SUPER_ADMIN en producción para probar
-  if (!userAddress) {
-    console.log('⚠️ getAuth: No address found, trying fallback...');
+  // Método 3: SOLO fallback para desarrollo - JAMÁS permitir en producción
+  if (!userAddress && process.env.NODE_ENV === 'development') {
+    console.log('⚠️ getAuth: Development mode - using SUPER_ADMIN fallback');
     userAddress = SUPER_ADMIN_WALLET;
-    console.log('🏁 getAuth: Using fallback SUPER_ADMIN_WALLET:', userAddress);
   }
 
   // Si aún no tenemos dirección, no hay sesión
