@@ -16,7 +16,7 @@
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": [
     "node_modules",
-    "src/components/uniswap_buy(tofix).tsx",
+    "src/components/uniswap_buy-tofix.tsx",
     "src/components/uniswapclon.tsx"
   ]
 }
