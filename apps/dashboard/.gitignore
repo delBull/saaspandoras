@@ -19,4 +19,4 @@ ignition/deployments/chain-31337
 
 # Exclude WIP Uniswap components (to bypass Vercel build issues)
 src/components/uniswapclon.tsx
-src/components/uniswap_buy(tofix).tsx
+src/components/uniswap_buy-tofix.tsx
