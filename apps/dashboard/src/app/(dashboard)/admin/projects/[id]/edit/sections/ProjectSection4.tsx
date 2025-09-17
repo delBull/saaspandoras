@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormContext, useFieldArray, UseFormReturn } from "react-hook-form";
+import { useFormContext, useFieldArray, type UseFormReturn } from "react-hook-form";
 import type { FullProjectFormData } from "../multi-step-form";
 import { toast } from "sonner";
 import {
@@ -183,7 +183,7 @@ const DistributionInput = ({ label, value, onChange, total, className = "" }: {
     <div className="w-full bg-zinc-800 rounded-full h-1.5 mt-1">
       <div
         className="bg-lime-500 h-1.5 rounded-full transition-all"
-        style={{ width: `${value || 0}%` }}
+        style={{ width: `${value ?? 0}%` }}
       ></div>
     </div>
     <p className="text-xs text-gray-500 mt-1">

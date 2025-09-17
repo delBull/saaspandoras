@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { FieldError } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -228,9 +229,9 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       fundUsage: project?.fundUsage ?? undefined,
       
       // Sección 4
-      teamMembers: project?.teamMembers ? JSON.parse(project.teamMembers as string) : [], // Parsear si viene de DB
-      advisors: project?.advisors ? JSON.parse(project.advisors as string) : [], // Parsear si viene de DB
-      tokenDistribution: project?.tokenDistribution ? JSON.parse(project.tokenDistribution as string) : { publicSale: 0, team: 0, treasury: 0, marketing: 0 }, // Parsear si viene de DB
+      teamMembers: project?.teamMembers ? (JSON.parse(String(project.teamMembers)) as any[]) : [], // Parsear si viene de DB
+      advisors: project?.advisors ? (JSON.parse(String(project.advisors)) as any[]) : [], // Parsear si viene de DB
+      tokenDistribution: project?.tokenDistribution ? (JSON.parse(String(project.tokenDistribution)) as Record<string, number>) : { publicSale: 0, team: 0, treasury: 0, marketing: 0 }, // Parsear si viene de DB
       contractAddress: project?.contractAddress ?? undefined,
       treasuryAddress: project?.treasuryAddress ?? undefined,
       
@@ -254,6 +255,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
     },
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { handleSubmit, watch, setValue, formState: { errors }, trigger } = methods;
 
   // Cargar progreso desde localStorage
@@ -323,13 +325,15 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
 
   // --- AÑADIDO: Manejador de errores de validación ---
   // Esta función se ejecutará si handleSubmit encuentra errores en el formulario.
-  const onValidationErrors = (formErrors: Record<string, any>) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const onValidationErrors = (formErrors: Record<string, FieldError>) => {
     console.error("Errores de validación del formulario:", formErrors);
     const errorFields = Object.keys(formErrors).join(", ");
     toast.error(`Hay errores en el formulario. Revisa los campos: ${errorFields}`);
   };
   // --- FIN DEL BLOQUE AÑADIDO ---
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const onFinalSubmit = async (data: FullProjectFormData) => {
     setIsLoading(true);
     
@@ -358,8 +362,8 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("Error del servidor (400):", errorData.errors); // Loguea el error real
-        throw new Error(errorData.message || "Error al guardar el proyecto");
+        console.error("Error del servidor (400):", (errorData as any).errors); // Loguea el error real
+        throw new Error((errorData as any).message || "Error al guardar el proyecto");
       }
 
       await response.json();
@@ -376,8 +380,9 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
         router.push("/admin/dashboard");
       }
       router.refresh();
-    } catch (error: any) {
-      toast.error(error.message || "Ocurrió un error al guardar el proyecto");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Ocurrió un error al guardar el proyecto";
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
@@ -414,7 +419,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       if (!response.ok) {
         const errorData = await response.json();
         console.error(`Error del servidor (${response.status}):`, errorData); // Loguea el error real y completo
-        throw new Error(errorData.message || "Error al guardar el proyecto");
+        throw new Error((errorData as any).message || "Error al guardar el proyecto");
       }
 
       toast.success("Proyecto creado y publicado rápidamente!");
@@ -426,8 +431,9 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       
       router.push("/admin/dashboard");
       router.refresh();
-    } catch (error: any) {
-      toast.error(error.message || "Ocurrió un error");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Ocurrió un error";
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }

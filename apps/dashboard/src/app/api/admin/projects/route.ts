@@ -50,19 +50,19 @@ export async function POST(request: Request) {
         title: data.title,
         description: data.description,
         slug: slug,
-        tagline: data.tagline || null,
-        businessCategory: data.businessCategory || 'other',
-        logoUrl: data.logoUrl || null,
-        coverPhotoUrl: data.coverPhotoUrl || null,
-        videoPitch: data.videoPitch || null,
+        tagline: data.tagline ?? null,
+        businessCategory: data.businessCategory ?? 'other',
+        logoUrl: data.logoUrl ?? null,
+        coverPhotoUrl: data.coverPhotoUrl ?? null,
+        videoPitch: data.videoPitch ?? null,
 
         // --- Sección 2: Strings ---
-        website: data.website || null,
-        whitepaperUrl: data.whitepaperUrl || null,
-        twitterUrl: data.twitterUrl || null,
-        discordUrl: data.discordUrl || null,
-        telegramUrl: data.telegramUrl || null,
-        linkedinUrl: data.linkedinUrl || null,
+        website: data.website ?? null,
+        whitepaperUrl: data.whitepaperUrl ?? null,
+        twitterUrl: data.twitterUrl ?? null,
+        discordUrl: data.discordUrl ?? null,
+        telegramUrl: data.telegramUrl ?? null,
+        linkedinUrl: data.linkedinUrl ?? null,
 
         // --- Sección 3: ¡LA CLAVE! Híbrido de Números y Strings ---
         
@@ -76,35 +76,35 @@ export async function POST(request: Request) {
         tokensOffered: data.tokensOffered ?? null, // Dejar como número
 
         // Campos VARCHAR/TEXT -> van como STRING
-        tokenType: data.tokenType || 'erc20',
-        estimatedApy: data.estimatedApy || null,
-        yieldSource: data.yieldSource || 'other',
-        lockupPeriod: data.lockupPeriod || null,
-        fundUsage: data.fundUsage || null,
+        tokenType: data.tokenType ?? 'erc20',
+        estimatedApy: data.estimatedApy ?? null,
+        yieldSource: data.yieldSource ?? 'other',
+        lockupPeriod: data.lockupPeriod ?? null,
+        fundUsage: data.fundUsage ?? null,
 
         // --- Sección 4: JSONB (como Objetos/Arrays) y Strings ---
         teamMembers: data.teamMembers ?? [], // Como Array
         advisors: data.advisors ?? [], // Como Array
         tokenDistribution: data.tokenDistribution ?? {}, // Como Objeto
-        contractAddress: data.contractAddress || null,
-        treasuryAddress: data.treasuryAddress || null,
+        contractAddress: data.contractAddress ?? null,
+        treasuryAddress: data.treasuryAddress ?? null,
 
         // --- Sección 5: Strings / Text ---
-        legalStatus: data.legalStatus || null,
-        valuationDocumentUrl: data.valuationDocumentUrl || null,
-        fiduciaryEntity: data.fiduciaryEntity || null,
-        dueDiligenceReportUrl: data.dueDiligenceReportUrl || null,
+        legalStatus: data.legalStatus ?? null,
+        valuationDocumentUrl: data.valuationDocumentUrl ?? null,
+        fiduciaryEntity: data.fiduciaryEntity ?? null,
+        dueDiligenceReportUrl: data.dueDiligenceReportUrl ?? null,
 
         // --- Sección 6: Booleans ---
-        isMintable: data.isMintable || false,
-        isMutable: data.isMutable || false,
-        updateAuthorityAddress: data.updateAuthorityAddress || null,
+        isMintable: data.isMintable ?? false,
+        isMutable: data.isMutable ?? false,
+        updateAuthorityAddress: data.updateAuthorityAddress ?? null,
 
         // --- Sección 7: Strings y Booleans ---
-        applicantName: data.applicantName || null,
-        applicantPosition: data.applicantPosition || null,
-        applicantEmail: data.applicantEmail || null,
-        applicantPhone: data.applicantPhone || null,
+        applicantName: data.applicantName ?? null,
+        applicantPosition: data.applicantPosition ?? null,
+        applicantEmail: data.applicantEmail ?? null,
+        applicantPhone: data.applicantPhone ?? null,
         verificationAgreement: data.verificationAgreement,
 
         // --- Campo de Estado: String (Enum) ---
