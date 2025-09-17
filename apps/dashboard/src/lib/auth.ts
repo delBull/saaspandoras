@@ -1,8 +1,12 @@
 import { db } from "~/db";
 import { administrators } from "~/db/schema";
 import { eq } from "drizzle-orm";
-
 import { SUPER_ADMIN_WALLET } from "./constants";
+
+interface MinimalHeaders {
+  get(name: string): string | null;
+}
+// ------------------------------------------
 
 export async function isAdmin(address: string | null | undefined): Promise<boolean> {
   if (!address) {
@@ -28,13 +32,14 @@ export async function isAdmin(address: string | null | undefined): Promise<boole
   return !!adminRecord;
 }
 
-export function getAuth(headers?: Headers) {
+export function getAuth(headers?: MinimalHeaders) { 
   let userAddress: string | null = null;
 
   // Método 1: Intentar desde cookies (desarrollo)
   const cookieString = headers?.get('cookie');
   if (cookieString) {
-    const thirdwebCookie = cookieString.split(';').find(c => c.trim().startsWith('thirdweb') || c.includes('wallet'));
+    
+    const thirdwebCookie = cookieString.split(';').find((c: string) => c.trim().startsWith('thirdweb') || c.includes('wallet'));
     if (thirdwebCookie) {
       const match = thirdwebCookie.match(/address=([^;]+)/);
       if (match?.[1]) {

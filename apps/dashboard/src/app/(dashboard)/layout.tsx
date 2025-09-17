@@ -1,4 +1,4 @@
-// ¡SIN 'use client'! Este es un Server Component.
+
 import { headers } from "next/headers";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
@@ -11,7 +11,7 @@ export default async function DashboardLayout({
 }) {
 
   const headersList = await headers();
-  const { session } = getAuth(headersList);
+  const { session } = await getAuth(headersList);
   const userIsAdmin = await isAdmin(session?.userId);
   const userIsSuperAdmin = session?.userId?.toLowerCase() === SUPER_ADMIN_WALLET;
 

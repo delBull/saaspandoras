@@ -7,8 +7,7 @@ import { getAuth, isAdmin } from "@/lib/auth";
 import slugify from "slugify";
 
 export async function POST(request: Request) {
-  const headersList = await headers();
-  const { session } = getAuth(headersList);
+  const { session } = await getAuth();
   const userIsAdmin = await isAdmin(session?.userId);
 
   if (!userIsAdmin) {
