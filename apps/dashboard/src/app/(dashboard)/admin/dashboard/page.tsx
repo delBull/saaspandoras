@@ -27,7 +27,7 @@ const MOCK_SWAPS = [
 
 export default async function AdminDashboardPage() {
   const headersList = await headers();
-  const { session } = await getAuth(headersList);
+  const { session } = getAuth(headersList);
   const userIsAdmin = isAdmin(session?.userId);
 
   if (!userIsAdmin) {

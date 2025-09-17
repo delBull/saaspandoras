@@ -1,7 +1,7 @@
 "use client";
 
 import { useFormContext } from "react-hook-form";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import type { FullProjectFormData } from "../multi-step-form";
 import { toast } from "sonner";
 import {

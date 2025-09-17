@@ -15,7 +15,7 @@ export default async function ProjectPage({ params }: ProjectPageParams) {
   const { id } = await params;
 
   const headersList = await headers();
-  const { session } = await getAuth(headersList);
+  const { session } = getAuth(headersList);
 
   if (!isAdmin(session?.userId)) notFound();
 

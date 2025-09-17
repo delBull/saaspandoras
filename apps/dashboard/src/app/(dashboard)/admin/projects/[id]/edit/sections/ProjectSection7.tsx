@@ -34,7 +34,7 @@ const Checkbox = ({ id, checked, onChange, className = "", children }: {
   className?: string;
   children: React.ReactNode;
 }) => (
-  <label htmlFor={id} className={`flex items-start gap-3 cursor-pointer p-3 bg-zinc-800/50 rounded-lg border border-zinc-700 hover:border-zinc-600 ${className}`}>
+  <label className={`flex items-start gap-3 cursor-pointer p-3 bg-zinc-800/50 rounded-lg border border-zinc-700 hover:border-zinc-600 ${className}`}>
     <input
       id={id}
       type="checkbox"
@@ -91,7 +91,7 @@ export function ProjectSection7() {
 
   const isValidPhone = (phone: string) => {
     // Basic phone validation (allow international formats)
-    return /^[\+]?[1-9][\d]{0,15}$/.test(phone.replace(/\s/g, ''));
+    return /^[+]?[1-9][\d]{0,15}$/.test(phone.replace(/\s/g, ''));
   };
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
