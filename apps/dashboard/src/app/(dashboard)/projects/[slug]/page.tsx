@@ -37,8 +37,8 @@ function safeJsonParse<T>(jsonString: string | null | undefined, defaultValue: T
   }
 }
 
-export default async function ProjectPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+export default async function ProjectPage({ params }: { params: { slug: string } }) {
+  const { slug } = params;
 
   const project = await getProjectData(slug);
 

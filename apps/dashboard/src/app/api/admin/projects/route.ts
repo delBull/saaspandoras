@@ -9,7 +9,7 @@ import slugify from "slugify";
 export async function POST(request: Request) {
   const headersList = await headers();
   const { session } = getAuth(headersList);
-  const userIsAdmin = isAdmin(session?.userId);
+  const userIsAdmin = await isAdmin(session?.userId);
 
   if (!userIsAdmin) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });

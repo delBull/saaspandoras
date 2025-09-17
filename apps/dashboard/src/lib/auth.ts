@@ -1,40 +1,51 @@
-const adminWallets = [
-  "0x00c9f7EE6d1808C09B61E561Af6c787060BFE7C9".toLowerCase(),
-];
+import { db } from "~/db";
+import { administrators } from "~/db/schema";
+import { eq } from "drizzle-orm";
 
-export function isAdmin(address: string | undefined): boolean {
+import { SUPER_ADMIN_WALLET } from "./constants";
+
+export async function isAdmin(address: string | null | undefined): Promise<boolean> {
   if (!address) {
     return false;
   }
-  return adminWallets.includes(address.toLowerCase());
+  const lowerCaseAddress = address.toLowerCase();
+
+  // El Super Admin siempre tiene acceso.
+  if (lowerCaseAddress === SUPER_ADMIN_WALLET) {
+    return true;
+  }
+
+  // Consultar la base de datos para otros administradores.
+  const adminRecord = await db.query.administrators.findFirst({
+    where: eq(administrators.walletAddress, lowerCaseAddress),
+  });
+
+  return !!adminRecord;
 }
 
 export function getAuth(headers?: Headers) {
   // Intenta obtener wallet de Thirdweb desde cookies (si el frontend la guarda)
   let userAddress: string | null = null;
   
-  const cookies = headers?.get('cookie');
-  if (cookies) {
-    const thirdwebCookie = cookies.split(';').find(cookie =>
-      cookie.trim().startsWith('thirdweb') ||
-      cookie.trim().includes('wallet')
-    );
-    if (thirdwebCookie) {
-      // Extrae address del cookie (simplificado - en producción parsear correctamente)
-      try {
-        const match = thirdwebCookie.match(/address=([^;]+)/);
-        if (match?.[1]) {
-          userAddress = match[1].toLowerCase();
+  const cookieString = headers?.get('cookie');
+  if (cookieString) {
+    const thirdwebAuthCookie = cookieString.split(';').find(c => c.trim().startsWith('thirdweb_auth_token='));
+    if (thirdwebAuthCookie) {
+      const token = thirdwebAuthCookie.split('=')[1];
+      if (token) {
+        try {
+          // Decodificar el JWT (sin verificar la firma, solo para obtener el payload)
+          const payloadBase64 = token.split('.')[1];
+          if (payloadBase64) {
+            const payloadJson = Buffer.from(payloadBase64, 'base64').toString('utf-8');
+            const payload = JSON.parse(payloadJson) as { sub?: string };
+            userAddress = payload.sub ?? null;
+          }
+        } catch (e) {
+          console.warn('Could not decode thirdweb auth token:', e);
         }
-      } catch (e) {
-        console.warn('Error parsing Thirdweb cookie:', e);
       }
     }
-  }
-  
-  // Fallback a admin wallet para desarrollo (puedes remover esto en producción)
-  if (!userAddress) {
-    userAddress = "0x00c9f7EE6d1808C09B61E561Af6c787060BFE7C9";
   }
   
   return {
