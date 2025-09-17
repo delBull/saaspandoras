@@ -48,6 +48,13 @@ export function getAuth(headers?: Headers) {
     }
   }
   
+  // --- SOLUCIÓN: Fallback de Desarrollo ---
+  // Si no se encuentra una sesión en las cookies y estamos en desarrollo,
+  // se asume la wallet del Super Admin para facilitar las pruebas.
+  if (!userAddress && process.env.NODE_ENV === 'development') {
+    userAddress = SUPER_ADMIN_WALLET;
+  }
+  
   return {
     session: {
       userId: userAddress,

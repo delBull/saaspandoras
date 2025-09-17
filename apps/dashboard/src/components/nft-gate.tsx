@@ -90,14 +90,22 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
           setShowSuccessAnimation(true);
         },
         onError: (error) => {
-          console.error("Fallo al mintear Pandora's Key", error);
-          toast({
-            title: "Fallo en el Minteo",
-            description: "Hubo un error al mintear tu llave de acceso. Por favor, intenta de nuevo.",
-            variant: "destructive",
-          });
-          setGateStatus("error");
-          // hasStartedProcessing se resetea en el onClose del modal para permitir reintentos.
+          // --- SOLUCIÓN: Manejar el error "Max per wallet reached" como un éxito ---
+          if (error.message.includes("Max per wallet reached")) {
+            // Este "error" en realidad significa que el usuario ya tiene la llave.
+            // Lo tratamos como un éxito para la experiencia de usuario.
+            setGateStatus("success");
+            setShowSuccessAnimation(true);
+          } else {
+            // Para cualquier otro error, mostramos el mensaje de fallo.
+            console.error("Fallo al mintear Pandora's Key", error);
+            toast({
+              title: "Fallo en el Minteo",
+              description: "Hubo un error al mintear tu llave de acceso. Por favor, intenta de nuevo.",
+              variant: "destructive",
+            });
+            setGateStatus("error");
+          }
         },
       });
     }
