@@ -9,13 +9,12 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // 1. Obtenemos la autenticación y autorización en el servidor.
+
   const headersList = await headers();
   const { session } = getAuth(headersList);
   const userIsAdmin = await isAdmin(session?.userId);
   const userIsSuperAdmin = session?.userId?.toLowerCase() === SUPER_ADMIN_WALLET;
 
-  // 2. Pasamos los valores booleanos resueltos al wrapper de cliente.
   return (
     <DashboardClientWrapper isAdmin={userIsAdmin} isSuperAdmin={userIsSuperAdmin}>
       {children}
