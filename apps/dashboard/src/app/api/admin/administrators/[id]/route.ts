@@ -10,7 +10,7 @@ import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const contextParams = await params;
   const headersList = await headers();
-  const { session } = getAuth(await headersList);
+  const { session } = getAuth(headersList);
 
   if (session?.userId?.toLowerCase() !== SUPER_ADMIN_WALLET) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
