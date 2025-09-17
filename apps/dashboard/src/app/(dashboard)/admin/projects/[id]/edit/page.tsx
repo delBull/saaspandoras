@@ -6,10 +6,14 @@ import { projects as projectsSchema } from "~/db/schema";
 import { eq } from "drizzle-orm";
 import { isAdmin, getAuth } from "@/lib/auth";
 
-export default async function EditProjectPage({
-  params,
-}: { params: { id: string } }) {
-  const { id } = params;
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
+
+export default async function EditProjectPage({ params }: PageProps) {
+  // ✅ En Next 15 params es una Promise
+  const { id } = await params;
+
   const headersList = await headers();
   const { session } = await getAuth(headersList);
 
