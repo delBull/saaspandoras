@@ -33,6 +33,14 @@ export const yieldSourceEnum = pgEnum("yield_source", [
   "other", // Otro
 ]);
 
+export const administrators = pgTable("administrators", {
+  id: serial("id").primaryKey(),
+  walletAddress: varchar("wallet_address", { length: 42 }).notNull().unique(),
+  role: varchar("role", { length: 50 }).default('admin').notNull(),
+  addedBy: varchar("added_by", { length: 42 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const businessCategoryEnum = pgEnum("business_category", [
   "residential_real_estate", // Bienes Raíces Residencial
   "commercial_real_estate", // Bienes Raíces Comercial

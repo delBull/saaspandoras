@@ -7,17 +7,18 @@ import { motion, AnimatePresence } from "framer-motion";
 import { HomeIcon, ArrowPathIcon, BanknotesIcon, ChevronLeftIcon, ChevronRightIcon, XMarkIcon, UserGroupIcon, ShieldCheckIcon, ArrowLeftOnRectangleIcon, ChevronDoubleRightIcon, ChartPieIcon } from "@heroicons/react/24/outline";
 import { cn } from "@saasfly/ui";
 import { useActiveAccount, useDisconnect, useActiveWallet, useConnectModal } from "thirdweb/react";
-import { createWallet, inAppWallet } from "thirdweb/wallets";
-import { isAdmin } from "@/lib/auth";
+import { createWallet, inAppWallet } from "thirdweb/wallets"; 
 import { config } from "@/config";
 import { client } from "@/lib/thirdweb-client";
 
 interface SidebarProps {
   wallet?: string;
   userName?: string;
+  isAdmin: boolean;
+  isSuperAdmin: boolean;
 }
 
-export function Sidebar({ wallet: walletProp, userName }: SidebarProps) {
+export function Sidebar({ wallet: walletProp, userName, isAdmin, isSuperAdmin }: SidebarProps) {
   const [isClient, setIsClient] = useState(false);
   useEffect(() => { setIsClient(true); }, []);
 
@@ -28,7 +29,6 @@ export function Sidebar({ wallet: walletProp, userName }: SidebarProps) {
   const wallet = useActiveWallet();
   const { connect, isConnecting } = useConnectModal();
   const { disconnect } = useDisconnect();
-  const userIsAdmin = isAdmin(account?.address);
 
   const links = useMemo( () => [ { 
     label: "Overview", 
@@ -61,15 +61,14 @@ export function Sidebar({ wallet: walletProp, userName }: SidebarProps) {
     disabled: true,
   },
   // Enlace condicional para el admin
-  ...(userIsAdmin ? [{
+  ...(isAdmin ? [{
     label: "Dashboard",
     href: "/admin/dashboard",
     icon: <ChartPieIcon className="h-5 w-5 shrink-0 font-mono text-lime-400" />,
     disabled: false,
     admin: true,
   }] : []),
-
-], [userIsAdmin] );
+], [isAdmin] );
 
   const logoVariants = {
     hidden: { opacity: 0, scale: 0.95, y: -10 },
@@ -181,7 +180,7 @@ export function Sidebar({ wallet: walletProp, userName }: SidebarProps) {
                       </button>
                   </div>
                 )}
-                 {isClient && userIsAdmin && (
+                 {isClient && isAdmin && (
                    <div className={cn("border-t border-gray-800 pt-2", !open && "mx-auto w-full")}>
                       <Link href="/admin" className={cn("relative flex items-center rounded-lg py-2 text-red-500 transition-all duration-200 hover:bg-red-900/50 hover:text-white", open ? "px-4" : "w-full justify-center")}>
                           <ShieldCheckIcon className="h-5 w-5 shrink-0" />
@@ -300,7 +299,7 @@ export function Sidebar({ wallet: walletProp, userName }: SidebarProps) {
                       </button>
                     </div>
                   )}
-                  {isClient && userIsAdmin && (
+                  {isClient && isAdmin && (
                     <div className="border-t border-gray-800 pt-2">
                       <Link href="/admin" onClick={() => setMobileOpen(false)} className="relative flex items-center rounded-lg py-2 px-4 text-red-500 transition-all duration-200 hover:bg-red-900/50 hover:text-white">
                         <ShieldCheckIcon className="h-5 w-5 shrink-0" />

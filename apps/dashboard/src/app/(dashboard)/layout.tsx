@@ -1,12 +1,23 @@
 // ¡SIN 'use client'! Este es un Server Component.
-import { DashboardClientWrapper } from "./dashboard-client-wrapper"; // Importa el nuevo wrapper
+import { headers } from "next/headers";
+import { getAuth, isAdmin } from "@/lib/auth";
+import { SUPER_ADMIN_WALLET } from "@/lib/constants";
+import { DashboardClientWrapper } from "./dashboard-client-wrapper";
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  // Este layout ahora es un Server Component.
-  // No usa hooks, estado, ni efectos.
-  // Solo renderiza el "wrapper" de cliente y le pasa los 'children' (tu página).
+export default async function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  // 1. Obtenemos la autenticación y autorización en el servidor.
+  const headersList = await headers();
+  const { session } = getAuth(headersList);
+  const userIsAdmin = await isAdmin(session?.userId);
+  const userIsSuperAdmin = session?.userId?.toLowerCase() === SUPER_ADMIN_WALLET;
+
+  // 2. Pasamos los valores booleanos resueltos al wrapper de cliente.
   return (
-    <DashboardClientWrapper>
+    <DashboardClientWrapper isAdmin={userIsAdmin} isSuperAdmin={userIsSuperAdmin}>
       {children}
     </DashboardClientWrapper>
   );

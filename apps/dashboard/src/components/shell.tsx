@@ -10,6 +10,8 @@ interface DashboardShellProps {
   title?: string;
   description?: string;
   className?: string;
+  isAdmin: boolean;
+  isSuperAdmin: boolean;
 }
 
 export function DashboardShell({
@@ -19,6 +21,8 @@ export function DashboardShell({
   title,
   description,
   className,
+  isAdmin,
+  isSuperAdmin,
 }: DashboardShellProps) {
   return (
     <div
@@ -29,7 +33,12 @@ export function DashboardShell({
         "overflow-hidden",
       )}
     >
-      <Sidebar wallet={wallet} userName={userName} />
+      <Sidebar
+        wallet={wallet}
+        userName={userName}
+        isAdmin={isAdmin}
+        isSuperAdmin={isSuperAdmin}
+      />
       <main
         className={cn(
           "flex-1 relative",

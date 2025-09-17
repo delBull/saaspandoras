@@ -6,18 +6,14 @@ import { eq } from "drizzle-orm";
 import { isAdmin, getAuth } from "@/lib/auth";
 import { MultiStepForm } from "./multi-step-form";
 
-interface ProjectPageParams {
-  params: Promise<{ id: string }>;
-}
-
 // Properly type the async params for Next.js 15
-export default async function ProjectPage({ params }: ProjectPageParams) {
-  const { id } = await params;
+export default async function ProjectPage({ params }: { params: { id: string } }) {
+  const { id } = params;
 
   const headersList = await headers();
   const { session } = getAuth(headersList);
 
-  if (!isAdmin(session?.userId)) notFound();
+  if (!await isAdmin(session?.userId)) notFound();
 
   let project = null;
   if (id !== "new") {

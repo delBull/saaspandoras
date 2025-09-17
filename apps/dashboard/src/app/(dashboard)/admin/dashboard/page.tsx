@@ -3,11 +3,13 @@ import { headers } from "next/headers";
 import { Button } from "@saasfly/ui/button";
 import { getAuth } from "@/lib/auth";
 import { isAdmin } from "@/lib/auth";
+import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 import { db } from "~/db";
 import { desc } from "drizzle-orm";
-import { projects as projectsTable } from "~/db/schema";
+import { projects as projectsTable, type administrators } from "~/db/schema";
 import { ProjectActions } from "~/components/admin/ProjectActions";
 import { AdminTabs } from "~/components/admin/AdminTabs";
+import { AdminSettings } from "~/components/admin/AdminSettings";
 
 interface Project {
   id: number;
@@ -27,8 +29,8 @@ const MOCK_SWAPS = [
 
 export default async function AdminDashboardPage() {
   const headersList = await headers();
-  const { session } = getAuth(headersList);
-  const userIsAdmin = isAdmin(session?.userId);
+  const { session } = await getAuth(headersList);
+  const userIsAdmin = await isAdmin(session?.userId);
 
   if (!userIsAdmin) {
     return (
@@ -42,7 +44,17 @@ export default async function AdminDashboardPage() {
   }
 
   // Fetching de datos del servidor
-  const projects = await db.select().from(projectsTable).orderBy(desc(projectsTable.createdAt)) as Project[];
+  const projects = (await db.query.projects.findMany({ orderBy: desc(projectsTable.createdAt) })) as Project[];
+  let admins: (typeof administrators.$inferSelect)[] = [];
+  try {
+    // Obtiene los administradores y filtra al Super Admin para que no se muestre en la UI.
+    const allAdmins = await db.query.administrators.findMany();
+    admins = allAdmins.filter(admin => admin.walletAddress.toLowerCase() !== SUPER_ADMIN_WALLET);
+
+  } catch (e) {
+    console.warn("Could not fetch administrators. Did you run the database migration?", e);
+    // Continúa sin administradores si la tabla no existe.
+  }
   const swaps = MOCK_SWAPS; // Mantenemos los swaps como mock por ahora
 
   return (
@@ -58,7 +70,7 @@ export default async function AdminDashboardPage() {
                     </Button>
                 </Link>
             </div>
-            <AdminTabs swaps={swaps}>
+            <AdminTabs swaps={swaps} showSettings={session?.userId?.toLowerCase() === SUPER_ADMIN_WALLET}>
                 {/* Este es el contenido para la pestaña de proyectos */}
                 <div className="max-h-[400px] overflow-auto">
                     <h2 className="text-xl font-bold mb-4 text-white">Gestión de Proyectos</h2>
@@ -102,6 +114,10 @@ export default async function AdminDashboardPage() {
                                 ))}
                             </tbody>
                         </table>
+                </div>
+                {/* Contenido para la pestaña de configuración */}
+                <div>
+                    <AdminSettings initialAdmins={admins} />
                 </div>
             </AdminTabs>
         </div>

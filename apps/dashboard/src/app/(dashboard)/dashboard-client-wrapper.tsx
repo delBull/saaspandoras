@@ -16,7 +16,15 @@ async function fetchUserName(address: string): Promise<string | null> {
 }
 
 // CAMBIO: Renombra la función (antes era DashboardLayout)
-export function DashboardClientWrapper({ children }: { children: React.ReactNode }) {
+export function DashboardClientWrapper({
+  children,
+  isAdmin,
+  isSuperAdmin,
+}: {
+  children: React.ReactNode;
+  isAdmin: boolean;
+  isSuperAdmin: boolean;
+}) {
   const pathname = usePathname();
   const account = useActiveAccount();
   const [userName, setUserName] = useState<string | null>(null);
@@ -32,7 +40,12 @@ export function DashboardClientWrapper({ children }: { children: React.ReactNode
   }, [account?.address]);
 
   return (
-    <DashboardShell wallet={account?.address} userName={userName ?? undefined}>
+    <DashboardShell
+      wallet={account?.address}
+      userName={userName ?? undefined}
+      isAdmin={isAdmin}
+      isSuperAdmin={isSuperAdmin}
+    >
       <NFTGate>
         <AnimatePresence mode="wait">
           <motion.div

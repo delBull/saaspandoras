@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { ReactNode } from "react";
 
 interface Swap {
   txHash: string;
@@ -13,10 +14,11 @@ interface Swap {
 
 interface AdminTabsProps {
   swaps: Swap[];
-  children: React.ReactNode; // Para el contenido de la pestaña de proyectos
+  children: ReactNode[]; // Ahora espera un array de nodos
+  showSettings?: boolean;
 }
 
-export function AdminTabs({ swaps, children }: AdminTabsProps) {
+export function AdminTabs({ swaps, children, showSettings = false }: AdminTabsProps) {
   const [activeTab, setActiveTab] = useState('projects');
 
   const totalVolume = swaps.reduce((a, s) => a + (s.status === 'success' ? s.fromAmountUsd : 0), 0);
@@ -33,10 +35,15 @@ export function AdminTabs({ swaps, children }: AdminTabsProps) {
           <button onClick={() => setActiveTab('swaps')} className={`pb-2 font-semibold ${activeTab === 'swaps' ? 'text-lime-400 border-b-2 border-lime-400' : 'text-gray-400'}`}>
             Swaps
           </button>
+          {showSettings && (
+            <button onClick={() => setActiveTab('settings')} className={`pb-2 font-semibold ${activeTab === 'settings' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-400'}`}>
+              Configuración
+            </button>
+          )}
         </nav>
       </div>
 
-      {activeTab === 'projects' && children}
+      {activeTab === 'projects' && children[0]}
 
       {activeTab === 'swaps' && (
         <div>
@@ -86,6 +93,8 @@ export function AdminTabs({ swaps, children }: AdminTabsProps) {
           </div>
         </div>
       )}
+
+      {activeTab === 'settings' && showSettings && children[1]}
     </>
   );
 }
