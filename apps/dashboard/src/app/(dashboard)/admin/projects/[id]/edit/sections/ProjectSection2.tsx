@@ -48,7 +48,7 @@ const LinkPreview = ({ url, title, description }: { url: string; title?: string;
         </svg>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-white truncate">{title || "Enlace"}</p>
+        <p className="text-sm font-medium text-white truncate">{title ?? "Enlace"}</p>
         <p className="text-xs text-gray-400 truncate">{url}</p>
         {description && <p className="text-xs text-gray-300 mt-1 line-clamp-2">{description}</p>}
       </div>

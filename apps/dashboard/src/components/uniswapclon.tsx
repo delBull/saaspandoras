@@ -26,7 +26,7 @@ import { client } from "@/lib/thirdweb-client";
 
 const BASE_CHAIN_ID = 8453;
 const BASE_USDC_ADDRESS =
-  "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as const;
+  "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const ETH_TOKEN = {
   address: NATIVE_TOKEN_ADDRESS,
   symbol: "ETH",
@@ -72,8 +72,7 @@ function useBridgeQuote({ amount }: { amount?: bigint }) {
       } catch (error) {
         if (!cancelled)
           setError(
-            (error as Error)?.message ||
-              "Error desconocido.",
+            error instanceof Error ? error.message : "Error desconocido.",
           );
       } finally {
         if (!cancelled) setLoading(false);
@@ -309,11 +308,12 @@ export default function UniswapClon() {
       <CardContent className="space-y-4">
         {/* Input ETH */}
         <div className="space-y-2">
-          <label className="text-sm font-medium block">
+          <label htmlFor="amount-input" className="text-sm font-medium block">
             Monto a intercambiar
           </label>
           <div className="flex items-center gap-2">
             <Input
+              id="amount-input"
               type="number"
               placeholder="0.0"
               value={amount}
@@ -341,10 +341,11 @@ export default function UniswapClon() {
               variant="link"
               size="sm"
               className="p-0 h-auto text-blue-600"
-              onClick={() =>
-                ethBalance &&
-                setAmount(ethBalance.displayValue)
-              }
+              onClick={() => {
+                if (ethBalance) {
+                  setAmount(ethBalance.displayValue);
+                }
+              }}
             >
               MAX
             </Button>
@@ -352,11 +353,12 @@ export default function UniswapClon() {
         </div>
         {/* Output USDC */}
         <div className="space-y-2">
-          <label className="text-sm font-medium block">
+          <label htmlFor="quote-output" className="text-sm font-medium block">
             Recibirás aproximadamente
           </label>
           <div className="flex items-center gap-2">
             <Input
+              id="quote-output"
               type="number"
               placeholder="0.0"
               value={
@@ -406,20 +408,9 @@ export default function UniswapClon() {
                 <strong>Rate:</strong> 1 ETH ≈{" "}
                 {(() => {
                   try {
-                    return (
-                      Number(
-                        formatUnits(
-                          quoteOut,
-                          USDC_TOKEN.decimals,
-                        ),
-                      ) /
-                      Number(
-                        formatUnits(
-                          amountInWei,
-                          ETH_TOKEN.decimals,
-                        ),
-                      )
-                    ).toFixed(2);
+                    const ethAmount = Number(formatUnits(amountInWei ?? 0n, ETH_TOKEN.decimals));
+                    const usdcAmount = Number(formatUnits(quoteOut ?? 0n, USDC_TOKEN.decimals));
+                    return ethAmount > 0 ? (usdcAmount / ethAmount).toFixed(2) : "-";
                   } catch {
                     return "-";
                   }

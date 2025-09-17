@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-type Swap = {
+interface Swap {
   txHash: string;
   from: string;
   toToken: string;

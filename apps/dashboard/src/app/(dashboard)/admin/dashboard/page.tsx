@@ -9,7 +9,14 @@ import { projects as projectsTable } from "~/db/schema";
 import { ProjectActions } from "~/components/admin/ProjectActions";
 import { AdminTabs } from "~/components/admin/AdminTabs";
 
-const ADMIN_WALLET = "0x00c9f7EE6d1808C09B61E561Af6c787060BFE7C9".toLowerCase();
+interface Project {
+  id: number;
+  title: string;
+  status: 'pending' | 'approved' | 'live' | 'completed' | 'rejected';
+  raisedAmount: number | null;
+  slug: string;
+  createdAt: Date;
+}
 
 // Mock de datos de swaps. En una app real, esto vendría de tu API/backend.
 const MOCK_SWAPS = [
@@ -35,7 +42,7 @@ export default async function AdminDashboardPage() {
   }
 
   // Fetching de datos del servidor
-  const projects = await db.select().from(projectsTable).orderBy(desc(projectsTable.createdAt)) as any[];
+  const projects = await db.select().from(projectsTable).orderBy(desc(projectsTable.createdAt)) as Project[];
   const swaps = MOCK_SWAPS; // Mantenemos los swaps como mock por ahora
 
   return (

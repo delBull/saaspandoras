@@ -63,7 +63,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
 
   const allSocials = {
     website: project.website,
-    twitter: project.twitterUrl || socials.twitter,
+    twitter: project.twitterUrl ?? socials.twitter,
     discord: project.discordUrl,
     telegram: project.telegramUrl,
     linkedin: project.linkedinUrl,
@@ -76,8 +76,8 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
             {/* --- Header --- */}
             <div className="relative w-full h-48 md:h-64 rounded-2xl overflow-hidden mb-[-4rem] md:mb-[-5rem]">
                 <Image
-                    src={project.coverPhotoUrl || project.imageUrl || "/images/sem.jpeg"}
-                    alt={project.title as string}
+                    src={project.coverPhotoUrl ?? project.imageUrl ?? "/images/sem.jpeg"}
+                    alt={project.title}
                     fill
                     className="object-cover object-center opacity-40"
                 />
@@ -88,8 +88,8 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                 <div className="flex flex-col md:flex-row md:items-end gap-4">
                     <div className="w-24 h-24 md:w-32 md:h-32 rounded-xl border-4 border-gray-800 bg-zinc-900 overflow-hidden shrink-0">
                          <Image
-                            src={project.logoUrl || project.imageUrl || "/images/sem.jpeg"}
-                            alt={`${project.title as string} logo`}
+                            src={project.logoUrl ?? project.imageUrl ?? "/images/sem.jpeg"}
+                            alt={`${project.title} logo`}
                             width={128}
                             height={128}
                             className="object-cover w-full h-full"
@@ -97,9 +97,9 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                     </div>
                     <div>
                         <p className="text-sm font-mono text-lime-400">{project.businessCategory ?? "Sin Categoría"}</p>
-                        <h1 className="text-3xl md:text-4xl font-bold text-white">{project.title as string}</h1>
+                        <h1 className="text-3xl md:text-4xl font-bold text-white">{project.title}</h1>
                         {project.tagline && (
-                            <p className="text-lime-400 italic mt-2 text-sm">"{project.tagline as string}"</p>
+                            <p className="text-lime-400 italic mt-2 text-sm">"{project.tagline}"</p>
                         )}
                     </div>
                 </div>
@@ -110,7 +110,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                 {/* Columna Izquierda (Info) */}
                 <div className="lg:col-span-2 bg-zinc-900/50 p-6 rounded-xl border border-zinc-800">
                     <h2 className="text-lg font-bold text-white mb-4">Sobre el Proyecto</h2>
-                    <p className="text-gray-300 leading-relaxed">{project.description as string}</p>
+                    <p className="text-gray-300 leading-relaxed">{project.description}</p>
                     
                     {/* Video Pitch */}
                     {project.videoPitch && (
@@ -170,7 +170,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                         <>
                           <h3 className="text-md font-semibold text-lime-400 mb-4">Equipo</h3>
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {teamMembers.map((member: any, index: number) => (
+                            {teamMembers.map((member, index: number) => (
                               <div key={index} className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
                                 <div className="flex items-start gap-3">
                                   <div className="w-12 h-12 bg-gradient-to-br from-lime-500 to-emerald-500 rounded-full flex items-center justify-center">
@@ -195,7 +195,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                         <>
                           <h3 className="text-md font-semibold text-emerald-400 mb-4 mt-6">Asesores</h3>
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {advisors.map((advisor: any, index: number) => (
+                            {advisors.map((advisor, index: number) => (
                               <div key={index} className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
                                 <div className="flex items-start gap-3">
                                   <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-full flex items-center justify-center">
@@ -203,7 +203,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                                   </div>
                                   <div className="flex-1">
                                     <h4 className="font-semibold text-white text-sm">{advisor.name}</h4>
-                                    <p className="text-gray-400 text-xs">{advisor.profile || 'Asesor'}</p>
+                                    <p className="text-gray-400 text-xs">{advisor.profile ?? 'Asesor'}</p>
                                     {advisor.linkedin && (
                                       <a href={advisor.linkedin} target="_blank" rel="noopener noreferrer" className="text-emerald-400 text-xs hover:underline mt-1 inline-block">
                                         LinkedIn →
@@ -248,7 +248,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                         <div className="bg-zinc-900/50 p-6 rounded-xl border border-zinc-800">
                           <h3 className="text-base font-bold text-white mb-3">Distribución de Tokens</h3>
                           <div className="space-y-2">
-                            {Object.entries(tokenDistribution).map(([key, value]: [string, any]) => (
+                            {Object.entries(tokenDistribution).map(([key, value]) => (
                               value && key !== 'total' && (
                                 <div key={key} className="flex justify-between items-center text-sm">
                                   <span className="text-gray-300 capitalize">{key.replace('_', ' ')}</span>

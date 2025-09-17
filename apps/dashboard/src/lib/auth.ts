@@ -9,28 +9,25 @@ export function isAdmin(address: string | undefined): boolean {
   return adminWallets.includes(address.toLowerCase());
 }
 
-export async function getAuth(headers?: Headers) {
+export function getAuth(headers?: Headers) {
   // Intenta obtener wallet de Thirdweb desde cookies (si el frontend la guarda)
   let userAddress: string | null = null;
   
-  if (headers) {
-    // Busca cookies de Thirdweb (típicamente 'thirdweb-wallet' o similar)
-    const cookies = headers.get('cookie');
-    if (cookies) {
-      const thirdwebCookie = cookies.split(';').find(cookie =>
-        cookie.trim().startsWith('thirdweb') ||
-        cookie.trim().includes('wallet')
-      );
-      if (thirdwebCookie) {
-        // Extrae address del cookie (simplificado - en producción parsear correctamente)
-        try {
-          const match = thirdwebCookie.match(/address=([^;]+)/);
-          if (match && match[1]) {
-            userAddress = match[1].toLowerCase();
-          }
-        } catch (e) {
-          console.warn('Error parsing Thirdweb cookie:', e);
+  const cookies = headers?.get('cookie');
+  if (cookies) {
+    const thirdwebCookie = cookies.split(';').find(cookie =>
+      cookie.trim().startsWith('thirdweb') ||
+      cookie.trim().includes('wallet')
+    );
+    if (thirdwebCookie) {
+      // Extrae address del cookie (simplificado - en producción parsear correctamente)
+      try {
+        const match = thirdwebCookie.match(/address=([^;]+)/);
+        if (match && match[1]) {
+          userAddress = match[1].toLowerCase();
         }
+      } catch (e) {
+        console.warn('Error parsing Thirdweb cookie:', e);
       }
     }
   }

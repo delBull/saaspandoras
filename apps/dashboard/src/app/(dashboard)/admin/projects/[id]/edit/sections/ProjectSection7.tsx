@@ -10,7 +10,6 @@ import {
   AlertCircle,
   CheckCircle
 } from "lucide-react";
-import { toast } from "sonner";
 
 // Componentes UI reutilizados
 const Input = ({ id, type = "text", className = "", placeholder, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { placeholder?: string }) => (
@@ -35,7 +34,7 @@ const Checkbox = ({ id, checked, onChange, className = "", children }: {
   className?: string;
   children: React.ReactNode;
 }) => (
-  <label className={`flex items-start gap-3 cursor-pointer p-3 bg-zinc-800/50 rounded-lg border border-zinc-700 hover:border-zinc-600 ${className}`}>
+  <label htmlFor={id} className={`flex items-start gap-3 cursor-pointer p-3 bg-zinc-800/50 rounded-lg border border-zinc-700 hover:border-zinc-600 ${className}`}>
     <input
       id={id}
       type="checkbox"
@@ -49,14 +48,14 @@ const Checkbox = ({ id, checked, onChange, className = "", children }: {
   </label>
 );
 
-const Label = ({ htmlFor, children, required = false, className = "" }: { 
-  htmlFor?: string; 
+const Label = ({ htmlFor, children, required = false, className = "" }: {
+  htmlFor?: string;
   children: React.ReactNode;
   required?: boolean;
   className?: string;
 }) => (
-  <label 
-    htmlFor={htmlFor} 
+  <label
+    htmlFor={htmlFor}
     className={`text-sm font-semibold text-white mb-2 flex items-center gap-1 ${className}`}
   >
     {children}
@@ -82,9 +81,9 @@ export function ProjectSection7() {
   const { register, watch, formState: { errors }, setValue } = useFormContext<FullProjectFormData>();
   
   const verificationAgreement = watch("verificationAgreement") || false;
-  const applicantName = watch("applicantName") || "";
-  const applicantEmail = watch("applicantEmail") || "";
-  const applicantPhone = watch("applicantPhone") || "";
+  const applicantName = watch("applicantName") ?? "";
+  const applicantEmail = watch("applicantEmail") ?? "";
+  const applicantPhone = watch("applicantPhone") ?? "";
 
   const isValidEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -209,7 +208,7 @@ export function ProjectSection7() {
           />
           {errors.applicantPosition && <ErrorMessage>{errors.applicantPosition.message}</ErrorMessage>}
           <p className="text-xs text-gray-500 mt-1">
-            Especifica tu rol exacto en la empresa (ej: "CEO & Fundador", "Director de Operaciones")
+            Especifica tu rol exacto en la empresa (ej: &quot;CEO & Fundador&quot;, &quot;Director de Operaciones&quot;)
           </p>
         </div>
       </div>

@@ -14,6 +14,55 @@ import { ProjectSection5 } from "./sections/ProjectSection5";
 import { ProjectSection6 } from "./sections/ProjectSection6";
 import { ProjectSection7 } from "./sections/ProjectSection7";
 
+interface Project {
+  id?: number;
+  slug?: string;
+  title?: string | null;
+  description?: string | null;
+  tagline?: string | null;
+  businessCategory?: string | null;
+  logoUrl?: string | null;
+  coverPhotoUrl?: string | null;
+  videoPitch?: string | null;
+  website?: string | null;
+  whitepaperUrl?: string | null;
+  twitterUrl?: string | null;
+  discordUrl?: string | null;
+  telegramUrl?: string | null;
+  linkedinUrl?: string | null;
+  targetAmount?: string | number | null;
+  totalValuationUsd?: string | number | null;
+  tokenType?: string | null;
+  totalTokens?: string | number | null;
+  tokensOffered?: string | number | null;
+  tokenPriceUsd?: string | number | null;
+  estimatedApy?: string | null;
+  yieldSource?: string | null;
+  lockupPeriod?: string | null;
+  fundUsage?: string | null;
+  teamMembers?: unknown | null;
+  advisors?: unknown | null;
+  tokenDistribution?: unknown | null;
+  contractAddress?: string | null;
+  treasuryAddress?: string | null;
+  legalStatus?: string | null;
+  valuationDocumentUrl?: string | null;
+  fiduciaryEntity?: string | null;
+  dueDiligenceReportUrl?: string | null;
+  isMintable?: boolean | string | null;
+  isMutable?: boolean | string | null;
+  updateAuthorityAddress?: string | null;
+  applicantName?: string | null;
+  applicantPosition?: string | null;
+  applicantEmail?: string | null;
+  applicantPhone?: string | null;
+  verificationAgreement?: boolean | string | null;
+  createdAt?: Date;
+  raisedAmount?: string | number | null;
+  returnsPaid?: string | number | null;
+  status?: string | null;
+}
+
 // Componentes UI inline (reutilizados de ProjectForm)
 const Button = ({ children, className = "", onClick, type = "button", disabled = false, variant = "primary" }: { 
   children: React.ReactNode, 
@@ -132,7 +181,7 @@ const fullProjectSchema = z.object({
 export type FullProjectFormData = z.infer<typeof fullProjectSchema>;
 
 interface MultiStepFormProps {
-  project?: any;
+  project?: Project | null;
   isEdit?: boolean;
   apiEndpoint?: string;
   isPublic?: boolean;
@@ -169,12 +218,12 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       // Sección 3
       targetAmount: Number(project?.targetAmount ?? 0),
       totalValuationUsd: Number(project?.totalValuationUsd ?? 0),
-      tokenType: project?.tokenType ?? undefined,
+      tokenType: (project?.tokenType as "erc20" | "erc721" | "erc1155" | null | undefined) ?? undefined,
       totalTokens: Number(project?.totalTokens ?? 0),
       tokensOffered: Number(project?.tokensOffered ?? 1),
       tokenPriceUsd: Number(project?.tokenPriceUsd ?? 0),
       estimatedApy: project?.estimatedApy ?? undefined,
-      yieldSource: project?.yieldSource ?? undefined,
+      yieldSource: (project?.yieldSource as "rental_income" | "capital_appreciation" | "dividends" | "royalties" | "other" | null | undefined) ?? undefined,
       lockupPeriod: project?.lockupPeriod ?? undefined,
       fundUsage: project?.fundUsage ?? undefined,
       
@@ -192,8 +241,8 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       dueDiligenceReportUrl: project?.dueDiligenceReportUrl ?? undefined,
       
       // Sección 6
-      isMintable: project?.isMintable ?? false,
-      isMutable: project?.isMutable ?? false,
+      isMintable: Boolean(project?.isMintable ?? false),
+      isMutable: Boolean(project?.isMutable ?? false),
       updateAuthorityAddress: project?.updateAuthorityAddress ?? undefined,
       
       // Sección 7
@@ -201,7 +250,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       applicantPosition: project?.applicantPosition ?? undefined,
       applicantEmail: project?.applicantEmail ?? undefined,
       applicantPhone: project?.applicantPhone ?? undefined,
-      verificationAgreement: project?.verificationAgreement ?? false,
+      verificationAgreement: Boolean(project?.verificationAgreement ?? false),
     },
   });
 
@@ -209,13 +258,13 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
 
   // Cargar progreso desde localStorage
   useEffect(() => {
-    if (isEdit) return; 
+    if (isEdit) return;
     
     const savedData = localStorage.getItem("pandoras-project-form");
     if (savedData) {
-      const parsed = JSON.parse(savedData);
-      Object.keys(parsed).forEach((key: any) => {
-        setValue(key as keyof FullProjectFormData, parsed[key]);
+      const parsed = JSON.parse(savedData) as Partial<FullProjectFormData>;
+      Object.keys(parsed).forEach((key) => {
+        setValue(key as keyof FullProjectFormData, parsed[key as keyof FullProjectFormData]);
       });
       const savedStep = localStorage.getItem("pandoras-project-step");
       if (savedStep) {
@@ -274,7 +323,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
 
   // --- AÑADIDO: Manejador de errores de validación ---
   // Esta función se ejecutará si handleSubmit encuentra errores en el formulario.
-  const onValidationErrors = (formErrors: any) => {
+  const onValidationErrors = (formErrors: Record<string, any>) => {
     console.error("Errores de validación del formulario:", formErrors);
     const errorFields = Object.keys(formErrors).join(", ");
     toast.error(`Hay errores en el formulario. Revisa los campos: ${errorFields}`);
@@ -287,10 +336,10 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
     // Preparamos los datos, convirtiendo `undefined` a 0 en la distribución
     // y luego stringificando los campos anidados que el backend espera como JSON.
     const finalDistribution = {
-      publicSale: data.tokenDistribution?.publicSale || 0,
-      team: data.tokenDistribution?.team || 0,
-      treasury: data.tokenDistribution?.treasury || 0,
-      marketing: data.tokenDistribution?.marketing || 0,
+      publicSale: data.tokenDistribution?.publicSale ?? 0,
+      team: data.tokenDistribution?.team ?? 0,
+      treasury: data.tokenDistribution?.treasury ?? 0,
+      marketing: data.tokenDistribution?.marketing ?? 0,
     };
 
     const submitData = {
@@ -342,10 +391,10 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
     // Preparamos los datos, convirtiendo `undefined` a 0 en la distribución
     // y luego stringificando los campos anidados.
     const finalDistribution = {
-      publicSale: data.tokenDistribution?.publicSale || 0,
-      team: data.tokenDistribution?.team || 0,
-      treasury: data.tokenDistribution?.treasury || 0,
-      marketing: data.tokenDistribution?.marketing || 0,
+      publicSale: data.tokenDistribution?.publicSale ?? 0,
+      team: data.tokenDistribution?.team ?? 0,
+      treasury: data.tokenDistribution?.treasury ?? 0,
+      marketing: data.tokenDistribution?.marketing ?? 0,
     };
 
     const preparedData = {
@@ -455,9 +504,8 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
           {currentStep === totalSteps && (
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
-                type="button"
+                type="submit"
                 variant="secondary"
-                onClick={handleSubmit(onFinalSubmit, onValidationErrors)}
                 disabled={isLoading}
                 className="w-full sm:w-auto"
               >
@@ -469,7 +517,10 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
                 <Button
                   type="button"
                   variant="primary"
-                  onClick={handleSubmit(onAdminQuickSubmit, onValidationErrors)}
+                  onClick={async () => {
+                    const data = methods.getValues();
+                    await onAdminQuickSubmit(data);
+                  }}
                   disabled={isLoading}
                   className="w-full sm:w-auto"
                 >

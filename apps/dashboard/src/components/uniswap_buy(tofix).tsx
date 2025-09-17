@@ -26,7 +26,7 @@ import { client } from "@/lib/thirdweb-client";
 
 const BASE_CHAIN_ID = 8453;
 const BASE_USDC_ADDRESS =
-  "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as const;
+  "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const ETH_TOKEN = {
   address: NATIVE_TOKEN_ADDRESS,
   symbol: "ETH",
@@ -186,14 +186,10 @@ export default function UniswapClon() {
         sender: account.address,
       });
 
-      let sawApproval = false;
-      let sawSell = false;
-
       // Ejecuta approvals primero si existen
       for (const step of prepared.steps ?? []) {
-        const act = (step as any).action || "";
-        if (act.toLowerCase() === "approval") {
-          sawApproval = true;
+        const stepAction = step.action as string || "";
+        if (stepAction.toLowerCase() === "approval") {
           setApprovalError(null);
           setApprovalPending(true);
           setApprovalDone(false);
@@ -205,8 +201,7 @@ export default function UniswapClon() {
             } catch (err) {
               setApprovalPending(false);
               setApprovalError(
-                (err as Error)?.message ||
-                  "Error en approval.",
+                err instanceof Error ? err.message : "Error en approval.",
               );
               setSwapping(false);
               return;
@@ -216,13 +211,12 @@ export default function UniswapClon() {
       }
       // Ejecuta el swap (sell)
       for (const step of prepared.steps ?? []) {
-        const act = (step as any).action || "";
+        const stepAction = step.action as string || "";
         if (
-          act.toLowerCase() === "sell" ||
+          stepAction.toLowerCase() === "sell" ||
           (!("action" in step) &&
             Array.isArray(step.transactions))
         ) {
-          sawSell = true;
           setSwapPending(true);
           for (const tx of step.transactions ?? []) {
             try {
@@ -230,12 +224,12 @@ export default function UniswapClon() {
               setSwapSuccess(
                 `¡Swap exitoso! Tx: ${res.transactionHash}`,
               );
-              setTxHash(res.transactionHash || null);
+              setTxHash(res.transactionHash ?? null);
               setSwapDone(true);
             } catch (err) {
               setSwapPending(false);
               setSwapError(
-                (err as Error)?.message || "Error en swap.",
+                err instanceof Error ? err.message : "Error en swap.",
               );
               setSwapping(false);
               return;
@@ -244,7 +238,7 @@ export default function UniswapClon() {
           setSwapPending(false);
         }
       }
-      if (!sawSell && !swapSuccess) {
+      if (!swapSuccess) {
         setSwapError(
           "No hay ruta DEX, solo rutas de pago están disponibles.",
         );
@@ -253,12 +247,12 @@ export default function UniswapClon() {
       }
     } catch (err) {
       setSwapError(
-        (err as Error)?.message || "Error desconocido.",
+        err instanceof Error ? err.message : "Error desconocido.",
       );
     } finally {
       setSwapping(false);
     }
-  }, [amountInWei, account, quote, sendTx]);
+  }, [amountInWei, account, quote, sendTx, swapSuccess]);
 
   if (!account) {
     return (
@@ -287,11 +281,12 @@ export default function UniswapClon() {
       <CardContent className="space-y-4">
         {/* Input ETH */}
         <div className="space-y-2">
-          <label className="text-sm font-medium block">
+          <label htmlFor="amount-input" className="text-sm font-medium block">
             Monto a intercambiar
           </label>
           <div className="flex items-center gap-2">
             <Input
+              id="amount-input"
               type="number"
               placeholder="0.0"
               value={amount}
@@ -319,10 +314,11 @@ export default function UniswapClon() {
               variant="link"
               size="sm"
               className="p-0 h-auto text-blue-600"
-              onClick={() =>
-                ethBalance &&
-                setAmount(ethBalance.displayValue)
-              }
+              onClick={() => {
+                if (ethBalance) {
+                  setAmount(ethBalance.displayValue);
+                }
+              }}
             >
               MAX
             </Button>
@@ -330,11 +326,12 @@ export default function UniswapClon() {
         </div>
         {/* Output USDC */}
         <div className="space-y-2">
-          <label className="text-sm font-medium block">
+          <label htmlFor="quote-output" className="text-sm font-medium block">
             Recibirás aproximadamente
           </label>
           <div className="flex items-center gap-2">
             <Input
+              id="quote-output"
               type="number"
               placeholder="0.0"
               value={
@@ -384,20 +381,9 @@ export default function UniswapClon() {
                 <strong>Rate:</strong> 1 ETH ≈{" "}
                 {(() => {
                   try {
-                    return (
-                      Number(
-                        formatUnits(
-                          quoteOut,
-                          USDC_TOKEN.decimals,
-                        ),
-                      ) /
-                      Number(
-                        formatUnits(
-                          amountInWei,
-                          ETH_TOKEN.decimals,
-                        ),
-                      )
-                    ).toFixed(2);
+                    const ethAmount = Number(formatUnits(amountInWei ?? 0n, ETH_TOKEN.decimals));
+                    const usdcAmount = Number(formatUnits(quoteOut ?? 0n, USDC_TOKEN.decimals));
+                    return ethAmount > 0 ? (usdcAmount / ethAmount).toFixed(2) : "-";
                   } catch {
                     return "-";
                   }

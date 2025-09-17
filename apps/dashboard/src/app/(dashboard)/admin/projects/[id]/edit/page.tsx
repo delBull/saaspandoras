@@ -6,9 +6,13 @@ import { eq } from "drizzle-orm";
 import { isAdmin, getAuth } from "@/lib/auth";
 import { MultiStepForm } from "./multi-step-form";
 
-// NO tipamos los props; Next los infiere automáticamente
-export default async function ProjectPage({ params }: any) {
-  const { id } = params; // Next infiere correctamente string
+interface ProjectPageParams {
+  params: Promise<{ id: string }>;
+}
+
+// Properly type the async params for Next.js 15
+export default async function ProjectPage({ params }: ProjectPageParams) {
+  const { id } = await params;
 
   const headersList = await headers();
   const { session } = await getAuth(headersList);
