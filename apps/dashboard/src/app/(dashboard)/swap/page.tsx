@@ -10,7 +10,7 @@ import {
 } from "@saasfly/ui/sheet";
 import { ScrollArea } from "@saasfly/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import UniswapClon from "~/components/uniswapclon";
+//import UniswapClon from "~/components/uniswapclon";
 
 // REINTEGRADO: Definición del componente Disclaimer
 function Disclaimer() {
@@ -82,7 +82,7 @@ export default function SwapPage() {
           Intercambia tokens de forma segura a través del protocolo Uniswap
         </p>
         
-        <UniswapClon />
+        {/*<UniswapClon />*/}
         {/*
         <div className="mt-4 mb-1 text-xs text-center text-gray-400">
           <span>
