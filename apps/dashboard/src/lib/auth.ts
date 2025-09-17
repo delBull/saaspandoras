@@ -24,37 +24,37 @@ export async function isAdmin(address: string | null | undefined): Promise<boole
 }
 
 export function getAuth(headers?: Headers) {
-  // Intenta obtener wallet de Thirdweb desde cookies (si el frontend la guarda)
   let userAddress: string | null = null;
-  
+
+  // Método 1: Intentar desde cookies (desarrollo)
   const cookieString = headers?.get('cookie');
   if (cookieString) {
-    const thirdwebAuthCookie = cookieString.split(';').find(c => c.trim().startsWith('thirdweb_auth_token='));
-    if (thirdwebAuthCookie) {
-      const token = thirdwebAuthCookie.split('=')[1];
-      if (token) {
-        try {
-          // Decodificar el JWT (sin verificar la firma, solo para obtener el payload)
-          const payloadBase64 = token.split('.')[1];
-          if (payloadBase64) {
-            const payloadJson = Buffer.from(payloadBase64, 'base64').toString('utf-8');
-            const payload = JSON.parse(payloadJson) as { sub?: string };
-            userAddress = payload.sub ?? null;
-          }
-        } catch (e) {
-          console.warn('Could not decode thirdweb auth token:', e);
-        }
+    const thirdwebCookie = cookieString.split(';').find(c => c.trim().startsWith('thirdweb') || c.includes('wallet'));
+    if (thirdwebCookie) {
+      const match = thirdwebCookie.match(/address=([^;]+)/);
+      if (match?.[1]) {
+        userAddress = match[1].toLowerCase();
       }
     }
   }
-  
-  // --- SOLUCIÓN: Fallback de Desarrollo ---
-  // Si no se encuentra una sesión en las cookies y estamos en desarrollo,
-  // se asume la wallet del Super Admin para facilitar las pruebas.
+
+  // Método 2: Intentar desde headers de Thirdweb (producción - X-Thirdweb-Address)
+  if (!userAddress) {
+    userAddress = headers?.get('x-thirdweb-address') || null;
+  }
+
+  // Método 3: Fallback solo para desarrollo
   if (!userAddress && process.env.NODE_ENV === 'development') {
     userAddress = SUPER_ADMIN_WALLET;
   }
-  
+
+  // Si aún no tenemos dirección, no hay sesión
+  if (!userAddress) {
+    return {
+      session: null
+    };
+  }
+
   return {
     session: {
       userId: userAddress,
