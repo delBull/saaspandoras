@@ -2,6 +2,7 @@
   "extends": "@saasfly/typescript-config/base.json",
   "compilerOptions": {
     "tsBuildInfoFile": ".next/tsconfig.tsbuildinfo",
+    "types": ["next", "next/types/global"],
     "plugins": [
       {
         "name": "next"
