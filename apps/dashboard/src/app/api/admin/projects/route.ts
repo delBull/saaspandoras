@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
 import { db } from "~/db";
 import { projects as projectsSchema } from "~/db/schema";
 import { projectApiSchema } from "@/lib/project-schema-api";
@@ -7,7 +6,7 @@ import { getAuth, isAdmin } from "@/lib/auth";
 import slugify from "slugify";
 
 export async function POST(request: Request) {
-  const { session } = await getAuth();
+  const { session } = getAuth();
   const userIsAdmin = await isAdmin(session?.userId);
 
   if (!userIsAdmin) {
