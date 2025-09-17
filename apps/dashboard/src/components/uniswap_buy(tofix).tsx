@@ -24,6 +24,18 @@ import { parseUnits, formatUnits } from "viem";
 import { defineChain } from "thirdweb/chains";
 import { client } from "@/lib/thirdweb-client";
 
+// Tipos para el resultado del Bridge de Thirdweb para dar claridad a TypeScript
+interface BridgeQuote {
+  originAmount: bigint;
+  destinationAmount: bigint;
+  steps?: RouteStep[];
+}
+
+interface RouteStep {
+  action?: string;
+  transactions?: any[];
+}
+
 const BASE_CHAIN_ID = 8453;
 const BASE_USDC_ADDRESS =
   "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
@@ -40,7 +52,7 @@ const USDC_TOKEN = {
 
 function useBridgeQuote({ amount }: { amount?: bigint }) {
   const [loading, setLoading] = useState(false);
-  const [quote, setQuote] = useState<any>(null);
+  const [quote, setQuote] = useState<BridgeQuote | null>(null);
   const [error, setError] = useState<string | null>(null);
   const account = useActiveAccount();
 
@@ -68,7 +80,7 @@ function useBridgeQuote({ amount }: { amount?: bigint }) {
           amount: amount,
         });
         if (cancelled) return;
-        setQuote(result);
+        setQuote(result as unknown as BridgeQuote);
       } catch (error) {
         if (!cancelled) {
           setError(
@@ -144,7 +156,7 @@ export default function UniswapClon() {
   } = useBridgeQuote({ amount: amountInWei });
   const quoteOut = useMemo(
     () => (quote ? quote.destinationAmount : undefined),
-    [quote],
+    [quote]
   );
   const canSwap =
     !quoteLoading &&
@@ -188,8 +200,8 @@ export default function UniswapClon() {
 
       // Ejecuta approvals primero si existen
       for (const step of prepared.steps ?? []) {
-        const stepAction = step.action as string || "";
-        if (stepAction.toLowerCase() === "approval") {
+        const currentStep = step as RouteStep;
+        if (currentStep.action?.toLowerCase() === "approval") {
           setApprovalError(null);
           setApprovalPending(true);
           setApprovalDone(false);
@@ -211,11 +223,10 @@ export default function UniswapClon() {
       }
       // Ejecuta el swap (sell)
       for (const step of prepared.steps ?? []) {
-        const stepAction = step.action as string || "";
+        const currentStep = step as RouteStep;
         if (
-          stepAction.toLowerCase() === "sell" ||
-          (!("action" in step) &&
-            Array.isArray(step.transactions))
+          currentStep.action?.toLowerCase() === "sell" ||
+          (!currentStep.action && Array.isArray(currentStep.transactions))
         ) {
           setSwapPending(true);
           for (const tx of step.transactions ?? []) {

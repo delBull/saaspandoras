@@ -140,7 +140,7 @@ export default function UniswapClon() {
     error: quoteError,
   } = useBridgeQuote({ amount: amountInWei });
   const quoteOut = useMemo(
-    () => (quote ? quote.destinationAmount : undefined),
+    () => (quote ? (quote as any).destinationAmount : undefined),
     [quote],
   );
   const canSwap =
