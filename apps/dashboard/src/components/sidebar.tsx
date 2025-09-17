@@ -18,7 +18,7 @@ interface SidebarProps {
   isSuperAdmin: boolean;
 }
 
-export function Sidebar({ wallet: walletProp, userName, isAdmin, isSuperAdmin }: SidebarProps) {
+export function Sidebar({ wallet: walletProp, userName, isAdmin }: SidebarProps) {
   const [isClient, setIsClient] = useState(false);
   useEffect(() => { setIsClient(true); }, []);
 
