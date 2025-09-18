@@ -223,21 +223,21 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       // Sección 3
       targetAmount: Number(project?.targetAmount ?? 0),
       totalValuationUsd: Number(project?.totalValuationUsd ?? 0),
-      tokenType: project?.tokenType as FullProjectFormData['tokenType'],
+      tokenType: project?.tokenType as "erc20" | "erc721" | "erc1155" | undefined,
       totalTokens: Number(project?.totalTokens ?? 0),
       tokensOffered: Number(project?.tokensOffered ?? 1),
       tokenPriceUsd: Number(project?.tokenPriceUsd ?? 0),
       estimatedApy: project?.estimatedApy ?? undefined,
-      yieldSource: (project?.yieldSource as "rental_income" | "capital_appreciation" | "dividends" | "royalties" | "other" | null | undefined) ?? undefined,
+      yieldSource: project?.yieldSource as FullProjectFormData['yieldSource'],
       lockupPeriod: project?.lockupPeriod ?? undefined,
       fundUsage: project?.fundUsage ?? undefined,
       
       // FIX 3: Parseo seguro de JSON que satisface a ESLint
       teamMembers: (() => {
         try {
-          const teamMembers = project?.teamMembers as unknown; // Tratar como 'unknown' seguro
+          const teamMembers: unknown = project?.teamMembers;
           if (!teamMembers) return [];
-          if (Array.isArray(teamMembers)) return teamMembers; // La aserción es innecesaria si el schema es `z.any()`
+          if (Array.isArray(teamMembers)) return teamMembers as TeamMember[];
           const parsed = JSON.parse(String(teamMembers)) as unknown; // Parsear a 'unknown'
           // Verificar que sea un array antes de castear y devolver
           return Array.isArray(parsed) ? (parsed as TeamMember[]) : []; 
@@ -249,9 +249,9 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
 
       advisors: (() => {
         try {
-          const advisors = project?.advisors as unknown;
+          const advisors: unknown = project?.advisors;
           if (!advisors) return [];
-          if (Array.isArray(advisors)) return advisors;
+          if (Array.isArray(advisors)) return advisors as Advisor[];
           const parsed = JSON.parse(String(advisors)) as unknown;
           return Array.isArray(parsed) ? (parsed as Advisor[]) : [];
         } catch (error) {
@@ -263,7 +263,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       tokenDistribution: (() => {
         const defaultDist: TokenDistribution = { publicSale: 0, team: 0, treasury: 0, marketing: 0 };
         try {
-          const tokenDistribution = project?.tokenDistribution as unknown;
+          const tokenDistribution: unknown = project?.tokenDistribution;
           if (!tokenDistribution) return defaultDist;
           // Si ya es un objeto (no array, no null), úsalo
           if (typeof tokenDistribution === 'object' && tokenDistribution !== null && !Array.isArray(tokenDistribution)) {
