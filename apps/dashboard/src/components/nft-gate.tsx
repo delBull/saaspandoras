@@ -74,15 +74,15 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
 
     // Enviamos la transacción y manejamos éxito/error.
     sendTransaction(transaction, {
-    onSuccess: () => {
-      setGateStatus("success");
-      setShowSuccessAnimation(true);
+        onSuccess: () => {
+          setGateStatus("success");
+          setShowSuccessAnimation(true);
 
-      // Forzar refresh después del minteo exitoso para verificar el estado
-      setTimeout(() => {
-        refetch();
-      }, 2000); // Esperar para que se indexe en blockchain
-    },
+          // Forzar refresh después del minteo exitoso para verificar el estado
+          setTimeout(() => {
+            void refetch();
+          }, 2000); // Esperar para que se indexe en blockchain
+        },
       onError: (error) => {
         console.error("Fallo al mintear Pandora's Key", error);
 
@@ -96,7 +96,7 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
             description: "Verificando tu estado...",
           });
           // Refrescamos la consulta para verificar de nuevo
-          refetch().then(() => {
+          void refetch().then(() => {
             setGateStatus("alreadyOwned");
             hasStartedProcessing.current = false;
           });

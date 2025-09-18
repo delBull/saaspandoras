@@ -57,7 +57,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     // Actualizar solo el status del proyecto
     const [updatedProject] = await db
       .update(projectsSchema)
-      .set({ status: status as any })
+      .set({ status: statusString as "pending" | "approved" | "live" | "completed" | "rejected" })
       .where(eq(projectsSchema.id, projectId))
       .returning();
 
