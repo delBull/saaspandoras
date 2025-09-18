@@ -36,11 +36,12 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       );
     }
 
-    const { status } = body as { status: string };
+    const { status } = body as { status: string | number | boolean };
+    const statusString = String(status);
 
     // Validar que el status sea válido
     const validStatuses = ['pending', 'approved', 'live', 'completed', 'rejected'];
-    if (!validStatuses.includes(status)) {
+    if (!validStatuses.includes(statusString)) {
       return NextResponse.json({ message: "Estado inválido" }, { status: 400 });
     }
 

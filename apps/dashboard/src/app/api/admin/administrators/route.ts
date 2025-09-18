@@ -53,7 +53,7 @@ export async function POST(request: Request) {
   try {
     const [newAdmin] = await db.insert(administrators).values({
       walletAddress: newAddress,
-      alias: validation.data.alias?.trim() || null, // Save the alias, trimmed or null
+      alias: validation.data.alias?.trim() ?? null, // Save the alias, trimmed or null
       addedBy: session.userId, // Guardamos quién lo añadió
     }).returning();
 
