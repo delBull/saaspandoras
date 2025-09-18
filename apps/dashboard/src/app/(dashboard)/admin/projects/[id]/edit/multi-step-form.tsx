@@ -208,7 +208,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       // Sección 4 - Opción segura para manejar tanto strings JSON como objetos
       teamMembers: (() => {
         try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
           const teamMembers = (project as any)?.teamMembers;
           if (!teamMembers) return [];
           if (Array.isArray(teamMembers)) return teamMembers;
@@ -222,7 +222,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
 
       advisors: (() => {
         try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
           const advisors = (project as any)?.advisors;
           if (!advisors) return [];
           if (Array.isArray(advisors)) return advisors;
@@ -236,7 +236,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
 
       tokenDistribution: (() => {
         try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
           const tokenDistribution = (project as any)?.tokenDistribution;
           if (!tokenDistribution) return { publicSale: 0, team: 0, treasury: 0, marketing: 0 };
           if (typeof tokenDistribution === 'object' && tokenDistribution !== null) {
@@ -352,7 +352,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
     
     // Preparamos los datos, convirtiendo undefined a 0 en la distribución
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
-    const tokenDist = (data.tokenDistribution as any) ?? {};
+    const tokenDist = ((data.tokenDistribution as any) ?? {}) as Record<string, number>;
     const finalDistribution = {
       publicSale: tokenDist.publicSale ?? 0,
       team: tokenDist.team ?? 0,
@@ -416,7 +416,8 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
     console.log('🚀 onAdminQuickSubmit called');
     
     // Preparamos los datos, convirtiendo undefined a 0 en la distribución
-    const tokenDist = (data.tokenDistribution as { publicSale?: number; team?: number; treasury?: number; marketing?: number } | undefined) ?? {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+    const tokenDist = ((data.tokenDistribution as any) ?? {}) as Record<string, number>;
     const finalDistribution = {
       publicSale: tokenDist.publicSale ?? 0,
       team: tokenDist.team ?? 0,
