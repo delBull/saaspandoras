@@ -209,9 +209,9 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       teamMembers: (() => {
         try {
           if (!project?.teamMembers) return [];
-          if (Array.isArray(project.teamMembers)) return project.teamMembers;
+          if (Array.isArray(project.teamMembers)) return project.teamMembers as Array<{name?: string; position?: string; linkedin?: string}>;
           const parsed = JSON.parse(String(project.teamMembers));
-          return Array.isArray(parsed) ? parsed : [];
+          return Array.isArray(parsed) ? parsed as Array<{name?: string; position?: string; linkedin?: string}> : [];
         } catch (error) {
           console.warn('Error parsing teamMembers:', project?.teamMembers, error);
           return [];
@@ -221,9 +221,9 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       advisors: (() => {
         try {
           if (!project?.advisors) return [];
-          if (Array.isArray(project.advisors)) return project.advisors;
+          if (Array.isArray(project.advisors)) return project.advisors as Array<{name?: string; profile?: string}>;
           const parsed = JSON.parse(String(project.advisors));
-          return Array.isArray(parsed) ? parsed : [];
+          return Array.isArray(parsed) ? parsed as Array<{name?: string; profile?: string}> : [];
         } catch (error) {
           console.warn('Error parsing advisors:', project?.advisors, error);
           return [];
@@ -233,9 +233,11 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       tokenDistribution: (() => {
         try {
           if (!project?.tokenDistribution) return { publicSale: 0, team: 0, treasury: 0, marketing: 0 };
-          if (typeof project.tokenDistribution === 'object' && project.tokenDistribution !== null) return project.tokenDistribution;
+          if (typeof project.tokenDistribution === 'object' && project.tokenDistribution !== null) {
+            return project.tokenDistribution as { publicSale?: number; team?: number; treasury?: number; marketing?: number };
+          }
           const parsed = JSON.parse(String(project.tokenDistribution));
-          return typeof parsed === 'object' && parsed !== null ? parsed : { publicSale: 0, team: 0, treasury: 0, marketing: 0 };
+          return typeof parsed === 'object' && parsed !== null ? parsed as { publicSale?: number; team?: number; treasury?: number; marketing?: number } : { publicSale: 0, team: 0, treasury: 0, marketing: 0 };
         } catch (error) {
           console.warn('Error parsing tokenDistribution:', project?.tokenDistribution, error);
           return { publicSale: 0, team: 0, treasury: 0, marketing: 0 };
@@ -545,9 +547,9 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
                 <Button
                   type="button"
                   variant="primary"
-                  onClick={async () => {
+                  onClick={() => {
                     const data = methods.getValues();
-                    await onAdminQuickSubmit(data);
+                    void onAdminQuickSubmit(data);
                   }}
                   disabled={isLoading}
                   className="w-full sm:w-auto"

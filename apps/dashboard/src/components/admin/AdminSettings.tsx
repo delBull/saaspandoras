@@ -36,7 +36,7 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
       const response = await fetch("/api/admin/administrators", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ walletAddress: newAddress, alias: newAlias.trim() || undefined }),
+          body: JSON.stringify({ walletAddress: newAddress, alias: newAlias.trim() || null }),
       });
 
       if (!response.ok) {
@@ -159,7 +159,6 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
                           className="w-32 h-8 text-sm bg-zinc-700 border-zinc-600"
                           placeholder="Alias..."
                           maxLength={100}
-                          autoFocus
                         />
                         <Button size="sm" variant="outline" onClick={handleUpdateAlias} className="h-8 px-2">
                           ✓
