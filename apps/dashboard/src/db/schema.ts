@@ -36,6 +36,7 @@ export const yieldSourceEnum = pgEnum("yield_source", [
 export const administrators = pgTable("administrators", {
   id: serial("id").primaryKey(),
   walletAddress: varchar("wallet_address", { length: 42 }).notNull().unique(),
+  alias: varchar("alias", { length: 100 }),
   role: varchar("role", { length: 50 }).default('admin').notNull(),
   addedBy: varchar("added_by", { length: 42 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),

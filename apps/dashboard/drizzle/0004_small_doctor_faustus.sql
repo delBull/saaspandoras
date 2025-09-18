@@ -1,0 +1,1 @@
+ALTER TABLE "administrators" ADD COLUMN "alias" varchar(100);

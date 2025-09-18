@@ -4,12 +4,13 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Input } from "@saasfly/ui/input";
 import { Button } from "@saasfly/ui/button";
-import { Trash2, PlusCircle, Loader2 } from "lucide-react";
+import { Trash2, PlusCircle, Loader2, Pencil } from "lucide-react";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 
 interface Admin {
   id: number;
   walletAddress: string;
+  alias?: string | null;
   role: string;
 }
 
@@ -20,7 +21,10 @@ interface AdminSettingsProps {
 export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
   const [admins, setAdmins] = useState<Admin[]>(initialAdmins);
   const [newAddress, setNewAddress] = useState("");
+  const [newAlias, setNewAlias] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [editingAliasId, setEditingAliasId] = useState<number | null>(null);
+  const [editingAliasValue, setEditingAliasValue] = useState("");
 
   const handleAddAdmin = async () => {
     if (!/^0x[a-fA-F0-9]{40}$/.test(newAddress)) {
@@ -32,7 +36,7 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
       const response = await fetch("/api/admin/administrators", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ walletAddress: newAddress }),
+        body: JSON.stringify({ walletAddress: newAddress, alias: newAlias.trim() || undefined }),
       });
 
       if (!response.ok) {
@@ -43,6 +47,7 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
       const newAdmin = await response.json() as Admin;
       setAdmins([...admins, newAdmin]);
       setNewAddress("");
+      setNewAlias("");
       toast.success("Administrador añadido exitosamente.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Ocurrió un error.");
@@ -72,19 +77,61 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
     }
   };
 
+  const handleStartEditAlias = (admin: Admin) => {
+    setEditingAliasId(admin.id);
+    setEditingAliasValue(admin.alias || "");
+  };
+
+  const handleCancelEditAlias = () => {
+    setEditingAliasId(null);
+    setEditingAliasValue("");
+  };
+
+  const handleUpdateAlias = async () => {
+    if (editingAliasId === null) return;
+
+    try {
+      const response = await fetch(`/api/admin/administrators/${editingAliasId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ alias: editingAliasValue.trim() || null }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json() as { message?: string };
+        throw new Error(errorData.message ?? "No se pudo actualizar el alias.");
+      }
+
+      const updatedAdmin = await response.json() as Admin;
+      setAdmins(admins.map(admin => admin.id === editingAliasId ? updatedAdmin : admin));
+      toast.success("Alias actualizado.");
+      handleCancelEditAlias();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Ocurrió un error.");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold text-white">Añadir Nuevo Administrador</h3>
-        <div className="flex gap-2 mt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
           <Input
             type="text"
-            placeholder="0x..."
+            placeholder="Dirección de Wallet (0x...)"
             value={newAddress}
             onChange={(e) => setNewAddress(e.target.value)}
-            className="bg-zinc-800 border-zinc-700"
+            className="bg-zinc-800 border-zinc-700 sm:col-span-1"
           />
-          <Button onClick={handleAddAdmin} disabled={isLoading} className="bg-lime-500 hover:bg-lime-600 text-zinc-900">
+          <Input
+            type="text"
+            placeholder="Alias (opcional)"
+            value={newAlias}
+            onChange={(e) => setNewAlias(e.target.value)}
+            className="bg-zinc-800 border-zinc-700 sm:col-span-1"
+            maxLength={100}
+          />
+          <Button onClick={handleAddAdmin} disabled={isLoading} className="bg-lime-500 hover:bg-lime-600 text-zinc-900 sm:col-span-1">
             {isLoading ? <Loader2 className="animate-spin" /> : <PlusCircle className="w-4 h-4 mr-2" />}
             Añadir
           </Button>
@@ -94,14 +141,53 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
         <h3 className="text-lg font-semibold text-white">Administradores Actuales</h3>
         <ul className="mt-2 space-y-2">
           {admins.map((admin) => (
-            <li key={admin.id} className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-md border border-zinc-700">
-              <div className="font-mono text-sm text-gray-300">{admin.walletAddress}</div>
-              {/* Verificación de seguridad en la UI: no mostrar el botón de borrar para el Super Admin */}
-              {admin.walletAddress.toLowerCase() !== SUPER_ADMIN_WALLET && (
-                <Button variant="destructive" size="sm" onClick={() => handleDeleteAdmin(admin.id)}>
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              )}
+            <li key={admin.id} className="p-3 bg-zinc-800/50 rounded-md border border-zinc-700">
+              <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <div className="font-semibold text-white">{admin.alias || 'Sin alias'}</div>
+                      <div className="font-mono text-xs text-gray-400 truncate max-w-xs">{admin.walletAddress}</div>
+                    </div>
+                    {editingAliasId === admin.id ? (
+                      <div className="flex items-center gap-2 ml-auto">
+                        <Input
+                          type="text"
+                          value={editingAliasValue}
+                          onChange={(e) => setEditingAliasValue(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleUpdateAlias()}
+                          className="w-32 h-8 text-sm bg-zinc-700 border-zinc-600"
+                          placeholder="Alias..."
+                          maxLength={100}
+                          autoFocus
+                        />
+                        <Button size="sm" variant="outline" onClick={handleUpdateAlias} className="h-8 px-2">
+                          ✓
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={handleCancelEditAlias} className="h-8 px-2 text-gray-400">
+                          ✕
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleStartEditAlias(admin)}
+                        className="h-8 w-8 p-0 text-gray-400 hover:text-white"
+                        title="Editar alias"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                {/* Verificación de seguridad en la UI: no mostrar el botón de borrar para el Super Admin */}
+                {admin.walletAddress.toLowerCase() !== SUPER_ADMIN_WALLET && (
+                  <Button variant="destructive" size="sm" onClick={() => handleDeleteAdmin(admin.id)} className="ml-2">
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
             </li>
           ))}
         </ul>
