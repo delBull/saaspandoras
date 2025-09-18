@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import type { FieldErrors } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { useForm, FormProvider } from "react-hook-form";
-// import { zodResolver } from "@hookform/resolvers/zod"; // Temporarily disabled for compatibility
+import { zodResolver } from "@hookform/resolvers/zod"; // FIX 1: Reactivado
 import { z } from "zod";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -64,11 +64,22 @@ interface Project {
   status?: string | null;
 }
 
+// FIX 2: Definir tipos claros para los datos parseados
+type TeamMember = { name: string; position: string; linkedin?: string | "" };
+type Advisor = { name: string; profile?: string };
+type TokenDistribution = {
+  publicSale?: number;
+  team?: number;
+  treasury?: number;
+  marketing?: number;
+};
+
+
 // Componentes UI inline (reutilizados de ProjectForm)
 const Button = ({ children, className = "", onClick, type = "button", disabled = false, variant = "primary" }: { 
   children: React.ReactNode, 
   className?: string, 
-  onClick?: () => void, 
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void, // Tipo ajustado para handleSubmit
   type?: "button" | "submit", 
   disabled?: boolean,
   variant?: "primary" | "secondary" | "outline"
@@ -130,7 +141,7 @@ const fullProjectSchema = z.object({
   fundUsage: z.string().optional(),
 
   // Sección 4: Equipo (simplificado)
-  teamMembers: z.any().optional(), // Usar any para evitar complejidad
+  teamMembers: z.any().optional(), // Usar any está bien aquí porque lo parseamos de forma segura abajo
   advisors: z.any().optional(),
   tokenDistribution: z.any().optional(),
   contractAddress: z.string().optional(),
@@ -171,9 +182,9 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
   const isAdminUser = !isPublic; // El estado de admin se deriva directamente de la prop.
   const totalSteps = 7;
   
-  // Formulario principal - deshabilitar resolución por problemas de compatibilidad de tipos
+  // Formulario principal
   const methods = useForm<FullProjectFormData>({
-    // resolver: zodResolver(fullProjectSchema), // Temporalmente deshabilitado por compatibilidad
+    resolver: zodResolver(fullProjectSchema), // FIX 1: Reactivado
     mode: 'onChange',
     defaultValues: {
       // Sección 1
@@ -205,15 +216,15 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       lockupPeriod: project?.lockupPeriod ?? undefined,
       fundUsage: project?.fundUsage ?? undefined,
       
-      // Sección 4 - Opción segura para manejar tanto strings JSON como objetos
+      // FIX 3: Parseo seguro de JSON que satisface a ESLint
       teamMembers: (() => {
         try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
-          const teamMembers = (project as any)?.teamMembers;
+          const teamMembers = project?.teamMembers as unknown; // Tratar como 'unknown' seguro
           if (!teamMembers) return [];
-          if (Array.isArray(teamMembers)) return teamMembers;
-          const parsed = JSON.parse(String(teamMembers));
-          return Array.isArray(parsed) ? parsed : [];
+          if (Array.isArray(teamMembers)) return teamMembers as TeamMember[]; // Confiar si ya es un array
+          const parsed = JSON.parse(String(teamMembers)) as unknown; // Parsear a 'unknown'
+          // Verificar que sea un array antes de castear y devolver
+          return Array.isArray(parsed) ? (parsed as TeamMember[]) : []; 
         } catch (error) {
           console.warn('Error parsing teamMembers:', project?.teamMembers, error);
           return [];
@@ -222,12 +233,11 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
 
       advisors: (() => {
         try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
-          const advisors = (project as any)?.advisors;
+          const advisors = project?.advisors as unknown;
           if (!advisors) return [];
-          if (Array.isArray(advisors)) return advisors;
-          const parsed = JSON.parse(String(advisors));
-          return Array.isArray(parsed) ? parsed : [];
+          if (Array.isArray(advisors)) return advisors as Advisor[];
+          const parsed = JSON.parse(String(advisors)) as unknown;
+          return Array.isArray(parsed) ? (parsed as Advisor[]) : [];
         } catch (error) {
           console.warn('Error parsing advisors:', project?.advisors, error);
           return [];
@@ -235,18 +245,22 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       })(),
 
       tokenDistribution: (() => {
+        const defaultDist: TokenDistribution = { publicSale: 0, team: 0, treasury: 0, marketing: 0 };
         try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
-          const tokenDistribution = (project as any)?.tokenDistribution;
-          if (!tokenDistribution) return { publicSale: 0, team: 0, treasury: 0, marketing: 0 };
-          if (typeof tokenDistribution === 'object' && tokenDistribution !== null) {
-            return tokenDistribution;
+          const tokenDistribution = project?.tokenDistribution as unknown;
+          if (!tokenDistribution) return defaultDist;
+          // Si ya es un objeto (no array, no null), úsalo
+          if (typeof tokenDistribution === 'object' && tokenDistribution !== null && !Array.isArray(tokenDistribution)) {
+            return tokenDistribution as TokenDistribution;
           }
-          const parsed = JSON.parse(String(tokenDistribution));
-          return typeof parsed === 'object' && parsed !== null ? parsed : { publicSale: 0, team: 0, treasury: 0, marketing: 0 };
+          const parsed = JSON.parse(String(tokenDistribution)) as unknown;
+          // Verifica que lo parseado sea un objeto
+          return (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed))
+            ? (parsed as TokenDistribution)
+            : defaultDist;
         } catch (error) {
           console.warn('Error parsing tokenDistribution:', project?.tokenDistribution, error);
-          return { publicSale: 0, team: 0, treasury: 0, marketing: 0 };
+          return defaultDist;
         }
       })(),
       contractAddress: project?.contractAddress ?? undefined,
@@ -280,25 +294,37 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
 
     const savedData = localStorage.getItem("pandoras-project-form");
     if (savedData) {
-      const parsed = JSON.parse(savedData) as Partial<FullProjectFormData>;
-      Object.keys(parsed).forEach((key) => {
-        setValue(key as keyof FullProjectFormData, parsed[key as keyof FullProjectFormData]);
-      });
-      const savedStep = localStorage.getItem("pandoras-project-step");
-      if (savedStep) {
-        setCurrentStep(Number(savedStep));
+      try {
+        const parsed = JSON.parse(savedData) as Partial<FullProjectFormData>;
+        Object.keys(parsed).forEach((key) => {
+          // Asegurarse de que la clave existe antes de asignarla
+          if (key in methods.getValues()) {
+             setValue(key as keyof FullProjectFormData, parsed[key as keyof FullProjectFormData]);
+          }
+        });
+        const savedStep = localStorage.getItem("pandoras-project-step");
+        if (savedStep) {
+          setCurrentStep(Number(savedStep));
+        }
+      } catch (e) {
+         console.error("Failed to parse saved form data from localStorage", e);
+         localStorage.removeItem("pandoras-project-form");
+         localStorage.removeItem("pandoras-project-step");
       }
     }
-  }, [setValue, isEdit]);
+  }, [setValue, isEdit, methods]);
 
   // Guardar progreso en localStorage
   useEffect(() => {
     if (isEdit) return;
 
-    const currentData = watch();
-    localStorage.setItem("pandoras-project-form", JSON.stringify(currentData));
-    localStorage.setItem("pandoras-project-step", currentStep.toString());
-  }, [watch, currentStep, isEdit]);
+    const subscription = watch(() => {
+      const currentData = methods.getValues();
+      localStorage.setItem("pandoras-project-form", JSON.stringify(currentData));
+      localStorage.setItem("pandoras-project-step", currentStep.toString());
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, currentStep, isEdit, methods]);
 
   // Navegación entre pasos
   const nextStep = async () => {
@@ -350,9 +376,8 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
     console.log('🚀 onFinalSubmit called with data:', data);
     setIsLoading(true);
     
-    // Preparamos los datos, convirtiendo undefined a 0 en la distribución
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
-    const tokenDist = ((data.tokenDistribution as any) ?? {}) as Record<string, number>;
+    // FIX 4: Eliminar la aserción 'as any' innecesaria.
+    const tokenDist = (data.tokenDistribution ?? {}) as Record<string, number>;
     const finalDistribution = {
       publicSale: tokenDist.publicSale ?? 0,
       team: tokenDist.team ?? 0,
@@ -384,6 +409,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
         throw new Error(errorData.message ?? "Error al guardar el proyecto");
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const responseData = await response.json();
       console.log('✅ Success response:', responseData);
 
@@ -415,9 +441,8 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
     setIsLoading(true);
     console.log('🚀 onAdminQuickSubmit called');
     
-    // Preparamos los datos, convirtiendo undefined a 0 en la distribución
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
-    const tokenDist = ((data.tokenDistribution as any) ?? {}) as Record<string, number>;
+    // FIX 4: Eliminar la aserción 'as any' innecesaria.
+    const tokenDist = (data.tokenDistribution ?? {}) as Record<string, number>;
     const finalDistribution = {
       publicSale: tokenDist.publicSale ?? 0,
       team: tokenDist.team ?? 0,
@@ -504,6 +529,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
               <div className="text-sm text-gray-500">
                 {currentStep > 1 && (
                   <button
+                    type="button" // Prevenir submit del form
                     onClick={prevStep}
                     className="text-lime-400 hover:text-lime-300 mr-4"
                   >
@@ -550,10 +576,8 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
                 <Button
                   type="button"
                   variant="primary"
-                  onClick={() => {
-                    const data = methods.getValues();
-                    void onAdminQuickSubmit(data);
-                  }}
+                  // FIX 5: Envolver el handler en handleSubmit para que valide primero
+                  onClick={handleSubmit(onAdminQuickSubmit, onValidationErrors)}
                   disabled={isLoading}
                   className="w-full sm:w-auto"
                 >
