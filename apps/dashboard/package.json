@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
-    "@hookform/resolvers/zod": "3.3.4",
+    "@hookform/resolvers": "3.3.4",
     "@saasfly/api": "workspace:*",
     "@saasfly/db": "workspace:*",
     "@saasfly/ui": "workspace:*",
