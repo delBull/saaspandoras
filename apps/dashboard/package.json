@@ -22,6 +22,7 @@
     "@t3-oss/env-nextjs": "0.8.0",
     "@tabler/icons-react": "^3.34.1",
     "@tanstack/react-table": "8.17.0",
+    "@thirdweb-dev/auth": "^4.1.97",
     "@trpc/client": "10.44.1",
     "@trpc/next": "10.44.1",
     "@trpc/react-query": "10.44.1",
