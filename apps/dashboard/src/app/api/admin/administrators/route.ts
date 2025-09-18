@@ -8,6 +8,7 @@ import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 
 const addAdminSchema = z.object({
   walletAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/, "Dirección de wallet inválida."),
+  alias: z.string().max(100, "El alias no puede tener más de 100 caracteres.").optional(),
 });
 
 export async function GET() {
@@ -52,6 +53,7 @@ export async function POST(request: Request) {
   try {
     const [newAdmin] = await db.insert(administrators).values({
       walletAddress: newAddress,
+      alias: validation.data.alias?.trim() || null, // Save the alias, trimmed or null
       addedBy: session.userId, // Guardamos quién lo añadió
     }).returning();
 

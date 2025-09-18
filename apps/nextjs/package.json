@@ -56,9 +56,9 @@
     "superjson": "2.2.1",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
-    "thirdweb": "^5.105.44",
+    "thirdweb": "^5.105.46",
     "vaul": "0.9.0",
-    "zod": "3.22.4",
+    "zod": "3.22.5",
     "zustand": "4.5.0"
   },
   "devDependencies": {

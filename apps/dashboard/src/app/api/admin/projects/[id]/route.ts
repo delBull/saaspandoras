@@ -10,6 +10,66 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
+export async function PATCH(request: Request, { params }: RouteParams) {
+  const { session } = getAuth();
+  const userIsAdmin = await isAdmin(session?.userId);
+
+  if (!userIsAdmin) {
+    return NextResponse.json({ message: "No autorizado" }, { status: 403 });
+  }
+
+  const { id } = await params;
+  const projectId = Number(id);
+
+  if (isNaN(projectId)) {
+    return NextResponse.json({ message: "ID de proyecto inválido" }, { status: 400 });
+  }
+
+  try {
+    const body: unknown = await request.json();
+
+    // For PATCH, we only allow status updates for now
+    if (typeof body !== 'object' || body === null || !('status' in body)) {
+      return NextResponse.json(
+        { message: "Solo se permite actualizar el estado del proyecto" },
+        { status: 400 }
+      );
+    }
+
+    const { status } = body as { status: string };
+
+    // Validar que el status sea válido
+    const validStatuses = ['pending', 'approved', 'live', 'completed', 'rejected'];
+    if (!validStatuses.includes(status)) {
+      return NextResponse.json({ message: "Estado inválido" }, { status: 400 });
+    }
+
+    // Verificar que el proyecto existe
+    const existingProject = await db.query.projects.findFirst({
+      where: eq(projectsSchema.id, projectId),
+    });
+
+    if (!existingProject) {
+      return NextResponse.json({ message: "Proyecto no encontrado" }, { status: 404 });
+    }
+
+    // Actualizar solo el status del proyecto
+    const [updatedProject] = await db
+      .update(projectsSchema)
+      .set({ status: status as any })
+      .where(eq(projectsSchema.id, projectId))
+      .returning();
+
+    return NextResponse.json(updatedProject, { status: 200 });
+  } catch (error) {
+    console.error("Error al actualizar el estado del proyecto:", error);
+    return NextResponse.json(
+      { message: "Error interno del servidor." },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PUT(request: Request, { params }: RouteParams) {
   const { session } = getAuth();
   const userIsAdmin = await isAdmin(session?.userId);
@@ -135,6 +195,46 @@ export async function PUT(request: Request, { params }: RouteParams) {
     return NextResponse.json(updatedProject, { status: 200 });
   } catch (error) {
     console.error("Error al actualizar el proyecto:", error);
+    return NextResponse.json(
+      { message: "Error interno del servidor." },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: Request, { params }: RouteParams) {
+  const { session } = getAuth();
+  const userIsAdmin = await isAdmin(session?.userId);
+
+  if (!userIsAdmin) {
+    return NextResponse.json({ message: "No autorizado" }, { status: 403 });
+  }
+
+  const { id } = await params;
+  const projectId = Number(id);
+
+  if (isNaN(projectId)) {
+    return NextResponse.json({ message: "ID de proyecto inválido" }, { status: 400 });
+  }
+
+  try {
+    // Verificar que el proyecto existe
+    const existingProject = await db.query.projects.findFirst({
+      where: eq(projectsSchema.id, projectId),
+    });
+
+    if (!existingProject) {
+      return NextResponse.json({ message: "Proyecto no encontrado" }, { status: 404 });
+    }
+
+    // Eliminar el proyecto de la base de datos
+    await db
+      .delete(projectsSchema)
+      .where(eq(projectsSchema.id, projectId));
+
+    return NextResponse.json({ message: "Proyecto eliminado exitosamente" }, { status: 200 });
+  } catch (error) {
+    console.error("Error al eliminar el proyecto:", error);
     return NextResponse.json(
       { message: "Error interno del servidor." },
       { status: 500 }
