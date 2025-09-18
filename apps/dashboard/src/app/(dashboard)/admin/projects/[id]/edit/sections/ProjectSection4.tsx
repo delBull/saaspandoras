@@ -204,7 +204,8 @@ export function ProjectSection4() {
     name: "advisors"
   });
 
-  const distribution = watch("tokenDistribution") ?? {};
+  const rawDistribution = watch("tokenDistribution") as unknown as { publicSale?: number; team?: number; treasury?: number; marketing?: number } | undefined;
+  const distribution = rawDistribution ?? {};
   const totalDistribution = Object.values(distribution).reduce((sum: number, val) => sum + (Number(val) ?? 0), 0);
 
   const handleDistributionChange = (key: keyof NonNullable<FullProjectFormData['tokenDistribution']>, value: number | undefined) => {

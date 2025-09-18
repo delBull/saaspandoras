@@ -208,10 +208,12 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       // Sección 4 - Opción segura para manejar tanto strings JSON como objetos
       teamMembers: (() => {
         try {
-          if (!project?.teamMembers) return [];
-          if (Array.isArray(project.teamMembers)) return project.teamMembers as {name?: string; position?: string; linkedin?: string}[];
-          const parsed = JSON.parse(String(project.teamMembers));
-          return Array.isArray(parsed) ? parsed as {name?: string; position?: string; linkedin?: string}[] : [];
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return
+          const teamMembers = (project as any)?.teamMembers;
+          if (!teamMembers) return [];
+          if (Array.isArray(teamMembers)) return teamMembers;
+          const parsed = JSON.parse(String(teamMembers));
+          return Array.isArray(parsed) ? parsed : [];
         } catch (error) {
           console.warn('Error parsing teamMembers:', project?.teamMembers, error);
           return [];
@@ -220,10 +222,12 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
 
       advisors: (() => {
         try {
-          if (!project?.advisors) return [];
-          if (Array.isArray(project.advisors)) return project.advisors as {name?: string; profile?: string}[];
-          const parsed = JSON.parse(String(project.advisors));
-          return Array.isArray(parsed) ? parsed as {name?: string; profile?: string}[] : [];
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return
+          const advisors = (project as any)?.advisors;
+          if (!advisors) return [];
+          if (Array.isArray(advisors)) return advisors;
+          const parsed = JSON.parse(String(advisors));
+          return Array.isArray(parsed) ? parsed : [];
         } catch (error) {
           console.warn('Error parsing advisors:', project?.advisors, error);
           return [];
@@ -232,12 +236,14 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
 
       tokenDistribution: (() => {
         try {
-          if (!project?.tokenDistribution) return { publicSale: 0, team: 0, treasury: 0, marketing: 0 };
-          if (typeof project.tokenDistribution === 'object' && project.tokenDistribution !== null) {
-            return project.tokenDistribution as { publicSale?: number; team?: number; treasury?: number; marketing?: number };
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return
+          const tokenDistribution = (project as any)?.tokenDistribution;
+          if (!tokenDistribution) return { publicSale: 0, team: 0, treasury: 0, marketing: 0 };
+          if (typeof tokenDistribution === 'object' && tokenDistribution !== null) {
+            return tokenDistribution;
           }
-          const parsed = JSON.parse(String(project.tokenDistribution));
-          return typeof parsed === 'object' && parsed !== null ? parsed as { publicSale?: number; team?: number; treasury?: number; marketing?: number } : { publicSale: 0, team: 0, treasury: 0, marketing: 0 };
+          const parsed = JSON.parse(String(tokenDistribution));
+          return typeof parsed === 'object' && parsed !== null ? parsed : { publicSale: 0, team: 0, treasury: 0, marketing: 0 };
         } catch (error) {
           console.warn('Error parsing tokenDistribution:', project?.tokenDistribution, error);
           return { publicSale: 0, team: 0, treasury: 0, marketing: 0 };
@@ -266,13 +272,12 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
     },
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { handleSubmit, watch, setValue, formState: { errors }, trigger } = methods;
 
   // Cargar progreso desde localStorage
   useEffect(() => {
     if (isEdit) return;
-    
+
     const savedData = localStorage.getItem("pandoras-project-form");
     if (savedData) {
       const parsed = JSON.parse(savedData) as Partial<FullProjectFormData>;
@@ -289,7 +294,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
   // Guardar progreso en localStorage
   useEffect(() => {
     if (isEdit) return;
-    
+
     const currentData = watch();
     localStorage.setItem("pandoras-project-form", JSON.stringify(currentData));
     localStorage.setItem("pandoras-project-step", currentStep.toString());
@@ -334,23 +339,20 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
     return fieldMap[step] ?? {};
   };
 
-  // --- AÑADIDO: Manejador de errores de validación ---
-  // Esta función se ejecutará si handleSubmit encuentra errores en el formulario.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // Manejador de errores de validación
   const onValidationErrors = (errors: FieldErrors<FullProjectFormData>) => {
     console.error("Errores de validación del formulario:", errors);
     const errorFields = Object.keys(errors).join(", ");
     toast.error(`Hay errores en el formulario. Revisa los campos: ${errorFields}`);
   };
-  // --- FIN DEL BLOQUE AÑADIDO ---
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const onFinalSubmit = async (data: FullProjectFormData) => {
     console.log('🚀 onFinalSubmit called with data:', data);
     setIsLoading(true);
     
     // Preparamos los datos, convirtiendo undefined a 0 en la distribución
-    const tokenDist = (data.tokenDistribution as { publicSale?: number; team?: number; treasury?: number; marketing?: number } | undefined) ?? {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+    const tokenDist = (data.tokenDistribution as any) ?? {};
     const finalDistribution = {
       publicSale: tokenDist.publicSale ?? 0,
       team: tokenDist.team ?? 0,
