@@ -65,14 +65,23 @@ interface Project {
 }
 
 // FIX 2: Definir tipos claros para los datos parseados
-type TeamMember = { name: string; position: string; linkedin?: string | "" };
-type Advisor = { name: string; profile?: string };
-type TokenDistribution = {
+interface TeamMember {
+  name: string;
+  position: string;
+  linkedin?: string;
+}
+
+interface Advisor {
+  name: string;
+  profile?: string;
+}
+
+interface TokenDistribution {
   publicSale?: number;
   team?: number;
   treasury?: number;
   marketing?: number;
-};
+}
 
 
 // Componentes UI inline (reutilizados de ProjectForm)
@@ -409,7 +418,6 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
         throw new Error(errorData.message ?? "Error al guardar el proyecto");
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const responseData = await response.json();
       console.log('✅ Success response:', responseData);
 
