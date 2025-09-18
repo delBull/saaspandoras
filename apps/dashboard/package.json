@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
-    "@hookform/resolvers/zod": "latest",
+    "@hookform/resolvers/zod": "3.3.4",
     "@saasfly/api": "workspace:*",
     "@saasfly/db": "workspace:*",
     "@saasfly/ui": "workspace:*",
@@ -46,9 +46,9 @@
     "superjson": "2.2.1",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
-    "thirdweb": "^5.105.46",
+    "thirdweb": "^5.105.44",
     "vaul": "0.9.0",
-    "zod": "latest" 
+    "zod": "3.22.4"
   },
   "devDependencies": {
     "@saasfly/eslint-config": "workspace:*",
