@@ -223,7 +223,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       // Sección 3
       targetAmount: Number(project?.targetAmount ?? 0),
       totalValuationUsd: Number(project?.totalValuationUsd ?? 0),
-      tokenType: (project?.tokenType as "erc20" | "erc721" | "erc1155" | null | undefined) ?? undefined,
+      tokenType: project?.tokenType as FullProjectFormData['tokenType'],
       totalTokens: Number(project?.totalTokens ?? 0),
       tokensOffered: Number(project?.tokensOffered ?? 1),
       tokenPriceUsd: Number(project?.tokenPriceUsd ?? 0),
@@ -237,7 +237,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
         try {
           const teamMembers = project?.teamMembers as unknown; // Tratar como 'unknown' seguro
           if (!teamMembers) return [];
-          if (Array.isArray(teamMembers)) return teamMembers as TeamMember[]; // Confiar si ya es un array
+          if (Array.isArray(teamMembers)) return teamMembers; // La aserción es innecesaria si el schema es `z.any()`
           const parsed = JSON.parse(String(teamMembers)) as unknown; // Parsear a 'unknown'
           // Verificar que sea un array antes de castear y devolver
           return Array.isArray(parsed) ? (parsed as TeamMember[]) : []; 
@@ -251,7 +251,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
         try {
           const advisors = project?.advisors as unknown;
           if (!advisors) return [];
-          if (Array.isArray(advisors)) return advisors as Advisor[];
+          if (Array.isArray(advisors)) return advisors;
           const parsed = JSON.parse(String(advisors)) as unknown;
           return Array.isArray(parsed) ? (parsed as Advisor[]) : [];
         } catch (error) {
@@ -420,14 +420,14 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       console.log('📡 Response status:', response.status, response.ok);
 
       if (!response.ok) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const errorData = await response.json() as { message?: string, errors?: any };
+        const errorData: unknown = await response.json();
+        const errorMessage = (errorData as { message?: string })?.message ?? "Error al guardar el proyecto";
         console.error("❌ Error del servidor:", errorData);
-        throw new Error(errorData.message ?? "Error al guardar el proyecto");
+        throw new Error(errorMessage);
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const responseData = await response.json() as any;
+      // La respuesta se usa solo para log, así que 'unknown' es seguro.
+      const responseData: unknown = await response.json();
       console.log('✅ Success response:', responseData);
 
       toast.success(`Proyecto ${isEdit ? "actualizado" : isPublic ? "enviado para revisión" : "creado y subido"} exitosamente!`);
@@ -484,10 +484,10 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       console.log('📡 Admin quick submit response status:', response.status);
 
       if (!response.ok) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const errorData = await response.json() as { message?: string, errors?: any };
+        const errorData: unknown = await response.json();
+        const errorMessage = (errorData as { message?: string })?.message ?? "Error al guardar el proyecto";
         console.error(`❌ Error del servidor (${response.status}):`, errorData);
-        throw new Error(errorData.message ?? "Error al guardar el proyecto");
+        throw new Error(errorMessage);
       }
 
       toast.success("Proyecto creado y publicado rápidamente!");
