@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { HomeIcon, ArrowPathIcon, BanknotesIcon, ChevronLeftIcon, ChevronRightIcon, XMarkIcon, UserGroupIcon, ShieldCheckIcon, ArrowLeftOnRectangleIcon, ChevronDoubleRightIcon, ChartPieIcon } from "@heroicons/react/24/outline";
 import { cn } from "@saasfly/ui";
 import { useActiveAccount, useDisconnect, useActiveWallet, useConnectModal } from "thirdweb/react";
-import { createWallet, inAppWallet } from "thirdweb/wallets"; 
+import { createWallet, inAppWallet } from "thirdweb/wallets";
 import { config } from "@/config";
 import { client } from "@/lib/thirdweb-client";
 
@@ -110,22 +110,23 @@ export function Sidebar({ wallet: walletProp, userName, isAdmin }: SidebarProps)
               </div>
               <motion.div animate={{ opacity: open ? 1 : 0, height: open ? "auto" : 0 }} className="overflow-hidden w-full">
                   <button
-                    onClick={() => connect({ 
-                      client, 
+                    onClick={() => connect({
+                      client,
                       chain: config.chain,
-                      showThirdwebBranding: false, 
-                      wallets: [ 
-                        inAppWallet({ 
-                          auth: { 
-                            options: ["email", "google", "apple", "facebook", "passkey"], 
-                          }, 
-                          executionMode: { 
+                      showThirdwebBranding: false,
+                      wallets: [
+                        inAppWallet({
+                          auth: {
+                            options: ["email", "google", "apple", "facebook", "passkey"],
+                            mode: "popup",
+                          },
+                          executionMode: {
                             mode: "EIP7702",
-                            sponsorGas: true, 
-                          }, 
-                        }), 
-                        createWallet("io.metamask"), 
-                      ], 
+                            sponsorGas: true,
+                          },
+                        }),
+                        createWallet("io.metamask"),
+                      ],
                     })}
                     disabled={isConnecting}
                     className="w-full bg-gradient-to-r from-lime-300 to-lime-400 text-gray-800 py-2 px-4 rounded-md hover:opacity-90 font-semibold transition text-sm"
