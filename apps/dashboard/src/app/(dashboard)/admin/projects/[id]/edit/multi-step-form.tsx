@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import type { FieldError } from "react-hook-form";
+import type { FieldErrors } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -228,10 +228,42 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       lockupPeriod: project?.lockupPeriod ?? undefined,
       fundUsage: project?.fundUsage ?? undefined,
       
-      // Sección 4
-      teamMembers: project?.teamMembers ? (JSON.parse(String(project.teamMembers)) as { name: string; position: string; linkedin?: string }[]) : [], // Parsear si viene de DB
-      advisors: project?.advisors ? (JSON.parse(String(project.advisors)) as { name: string; profile: string }[]) : [], // Parsear si viene de DB
-      tokenDistribution: project?.tokenDistribution ? (JSON.parse(String(project.tokenDistribution)) as Record<string, number>) : { publicSale: 0, team: 0, treasury: 0, marketing: 0 }, // Parsear si viene de DB
+      // Sección 4 - Opción segura para manejar tanto strings JSON como objetos
+      teamMembers: (() => {
+        try {
+          if (!project?.teamMembers) return [];
+          if (Array.isArray(project.teamMembers)) return project.teamMembers;
+          const parsed = JSON.parse(String(project.teamMembers));
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (error) {
+          console.warn('Error parsing teamMembers:', project?.teamMembers, error);
+          return [];
+        }
+      })(),
+
+      advisors: (() => {
+        try {
+          if (!project?.advisors) return [];
+          if (Array.isArray(project.advisors)) return project.advisors;
+          const parsed = JSON.parse(String(project.advisors));
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (error) {
+          console.warn('Error parsing advisors:', project?.advisors, error);
+          return [];
+        }
+      })(),
+
+      tokenDistribution: (() => {
+        try {
+          if (!project?.tokenDistribution) return { publicSale: 0, team: 0, treasury: 0, marketing: 0 };
+          if (typeof project.tokenDistribution === 'object' && project.tokenDistribution !== null) return project.tokenDistribution;
+          const parsed = JSON.parse(String(project.tokenDistribution));
+          return typeof parsed === 'object' && parsed !== null ? parsed : { publicSale: 0, team: 0, treasury: 0, marketing: 0 };
+        } catch (error) {
+          console.warn('Error parsing tokenDistribution:', project?.tokenDistribution, error);
+          return { publicSale: 0, team: 0, treasury: 0, marketing: 0 };
+        }
+      })(),
       contractAddress: project?.contractAddress ?? undefined,
       treasuryAddress: project?.treasuryAddress ?? undefined,
       
@@ -326,15 +358,16 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
   // --- AÑADIDO: Manejador de errores de validación ---
   // Esta función se ejecutará si handleSubmit encuentra errores en el formulario.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const onValidationErrors = (formErrors: Record<string, FieldError>) => {
-    console.error("Errores de validación del formulario:", formErrors);
-    const errorFields = Object.keys(formErrors).join(", ");
+  const onValidationErrors = (errors: FieldErrors<FullProjectFormData>) => {
+    console.error("Errores de validación del formulario:", errors);
+    const errorFields = Object.keys(errors).join(", ");
     toast.error(`Hay errores en el formulario. Revisa los campos: ${errorFields}`);
   };
   // --- FIN DEL BLOQUE AÑADIDO ---
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const onFinalSubmit = async (data: FullProjectFormData) => {
+    console.log('🚀 onFinalSubmit called with data:', data);
     setIsLoading(true);
     
     // Preparamos los datos, convirtiendo `undefined` a 0 en la distribución
@@ -353,20 +386,26 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       tokenDistribution: JSON.stringify(finalDistribution),
     };
 
+    console.log('📤 Submitting data to:', apiEndpoint, submitData);
+
     try {
       const response = await fetch(apiEndpoint, {
         method: isEdit ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(submitData), // Enviamos los datos preparados
+        body: JSON.stringify(submitData),
       });
+
+      console.log('📡 Response status:', response.status, response.ok);
 
       if (!response.ok) {
         const errorData = await response.json() as { message?: string, errors?: unknown };
-        console.error("Error del servidor (400):", errorData.errors); // Loguea el error real
+        console.error("❌ Error del servidor:", errorData);
         throw new Error(errorData.message ?? "Error al guardar el proyecto");
       }
 
-      await response.json();
+      const responseData = await response.json();
+      console.log('✅ Success response:', responseData);
+
       toast.success(`Proyecto ${isEdit ? "actualizado" : isPublic ? "enviado para revisión" : "creado y subido"} exitosamente!`);
       
       if (!isEdit) {
@@ -382,6 +421,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       router.refresh();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Ocurrió un error al guardar el proyecto";
+      console.error('💥 Submit error:', error);
       toast.error(message);
     } finally {
       setIsLoading(false);
@@ -392,6 +432,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
     if (isPublic) return; // No quick submit for public users
     
     setIsLoading(true);
+    console.log('🚀 onAdminQuickSubmit called');
     
     // Preparamos los datos, convirtiendo `undefined` a 0 en la distribución
     // y luego stringificando los campos anidados.
@@ -413,12 +454,14 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       const response = await fetch(apiEndpoint, {
         method: isEdit ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...preparedData, status: "approved" }), // Forzamos el estado a 'approved'
+        body: JSON.stringify({ ...preparedData, status: "approved" }),
       });
+
+      console.log('📡 Admin quick submit response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.json() as { message?: string, errors?: unknown };
-        console.error(`Error del servidor (${response.status}):`, errorData); // Loguea el error real y completo
+        console.error(`❌ Error del servidor (${response.status}):`, errorData);
         throw new Error(errorData.message ?? "Error al guardar el proyecto");
       }
 
@@ -433,6 +476,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       router.refresh();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Ocurrió un error";
+      console.error('💥 Admin submit error:', error);
       toast.error(message);
     } finally {
       setIsLoading(false);
@@ -454,7 +498,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
   return (
     <div className="min-h-screen bg-zinc-950">
       <FormProvider {...methods}>
-        <div className="max-w-4xl mx-auto p-4 md:p-8">
+        <form onSubmit={handleSubmit(onFinalSubmit, onValidationErrors)} className="max-w-4xl mx-auto p-4 md:p-8">
           {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-lime-400 to-emerald-500 bg-clip-text text-transparent mb-2">
@@ -486,6 +530,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
                 )}
                 {currentStep < totalSteps && (
                   <button
+                    type="button"
                     onClick={nextStep}
                     className="text-lime-400 hover:text-lime-300"
                     disabled={!isAdminUser && Object.keys(errors).length > 0}
@@ -512,7 +557,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
               <Button
                 type="submit"
                 variant="secondary"
-                disabled={isLoading}
+                disabled={isLoading || Object.keys(errors).length > 0}
                 className="w-full sm:w-auto"
               >
                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
@@ -551,7 +596,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
               </Button>
             </div>
           )}
-        </div>
+        </form>
       </FormProvider>
     </div>
   );
