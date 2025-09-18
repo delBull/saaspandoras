@@ -209,9 +209,9 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       teamMembers: (() => {
         try {
           if (!project?.teamMembers) return [];
-          if (Array.isArray(project.teamMembers)) return project.teamMembers as Array<{name?: string; position?: string; linkedin?: string}>;
+          if (Array.isArray(project.teamMembers)) return project.teamMembers as {name?: string; position?: string; linkedin?: string}[];
           const parsed = JSON.parse(String(project.teamMembers));
-          return Array.isArray(parsed) ? parsed as Array<{name?: string; position?: string; linkedin?: string}> : [];
+          return Array.isArray(parsed) ? parsed as {name?: string; position?: string; linkedin?: string}[] : [];
         } catch (error) {
           console.warn('Error parsing teamMembers:', project?.teamMembers, error);
           return [];
@@ -221,9 +221,9 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       advisors: (() => {
         try {
           if (!project?.advisors) return [];
-          if (Array.isArray(project.advisors)) return project.advisors as Array<{name?: string; profile?: string}>;
+          if (Array.isArray(project.advisors)) return project.advisors as {name?: string; profile?: string}[];
           const parsed = JSON.parse(String(project.advisors));
-          return Array.isArray(parsed) ? parsed as Array<{name?: string; profile?: string}> : [];
+          return Array.isArray(parsed) ? parsed as {name?: string; profile?: string}[] : [];
         } catch (error) {
           console.warn('Error parsing advisors:', project?.advisors, error);
           return [];
