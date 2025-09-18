@@ -85,17 +85,24 @@ interface TokenDistribution {
 
 
 // Componentes UI inline (reutilizados de ProjectForm)
-const Button = ({ children, className = "", onClick, type = "button", disabled = false, variant = "primary" }: { 
-  children: React.ReactNode, 
-  className?: string, 
-  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void, // Tipo ajustado para handleSubmit
-  type?: "button" | "submit", 
-  disabled?: boolean,
-  variant?: "primary" | "secondary" | "outline"
+const Button = ({
+  children,
+  className = "",
+  onClick,
+  type = "button",
+  disabled = false,
+  variant = "primary"
+}: {
+  children: React.ReactNode;
+  className?: string;
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  type?: "button" | "submit";
+  disabled?: boolean;
+  variant?: "primary" | "secondary" | "outline";
 }) => (
-  <button 
-    type={type} 
-    onClick={onClick} 
+  <button
+    type={type}
+    onClick={onClick}
     disabled={disabled}
     className={`
       px-6 py-3 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed
@@ -413,12 +420,14 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       console.log('📡 Response status:', response.status, response.ok);
 
       if (!response.ok) {
-        const errorData = await response.json() as { message?: string, errors?: unknown };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const errorData = await response.json() as { message?: string, errors?: any };
         console.error("❌ Error del servidor:", errorData);
         throw new Error(errorData.message ?? "Error al guardar el proyecto");
       }
 
-      const responseData = await response.json();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const responseData = await response.json() as any;
       console.log('✅ Success response:', responseData);
 
       toast.success(`Proyecto ${isEdit ? "actualizado" : isPublic ? "enviado para revisión" : "creado y subido"} exitosamente!`);
@@ -475,7 +484,8 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       console.log('📡 Admin quick submit response status:', response.status);
 
       if (!response.ok) {
-        const errorData = await response.json() as { message?: string, errors?: unknown };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const errorData = await response.json() as { message?: string, errors?: any };
         console.error(`❌ Error del servidor (${response.status}):`, errorData);
         throw new Error(errorData.message ?? "Error al guardar el proyecto");
       }
