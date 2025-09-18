@@ -35,7 +35,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   try {
     const [updatedAdmin] = await db.update(administrators)
-      .set({ alias: validation.data.alias?.trim() || null })
+      .set({ alias: validation.data.alias?.trim() ?? null })
       .where(eq(administrators.id, adminId))
       .returning();
 

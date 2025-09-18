@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import type { FieldErrors } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { useForm, FormProvider } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+// import { zodResolver } from "@hookform/resolvers/zod"; // Temporarily disabled for compatibility
 import { z } from "zod";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -347,13 +347,13 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
     console.log('🚀 onFinalSubmit called with data:', data);
     setIsLoading(true);
     
-    // Preparamos los datos, convirtiendo `undefined` a 0 en la distribución
-    // y luego stringificando los campos anidados que el backend espera como JSON.
+    // Preparamos los datos, convirtiendo undefined a 0 en la distribución
+    const tokenDist = (data.tokenDistribution as { publicSale?: number; team?: number; treasury?: number; marketing?: number } | undefined) ?? {};
     const finalDistribution = {
-      publicSale: data.tokenDistribution?.publicSale ?? 0,
-      team: data.tokenDistribution?.team ?? 0,
-      treasury: data.tokenDistribution?.treasury ?? 0,
-      marketing: data.tokenDistribution?.marketing ?? 0,
+      publicSale: tokenDist.publicSale ?? 0,
+      team: tokenDist.team ?? 0,
+      treasury: tokenDist.treasury ?? 0,
+      marketing: tokenDist.marketing ?? 0,
     };
 
     const submitData = {
@@ -411,13 +411,13 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
     setIsLoading(true);
     console.log('🚀 onAdminQuickSubmit called');
     
-    // Preparamos los datos, convirtiendo `undefined` a 0 en la distribución
-    // y luego stringificando los campos anidados.
+    // Preparamos los datos, convirtiendo undefined a 0 en la distribución
+    const tokenDist = (data.tokenDistribution as { publicSale?: number; team?: number; treasury?: number; marketing?: number } | undefined) ?? {};
     const finalDistribution = {
-      publicSale: data.tokenDistribution?.publicSale ?? 0,
-      team: data.tokenDistribution?.team ?? 0,
-      treasury: data.tokenDistribution?.treasury ?? 0,
-      marketing: data.tokenDistribution?.marketing ?? 0,
+      publicSale: tokenDist.publicSale ?? 0,
+      team: tokenDist.team ?? 0,
+      treasury: tokenDist.treasury ?? 0,
+      marketing: tokenDist.marketing ?? 0,
     };
 
     const preparedData = {
