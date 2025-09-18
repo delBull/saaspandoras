@@ -79,7 +79,7 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
 
   const handleStartEditAlias = (admin: Admin) => {
     setEditingAliasId(admin.id);
-    setEditingAliasValue(admin.alias || "");
+    setEditingAliasValue(admin.alias ?? "");
   };
 
   const handleCancelEditAlias = () => {
@@ -146,7 +146,7 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3">
                     <div>
-                      <div className="font-semibold text-white">{admin.alias || 'Sin alias'}</div>
+                      <div className="font-semibold text-white">{admin.alias ?? 'Sin alias'}</div>
                       <div className="font-mono text-xs text-gray-400 truncate max-w-xs">{admin.walletAddress}</div>
                     </div>
                     {editingAliasId === admin.id ? (
