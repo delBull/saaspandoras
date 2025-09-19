@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { createAuth } from "thirdweb/auth";
 import { createThirdwebClient } from "thirdweb";
 
@@ -7,12 +7,18 @@ const client = createThirdwebClient({
 });
 
 const auth = createAuth({
-  domain: process.env.NEXT_PUBLIC_URL || "http://localhost:3000",
+  domain: process.env.NEXT_PUBLIC_URL ?? "http://localhost:3000",
   client,
 });
 
+interface AuthRequest {
+  address: string;
+  chainId: number;
+}
+
 export async function POST(req: NextRequest) {
-  const { address, chainId } = await req.json();
+  const body: AuthRequest = await req.json();
+  const { address, chainId } = body;
   const payload = await auth.generatePayload({ address, chainId });
   return NextResponse.json(payload);
 }

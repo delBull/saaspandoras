@@ -5,7 +5,7 @@ import { projectApiSchema } from "@/lib/project-schema-api";
 import { getAuth, isAdmin } from "@/lib/auth";
 import slugify from "slugify";
 
-export async function GET(request: Request) {
+export async function GET(_request: Request) {
   const { session } = getAuth();
   const userIsAdmin = await isAdmin(session?.userId);
 
