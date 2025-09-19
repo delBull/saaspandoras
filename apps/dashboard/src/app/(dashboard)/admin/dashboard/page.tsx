@@ -40,7 +40,7 @@ export default function AdminDashboardPage() {
         // Fetch projects
         const projectsRes = await fetch('/api/admin/projects');
         if (projectsRes.ok) {
-          const projectsData: Project[] = await projectsRes.json();
+          const projectsData = await projectsRes.json() as Project[];
           setProjects(projectsData);
         }
 

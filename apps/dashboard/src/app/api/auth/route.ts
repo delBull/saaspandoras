@@ -17,8 +17,9 @@ interface AuthRequest {
 }
 
 export async function POST(req: NextRequest) {
-  const body: AuthRequest = await req.json();
-  const { address, chainId } = body;
+  const body = await req.json() as unknown;
+  const authRequest = body as AuthRequest;
+  const { address, chainId } = authRequest;
   const payload = await auth.generatePayload({ address, chainId });
   return NextResponse.json(payload);
 }
