@@ -17,7 +17,9 @@ interface AuthRequest {
 }
 
 export async function POST(req: NextRequest) {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const body = await req.json() as unknown;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const authRequest = body as AuthRequest;
   const { address, chainId } = authRequest;
   const payload = await auth.generatePayload({ address, chainId });
@@ -33,9 +35,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Missing params" }, { status: 400 });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const parsedPayload = JSON.parse(payloadParam);
 
   const verified = await auth.verifyPayload({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unnecessary-type-assertion
     payload: parsedPayload as any, // Required for thirdweb API types
     signature,
   });
