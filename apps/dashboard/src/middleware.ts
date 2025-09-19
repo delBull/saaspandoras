@@ -2,16 +2,6 @@ import { NextResponse } from "next/server";
 import { type NextRequest } from "next/server";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 
-type CookieData = {
-  address?: string;
-  user?: string;
-};
-
-// Type guard function to check if object has string property
-function isString(value: unknown): value is string {
-  return typeof value === 'string';
-}
-
 export function middleware(request: NextRequest) {
   // Solo interceptar rutas que empiecen con /admin/
   if (request.nextUrl.pathname.startsWith("/admin/") ??
@@ -43,18 +33,20 @@ export function middleware(request: NextRequest) {
       } else if (thirdwebCookie?.value) {
         // Intentar parsear la dirección de las cookies
         try {
-          const parsedValue = JSON.parse(thirdwebCookie.value);
+          const parsedValue: unknown = JSON.parse(thirdwebCookie.value);
 
-          // Use type guard to safely access properties
-          const address = parsedValue && typeof parsedValue === 'object' &&
-                         parsedValue.address && isString(parsedValue.address)
-            ? parsedValue.address
-            : parsedValue && typeof parsedValue === 'object' &&
-              parsedValue.user && isString(parsedValue.user)
-            ? parsedValue.user : null;
-
-          if (address && isString(address) && address.startsWith('0x') && address.length === 42) {
-            userAddress = address.toLowerCase();
+          // Validar de forma segura que el valor parseado es un objeto con las propiedades esperadas
+          if (typeof parsedValue === 'object' && parsedValue !== null) {
+            let potentialAddress: string | null = null;
+            if ('address' in parsedValue && typeof parsedValue.address === 'string') {
+              potentialAddress = parsedValue.address;
+            } else if ('user' in parsedValue && typeof parsedValue.user === 'string') {
+              potentialAddress = parsedValue.user;
+            }
+            
+            if (potentialAddress && potentialAddress.startsWith('0x') && potentialAddress.length === 42) {
+              userAddress = potentialAddress.toLowerCase();
+            }
           }
         } catch (parseError) {
           console.log('Middleware: Unable to parse auth cookie:', parseError);
