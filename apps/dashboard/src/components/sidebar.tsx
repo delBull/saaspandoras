@@ -118,7 +118,6 @@ export function Sidebar({ wallet: walletProp, userName, isAdmin }: SidebarProps)
                         inAppWallet({
                           auth: {
                             options: ["email", "google", "apple", "facebook", "passkey"],
-                            mode: "popup",
                           },
                           executionMode: {
                             mode: "EIP7702",
@@ -234,21 +233,23 @@ export function Sidebar({ wallet: walletProp, userName, isAdmin }: SidebarProps)
                     </div>
                     <div className="w-full">
                         <button
-                          onClick={() => connect({ 
-                            client, 
+                          onClick={() => connect({
+                            client,
                             chain: config.chain,
-                            showThirdwebBranding: false, 
-                            wallets: [ 
-                              inAppWallet({ 
-                                auth: { 
-                                  options: ["email", "google", "apple", "facebook", "passkey"], 
-                                }, 
-                                executionMode: { 
-                                  mode: "EIP7702", 
-                                  sponsorGas: true, 
-                                }, 
-                              }), 
-                              createWallet("io.metamask"), ], })}
+                            showThirdwebBranding: false,
+                            wallets: [
+                              inAppWallet({
+                                auth: {
+                                  options: ["email", "google", "apple", "facebook", "passkey"],
+                                },
+                                executionMode: {
+                                  mode: "EIP7702",
+                                  sponsorGas: true,
+                                },
+                              }),
+                              createWallet("io.metamask"),
+                            ],
+                          })}
                           disabled={isConnecting}
                           className="w-full bg-gradient-to-r from-lime-300 to-lime-400 text-gray-800 py-2 px-4 rounded-md hover:opacity-90 font-semibold transition text-sm"
                         >

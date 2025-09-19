@@ -159,7 +159,23 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
                 <InformationCircleIcon className="h-6 w-6" />
               </button>
               <button
-                onClick={() => connect({ client, chain: config.chain, wallets: [ inAppWallet({ auth: { options: ["email", "google", "apple", "facebook", "passkey"], }, executionMode: { mode: "EIP7702", sponsorGas: true, }, }), createWallet("io.metamask"), ], })}
+                onClick={() => 
+                  connect({ 
+                    client, 
+                    chain: config.chain, 
+                    wallets: [ 
+                      inAppWallet({ 
+                        auth: { 
+                          options: ["email", "google", "apple", "facebook", "passkey"], 
+                        }, 
+                        executionMode: { 
+                          mode: "EIP7702", 
+                          sponsorGas: true, 
+                        }, 
+                      }), 
+                      createWallet("io.metamask"), 
+                    ], 
+                  })}
                 disabled={isConnecting}
                 className="bg-gradient-to-r from-lime-300 to-lime-400 text-gray-800 py-2 px-6 rounded-md hover:opacity-90 font-semibold transition"
               >
