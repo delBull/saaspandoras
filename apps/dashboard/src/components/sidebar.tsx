@@ -30,7 +30,7 @@ export function Sidebar({ wallet: walletProp, userName, isAdmin: isAdminProp }: 
   const computedIsAdmin = account?.address?.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase();
 
   // usa el valor calculado, o el prop si lo quieres de fallback
-  const isAdmin = computedIsAdmin || isAdminProp || false;
+  const isAdmin = computedIsAdmin ?? isAdminProp ?? false;
   const wallet = useActiveWallet();
   const { connect, isConnecting } = useConnectModal();
   const { disconnect } = useDisconnect();

@@ -2,9 +2,19 @@ import { NextResponse } from "next/server";
 import { type NextRequest } from "next/server";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 
-export async function middleware(request: NextRequest) {
+type CookieData = {
+  address?: string;
+  user?: string;
+};
+
+// Type guard function to check if object has string property
+function isString(value: unknown): value is string {
+  return typeof value === 'string';
+}
+
+export function middleware(request: NextRequest) {
   // Solo interceptar rutas que empiecen con /admin/
-  if (request.nextUrl.pathname.startsWith("/admin/") ||
+  if (request.nextUrl.pathname.startsWith("/admin/") ??
       request.nextUrl.pathname === "/admin") {
 
     try {
@@ -33,13 +43,17 @@ export async function middleware(request: NextRequest) {
       } else if (thirdwebCookie?.value) {
         // Intentar parsear la dirección de las cookies
         try {
-          const cookieData = JSON.parse(thirdwebCookie.value);
+          const parsedValue = JSON.parse(thirdwebCookie.value);
 
-          // Verificar diferentes posibles estructuras de cookie
-          const address = cookieData?.address ?? cookieData?.address?.address ??
-                         cookieData?.user?.address ?? cookieData?.user;
+          // Use type guard to safely access properties
+          const address = parsedValue && typeof parsedValue === 'object' &&
+                         parsedValue.address && isString(parsedValue.address)
+            ? parsedValue.address
+            : parsedValue && typeof parsedValue === 'object' &&
+              parsedValue.user && isString(parsedValue.user)
+            ? parsedValue.user : null;
 
-          if (typeof address === 'string') {
+          if (address && isString(address) && address.startsWith('0x') && address.length === 42) {
             userAddress = address.toLowerCase();
           }
         } catch (parseError) {
