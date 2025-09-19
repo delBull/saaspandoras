@@ -6,7 +6,6 @@ import { SUPER_ADMIN_WALLET } from "./constants";
 interface MinimalHeaders {
   get(name: string): string | null;
 }
-// ------------------------------------------
 
 export async function isAdmin(address: string | null | undefined): Promise<boolean> {
   if (!address) {
@@ -17,20 +16,10 @@ export async function isAdmin(address: string | null | undefined): Promise<boole
   console.log('isAdmin: Checking address', lowerCaseAddress);
   console.log('isAdmin: SUPER_ADMIN_WALLET', SUPER_ADMIN_WALLET);
 
-  // El Super Admin siempre tiene acceso.
-  if (lowerCaseAddress === SUPER_ADMIN_WALLET) {
-    console.log('isAdmin: SUPER_ADMIN match');
-    return true;
+  if (lowerCaseAddress === SUPER_ADMIN_WALLET.toLowerCase()) return true;
+    const result = await db.select().from(administrators).where(eq(administrators.walletAddress, lowerCaseAddress));
+    return result.length > 0;
   }
-
-  // Consultar la base de datos para otros administradores.
-  const adminRecord = await db.query.administrators.findFirst({
-    where: eq(administrators.walletAddress, lowerCaseAddress),
-  });
-  console.log('isAdmin: DB admin record', adminRecord);
-
-  return !!adminRecord;
-}
 
 export function getAuth(headers?: MinimalHeaders) {
   console.log('🔍 getAuth: AUTH FUNCTION CALLED FROM:', headers?.get('host'));
@@ -88,9 +77,9 @@ export function getAuth(headers?: MinimalHeaders) {
     }
   }
 
-  // Método 3: SOLO fallback para desarrollo - JAMÁS permitir en producción
+  // TEMPORAL: Restaurar fallback para testing mientras arreglamos las cookies
   if (!userAddress && process.env.NODE_ENV === 'development') {
-    console.log('⚠️ getAuth: Development mode - using SUPER_ADMIN fallback');
+    console.log('⚠️ getAuth: Development mode - using SUPER_ADMIN fallback TEMPORAL');
     userAddress = SUPER_ADMIN_WALLET;
   }
 

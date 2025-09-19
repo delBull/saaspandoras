@@ -5,6 +5,29 @@ import { projectApiSchema } from "@/lib/project-schema-api";
 import { getAuth, isAdmin } from "@/lib/auth";
 import slugify from "slugify";
 
+export async function GET(request: Request) {
+  const { session } = getAuth();
+  const userIsAdmin = await isAdmin(session?.userId);
+
+  if (!userIsAdmin) {
+    return NextResponse.json({ message: "No autorizado" }, { status: 403 });
+  }
+
+  try {
+    const projects = await db.query.projects.findMany({
+      orderBy: (projects, { desc }) => desc(projects.createdAt),
+    });
+
+    return NextResponse.json(projects);
+  } catch (error) {
+    console.error("Error fetching projects:", error);
+    return NextResponse.json(
+      { message: "Error al obtener proyectos" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: Request) {
   const { session } = getAuth();
   const userIsAdmin = await isAdmin(session?.userId);
