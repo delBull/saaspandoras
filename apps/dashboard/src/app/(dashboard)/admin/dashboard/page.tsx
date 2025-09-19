@@ -40,19 +40,19 @@ export default function AdminDashboardPage() {
         // Fetch projects
         const projectsRes = await fetch('/api/admin/projects');
         if (projectsRes.ok) {
-          const projectsData = await projectsRes.json();
+          const projectsData: Project[] = await projectsRes.json();
           setProjects(projectsData);
         }
 
         // Fetch administrators (esto se usa en AdminSettings)
         const adminsRes = await fetch('/api/admin/administrators');
         if (adminsRes.ok) {
-          const adminsData = await adminsRes.json();
+          const adminsData: Omit<AdminData, 'role'>[] = await adminsRes.json();
           // Ensure each admin has a role property (default to 'admin')
-          const processedAdmins = adminsData.map((admin: { id: number; walletAddress: string; alias?: string | null; role?: string }) => ({
+          const processedAdmins = adminsData.map((admin) => ({
             ...admin,
-            role: admin.role || 'admin'
-          }));
+            role: 'admin' // Default role for all admins
+          } as AdminData));
           setAdmins(processedAdmins);
         }
       } catch (error) {
@@ -62,7 +62,7 @@ export default function AdminDashboardPage() {
       }
     };
 
-    fetchData();
+    void fetchData();
   }, []);
 
   if (loading) {
@@ -99,9 +99,9 @@ export default function AdminDashboardPage() {
         </Link>
       </div>
 
-      <AdminTabs swaps={mockSwaps} showSettings={true} children={[
-        // Tab de proyectos
-        <div className="space-y-6">
+      <AdminTabs swaps={mockSwaps} showSettings={true}>
+        {/* Tab de proyectos */}
+        <div key="projects-tab" className="space-y-6">
           <div className="overflow-x-auto rounded-lg border border-zinc-700">
             <table className="min-w-full divide-y divide-zinc-700 text-sm">
               <thead className="bg-zinc-800">
@@ -157,6 +157,16 @@ export default function AdminDashboardPage() {
                             console.log('Eliminar proyecto:', p.id);
                           }
                         }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            if (window.confirm(`¿Eliminar proyecto "${p.title}"? Esta acción no se puede deshacer.`)) {
+                              console.log('Eliminar proyecto:', p.id);
+                            }
+                          }
+                        }}
+                        role="button"
+                        tabIndex={0}
                       >
                         Eliminar
                       </span>
@@ -166,10 +176,11 @@ export default function AdminDashboardPage() {
               </tbody>
             </table>
           </div>
-        </div>,
+        </div>
 
-        <AdminSettings initialAdmins={admins} />
-      ]} />
+        {/* Tab de configuración */}
+        <AdminSettings key="settings-tab" initialAdmins={admins} />
+      </AdminTabs>
     </div>
   );
 }
