@@ -26,15 +26,17 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const payload = searchParams.get("payload");
+  const payloadParam = searchParams.get("payload");
   const signature = searchParams.get("signature");
 
-  if (!payload || !signature) {
+  if (!payloadParam || !signature) {
     return NextResponse.json({ error: "Missing params" }, { status: 400 });
   }
 
+  const parsedPayload = JSON.parse(payloadParam);
+
   const verified = await auth.verifyPayload({
-    payload: JSON.parse(payload),
+    payload: parsedPayload as any,
     signature,
   });
 
