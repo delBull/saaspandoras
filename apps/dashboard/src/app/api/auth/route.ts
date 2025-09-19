@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
   const parsedPayload = JSON.parse(payloadParam);
 
   const verified = await auth.verifyPayload({
-    payload: parsedPayload as any,
+    payload: parsedPayload as any, // Required for thirdweb API types
     signature,
   });
 

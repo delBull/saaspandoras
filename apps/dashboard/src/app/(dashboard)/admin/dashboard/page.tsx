@@ -47,13 +47,13 @@ export default function AdminDashboardPage() {
         // Fetch administrators (esto se usa en AdminSettings)
         const adminsRes = await fetch('/api/admin/administrators');
         if (adminsRes.ok) {
-          const rawAdminsData = await adminsRes.json() as Array<Omit<AdminData, 'role'> & { role?: string }>;
+          const rawAdminsData = await adminsRes.json() as (Omit<AdminData, 'role'> & { role?: string })[];
           // Ensure each admin has a role property (default to 'admin')
           const processedAdmins = rawAdminsData.map((admin) => ({
             id: admin.id,
             walletAddress: admin.walletAddress,
             alias: admin.alias,
-            role: admin.role || 'admin' // Default role for all admins
+            role: admin.role ?? 'admin' // Default role for all admins
           } as AdminData));
           setAdmins(processedAdmins);
         }
