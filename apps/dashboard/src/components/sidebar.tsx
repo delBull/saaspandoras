@@ -10,15 +10,16 @@ import { useActiveAccount, useDisconnect, useActiveWallet, useConnectModal } fro
 import { createWallet, inAppWallet } from "thirdweb/wallets";
 import { config } from "@/config";
 import { client } from "@/lib/thirdweb-client";
+import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 
 interface SidebarProps {
   wallet?: string;
   userName?: string;
-  isAdmin: boolean;
-  isSuperAdmin: boolean;
+  isAdmin?: boolean;  
+  isSuperAdmin?: boolean; 
 }
 
-export function Sidebar({ wallet: walletProp, userName, isAdmin }: SidebarProps) {
+export function Sidebar({ wallet: walletProp, userName, isAdmin: isAdminProp }: SidebarProps) {
   const [isClient, setIsClient] = useState(false);
   useEffect(() => { setIsClient(true); }, []);
 
@@ -26,6 +27,10 @@ export function Sidebar({ wallet: walletProp, userName, isAdmin }: SidebarProps)
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const account = useActiveAccount();
+  const computedIsAdmin = account?.address?.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase();
+
+  // usa el valor calculado, o el prop si lo quieres de fallback
+  const isAdmin = computedIsAdmin || isAdminProp || false;
   const wallet = useActiveWallet();
   const { connect, isConnecting } = useConnectModal();
   const { disconnect } = useDisconnect();
