@@ -16,16 +16,28 @@ interface AuthRequest {
   chainId: number;
 }
 
+// POST: genera payload de autenticación
 export async function POST(req: NextRequest) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const body = await req.json() as unknown;
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const authRequest = body as AuthRequest;
-  const { address, chainId } = authRequest;
+  // Tipar directamente el JSON
+  const body: unknown = await req.json();
+
+  // Validar que body tenga la forma correcta
+  if (
+    typeof body !== "object" ||
+    body === null ||
+    !("address" in body) ||
+    !("chainId" in body)
+  ) {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+
+  const { address, chainId } = body as AuthRequest;
+
   const payload = await auth.generatePayload({ address, chainId });
   return NextResponse.json(payload);
 }
 
+// GET: verifica firma
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const payloadParam = searchParams.get("payload");
@@ -35,12 +47,17 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Missing params" }, { status: 400 });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const parsedPayload = JSON.parse(payloadParam);
+  let parsedPayload: unknown;
+  try {
+    parsedPayload = JSON.parse(payloadParam) as Record<string, unknown>;
+  } catch {
+    return NextResponse.json({ error: "Invalid payload JSON" }, { status: 400 });
+  }
 
   const verified = await auth.verifyPayload({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unnecessary-type-assertion
-    payload: parsedPayload as any, // Required for thirdweb API types
+    // thirdweb requiere tipo LoginPayload específico, usamos any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    payload: parsedPayload as any,
     signature,
   });
 
@@ -48,7 +65,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
-  // ✅ La dirección está dentro de verified.payload.address
   return NextResponse.json({
     success: true,
     address: verified.payload.address,
