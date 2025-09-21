@@ -1,5 +1,5 @@
 
-import { headers } from "next/headers";
+import { headers as _headers } from "next/headers";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 import { DashboardClientWrapper } from "./dashboard-client-wrapper";

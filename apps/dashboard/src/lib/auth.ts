@@ -42,7 +42,7 @@ export async function getAuth(userAddress?: string) {
     try {
       // Intentar obtener desde cookies
       const cookieStore = await cookies();
-      address = cookieStore.get('wallet-address')?.value || null;
+      address = cookieStore.get('wallet-address')?.value ?? null;
     } catch {
       // Silently ignore cookie access errors
     }
