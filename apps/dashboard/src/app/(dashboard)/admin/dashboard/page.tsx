@@ -201,11 +201,11 @@ export default function AdminDashboardPage() {
                       </Link>
                       <span
                         className="text-red-400 hover:underline cursor-pointer"
-                        onClick={() => deleteProject(p.id, p.title)}
+                        onClick={() => deleteProject(p.id, p.title).catch(console.error)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
-                            deleteProject(p.id, p.title);
+                            deleteProject(p.id, p.title).catch(console.error);
                           }
                         }}
                         role="button"
