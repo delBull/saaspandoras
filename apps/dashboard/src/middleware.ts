@@ -7,18 +7,24 @@ export async function middleware(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith("/admin")) {
     console.log("Middleware: Interceptando ruta de admin:", request.nextUrl.pathname);
 
-    // En v5, obtenemos la dirección de wallet desde cookies o headers
-    // Puedes usar cookies personalizadas o sesiones
+    // En v5, obtenemos la dirección de wallet desde cookies
     const walletAddress = request.cookies.get("wallet-address")?.value;
+
+    if (!walletAddress) {
+      console.log("Middleware: No cookie encontrada, dejando pasar al client-side para verificar");
+      // Dejar pasar - el client-side verificará permisos después
+      return NextResponse.next();
+    }
 
     // Obtenemos la sesión usando nuestra función unificada con la dirección del wallet
     const { session } = await getAuth(walletAddress);
 
-    // Si no hay sesión o el usuario no es un administrador (ni normal ni super),
-    // lo redirigimos a la página de inicio.
+    // Si no hay sesión o el usuario no es un administrador,
+    // permitimos que el client-side maneje la verificación
     if (!session?.userId || !(await isAdmin(session.userId))) {
-      console.log("Middleware: Acceso denegado. Redirigiendo a /.");
-      return NextResponse.redirect(new URL("/", request.url));
+      console.log("Middleware: Usuario no autorizado o sin sesión, dejando pasar al client-side");
+      // Dejar pasar - el client-side mostrará pantalla de no autorizado
+      return NextResponse.next();
     }
 
     // Si la sesión es válida y el usuario es admin, se le permite el acceso.
