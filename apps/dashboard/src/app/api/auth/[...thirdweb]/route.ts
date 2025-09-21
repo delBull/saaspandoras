@@ -2,8 +2,8 @@
 // En v5, la autenticación se maneja principalmente desde el frontend
 // Las rutas de API de catch-all pueden usarse para validación custom
 
-// Endpoint GET reemplazado por funcionalidad básica
-export async function GET() {
+// Endpoint GET para compatibilidad (síncrono)
+export function GET() {
   // Retorna respuesta básica para compatibilidad
   return Response.json({ message: "Auth endpoint" });
 }

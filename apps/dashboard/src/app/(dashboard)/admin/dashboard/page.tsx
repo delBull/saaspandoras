@@ -55,9 +55,13 @@ export default function AdminDashboardPage() {
         alert('Proyecto eliminado exitosamente');
         console.log('Project deleted successfully');
       } else {
-        const errorData = await response.json().catch(() => ({ message: 'Error desconocido' }));
-        alert(`Error al eliminar el proyecto: ${errorData.message}`);
-        console.error('Failed to delete project:', response.status, errorData);
+        const errorText = await response.text().catch(() => 'Error desconocido');
+        let errorMessage = 'Error desconocido';
+        if (errorText) {
+          errorMessage = errorText;
+        }
+        alert(`Error al eliminar el proyecto: ${errorMessage}`);
+        console.error('Failed to delete project:', response.status, errorMessage);
       }
     } catch (error) {
       alert('Error de conexión al eliminar el proyecto');
@@ -105,7 +109,9 @@ export default function AdminDashboardPage() {
       }
     };
 
-    void fetchData();
+    fetchData().catch((error) => {
+      console.error('Error initializing admin dashboard:', error);
+    });
   }, []);
 
   if (loading) {

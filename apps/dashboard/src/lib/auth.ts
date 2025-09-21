@@ -35,7 +35,7 @@ export async function isAdmin(address?: string | null): Promise<boolean> {
  * Lee la dirección del wallet desde cookies si no se proporciona directamente.
  */
 export async function getAuth(userAddress?: string) {
-  let address: string | null = userAddress || null;
+  let address: string | null = userAddress ?? null;
 
   // Si no se proporciona address, intentar obtenerla desde cookies
   if (!address) {

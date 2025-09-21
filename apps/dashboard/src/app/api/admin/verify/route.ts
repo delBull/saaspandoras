@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 

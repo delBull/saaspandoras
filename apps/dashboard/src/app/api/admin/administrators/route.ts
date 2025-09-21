@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
 import { z } from "zod";
 import { db } from "~/db";
 import { administrators } from "~/db/schema";
