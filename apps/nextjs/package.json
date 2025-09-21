@@ -39,7 +39,7 @@
     "fetch-ponyfill": "7.1.0",
     "framer-motion": "^12.23.12",
     "lucide-react": "^0.542.0",
-    "mime": "^4.0.1",
+    "mime": "^3.0.0",
     "motion": "^12.23.12",
     "negotiator": "0.6.3",
     "next": "^15.3.3",
