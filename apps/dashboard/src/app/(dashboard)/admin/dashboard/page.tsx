@@ -33,6 +33,7 @@ export default function AdminDashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [admins, setAdmins] = useState<AdminData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null); // null = not verified yet
 
   // Function to handle project deletion with confirmation
   const deleteProject = async (projectId: string, projectTitle: string) => {
@@ -69,7 +70,32 @@ export default function AdminDashboardPage() {
     }
   };
 
+  // Check admin status first
   useEffect(() => {
+    const checkAdminStatus = async () => {
+      try {
+        const response = await fetch('/api/admin/verify');
+        const data = await response.json().catch(() => ({ isAdmin: false, isSuperAdmin: false }));
+
+        // User is admin if they have admin privileges OR super admin privileges
+        const userIsAdmin = data.isAdmin ?? data.isSuperAdmin ?? false;
+        console.log('Admin dashboard - User is admin:', userIsAdmin, { data });
+        setIsAdmin(userIsAdmin);
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+        setIsAdmin(false);
+      }
+    };
+
+    checkAdminStatus();
+  }, []);
+
+  useEffect(() => {
+    // Only fetch data if user is verified as admin
+    if (isAdmin !== true) {
+      return;
+    }
+
     const fetchData = async () => {
       try {
         // Fetch projects
@@ -112,8 +138,9 @@ export default function AdminDashboardPage() {
     fetchData().catch((error) => {
       console.error('Error initializing admin dashboard:', error);
     });
-  }, []);
+  }, [isAdmin]);
 
+  // Show loading state while checking admin status
   if (loading) {
     return (
       <div className="p-6">
@@ -126,6 +153,23 @@ export default function AdminDashboardPage() {
             <div className="h-10 bg-zinc-700 rounded w-40"></div>
           </div>
           <div className="h-64 bg-zinc-700 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // If user is not admin and we're not loading, show unauthorized message
+  if (!isAdmin) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center p-8">
+          <h1 className="text-2xl font-bold text-red-400 mb-4">Acceso No Autorizado</h1>
+          <p className="text-gray-300 mb-6">
+            No tienes permisos para acceder a esta sección administrativa.
+          </p>
+          <p className="text-sm text-gray-400">
+            Solo los usuarios administradores pueden acceder al dashboard.
+          </p>
         </div>
       </div>
     );

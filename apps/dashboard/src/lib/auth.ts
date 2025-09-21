@@ -22,12 +22,20 @@ export async function isAdmin(address?: string | null): Promise<boolean> {
 
   if (lower === SUPER_ADMIN_WALLET.toLowerCase()) return true;
 
-  const result = await db
-    .select()
-    .from(administrators)
-    .where(eq(administrators.walletAddress, lower));
+  try {
+    console.log("isAdmin: Querying database for address:", lower);
+    const result = await db
+      .select()
+      .from(administrators)
+      .where(eq(administrators.walletAddress, lower));
 
-  return result.length > 0;
+    console.log("isAdmin: Database result:", result.length, "rows found");
+    return result.length > 0;
+  } catch (error) {
+    console.error("isAdmin: Database query failed:", error);
+    // If database query fails, fall back to false
+    return false;
+  }
 }
 
 /**
