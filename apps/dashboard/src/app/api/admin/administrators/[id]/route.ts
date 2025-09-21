@@ -1,6 +1,5 @@
 
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
 import { z } from "zod";
 import { db } from "~/db";
 import { administrators } from "~/db/schema";
@@ -14,8 +13,7 @@ const updateAliasSchema = z.object({
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const contextParams = await params;
-  const headersList = await headers();
-  const { session } = getAuth(headersList);
+  const { session } = await getAuth();
 
   if (session?.userId?.toLowerCase() !== SUPER_ADMIN_WALLET) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
@@ -52,8 +50,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const contextParams = await params;
-  const headersList = await headers();
-  const { session } = getAuth(headersList);
+  const { session } = await getAuth();
 
   if (session?.userId?.toLowerCase() !== SUPER_ADMIN_WALLET) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });

@@ -34,20 +34,57 @@ export default function AdminDashboardPage() {
   const [admins, setAdmins] = useState<AdminData[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Function to handle project deletion with confirmation
+  const deleteProject = async (projectId: string, projectTitle: string) => {
+    const confirmMessage = `¿Eliminar proyecto "${projectTitle}"?\n\nEsta acción NO SE PUEDE deshacer.`;
+    const isConfirmed = window.confirm(confirmMessage);
+
+    if (!isConfirmed) return;
+
+    try {
+      console.log('Deleting project:', projectId);
+      const response = await fetch(`/api/admin/projects/${projectId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Remove the project from the local state
+        setProjects(prevProjects =>
+          prevProjects.filter(project => project.id !== projectId)
+        );
+        alert('Proyecto eliminado exitosamente');
+        console.log('Project deleted successfully');
+      } else {
+        const errorData = await response.json().catch(() => ({ message: 'Error desconocido' }));
+        alert(`Error al eliminar el proyecto: ${errorData.message}`);
+        console.error('Failed to delete project:', response.status, errorData);
+      }
+    } catch (error) {
+      alert('Error de conexión al eliminar el proyecto');
+      console.error('Error deleting project:', error);
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         // Fetch projects
         const projectsRes = await fetch('/api/admin/projects');
+        console.log('Projects API response:', projectsRes.status, projectsRes.statusText);
         if (projectsRes.ok) {
           const projectsData = await projectsRes.json() as Project[];
+          console.log('Projects data:', projectsData);
           setProjects(projectsData);
+        } else {
+          console.error('Failed to fetch projects:', projectsRes.status);
         }
 
         // Fetch administrators (esto se usa en AdminSettings)
         const adminsRes = await fetch('/api/admin/administrators');
+        console.log('Admins API response:', adminsRes.status, adminsRes.statusText);
         if (adminsRes.ok) {
           const rawAdminsData = await adminsRes.json() as (Omit<AdminData, 'role'> & { role?: string })[];
+          console.log('Admins data:', rawAdminsData);
           // Ensure each admin has a role property (default to 'admin')
           const processedAdmins = rawAdminsData.map((admin) => ({
             id: admin.id,
@@ -56,6 +93,8 @@ export default function AdminDashboardPage() {
             role: admin.role ?? 'admin' // Default role for all admins
           } as AdminData));
           setAdmins(processedAdmins);
+        } else {
+          console.error('Failed to fetch admins:', adminsRes.status);
         }
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
@@ -154,17 +193,11 @@ export default function AdminDashboardPage() {
                       </Link>
                       <span
                         className="text-red-400 hover:underline cursor-pointer"
-                        onClick={() => {
-                          if (window.confirm(`¿Eliminar proyecto "${p.title}"? Esta acción no se puede deshacer.`)) {
-                            console.log('Eliminar proyecto:', p.id);
-                          }
-                        }}
+                        onClick={() => deleteProject(p.id, p.title)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
-                            if (window.confirm(`¿Eliminar proyecto "${p.title}"? Esta acción no se puede deshacer.`)) {
-                              console.log('Eliminar proyecto:', p.id);
-                            }
+                            deleteProject(p.id, p.title);
                           }
                         }}
                         role="button"

@@ -11,7 +11,7 @@ interface RouteParams {
 }
 
 export async function PATCH(request: Request, { params }: RouteParams) {
-  const { session } = getAuth();
+  const { session } = await getAuth();
   const userIsAdmin = await isAdmin(session?.userId);
 
   if (!userIsAdmin) {
@@ -72,7 +72,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 }
 
 export async function PUT(request: Request, { params }: RouteParams) {
-  const { session } = getAuth();
+  const { session } = await getAuth();
   const userIsAdmin = await isAdmin(session?.userId);
 
   if (!userIsAdmin) {
@@ -204,7 +204,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
 }
 
 export async function DELETE(request: Request, { params }: RouteParams) {
-  const { session } = getAuth();
+  const { session } = await getAuth();
   const userIsAdmin = await isAdmin(session?.userId);
 
   if (!userIsAdmin) {

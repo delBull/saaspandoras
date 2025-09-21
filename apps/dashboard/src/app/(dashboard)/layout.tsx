@@ -11,10 +11,7 @@ export default async function DashboardLayout({
 }) {
   console.log('🏠 DashboardLayout: Starting authentication check');
 
-  const headersList = await headers();
-  console.log('🏠 DashboardLayout: Headers obtained');
-
-  const { session } = getAuth(headersList);
+  const { session } = await getAuth();
   console.log('🏠 DashboardLayout: Session result:', {
     hasSession: !!session,
     userId: session?.userId,

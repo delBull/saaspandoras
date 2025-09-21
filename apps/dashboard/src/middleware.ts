@@ -1,87 +1,28 @@
 import { NextResponse } from "next/server";
 import { type NextRequest } from "next/server";
-import { SUPER_ADMIN_WALLET } from "@/lib/constants";
+import { getAuth, isAdmin } from "@/lib/auth";
 
-export function middleware(request: NextRequest) {
-  // Solo interceptar rutas que empiecen con /admin/
-  if (request.nextUrl.pathname.startsWith("/admin/") ??
-      request.nextUrl.pathname === "/admin") {
+export async function middleware(request: NextRequest) {
+  // Proteger todas las rutas que empiecen con /admin
+  if (request.nextUrl.pathname.startsWith("/admin")) {
+    console.log("Middleware: Interceptando ruta de admin:", request.nextUrl.pathname);
 
-    try {
-      // Buscar cookies de autenticación de thirdweb varias posibles
-      const possibleAuthCookies = [
-        'thirdweb_auth_token',
-        'thirdweb-auth-token',
-        'thirdweb_session',
-        'thirdweb-user'
-      ];
+    // En v5, obtenemos la dirección de wallet desde cookies o headers
+    // Puedes usar cookies personalizadas o sesiones
+    const walletAddress = request.cookies.get("wallet-address")?.value;
 
-      let thirdwebCookie = null;
-      for (const cookieName of possibleAuthCookies) {
-        thirdwebCookie = request.cookies.get(cookieName);
-        if (thirdwebCookie?.value) break;
-      }
+    // Obtenemos la sesión usando nuestra función unificada con la dirección del wallet
+    const { session } = await getAuth(walletAddress);
 
-      // Buscar headers x-thirdweb-address (si existe)
-      const thirdwebAddress = request.headers.get('x-thirdweb-address');
-      const thirdwebHeader = request.headers.get('thirdweb-address');
-
-      let userAddress: string | null = null;
-
-      if (thirdwebAddress ?? thirdwebHeader) {
-        userAddress = (thirdwebAddress ?? thirdwebHeader)?.toLowerCase() ?? null;
-      } else if (thirdwebCookie?.value) {
-        // Intentar parsear la dirección de las cookies
-        try {
-          const parsedValue: unknown = JSON.parse(thirdwebCookie.value);
-
-          // Validar de forma segura que el valor parseado es un objeto con las propiedades esperadas
-          if (typeof parsedValue === 'object' && parsedValue !== null) {
-            let potentialAddress: string | null = null;
-            if ('address' in parsedValue && typeof parsedValue.address === 'string') {
-              potentialAddress = parsedValue.address;
-            } else if ('user' in parsedValue && typeof parsedValue.user === 'string') {
-              potentialAddress = parsedValue.user;
-            }
-            
-            if (potentialAddress && potentialAddress.startsWith('0x') && potentialAddress.length === 42) {
-              userAddress = potentialAddress.toLowerCase();
-            }
-          }
-        } catch (parseError) {
-          console.log('Middleware: Unable to parse auth cookie:', parseError);
-          // Verificar si la cookie es un string directo de address
-          if (thirdwebCookie.value.startsWith('0x') && thirdwebCookie.value.length === 42) {
-            userAddress = thirdwebCookie.value.toLowerCase();
-          }
-        }
-      }
-
-      if (!userAddress) {
-        console.log('Middleware: No wallet address found in auth data');
-        console.log('Middleware: Cookies found:', request.cookies.getAll());
-        console.log('Middleware: Thirdweb headers:', thirdwebAddress, thirdwebHeader);
-        return NextResponse.redirect(new URL("/", request.url));
-      }
-
-      // Verificar si el usuario está autorizado (SUPER ADMIN por ahora)
-      const userIsSuperAdmin = userAddress === SUPER_ADMIN_WALLET.toLowerCase();
-
-      // Si no es super admin, rechazar (por simplicidad en middleware)
-      if (!userIsSuperAdmin) {
-        console.log('Middleware: Access denied for wallet:', userAddress, '- not super admin');
-        return NextResponse.redirect(new URL("/", request.url));
-      }
-
-      console.log('Middleware: Access granted for wallet:', userAddress, {
-        isSuperAdmin: userIsSuperAdmin
-      });
-
-    } catch (error) {
-      console.error('Middleware error:', error);
-      // En caso de error, redirigir al home
+    // Si no hay sesión o el usuario no es un administrador (ni normal ni super),
+    // lo redirigimos a la página de inicio.
+    if (!session?.userId || !(await isAdmin(session.userId))) {
+      console.log("Middleware: Acceso denegado. Redirigiendo a /.");
       return NextResponse.redirect(new URL("/", request.url));
     }
+
+    // Si la sesión es válida y el usuario es admin, se le permite el acceso.
+    console.log("Middleware: Acceso concedido para:", session.userId);
   }
 
   return NextResponse.next();
