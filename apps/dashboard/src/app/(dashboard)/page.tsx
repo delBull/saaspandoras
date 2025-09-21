@@ -56,7 +56,8 @@ function ActionButton({ icon, label, disabled = false, href }: { icon: React.Rea
 
 function BannersSection() {
   const [emblaRef] = useEmblaCarousel({ align: 'start', skipSnaps: true, });
-  const initialBanners = [ { id: 1, title: "Hemp Project", subtitle: "Green GENESIS Become an early supporter", actionText: "Do more with hemp!", variant: "purple", imageUrl:"/images/sem.jpeg" }, { id: 2, title: "Mining Project", subtitle: "Ever dream about being a miner?", actionText: "Soon to be launched", variant: "green", imageUrl: "/images/blockbunny.jpg" }, { id: 3, title: "RA Wallet", subtitle: "Best blockchain wallet, rewards like no other", actionText: "Win by holding", variant: "red", imageUrl: "/images/narailoft.jpg" }, ] as const;
+  const initialBanners = [ { 
+    id: 1, title: "Hemp Project", subtitle: "Green GENESIS Become an early supporter", actionText: "Do more with hemp!", variant: "purple", imageUrl:"/images/sem.jpeg" }, { id: 2, title: "Mining Project", subtitle: "Ever dream about being a miner?", actionText: "Soon to be launched", variant: "green", imageUrl: "/images/blockbunny.jpg" }, { id: 3, title: "RA Wallet", subtitle: "Best blockchain wallet, rewards like no other", actionText: "Win by holding", variant: "red", imageUrl: "/images/narailoft.jpg" }, ] as const;
   type BannerData = typeof initialBanners[number];
   const [displayedBanners, setDisplayedBanners] = useState<readonly BannerData[]>(initialBanners);
   const handleClose = (idToClose: number) => { setDisplayedBanners(prevBanners => prevBanners.filter(b => b.id !== idToClose)); };

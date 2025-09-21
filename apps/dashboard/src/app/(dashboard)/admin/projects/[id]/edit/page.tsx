@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import { headers } from "next/headers";
 import { db } from "~/db";
 import { projects as projectsSchema } from "~/db/schema";
 import { eq } from "drizzle-orm";
@@ -13,8 +12,7 @@ interface ProjectPageProps {
 export default async function ProjectPage({ params }: ProjectPageProps) {
   const { id } = await params;
 
-  const headersList = await headers();
-  const { session } = getAuth(headersList);
+  const { session } = await getAuth();
 
   if (!await isAdmin(session?.userId)) notFound();
 

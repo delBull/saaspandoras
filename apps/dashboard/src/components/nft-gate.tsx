@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from "react";
-import { 
-  useActiveAccount, 
-  useReadContract, 
-  useConnectModal,
+import {
+  useActiveAccount,
+  useReadContract,
+  ConnectButton,
   useSendTransaction
 } from "thirdweb/react";
 import { createWallet, inAppWallet } from "thirdweb/wallets";
@@ -22,7 +22,6 @@ import { InformationCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 export function NFTGate({ children }: { children: React.ReactNode }) {
   const account = useActiveAccount();
-  const { connect, isConnecting } = useConnectModal();
   const { mutate: sendTransaction, isPending: isMinting } = useSendTransaction();
   const { toast } = useToast();
 
@@ -30,6 +29,20 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
   const [gateStatus, setGateStatus] = useState("idle");
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const hasStartedProcessing = useRef(false);
+
+  // Store wallet address in cookie when connected (same as sidebar)
+  useEffect(() => {
+    if (!account?.address) {
+      // Clear cookie when disconnected
+      document.cookie = `wallet-address=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+      return;
+    }
+
+    // Store wallet address in cookie when connected
+    const expires = new Date();
+    expires.setDate(expires.getDate() + 30); // Cookie expires in 30 days
+    document.cookie = `wallet-address=${account.address}; path=/; expires=${expires.toUTCString()}; Secure; SameSite=Strict`;
+  }, [account?.address]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') { setShowInfo(false); } };
@@ -158,29 +171,31 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
               <button onClick={() => setShowInfo(v => !v)} className="p-2 rounded-full text-gray-500 hover:text-gray-300 hover:bg-zinc-800 transition-colors" aria-label="Mostrar información sobre wallets compatibles" >
                 <InformationCircleIcon className="h-6 w-6" />
               </button>
-              <button
-                onClick={() => 
-                  connect({ 
-                    client, 
-                    chain: config.chain, 
-                    wallets: [ 
-                      inAppWallet({ 
-                        auth: { 
-                          options: ["email", "google", "apple", "facebook", "passkey"], 
-                        }, 
-                        executionMode: { 
-                          mode: "EIP7702", 
-                          sponsorGas: true, 
-                        }, 
-                      }), 
-                      createWallet("io.metamask"), 
-                    ], 
-                  })}
-                disabled={isConnecting}
-                className="bg-gradient-to-r from-lime-300 to-lime-400 text-gray-800 py-2 px-6 rounded-md hover:opacity-90 font-semibold transition"
-              >
-                {isConnecting ? "Conectando..." : "Connect Wallet"}
-              </button>
+              <div className="w-full max-w-xs">
+                <ConnectButton
+                  client={client}
+                  chain={config.chain}
+                  connectModal={{
+                      showThirdwebBranding: false,
+                      }}
+                  wallets={[
+                    createWallet("io.metamask"),
+                    inAppWallet({
+                      auth: {
+                        options: ["email", "google", "apple", "facebook", "passkey"],
+                      },
+                      executionMode: {
+                        mode: "EIP7702",
+                        sponsorGas: true,
+                      },
+                    })
+                  ]}
+                  connectButton={{
+                    label: "Connect Wallet",
+                    className: "w-full !bg-gradient-to-r !from-lime-300 !to-lime-400 !text-gray-800 !py-2 !px-6 !rounded-md !hover:opacity-90 !font-semibold !transition",
+                  }}
+                />
+              </div>
             </div>
             <AnimatePresence> {showInfo && explanation} </AnimatePresence>
           </div>
