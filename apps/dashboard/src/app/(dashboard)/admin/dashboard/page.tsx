@@ -75,10 +75,14 @@ export default function AdminDashboardPage() {
     const checkAdminStatus = async () => {
       try {
         const response = await fetch('/api/admin/verify');
-        const data = await response.json().catch(() => ({ isAdmin: false, isSuperAdmin: false }));
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.status}`);
+        }
+
+        const data = await response.json() as { isAdmin?: boolean; isSuperAdmin?: boolean };
 
         // User is admin if they have admin privileges OR super admin privileges
-        const userIsAdmin = data.isAdmin ?? data.isSuperAdmin ?? false;
+        const userIsAdmin = (data.isAdmin ?? false) || (data.isSuperAdmin ?? false);
         console.log('Admin dashboard - User is admin:', userIsAdmin, { data });
         setIsAdmin(userIsAdmin);
       } catch (error) {
@@ -87,7 +91,7 @@ export default function AdminDashboardPage() {
       }
     };
 
-    checkAdminStatus();
+    checkAdminStatus().catch(console.error);
   }, []);
 
   useEffect(() => {
