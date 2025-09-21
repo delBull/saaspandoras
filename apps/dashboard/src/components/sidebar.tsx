@@ -85,7 +85,7 @@ export function Sidebar({
       } catch (e) {
         console.error("Error verifying admin status:", e);
       }
-    })();
+    })().catch(console.error);
   }, [account?.address]);
 
   // The final isAdmin status is a combination of regular admin and super admin

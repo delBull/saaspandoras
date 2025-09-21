@@ -76,7 +76,8 @@ export default function AdminDashboardPage() {
           console.log('Projects data:', projectsData);
           setProjects(projectsData);
         } else {
-          console.error('Failed to fetch projects:', projectsRes.status);
+          const errorResponse = await projectsRes.text();
+          console.error('Failed to fetch projects:', projectsRes.status, errorResponse);
         }
 
         // Fetch administrators (esto se usa en AdminSettings)
@@ -94,7 +95,8 @@ export default function AdminDashboardPage() {
           } as AdminData));
           setAdmins(processedAdmins);
         } else {
-          console.error('Failed to fetch admins:', adminsRes.status);
+          const errorResponse = await adminsRes.text();
+          console.error('Failed to fetch admins:', adminsRes.status, errorResponse);
         }
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
