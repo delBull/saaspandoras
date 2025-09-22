@@ -120,8 +120,8 @@ export function ProjectSection5() {
   const valuationDocumentUrl = watch("valuationDocumentUrl") ?? "";
   const dueDiligenceReportUrl = watch("dueDiligenceReportUrl") ?? "";
 
-  // Manejo de upload documentos
-  const handleDocumentUpload = (e: React.ChangeEvent<HTMLInputElement>, setPreview: (url: string) => void, setField: (url: string) => void) => {
+  // Manejo de upload documentos con API real
+  const handleDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>, setPreview: (url: string) => void, setField: (url: string) => void) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 10 * 1024 * 1024) {
@@ -133,14 +133,27 @@ export function ProjectSection5() {
         return;
       }
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const url = reader.result as string;
-        setPreview(url);
-        setField(url); // En producción usar upload a cloud storage
-        toast.success("Documento cargado correctamente");
-      };
-      reader.readAsDataURL(file);
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('/api/upload/pdf', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setPreview(data.url);
+          setField(data.url);
+          toast.success("Documento cargado correctamente");
+        } else {
+          toast.error("Error al subir el documento");
+        }
+      } catch (error) {
+        console.error('Upload error:', error);
+        toast.error("Error al subir el documento");
+      }
     }
   };
 

@@ -315,8 +315,36 @@ export function ProjectSection1() {
               <Film className="w-4 h-4" />
               Preview del Video
             </h5>
-            <div className="aspect-video bg-black rounded-lg overflow-hidden flex items-center justify-center">
-              <p className="text-gray-500 text-sm">Video listo para embed</p>
+            <div className="aspect-video bg-black rounded-lg overflow-hidden">
+              {videoPitch.includes('youtube.com') || videoPitch.includes('youtu.be') ? (
+                <iframe
+                  width="100%"
+                  height="100%"
+                  src={`https://www.youtube.com/embed/${videoPitch.includes('youtube.com')
+                    ? videoPitch.split('v=')[1]?.split('&')[0]
+                    : videoPitch.split('/').pop()?.split('?')[0]}`}
+                  title="YouTube video player"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="rounded-lg"
+                />
+              ) : videoPitch.includes('vimeo.com') ? (
+                <iframe
+                  width="100%"
+                  height="100%"
+                  src={`https://player.vimeo.com/video/${videoPitch.split('/').pop()}`}
+                  title="Vimeo video player"
+                  frameBorder="0"
+                  allow="autoplay; fullscreen; picture-in-picture"
+                  allowFullScreen
+                  className="rounded-lg"
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-gray-500 text-sm">Video listo para embed</p>
+                </div>
+              )}
             </div>
           </div>
         )}

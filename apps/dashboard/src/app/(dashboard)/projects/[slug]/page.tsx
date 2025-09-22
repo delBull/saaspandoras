@@ -136,12 +136,51 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                                 <SparklesIcon className="w-5 h-5 text-lime-400" /> Video Pitch
                             </h3>
                             <div className="aspect-video rounded-xl overflow-hidden shadow-2xl">
-                                <iframe
-                                    src={project.videoPitch.replace("watch?v=", "embed/")}
-                                    title={`${project.title} Video Pitch`}
-                                    className="w-full h-full"
-                                    allowFullScreen
-                                />
+                                {project.videoPitch && (() => {
+                                    let embedUrl = '';
+
+                                    if (project.videoPitch.includes('youtube.com') || project.videoPitch.includes('youtu.be')) {
+                                        // Extraer el ID del video de diferentes formatos de YouTube
+                                        let videoId = '';
+                                        if (project.videoPitch.includes('youtube.com')) {
+                                            const vParam = project.videoPitch.split('v=')[1];
+                                            videoId = vParam?.split('&')[0] || '';
+                                        } else if (project.videoPitch.includes('youtu.be/')) {
+                                            const pathSegment = project.videoPitch.split('/').pop();
+                                            videoId = pathSegment?.split('?')[0] || '';
+                                        }
+
+                                        if (videoId && videoId.length > 0) {
+                                            embedUrl = `https://www.youtube.com/embed/${videoId}`;
+                                        }
+                                    } else if (project.videoPitch.includes('vimeo.com')) {
+                                        // Extraer el ID del video de Vimeo
+                                        const videoId = project.videoPitch.split('/').pop();
+                                        if (videoId) {
+                                            embedUrl = `https://player.vimeo.com/video/${videoId}`;
+                                        }
+                                    }
+
+                                    if (embedUrl) {
+                                        return (
+                                            <iframe
+                                                src={embedUrl}
+                                                title={`${project.title} Video Pitch`}
+                                                className="w-full h-full rounded-xl"
+                                                frameBorder="0"
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                allowFullScreen
+                                                referrerPolicy="strict-origin-when-cross-origin"
+                                            />
+                                        );
+                                    } else {
+                                        return (
+                                            <div className="w-full h-full bg-zinc-800 rounded-xl flex items-center justify-center">
+                                                <p className="text-gray-400 text-sm">URL del video inválida</p>
+                                            </div>
+                                        );
+                                    }
+                                })()}
                             </div>
                         </div>
                     )}

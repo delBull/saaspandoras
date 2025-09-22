@@ -15,7 +15,6 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
-
     "@hookform/resolvers": "3.3.4",
     "@saasfly/api": "workspace:*",
     "@saasfly/db": "workspace:*",
@@ -27,12 +26,14 @@
     "@trpc/next": "10.44.1",
     "@trpc/react-query": "10.44.1",
     "@trpc/server": "10.44.1",
+    "@types/formidable": "^3.4.5",
     "@uniswap/widgets": "^2.59.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "3.3.1",
     "embla-carousel-react": "^8.6.0",
     "ethers": "5.7.2",
+    "formidable": "^3.5.4",
     "framer-motion": "^12.23.12",
     "lucide-react": "^0.542.0",
     "motion": "^12.23.12",
