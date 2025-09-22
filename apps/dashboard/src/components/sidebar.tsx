@@ -94,10 +94,28 @@ export function Sidebar({
   const links = useMemo(
     () => [
       {
-        label: "Overview",
+        label: "Inicio",
         href: "/",
         icon: <HomeIcon className="h-5 w-5 shrink-0 font-mono text-gray-400" />,
         disabled: false,
+      },
+      {
+        label: "Invertir",
+        href: "#",
+        icon: (
+          <ArrowPathIcon className="h-5 w-5 shrink-0 font-mono text-gray-400" />
+        ),
+        comingSoon: true,
+        disabled: true,
+      },
+      {
+        label: "Pools",
+        href: "#",
+        icon: (
+          <BanknotesIcon className="h-5 w-5 shrink-0 font-mono text-gray-400" />
+        ),
+        comingSoon: true,
+        disabled: true,
       },
       {
         label: "Swap",
@@ -108,30 +126,12 @@ export function Sidebar({
         disabled: true,
       },
       {
-        label: "Applicants",
+        label: "Aplicantes",
         href: "/applicants",
         icon: (
           <UserGroupIcon className="h-5 w-5 shrink-0 font-mono text-gray-400" />
         ),
         disabled: false,
-      },
-      {
-        label: "Invest",
-        href: "#",
-        icon: (
-          <ArrowPathIcon className="h-5 w-5 shrink-0 font-mono text-gray-400" />
-        ),
-        comingSoon: true,
-        disabled: true,
-      },
-      {
-        label: "Pool",
-        href: "#",
-        icon: (
-          <BanknotesIcon className="h-5 w-5 shrink-0 font-mono text-gray-400" />
-        ),
-        comingSoon: true,
-        disabled: true,
       },
       // Enlace solo visible para admin
       ...(isAdmin
@@ -372,25 +372,26 @@ export function Sidebar({
                   !open && "mx-auto w-full"
                 )}
               >
-                <Link
-                  href="/admin"
-                  className={cn(
-                    "relative flex items-center rounded-lg py-2 text-red-500 transition-all duration-200 hover:bg-red-900/50 hover:text-white",
-                    open ? "px-4" : "w-full justify-center"
-                  )}
-                >
-                  <ShieldCheckIcon className="h-5 w-5 shrink-0" />
-                  <motion.span
-                    animate={{
-                      opacity: open ? 1 : 0,
-                      width: open ? "auto" : 0,
-                      marginLeft: open ? "0.75rem" : "0",
-                    }}
-                    className="whitespace-nowrap font-bold"
+                {true ? (
+                  <span
+                    className={cn(
+                      "relative flex items-center rounded-lg py-2 text-red-700 transition-all duration-200 cursor-not-allowed opacity-50",
+                      open ? "px-4" : "w-full justify-center"
+                    )}
                   >
-                    Admin
-                  </motion.span>
-                </Link>
+                    <ShieldCheckIcon className="h-5 w-5 shrink-0" />
+                    <motion.span
+                      animate={{
+                        opacity: open ? 1 : 0,
+                        width: open ? "auto" : 0,
+                        marginLeft: open ? "0.75rem" : "0",
+                      }}
+                      className="whitespace-nowrap font-bold"
+                    >
+                      Admin
+                    </motion.span>
+                  </span>
+                ) : null}
               </div>
             )}
           </div>
