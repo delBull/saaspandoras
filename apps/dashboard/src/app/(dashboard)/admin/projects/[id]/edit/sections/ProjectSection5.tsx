@@ -143,7 +143,8 @@ export function ProjectSection5() {
         });
 
         if (response.ok) {
-          const data: { url: string; filename: string; success: boolean } = await response.json();
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          const data = await response.json() as { url: string; filename: string; success: boolean };
           setPreview(data.url);
           setField(data.url);
           toast.success("Documento cargado correctamente");
