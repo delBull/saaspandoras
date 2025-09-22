@@ -572,7 +572,7 @@ export default function AdminDashboardPage() {
                                 <div className="space-y-1">
                                   <div className="text-xs">
                                     <span className="text-gray-400">Nombre: </span>
-                                    <span className="text-white">{p.applicantName || "Sin completar"}</span>
+                                    <span className="text-white">{p.applicantName ?? "Sin completar"}</span>
                                   </div>
                                   <div className="text-xs">
                                     <span className="text-gray-400">Email: </span>
@@ -586,7 +586,7 @@ export default function AdminDashboardPage() {
                                   </div>
                                   <div className="text-xs">
                                     <span className="text-gray-400">Teléfono: </span>
-                                    <span className="text-white">{p.applicantPhone || "Sin completar"}</span>
+                                    <span className="text-white">{p.applicantPhone ?? "Sin completar"}</span>
                                   </div>
                                 </div>
                               </div>
@@ -659,15 +659,15 @@ export default function AdminDashboardPage() {
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                                 <div>
                                   <span className="text-gray-400">Categoría de negocio: </span>
-                                  <span className="text-white">{p.businessCategory || "Sin especificar"}</span>
+                                  <span className="text-white">{p.businessCategory ?? "Sin especificar"}</span>
                                 </div>
                                 <div>
                                   <span className="text-gray-400">Estatus legal: </span>
-                                  <span className="text-white">{p.legalStatus || "Sin completar"}</span>
+                                  <span className="text-white">{p.legalStatus ?? "Sin completar"}</span>
                                 </div>
                                 <div>
                                   <span className="text-gray-400">Entidad fiduciaria: </span>
-                                  <span className="text-white">{p.fiduciaryEntity || "Sin completar"}</span>
+                                  <span className="text-white">{p.fiduciaryEntity ?? "Sin completar"}</span>
                                 </div>
                               </div>
                             </div>
