@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { AdminSettings } from "@/components/admin/AdminSettings";
 import Link from "next/link";
+import { calculateProjectCompletion } from "@/lib/project-utils";
 
 // Datos de ejemplo para swaps (puedes conectar esto a tu API real después)
 const mockSwaps = [
@@ -12,14 +13,17 @@ const mockSwaps = [
   { txHash: '0x789abc...', from: '0xdef789...', toToken: 'WETH', fromAmountUsd: 50.00, feeUsd: 0.25, status: 'failed' },
 ];
 
+type ProjectStatus = "draft" | "pending" | "approved" | "live" | "completed" | "incomplete" | "rejected";
+
 interface Project {
   id: string;
   title: string;
   description: string;
   website?: string;
   targetAmount: number;
-  status: "pending" | "approved" | "live" | "completed" | "rejected";
+  status: ProjectStatus;
   createdAt: string;
+  completionData?: ReturnType<typeof calculateProjectCompletion>;
 }
 
 interface AdminData {
@@ -34,6 +38,7 @@ export default function AdminDashboardPage() {
   const [admins, setAdmins] = useState<AdminData[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null); // null = not verified yet
+  const [statusFilter, setStatusFilter] = useState<ProjectStatus | 'all'>('all');
 
   // Function to handle project deletion with confirmation
   const deleteProject = async (projectId: string, projectTitle: string) => {
@@ -67,6 +72,72 @@ export default function AdminDashboardPage() {
     } catch (error) {
       alert('Error de conexión al eliminar el proyecto');
       console.error('Error deleting project:', error);
+    }
+  };
+
+  // Function to approve a project
+  const approveProject = async (projectId: string, projectTitle: string) => {
+    const confirmMessage = `¿Aprobar el proyecto "${projectTitle}"?\n\nEl proyecto pasará al estado "approved" y podrá ir live.`;
+    const isConfirmed = window.confirm(confirmMessage);
+
+    if (!isConfirmed) return;
+
+    try {
+      const response = await fetch(`/api/admin/projects/${projectId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'approved' }),
+      });
+
+      if (response.ok) {
+        // Update project status in local state
+        setProjects(prevProjects =>
+          prevProjects.map(p => p.id === projectId ? { ...p, status: 'approved' as ProjectStatus } : p)
+        );
+        alert('Proyecto aprobado exitosamente');
+      } else {
+        alert('Error al aprobar el proyecto');
+      }
+    } catch (error) {
+      alert('Error de conexión');
+      console.error('Error approving project:', error);
+    }
+  };
+
+  // Function to reject/incomplete a project
+  const rejectProject = async (projectId: string, projectTitle: string) => {
+    const rejectionType = window.confirm(`Proyecto: "${projectTitle}"\n\n¿Es un "No completado" (continúa aplicando) o "Rechazado" definitivamente?`);
+
+    const newStatus = rejectionType ? 'rejected' : 'incomplete';
+    const statusText = rejectionType ? 'rechazado' : 'marcado como no completado';
+
+    const confirmMessage = `¿${statusText} el proyecto "${projectTitle}"?\n\n${
+      rejectionType
+        ? 'El solicitante tendrá que aplicar nuevamente.'
+        : 'El solicitante podrá completar la información faltante.'
+    }`;
+
+    if (!window.confirm(confirmMessage)) return;
+
+    try {
+      const response = await fetch(`/api/admin/projects/${projectId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (response.ok) {
+        // Update project status in local state
+        setProjects(prevProjects =>
+          prevProjects.map(p => p.id === projectId ? { ...p, status: newStatus as ProjectStatus } : p)
+        );
+        alert(`Proyecto ${statusText} exitosamente`);
+      } else {
+        alert(`Error al ${statusText} el proyecto`);
+      }
+    } catch (error) {
+      alert('Error de conexión');
+      console.error('Error rejecting project:', error);
     }
   };
 
@@ -144,6 +215,39 @@ export default function AdminDashboardPage() {
     });
   }, [isAdmin]);
 
+  // Calculate completion for draft projects
+  const enhancedProjects = useMemo(() => {
+    return projects.map(project => ({
+      ...project,
+      completionData: project.status === 'draft' ? calculateProjectCompletion(project) : undefined
+    }));
+  }, [projects]);
+
+  // Filter projects based on selected filter
+  const filteredProjects = useMemo(() => {
+    if (statusFilter === 'all') return enhancedProjects;
+    return enhancedProjects.filter(project => project.status === statusFilter);
+  }, [enhancedProjects, statusFilter]);
+
+  // Get status counts for filter badges
+  const statusCounts = useMemo(() => {
+    const counts: Record<ProjectStatus, number> = {
+      draft: 0,
+      pending: 0,
+      approved: 0,
+      live: 0,
+      completed: 0,
+      incomplete: 0,
+      rejected: 0,
+    };
+
+    enhancedProjects.forEach(project => {
+      counts[project.status]++;
+    });
+
+    return counts;
+  }, [enhancedProjects]);
+
   // Show loading state while checking admin status
   if (loading) {
     return (
@@ -199,41 +303,115 @@ export default function AdminDashboardPage() {
       <AdminTabs swaps={mockSwaps} showSettings={true}>
         {/* Tab de proyectos */}
         <div key="projects-tab" className="space-y-6">
+          {/* Filtros de estado */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setStatusFilter('all')}
+              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                statusFilter === 'all'
+                  ? 'bg-lime-500 text-black'
+                  : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600'
+              }`}
+            >
+              Todos ({projects.length})
+            </button>
+            {Object.entries(statusCounts).map(([status, count]) => (
+              count > 0 && (
+                <button
+                  key={status}
+                  onClick={() => setStatusFilter(status as ProjectStatus)}
+                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                    statusFilter === status
+                      ? 'bg-lime-500 text-black'
+                      : `${
+                          status === 'draft' ? 'text-purple-300' :
+                          status === 'pending' ? 'text-yellow-300' :
+                          status === 'approved' ? 'text-blue-300' :
+                          status === 'live' ? 'text-green-300' :
+                          status === 'completed' ? 'text-emerald-300' :
+                          status === 'incomplete' ? 'text-orange-300' :
+                          'text-red-300'
+                        } bg-zinc-700 hover:bg-zinc-600`
+                  }`}
+                >
+                  {status} ({count})
+                </button>
+              )
+            ))}
+          </div>
+
           <div className="overflow-x-auto rounded-lg border border-zinc-700">
             <table className="min-w-full divide-y divide-zinc-700 text-sm">
               <thead className="bg-zinc-800">
                 <tr>
                   <th className="px-4 py-3 text-left font-semibold text-gray-300">Título</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-300">Monto (USD)</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-300">Estado</th>
+                  {statusFilter === 'all' || statusFilter === 'draft' ? (
+                    <th className="px-4 py-3 text-left font-semibold text-gray-300">Estado</th>
+                  ) : (
+                    <th className="px-4 py-3 text-left font-semibold text-gray-300">Monto (USD)</th>
+                  )}
+                  <th className="px-4 py-3 text-left font-semibold text-gray-300">
+                    {statusFilter === 'draft' ? 'Completitud' : 'Estado'}
+                  </th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-300">Sitio Web</th>
                   <th className="px-4 py-3 text-right font-semibold text-gray-300">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-700 bg-zinc-900">
-                {projects.length === 0 && (
+                {filteredProjects.length === 0 && (
                   <tr>
                     <td colSpan={5} className="px-4 py-6 text-center text-gray-500">
-                      No hay proyectos registrados.
+                      No hay proyectos registrados{statusFilter !== 'all' ? ` con estado "${statusFilter}"` : ''}.
                     </td>
                   </tr>
                 )}
-                {projects.map((p) => (
+                {filteredProjects.map((p) => (
                   <tr key={p.id} className="hover:bg-zinc-800">
                     <td className="px-4 py-3 text-gray-200">{p.title}</td>
-                    <td className="px-4 py-3 text-gray-200">
-                      ${Number(p.targetAmount).toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                        p.status === "live" ? "bg-green-600 text-white" :
-                        p.status === "pending" ? "bg-yellow-600 text-white" :
-                        p.status === "rejected" ? "bg-red-600 text-white" :
-                        "bg-zinc-700 text-gray-200"
-                      }`}>
-                        {p.status}
-                      </span>
-                    </td>
+                    {statusFilter === 'all' || statusFilter === 'draft' ? (
+                      <td className="px-4 py-3 text-gray-200">
+                        ${Number(p.targetAmount).toLocaleString()}
+                      </td>
+                    ) : (
+                      <td className="px-4 py-3 text-gray-200">
+                        ${Number(p.targetAmount).toLocaleString()}
+                      </td>
+                    )}
+                    {statusFilter === 'draft' && p.completionData ? (
+                      <td className="px-4 py-3">
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs text-gray-400">
+                            <span>{p.completionData.percentage}%</span>
+                          </div>
+                          <div className="w-full bg-zinc-700 rounded-full h-2">
+                            <div
+                              className="bg-lime-500 h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${p.completionData.percentage}%` }}
+                            ></div>
+                          </div>
+                          {p.completionData.missingFields.length > 0 && (
+                            <div className="text-xs text-orange-300">
+                              Faltan: {p.completionData.missingFields.slice(0, 2).join(', ')}
+                              {p.completionData.missingFields.length > 2 && '...'}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    ) : (
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                          p.status === "draft" ? "bg-purple-600 text-white" :
+                          p.status === "pending" ? "bg-yellow-600 text-white" :
+                          p.status === "approved" ? "bg-blue-600 text-white" :
+                          p.status === "live" ? "bg-green-600 text-white" :
+                          p.status === "completed" ? "bg-emerald-600 text-white" :
+                          p.status === "incomplete" ? "bg-orange-600 text-white" :
+                          "bg-red-600 text-white"
+                        }`}>
+                          {p.status}
+                        </span>
+                      </td>
+                    )}
                     <td className="px-4 py-3">
                       {p.website ? (
                         <a href={p.website} target="_blank" className="text-lime-400 hover:underline" rel="noopener noreferrer">
@@ -243,10 +421,27 @@ export default function AdminDashboardPage() {
                         <span className="text-gray-400">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <Link href={`/admin/projects/${p.id}/edit`} className="text-lime-400 hover:underline mr-4">
-                        Editar
-                      </Link>
+                    <td className="px-4 py-3 text-right space-x-2">
+                      {p.status === 'pending' ? (
+                        <>
+                          <button
+                            onClick={() => approveProject(p.id, p.title).catch(console.error)}
+                            className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-medium mr-2"
+                          >
+                            ✓ Aprobar
+                          </button>
+                          <button
+                            onClick={() => rejectProject(p.id, p.title).catch(console.error)}
+                            className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-medium mr-2"
+                          >
+                            ✗ Denegar
+                          </button>
+                        </>
+                      ) : (
+                        <Link href={`/admin/projects/${p.id}/edit`} className="text-lime-400 hover:underline mr-4">
+                          Editar
+                        </Link>
+                      )}
                       <span
                         className="text-red-400 hover:underline cursor-pointer"
                         onClick={() => deleteProject(p.id, p.title).catch(console.error)}

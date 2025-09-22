@@ -92,7 +92,7 @@ export function SuccessNFTCard({ onAnimationComplete }: SuccessNFTCardProps) {
       >
         <h2 className={cn(shadowsIntoLight.className, "text-3xl font-bold text-white mb-4")}>¡Llave Adquirida!</h2>
         <div className="w-56 h-56 relative mb-4">
-          <Image src="/images/pkey.png" layout="fill" objectFit="contain" alt="Pandora's Key" />
+          <Image src="/images/pkey.png" fill style={{objectFit: "contain"}} alt="Pandora's Key" />
         </div>
         <p className="text-center font-mono text-gray-300 px-4">Tu Pandora's Key ha sido creada y guardada de forma segura en tu billetera.</p>
       </motion.div>

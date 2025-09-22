@@ -120,6 +120,8 @@ export function PromotionalBanner({
           src={imageUrl}
           alt={title}
           fill
+          sizes="(max-width: 768px) 90vw, 33vw"
+          priority={imageUrl.includes('sem.jpeg') || imageUrl.includes('blockbunny.jpg') || imageUrl.includes('narailoft.jpg')}
           className="object-cover transition-transform duration-500 group-hover:scale-105 opacity-30"
           style={{ zIndex: 0 }}
         />
