@@ -219,7 +219,7 @@ export default function AdminDashboardPage() {
   const enhancedProjects = useMemo(() => {
     return projects.map(project => ({
       ...project,
-      completionData: project.status === 'draft' ? calculateProjectCompletion(project) : undefined
+      completionData: project.status === 'draft' ? calculateProjectCompletion(project as unknown as Record<string, unknown>) : undefined
     }));
   }, [projects]);
 
