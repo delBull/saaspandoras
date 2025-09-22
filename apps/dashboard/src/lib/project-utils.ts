@@ -1,5 +1,3 @@
-import { type Project } from "~/db/schema";
-
 /**
  * Calculates the percentage of completion of a project
  * Based on required vs optional fields completed
@@ -80,7 +78,7 @@ export function calculateProjectCompletion(project: Record<string, unknown>): {
 
   // Validar campos requeridos
   for (const item of requiredSections) {
-    const value = (project as Record<string, unknown>)[item.field];
+    const value = project[item.field];
     if (value === null || value === undefined || value === '' ||
         (typeof value === 'string' && value.trim() === '')) {
       missingFields.push(item.label);
@@ -91,7 +89,7 @@ export function calculateProjectCompletion(project: Record<string, unknown>): {
 
   // Agregar puntos de campos opcionales
   for (const item of optionalSections) {
-    const value = (project as Record<string, unknown>)[item.field];
+    const value = project[item.field];
     if (value !== null && value !== undefined &&
         value !== '' && !(typeof value === 'string' && value.trim() === '')) {
       // Campos opcionales cuentan como bono
