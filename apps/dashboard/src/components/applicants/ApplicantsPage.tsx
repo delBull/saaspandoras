@@ -53,7 +53,6 @@ function NewProjectForm({ showForm, onCancel }: FormProps) {
 
 export default function ApplicantsPage() {
   const {
-    projects,
     loading,
     pendingProjects,
     approvedProjects,

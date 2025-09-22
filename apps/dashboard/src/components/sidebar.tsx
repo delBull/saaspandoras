@@ -372,26 +372,24 @@ export function Sidebar({
                   !open && "mx-auto w-full"
                 )}
               >
-                {true ? (
-                  <span
-                    className={cn(
-                      "relative flex items-center rounded-lg py-2 text-red-700 transition-all duration-200 cursor-not-allowed opacity-50",
-                      open ? "px-4" : "w-full justify-center"
-                    )}
+                <span
+                  className={cn(
+                    "relative flex items-center rounded-lg py-2 text-red-700 transition-all duration-200 cursor-not-allowed opacity-50",
+                    open ? "px-4" : "w-full justify-center"
+                  )}
+                >
+                  <ShieldCheckIcon className="h-5 w-5 shrink-0" />
+                  <motion.span
+                    animate={{
+                      opacity: open ? 1 : 0,
+                      width: open ? "auto" : 0,
+                      marginLeft: open ? "0.75rem" : "0",
+                    }}
+                    className="whitespace-nowrap font-bold"
                   >
-                    <ShieldCheckIcon className="h-5 w-5 shrink-0" />
-                    <motion.span
-                      animate={{
-                        opacity: open ? 1 : 0,
-                        width: open ? "auto" : 0,
-                        marginLeft: open ? "0.75rem" : "0",
-                      }}
-                      className="whitespace-nowrap font-bold"
-                    >
-                      Admin
-                    </motion.span>
-                  </span>
-                ) : null}
+                    Admin
+                  </motion.span>
+                </span>
               </div>
             )}
           </div>
