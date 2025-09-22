@@ -12,11 +12,13 @@ import {
 } from "drizzle-orm/pg-core";
 
 export const projectStatusEnum = pgEnum("project_status", [
-  "pending", // Aplicación recibida, en revisión.
-  "approved", // Aprobado, pero aún no en vivo para inversión.
-  "live", // Activo y aceptando inversiones.
-  "completed", // Financiación completada.
-  "rejected", // Aplicación rechazada.
+  "draft",        // Borrador: Proyecto incompleto guardado por el solicitante
+  "pending",      // Pendiente: Aplicación completa, esperando revisión
+  "approved",     // Aprobado: Aprobado por admin, listo para ir live
+  "live",         // Live: Activo y aceptando inversiones
+  "completed",    // Completed: Financiación completada exitosamente
+  "incomplete",   // No completado: Denegado por información faltante
+  "rejected",     // Denegado: Rechazado definitivamente después de revisión
 ]);
 
 export const tokenTypeEnum = pgEnum("token_type", [

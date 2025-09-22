@@ -170,21 +170,22 @@ export function Sidebar({
           <div className="absolute top-12 left-0 right-0 flex justify-center items-center h-8">
             <AnimatePresence initial={false}>
               {open ? (
-                <motion.div
-                  key="logo-largo"
-                  initial="hidden"
-                  animate="visible"
-                  exit="hidden"
-                  variants={logoVariants}
-                  transition={{ type: "tween", ease: "easeInOut", duration: 0.2 }}
-                >
-                  <Image
-                    src="/images/logo_finance.png"
-                    width={256}
-                    height={64}
-                    alt="Logo Finance"
-                    priority
-                  />
+                  <motion.div
+                    key="logo-largo"
+                    initial="hidden"
+                    animate="visible"
+                    exit="hidden"
+                    variants={logoVariants}
+                    transition={{ type: "tween", ease: "easeInOut", duration: 0.2 }}
+                  >
+                    <Image
+                      src="/images/logo_finance.png"
+                      width={160}
+                      height={40}
+                      alt="Logo Finance"
+                      priority
+                      style={{ width: "auto", height: "auto" }}
+                    />
                 </motion.div>
               ) : (
                 <motion.div

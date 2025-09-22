@@ -80,6 +80,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                     alt={project.title}
                     fill
                     className="object-cover object-center opacity-40"
+                    priority
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-950 to-transparent" />
             </div>
@@ -93,6 +94,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                             width={128}
                             height={128}
                             className="object-cover w-full h-full"
+                            priority
                         />
                     </div>
                     <div>
