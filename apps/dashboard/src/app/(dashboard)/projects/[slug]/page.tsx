@@ -144,10 +144,10 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                                         let videoId = '';
                                         if (project.videoPitch.includes('youtube.com')) {
                                             const vParam = project.videoPitch.split('v=')[1];
-                                            videoId = vParam?.split('&')[0] || '';
+                                            videoId = vParam?.split('&')[0] ?? '';
                                         } else if (project.videoPitch.includes('youtu.be/')) {
                                             const pathSegment = project.videoPitch.split('/').pop();
-                                            videoId = pathSegment?.split('?')[0] || '';
+                                            videoId = pathSegment?.split('?')[0] ?? '';
                                         }
 
                                         if (videoId && videoId.length > 0) {

@@ -143,14 +143,14 @@ export function ProjectSection5() {
         });
 
         if (response.ok) {
-          const data = await response.json();
+          const data: { url: string; filename: string; success: boolean } = await response.json();
           setPreview(data.url);
           setField(data.url);
           toast.success("Documento cargado correctamente");
         } else {
           toast.error("Error al subir el documento");
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Upload error:', error);
         toast.error("Error al subir el documento");
       }
@@ -158,11 +158,11 @@ export function ProjectSection5() {
   };
 
   const handleValuationUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleDocumentUpload(e, setValuationPreview, (url) => setValue("valuationDocumentUrl", url));
+    void handleDocumentUpload(e, setValuationPreview, (url) => setValue("valuationDocumentUrl", url));
   };
 
   const handleDueDiligenceUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleDocumentUpload(e, setDueDiligencePreview, (url) => setValue("dueDiligenceReportUrl", url));
+    void handleDocumentUpload(e, setDueDiligencePreview, (url) => setValue("dueDiligenceReportUrl", url));
   };
 
   const isValidUrl = (url: string) => {

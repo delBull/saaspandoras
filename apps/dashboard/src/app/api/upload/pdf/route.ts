@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     await writeFile(filePath, buffer);
 
     // Generate URL
-    const baseUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'http://localhost:3001';
+    const baseUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL ?? 'http://localhost:3001';
     const fileUrl = `${baseUrl}/uploads/${filename}`;
 
     return Response.json({

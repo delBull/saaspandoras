@@ -14,11 +14,13 @@ export function MobileModal({ isOpen, onClose, pendingProjects }: MobileModalPro
       isOpen ? 'translate-y-0' : 'translate-y-full'
     }`}>
       {/* Backdrop */}
-      <div
+      <button
+        type="button"
         className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-500 ${
           isOpen ? 'opacity-100' : 'opacity-0'
         }`}
         onClick={onClose}
+        aria-label="Cerrar modal"
       />
 
       {/* Modal Panel */}
