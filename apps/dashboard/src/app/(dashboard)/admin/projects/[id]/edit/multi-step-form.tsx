@@ -669,7 +669,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
               <Button
                 type="button"
                 variant="outline"
-                onClick={handleSubmit(onSaveDraft, onValidationErrors)}
+                onClick={() => onSaveDraft(methods.getValues())} // Skip validation for drafts
                 disabled={isLoading}
                 className="w-full sm:w-auto"
               >
