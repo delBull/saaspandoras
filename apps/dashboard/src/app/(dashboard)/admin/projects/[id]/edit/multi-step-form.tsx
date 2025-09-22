@@ -392,8 +392,15 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
     setIsLoading(true);
     console.log('💾 onSaveDraft called with data:', data);
 
+    // For drafts, provide valid defaults to bypass validation
+    const draftData = {
+      ...data,
+      totalTokens: data.totalTokens || 1,
+      verificationAgreement: true, // Force true for drafts so they can be saved
+    };
+
     // FIX 4: Eliminar la aserción 'as any' innecesaria.
-    const tokenDist = (data.tokenDistribution ?? {}) as Record<string, number>;
+    const tokenDist = (draftData.tokenDistribution ?? {}) as Record<string, number>;
     const finalDistribution = {
       publicSale: tokenDist.publicSale ?? 0,
       team: tokenDist.team ?? 0,
@@ -402,9 +409,9 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
     };
 
     const submitData = {
-      ...data,
-      teamMembers: JSON.stringify(data.teamMembers ?? []),
-      advisors: JSON.stringify(data.advisors ?? []),
+      ...draftData,
+      teamMembers: JSON.stringify(draftData.teamMembers ?? []),
+      advisors: JSON.stringify(draftData.advisors ?? []),
       tokenDistribution: JSON.stringify(finalDistribution),
     };
 
