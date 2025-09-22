@@ -229,11 +229,6 @@ export default function AdminDashboardPage() {
     return enhancedProjects.filter(project => project.status === statusFilter);
   }, [enhancedProjects, statusFilter]);
 
-  // Include drafts in the projects list for admin management
-  const allProjectsForManagement = useMemo(() => {
-    return enhancedProjects; // Include all projects including drafts for management
-  }, [enhancedProjects]);
-
   // Get status counts for filter badges
   const statusCounts = useMemo(() => {
     const counts: Record<ProjectStatus, number> = {
