@@ -688,24 +688,32 @@ export default function AdminDashboardPage() {
 
       {/* Dropdown de Status - Renderizado fuera de la tabla para z-index máximo */}
       {statusDropdown && (
-        <div
-          className="fixed inset-0 z-[10000] flex items-start justify-center"
-          onClick={() => setStatusDropdown(null)}
-          style={{ paddingTop: '200px' }}
-        >
+        <>
+          <button
+            className="fixed inset-0 z-[9999] bg-black/20"
+            onClick={() => setStatusDropdown(null)}
+            aria-label="Cerrar menú"
+            type="button"
+          />
           <div
-            className="bg-zinc-900 border border-zinc-700 rounded-lg shadow-2xl min-w-48"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed z-[10000] min-w-48 bg-zinc-900 border border-zinc-700 rounded-lg shadow-2xl"
+            style={{
+              top: '220px',
+              left: '50%',
+              transform: 'translateX(-50%)'
+            }}
+            role="menu"
+            aria-label="Opciones de estado del proyecto"
           >
-            <div className="py-1">
+            <div className="py-1" role="none">
               {["draft", "pending", "approved", "rejected", "incomplete", "live", "completed"].map((statusOption) => {
                 const currentProject = projects.find(p => p.id === statusDropdown);
                 return (
                   <button
                     key={statusOption}
-                    onClick={() => {
+                    onClick={async () => {
                       if (currentProject) {
-                        changeProjectStatus(currentProject.id, currentProject.title, statusOption as ProjectStatus);
+                        await changeProjectStatus(currentProject.id, currentProject.title, statusOption as ProjectStatus);
                       }
                       setStatusDropdown(null);
                     }}
@@ -713,6 +721,8 @@ export default function AdminDashboardPage() {
                       currentProject?.status === statusOption ? 'font-bold bg-zinc-800 text-white' :
                       'text-gray-300 hover:text-white'
                     }`}
+                    role="menuitem"
+                    type="button"
                   >
                     {statusOption}
                   </button>
@@ -720,7 +730,7 @@ export default function AdminDashboardPage() {
               })}
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
