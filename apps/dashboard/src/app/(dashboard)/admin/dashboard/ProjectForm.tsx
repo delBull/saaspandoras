@@ -54,7 +54,7 @@ const projectSchema = z.object({
   website: z.string().url("URL inválida.").optional().or(z.literal("")),
   businessCategory: z.string().optional(),
   targetAmount: z.coerce.number().min(0, "Debe ser un número positivo."),
-  status: z.enum(["pending", "approved", "live", "completed", "rejected"]),
+  status: z.enum(["draft", "pending", "approved", "live", "completed", "incomplete", "rejected"]),
 });
 
 type ProjectFormData = z.infer<typeof projectSchema>;
