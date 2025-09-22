@@ -22,8 +22,8 @@ export function ProjectGrid({ projects, variant = 'approved' }: ProjectGridProps
   }
 
   return (
-    <div className={`grid gap-8 ${
-      variant === 'pending' ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'
+    <div className={`grid ${
+      variant === 'pending' ? 'grid-cols-1 gap-4' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-8'
     }`}>
       {projects.map((project) => (
         <ProjectCard

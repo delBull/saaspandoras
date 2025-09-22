@@ -43,7 +43,7 @@ export function PanelProjects({ pendingProjects, isCollapsed, onToggleCollapse }
       </div>
 
       {/* Panel Content */}
-      <div className={`h-full overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent ${
+      <div className={`h-full px-3 py-3 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent ${
         isCollapsed ? 'hidden' : ''
       }`}>
         <ProjectGrid projects={pendingProjects} variant="pending" />

@@ -68,12 +68,30 @@ export function ProjectSection2() {
 
   const handleUrlChange = (field: keyof FullProjectFormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const url = e.target.value;
+    // No validamos inmediatamente para permitir escritura manual
     setValue(field, url);
-    
-    // Validación básica de URL
-    if (url && !url.startsWith('http')) {
-      toast.error("Por favor ingresa una URL completa (ej: https://example.com)");
-      setValue(field, "");
+  };
+
+  const handleUrlBlur = (field: keyof FullProjectFormData) => (e: React.FocusEvent<HTMLInputElement>) => {
+    const url = e.target.value.trim();
+    if (url && url.length > 0) {
+      // Solo validar y corregir el formato básico
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        // Corregir automáticamente añadiendo https:// si no tiene protocolo
+        setValue(field, 'https://' + url.replace(/^https?:\/\//, ''));
+      } else {
+        // Solo limpiar si no puede crear URL válida
+        try {
+          new URL(url);
+        } catch {
+          if (url.includes('.') && url.length > 3) {
+            // Permitir URLs que probablemente sean válidas
+            return;
+          }
+          toast.error("Formato de URL inválido");
+          setValue(field, "");
+        }
+      }
     }
   };
 
@@ -101,15 +119,16 @@ export function ProjectSection2() {
         <Label htmlFor="website" required>Sitio Web Oficial</Label>
         <Input
           id="website"
-          type="url"
+          type="text"
           placeholder="https://tu-proyecto.com"
-          {...register("website")}
+          {...register("website", { required: false })}
           onChange={handleUrlChange("website")}
+          onBlur={handleUrlBlur("website")}
         />
         {errors.website && <ErrorMessage>{errors.website.message}</ErrorMessage>}
         {website && isValidUrl(website) && (
-          <LinkPreview 
-            url={website} 
+          <LinkPreview
+            url={website}
             title="Sitio Web Oficial"
             description="Página principal del proyecto donde los inversionistas pueden encontrar más información"
           />
@@ -124,15 +143,16 @@ export function ProjectSection2() {
         <Label htmlFor="whitepaperUrl">White Paper / Prospecto de Inversión (PDF)</Label>
         <Input
           id="whitepaperUrl"
-          type="url"
+          type="text"
           placeholder="https://tu-proyecto.com/whitepaper.pdf"
-          {...register("whitepaperUrl")}
+          {...register("whitepaperUrl", { required: false })}
           onChange={handleUrlChange("whitepaperUrl")}
+          onBlur={handleUrlBlur("whitepaperUrl")}
         />
         {errors.whitepaperUrl && <ErrorMessage>{errors.whitepaperUrl.message}</ErrorMessage>}
         {whitepaperUrl && isValidUrl(whitepaperUrl) && whitepaperUrl.endsWith('.pdf') && (
-          <LinkPreview 
-            url={whitepaperUrl} 
+          <LinkPreview
+            url={whitepaperUrl}
             title="White Paper / Prospecto"
             description="Documento detallado con toda la información técnica, financiera y legal del proyecto"
           />
@@ -150,21 +170,22 @@ export function ProjectSection2() {
           </svg>
           Comunidad y Redes Sociales
         </h4>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Twitter/X */}
           <div>
             <Label htmlFor="twitterUrl">X (Twitter)</Label>
             <Input
               id="twitterUrl"
-              type="url"
+              type="text"
               placeholder="https://twitter.com/tu-proyecto"
-              {...register("twitterUrl")}
+              {...register("twitterUrl", { required: false })}
               onChange={handleUrlChange("twitterUrl")}
+              onBlur={handleUrlBlur("twitterUrl")}
             />
             {twitterUrl && isValidUrl(twitterUrl) && twitterUrl.includes('twitter.com') && (
-              <LinkPreview 
-                url={twitterUrl} 
+              <LinkPreview
+                url={twitterUrl}
                 title="@TuProyecto"
                 description="Cuenta oficial en X/Twitter donde compartimos actualizaciones"
               />
@@ -176,14 +197,15 @@ export function ProjectSection2() {
             <Label htmlFor="discordUrl">Discord (si aplica)</Label>
             <Input
               id="discordUrl"
-              type="url"
+              type="text"
               placeholder="https://discord.gg/tu-invite"
-              {...register("discordUrl")}
+              {...register("discordUrl", { required: false })}
               onChange={handleUrlChange("discordUrl")}
+              onBlur={handleUrlBlur("discordUrl")}
             />
             {discordUrl && isValidUrl(discordUrl) && discordUrl.includes('discord.gg') && (
-              <LinkPreview 
-                url={discordUrl} 
+              <LinkPreview
+                url={discordUrl}
                 title="Discord Community"
                 description="Comunidad oficial en Discord para inversionistas y supporters"
               />
@@ -195,14 +217,15 @@ export function ProjectSection2() {
             <Label htmlFor="telegramUrl">Telegram (si aplica)</Label>
             <Input
               id="telegramUrl"
-              type="url"
+              type="text"
               placeholder="https://t.me/tu-canal"
-              {...register("telegramUrl")}
+              {...register("telegramUrl", { required: false })}
               onChange={handleUrlChange("telegramUrl")}
+              onBlur={handleUrlBlur("telegramUrl")}
             />
             {telegramUrl && isValidUrl(telegramUrl) && telegramUrl.includes('t.me') && (
-              <LinkPreview 
-                url={telegramUrl} 
+              <LinkPreview
+                url={telegramUrl}
                 title="Telegram Channel"
                 description="Canal oficial de Telegram para noticias y actualizaciones"
               />
@@ -214,14 +237,15 @@ export function ProjectSection2() {
             <Label htmlFor="linkedinUrl">LinkedIn de la Empresa</Label>
             <Input
               id="linkedinUrl"
-              type="url"
+              type="text"
               placeholder="https://linkedin.com/company/tu-empresa"
-              {...register("linkedinUrl")}
+              {...register("linkedinUrl", { required: false })}
               onChange={handleUrlChange("linkedinUrl")}
+              onBlur={handleUrlBlur("linkedinUrl")}
             />
             {linkedinUrl && isValidUrl(linkedinUrl) && linkedinUrl.includes('linkedin.com') && (
-              <LinkPreview 
-                url={linkedinUrl} 
+              <LinkPreview
+                url={linkedinUrl}
                 title="LinkedIn Company"
                 description="Perfil oficial de LinkedIn de la empresa/emprendimiento"
               />
