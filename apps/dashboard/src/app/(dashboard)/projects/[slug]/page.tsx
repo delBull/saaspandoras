@@ -107,7 +107,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                         </h1>
                         {project.tagline && (
                             <p className="text-lime-400 italic mt-3 lg:mt-4 text-base lg:text-lg xl:text-xl max-w-3xl">
-                                "{project.tagline}"
+                                &quot;{project.tagline}&quot;
                             </p>
                         )}
                     </div>
