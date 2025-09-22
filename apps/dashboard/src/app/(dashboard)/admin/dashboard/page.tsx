@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { AdminSettings } from "@/components/admin/AdminSettings";
 import Link from "next/link";
@@ -20,10 +20,24 @@ interface Project {
   title: string;
   description: string;
   website?: string;
+  whitepaperUrl?: string;
+  twitterUrl?: string;
+  discordUrl?: string;
+  telegramUrl?: string;
+  linkedinUrl?: string;
+  businessCategory?: string;
   targetAmount: number;
   status: ProjectStatus;
   createdAt: string;
   completionData?: ReturnType<typeof calculateProjectCompletion>;
+  // Due diligence info
+  valuationDocumentUrl?: string;
+  dueDiligenceReportUrl?: string;
+  legalStatus?: string;
+  fiduciaryEntity?: string;
+  applicantName?: string;
+  applicantEmail?: string;
+  applicantPhone?: string;
 }
 
 interface AdminData {
@@ -39,6 +53,8 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null); // null = not verified yet
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | 'all'>('all');
+  const [expandedProject, setExpandedProject] = useState<string | null>(null); // Para controlar el dropdown de detalles
+  const [statusDropdown, setStatusDropdown] = useState<string | null>(null); // Para controlar el dropdown de estado
 
   // Function to handle project deletion with confirmation
   const deleteProject = async (projectId: string, projectTitle: string) => {
@@ -138,6 +154,43 @@ export default function AdminDashboardPage() {
     } catch (error) {
       alert('Error de conexión');
       console.error('Error rejecting project:', error);
+    }
+  };
+
+  // Function to change project status to any value
+  const changeProjectStatus = async (projectId: string, projectTitle: string, newStatus: ProjectStatus) => {
+    const statusLabels: Record<ProjectStatus, string> = {
+      draft: 'Borrador',
+      pending: 'Pendiente',
+      approved: 'Aprobado',
+      rejected: 'Rechazado',
+      incomplete: 'Incompleto',
+      live: 'En Vivo',
+      completed: 'Completado'
+    };
+
+    const confirmMessage = `¿Cambiar el status del proyecto "${projectTitle}" a "${statusLabels[newStatus]}"?`;
+
+    if (!window.confirm(confirmMessage)) return;
+
+    try {
+      const response = await fetch(`/api/admin/projects/${projectId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (response.ok) {
+        // Update project status in local state
+        setProjects(prevProjects =>
+          prevProjects.map(p => p.id === projectId ? { ...p, status: newStatus } : p)
+        );
+      } else {
+        alert('Error al cambiar el status del proyecto');
+      }
+    } catch (error) {
+      alert('Error de conexión');
+      console.error('Error changing project status:', error);
     }
   };
 
@@ -351,104 +404,278 @@ export default function AdminDashboardPage() {
                     {statusFilter !== 'draft' && 'Estado'}
                   </th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-300">Sitio Web</th>
+                  <th className="px-4 py-3 text-center font-semibold text-gray-300">Detalles</th>
                   <th className="px-4 py-3 text-right font-semibold text-gray-300">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-700 bg-zinc-900">
                 {filteredProjects.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center text-gray-500">
+                    <td colSpan={6} className="px-4 py-6 text-center text-gray-500">
                       No hay proyectos registrados{statusFilter !== 'all' ? ` con estado "${statusFilter}"` : ''}.
                     </td>
                   </tr>
                 )}
                 {filteredProjects.map((p) => (
-                  <tr key={p.id} className="hover:bg-zinc-800">
-                    <td className="px-4 py-3 text-gray-200">{p.title}</td>
-                    <td className="px-4 py-3 text-gray-200">
-                      ${Number(p.targetAmount).toLocaleString()}
-                    </td>
-                    {statusFilter === 'draft' && p.completionData ? (
-                      <td className="px-4 py-3">
-                        <div className="space-y-1">
-                          <div className="flex justify-between text-xs text-gray-400">
-                            <span>{p.completionData.percentage}%</span>
-                          </div>
-                          <div className="w-full bg-zinc-700 rounded-full h-2">
-                            <div
-                              className="bg-lime-500 h-2 rounded-full transition-all duration-300"
-                              style={{ width: `${p.completionData.percentage}%` }}
-                            ></div>
-                          </div>
-                          {p.completionData.missingFields.length > 0 && (
-                            <div className="text-xs text-orange-300">
-                              Faltan: {p.completionData.missingFields.slice(0, 2).join(', ')}
-                              {p.completionData.missingFields.length > 2 && '...'}
-                            </div>
-                          )}
-                        </div>
+                  <React.Fragment key={p.id}>
+                    <tr className="hover:bg-zinc-800">
+                      <td className="px-4 py-3 text-gray-200">{p.title}</td>
+                      <td className="px-4 py-3 text-gray-200">
+                        ${Number(p.targetAmount).toLocaleString()}
                       </td>
-                    ) : (
+                      {statusFilter === 'draft' && p.completionData ? (
+                        <td className="px-4 py-3">
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-xs text-gray-400">
+                              <span>{p.completionData.percentage}%</span>
+                            </div>
+                            <div className="w-full bg-zinc-700 rounded-full h-2">
+                              <div
+                                className="bg-lime-500 h-2 rounded-full transition-all duration-300"
+                                style={{ width: `${p.completionData.percentage}%` }}
+                              ></div>
+                            </div>
+                            {p.completionData.missingFields.length > 0 && (
+                              <div className="text-xs text-orange-300">
+                                Faltan: {p.completionData.missingFields.slice(0, 2).join(', ')}
+                                {p.completionData.missingFields.length > 2 && '...'}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      ) : (
+                        <td className="px-4 py-3">
+                          <div className="relative">
+                            <button
+                              onClick={() => setStatusDropdown(statusDropdown === p.id ? null : p.id)}
+                              className={`px-2 py-1 rounded text-xs font-semibold cursor-pointer transition-all ${
+                                p.status === "draft" ? "bg-purple-600 hover:bg-purple-700" :
+                                p.status === "pending" ? "bg-yellow-600 hover:bg-yellow-700" :
+                                p.status === "approved" ? "bg-blue-600 hover:bg-blue-700" :
+                                p.status === "live" ? "bg-green-600 hover:bg-green-700" :
+                                p.status === "completed" ? "bg-emerald-600 hover:bg-emerald-700" :
+                                p.status === "incomplete" ? "bg-orange-600 hover:bg-orange-700" :
+                                "bg-red-600 hover:bg-red-700"
+                              } text-white flex items-center gap-1`}
+                            >
+                              <span>{p.status}</span>
+                              <svg className="w-3 h-3 transition-transform" style={{transform: statusDropdown === p.id ? 'rotate(180deg)' : 'rotate(0deg)'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
+                      )}
                       <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                          p.status === "draft" ? "bg-purple-600 text-white" :
-                          p.status === "pending" ? "bg-yellow-600 text-white" :
-                          p.status === "approved" ? "bg-blue-600 text-white" :
-                          p.status === "live" ? "bg-green-600 text-white" :
-                          p.status === "completed" ? "bg-emerald-600 text-white" :
-                          p.status === "incomplete" ? "bg-orange-600 text-white" :
-                          "bg-red-600 text-white"
-                        }`}>
-                          {p.status}
+                        {p.website ? (
+                          <a href={p.website} target="_blank" className="text-lime-400 hover:underline" rel="noopener noreferrer">
+                            Visitar
+                          </a>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                  {/* Columna de Detalles/Due Diligence */}
+                  <td className="px-4 py-3 text-center">
+                    <button
+                      onClick={() => setExpandedProject(expandedProject === p.id ? null : p.id)}
+                      className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition-colors"
+                    >
+                      {expandedProject === p.id ? 'Ocultar' : 'Ver'}
+                    </button>
+                  </td>
+                      <td className="px-4 py-3 text-right space-x-2">
+                        {p.status === 'pending' ? (
+                          <>
+                            <button
+                              onClick={() => approveProject(p.id, p.title).catch(console.error)}
+                              className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-medium mr-2"
+                            >
+                              ✓ Aprobar
+                            </button>
+                            <button
+                              onClick={() => rejectProject(p.id, p.title).catch(console.error)}
+                              className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-medium mr-2"
+                            >
+                              ✗ Denegar
+                            </button>
+                          </>
+                        ) : (
+                          <Link href={`/admin/projects/${p.id}/edit`} className="text-lime-400 hover:underline mr-4">
+                            Editar
+                          </Link>
+                        )}
+                        <span
+                          className="text-red-400 hover:underline cursor-pointer"
+                          onClick={() => deleteProject(p.id, p.title).catch(console.error)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              deleteProject(p.id, p.title).catch(console.error);
+                            }
+                          }}
+                          role="button"
+                          tabIndex={0}
+                        >
+                          Eliminar
                         </span>
                       </td>
+                    </tr>
+
+                    {/* Fila expandida con detalles de due diligence */}
+                    {expandedProject === p.id && (
+                      <tr className="bg-zinc-800/50">
+                        <td colSpan={6} className="px-6 py-4">
+                          <div className="space-y-4">
+                            <h4 className="font-semibold text-lime-400 text-sm flex items-center gap-2">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                              Información de Due Diligence
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {/* Documentos */}
+                              <div className="space-y-2">
+                                <h5 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Documentos Legales</h5>
+                                <div className="space-y-1">
+                                  {p.valuationDocumentUrl ? (
+                                    <a
+                                      href={p.valuationDocumentUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="block px-2 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-xs text-lime-300 hover:text-lime-200"
+                                    >
+                                      📄 Valuación Profesional
+                                    </a>
+                                  ) : (
+                                    <span className="block px-2 py-1 bg-zinc-800 text-gray-500 rounded text-xs">Valuación: Sin completar</span>
+                                  )}
+
+                                  {p.dueDiligenceReportUrl ? (
+                                    <a
+                                      href={p.dueDiligenceReportUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="block px-2 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-xs text-cyan-300 hover:text-cyan-200"
+                                    >
+                                      📋 Reporte Due Diligence
+                                    </a>
+                                  ) : (
+                                    <span className="block px-2 py-1 bg-zinc-800 text-gray-500 rounded text-xs">Due Diligence: Sin completar</span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Información de contacto */}
+                              <div className="space-y-2">
+                                <h5 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Representante</h5>
+                                <div className="space-y-1">
+                                  <div className="text-xs">
+                                    <span className="text-gray-400">Nombre: </span>
+                                    <span className="text-white">{p.applicantName || "Sin completar"}</span>
+                                  </div>
+                                  <div className="text-xs">
+                                    <span className="text-gray-400">Email: </span>
+                                    {p.applicantEmail ? (
+                                      <a href={`mailto:${p.applicantEmail}`} className="text-lime-400 hover:underline">
+                                        {p.applicantEmail}
+                                      </a>
+                                    ) : (
+                                      <span className="text-gray-500">Sin completar</span>
+                                    )}
+                                  </div>
+                                  <div className="text-xs">
+                                    <span className="text-gray-400">Teléfono: </span>
+                                    <span className="text-white">{p.applicantPhone || "Sin completar"}</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Enlaces y redes sociales */}
+                              <div className="space-y-2">
+                                <h5 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Enlaces Públicos</h5>
+                                <div className="space-y-1">
+                                  {p.whitepaperUrl && (
+                                    <a
+                                      href={p.whitepaperUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="block px-2 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-xs text-lime-300 hover:text-lime-200"
+                                    >
+                                      📄 White Paper
+                                    </a>
+                                  )}
+                                  {p.twitterUrl && (
+                                    <a
+                                      href={p.twitterUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="block px-2 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-xs text-blue-300 hover:text-blue-200"
+                                    >
+                                      𝕏 Twitter
+                                    </a>
+                                  )}
+                                  {p.discordUrl && (
+                                    <a
+                                      href={p.discordUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="block px-2 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-xs text-indigo-300 hover:text-indigo-200"
+                                    >
+                                      💬 Discord
+                                    </a>
+                                  )}
+                                  {p.telegramUrl && (
+                                    <a
+                                      href={p.telegramUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="block px-2 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-xs text-blue-400 hover:text-blue-300"
+                                    >
+                                      ✈️ Telegram
+                                    </a>
+                                  )}
+                                  {p.linkedinUrl && (
+                                    <a
+                                      href={p.linkedinUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="block px-2 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-xs text-blue-600 hover:text-blue-500"
+                                    >
+                                      💼 LinkedIn
+                                    </a>
+                                  )}
+                                  {!p.whitepaperUrl && !p.twitterUrl && !p.discordUrl && !p.telegramUrl && !p.linkedinUrl && (
+                                    <span className="block px-2 py-1 bg-zinc-800 text-gray-500 rounded text-xs">
+                                      Sin enlaces registrados
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Información adicional */}
+                            <div className="border-t border-zinc-700 pt-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                <div>
+                                  <span className="text-gray-400">Categoría de negocio: </span>
+                                  <span className="text-white">{p.businessCategory || "Sin especificar"}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-400">Estatus legal: </span>
+                                  <span className="text-white">{p.legalStatus || "Sin completar"}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-400">Entidad fiduciaria: </span>
+                                  <span className="text-white">{p.fiduciaryEntity || "Sin completar"}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
                     )}
-                    <td className="px-4 py-3">
-                      {p.website ? (
-                        <a href={p.website} target="_blank" className="text-lime-400 hover:underline" rel="noopener noreferrer">
-                          Visitar
-                        </a>
-                      ) : (
-                        <span className="text-gray-400">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right space-x-2">
-                      {p.status === 'pending' ? (
-                        <>
-                          <button
-                            onClick={() => approveProject(p.id, p.title).catch(console.error)}
-                            className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-medium mr-2"
-                          >
-                            ✓ Aprobar
-                          </button>
-                          <button
-                            onClick={() => rejectProject(p.id, p.title).catch(console.error)}
-                            className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-medium mr-2"
-                          >
-                            ✗ Denegar
-                          </button>
-                        </>
-                      ) : (
-                        <Link href={`/admin/projects/${p.id}/edit`} className="text-lime-400 hover:underline mr-4">
-                          Editar
-                        </Link>
-                      )}
-                      <span
-                        className="text-red-400 hover:underline cursor-pointer"
-                        onClick={() => deleteProject(p.id, p.title).catch(console.error)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            deleteProject(p.id, p.title).catch(console.error);
-                          }
-                        }}
-                        role="button"
-                        tabIndex={0}
-                      >
-                        Eliminar
-                      </span>
-                    </td>
-                  </tr>
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
@@ -458,6 +685,43 @@ export default function AdminDashboardPage() {
         {/* Tab de configuración */}
         <AdminSettings key="settings-tab" initialAdmins={admins} />
       </AdminTabs>
+
+      {/* Dropdown de Status - Renderizado fuera de la tabla para z-index máximo */}
+      {statusDropdown && (
+        <div
+          className="fixed inset-0 z-[10000] flex items-start justify-center"
+          onClick={() => setStatusDropdown(null)}
+          style={{ paddingTop: '200px' }}
+        >
+          <div
+            className="bg-zinc-900 border border-zinc-700 rounded-lg shadow-2xl min-w-48"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="py-1">
+              {["draft", "pending", "approved", "rejected", "incomplete", "live", "completed"].map((statusOption) => {
+                const currentProject = projects.find(p => p.id === statusDropdown);
+                return (
+                  <button
+                    key={statusOption}
+                    onClick={() => {
+                      if (currentProject) {
+                        changeProjectStatus(currentProject.id, currentProject.title, statusOption as ProjectStatus);
+                      }
+                      setStatusDropdown(null);
+                    }}
+                    className={`block w-full text-left px-4 py-3 text-sm hover:bg-zinc-700 transition-colors ${
+                      currentProject?.status === statusOption ? 'font-bold bg-zinc-800 text-white' :
+                      'text-gray-300 hover:text-white'
+                    }`}
+                  >
+                    {statusOption}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

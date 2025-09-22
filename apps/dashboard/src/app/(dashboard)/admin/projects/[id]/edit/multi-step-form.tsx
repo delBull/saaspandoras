@@ -201,7 +201,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
   // Formulario principal
   const methods = useForm<FullProjectFormData>({
     resolver: zodResolver(fullProjectSchema), // FIX 1: Reactivado
-    mode: 'onChange',
+    mode: 'onBlur', // Cambiar de 'onChange' a 'onBlur' para permitir escritura sin validación inmediata
     defaultValues: {
       // Sección 1
       title: project?.title ?? undefined,

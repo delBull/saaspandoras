@@ -16,8 +16,8 @@ export function ProjectCard({ project, variant = 'approved' }: ProjectCardProps)
   const isPending = project.status === 'pending';
 
   return (
-    <div className={`bg-zinc-800/50 rounded-xl overflow-hidden border hover:border-lime-500/50 transition-all duration-300 group flex flex-col min-w-[300px] ${
-      variant === 'pending' ? 'hover:border-yellow-500/50 border-zinc-700' : ''
+    <div className={`bg-zinc-800/50 rounded-xl overflow-hidden border hover:border-lime-500/50 transition-all duration-300 group flex flex-col ${
+      variant === 'pending' ? 'hover:border-yellow-500/50 border-zinc-700 min-w-0' : 'min-w-[300px]'
     }`}>
       <div className="relative w-full bg-zinc-700" style={{ paddingBottom: isPending ? '75%' : '50%' }}>
         {project.coverPhotoUrl ? (
@@ -43,7 +43,7 @@ export function ProjectCard({ project, variant = 'approved' }: ProjectCardProps)
         )}
       </div>
 
-      <div className="p-5 flex flex-col flex-grow">
+      <div className={`flex flex-col flex-grow ${variant === 'pending' ? 'p-3' : 'p-5'}`}>
         <h3 className={`font-bold text-white mb-2 line-clamp-1 ${
           isPending ? 'text-base' : 'text-xl'
         }`}>
