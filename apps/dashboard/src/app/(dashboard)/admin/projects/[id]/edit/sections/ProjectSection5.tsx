@@ -143,7 +143,6 @@ export function ProjectSection5() {
         });
 
         if (response.ok) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           const data = await response.json() as { url: string; filename: string; success: boolean };
           setPreview(data.url);
           setField(data.url);
