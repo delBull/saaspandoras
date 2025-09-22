@@ -151,7 +151,7 @@ const fullProjectSchema = z.object({
   totalTokens: z.number().min(1).optional(),
   tokensOffered: z.number().min(1).optional(),
   tokenPriceUsd: z.number().min(0).optional(),
-  estimatedApy: z.string().optional(),
+  estimatedApy: z.union([z.string(), z.number()]).optional(),
   yieldSource: z.enum(["rental_income", "capital_appreciation", "dividends", "royalties", "other"]).optional(),
   lockupPeriod: z.string().optional(),
   fundUsage: z.string().optional(),
@@ -603,7 +603,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
                 <h2 className="text-2xl font-bold text-white">{currentTitle}</h2>
                 <p className="text-gray-400 mt-1">Paso {currentStep} de {totalSteps}</p>
               </div>
-              <div className="text-sm text-gray-500">
+              {/*<div className="text-sm text-gray-500">
                 {currentStep > 1 && (
                   <button
                     type="button" // Prevenir submit del form
@@ -623,7 +623,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
                     Siguiente →
                   </button>
                 )}
-              </div>
+              </div>*/}
             </div>
 
             {/* Renderizar sección actual */}
@@ -634,9 +634,52 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
             {currentStep === 5 && <ProjectSection5 />}
             {currentStep === 6 && <ProjectSection6 />}
             {currentStep === 7 && <ProjectSection7 />}
+
+            {/* Navegación inferior */}
+            <div className="flex justify-between items-center mt-8 pt-6 border-t border-zinc-800">
+              <div>
+                {currentStep > 1 && (
+                  <button
+                    type="button"
+                    onClick={prevStep}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-400 hover:text-lime-400 hover:bg-zinc-800/50 rounded-lg transition-colors duration-200"
+                  >
+                    ← Anterior
+                  </button>
+                )}
+              </div>
+              <div>
+                {currentStep < totalSteps && (
+                  <button
+                    type="button"
+                    onClick={nextStep}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-lime-500 hover:bg-lime-600 text-zinc-900 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={!isAdminUser && Object.keys(errors).length > 0}
+                  >
+                    Siguiente →
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Botones de Acción - Solo en el último paso */}
+          {/* Botones de Acción - Siempre visible el borrar para usuarios públicos */}
+          {isPublic && (
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleSubmit(onSaveDraft, onValidationErrors)}
+                disabled={isLoading}
+                className="w-full sm:w-auto"
+              >
+                {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                Guardar y Continuar Más Tarde
+              </Button>
+            </div>
+          )}
+
+          {/* Botones finales - Solo en el último paso */}
           {currentStep === totalSteps && (
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
@@ -648,19 +691,6 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                 {isEdit ? "Guardar Cambios" : isPublic ? "Enviar Aplicación" : "Guardar Borrador"}
               </Button>
-
-              {isPublic && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleSubmit(onSaveDraft, onValidationErrors)}
-                  disabled={isLoading}
-                  className="w-full sm:w-auto"
-                >
-                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                  Guardar y Continuar Más Tarde
-                </Button>
-              )}
 
               {!isPublic && isAdminUser && (
                 <Button
