@@ -388,6 +388,65 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
     toast.error(`Hay errores en el formulario. Revisa los campos: ${errorFields}`);
   };
 
+  const onSaveDraft = async (data: FullProjectFormData) => {
+    setIsLoading(true);
+    console.log('💾 onSaveDraft called with data:', data);
+
+    // FIX 4: Eliminar la aserción 'as any' innecesaria.
+    const tokenDist = (data.tokenDistribution ?? {}) as Record<string, number>;
+    const finalDistribution = {
+      publicSale: tokenDist.publicSale ?? 0,
+      team: tokenDist.team ?? 0,
+      treasury: tokenDist.treasury ?? 0,
+      marketing: tokenDist.marketing ?? 0,
+    };
+
+    const submitData = {
+      ...data,
+      teamMembers: JSON.stringify(data.teamMembers ?? []),
+      advisors: JSON.stringify(data.advisors ?? []),
+      tokenDistribution: JSON.stringify(finalDistribution),
+    };
+
+    const draftEndpoint = isEdit ? `/api/admin/projects/${project?.id}` : "/api/projects/draft";
+
+    console.log('📤 Saving draft to:', draftEndpoint, submitData);
+
+    try {
+      const response = await fetch(draftEndpoint, {
+        method: isEdit ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...submitData,
+          status: "draft" // Forzar status como draft para usuarios públicos
+        }),
+      });
+
+      console.log('📡 Draft save response status:', response.status, response.ok);
+
+      if (!response.ok) {
+        const errorData: unknown = await response.json();
+        const errorMessage = (errorData as { message?: string })?.message ?? "Error al guardar el borrador";
+        console.error("❌ Error del servidor:", errorData);
+        throw new Error(errorMessage);
+      }
+
+      // La respuesta se usa solo para log, así que 'unknown' es seguro.
+      const responseData: unknown = await response.json();
+      console.log('✅ Draft save success response:', responseData);
+
+      toast.success("Borrador guardado exitosamente! Puedes continuar más tarde.");
+      router.push("/applicants");
+      router.refresh();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Ocurrió un error al guardar el borrador";
+      console.error('💥 Draft save error:', error);
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const onFinalSubmit = async (data: FullProjectFormData) => {
     console.log('🚀 onFinalSubmit called with data:', data);
     setIsLoading(true);
@@ -589,7 +648,20 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                 {isEdit ? "Guardar Cambios" : isPublic ? "Enviar Aplicación" : "Guardar Borrador"}
               </Button>
-              
+
+              {isPublic && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleSubmit(onSaveDraft, onValidationErrors)}
+                  disabled={isLoading}
+                  className="w-full sm:w-auto"
+                >
+                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  Guardar y Continuar Más Tarde
+                </Button>
+              )}
+
               {!isPublic && isAdminUser && (
                 <Button
                   type="button"

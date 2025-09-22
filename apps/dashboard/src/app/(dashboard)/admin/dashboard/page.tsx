@@ -229,6 +229,11 @@ export default function AdminDashboardPage() {
     return enhancedProjects.filter(project => project.status === statusFilter);
   }, [enhancedProjects, statusFilter]);
 
+  // Include drafts in the projects list for admin management
+  const allProjectsForManagement = useMemo(() => {
+    return enhancedProjects; // Include all projects including drafts for management
+  }, [enhancedProjects]);
+
   // Get status counts for filter badges
   const statusCounts = useMemo(() => {
     const counts: Record<ProjectStatus, number> = {
@@ -345,13 +350,10 @@ export default function AdminDashboardPage() {
               <thead className="bg-zinc-800">
                 <tr>
                   <th className="px-4 py-3 text-left font-semibold text-gray-300">Título</th>
-                  {statusFilter === 'all' || statusFilter === 'draft' ? (
-                    <th className="px-4 py-3 text-left font-semibold text-gray-300">Estado</th>
-                  ) : (
-                    <th className="px-4 py-3 text-left font-semibold text-gray-300">Monto (USD)</th>
-                  )}
+                  <th className="px-4 py-3 text-left font-semibold text-gray-300">Monto (USD)</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-300">
-                    {statusFilter === 'draft' ? 'Completitud' : 'Estado'}
+                    {statusFilter === 'draft' && 'Completitud'}
+                    {statusFilter !== 'draft' && 'Estado'}
                   </th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-300">Sitio Web</th>
                   <th className="px-4 py-3 text-right font-semibold text-gray-300">Acciones</th>
@@ -368,15 +370,9 @@ export default function AdminDashboardPage() {
                 {filteredProjects.map((p) => (
                   <tr key={p.id} className="hover:bg-zinc-800">
                     <td className="px-4 py-3 text-gray-200">{p.title}</td>
-                    {statusFilter === 'all' || statusFilter === 'draft' ? (
-                      <td className="px-4 py-3 text-gray-200">
-                        ${Number(p.targetAmount).toLocaleString()}
-                      </td>
-                    ) : (
-                      <td className="px-4 py-3 text-gray-200">
-                        ${Number(p.targetAmount).toLocaleString()}
-                      </td>
-                    )}
+                    <td className="px-4 py-3 text-gray-200">
+                      ${Number(p.targetAmount).toLocaleString()}
+                    </td>
                     {statusFilter === 'draft' && p.completionData ? (
                       <td className="px-4 py-3">
                         <div className="space-y-1">
