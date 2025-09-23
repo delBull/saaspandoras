@@ -421,12 +421,11 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       marketing: tokenDist.marketing ?? 0,
     };
 
-    const submitData = {
-      ...draftData,
-      teamMembers: JSON.stringify(draftData.teamMembers ?? []),
-      advisors: JSON.stringify(draftData.advisors ?? []),
-      tokenDistribution: JSON.stringify(finalDistribution),
-    };
+    // FIX: Build submitData explicitly to avoid unsafe assignment error from spread operator
+    const submitData: Record<string, unknown> = { ...draftData };
+    submitData.teamMembers = JSON.stringify(draftData.teamMembers ?? []);
+    submitData.advisors = JSON.stringify(draftData.advisors ?? []);
+    submitData.tokenDistribution = JSON.stringify(finalDistribution);
 
     const draftEndpoint = isEdit ? `/api/admin/projects/${project?.id}` : "/api/projects/draft";
 
