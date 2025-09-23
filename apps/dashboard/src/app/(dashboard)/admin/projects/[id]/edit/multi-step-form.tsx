@@ -389,6 +389,29 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
     return () => clearTimeout(timeoutId);
   }, [currentStep]);
 
+  // Auto-redirección de modales después de 5 segundos
+  useEffect(() => {
+    if (showSuccessModal) {
+      const timer = setTimeout(() => {
+        setShowSuccessModal(false);
+        router.push(isPublic ? "/applicants" : "/admin/dashboard");
+        router.refresh();
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showSuccessModal, isPublic, router]);
+
+  useEffect(() => {
+    if (showDraftModal) {
+      const timer = setTimeout(() => {
+        setShowDraftModal(false);
+        router.push("/applicants");
+        router.refresh();
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showDraftModal, router]);
+
   // Navegación entre pasos
   const nextStep = async () => {
     const fieldsToValidate = Object.keys(getFieldsForStep(currentStep));
@@ -513,9 +536,8 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       const responseData = await response.json().catch(() => ({}));
       console.log('✅ Draft save success response:', responseData);
 
-      toast.success("Borrador guardado exitosamente! Puedes continuar más tarde.");
-      router.push("/applicants");
-      router.refresh();
+      // Mostrar modal en lugar de toast
+      setShowDraftModal(true);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Ocurrió un error al guardar el borrador";
       console.error('💥 Draft save error:', error);
@@ -613,19 +635,14 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       const responseData: unknown = await response.json();
       console.log('✅ Success response:', responseData);
 
-      toast.success(`Proyecto ${isEdit ? "actualizado" : isPublic ? "enviado para revisión" : "creado y subido"} exitosamente!`);
+      // Mostrar modal de éxito en lugar de toast inmediato
+      setShowSuccessModal(true);
 
+      // Limpiar localStorage después del éxito
       if (!isEdit) {
         localStorage.removeItem("pandoras-project-form");
         localStorage.removeItem("pandoras-project-step");
       }
-
-      if (isPublic) {
-        router.push("/applicants");
-      } else {
-        router.push("/admin/dashboard");
-      }
-      router.refresh();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Ocurrió un error al guardar el proyecto";
       console.error('💥 Submit error:', error);
@@ -711,6 +728,76 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
   ];
 
   const currentTitle = stepTitles[currentStep - 1];
+
+  // Componentes de modales
+  const SuccessModal = () => (
+    <div className="fixed inset-0 z-[10000] bg-black/50 flex items-center justify-center p-4">
+      <div className="bg-zinc-900 border border-lime-500 rounded-xl p-8 max-w-md w-full text-center shadow-2xl">
+        <div className="mb-4">
+          <div className="w-16 h-16 bg-lime-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-zinc-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-white mb-2">
+            ¡Aplicación Enviada Exitosamente!
+          </h3>
+          <p className="text-gray-300 text-sm">
+            {isPublic
+              ? "Gracias por enviar tu aplicación. Vamos a revisar tu proyecto cuidadosamente y te contactaremos prontamente con los próximos pasos"
+              : "Proyecto guardado exitosamente en el sistema administrativo"
+            }
+          </p>
+        </div>
+        <button
+          onClick={() => {
+            setShowSuccessModal(false);
+            router.push(isPublic ? "/applicants" : "/admin/dashboard");
+            router.refresh();
+          }}
+          className="w-full bg-lime-500 hover:bg-lime-600 text-zinc-900 py-2 px-4 rounded-lg font-medium transition-colors"
+        >
+          Entendido
+        </button>
+        <p className="text-xs text-gray-500 mt-2">
+          Redirigiendo automáticamente en 5 segundos...
+        </p>
+      </div>
+    </div>
+  );
+
+  const DraftModal = () => (
+    <div className="fixed inset-0 z-[10000] bg-black/50 flex items-center justify-center p-4">
+      <div className="bg-zinc-900 border border-blue-500 rounded-xl p-8 max-w-md w-full text-center shadow-2xl">
+        <div className="mb-4">
+          <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-zinc-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-white mb-2">
+            ¡Borrador Guardado!
+          </h3>
+          <p className="text-gray-300 text-sm">
+            Tu progreso ha sido guardado exitosamente. Puedes continuar completando tu aplicación en cualquier momento sin perder lo que hayas avanzado.
+          </p>
+        </div>
+        <button
+          onClick={() => {
+            setShowDraftModal(false);
+            router.push("/applicants");
+            router.refresh();
+          }}
+          className="w-full bg-blue-500 hover:bg-blue-600 text-zinc-900 py-2 px-4 rounded-lg font-medium transition-colors"
+        >
+          Continuar en Aplicantes
+        </button>
+        <p className="text-xs text-gray-500 mt-2">
+          Redirigiendo automáticamente en 5 segundos...
+        </p>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-zinc-950">
@@ -856,6 +943,10 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
             </div>
           )}
         </form>
+
+        {/* Modales */}
+        {showSuccessModal && <SuccessModal />}
+        {showDraftModal && <DraftModal />}
       </FormProvider>
     </div>
   );
