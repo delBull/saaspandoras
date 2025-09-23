@@ -204,14 +204,14 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
     mode: 'onBlur', // Cambiar de 'onChange' a 'onBlur' para permitir escritura sin validación inmediata
     defaultValues: {
       // Sección 1
-      title: project?.title ?? undefined,
-      description: project?.description ?? undefined,
+      title: project?.title ?? "",  // Campo requerido - string vacío en lugar de undefined
+      description: project?.description ?? "",  // Campo requerido - string vacío en lugar de undefined
       tagline: project?.tagline ?? undefined,
       businessCategory: project?.businessCategory ?? undefined,
       logoUrl: project?.logoUrl ?? undefined,
       coverPhotoUrl: project?.coverPhotoUrl ?? undefined,
       videoPitch: project?.videoPitch ?? undefined,
-      
+
       // Sección 2
       website: project?.website ?? undefined,
       whitepaperUrl: project?.whitepaperUrl ?? undefined,
@@ -219,12 +219,12 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       discordUrl: project?.discordUrl ?? undefined,
       telegramUrl: project?.telegramUrl ?? undefined,
       linkedinUrl: project?.linkedinUrl ?? undefined,
-      
+
       // Sección 3
-      targetAmount: Number(project?.targetAmount ?? 0),
-      totalValuationUsd: Number(project?.totalValuationUsd ?? 0),
+      targetAmount: Number(project?.targetAmount ?? 1),  // Requerido mínimo 1 para evitar 0 inválido
+      totalValuationUsd: Number(project?.totalValuationUsd ?? 0),  // 0 es válido según schema
       tokenType: project?.tokenType as "erc20" | "erc721" | "erc1155" | undefined,
-      totalTokens: Number(project?.totalTokens ?? 0),
+      totalTokens: Number(project?.totalTokens ?? 1000000),  // Dar valor creíble por defecto
       tokensOffered: Number(project?.tokensOffered ?? 1),
       tokenPriceUsd: Number(project?.tokenPriceUsd ?? 0),
       estimatedApy: project?.estimatedApy ?? undefined,
@@ -397,7 +397,13 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       ...data,
       totalTokens: Number(data.totalTokens) >= 1 ? Number(data.totalTokens) : 1000000, // Guaranty it passes validation
       verificationAgreement: true, // Force true for drafts so they can be saved
+      // Ensure required string fields are not empty
+      title: data.title || "",
+      description: data.description || "",
+      targetAmount: data.targetAmount >= 1 ? data.targetAmount : 1,
     };
+
+    console.log('💾 Draft data after defaults:', draftData);
 
     // FIX 4: Eliminar la aserción 'as any' innecesaria.
     const tokenDist = (draftData.tokenDistribution ?? {}) as Record<string, number>;
@@ -417,7 +423,8 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
 
     const draftEndpoint = isEdit ? `/api/admin/projects/${project?.id}` : "/api/projects/draft";
 
-    console.log('📤 Saving draft to:', draftEndpoint, submitData);
+    console.log('📤 Saving draft to:', draftEndpoint);
+    console.log('📤 Final submitData:', JSON.stringify(submitData, null, 2));
 
     try {
       const response = await fetch(draftEndpoint, {
@@ -432,20 +439,20 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       console.log('📡 Draft save response status:', response.status, response.ok);
 
       if (!response.ok) {
-        const errorData: unknown = await response.json();
-        const errorMessage = (errorData as { message?: string })?.message ?? "Error al guardar el borrador";
-        console.error("❌ Error del servidor:", errorData);
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error("❌ Error del servidor - Status:", response.status, "- Data:", errorData);
+        const errorMessage = errorData.message || "Error al guardar el borrador";
         throw new Error(errorMessage);
       }
 
       // La respuesta se usa solo para log, así que 'unknown' es seguro.
-      const responseData: unknown = await response.json();
+      const responseData = await response.json().catch(() => ({}));
       console.log('✅ Draft save success response:', responseData);
 
       toast.success("Borrador guardado exitosamente! Puedes continuar más tarde.");
       router.push("/applicants");
       router.refresh();
-    } catch (error: unknown) {
+    } catch (error) {
       const message = error instanceof Error ? error.message : "Ocurrió un error al guardar el borrador";
       console.error('💥 Draft save error:', error);
       toast.error(message);
