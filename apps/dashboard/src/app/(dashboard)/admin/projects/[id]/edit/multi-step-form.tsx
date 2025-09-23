@@ -208,7 +208,12 @@ interface MultiStepFormProps {
   isPublic?: boolean;
 }
 
-export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/admin/projects", isPublic = false }: MultiStepFormProps) {
+export function MultiStepForm({
+  project,
+  isEdit = false,
+  apiEndpoint = "/api/admin/projects",
+  isPublic = false
+}: MultiStepFormProps) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -385,6 +390,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
 
     // También ejecutar después de un pequeño delay por si el DOM no está listo
     const timeoutId = setTimeout(scrollToTop, 50);
+    // eslint-disable-line no-unused-vars
 
     return () => clearTimeout(timeoutId);
   }, [currentStep]);
@@ -536,7 +542,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       const responseData = await response.json().catch(() => ({}));
       console.log('✅ Draft save success response:', responseData);
 
-      // Mostrar modal en lugar de toast
+      // Mostrar modal de draft en lugar de toast
       setShowDraftModal(true);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Ocurrió un error al guardar el borrador";
