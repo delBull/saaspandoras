@@ -396,7 +396,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
     console.log('💾 onSaveDraft called with data:', data);
 
     // For drafts, provide valid defaults to bypass validation
-    const draftData = {
+    const draftData: FullProjectFormData = {
       ...data,
       totalTokens: Number(data.totalTokens) >= 1 ? Number(data.totalTokens) : 1000000, // Guaranty it passes validation
       verificationAgreement: true, // Force true for drafts so they can be saved
