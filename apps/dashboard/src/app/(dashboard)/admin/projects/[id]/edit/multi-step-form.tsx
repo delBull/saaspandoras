@@ -42,8 +42,8 @@ interface Project {
   lockupPeriod?: string | null;
   fundUsage?: string | null;
   teamMembers?: unknown;
-  advisors?: unknown;
-  tokenDistribution?: unknown;
+  advisors?: Advisor[] | string | null;
+  tokenDistribution?: TokenDistribution | string | null;
   contractAddress?: string | null;
   treasuryAddress?: string | null;
   legalStatus?: string | null;
@@ -156,10 +156,27 @@ const fullProjectSchema = z.object({
   lockupPeriod: z.string().optional(),
   fundUsage: z.string().optional(),
 
-  // Sección 4: Equipo (simplificado)
-  teamMembers: z.any().optional(), // Usar any está bien aquí porque lo parseamos de forma segura abajo
-  advisors: z.any().optional(),
-  tokenDistribution: z.any().optional(),
+  // Sección 4: Equipo (con tipos estrictos)
+  teamMembers: z.array(
+    z.object({
+      name: z.string(),
+      position: z.string(),
+      linkedin: z.string().optional()
+    })
+  ).optional(),
+  advisors: z.array(
+    z.object({
+      name: z.string(),
+      profile: z.string().optional()
+    })
+  ).optional(),
+  tokenDistribution: z.object({
+    publicSale: z.number().optional(),
+    team: z.number().optional(),
+    treasury: z.number().optional(),
+    marketing: z.number().optional()
+  }).optional(),
+
   contractAddress: z.string().optional(),
   treasuryAddress: z.string().optional(),
 
@@ -198,6 +215,33 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
   const isAdminUser = !isPublic; // El estado de admin se deriva directamente de la prop.
   const totalSteps = 7;
   
+  // Funciones de parseo seguro para inicializar el formulario
+  function safeParseArray<T>(input: unknown): T[] {
+    try {
+      if (Array.isArray(input)) return input as T[];
+      if (typeof input === "string" && input.trim().startsWith('[')) {
+        const parsed = JSON.parse(input) as unknown;
+        return Array.isArray(parsed) ? (parsed as T[]) : [];
+      }
+    } catch (e) {
+      console.warn("Failed to parse array from input:", input, e);
+    }
+    return [];
+  }
+
+  function safeParseObject<T extends object>(input: unknown, defaultVal: T): T {
+    try {
+      if (typeof input === "object" && input !== null && !Array.isArray(input)) return input as T;
+      if (typeof input === "string" && input.trim().startsWith('{')) {
+        const parsed = JSON.parse(input) as unknown;
+        return (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) ? (parsed as T) : defaultVal;
+      }
+    } catch (e) {
+      console.warn("Failed to parse object from input:", input, e);
+    }
+    return defaultVal;
+  }
+
   // Formulario principal
   const methods = useForm<FullProjectFormData>({
     resolver: zodResolver(fullProjectSchema), // FIX 1: Reactivado
@@ -232,53 +276,9 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       lockupPeriod: project?.lockupPeriod ?? undefined,
       fundUsage: project?.fundUsage ?? undefined,
       
-      // FIX 3: Parseo seguro de JSON que satisface a ESLint
-      teamMembers: (() => {
-        try {
-          const teamMembers: unknown = project?.teamMembers;
-          if (!teamMembers) return [];
-          if (Array.isArray(teamMembers)) return teamMembers as TeamMember[];
-          const parsed = JSON.parse(String(teamMembers)) as unknown; // Parsear a 'unknown'
-          // Verificar que sea un array antes de castear y devolver
-          return Array.isArray(parsed) ? (parsed as TeamMember[]) : []; 
-        } catch (error) {
-          console.warn('Error parsing teamMembers:', project?.teamMembers, error);
-          return [];
-        }
-      })(),
-
-      advisors: (() => {
-        try {
-          const advisors: unknown = project?.advisors;
-          if (!advisors) return [];
-          if (Array.isArray(advisors)) return advisors as Advisor[];
-          const parsed = JSON.parse(String(advisors)) as unknown;
-          return Array.isArray(parsed) ? (parsed as Advisor[]) : [];
-        } catch (error) {
-          console.warn('Error parsing advisors:', project?.advisors, error);
-          return [];
-        }
-      })(),
-
-      tokenDistribution: (() => {
-        const defaultDist: TokenDistribution = { publicSale: 0, team: 0, treasury: 0, marketing: 0 };
-        try {
-          const tokenDistribution: unknown = project?.tokenDistribution;
-          if (!tokenDistribution) return defaultDist;
-          // Si ya es un objeto (no array, no null), úsalo
-          if (typeof tokenDistribution === 'object' && tokenDistribution !== null && !Array.isArray(tokenDistribution)) {
-            return tokenDistribution as TokenDistribution;
-          }
-          const parsed = JSON.parse(String(tokenDistribution)) as unknown;
-          // Verifica que lo parseado sea un objeto
-          return (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed))
-            ? (parsed as TokenDistribution)
-            : defaultDist;
-        } catch (error) {
-          console.warn('Error parsing tokenDistribution:', project?.tokenDistribution, error);
-          return defaultDist;
-        }
-      })(),
+      teamMembers: safeParseArray<TeamMember>(project?.teamMembers),
+      advisors: safeParseArray<Advisor>(project?.advisors),
+      tokenDistribution: safeParseObject<TokenDistribution>(project?.tokenDistribution, { publicSale: 0, team: 0, treasury: 0, marketing: 0 }),
       contractAddress: project?.contractAddress ?? undefined,
       treasuryAddress: project?.treasuryAddress ?? undefined,
       
