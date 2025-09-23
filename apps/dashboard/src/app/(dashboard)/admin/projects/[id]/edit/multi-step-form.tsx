@@ -231,13 +231,17 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
 
   function safeParseObject<T extends object>(input: unknown, defaultVal: T): T {
     try {
-      if (typeof input === "object" && input !== null && !Array.isArray(input)) return input as T;
-      if (typeof input === "string" && input.trim().startsWith('{')) {
-        const parsed = JSON.parse(input) as unknown;
-        return (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) ? (parsed as T) : defaultVal;
+      if (typeof input === "object" && input !== null && !Array.isArray(input)) {
+        return input as T;
       }
-    } catch (e) {
-      console.warn("Failed to parse object from input:", input, e);
+      if (typeof input === "string" && input.trim().startsWith('{')) {
+        const parsed: unknown = JSON.parse(input);
+        if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+          return parsed as T;
+        }
+      }
+    } catch (error) {
+      console.warn("Failed to parse object from input:", input, error);
     }
     return defaultVal;
   }
