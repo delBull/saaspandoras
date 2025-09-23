@@ -242,11 +242,14 @@ export function MultiStepForm({
         return input as T;
       }
       if (typeof input === "string" && input.trim().startsWith('{')) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        const parsed: unknown = JSON.parse(input);
-        if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
-          // The type cast is now safe because we validated the input above
-          return parsed as T;
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          const parsedValue = JSON.parse(input);
+          if (parsedValue !== null && typeof parsedValue === 'object' && !Array.isArray(parsedValue)) {
+            return parsedValue as T;
+          }
+        } catch {
+          // Silently fail for invalid JSON
         }
       }
     } catch (error) {
@@ -390,7 +393,6 @@ export function MultiStepForm({
 
     // También ejecutar después de un pequeño delay por si el DOM no está listo
     const timeoutId = setTimeout(scrollToTop, 50);
-    // eslint-disable-line no-unused-vars
 
     return () => clearTimeout(timeoutId);
   }, [currentStep]);
