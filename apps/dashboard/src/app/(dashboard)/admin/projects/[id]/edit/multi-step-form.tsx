@@ -406,7 +406,11 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
     console.log('💾 Draft data after defaults:', draftData);
 
     // FIX 4: Eliminar la aserción 'as any' innecesaria.
-    const tokenDist = (draftData.tokenDistribution ?? {}) as Record<string, number>;
+    // FIX: Safe handling of 'any' type to satisfy ESLint
+    const tokenDistRaw: unknown = draftData.tokenDistribution;
+    const tokenDist = (typeof tokenDistRaw === 'object' && tokenDistRaw !== null && !Array.isArray(tokenDistRaw))
+      ? tokenDistRaw as Record<string, number>
+      : {};
     const finalDistribution = {
       publicSale: tokenDist.publicSale ?? 0,
       team: tokenDist.team ?? 0,
@@ -466,7 +470,11 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
     setIsLoading(true);
     
     // FIX 4: Eliminar la aserción 'as any' innecesaria.
-    const tokenDist = (data.tokenDistribution ?? {}) as Record<string, number>;
+    // FIX: Safe handling of 'any' type to satisfy ESLint
+    const tokenDistRaw: unknown = data.tokenDistribution;
+    const tokenDist = (typeof tokenDistRaw === 'object' && tokenDistRaw !== null && !Array.isArray(tokenDistRaw))
+      ? tokenDistRaw as Record<string, number>
+      : {};
     const finalDistribution = {
       publicSale: tokenDist.publicSale ?? 0,
       team: tokenDist.team ?? 0,
@@ -532,7 +540,11 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
     console.log('🚀 onAdminQuickSubmit called');
     
     // FIX 4: Eliminar la aserción 'as any' innecesaria.
-    const tokenDist = (data.tokenDistribution ?? {}) as Record<string, number>;
+    // FIX: Safe handling of 'any' type to satisfy ESLint
+    const tokenDistRaw: unknown = data.tokenDistribution;
+    const tokenDist = (typeof tokenDistRaw === 'object' && tokenDistRaw !== null && !Array.isArray(tokenDistRaw))
+      ? tokenDistRaw as Record<string, number>
+      : {};
     const finalDistribution = {
       publicSale: tokenDist.publicSale ?? 0,
       team: tokenDist.team ?? 0,
