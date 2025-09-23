@@ -395,25 +395,29 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
     setIsLoading(true);
     console.log('💾 onSaveDraft called with data:', data);
 
-    // For drafts, provide valid defaults to bypass validation
-    const draftData: FullProjectFormData = {
+    // Create a raw object with defaults for the draft
+    const rawDraftData = {
       ...data,
-      totalTokens: Number(data.totalTokens) >= 1 ? Number(data.totalTokens) : 1000000, // Guaranty it passes validation
-      verificationAgreement: true, // Force true for drafts so they can be saved
-      // Ensure required string fields are not empty
-      title: data.title || "",
-      description: data.description || "",
+      totalTokens: Number(data.totalTokens) >= 1 ? Number(data.totalTokens) : 1000000,
+      verificationAgreement: true,
+      title: data.title || "Untitled Draft",
+      description: data.description || "No description provided.",
       targetAmount: data.targetAmount >= 1 ? data.targetAmount : 1,
     };
 
-    console.log('💾 Draft data after defaults:', draftData);
+    // Validate the raw data to get a safely typed object
+    const validation = fullProjectSchema.partial().safeParse(rawDraftData);
+    if (!validation.success) {
+      console.error("Draft data failed validation:", validation.error.flatten());
+      toast.error("No se pudo guardar el borrador por datos inválidos.");
+      setIsLoading(false);
+      return;
+    }
+    const draftData = validation.data; // This is now a safely typed object
 
-    // FIX 4: Eliminar la aserción 'as any' innecesaria.
-    // FIX: Safe handling of 'any' type to satisfy ESLint
-    const tokenDistRaw: unknown = draftData.tokenDistribution;
-    const tokenDist = (typeof tokenDistRaw === 'object' && tokenDistRaw !== null && !Array.isArray(tokenDistRaw))
-      ? tokenDistRaw as Record<string, number>
-      : {};
+    console.log('💾 Validated draft data:', draftData);
+
+    const tokenDist = draftData.tokenDistribution ?? {};
     const finalDistribution = {
       publicSale: tokenDist.publicSale ?? 0,
       team: tokenDist.team ?? 0,
@@ -421,7 +425,6 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       marketing: tokenDist.marketing ?? 0,
     };
 
-    // FIX: Build submitData explicitly to avoid unsafe assignment error from spread operator
     const submitData: Record<string, unknown> = { ...draftData };
     submitData.teamMembers = JSON.stringify(draftData.teamMembers ?? []);
     submitData.advisors = JSON.stringify(draftData.advisors ?? []);
@@ -468,15 +471,19 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
   };
 
   const onFinalSubmit = async (data: FullProjectFormData) => {
-    console.log('🚀 onFinalSubmit called with data:', data);
+    // Re-validate to ensure type safety and satisfy the linter
+    const validation = fullProjectSchema.safeParse(data);
+    if (!validation.success) {
+      console.error("Final submit data failed validation:", validation.error.flatten());
+      toast.error("No se pudo enviar el proyecto por datos inválidos.");
+      return;
+    }
+    const safeData = validation.data; // Use this safely typed data
+
+    console.log('🚀 onFinalSubmit called with validated data:', safeData);
     setIsLoading(true);
     
-    // FIX 4: Eliminar la aserción 'as any' innecesaria.
-    // FIX: Safe handling of 'any' type to satisfy ESLint
-    const tokenDistRaw: unknown = data.tokenDistribution;
-    const tokenDist = (typeof tokenDistRaw === 'object' && tokenDistRaw !== null && !Array.isArray(tokenDistRaw))
-      ? tokenDistRaw as Record<string, number>
-      : {};
+    const tokenDist = safeData.tokenDistribution ?? {};
     const finalDistribution = {
       publicSale: tokenDist.publicSale ?? 0,
       team: tokenDist.team ?? 0,
@@ -485,9 +492,9 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
     };
 
     const submitData = {
-      ...data,
-      teamMembers: JSON.stringify(data.teamMembers ?? []),
-      advisors: JSON.stringify(data.advisors ?? []),
+      ...safeData,
+      teamMembers: JSON.stringify(safeData.teamMembers ?? []),
+      advisors: JSON.stringify(safeData.advisors ?? []),
       tokenDistribution: JSON.stringify(finalDistribution),
     };
 
@@ -538,15 +545,19 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
   const onAdminQuickSubmit = async (data: FullProjectFormData) => {
     if (isPublic) return; // No quick submit for public users
     
+    // Re-validate to ensure type safety and satisfy the linter
+    const validation = fullProjectSchema.safeParse(data);
+    if (!validation.success) {
+      console.error("Admin quick submit data failed validation:", validation.error.flatten());
+      toast.error("No se pudo publicar el proyecto por datos inválidos.");
+      return;
+    }
+    const safeData = validation.data; // Use this safely typed data
+
     setIsLoading(true);
-    console.log('🚀 onAdminQuickSubmit called');
+    console.log('🚀 onAdminQuickSubmit called with validated data:', safeData);
     
-    // FIX 4: Eliminar la aserción 'as any' innecesaria.
-    // FIX: Safe handling of 'any' type to satisfy ESLint
-    const tokenDistRaw: unknown = data.tokenDistribution;
-    const tokenDist = (typeof tokenDistRaw === 'object' && tokenDistRaw !== null && !Array.isArray(tokenDistRaw))
-      ? tokenDistRaw as Record<string, number>
-      : {};
+    const tokenDist = safeData.tokenDistribution ?? {};
     const finalDistribution = {
       publicSale: tokenDist.publicSale ?? 0,
       team: tokenDist.team ?? 0,
@@ -555,9 +566,9 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
     };
 
     const preparedData = {
-      ...data,
-      teamMembers: JSON.stringify(data.teamMembers ?? []),
-      advisors: JSON.stringify(data.advisors ?? []),
+      ...safeData,
+      teamMembers: JSON.stringify(safeData.teamMembers ?? []),
+      advisors: JSON.stringify(safeData.advisors ?? []),
       tokenDistribution: JSON.stringify(finalDistribution),
     };
 
