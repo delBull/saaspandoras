@@ -440,8 +440,8 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' })) as { message?: string; errors?: unknown };
-        console.error("❌ Error del servidor - Status:", response.status, "- Data:", errorData);
-        const errorMessage = errorData.message ?? "Error al guardar el borrador";
+        const errorMessage = errorData.message ?? "Error al guardar el proyecto";
+        console.error(`❌ Error del servidor (${response.status}):`, errorData);
         throw new Error(errorMessage);
       }
 
