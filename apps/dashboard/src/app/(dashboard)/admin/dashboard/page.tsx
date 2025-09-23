@@ -692,18 +692,25 @@ export default function AdminDashboardPage() {
           <button
             className="fixed inset-0 z-[9999] bg-black/20"
             onClick={() => setStatusDropdown(null)}
-            aria-label="Cerrar menú"
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                setStatusDropdown(null);
+              }
+            }}
+            aria-label="Cerrar menú de estado"
             type="button"
+            tabIndex={-1}
           />
           <div
             className="fixed z-[10000] min-w-48 bg-zinc-900 border border-zinc-700 rounded-lg shadow-2xl"
             style={{
-              top: '220px',
+              top: '200px',
               left: '50%',
               transform: 'translateX(-50%)'
             }}
             role="menu"
             aria-label="Opciones de estado del proyecto"
+            tabIndex={-1}
           >
             <div className="py-1" role="none">
               {["draft", "pending", "approved", "rejected", "incomplete", "live", "completed"].map((statusOption) => {
@@ -717,12 +724,19 @@ export default function AdminDashboardPage() {
                       }
                       setStatusDropdown(null);
                     }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        e.currentTarget.click();
+                      }
+                    }}
                     className={`block w-full text-left px-4 py-3 text-sm hover:bg-zinc-700 transition-colors ${
                       currentProject?.status === statusOption ? 'font-bold bg-zinc-800 text-white' :
                       'text-gray-300 hover:text-white'
                     }`}
                     role="menuitem"
                     type="button"
+                    tabIndex={0}
                   >
                     {statusOption}
                   </button>

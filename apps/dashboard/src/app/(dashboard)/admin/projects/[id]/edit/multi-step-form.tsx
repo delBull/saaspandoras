@@ -439,9 +439,9 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       console.log('📡 Draft save response status:', response.status, response.ok);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' })) as { message?: string; errors?: unknown };
         console.error("❌ Error del servidor - Status:", response.status, "- Data:", errorData);
-        const errorMessage = errorData.message || "Error al guardar el borrador";
+        const errorMessage = errorData.message ?? "Error al guardar el borrador";
         throw new Error(errorMessage);
       }
 
@@ -493,8 +493,8 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       console.log('📡 Response status:', response.status, response.ok);
 
       if (!response.ok) {
-        const errorData: unknown = await response.json();
-        const errorMessage = (errorData as { message?: string })?.message ?? "Error al guardar el proyecto";
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' })) as { message?: string; errors?: unknown };
+        const errorMessage = errorData.message ?? "Error al guardar el proyecto";
         console.error("❌ Error del servidor:", errorData);
         throw new Error(errorMessage);
       }
