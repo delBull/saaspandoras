@@ -541,7 +541,7 @@ export function MultiStepForm({
       }
 
       // La respuesta se usa solo para log, así que 'unknown' es seguro.
-      const responseData = await response.json().catch(() => ({}));
+      const responseData: unknown = await response.json().catch(() => ({}));
       console.log('✅ Draft save success response:', responseData);
 
       // Mostrar modal de draft en lugar de toast
