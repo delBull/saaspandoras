@@ -4,10 +4,10 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   useActiveAccount,
   useReadContract,
-  ConnectButton,
+  useConnectModal,
   useSendTransaction
 } from "thirdweb/react";
-import { createWallet, inAppWallet } from "thirdweb/wallets";
+import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { getContract, prepareContractCall } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { PANDORAS_KEY_ABI } from "@/lib/pandoras-key-abi";
@@ -24,6 +24,9 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
   const account = useActiveAccount();
   const { mutate: sendTransaction, isPending: isMinting } = useSendTransaction();
   const { toast } = useToast();
+
+  // Connect modal con social login (gratuito) + MetaMask (para admins)
+  const { connect } = useConnectModal();
 
   const [showInfo, setShowInfo] = useState(false);
   const [gateStatus, setGateStatus] = useState("idle");
@@ -158,6 +161,15 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
     </motion.div>
   );
 
+
+
+  // No necesitamos conectar de nuevo, solo manejar minteo
+  const adminAddresses = [
+    "0x1234...abcd", // Reemplaza con tus addresses de admin reales
+    "0x44d198d28a31fe897726ead9f67eefa59df7d6c8",
+  ];
+  const isAdmin = !!account && adminAddresses.includes(account.address?.toLowerCase());
+
   // --- LÓGICA DE RENDERIZADO ---
 
   if (!account) {
@@ -165,40 +177,71 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
       <div className="flex flex-col items-center justify-center h-full">
         <div className="text-center p-4">
           <h2 className="text-2xl font-mono font-bold">Acceso Restringido</h2>
-          <p className="mt-2 font-mono text-gray-400"> Conecta tu wallet para verificar tu llave de acceso. </p>
+          <p className="mt-2 font-mono text-gray-400">
+            Conecta tu wallet para verificar tu llave de acceso.
+          </p>
           <div className="mt-6 flex flex-col items-center gap-2">
             <div className="flex items-center gap-3">
-              <button onClick={() => setShowInfo(v => !v)} className="p-2 rounded-full text-gray-500 hover:text-gray-300 hover:bg-zinc-800 transition-colors" aria-label="Mostrar información sobre wallets compatibles" >
+              <button
+                onClick={() => setShowInfo(prev => !prev)}
+                className="p-2 rounded-full text-gray-500 hover:text-gray-300 hover:bg-zinc-800 transition-colors"
+                aria-label="Mostrar información sobre wallets compatibles"
+              >
                 <InformationCircleIcon className="h-6 w-6" />
               </button>
-              <div className="w-full max-w-xs">
-                <ConnectButton
-                  client={client}
-                  chain={config.chain}
-                  connectModal={{
+              <div className="w-full max-w-xs space-y-3">
+                <button
+                  onClick={() =>
+                    connect({
+                      client,
+                      chain: config.chain,
                       showThirdwebBranding: false,
-                      }}
-                  wallets={[
-                    createWallet("io.metamask"),
-                    inAppWallet({
-                      auth: {
-                        options: ["email", "google", "apple", "facebook", "passkey"],
-                      },
-                      executionMode: {
-                        mode: "EIP7702",
-                        sponsorGas: true,
-                      },
+                      wallets: [
+                        inAppWallet({
+                          auth: {
+                            options: ["email", "google", "apple", "facebook", "passkey"],
+                          },
+                          executionMode: {
+                            mode: "EIP7702",
+                            sponsorGas: true,
+                          },
+                        }),
+                      ],
                     })
-                  ]}
-                  connectButton={{
-                    label: "Connect Wallet",
-                    className: "w-full !bg-gradient-to-r !from-lime-300 !to-lime-400 !text-gray-800 !py-2 !px-6 !rounded-md !hover:opacity-90 !font-semibold !transition",
-                  }}
-                />
+                  }
+                  className="w-full bg-gradient-to-r from-lime-300 to-lime-400 text-gray-800 py-2 px-6 rounded-md hover:opacity-90 font-semibold transition"
+                >
+                  🔑 Login Rápido (Gratis & Seguro)
+                </button>
+
+                <button
+                  onClick={() =>
+                    connect({
+                      client,
+                      chain: config.chain,
+                      showThirdwebBranding: false,
+                      wallets: [createWallet("io.metamask")],
+                    })
+                  }
+                  className="w-full bg-orange-600 hover:bg-orange-700 text-white py-2 px-6 rounded-md font-medium transition border border-orange-500/30"
+                >
+                  🦊 MetaMask (Pro)
+                </button>
               </div>
             </div>
-            <AnimatePresence> {showInfo && explanation} </AnimatePresence>
+            <AnimatePresence>
+              {showInfo && explanation}
+            </AnimatePresence>
+            <p className="text-xs text-gray-500 text-center mt-2">
+              Email • Google • Apple • Facebook • Passkey
+            </p>
           </div>
+
+          {isAdmin && (
+            <div className="bg-green-100 text-green-800 p-2 rounded mt-4 text-xs font-mono max-w-xs">
+              ¡Hola, admin! Tu wallet tiene permisos elevados.
+            </div>
+          )}
         </div>
       </div>
     );
@@ -244,14 +287,27 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
       <div className="flex flex-col items-center justify-center h-full">
         <div className="text-center p-8 max-w-md mx-auto">
           <div className="mb-6">
-            <div className="w-24 h-24 mx-auto mb-4 bg-gradient-to-br from-lime-400 to-emerald-600 rounded-2xl flex items-center justify-center">
-              <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-              </svg>
+            <div className="w-24 h-24 mx-auto mb-4 rounded-2xl flex items-center justify-center">
+              <img
+                src="/images/pkey.png"
+                alt="Pandora's Key"
+                className="w-24 h-24 object-contain"
+                onError={(e) => {
+                  console.error('Failed to load pkey.png, falling back to SVG');
+                  e.currentTarget.style.display = 'none';
+                  const fallback = document.createElement('svg');
+                  fallback.className = 'w-12 h-12 text-white';
+                  fallback.setAttribute('fill', 'none');
+                  fallback.setAttribute('stroke', 'currentColor');
+                  fallback.setAttribute('viewBox', '0 0 24 24');
+                  fallback.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>`;
+                  e.currentTarget.parentElement?.appendChild(fallback);
+                }}
+              />
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">¡Bienvenido!</h2>
             <p className="text-gray-300 leading-relaxed">
-              Para acceder a Pandoras, necesitas una <strong className="text-lime-400">Llave de Pandora</strong>.
+              Para acceder, necesitas una <strong className="text-lime-400">Llave Pandora's Key</strong>.
               Este NFT te da acceso completo a la plataforma.
             </p>
           </div>
