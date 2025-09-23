@@ -235,9 +235,8 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
         return input as T;
       }
       if (typeof input === "string" && input.trim().startsWith('{')) {
-        const parsedStr: string = input as string;
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        const parsed: unknown = JSON.parse(parsedStr);
+        const parsed: unknown = JSON.parse(input);
         if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
           // The type cast is now safe because we validated the input above
           return parsed as T;
