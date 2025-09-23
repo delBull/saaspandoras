@@ -311,13 +311,16 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
     const savedData = localStorage.getItem("pandoras-project-form");
     if (savedData) {
       try {
-        const parsed = JSON.parse(savedData) as Partial<FullProjectFormData>;
-        Object.keys(parsed).forEach((key) => {
-          // Asegurarse de que la clave existe antes de asignarla
-          if (key in methods.getValues()) {
-             setValue(key as keyof FullProjectFormData, parsed[key as keyof FullProjectFormData]);
-          }
-        });
+        const parsedData: unknown = JSON.parse(savedData); // Parse to unknown first
+        
+        // Validate the parsed data against a partial schema
+        const validation = fullProjectSchema.partial().safeParse(parsedData);
+        if (validation.success) {
+          // If valid, iterate and set values. Types are now correct.
+          Object.entries(validation.data).forEach(([key, value]) => {
+            setValue(key as keyof FullProjectFormData, value);
+          });
+        }
         const savedStep = localStorage.getItem("pandoras-project-step");
         if (savedStep) {
           setCurrentStep(Number(savedStep));
