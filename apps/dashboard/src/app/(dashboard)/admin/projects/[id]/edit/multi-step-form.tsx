@@ -414,12 +414,12 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       marketing: tokenDist.marketing ?? 0,
     };
 
-    const submitData = {
+    const submitData: Record<string, unknown> = {
       ...draftData,
       teamMembers: JSON.stringify(draftData.teamMembers ?? []),
       advisors: JSON.stringify(draftData.advisors ?? []),
       tokenDistribution: JSON.stringify(finalDistribution),
-    };
+    }
 
     const draftEndpoint = isEdit ? `/api/admin/projects/${project?.id}` : "/api/projects/draft";
 
