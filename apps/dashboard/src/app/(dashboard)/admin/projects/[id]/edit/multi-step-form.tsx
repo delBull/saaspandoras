@@ -557,8 +557,8 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       console.log('📡 Admin quick submit response status:', response.status);
 
       if (!response.ok) {
-        const errorData: unknown = await response.json();
-        const errorMessage = (errorData as { message?: string })?.message ?? "Error al guardar el proyecto";
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' })) as { message?: string; errors?: unknown };
+        const errorMessage = errorData.message ?? "Error al guardar el proyecto";
         console.error(`❌ Error del servidor (${response.status}):`, errorData);
         throw new Error(errorMessage);
       }
