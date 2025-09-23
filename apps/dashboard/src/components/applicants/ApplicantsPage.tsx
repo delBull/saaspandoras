@@ -41,7 +41,7 @@ function NewProjectForm({ showForm, onCancel }: FormProps) {
             <MultiStepForm
               project={null}
               isEdit={false}
-              apiEndpoint="/api/projects/apply"
+              apiEndpoint="/api/projects/draft"
               isPublic={true}
             />
           </div>

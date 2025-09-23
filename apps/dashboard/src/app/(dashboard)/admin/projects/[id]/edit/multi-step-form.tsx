@@ -425,10 +425,13 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       marketing: tokenDist.marketing ?? 0,
     };
 
-    const submitData: Record<string, unknown> = { ...draftData };
-    submitData.teamMembers = JSON.stringify(draftData.teamMembers ?? []);
-    submitData.advisors = JSON.stringify(draftData.advisors ?? []);
-    submitData.tokenDistribution = JSON.stringify(finalDistribution);
+    const submitData = {
+      ...draftData,
+      estimatedApy: draftData.estimatedApy ? String(draftData.estimatedApy) : undefined,
+      teamMembers: JSON.stringify(draftData.teamMembers ?? []),
+      advisors: JSON.stringify(draftData.advisors ?? []),
+      tokenDistribution: JSON.stringify(finalDistribution),
+    };
 
     const draftEndpoint = isEdit ? `/api/admin/projects/${project?.id}` : "/api/projects/draft";
 
@@ -482,36 +485,74 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
 
     console.log('🚀 onFinalSubmit called with validated data:', safeData);
     setIsLoading(true);
-    
+
     const tokenDist = safeData.tokenDistribution ?? {};
+    // Asegurar distribución válida para clientes (permitir suma de 100%)
     const finalDistribution = {
-      publicSale: tokenDist.publicSale ?? 0,
+      publicSale: tokenDist.publicSale ?? 100,
       team: tokenDist.team ?? 0,
       treasury: tokenDist.treasury ?? 0,
       marketing: tokenDist.marketing ?? 0,
     };
 
+    // Verificar suma para clientes públicos
+    if (isPublic) {
+      const total = (finalDistribution.publicSale ?? 0) + (finalDistribution.team ?? 0) + (finalDistribution.treasury ?? 0) + (finalDistribution.marketing ?? 0);
+      if (total > 100) {
+        toast.error("La distribución total de tokens no puede exceder el 100%");
+        setIsLoading(false);
+        return;
+      }
+      if (total === 0) {
+        // Si suma es 0, establecer publicSale al 100% por defecto
+        finalDistribution.publicSale = 100;
+      }
+    }
+
     const submitData = {
       ...safeData,
+      estimatedApy: safeData.estimatedApy ? String(safeData.estimatedApy) : undefined, // Convertir a string como espera el servidor
       teamMembers: JSON.stringify(safeData.teamMembers ?? []),
       advisors: JSON.stringify(safeData.advisors ?? []),
       tokenDistribution: JSON.stringify(finalDistribution),
     };
 
     console.log('📤 Submitting data to:', apiEndpoint, submitData);
+    console.log('📤 apiEndpoint prop:', apiEndpoint);
 
     try {
-      const response = await fetch(apiEndpoint, {
+      // FIX: Use the apiEndpoint prop if it's different from default, otherwise use built-in logic
+      const finalEndpoint = apiEndpoint !== "/api/admin/projects" ? apiEndpoint : (
+        isEdit ? `/api/admin/projects/${project?.id}` : "/api/projects/draft"
+      );
+
+      console.log('📡 Submitting to endpoint:', finalEndpoint);
+
+      const response = await fetch(finalEndpoint, {
         method: isEdit ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(submitData),
+        body: JSON.stringify({
+          ...submitData,
+          status: isPublic ? "pending" : "approved"
+        }),
       });
 
       console.log('📡 Response status:', response.status, response.ok);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' })) as { message?: string; errors?: unknown };
-        const errorMessage = errorData.message ?? "Error al guardar el proyecto";
+        let errorMessage = "Error al guardar el proyecto";
+        let errorData: unknown = null;
+
+        try {
+          const responseText = await response.text();
+          console.log('Response text:', responseText);
+          errorData = JSON.parse(responseText);
+          errorMessage = (errorData as { message?: string }).message ?? errorMessage;
+          console.log('Parsed error data:', errorData);
+        } catch {
+          errorMessage = `Error del servidor (${response.status}) - respuesta no válida`;
+        }
+
         console.error("❌ Error del servidor:", errorData);
         throw new Error(errorMessage);
       }
@@ -521,12 +562,12 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       console.log('✅ Success response:', responseData);
 
       toast.success(`Proyecto ${isEdit ? "actualizado" : isPublic ? "enviado para revisión" : "creado y subido"} exitosamente!`);
-      
+
       if (!isEdit) {
         localStorage.removeItem("pandoras-project-form");
         localStorage.removeItem("pandoras-project-step");
       }
-      
+
       if (isPublic) {
         router.push("/applicants");
       } else {
@@ -567,6 +608,7 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
 
     const preparedData = {
       ...safeData,
+      estimatedApy: safeData.estimatedApy ? String(safeData.estimatedApy) : undefined,
       teamMembers: JSON.stringify(safeData.teamMembers ?? []),
       advisors: JSON.stringify(safeData.advisors ?? []),
       tokenDistribution: JSON.stringify(finalDistribution),
