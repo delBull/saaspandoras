@@ -42,8 +42,8 @@ interface Project {
   lockupPeriod?: string | null;
   fundUsage?: string | null;
   teamMembers?: unknown;
-  advisors?: Advisor[] | string | null;
-  tokenDistribution?: TokenDistribution | string | null;
+  advisors?: unknown;
+  tokenDistribution?: unknown;
   contractAddress?: string | null;
   treasuryAddress?: string | null;
   legalStatus?: string | null;
