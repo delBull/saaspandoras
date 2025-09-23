@@ -12,6 +12,7 @@ import { getContract, prepareContractCall } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { PANDORAS_KEY_ABI } from "@/lib/pandoras-key-abi";
 import { config } from "@/config";
+import Image from "next/image";
 
 import { MintingProgressModal } from "./nft-gating/minting-progress-modal";
 import { SuccessNFTCard } from "./nft-gating/success-nft-card";
@@ -288,26 +289,18 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
         <div className="text-center p-8 max-w-md mx-auto">
           <div className="mb-6">
             <div className="w-24 h-24 mx-auto mb-4 rounded-2xl flex items-center justify-center">
-              <img
+              <Image
                 src="/images/pkey.png"
                 alt="Pandora's Key"
-                className="w-24 h-24 object-contain"
-                onError={(e) => {
-                  console.error('Failed to load pkey.png, falling back to SVG');
-                  e.currentTarget.style.display = 'none';
-                  const fallback = document.createElement('svg');
-                  fallback.className = 'w-12 h-12 text-white';
-                  fallback.setAttribute('fill', 'none');
-                  fallback.setAttribute('stroke', 'currentColor');
-                  fallback.setAttribute('viewBox', '0 0 24 24');
-                  fallback.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>`;
-                  e.currentTarget.parentElement?.appendChild(fallback);
-                }}
+                width={120}
+                height={120}
+                priority
+                style={{ width: "auto", height: "auto" }}
               />
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">¡Bienvenido!</h2>
             <p className="text-gray-300 leading-relaxed">
-              Para acceder, necesitas una <strong className="text-lime-400">Llave Pandora's Key</strong>.
+              Para acceder, necesitas una <strong className="text-lime-400">Llave Pandora&apos;s Key</strong>.
               Este NFT te da acceso completo a la plataforma.
             </p>
           </div>
