@@ -19,7 +19,7 @@ function NewProjectForm({ showForm, onCancel }: FormProps) {
   return (
     <div className="min-h-screen text-white">
       {/* Header with Cancel Button */}
-      <div className="sticky top-0 z-10 flex items-center p-6 backdrop-blur">
+      <div className="top-0 z-10 flex items-center p-6 backdrop-blur">
         <Button
           variant="ghost"
           onClick={onCancel}

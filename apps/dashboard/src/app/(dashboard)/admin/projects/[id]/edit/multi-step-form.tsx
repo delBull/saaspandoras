@@ -212,6 +212,8 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showDraftModal, setShowDraftModal] = useState(false);
   const isAdminUser = !isPublic; // El estado de admin se deriva directamente de la prop.
   const totalSteps = 7;
   
@@ -351,13 +353,53 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
     return () => subscription.unsubscribe();
   }, [watch, currentStep, isEdit, methods]);
 
+  // Auto-scroll to top cuando cambie el paso - POSIBLE SOLUCIÓN PARA PUBLIC USERS
+  useEffect(() => {
+    // Scroll inmediato - prioridad máxima
+    const scrollToTop = () => {
+      // Intentar múltiples enfoques para scroll
+      try {
+        // 1. Scroll directo de window
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+
+        // 2. Scroll de document element
+        document.documentElement.scrollTop = 0;
+
+        // 3. Scroll de body
+        document.body.scrollTop = 0;
+
+        // 4. Scroll force donde esté la navegación
+        const navElement = document.querySelector('nav, [role="navigation"], header');
+        if (navElement) {
+          navElement.scrollIntoView({ block: 'start', behavior: 'instant' });
+        }
+
+        console.log('Auto-scroll ejecutado al paso:', currentStep);
+      } catch (error) {
+        console.warn('Error en auto-scroll:', error);
+      }
+    };
+
+    // Ejecutar inmediatamente
+    requestAnimationFrame(scrollToTop);
+
+    // También ejecutar después de un pequeño delay por si el DOM no está listo
+    const timeoutId = setTimeout(scrollToTop, 50);
+
+    return () => clearTimeout(timeoutId);
+  }, [currentStep]);
+
   // Navegación entre pasos
   const nextStep = async () => {
     const fieldsToValidate = Object.keys(getFieldsForStep(currentStep));
 
     // Para admins, siempre permitir avanzar sin validar
     if (isAdminUser) {
-      if (currentStep < totalSteps) setCurrentStep(prev => prev + 1);
+      if (currentStep < totalSteps) {
+        setCurrentStep(prev => prev + 1);
+        // Immediate scroll to top after state change
+        requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+      }
       return;
     }
 
@@ -367,7 +409,11 @@ export function MultiStepForm({ project, isEdit = false, apiEndpoint = "/api/adm
       toast.error("Por favor completa los campos requeridos de esta sección.");
       return;
     }
-    if (currentStep < totalSteps) setCurrentStep(prev => prev + 1);
+    if (currentStep < totalSteps) {
+      setCurrentStep(prev => prev + 1);
+      // Immediate scroll to top after state change
+      requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+    }
   };
 
   const prevStep = () => {
