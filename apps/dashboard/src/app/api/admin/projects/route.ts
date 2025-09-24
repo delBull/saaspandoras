@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 import { NextResponse } from "next/server";
 import { db } from "~/db";
 import { projects as projectsSchema } from "~/db/schema";
+import { sql } from "drizzle-orm";
 import { projectApiSchema } from "@/lib/project-schema-api";
 import { getAuth, isAdmin } from "@/lib/auth";
 import slugify from "slugify";
@@ -62,7 +64,16 @@ export async function POST(request: Request) {
       slug = `${slug}-${Date.now()}`;
     }
 
-    // Insertar en la base de datos con estado 'approved'
+    // Get creator information for better project tracking
+    const creatorWallet = session?.userId ?? 'system';
+    const creatorInfo = await db.execute(sql`
+      SELECT "name", "email" FROM "User" WHERE "walletAddress" = ${creatorWallet}
+    `);
+    const creatorName = creatorInfo[0] ? String((creatorInfo[0] as Record<string, unknown>).name) : 'Unknown';
+
+    console.log(`🏗️ Project created by: ${creatorWallet} (${creatorName})`);
+
+    // Insertar en la base de datos con estado 'approved' and creator tracking
     const [newProject] = await db
       .insert(projectsSchema)
       // .values() espera un ARRAY de objetos

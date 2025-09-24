@@ -112,10 +112,24 @@ export default function ProfileProjectsPage() {
           );
           setUserProfile(currentUser ?? null);
 
-          // Filter projects where user is the applicant
-          const userProjects = projects.filter(p =>
-            p.applicantEmail?.toLowerCase() === currentUser?.email?.toLowerCase()
-          );
+          // For super admins (like YOU), show ALL projects in the system
+          // For regular users, show only projects where they are the applicant
+          const SUPER_ADMIN_WALLETS = ['0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9'];
+          const isSuperAdmin = SUPER_ADMIN_WALLETS.includes(currentUser?.walletAddress.toLowerCase() || '');
+
+          let userProjects;
+          if (isSuperAdmin) {
+            // Super admin sees all projects for management
+            userProjects = projects.filter(p =>
+              p.status === 'pending' || p.status === 'approved' || p.status === 'live' || p.status === 'completed'
+            );
+          } else {
+            // Regular users see only their own projects
+            userProjects = projects.filter(p =>
+              p.applicantEmail?.toLowerCase() === currentUser?.email?.toLowerCase()
+            );
+          }
+
           setUserProjects(userProjects);
         })
         .catch(err => {

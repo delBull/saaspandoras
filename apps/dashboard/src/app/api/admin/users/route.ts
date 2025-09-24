@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-assignment */
 import { NextResponse } from "next/server";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { db } from "~/db";
@@ -67,38 +67,47 @@ export async function GET() {
 
     console.log("Users query result:", usersQuery.length, "users found");
 
-    // Get project counts by email to improve performance
+    // Get comprehensive project counts - MORE ROBUST COUNTING SYSTEM
     const projectCountsByEmail: Record<string, number> = {};
     const totalProjectsInDb = { count: 0 };
+
     try {
-      console.log("Fetching project counts...");
-      // First count total projects
+      console.log("🔢 Fetching comprehensive project counts...");
+
+      // First get total projects for super admin calculation
       const totalQuery = await db.execute(sql`SELECT COUNT(*) as count FROM "projects"`);
       totalProjectsInDb.count = Number(totalQuery[0]?.count as string);
-      console.log("Total projects in DB:", totalProjectsInDb.count);
+      console.log("📊 Total projects in DB:", totalProjectsInDb.count);
 
-      // Get projects with applicant email - use correct column name
-      const allProjects = await db.execute(sql`
-        SELECT "applicant_email" as applicantEmail, COUNT(*) as count
+      // Get projects by applicant email (original logic)
+      const applicantProjects = await db.execute(sql`
+        SELECT
+          "applicant_email" as applicantEmail,
+          COUNT(*) as count,
+          STRING_AGG("status", ', ') as statuses,
+          COUNT(CASE WHEN "status" IN ('draft', 'pending', 'approved', 'live', 'completed', 'incomplete', 'rejected') THEN 1 END) as all_status_count
         FROM "projects"
         WHERE "applicant_email" IS NOT NULL AND "applicant_email" != ''
         GROUP BY "applicant_email"
       `);
 
-      console.log("Projects with email count:", allProjects.length);
-      console.log("Available project emails:", allProjects.map((p: any) => `"${p.applicantEmail || 'null'}"`).join(', '));
-      console.log("First 2 project details:", allProjects.slice(0, 2).map((p: any) => ({
-        id: "project_id_would_go_here",  // No tenemos ID aquí
-        title: "NA", // No tenemos título aquí
-        email: (p as Record<string, unknown>).applicantEmail || 'null',
-        count: p.count
-      })));
+      console.log("📧 Projects by applicant email:", applicantProjects.length);
+      console.log("Available project emails:", applicantProjects.map((p: any) =>
+        `"${p.applicantEmail}" (${p.all_status_count} total)`
+      ).join(', '));
 
-      allProjects.forEach((row: any) => {
-        projectCountsByEmail[row.applicantEmail as string] = Number(row.count as string);
+      // Store comprehensive counts: ALL PROJECTS regardless of status (draft→rejected)
+      applicantProjects.forEach((row: any) => {
+        const email = row.applicantEmail as string;
+        const allStatusCount = Number(row.all_status_count);
+        projectCountsByEmail[email] = allStatusCount;
+        console.log(`📈 ${email}: ${allStatusCount} projects (${row.statuses})`);
       });
+
+      console.log("🎯 Final project counts by email:", projectCountsByEmail);
+
     } catch (error) {
-      console.warn("Could not fetch project counts by email:", error);
+      console.warn("⚠️ Could not fetch comprehensive project counts:", error);
     }
 
     // Get all admin wallets for role detection (incluyendo super admins hardcodeados)
@@ -124,11 +133,36 @@ export async function GET() {
 
     // Process each user with the collected data
     const usersWithDetails = usersQuery.map((user: any) => {
-      // Get project count from pre-calculated data
-      const projectCount: number = (user.email && projectCountsByEmail[user.email] !== undefined) ? projectCountsByEmail[user.email]! : 0;
+      const userWallet = (user.walletAddress as string).toLowerCase();
+      // Check for SUPER admin wallet address directly (case sensitive check)
+      const isSuperAdmin = user.walletAddress === '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9';
+      const isAdmin = ALL_ADMIN_WALLETS.includes(userWallet);
 
-      // Check if admin (usando TODOS los admins incluyendo super admins)
-      const isAdmin: boolean = ALL_ADMIN_WALLETS.includes((user.walletAddress as string).toLowerCase());
+      // Enhanced logging for debugging
+      console.log(`🔍 Processing user ${userWallet.substring(0, 8)}...`);
+      console.log(`   Wallet: ${user.walletAddress}`);
+      console.log(`   Email: ${user.email || 'null'}`);
+      console.log(`   Is super admin: ${isSuperAdmin}`);
+      console.log(`   Is admin (any): ${isAdmin}`);
+
+      // For super admins (YOU), show total project count ALWAYS
+      // For regular admins, show projects with their email
+      // For regular users, show only their projects
+      let projectCount: number;
+      if (isSuperAdmin) {
+        projectCount = totalProjectsInDb.count; // Super admin sees ALL projects in system
+        console.log(`   ✅ FORCE SUPER ADMIN: Assigning ${projectCount} total projects`);
+      } else {
+        // Check if user has projects via email
+        const userEmail = user.email;
+        if (userEmail && projectCountsByEmail[userEmail] !== undefined) {
+          projectCount = projectCountsByEmail[userEmail]!;
+          console.log(`   📧 EMAIL MATCH: ${projectCount} projects for ${userEmail}`);
+        } else {
+          projectCount = 0;
+          console.log(`   ❌ No projects found via email or admin status`);
+        }
+      }
 
       // Determine role
       let role: 'admin' | 'applicant' | 'pandorian';
@@ -144,9 +178,8 @@ export async function GET() {
       // TODO: Implement proper Pandora's Key verification system
       const hasPandorasKey = true; // All users get it until proper verification is implemented
 
-      // Debug logs for each user
-      console.log(`🔍 Processing user ${user.walletAddress.substring(0, 8)}...`);
-      console.log(`   Email: ${user.email || 'null'} | Project count: ${projectCount} | Is admin: ${isAdmin} | Final role: ${role}`);
+      console.log(`   Final: Count=${projectCount}, Role=${role}, Key=${hasPandorasKey}`);
+      console.log(`   ---`);
 
       const result = {
         ...user,
