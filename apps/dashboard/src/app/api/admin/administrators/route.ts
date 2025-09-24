@@ -5,6 +5,19 @@ import { administrators } from "~/db/schema";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 
+// Super admins hardcodeados que aparecen en la UI
+const SUPER_ADMINS = [
+  {
+    id: 999,
+    walletAddress: SUPER_ADMIN_WALLET.toLowerCase(),
+    alias: "Super Admin",
+    role: "admin",
+    addedBy: "system",
+    createdAt: new Date("2024-01-01T00:00:00.000Z"),
+    updatedAt: new Date("2024-01-01T00:00:00.000Z")
+  }
+];
+
 const addAdminSchema = z.object({
   walletAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/, "Dirección de wallet inválida."),
   alias: z.string().max(100, "El alias no puede tener más de 100 caracteres.").optional(),
@@ -17,7 +30,9 @@ export async function GET() {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
   }
 
-  const allAdmins = await db.query.administrators.findMany();
+  const dbAdmins = await db.query.administrators.findMany();
+  // Combinar admins de BD con super admins hardcodeados
+  const allAdmins = [...SUPER_ADMINS, ...dbAdmins];
   return NextResponse.json(allAdmins);
 }
 
