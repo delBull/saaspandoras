@@ -50,6 +50,13 @@
       "when": 1758696070677,
       "tag": "0006_special_the_renegades",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1758697461126,
+      "tag": "0007_cynical_raider",
+      "breakpoints": true
     }
   ]
 }
