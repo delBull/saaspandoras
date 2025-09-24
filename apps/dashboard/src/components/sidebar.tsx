@@ -22,11 +22,11 @@ import {
   useActiveAccount,
   useDisconnect,
   useActiveWallet,
-  ConnectButton,
+  //ConnectButton,
 } from "thirdweb/react";
-import { createWallet, inAppWallet } from "thirdweb/wallets";
-import { client } from "@/lib/thirdweb-client";
-import { config } from "@/config";
+//import { createWallet, inAppWallet } from "thirdweb/wallets";
+//import { client } from "@/lib/thirdweb-client";
+//import { config } from "@/config";
 
 interface SidebarProps {
   wallet?: string;
@@ -238,7 +238,8 @@ export function Sidebar({
                   Not Connected
                 </motion.span>
               </div>
-              <motion.div
+              {/* Connect button hidden - NFT-Gate only connection policy */}
+              {/* <motion.div
                 animate={{ opacity: open ? 1 : 0, height: open ? "auto" : 0 }}
                 className="overflow-hidden w-full"
               >
@@ -270,7 +271,7 @@ export function Sidebar({
                     }}
                   />
                 </div>
-              </motion.div>
+              </motion.div> */}
             </div>
           ) : (
             // --- ESTADO CONECTADO ---
@@ -431,7 +432,6 @@ export function Sidebar({
                 <XMarkIcon className="h-6 w-6" />
               </button>
 
-              {/* Estado conectado/desconectado móvil */}
               <div className="mt-6 mx-2">
                 {isClient && !account ? (
                   <div className="w-full rounded-lg border border-gray-700 bg-gray-800/50 p-2 flex flex-col items-center gap-2">
@@ -443,7 +443,8 @@ export function Sidebar({
                         Not Connected
                       </span>
                     </div>
-                    <div className="w-full">
+                    {/* Connect button hidden - NFT-Gate only connection policy */}
+                    {/* <div className="w-full">
                       <ConnectButton
                         client={client}
                         chain={config.chain}
@@ -463,7 +464,7 @@ export function Sidebar({
                           className: "w-full !bg-gradient-to-r !from-lime-300 !to-lime-400 !text-gray-800 !py-2 !px-4 !rounded-md !hover:opacity-90 !font-semibold !transition !text-sm",
                         }}
                       />
-                    </div>
+                    </div> */}
                   </div>
                 ) : (
                   <div className="w-full rounded-lg border border-gray-700 bg-gray-800/50 p-2">
