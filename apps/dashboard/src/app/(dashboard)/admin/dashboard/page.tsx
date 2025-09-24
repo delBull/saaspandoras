@@ -788,8 +788,8 @@ export default function AdminDashboardPage() {
           <div
             className="fixed z-[10000] min-w-48 bg-zinc-900 border border-zinc-700 rounded-lg shadow-2xl"
             style={{
-              top: (actionsDropdownPosition?.top || 0) + 4,
-              left: actionsDropdownPosition?.left || 0,
+              top: (actionsDropdownPosition?.top ?? 0) + 4,
+              left: actionsDropdownPosition?.left ?? 0,
             }}
             role="menu"
             aria-label="Opciones de acciones del proyecto"
