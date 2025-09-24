@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import type { ReactNode } from "react";
+import { UserData } from "@/types/admin";
+import { UsersTable } from "./UsersTable";
 
 interface Swap {
   txHash: string;
@@ -14,11 +16,13 @@ interface Swap {
 
 interface AdminTabsProps {
   swaps: Swap[];
+  users?: UserData[];
   children: ReactNode[]; // Ahora espera un array de nodos
   showSettings?: boolean;
+  showUsers?: boolean;
 }
 
-export function AdminTabs({ swaps, children, showSettings = false }: AdminTabsProps) {
+export function AdminTabs({ swaps, users, children, showSettings = false, showUsers = false }: AdminTabsProps) {
   const [activeTab, setActiveTab] = useState('projects');
 
   const totalVolume = swaps.reduce((a, s) => a + (s.status === 'success' ? s.fromAmountUsd : 0), 0);
@@ -32,6 +36,9 @@ export function AdminTabs({ swaps, children, showSettings = false }: AdminTabsPr
           <button onClick={() => setActiveTab('projects')} className={`pb-2 font-semibold ${activeTab === 'projects' ? 'text-lime-400 border-b-2 border-lime-400' : 'text-gray-400'}`}>
             Proyectos
           </button>
+          <button onClick={() => setActiveTab('users')} className={`pb-2 font-semibold ${activeTab === 'users' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-gray-400'} flex items-center gap-2`}>
+            📊 Base de Datos de Usuarios
+          </button>
           <button onClick={() => setActiveTab('swaps')} className={`pb-2 font-semibold ${activeTab === 'swaps' ? 'text-lime-400 border-b-2 border-lime-400' : 'text-gray-400'}`}>
             Swaps
           </button>
@@ -44,6 +51,10 @@ export function AdminTabs({ swaps, children, showSettings = false }: AdminTabsPr
       </div>
 
       {activeTab === 'projects' && children[0]}
+
+      {activeTab === 'users' && showUsers && users && (
+        <UsersTable users={users} />
+      )}
 
       {activeTab === 'swaps' && (
         <div>

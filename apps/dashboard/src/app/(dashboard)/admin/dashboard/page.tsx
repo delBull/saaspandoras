@@ -7,7 +7,7 @@ import { AdminSettings } from "@/components/admin/AdminSettings";
 import { UnauthorizedAccess } from "@/components/admin/UnauthorizedAccess";
 import { calculateProjectCompletion } from "@/lib/project-utils";
 import { useProjectActions } from "@/hooks/useProjectActions";
-import { ProjectStatus, Project, AdminData } from "@/types/admin";
+import { ProjectStatus, Project, AdminData, UserData } from "@/types/admin";
 
 // Datos de ejemplo para swaps (puedes conectar esto a tu API real después)
 const mockSwaps = [
@@ -18,6 +18,7 @@ const mockSwaps = [
 
 export default function AdminDashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [users, setUsers] = useState<UserData[]>([]);
   const [admins, setAdmins] = useState<AdminData[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null); // null = not verified yet
@@ -117,6 +118,18 @@ export default function AdminDashboardPage() {
           const errorResponse = await adminsRes.text();
           console.error('Failed to fetch admins:', adminsRes.status, errorResponse);
         }
+
+        // Fetch users
+        const usersRes = await fetch('/api/admin/users');
+        console.log('Users API response:', usersRes.status, usersRes.statusText);
+        if (usersRes.ok) {
+          const usersData = await usersRes.json() as UserData[];
+          console.log('Users data:', usersData);
+          setUsers(usersData);
+        } else {
+          const errorResponse = await usersRes.text();
+          console.error('Failed to fetch users:', usersRes.status, errorResponse);
+        }
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
@@ -202,7 +215,7 @@ export default function AdminDashboardPage() {
         </Link>
       </div>
 
-      <AdminTabs swaps={mockSwaps} showSettings={true}>
+      <AdminTabs swaps={mockSwaps} users={users} showSettings={true} showUsers={true}>
         {/* Tab de proyectos */}
         <div key="projects-tab" className="space-y-6">
           {/* Filtros de estado */}

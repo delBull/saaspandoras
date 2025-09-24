@@ -31,3 +31,17 @@ export interface AdminData {
   alias?: string | null;
   role: string;
 }
+
+export interface UserData {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+  walletAddress: string;
+  hasPandorasKey: boolean;
+  createdAt: string;
+  role: UserRole;
+  projectCount: number;
+}
+
+export type UserRole = "applicant" | "pandorian" | "admin";
