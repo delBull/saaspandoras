@@ -137,9 +137,9 @@ export function UsersTable({ users }: UsersTableProps) {
                         />
                       )}
                       <div>
-                        <div className="text-white font-medium">
-                          {user.name || 'Usuario sin nombre'}
-                        </div>
+                      <div className="text-white font-medium">
+                        {user.name ?? 'Usuario sin nombre'}
+                      </div>
                         {user.email && (
                           <div className="text-gray-400 text-xs">{user.email}</div>
                         )}

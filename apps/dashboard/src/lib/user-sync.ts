@@ -83,9 +83,9 @@ export async function syncThirdwebUser(userData: {
         VALUES (
           ${crypto.randomUUID()},
           ${userData.walletAddress},
-          ${userData.email || null},
-          ${userData.name || null},
-          ${userData.image || null},
+          ${userData.email ?? null},
+          ${userData.name ?? null},
+          ${userData.image ?? null},
           ${isSystemAdmin},  -- Admins automáticamente tienen Pandora's Key
           1,
           NOW(),
