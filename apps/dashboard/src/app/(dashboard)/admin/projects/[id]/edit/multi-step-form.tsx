@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useActiveAccount } from "thirdweb/react";
 import type { FieldErrors } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { useForm, FormProvider } from "react-hook-form";
@@ -215,6 +216,7 @@ export function MultiStepForm({
   isPublic = false
 }: MultiStepFormProps) {
   const router = useRouter();
+  const account = useActiveAccount();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -360,6 +362,16 @@ export function MultiStepForm({
     });
     return () => subscription.unsubscribe();
   }, [watch, currentStep, isEdit, methods]);
+
+  // Establecer dirección por defecto de la wallet conectada para updateAuthorityAddress
+  const [hasSetDefaultAddress, setHasSetDefaultAddress] = useState(false);
+  useEffect(() => {
+    if (!hasSetDefaultAddress && account?.address && !project?.updateAuthorityAddress) {
+      // Solo establece si no hay un valor proyecto existente y hay una wallet conectada
+      setValue("updateAuthorityAddress", account.address);
+      setHasSetDefaultAddress(true);
+    }
+  }, [account?.address, setValue, hasSetDefaultAddress, project?.updateAuthorityAddress]);
 
   // Auto-scroll to top cuando cambie el paso - POSIBLE SOLUCIÓN PARA PUBLIC USERS
   useEffect(() => {
