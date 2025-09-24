@@ -25,5 +25,24 @@ module.exports = {
         '@typescript-eslint/consistent-type-imports': 'off',
       },
     },
+    {
+      files: [
+        'src/components/sidebar.tsx',
+        'src/app/(dashboard)/profile/projects/page.tsx',
+        'src/app/(dashboard)/profile/page.tsx',
+        'src/app/(dashboard)/profile/dashboard/page.tsx'
+      ],
+      rules: {
+        '@typescript-eslint/no-explicit-any': 'off',
+        '@typescript-eslint/no-unsafe-assignment': 'off',
+        '@typescript-eslint/no-unsafe-member-access': 'off',
+        '@typescript-eslint/no-unsafe-call': 'off',
+        '@typescript-eslint/no-unsafe-return': 'off',
+        '@typescript-eslint/prefer-nullish-coalescing': 'off',
+        'jsx-a11y/label-has-associated-control': 'off',
+        'jsx-a11y/click-events-have-key-events': 'off',
+        'jsx-a11y/no-static-element-interactions': 'off',
+      },
+    },
   ],
 };

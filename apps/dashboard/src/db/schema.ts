@@ -51,6 +51,12 @@ export const users = pgTable("User", {
   image: text("image"),
   walletAddress: varchar("walletAddress", { length: 42 }).unique(),
   hasPandorasKey: boolean("hasPandorasKey").default(false).notNull(),
+
+  // KYC Related Fields - New additions for user profile system
+  kycLevel: varchar("kycLevel", { length: 20 }).default('basic').notNull(), // 'basic' or 'advanced'
+  kycCompleted: boolean("kycCompleted").default(false).notNull(), // Whether advanced KYC is complete
+  kycData: jsonb("kycData"), // JSON object with KYC information (phone, address, SSN, etc.)
+
   connectionCount: integer("connectionCount").default(1).notNull(),
   lastConnectionAt: timestamp("lastConnectionAt").defaultNow(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

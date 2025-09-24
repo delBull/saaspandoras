@@ -34,6 +34,27 @@ export interface AdminData {
   role: string;
 }
 
+export interface KYCData {
+  fullName?: string;
+  phoneNumber?: string;
+  dateOfBirth?: string;
+  address?: {
+    street: string;
+    city: string;
+    state: string;
+    country: string;
+    postalCode: string;
+  };
+  taxId?: string; // SSN, TIN, etc.
+  nationality?: string;
+  occupation?: string;
+  // Additional KYC fields as needed
+  documents?: {
+    idPhoto?: string;
+    proofOfAddress?: string;
+  };
+}
+
 export interface UserData {
   id: string;
   name?: string | null;
@@ -46,6 +67,11 @@ export interface UserData {
   createdAt: string;
   role: UserRole;
   projectCount: number;
+
+  // KYC related fields
+  kycLevel: 'basic' | 'advanced';
+  kycCompleted: boolean;
+  kycData?: KYCData | null;
 }
 
 export type UserRole = "applicant" | "pandorian" | "admin";

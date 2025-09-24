@@ -57,7 +57,10 @@ export async function GET() {
         "hasPandorasKey",
         "connectionCount",
         "lastConnectionAt",
-        "createdAt"
+        "createdAt",
+        "kycLevel",
+        "kycCompleted",
+        "kycData"
       FROM "User"
       ORDER BY "createdAt" DESC
     `);
@@ -169,6 +172,9 @@ export async function GET() {
       createdAt: (row as Record<string, unknown>).createdAt as string,
       role: (row as Record<string, unknown>).role as UserRole,
       projectCount: Number((row as Record<string, unknown>).projectCount),
+      kycLevel: (row as Record<string, unknown>).kycLevel as 'basic' | 'advanced',
+      kycCompleted: (row as Record<string, unknown>).kycCompleted as boolean,
+      kycData: (row as Record<string, unknown>).kycData as any || null,
     }));
 
     return NextResponse.json(users);

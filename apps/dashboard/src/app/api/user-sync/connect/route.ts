@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
+
 import { NextResponse } from "next/server";
 import { syncThirdwebUser } from "@/lib/user-sync";
 import { db } from "~/db";
