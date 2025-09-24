@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { UserData, UserRole } from '@/types/admin';
+import Image from 'next/image';
+import type { UserData, UserRole } from '@/types/admin';
 
 interface UsersTableProps {
   users: UserData[];
@@ -83,7 +84,7 @@ export function UsersTable({ users }: UsersTableProps) {
           Todos ({users.length})
         </button>
         {(Object.entries(roleCounts) as [UserRole, number][]).map(([role, count]) => {
-          const { text, className } = getRoleDisplay(role);
+          const { text, className: _className } = getRoleDisplay(role);
           return count > 0 ? (
             <button
               key={role}
@@ -130,16 +131,18 @@ export function UsersTable({ users }: UsersTableProps) {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       {user.image && (
-                        <img
+                        <Image
                           src={user.image}
                           alt="Avatar"
+                          width={32}
+                          height={32}
                           className="w-8 h-8 rounded-full"
                         />
                       )}
                       <div>
-                      <div className="text-white font-medium">
-                        {user.name ?? 'Usuario sin nombre'}
-                      </div>
+                        <div className="text-white font-medium">
+                          {user.name ?? 'Usuario sin nombre'}
+                        </div>
                         {user.email && (
                           <div className="text-gray-400 text-xs">{user.email}</div>
                         )}

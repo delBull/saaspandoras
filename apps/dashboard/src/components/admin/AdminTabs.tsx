@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { ReactNode } from "react";
-import { UserData } from "@/types/admin";
+import type { UserData } from "@/types/admin";
 import { UsersTable } from "./UsersTable";
 
 interface Swap {

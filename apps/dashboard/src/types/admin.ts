@@ -1,3 +1,5 @@
+import type { calculateProjectCompletion } from "@/lib/project-utils";
+
 export type ProjectStatus = "draft" | "pending" | "approved" | "live" | "completed" | "incomplete" | "rejected";
 
 export interface Project {
@@ -14,7 +16,7 @@ export interface Project {
   targetAmount: number;
   status: ProjectStatus;
   createdAt: string;
-  completionData?: ReturnType<typeof import("@/lib/project-utils").calculateProjectCompletion>;
+  completionData?: ReturnType<typeof calculateProjectCompletion>;
   // Due diligence info
   valuationDocumentUrl?: string;
   dueDiligenceReportUrl?: string;
