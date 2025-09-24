@@ -9,7 +9,8 @@ import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 
 interface Admin {
   id: number;
-  walletAddress: string;
+  walletAddress?: string;
+  wallet_address?: string;
   alias?: string | null;
   role: string;
 }
@@ -18,8 +19,19 @@ interface AdminSettingsProps {
   initialAdmins: Admin[];
 }
 
+// Helper function to get wallet address safely
+const getWalletAddress = (admin: Admin): string => {
+  return admin.walletAddress ?? admin.wallet_address ?? 'N/A';
+};
+
 export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
-  const [admins, setAdmins] = useState<Admin[]>(initialAdmins);
+  // Filter out admins without wallet address and system admins (id: 999 or super admin wallet)
+  const validAdmins = initialAdmins.filter(admin =>
+    getWalletAddress(admin) !== 'N/A' &&
+    admin.id !== 999 &&
+    getWalletAddress(admin).toLowerCase() !== SUPER_ADMIN_WALLET
+  );
+  const [admins, setAdmins] = useState<Admin[]>(validAdmins);
   const [newAddress, setNewAddress] = useState("");
   const [newAlias, setNewAlias] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -147,7 +159,7 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
                   <div className="flex items-center gap-3">
                     <div>
                       <div className="font-semibold text-white">{admin.alias ?? 'Sin alias'}</div>
-                      <div className="font-mono text-xs text-gray-400 truncate max-w-xs">{admin.walletAddress}</div>
+                      <div className="font-mono text-xs text-gray-400 truncate max-w-xs">{getWalletAddress(admin)}</div>
                     </div>
                     {editingAliasId === admin.id ? (
                       <div className="flex items-center gap-2 ml-auto">
@@ -181,7 +193,7 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
                   </div>
                 </div>
                 {/* Verificación de seguridad en la UI: no mostrar el botón de borrar para el Super Admin */}
-                {admin.walletAddress.toLowerCase() !== SUPER_ADMIN_WALLET && (
+                {getWalletAddress(admin).toLowerCase() !== SUPER_ADMIN_WALLET && (
                   <Button variant="destructive" size="sm" onClick={() => handleDeleteAdmin(admin.id)} className="ml-2">
                     <Trash2 className="w-4 h-4" />
                   </Button>
