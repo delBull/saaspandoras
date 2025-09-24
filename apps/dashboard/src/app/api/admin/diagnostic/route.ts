@@ -6,20 +6,20 @@ import { sql } from "drizzle-orm";
 export async function GET() {
   try {
     // Información básica sin autenticación
-    const basicInfo = {
+    const _basicInfo = {
       timestamp: new Date().toISOString(),
       message: "Sistema de diagnóstico - Datos resumidos"
     };
 
-    let detailedInfo = null;
-    let userIsAdmin = false;
+    let _detailedInfo = null;
+    let _userIsAdmin = false;
 
     // Intentar obtener información detallada solo si está autenticado
     try {
       const { session } = await getAuth();
-      userIsAdmin = await isAdmin(session?.userId);
+      _userIsAdmin = await isAdmin(session?.userId);
 
-      if (userIsAdmin) {
+      if (_userIsAdmin) {
         console.log('🔍 Running detailed database diagnostic...');
         // Información detallada aquí
       } else {

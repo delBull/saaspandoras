@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useActiveAccount, useConnectedWallets } from 'thirdweb/react';
+import { useActiveAccount } from 'thirdweb/react';
 
 export function useThirdwebUserSync() {
   const account = useActiveAccount();
   const [hasSynced, setHasSynced] = useState(false);
-  const [hasSyncedProfile, setHasSyncedProfile] = useState(false);
+  const [_hasSyncedProfile, _setHasSyncedProfile] = useState(false);
 
   useEffect(() => {
     if (account?.address && !hasSynced) {
@@ -39,7 +39,7 @@ export function useThirdwebUserSync() {
   useEffect(() => {
     if (!account?.address) {
       setHasSynced(false);
-      setHasSyncedProfile(false);
+      _setHasSyncedProfile(false);
     }
   }, [account?.address]);
 

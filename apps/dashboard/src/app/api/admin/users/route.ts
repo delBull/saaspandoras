@@ -108,7 +108,7 @@ export async function GET() {
       const projectCount: number = (user.email && projectCountsByEmail[user.email] !== undefined) ? projectCountsByEmail[user.email]! : 0;
 
       // Check if admin
-      const isAdmin: boolean = adminWallets.includes(user.walletAddress.toLowerCase());
+      const isAdmin: boolean = adminWallets.includes((user.walletAddress as string).toLowerCase());
 
       // Determine role
       let role: 'admin' | 'applicant' | 'pandorian';
@@ -122,7 +122,7 @@ export async function GET() {
 
       // Determine Pandora's Key status - for now, give to all users since it's required to access platform
       // TODO: Implement proper Pandora's Key verification system
-      const hasPandorasKey: boolean = true; // All users get it until proper verification is implemented
+      const hasPandorasKey = true; // All users get it until proper verification is implemented
 
       const result = {
         ...user,
