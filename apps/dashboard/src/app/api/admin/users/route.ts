@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
 import { NextResponse } from "next/server";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { db } from "~/db";
@@ -31,7 +31,7 @@ export async function GET() {
           'sample-user-uuid',
           'Usuario de Ejemplo',
           'sample@example.com',
-          'https://example.com/avatar.jpg',
+          '/images/avatars/rasta.png',
           '0x1234567890123456789012345678901234567890',
           true,
           1,
@@ -83,6 +83,14 @@ export async function GET() {
       `);
 
       console.log("Projects with email count:", allProjects.length);
+      console.log("Available project emails:", allProjects.map((p: any) => `"${p.applicantEmail || 'null'}"`).join(', '));
+      console.log("First 2 project details:", allProjects.slice(0, 2).map((p: any) => ({
+        id: "project_id_would_go_here",  // No tenemos ID aquí
+        title: "NA", // No tenemos título aquí
+        email: (p as Record<string, unknown>).applicantEmail || 'null',
+        count: p.count
+      })));
+
       allProjects.forEach((row: any) => {
         projectCountsByEmail[row.applicantEmail as string] = Number(row.count as string);
       });
@@ -90,26 +98,34 @@ export async function GET() {
       console.warn("Could not fetch project counts by email:", error);
     }
 
-    // Get all admin wallets for role detection
+    // Get all admin wallets for role detection (incluyendo super admins hardcodeados)
+    const SUPER_ADMIN_WALLETS = [
+      '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9' // Tú - siempre admin
+    ].map(addr => addr.toLowerCase());
+
     const adminWallets: string[] = [];
     try {
       const adminQuery = await db.execute(sql`
-        SELECT "walletAddress" FROM "administrators"
+        SELECT "wallet_address" FROM "administrators"
       `);
       adminQuery.forEach((row: any) => {
-        adminWallets.push((row.walletAddress as string).toLowerCase());
+        adminWallets.push((row.wallet_address as string).toLowerCase());
       });
     } catch (error) {
       console.warn("Could not fetch admin wallets:", error);
     }
+
+    // Combinar super admins con admins de BD
+    const ALL_ADMIN_WALLETS = [...SUPER_ADMIN_WALLETS, ...adminWallets];
+    console.log('📊 Total admin wallets for role detection:', ALL_ADMIN_WALLETS.length, ALL_ADMIN_WALLETS);
 
     // Process each user with the collected data
     const usersWithDetails = usersQuery.map((user: any) => {
       // Get project count from pre-calculated data
       const projectCount: number = (user.email && projectCountsByEmail[user.email] !== undefined) ? projectCountsByEmail[user.email]! : 0;
 
-      // Check if admin
-      const isAdmin: boolean = adminWallets.includes((user.walletAddress as string).toLowerCase());
+      // Check if admin (usando TODOS los admins incluyendo super admins)
+      const isAdmin: boolean = ALL_ADMIN_WALLETS.includes((user.walletAddress as string).toLowerCase());
 
       // Determine role
       let role: 'admin' | 'applicant' | 'pandorian';
@@ -125,6 +141,10 @@ export async function GET() {
       // TODO: Implement proper Pandora's Key verification system
       const hasPandorasKey = true; // All users get it until proper verification is implemented
 
+      // Debug logs for each user
+      console.log(`🔍 Processing user ${user.walletAddress.substring(0, 8)}...`);
+      console.log(`   Email: ${user.email || 'null'} | Project count: ${projectCount} | Is admin: ${isAdmin} | Final role: ${role}`);
+
       const result = {
         ...user,
         projectCount,
@@ -138,17 +158,17 @@ export async function GET() {
     console.log("Users processed with roles and counts");
 
     const users: UserData[] = usersWithDetails.map((row: any) => ({
-      id: row.id as string,
-      name: row.name as string | null,
-      email: row.email as string | null,
-      image: row.image as string | null,
-      walletAddress: row.walletAddress as string,
-      hasPandorasKey: row.hasPandorasKey as boolean,
-      connectionCount: Number(row.connectionCount),
-      lastConnectionAt: row.lastConnectionAt as string,
-      createdAt: row.createdAt as string,
-      role: row.role as UserRole,
-      projectCount: Number(row.projectCount),
+      id: (row as Record<string, unknown>).id as string,
+      name: (row as Record<string, unknown>).name as string | null,
+      email: (row as Record<string, unknown>).email as string | null,
+      image: (row as Record<string, unknown>).image as string | null,
+      walletAddress: (row as Record<string, unknown>).walletAddress as string,
+      hasPandorasKey: (row as Record<string, unknown>).hasPandorasKey as boolean,
+      connectionCount: Number((row as Record<string, unknown>).connectionCount),
+      lastConnectionAt: (row as Record<string, unknown>).lastConnectionAt as string,
+      createdAt: (row as Record<string, unknown>).createdAt as string,
+      role: (row as Record<string, unknown>).role as UserRole,
+      projectCount: Number((row as Record<string, unknown>).projectCount),
     }));
 
     return NextResponse.json(users);
