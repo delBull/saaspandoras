@@ -49,6 +49,8 @@ export async function syncThirdwebUser(userData: {
       const currentCount = Number(existing[0]?.connectionCount as string);
       const newCount = currentCount + 1;
 
+      console.log('🔄 Existing user found - updating connection count:', currentCount, '→', newCount);
+
       await db.execute(sql`
         UPDATE "User"
         SET "name" = COALESCE(${userData.name ?? null}, "name"),
@@ -61,23 +63,10 @@ export async function syncThirdwebUser(userData: {
 
       console.log('✅ User updated - New connection count:', newCount);
 
-      // Si es admin del sistema pero no está en la tabla administrators, agregarlo automáticamente
-      if (isSystemAdmin) {
-        const adminExists = await db.execute(sql`
-          SELECT COUNT(*) as count FROM "administrators" WHERE "walletAddress" = ${userData.walletAddress}
-        `);
-
-        if (Number(adminExists[0]?.count as string) === 0) {
-          await db.execute(sql`
-            INSERT INTO "administrators" ("walletAddress", "alias", "role", "addedBy", "createdAt")
-            VALUES (${userData.walletAddress}, 'System Admin', 'admin', 'system', NOW())
-          `);
-          console.log('✅ Admin privileges granted automatically');
-        }
-      }
-
     } else {
-      // ❌ Usuario no existe - CREAR nuevo
+      // ❌ Usuario NO existe - CREARLO
+      console.log('🆕 Creating new user in database:', userData.walletAddress);
+
       await db.execute(sql`
         INSERT INTO "User" ("id", "walletAddress", "email", "name", "image", "hasPandorasKey", "connectionCount", "lastConnectionAt", "createdAt")
         VALUES (
@@ -93,19 +82,24 @@ export async function syncThirdwebUser(userData: {
         )
       `);
 
-      console.log('✅ New user created from Thirdweb auth - wallet:', userData.walletAddress);
+      console.log('✅ New user created in database:', userData.walletAddress);
+    }
 
-      // Verificar después de crear que existe
-      const verifyCreate = await db.execute(sql`SELECT COUNT(*) as count FROM "User" WHERE "walletAddress" = ${userData.walletAddress}`);
-      console.log('✅ User creation verification - count:', Number(verifyCreate[0]?.count as string));
+    // Si es admin del sistema pero no está en la tabla administrators, agregarlo automáticamente
+    if (isSystemAdmin) {
+      console.log('👑 Checking admin privileges for:', userData.walletAddress);
+      const adminExists = await db.execute(sql`
+        SELECT COUNT(*) as count FROM "administrators" WHERE "walletAddress" = ${userData.walletAddress}
+      `);
 
-      // Si es admin del sistema, agregarlo automáticamente a administradores
-      if (isSystemAdmin) {
+      if (Number(adminExists[0]?.count as string) === 0) {
         await db.execute(sql`
           INSERT INTO "administrators" ("walletAddress", "alias", "role", "addedBy", "createdAt")
           VALUES (${userData.walletAddress}, 'System Admin', 'admin', 'system', NOW())
         `);
-        console.log('✅ Admin privileges granted automatically for new user');
+        console.log('✅ Admin privileges granted automatically');
+      } else {
+        console.log('ℹ️ Admin already exists in administrators table');
       }
     }
   } catch (error) {
