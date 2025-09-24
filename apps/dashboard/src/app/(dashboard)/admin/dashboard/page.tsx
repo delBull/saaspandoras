@@ -1,53 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { AdminSettings } from "@/components/admin/AdminSettings";
-import Link from "next/link";
+import { UnauthorizedAccess } from "@/components/admin/UnauthorizedAccess";
 import { calculateProjectCompletion } from "@/lib/project-utils";
-
-// Component for unauthorized access screen to avoid hook order issues
-function UnauthorizedAccess({ authError }: { authError: string | null }) {
-  const router = useRouter();
-  const [redirectCountdown, setRedirectCountdown] = React.useState<number>(5);
-
-  // Countdown effect
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setRedirectCountdown((prev) => prev - 1);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Redirect effect when countdown reaches 0
-  useEffect(() => {
-    if (redirectCountdown <= 0) {
-      router.push('/');
-    }
-  }, [redirectCountdown, router]);
-
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center p-8">
-        <h1 className="text-2xl font-bold text-red-400 mb-4">Acceso No Autorizado</h1>
-        <p className="text-gray-300 mb-6">
-          No tienes permisos para acceder a esta sección administrativa.
-          {authError && <span className="block text-orange-400 mt-2">Error: {authError}</span>}
-        </p>
-        <p className="text-sm text-gray-400 mb-4">
-          Solo los usuarios administradores pueden acceder al dashboard.
-        </p>
-        <div className="flex items-center justify-center">
-          <div className="bg-zinc-800 rounded-lg px-4 py-2 text-sm text-gray-300">
-            🔄 Redirigiendo a la página principal en <span className="font-bold text-lime-400">{redirectCountdown}</span> segundos...
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+import { useProjectActions } from "@/hooks/useProjectActions";
+import { ProjectStatus, Project, AdminData } from "@/types/admin";
 
 // Datos de ejemplo para swaps (puedes conectar esto a tu API real después)
 const mockSwaps = [
@@ -56,42 +16,7 @@ const mockSwaps = [
   { txHash: '0x789abc...', from: '0xdef789...', toToken: 'WETH', fromAmountUsd: 50.00, feeUsd: 0.25, status: 'failed' },
 ];
 
-type ProjectStatus = "draft" | "pending" | "approved" | "live" | "completed" | "incomplete" | "rejected";
-
-interface Project {
-  id: string;
-  title: string;
-  description: string;
-  website?: string;
-  whitepaperUrl?: string;
-  twitterUrl?: string;
-  discordUrl?: string;
-  telegramUrl?: string;
-  linkedinUrl?: string;
-  businessCategory?: string;
-  targetAmount: number;
-  status: ProjectStatus;
-  createdAt: string;
-  completionData?: ReturnType<typeof calculateProjectCompletion>;
-  // Due diligence info
-  valuationDocumentUrl?: string;
-  dueDiligenceReportUrl?: string;
-  legalStatus?: string;
-  fiduciaryEntity?: string;
-  applicantName?: string;
-  applicantEmail?: string;
-  applicantPhone?: string;
-}
-
-interface AdminData {
-  id: number;
-  walletAddress: string;
-  alias?: string | null;
-  role: string;
-}
-
 export default function AdminDashboardPage() {
-  const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [admins, setAdmins] = useState<AdminData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,170 +28,21 @@ export default function AdminDashboardPage() {
   const [actionsDropdownPosition, setActionsDropdownPosition] = useState<{top: number, left: number} | null>(null); // Posición del dropdown
   const [actionsLoading, setActionsLoading] = useState<Record<string, boolean>>({}); // Track loading states for actions
   const [authError, setAuthError] = useState<string | null>(null); // Para mostrar errores de autenticación
-  const [redirectCountdown, setRedirectCountdown] = useState<number>(5); // Contador de redirección
 
-  // Function to handle project deletion with confirmation
-  const deleteProject = async (projectId: string, projectTitle: string) => {
-    const confirmMessage = `¿Eliminar proyecto "${projectTitle}"?\n\nEsta acción NO SE PUEDE deshacer.`;
-    const isConfirmed = window.confirm(confirmMessage);
-
-    if (!isConfirmed) return;
-
-    const actionKey = `delete-${projectId}`;
-    setActionsLoading(prev => ({ ...prev, [actionKey]: true }));
-
-    try {
-      console.log('Deleting project:', projectId);
-      const response = await fetch(`/api/admin/projects/${projectId}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        // Remove the project from the local state
-        setProjects(prevProjects =>
-          prevProjects.filter(project => project.id !== projectId)
-        );
-        alert('Proyecto eliminado exitosamente');
-        console.log('Project deleted successfully');
-      } else {
-        const errorText = await response.text().catch(() => 'Error desconocido');
-        let errorMessage = 'Error desconocido';
-        if (errorText) {
-          errorMessage = errorText;
-        }
-        alert(`Error al eliminar el proyecto: ${errorMessage}`);
-        console.error('Failed to delete project:', response.status, errorMessage);
-      }
-    } catch (error) {
-      alert('Error de conexión al eliminar el proyecto');
-      console.error('Error deleting project:', error);
-    } finally {
-      setActionsLoading(prev => ({ ...prev, [actionKey]: false }));
-    }
-  };
-
-  // Function to approve a project
-  const approveProject = async (projectId: string, projectTitle: string) => {
-    const confirmMessage = `¿Aprobar el proyecto "${projectTitle}"?\n\nEl proyecto pasará al estado "approved" y podrá ir live.`;
-    const isConfirmed = window.confirm(confirmMessage);
-
-    if (!isConfirmed) return;
-
-    const actionKey = `approve-${projectId}`;
-    setActionsLoading(prev => ({ ...prev, [actionKey]: true }));
-
-    try {
-      const response = await fetch(`/api/admin/projects/${projectId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'approved' }),
-      });
-
-      if (response.ok) {
-        // Update project status in local state
-        setProjects(prevProjects =>
-          prevProjects.map(p => p.id === projectId ? { ...p, status: 'approved' as ProjectStatus } : p)
-        );
-        alert('Proyecto aprobado exitosamente');
-      } else {
-        alert('Error al aprobar el proyecto');
-      }
-    } catch (error) {
-      alert('Error de conexión');
-      console.error('Error approving project:', error);
-    } finally {
-      setActionsLoading(prev => ({ ...prev, [actionKey]: false }));
-    }
-  };
-
-  // Function to reject/incomplete a project
-  const rejectProject = async (projectId: string, projectTitle: string) => {
-    const rejectionType = window.confirm(`Proyecto: "${projectTitle}"\n\n¿Es un "No completado" (continúa aplicando) o "Rechazado" definitivamente?`);
-
-    const newStatus = rejectionType ? 'rejected' : 'incomplete';
-    const statusText = rejectionType ? 'rechazado' : 'marcado como no completado';
-
-    const confirmMessage = `¿${statusText} el proyecto "${projectTitle}"?\n\n${
-      rejectionType
-        ? 'El solicitante tendrá que aplicar nuevamente.'
-        : 'El solicitante podrá completar la información faltante.'
-    }`;
-
-    if (!window.confirm(confirmMessage)) return;
-
-    const actionKey = `reject-${projectId}`;
-    setActionsLoading(prev => ({ ...prev, [actionKey]: true }));
-
-    try {
-      const response = await fetch(`/api/admin/projects/${projectId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      if (response.ok) {
-        // Update project status in local state
-        setProjects(prevProjects =>
-          prevProjects.map(p => p.id === projectId ? { ...p, status: newStatus as ProjectStatus } : p)
-        );
-        alert(`Proyecto ${statusText} exitosamente`);
-      } else {
-        alert(`Error al ${statusText} el proyecto`);
-      }
-    } catch (error) {
-      alert('Error de conexión');
-      console.error('Error rejecting project:', error);
-    } finally {
-      setActionsLoading(prev => ({ ...prev, [actionKey]: false }));
-    }
-  };
-
-  // Function to change project status to any value
-  const changeProjectStatus = async (projectId: string, projectTitle: string, newStatus: ProjectStatus) => {
-    const statusLabels: Record<ProjectStatus, string> = {
-      draft: 'Borrador',
-      pending: 'Pendiente',
-      approved: 'Aprobado',
-      rejected: 'Rechazado',
-      incomplete: 'Incompleto',
-      live: 'En Vivo',
-      completed: 'Completado'
-    };
-
-    const confirmMessage = `¿Cambiar el status del proyecto "${projectTitle}" a "${statusLabels[newStatus]}"?`;
-
-    if (!window.confirm(confirmMessage)) return;
-
-    const actionKey = `change-status-${projectId}`;
-    setActionsLoading(prev => ({ ...prev, [actionKey]: true }));
-
-    try {
-      const response = await fetch(`/api/admin/projects/${projectId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      if (response.ok) {
-        // Update project status in local state
-        setProjects(prevProjects =>
-          prevProjects.map(p => p.id === projectId ? { ...p, status: newStatus } : p)
-        );
-        alert('Status del proyecto actualizado exitosamente');
-      } else {
-        alert('Error al cambiar el status del proyecto');
-      }
-    } catch (error) {
-      alert('Error de conexión');
-      console.error('Error changing project status:', error);
-    } finally {
-      setActionsLoading(prev => ({ ...prev, [actionKey]: false }));
-    }
-  };
+  // Use project actions hook
+  const { deleteProject, approveProject, rejectProject, changeProjectStatus } = useProjectActions({
+    setActionsLoading,
+  });
 
   // Check admin status first with timeout fallback
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
+    const timeoutId: NodeJS.Timeout = setTimeout(() => {
+      if (isAdmin === null) {
+        console.log('Admin verification timeout - assuming no admin access');
+        setAuthError('Timeout al verificar permisos administrativos');
+        setIsAdmin(false);
+      }
+    }, 5000);
 
     const checkAdminStatus = async () => {
       try {
@@ -294,17 +70,8 @@ export default function AdminDashboardPage() {
     // Start admin verification
     checkAdminStatus().catch(console.error);
 
-    // Set timeout for 5 seconds - if still null, assume not admin (security)
-    timeoutId = setTimeout(() => {
-      if (isAdmin === null) {
-        console.log('Admin verification timeout - assuming no admin access');
-        setAuthError('Timeout al verificar permisos administrativos');
-        setIsAdmin(false);
-      }
-    }, 5000);
-
     return () => clearTimeout(timeoutId);
-  }, []);
+  }, [isAdmin]); // Added isAdmin dependency
 
   useEffect(() => {
     // Set loading to false immediately if user is not admin (prevents infinite loading)
