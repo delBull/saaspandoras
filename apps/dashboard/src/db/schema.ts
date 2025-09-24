@@ -44,6 +44,16 @@ export const administrators = pgTable("administrators", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const users = pgTable("User", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  name: varchar("name", { length: 255 }),
+  email: varchar("email", { length: 255 }).unique(),
+  image: text("image"),
+  walletAddress: varchar("walletAddress", { length: 42 }).unique(),
+  hasPandorasKey: boolean("hasPandorasKey").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
 export const businessCategoryEnum = pgEnum("business_category", [
   "residential_real_estate", // Bienes Raíces Residencial
   "commercial_real_estate", // Bienes Raíces Comercial

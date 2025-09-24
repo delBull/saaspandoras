@@ -43,6 +43,13 @@
       "when": 1758504980425,
       "tag": "0005_groovy_red_ghost",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1758696070677,
+      "tag": "0006_special_the_renegades",
+      "breakpoints": true
     }
   ]
 }
