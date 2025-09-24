@@ -1,10 +1,53 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { AdminSettings } from "@/components/admin/AdminSettings";
 import Link from "next/link";
 import { calculateProjectCompletion } from "@/lib/project-utils";
+
+// Component for unauthorized access screen to avoid hook order issues
+function UnauthorizedAccess({ authError }: { authError: string | null }) {
+  const router = useRouter();
+  const [redirectCountdown, setRedirectCountdown] = React.useState<number>(5);
+
+  // Countdown effect
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRedirectCountdown((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Redirect effect when countdown reaches 0
+  useEffect(() => {
+    if (redirectCountdown <= 0) {
+      router.push('/');
+    }
+  }, [redirectCountdown, router]);
+
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center p-8">
+        <h1 className="text-2xl font-bold text-red-400 mb-4">Acceso No Autorizado</h1>
+        <p className="text-gray-300 mb-6">
+          No tienes permisos para acceder a esta sección administrativa.
+          {authError && <span className="block text-orange-400 mt-2">Error: {authError}</span>}
+        </p>
+        <p className="text-sm text-gray-400 mb-4">
+          Solo los usuarios administradores pueden acceder al dashboard.
+        </p>
+        <div className="flex items-center justify-center">
+          <div className="bg-zinc-800 rounded-lg px-4 py-2 text-sm text-gray-300">
+            🔄 Redirigiendo a la página principal en <span className="font-bold text-lime-400">{redirectCountdown}</span> segundos...
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // Datos de ejemplo para swaps (puedes conectar esto a tu API real después)
 const mockSwaps = [
@@ -48,6 +91,7 @@ interface AdminData {
 }
 
 export default function AdminDashboardPage() {
+  const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [admins, setAdmins] = useState<AdminData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,6 +102,8 @@ export default function AdminDashboardPage() {
   const [actionsDropdown, setActionsDropdown] = useState<string | null>(null); // Para controlar el dropdown de acciones
   const [actionsDropdownPosition, setActionsDropdownPosition] = useState<{top: number, left: number} | null>(null); // Posición del dropdown
   const [actionsLoading, setActionsLoading] = useState<Record<string, boolean>>({}); // Track loading states for actions
+  const [authError, setAuthError] = useState<string | null>(null); // Para mostrar errores de autenticación
+  const [redirectCountdown, setRedirectCountdown] = useState<number>(5); // Contador de redirección
 
   // Function to handle project deletion with confirmation
   const deleteProject = async (projectId: string, projectTitle: string) => {
@@ -218,8 +264,10 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // Check admin status first
+  // Check admin status first with timeout fallback
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
     const checkAdminStatus = async () => {
       try {
         const response = await fetch('/api/admin/verify');
@@ -233,16 +281,38 @@ export default function AdminDashboardPage() {
         const userIsAdmin = (data.isAdmin ?? false) || (data.isSuperAdmin ?? false);
         console.log('Admin dashboard - User is admin:', userIsAdmin, { data });
         setIsAdmin(userIsAdmin);
+        setAuthError(null);
       } catch (error) {
         console.error('Error checking admin status:', error);
+        setAuthError('Error al verificar permisos administrativos');
         setIsAdmin(false);
+      } finally {
+        clearTimeout(timeoutId);
       }
     };
 
+    // Start admin verification
     checkAdminStatus().catch(console.error);
+
+    // Set timeout for 5 seconds - if still null, assume not admin (security)
+    timeoutId = setTimeout(() => {
+      if (isAdmin === null) {
+        console.log('Admin verification timeout - assuming no admin access');
+        setAuthError('Timeout al verificar permisos administrativos');
+        setIsAdmin(false);
+      }
+    }, 5000);
+
+    return () => clearTimeout(timeoutId);
   }, []);
 
   useEffect(() => {
+    // Set loading to false immediately if user is not admin (prevents infinite loading)
+    if (isAdmin === false) {
+      setLoading(false);
+      return;
+    }
+
     // Only fetch data if user is verified as admin
     if (isAdmin !== true) {
       return;
@@ -343,21 +413,9 @@ export default function AdminDashboardPage() {
     );
   }
 
-  // If user is not admin and we're not loading, show unauthorized message
-  if (!isAdmin) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center p-8">
-          <h1 className="text-2xl font-bold text-red-400 mb-4">Acceso No Autorizado</h1>
-          <p className="text-gray-300 mb-6">
-            No tienes permisos para acceder a esta sección administrativa.
-          </p>
-          <p className="text-sm text-gray-400">
-            Solo los usuarios administradores pueden acceder al dashboard.
-          </p>
-        </div>
-      </div>
-    );
+  // If user is not admin and we're not loading, show unauthorized component
+  if (!isAdmin && isAdmin !== null) {
+    return <UnauthorizedAccess authError={authError} />;
   }
 
   return (
