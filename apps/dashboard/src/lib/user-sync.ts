@@ -107,6 +107,51 @@ export async function syncThirdwebUser(userData: {
         console.log('ℹ️ Admin already exists in administrators table');
       }
     }
+
+    // 🔄 REACTIVATE SOCIAL PROFILE ENRICHMENT
+    // Intentar enriquecer con datos sociales de Thirdweb después de la sincronización básica
+    try {
+      console.log('🤝 Attempting to enrich user with social profiles from Thirdweb...');
+
+      // IMPORTANTE: Esta llamada se hace al final para no bloquear la sincronización básica
+      // Si Thirdweb API no está configurado o falla, el usuario aún funciona con datos básicos
+
+      const enrichedProfile = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/thirdweb-fetch?address=${userData.walletAddress}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (enrichedProfile.ok) {
+        const enrichedData = await enrichedProfile.json();
+
+        // Actualizar user con datos sociales si están disponibles
+        if (enrichedData.socialProfiles && enrichedData.socialProfiles.length > 0) {
+          console.log('🎯 Found social profiles - updating user...');
+
+          // Actualizar con datos sociales más ricos
+          await db.execute(sql`
+            UPDATE "User"
+            SET "name" = COALESCE(${enrichedData.name}, "name"),
+                "email" = COALESCE(${enrichedData.email}, "email"),
+                "image" = COALESCE(${enrichedData.image}, "image")
+            WHERE "walletAddress" = ${userData.walletAddress}
+          `);
+
+          console.log('✅ Social profile data merged successfully');
+          console.log('📊 Social login methods:', enrichedData.socialProfiles.map((p: any) => p.type).filter((t: string) => t !== 'wallet'));
+        } else {
+          console.log('📝 No social profiles found for this wallet (this is normal for wallet-only logins)');
+        }
+      } else {
+        console.log('📄 Thirdweb API not available (this is expected in development without secret key)');
+      }
+    } catch (socialError) {
+      console.warn('⚠️ Social profile enrichment failed - continuing with basic user sync:', socialError);
+      // NO fallamos aquí - la sincronización básica ya funciona
+    }
+
   } catch (error) {
     console.error('❌ Error syncing user:', error);
   }

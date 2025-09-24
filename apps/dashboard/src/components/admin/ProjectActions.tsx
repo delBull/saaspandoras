@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@saasfly/ui/button';
 import { toast } from 'sonner';
-import { CheckIcon, Loader2, TrashIcon } from 'lucide-react';
+import { CheckIcon, Loader2, TrashIcon, PencilIcon } from 'lucide-react';
 import { XMarkIcon } from '@heroicons/react/24/solid';
 
 interface ProjectActionsProps {
@@ -60,8 +60,24 @@ export function ProjectActions({ projectId, currentStatus }: ProjectActionsProps
     }
   };
 
+  const handleEditProject = () => {
+    router.push(`/admin/projects/${projectId}/edit`);
+  };
+
   return (
     <div className="flex items-center justify-end gap-2">
+      {/* Edit button - available for all projects */}
+      <Button
+        size="sm"
+        variant="outline"
+        className="border-blue-500 text-blue-500 hover:bg-blue-900/50 hover:text-blue-400"
+        onClick={handleEditProject}
+        disabled={!!isLoading}
+        title="Editar proyecto"
+      >
+        <PencilIcon className="h-4 w-4" />
+      </Button>
+
       {/* Status actions for pending projects */}
       {currentStatus === 'pending' && (
         <>
@@ -71,6 +87,7 @@ export function ProjectActions({ projectId, currentStatus }: ProjectActionsProps
             className="border-green-500 text-green-500 hover:bg-green-900/50 hover:text-green-400"
             onClick={() => handleUpdateStatus('approved')}
             disabled={!!isLoading}
+            title="Aprobar proyecto"
           >
             {isLoading === 'approved' ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckIcon className="h-4 w-4" />}
           </Button>
@@ -79,6 +96,7 @@ export function ProjectActions({ projectId, currentStatus }: ProjectActionsProps
             variant="destructive"
             onClick={() => handleUpdateStatus('rejected')}
             disabled={!!isLoading}
+            title="Rechazar proyecto"
           >
             {isLoading === 'rejected' ? <Loader2 className="h-4 w-4 animate-spin" /> : <XMarkIcon className="h-4 w-4" />}
           </Button>
@@ -92,6 +110,7 @@ export function ProjectActions({ projectId, currentStatus }: ProjectActionsProps
         className="border-red-500 text-red-500 hover:bg-red-900/50 hover:text-red-400"
         onClick={() => setShowDeleteConfirm(true)}
         disabled={!!isLoading}
+        title="Eliminar proyecto"
       >
         {isLoading === 'delete' ? <Loader2 className="h-4 w-4 animate-spin" /> : <TrashIcon className="h-4 w-4" />}
       </Button>

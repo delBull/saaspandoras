@@ -703,13 +703,18 @@ export default function AdminDashboardPage() {
                     </button>
                   );
                 } else {
+                  // BOTÓN EDITAR - disponible para TODOS los proyectos que no estén pending
                   actions.unshift(
                     <Link
                       key="edit"
                       href={`/admin/projects/${currentProject.id}/edit`}
-                      className="w-full text-left px-4 py-3 text-sm hover:bg-zinc-700 transition-colors flex items-center text-lime-400 hover:text-lime-300"
+                      className="w-full text-left px-4 py-3 text-sm hover:bg-zinc-700 transition-colors flex items-center text-blue-400 hover:text-blue-300"
                       onClick={() => setActionsDropdown(null)}
+                      title="Editar proyecto"
                     >
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
                       ✏️ Editar
                     </Link>
                   );
