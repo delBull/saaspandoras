@@ -5,6 +5,10 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { ThirdwebProvider } from "thirdweb/react";
 import { useThirdwebUserSync } from "@/hooks/useThirdwebUserSync";
 
+// 🔧 CONFIGURACIÓN THIRDWEB v5 BÁSICA FUNCIONANDO
+// Para expandir con social login, revisar documentación:
+// https://portal.thirdweb.com/auth/social-login
+
 function ThirdwebUserSyncWrapper() {
   // Este componente se renderiza DENTRO de ThirdwebProvider
   // por lo tanto sí tiene acceso a los hooks
@@ -37,3 +41,8 @@ export function Providers({
     </ThemeProvider>
   );
 }
+
+// 🔄 PARA EXPANDIR CON SOCIAL LOGIN:
+// 1. Agregar a ThirdwebProvider: embededWallet con auth.options
+// 2. Crear hook useThirdwebProfileSync para capturar datos sociales
+// 3. Usar el PUT /api/user-sync/connect para actualizar perfil

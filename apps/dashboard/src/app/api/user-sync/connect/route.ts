@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { syncThirdwebUser } from "@/lib/user-sync";
-import { getAuth, isAdmin } from "@/lib/auth";
 import { db } from "~/db";
 import { sql } from "drizzle-orm";
 
@@ -29,9 +28,9 @@ export async function POST(request: Request) {
     // Sincronizar usuario en la base de datos con información completa
     await syncThirdwebUser({
       walletAddress: walletAddress.toLowerCase(),
-      email: email || null,
-      name: name || null,
-      image: image || null,
+      email: email ?? null,
+      name: name ?? null,
+      image: image ?? null,
     });
 
     return NextResponse.json({ message: "Usuario sincronizado correctamente" });
@@ -63,9 +62,9 @@ export async function PUT(request: Request) {
     // Actualizar información del usuario existente
     await db.execute(sql`
       UPDATE "User"
-      SET "name" = ${name || null},
+      SET "name" = ${name ?? null},
           "email" = ${email},
-          "image" = ${image || null},
+          "image" = ${image ?? null},
           "lastConnectionAt" = NOW()
       WHERE "walletAddress" = ${walletAddress.toLowerCase()}
     `);

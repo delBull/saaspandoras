@@ -10,20 +10,34 @@ export async function syncThirdwebUser(userData: {
   try {
     console.log('🔄 Syncing Thirdweb user:', userData.walletAddress);
 
-    // Leer TODAS las wallets admin de la tabla administrators automáticamente
+    // Lista de SUPER ADMINS hardcodeados (siempre admin sin importar BD)
+    const SUPER_ADMINS = [
+      '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9', // Tú - siempre admin
+      // Agrega aquí otros superadmin si necesitas
+    ].map(addr => addr.toLowerCase());
+
+    // Leer TODAS las wallets admin adicionales desde la base de datos
     const adminWallets = await db.execute(sql`
       SELECT "walletAddress", "alias" FROM "administrators"
     `);
 
     console.log('📊 Admin wallets in DB:', adminWallets.length);
-    adminWallets.forEach((admin: any) => {
-      console.log('📊 Admin wallet:', admin.walletAddress, 'alias:', admin.alias);
+    adminWallets.forEach((admin: Record<string, unknown>) => {
+      console.log('📊 Admin wallet:', admin.walletAddress ?? 'unknown', 'alias:', admin.alias ?? 'no-alias');
     });
 
-    const ADMIN_WALLETS = adminWallets.map(row => (row.walletAddress as string).toLowerCase());
-    const isSystemAdmin = ADMIN_WALLETS.includes(userData.walletAddress.toLowerCase());
+    // Combinar super admins con admins de BD
+    const ALL_ADMIN_WALLETS = [
+      ...SUPER_ADMINS,
+      ...adminWallets.map(row => (row.walletAddress as string).toLowerCase())
+    ];
 
-    console.log('📊 Current user wallet:', userData.walletAddress, 'Is admin?', isSystemAdmin, 'Has email?', userData.email, 'Has name?', userData.name);
+    const isSystemAdmin = ALL_ADMIN_WALLETS.includes(userData.walletAddress.toLowerCase());
+
+    console.log('🔍 New user detection for wallet:', userData.walletAddress);
+    console.log('📊 Admin wallets in system:', ALL_ADMIN_WALLETS.map((w: string) => w.slice(-8)).join(', '));
+    console.log('📊 Is current user admin?', isSystemAdmin, '- in list?', ALL_ADMIN_WALLETS.includes(userData.walletAddress.toLowerCase()));
+    console.log('📊 Checking if user exists already...');
 
     // Verificar si usuario existe
     const existing = await db.execute(sql`
@@ -37,9 +51,9 @@ export async function syncThirdwebUser(userData: {
 
       await db.execute(sql`
         UPDATE "User"
-        SET "name" = COALESCE(${userData.name}, "name"),
-            "email" = COALESCE(${userData.email}, "email"),
-            "image" = COALESCE(${userData.image}, "image"),
+        SET "name" = COALESCE(${userData.name ?? null}, "name"),
+            "email" = COALESCE(${userData.email ?? null}, "email"),
+            "image" = COALESCE(${userData.image ?? null}, "image"),
             "connectionCount" = ${newCount},
             "lastConnectionAt" = NOW()
         WHERE "walletAddress" = ${userData.walletAddress}
