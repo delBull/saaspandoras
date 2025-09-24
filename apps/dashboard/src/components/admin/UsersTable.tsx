@@ -110,14 +110,15 @@ export function UsersTable({ users }: UsersTableProps) {
               <th className="px-4 py-3 text-left font-semibold text-gray-300">Wallet</th>
               <th className="px-4 py-3 text-left font-semibold text-gray-300">Rol</th>
               <th className="px-4 py-3 text-left font-semibold text-gray-300">Proyectos</th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-300">Registro</th>
+              <th className="px-4 py-3 text-left font-semibold text-gray-300">Conexiones</th>
+              <th className="px-4 py-3 text-left font-semibold text-gray-300">Última Conex.</th>
               <th className="px-4 py-3 text-left font-semibold text-gray-300">Pandoras Key</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-700 bg-zinc-900">
             {filteredUsers.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-gray-500">
+                <td colSpan={7} className="px-4 py-6 text-center text-gray-500">
                   No hay usuarios registrados{roleFilter !== 'all' ? ` con rol "${roleFilter}"` : ''}.
                 </td>
               </tr>
@@ -158,8 +159,13 @@ export function UsersTable({ users }: UsersTableProps) {
                       {user.projectCount}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-300 text-sm">
-                    {formatDate(user.createdAt)}
+                  <td className="px-4 py-3 text-center">
+                    <span className="inline-flex items-center justify-center w-8 h-6 bg-cyan-700 text-white text-xs rounded-full font-semibold">
+                      {user.connectionCount}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-gray-300 text-xs">
+                    {formatDate(user.lastConnectionAt)}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
@@ -178,7 +184,7 @@ export function UsersTable({ users }: UsersTableProps) {
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mt-6">
         <div className="bg-zinc-800 rounded-lg p-4 text-center">
           <div className="text-lime-400 text-lg">🔍</div>
           <div className="text-2xl font-bold text-white">{roleCounts.applicant}</div>
@@ -198,6 +204,16 @@ export function UsersTable({ users }: UsersTableProps) {
           <div className="text-cyan-400 text-lg">📊</div>
           <div className="text-2xl font-bold text-white">{users.filter(u => u.projectCount > 0).length}</div>
           <div className="text-xs text-gray-400">Con Proyectos</div>
+        </div>
+        <div className="bg-zinc-800 rounded-lg p-4 text-center">
+          <div className="text-orange-400 text-lg">🔗</div>
+          <div className="text-2xl font-bold text-white">{users.reduce((total, user) => total + user.connectionCount, 0)}</div>
+          <div className="text-xs text-gray-400">Total Conexiones</div>
+        </div>
+        <div className="bg-zinc-800 rounded-lg p-4 text-center">
+          <div className="text-green-400 text-lg">📈</div>
+          <div className="text-xl font-bold text-white">{users.length}&nbsp→&nbsp{users.reduce((total, user) => total + user.connectionCount, 0)}</div>
+          <div className="text-xs text-gray-400">Usuarios → Conexiones</div>
         </div>
       </div>
     </div>

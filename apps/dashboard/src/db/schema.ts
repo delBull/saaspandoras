@@ -51,6 +51,8 @@ export const users = pgTable("User", {
   image: text("image"),
   walletAddress: varchar("walletAddress", { length: 42 }).unique(),
   hasPandorasKey: boolean("hasPandorasKey").default(false).notNull(),
+  connectionCount: integer("connectionCount").default(1).notNull(),
+  lastConnectionAt: timestamp("lastConnectionAt").defaultNow(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 

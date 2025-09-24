@@ -25,7 +25,7 @@ export async function GET() {
 
       // Insert a sample user
       await db.execute(sql`
-        INSERT INTO "User" ("id", "name", "email", "image", "walletAddress", "hasPandorasKey", "createdAt")
+        INSERT INTO "User" ("id", "name", "email", "image", "walletAddress", "hasPandorasKey", "connectionCount", "lastConnectionAt", "createdAt")
         VALUES (
           'sample-user-uuid',
           'Usuario de Ejemplo',
@@ -33,6 +33,8 @@ export async function GET() {
           'https://example.com/avatar.jpg',
           '0x1234567890123456789012345678901234567890',
           true,
+          1,
+          NOW(),
           NOW()
         )
       `);
@@ -52,6 +54,8 @@ export async function GET() {
         "image",
         "walletAddress",
         "hasPandorasKey",
+        "connectionCount",
+        "lastConnectionAt",
         "createdAt"
       FROM "User"
       ORDER BY "createdAt" DESC
@@ -59,57 +63,76 @@ export async function GET() {
 
     console.log("Users query result:", usersQuery.length, "users found");
 
-    // For each user, get project count and determine role
-    const usersWithDetails = await Promise.all(
-      usersQuery.map(async (user: any) => {
-        let projectCount = 0;
+    // Get project counts by email to improve performance
+    const projectCountsByEmail: Record<string, number> = {};
+    const totalProjectsInDb = { count: 0 };
+    try {
+      console.log("Fetching project counts...");
+      // First count total projects
+      const totalQuery = await db.execute(sql`SELECT COUNT(*) as count FROM "projects"`);
+      totalProjectsInDb.count = Number(totalQuery[0]?.count as string);
+      console.log("Total projects in DB:", totalProjectsInDb.count);
 
-        try {
-          // Try to count projects for this user - gracefully handle missing/invalid emails
-          if (user.email && user.email !== null) {
-            const projectCountQuery = await db.execute(sql`
-              SELECT COUNT(*) as count
-              FROM "projects"
-              WHERE "applicantEmail" = ${user.email}
-            `);
-            projectCount = Number(projectCountQuery[0]?.count as string);
-          }
-        } catch (countError) {
-          console.warn("Could not count projects for user", user.id, ":", countError);
-          projectCount = 0; // Default to 0 if query fails
-        }
+      // Get projects with applicant email - use correct column name
+      const allProjects = await db.execute(sql`
+        SELECT "applicant_email" as applicantEmail, COUNT(*) as count
+        FROM "projects"
+        WHERE "applicant_email" IS NOT NULL AND "applicant_email" != ''
+        GROUP BY "applicant_email"
+      `);
 
-        let isAdmin = false;
-        try {
-          // Check if admin
-          const adminCheck = await db.execute(sql`
-            SELECT COUNT(*) as count
-            FROM "administrators"
-            WHERE "walletAddress" = ${user.walletAddress}
-          `);
-          isAdmin = Number(adminCheck[0]?.count as string) > 0;
-        } catch (adminError) {
-          console.warn("Could not check admin status for user", user.id, ":", adminError);
-          isAdmin = false; // Default to false if query fails
-        }
+      console.log("Projects with email count:", allProjects.length);
+      allProjects.forEach((row: any) => {
+        projectCountsByEmail[row.applicantEmail as string] = Number(row.count as string);
+      });
+    } catch (error) {
+      console.warn("Could not fetch project counts by email:", error);
+    }
 
-        // Determine role
-        let role: 'admin' | 'applicant' | 'pandorian';
-        if (isAdmin) {
-          role = 'admin';
-        } else if (projectCount > 0) {
-          role = 'applicant';
-        } else {
-          role = 'pandorian';
-        }
+    // Get all admin wallets for role detection
+    const adminWallets: string[] = [];
+    try {
+      const adminQuery = await db.execute(sql`
+        SELECT "walletAddress" FROM "administrators"
+      `);
+      adminQuery.forEach((row: any) => {
+        adminWallets.push((row.walletAddress as string).toLowerCase());
+      });
+    } catch (error) {
+      console.warn("Could not fetch admin wallets:", error);
+    }
 
-        return {
-          ...user,
-          projectCount,
-          role
-        };
-      })
-    );
+    // Process each user with the collected data
+    const usersWithDetails = usersQuery.map((user: any) => {
+      // Get project count from pre-calculated data
+      const projectCount: number = (user.email && projectCountsByEmail[user.email] !== undefined) ? projectCountsByEmail[user.email]! : 0;
+
+      // Check if admin
+      const isAdmin: boolean = adminWallets.includes(user.walletAddress.toLowerCase());
+
+      // Determine role
+      let role: 'admin' | 'applicant' | 'pandorian';
+      if (isAdmin) {
+        role = 'admin';
+      } else if (projectCount > 0) {
+        role = 'applicant';
+      } else {
+        role = 'pandorian';
+      }
+
+      // Determine Pandora's Key status - for now, give to all users since it's required to access platform
+      // TODO: Implement proper Pandora's Key verification system
+      const hasPandorasKey: boolean = true; // All users get it until proper verification is implemented
+
+      const result = {
+        ...user,
+        projectCount,
+        role,
+        hasPandorasKey
+      };
+
+      return result;
+    });
 
     console.log("Users processed with roles and counts");
 
@@ -120,6 +143,8 @@ export async function GET() {
       image: row.image as string | null,
       walletAddress: row.walletAddress as string,
       hasPandorasKey: row.hasPandorasKey as boolean,
+      connectionCount: Number(row.connectionCount),
+      lastConnectionAt: row.lastConnectionAt as string,
       createdAt: row.createdAt as string,
       role: row.role as UserRole,
       projectCount: Number(row.projectCount),

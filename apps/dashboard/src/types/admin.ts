@@ -39,6 +39,8 @@ export interface UserData {
   image?: string | null;
   walletAddress: string;
   hasPandorasKey: boolean;
+  connectionCount: number;
+  lastConnectionAt: string;
   createdAt: string;
   role: UserRole;
   projectCount: number;
