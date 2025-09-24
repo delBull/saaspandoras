@@ -7,7 +7,7 @@ import { AdminSettings } from "@/components/admin/AdminSettings";
 import { UnauthorizedAccess } from "@/components/admin/UnauthorizedAccess";
 import { calculateProjectCompletion } from "@/lib/project-utils";
 import { useProjectActions } from "@/hooks/useProjectActions";
-import { ProjectStatus, Project, AdminData, UserData } from "@/types/admin";
+import type { ProjectStatus, Project, AdminData, UserData } from "@/types/admin";
 
 // Datos de ejemplo para swaps (puedes conectar esto a tu API real después)
 const mockSwaps = [

@@ -1,4 +1,4 @@
-import { ProjectStatus } from '@/types/admin';
+import type { ProjectStatus } from '@/types/admin';
 
 interface ProjectActionsProps {
   setActionsLoading: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
