@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { db } from "~/db";
@@ -11,7 +12,7 @@ export async function GET() {
       message: "Sistema de diagnóstico - Datos resumidos"
     };
 
-    let _detailedInfo = null;
+    const _detailedInfo = null;
     let _userIsAdmin = false;
 
     // Intentar obtener información detallada solo si está autenticado
