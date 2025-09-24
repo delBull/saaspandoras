@@ -55,6 +55,9 @@ export default function AdminDashboardPage() {
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | 'all'>('all');
   const [expandedProject, setExpandedProject] = useState<string | null>(null); // Para controlar el dropdown de detalles
   const [statusDropdown, setStatusDropdown] = useState<string | null>(null); // Para controlar el dropdown de estado
+  const [actionsDropdown, setActionsDropdown] = useState<string | null>(null); // Para controlar el dropdown de acciones
+  const [actionsDropdownPosition, setActionsDropdownPosition] = useState<{top: number, left: number} | null>(null); // Posición del dropdown
+  const [actionsLoading, setActionsLoading] = useState<Record<string, boolean>>({}); // Track loading states for actions
 
   // Function to handle project deletion with confirmation
   const deleteProject = async (projectId: string, projectTitle: string) => {
@@ -62,6 +65,9 @@ export default function AdminDashboardPage() {
     const isConfirmed = window.confirm(confirmMessage);
 
     if (!isConfirmed) return;
+
+    const actionKey = `delete-${projectId}`;
+    setActionsLoading(prev => ({ ...prev, [actionKey]: true }));
 
     try {
       console.log('Deleting project:', projectId);
@@ -88,6 +94,8 @@ export default function AdminDashboardPage() {
     } catch (error) {
       alert('Error de conexión al eliminar el proyecto');
       console.error('Error deleting project:', error);
+    } finally {
+      setActionsLoading(prev => ({ ...prev, [actionKey]: false }));
     }
   };
 
@@ -97,6 +105,9 @@ export default function AdminDashboardPage() {
     const isConfirmed = window.confirm(confirmMessage);
 
     if (!isConfirmed) return;
+
+    const actionKey = `approve-${projectId}`;
+    setActionsLoading(prev => ({ ...prev, [actionKey]: true }));
 
     try {
       const response = await fetch(`/api/admin/projects/${projectId}`, {
@@ -117,6 +128,8 @@ export default function AdminDashboardPage() {
     } catch (error) {
       alert('Error de conexión');
       console.error('Error approving project:', error);
+    } finally {
+      setActionsLoading(prev => ({ ...prev, [actionKey]: false }));
     }
   };
 
@@ -134,6 +147,9 @@ export default function AdminDashboardPage() {
     }`;
 
     if (!window.confirm(confirmMessage)) return;
+
+    const actionKey = `reject-${projectId}`;
+    setActionsLoading(prev => ({ ...prev, [actionKey]: true }));
 
     try {
       const response = await fetch(`/api/admin/projects/${projectId}`, {
@@ -154,6 +170,8 @@ export default function AdminDashboardPage() {
     } catch (error) {
       alert('Error de conexión');
       console.error('Error rejecting project:', error);
+    } finally {
+      setActionsLoading(prev => ({ ...prev, [actionKey]: false }));
     }
   };
 
@@ -173,6 +191,9 @@ export default function AdminDashboardPage() {
 
     if (!window.confirm(confirmMessage)) return;
 
+    const actionKey = `change-status-${projectId}`;
+    setActionsLoading(prev => ({ ...prev, [actionKey]: true }));
+
     try {
       const response = await fetch(`/api/admin/projects/${projectId}`, {
         method: 'PATCH',
@@ -185,12 +206,15 @@ export default function AdminDashboardPage() {
         setProjects(prevProjects =>
           prevProjects.map(p => p.id === projectId ? { ...p, status: newStatus } : p)
         );
+        alert('Status del proyecto actualizado exitosamente');
       } else {
         alert('Error al cambiar el status del proyecto');
       }
     } catch (error) {
       alert('Error de conexión');
       console.error('Error changing project status:', error);
+    } finally {
+      setActionsLoading(prev => ({ ...prev, [actionKey]: false }));
     }
   };
 
@@ -484,41 +508,36 @@ export default function AdminDashboardPage() {
                       {expandedProject === p.id ? 'Ocultar' : 'Ver'}
                     </button>
                   </td>
-                      <td className="px-4 py-3 text-right space-x-2">
-                        {p.status === 'pending' ? (
-                          <>
-                            <button
-                              onClick={() => approveProject(p.id, p.title).catch(console.error)}
-                              className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-medium mr-2"
+                      <td className="px-4 py-3 text-right">
+                        <div className="relative">
+                          <button
+                            onClick={(e) => {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              if (actionsDropdown === p.id) {
+                                setActionsDropdown(null);
+                                setActionsDropdownPosition(null);
+                              } else {
+                                setActionsDropdown(p.id);
+                                setActionsDropdownPosition({
+                                  top: rect.bottom + window.scrollY,
+                                  left: rect.left + window.scrollX - 60
+                                });
+                              }
+                            }}
+                            className="px-2 py-1 bg-zinc-700 hover:bg-zinc-600 text-gray-300 hover:text-white rounded text-xs font-medium flex items-center gap-1 transition-colors"
+                          >
+                            <span>Acciones</span>
+                            <svg
+                              className="w-3 h-3 transition-transform"
+                              style={{transform: actionsDropdown === p.id ? 'rotate(180deg)' : 'rotate(0deg)'}}
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
                             >
-                              ✓ Aprobar
-                            </button>
-                            <button
-                              onClick={() => rejectProject(p.id, p.title).catch(console.error)}
-                              className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-medium mr-2"
-                            >
-                              ✗ Denegar
-                            </button>
-                          </>
-                        ) : (
-                          <Link href={`/admin/projects/${p.id}/edit`} className="text-lime-400 hover:underline mr-4">
-                            Editar
-                          </Link>
-                        )}
-                        <span
-                          className="text-red-400 hover:underline cursor-pointer"
-                          onClick={() => deleteProject(p.id, p.title).catch(console.error)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              deleteProject(p.id, p.title).catch(console.error);
-                            }
-                          }}
-                          role="button"
-                          tabIndex={0}
-                        >
-                          Eliminar
-                        </span>
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                        </div>
                       </td>
                     </tr>
 
@@ -730,7 +749,8 @@ export default function AdminDashboardPage() {
                         e.currentTarget.click();
                       }
                     }}
-                    className={`block w-full text-left px-4 py-3 text-sm hover:bg-zinc-700 transition-colors ${
+                    disabled={actionsLoading[`change-status-${statusDropdown}`]}
+                    className={`w-full text-left px-4 py-3 text-sm hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between ${
                       currentProject?.status === statusOption ? 'font-bold bg-zinc-800 text-white' :
                       'text-gray-300 hover:text-white'
                     }`}
@@ -738,10 +758,127 @@ export default function AdminDashboardPage() {
                     type="button"
                     tabIndex={0}
                   >
-                    {statusOption}
+                    <span>{statusOption}</span>
+                    {actionsLoading[`change-status-${statusDropdown}`] && (
+                      <div className="w-2 h-2 border border-current border-t-transparent rounded-full animate-spin"></div>
+                    )}
                   </button>
                 );
               })}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Dropdown de Acciones - Renderizado fuera de la tabla para z-index máximo */}
+      {actionsDropdown && (
+        <>
+          <button
+            className="fixed inset-0 z-[9999] bg-black/20"
+            onClick={() => setActionsDropdown(null)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                setActionsDropdown(null);
+              }
+            }}
+            aria-label="Cerrar menú de acciones"
+            type="button"
+            tabIndex={-1}
+          />
+          <div
+            className="fixed z-[10000] min-w-48 bg-zinc-900 border border-zinc-700 rounded-lg shadow-2xl"
+            style={{
+              top: (actionsDropdownPosition?.top || 0) + 4,
+              left: actionsDropdownPosition?.left || 0,
+            }}
+            role="menu"
+            aria-label="Opciones de acciones del proyecto"
+            tabIndex={-1}
+          >
+            <div className="py-1" role="none">
+              {(() => {
+                const currentProject = projects.find(p => p.id === actionsDropdown);
+                if (!currentProject) return null;
+
+                const actions = [];
+
+                // Agregar acciones comunes
+                actions.push(
+                  <button
+                    key="delete"
+                    onClick={async () => {
+                      await deleteProject(currentProject.id, currentProject.title);
+                      setActionsDropdown(null);
+                    }}
+                    disabled={actionsLoading[`delete-${currentProject.id}`]}
+                    className={`w-full text-left px-4 py-3 text-sm hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between text-red-400 hover:text-red-300`}
+                    role="menuitem"
+                    type="button"
+                    tabIndex={0}
+                  >
+                    <span>🗑️ Eliminar</span>
+                    {actionsLoading[`delete-${currentProject.id}`] && (
+                      <div className="w-2 h-2 border border-current border-t-transparent rounded-full animate-spin"></div>
+                    )}
+                  </button>
+                );
+
+                // Agregar acciones específicas según el status
+                if (currentProject.status === 'pending') {
+                  actions.unshift(
+                    <button
+                      key="approve"
+                      onClick={async () => {
+                        await approveProject(currentProject.id, currentProject.title);
+                        setActionsDropdown(null);
+                      }}
+                      disabled={actionsLoading[`approve-${currentProject.id}`]}
+                      className={`w-full text-left px-4 py-3 text-sm hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between text-green-400 hover:text-green-300`}
+                      role="menuitem"
+                      type="button"
+                      tabIndex={0}
+                    >
+                      <span>✓ Aprobar</span>
+                      {actionsLoading[`approve-${currentProject.id}`] && (
+                        <div className="w-2 h-2 border border-current border-t-transparent rounded-full animate-spin"></div>
+                      )}
+                    </button>
+                  );
+
+                  actions.splice(1, 0,
+                    <button
+                      key="reject"
+                      onClick={async () => {
+                        await rejectProject(currentProject.id, currentProject.title);
+                        setActionsDropdown(null);
+                      }}
+                      disabled={actionsLoading[`reject-${currentProject.id}`]}
+                      className={`w-full text-left px-4 py-3 text-sm hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between text-orange-400 hover:text-orange-300`}
+                      role="menuitem"
+                      type="button"
+                      tabIndex={0}
+                    >
+                      <span>✗ Denegar</span>
+                      {actionsLoading[`reject-${currentProject.id}`] && (
+                        <div className="w-2 h-2 border border-current border-t-transparent rounded-full animate-spin"></div>
+                      )}
+                    </button>
+                  );
+                } else {
+                  actions.unshift(
+                    <Link
+                      key="edit"
+                      href={`/admin/projects/${currentProject.id}/edit`}
+                      className="w-full text-left px-4 py-3 text-sm hover:bg-zinc-700 transition-colors flex items-center text-lime-400 hover:text-lime-300"
+                      onClick={() => setActionsDropdown(null)}
+                    >
+                      ✏️ Editar
+                    </Link>
+                  );
+                }
+
+                return actions;
+              })()}
             </div>
           </div>
         </>

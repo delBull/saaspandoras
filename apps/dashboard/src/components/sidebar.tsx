@@ -88,6 +88,8 @@ export function Sidebar({
     })().catch(console.error);
   }, [account?.address]);
 
+
+
   // The final isAdmin status is a combination of regular admin and super admin
   const isAdmin = adminStatus.isAdmin || adminStatus.isSuperAdmin;
 
