@@ -128,6 +128,7 @@ export const projects = pgTable("projects", {
   applicantPosition: varchar("applicant_position", { length: 256 }),
   applicantEmail: varchar("applicant_email", { length: 256 }),
   applicantPhone: varchar("applicant_phone", { length: 50 }),
+  applicantWalletAddress: varchar("applicant_wallet_address", { length: 42 }),
   verificationAgreement: boolean("verification_agreement").default(false),
   
   // Campos existentes (mantener compatibilidad)

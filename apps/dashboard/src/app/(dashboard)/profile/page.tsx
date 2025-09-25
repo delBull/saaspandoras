@@ -111,6 +111,8 @@ export default function ProfilePage() {
                 <Image
                   src={userProfile?.image ?? sessionUser.image ?? '/images/avatars/rasta.png'}
                   alt="Profile"
+                  width={64}
+                  height={64}
                   className="w-16 h-16 rounded-full border-2 border-lime-400"
                 />
                 <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-zinc-900 ${

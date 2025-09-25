@@ -25,6 +25,7 @@ export interface Project {
   applicantName?: string;
   applicantEmail?: string;
   applicantPhone?: string;
+  applicantWalletAddress?: string;
 }
 
 export interface AdminData {
@@ -67,6 +68,7 @@ export interface UserData {
   createdAt: string;
   role: UserRole;
   projectCount: number;
+  systemProjectsManaged?: number; // For super admins only
 
   // KYC related fields
   kycLevel: 'basic' | 'advanced';
