@@ -1,5 +1,6 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-floating-promises */
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useMemo, useEffect, useRef } from "react";
@@ -25,10 +26,11 @@ import {
   useActiveAccount,
   useDisconnect,
   useActiveWallet,
+  useConnectModal,
 } from "thirdweb/react";
-//import { createWallet, inAppWallet } from "thirdweb/wallets";
-//import { client } from "@/lib/thirdweb-client";
-//import { config } from "@/config";
+import { inAppWallet, createWallet } from "thirdweb/wallets";
+import { client } from "@/lib/thirdweb-client";
+import { config } from "@/config";
 
 interface SidebarProps {
   wallet?: string;
@@ -57,8 +59,30 @@ export function Sidebar({
   const account = useActiveAccount();
   const wallet = useActiveWallet();
   const { disconnect } = useDisconnect();
+  const { connect, isConnecting } = useConnectModal();
 
-  // Remove custom connect logic - use ConnectButton instead
+  // Handle wallet connection - Use SAME wallet config as NFT gate for session detection
+  const handleWalletConnect = () => {
+    connect({
+      client,
+      chain: config.chain,
+      showThirdwebBranding: false,
+      wallets: [
+        // Same as NFT gate: inAppWallet for social login
+        inAppWallet({
+          auth: {
+            options: ["email", "google", "apple", "facebook", "passkey"],
+          },
+          executionMode: {
+            mode: "EIP7702",
+            sponsorGas: true,
+          },
+        }),
+        // Also include MetaMask for users who connected with it
+        createWallet("io.metamask"),
+      ],
+    });
+  };
 
   // State for client-side admin status, initialized with server-side props
   const [adminStatus, setAdminStatus] = useState({
@@ -293,40 +317,6 @@ export function Sidebar({
                   Not Connected
                 </motion.span>
               </div>
-              {/* Connect button hidden - NFT-Gate only connection policy */}
-              {/* <motion.div
-                animate={{ opacity: open ? 1 : 0, height: open ? "auto" : 0 }}
-                className="overflow-hidden w-full"
-              >
-                <div className={cn(
-                  "w-full",
-                  open ? "max-w-full" : "max-w-8 overflow-hidden"
-                )}>
-                  <ConnectButton
-                    client={client}
-                    chain={config.chain}
-                    connectModal={{
-                      showThirdwebBranding: false,
-                      }}
-                    wallets={[
-                      createWallet("io.metamask"),
-                      inAppWallet({
-                        auth: {
-                          options: ["email", "google", "apple", "facebook", "passkey"],
-                        },
-                        executionMode: {
-                          mode: "EIP7702",
-                          sponsorGas: true,
-                        },
-                      })
-                    ]}
-                    connectButton={{
-                      label: "Connect Wallet",
-                      className: "w-full !bg-gradient-to-r !from-lime-300 !to-lime-400 !text-gray-800 !py-2 !px-6 !rounded-md !hover:opacity-90 !font-semibold !transition !text-sm",
-                    }}
-                  />
-                </div>
-              </motion.div> */}
             </div>
           ) : (
             // --- ESTADO CONECTADO - TODO DENTRO DEL RECUADRO CON COLOR ---
@@ -442,15 +432,23 @@ export function Sidebar({
 
                       <div className="border-t border-zinc-700 my-2"></div>
 
-                      {/* Wallet - Currently wallet modal integration pending */}
-                      {/* TODO: Implement wallet modal when Thirdweb provides programmatic access */}
-                      <div className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800/30 transition-colors w-full text-left opacity-75 cursor-not-allowed">
-                        <UserIcon className="w-5 h-5 text-gray-500" />
+                      {/* Wallet Modal Trigger */}
+                      <button
+                        onClick={() => {
+                          setProfileDropdown(false);
+                          void handleWalletConnect();
+                        }}
+                        disabled={isConnecting}
+                        className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <UserIcon className="w-5 h-5 text-gray-400" />
                         <div className="flex-1">
-                          <div className="text-gray-400 text-sm">Wallet</div>
-                          <div className="text-gray-500 text-xs">Próximamente</div>
+                          <div className="text-white text-sm">Wallet</div>
+                          <div className="text-gray-400 text-xs">
+                            {isConnecting ? 'Conectando...' : 'Gestionar wallet'}
+                          </div>
                         </div>
-                      </div>
+                      </button>
 
 
                     </div>
@@ -608,28 +606,6 @@ export function Sidebar({
                         Not Connected
                       </span>
                     </div>
-                    {/* Connect button hidden - NFT-Gate only connection policy */}
-                    {/* <div className="w-full">
-                      <ConnectButton
-                        client={client}
-                        chain={config.chain}
-                        connectModal={{
-                          showThirdwebBranding: false,
-                          }}
-                        wallets={[
-                          createWallet("io.metamask"),
-                          inAppWallet({
-                            auth: {
-                              options: ["email", "google", "apple", "facebook", "passkey"],
-                            },
-                          })
-                        ]}
-                        connectButton={{
-                          label: "Connect Wallet",
-                          className: "w-full !bg-gradient-to-r !from-lime-300 !to-lime-400 !text-gray-800 !py-2 !px-4 !rounded-md !hover:opacity-90 !font-semibold !transition !text-sm",
-                        }}
-                      />
-                    </div> */}
                   </div>
                 ) : (
                   // --- ESTADO CONECTADO - MISMO FORMATO QUE DESKTOP ---
