@@ -299,7 +299,7 @@ export default function ProfileProjectsPage() {
                           project.status === 'completed' ? '🏁 Completado' :
                           project.status
                         }</span>
-                        <span>Meta: ${(metrics.targetAmount).toLocaleString()}</span>
+                        <span>Meta ${(metrics.targetAmount).toLocaleString()} USD</span>
                       </div>
                     </div>
 

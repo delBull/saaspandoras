@@ -68,7 +68,7 @@ export function ProjectCard({ project, variant = 'approved' }: ProjectCardProps)
               />
             </div>
             <div className="text-right text-xs text-gray-400 mt-1">
-              Meta: <span className="font-semibold text-white">${targetAmount.toLocaleString()}</span>
+              Meta <span className="font-semibold text-white">${targetAmount.toLocaleString()}</span>
             </div>
           </div>
         )}
