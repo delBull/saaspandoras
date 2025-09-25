@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Explicitly set workspace root to avoid detecting multiple lockfiles
+  outputFileTracingRoot: process.cwd(),
+
   images: {
     remotePatterns: [
       {
