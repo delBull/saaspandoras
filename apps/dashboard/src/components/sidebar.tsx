@@ -109,31 +109,41 @@ export function Sidebar({
     void fetchProfile();
   }, [account?.address]);
 
-  // Handle click outside and escape key to close dropdown
+  // Handle click outside anywhere on screen and escape key to close dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
-        setProfileDropdown(false);
+      // Only close if dropdown is open and click is not on the avatar/sidebare
+      if (!profileDropdown) return;
+
+      const target = event.target as Element;
+
+      // Check if click is inside the sidebar area (including dropdown)
+      if (sidebarRef.current?.contains(target)) {
+        return; // Don't close if click is inside sidebar
       }
+
+      // Close dropdown if click is anywhere else on the page
+      setProfileDropdown(false);
     };
 
     const handleEscapeKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' && profileDropdown) {
         setProfileDropdown(false);
       }
     };
 
     if (profileDropdown) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('keydown', handleEscapeKey);
+      // Use capture phase to ensure we get the event before others might stopPropagation
+      document.addEventListener('mousedown', handleClickOutside, true);
+      document.addEventListener('keydown', handleEscapeKey, true);
     } else {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscapeKey);
+      document.removeEventListener('mousedown', handleClickOutside, true);
+      document.removeEventListener('keydown', handleEscapeKey, true);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscapeKey);
+      document.removeEventListener('mousedown', handleClickOutside, true);
+      document.removeEventListener('keydown', handleEscapeKey, true);
     };
   }, [profileDropdown]);
 

@@ -172,9 +172,9 @@ export default function ProfileProjectsPage() {
 
   // Calculate real metrics for each project individually
   const calculateProjectMetrics = (project: any) => {
-    const raised = project.raised_amount || 0;
-    const target = project.target_amount || 1;
-    const returnsPaid = project.returns_paid || 0;
+    const raised = Number(project.raised_amount || project.raisedAmount || 0);
+    const target = Number(project.target_amount || project.targetAmount || 1);
+    const returnsPaid = Number(project.returns_paid || project.returnsPaid || 0);
     const fundingProgress = Math.min(Math.round((raised / target) * 100), 100);
 
     // Real investor count calculation - conditional based on project status
