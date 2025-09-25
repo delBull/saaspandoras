@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "~/db";
 import { projects as projectsSchema } from "~/db/schema";
 import { projectApiSchema } from "@/lib/project-schema-api";
+import { getAuth } from "@/lib/auth";
 import slugify from "slugify";
 
 export async function POST(request: Request) {
@@ -15,6 +16,10 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    // Obtener wallet address del usuario conectado
+    const { session } = await getAuth();
+    const applicantWalletAddress = session?.userId ?? null;
 
     // Generar un slug único
     let slug = slugify(parsedData.data.title, { lower: true, strict: true });
@@ -84,6 +89,7 @@ export async function POST(request: Request) {
         applicantPosition: parsedData.data.applicantPosition ?? null,
         applicantEmail: parsedData.data.applicantEmail ?? null,
         applicantPhone: parsedData.data.applicantPhone ?? null,
+        applicantWalletAddress: applicantWalletAddress,
         verificationAgreement: parsedData.data.verificationAgreement,
 
         // --- Campo de Estado: String (Enum) ---

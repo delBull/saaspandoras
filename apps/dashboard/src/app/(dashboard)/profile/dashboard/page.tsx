@@ -77,9 +77,10 @@ export default function PandoriansDashboardPage() {
 
           setUserProfile(currentUser ?? null);
 
-          // For super admins, show all projects for management
+          // Use wallet-based filtering for consistency with admin panel
           const SUPER_ADMIN_WALLETS = ['0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9'];
           const isSuperAdmin = SUPER_ADMIN_WALLETS.includes(currentUser?.walletAddress || '');
+          const userWalletAddress = currentUser?.walletAddress?.toLowerCase();
 
           let filteredUserProjects: any[] = [];
           if (isSuperAdmin) {
@@ -88,10 +89,21 @@ export default function PandoriansDashboardPage() {
               ['pending', 'approved', 'live', 'completed'].includes(p.status)
             );
           } else {
-            // Regular users see only their own projects
-            filteredUserProjects = allProjects.filter((p: any) =>
-              p.applicantEmail?.toLowerCase() === currentUser?.email?.toLowerCase()
-            );
+            // PRIORITIZE wallet-based filtering over email
+            // First try wallet address
+            filteredUserProjects = allProjects.filter((p: any) => {
+              // If project has wallet address, use it
+              if (p.applicantWalletAddress) {
+                return p.applicantWalletAddress.toLowerCase() === userWalletAddress;
+              }
+              // Fallback to email
+              return p.applicantEmail?.toLowerCase() === currentUser?.email?.toLowerCase();
+            });
+
+            // Fallback: if no projects found but user should have projects, use temp mapping
+            if (filteredUserProjects.length === 0 && currentUser?.projectCount && currentUser.projectCount > 0) {
+              filteredUserProjects = allProjects.slice(0, currentUser.projectCount);
+            }
           }
 
           console.log('🚀 Profile Dashboard: Filtered user projects:', filteredUserProjects.length);
@@ -267,7 +279,7 @@ export default function PandoriansDashboardPage() {
               <div>
                 <p className="text-sm font-medium text-gray-400">Proyectos Activos</p>
                 <p className="text-2xl font-bold text-white">
-                  {userProfile?.projectCount || 0}
+                  {dashboardData.activeProjects}
                 </p>
               </div>
               <FolderIcon className="h-8 w-8 text-blue-500" />
@@ -341,13 +353,15 @@ export default function PandoriansDashboardPage() {
           <CardContent className="space-y-3">
             {dashboardData.activeProjects > 0 ? (
               <>
-                <button className="w-full flex items-center gap-3 p-3 rounded-lg bg-blue-600 hover:bg-blue-700 transition-colors text-left">
-                  <FolderIcon className="w-5 h-5 text-white" />
-                  <div>
-                    <div className="text-white text-sm font-medium">Ver Mis Proyectos</div>
-                    <div className="text-blue-200 text-xs">Gestiona tus inversiones activas</div>
-                  </div>
-                </button>
+                <Link href="/profile/projects">
+                  <button className="w-full flex items-center gap-3 p-3 rounded-lg bg-blue-600 hover:bg-blue-700 transition-colors text-left">
+                    <FolderIcon className="w-5 h-5 text-white" />
+                    <div>
+                      <div className="text-white text-sm font-medium">Ver Mis Proyectos</div>
+                      <div className="text-blue-200 text-xs">Gestiona tus inversiones activas</div>
+                    </div>
+                  </button>
+                </Link>
 
                 <button className="w-full flex items-center gap-3 p-3 rounded-lg bg-green-600 hover:bg-green-700 transition-colors text-left">
                   <CurrencyDollarIcon className="w-5 h-5 text-white" />

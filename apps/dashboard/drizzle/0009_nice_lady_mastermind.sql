@@ -1,0 +1,1 @@
+ALTER TABLE "projects" ADD COLUMN "applicant_wallet_address" varchar(42);

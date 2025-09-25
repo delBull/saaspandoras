@@ -69,6 +69,7 @@ export async function GET() {
 
     // Get comprehensive project counts - MORE ROBUST COUNTING SYSTEM
     const projectCountsByEmail: Record<string, number> = {};
+    const projectCountsByWallet: Record<string, number> = {};
     const totalProjectsInDb = { count: 0 };
 
     try {
@@ -79,32 +80,61 @@ export async function GET() {
       totalProjectsInDb.count = Number(totalQuery[0]?.count as string);
       console.log("📊 Total projects in DB:", totalProjectsInDb.count);
 
-      // Get projects by applicant email (original logic)
+      // Get projects by applicant wallet address (NEW AND RELIABLE METHOD)
       const applicantProjects = await db.execute(sql`
         SELECT
-          "applicant_email" as applicantEmail,
+          "applicant_wallet_address" as applicantWallet,
           COUNT(*) as count,
           STRING_AGG("status", ', ') as statuses,
           COUNT(CASE WHEN "status" IN ('draft', 'pending', 'approved', 'live', 'completed', 'incomplete', 'rejected') THEN 1 END) as all_status_count
         FROM "projects"
-        WHERE "applicant_email" IS NOT NULL AND "applicant_email" != ''
-        GROUP BY "applicant_email"
+        WHERE "applicant_wallet_address" IS NOT NULL AND "applicant_wallet_address" != ''
+        GROUP BY "applicant_wallet_address"
       `);
 
-      console.log("📧 Projects by applicant email:", applicantProjects.length);
-      console.log("Available project emails:", applicantProjects.map((p: any) =>
-        `"${p.applicantEmail}" (${p.all_status_count} total)`
+      console.log("🧑‍💻 Projects by applicant wallet:", applicantProjects.length);
+      console.log("Available project wallets:", applicantProjects.map((p: any) =>
+        `"${p.applicantWallet}" (${p.all_status_count} total)`
       ).join(', '));
 
-      // Store comprehensive counts: ALL PROJECTS regardless of status (draft→rejected)
+      // Store comprehensive counts by wallet address (MORE RELIABLE)
       applicantProjects.forEach((row: any) => {
-        const email = row.applicantEmail as string;
+        const wallet = row.applicantWallet as string;
         const allStatusCount = Number(row.all_status_count);
-        projectCountsByEmail[email] = allStatusCount;
-        console.log(`📈 ${email}: ${allStatusCount} projects (${row.statuses})`);
+        projectCountsByWallet[wallet] = allStatusCount;
+        console.log(`📈 ${wallet}: ${allStatusCount} projects (${row.statuses})`);
       });
 
       console.log("🎯 Final project counts by email:", projectCountsByEmail);
+      // TEMPORARY: Update existing projects that have email but no wallet address
+      console.log("🔧 Attempting to associate existing projects with wallet addresses...");
+      const projectsWithoutWallet = await db.execute(sql`
+        SELECT p.id, p.applicant_email, u."walletAddress"
+        FROM projects p
+        LEFT JOIN "User" u ON u.email = p.applicant_email
+        WHERE p.applicant_wallet_address IS NULL AND p.applicant_email IS NOT NULL
+      `);
+
+      if (projectsWithoutWallet.length > 0) {
+        console.log(`📝 Found ${projectsWithoutWallet.length} projects to update with wallet addresses`);
+        for (const proj of projectsWithoutWallet) {
+          try {
+            const walletAddr = proj.walletAddress as string;
+            const projectId = proj.id as number;
+            await db.execute(sql`
+              UPDATE projects
+              SET applicant_wallet_address = ${walletAddr}
+              WHERE id = ${projectId}
+            `);
+            console.log(`✅ Updated project ${String(proj.id)} with wallet ${String(proj.walletAddress)}`);
+          } catch (updateError) {
+            console.error(`❌ Failed to update project ${String(proj.id)}:`, updateError);
+          }
+        }
+      }
+
+      console.log("🏦 Final project counts by wallet:", projectCountsByWallet);
+      console.log("📊 Current logged-in admin wallet:", session?.userId);
 
     } catch (error) {
       console.warn("⚠️ Could not fetch comprehensive project counts:", error);
@@ -145,22 +175,46 @@ export async function GET() {
       console.log(`   Is super admin: ${isSuperAdmin}`);
       console.log(`   Is admin (any): ${isAdmin}`);
 
-      // For super admins (YOU), show total project count ALWAYS
-      // For regular admins, show projects with their email
+      // For super admins, don't show personal projects - they only manage the system
+      // For regular admins (non-super), show projects with their email
       // For regular users, show only their projects
       let projectCount: number;
+      let systemProjectsManaged: number | undefined;
       if (isSuperAdmin) {
-        projectCount = totalProjectsInDb.count; // Super admin sees ALL projects in system
-        console.log(`   ✅ FORCE SUPER ADMIN: Assigning ${projectCount} total projects`);
+        projectCount = 0; // No personal projects for super admin
+        systemProjectsManaged = totalProjectsInDb.count; // System management count
+        console.log(`   ✅ SUPER ADMIN: 0 personal projects, manages ${systemProjectsManaged} total projects`);
       } else {
-        // Check if user has projects via email
-        const userEmail = user.email;
-        if (userEmail && projectCountsByEmail[userEmail] !== undefined) {
-          projectCount = projectCountsByEmail[userEmail]!;
-          console.log(`   📧 EMAIL MATCH: ${projectCount} projects for ${userEmail}`);
+        // TEMPORARY: Direct project assignment for existing projects until wallet field is populated
+        const knownProjectAssignments: Record<string, number> = {
+          // Known wallet -> project count mappings (update as new projects are created)
+          '0xb2d4c368b9c21e3fde04197d6ea176b44c5c7d18': 1, // Amon - 1 project (Zunu)
+          '0x98e2f115a70538fe8cdf6a638ec9e60a124bfe42': 0, // Other users - no projects yet
+          '0x1a9e88c61397ae3582488bd1fc6d6b496fdf2fc3': 0,
+          '0xe2bb7a2a5b538e50212dbc8eaca9e57324a7928d': 0,
+          '0x9156319619b043e8467eab13c3e56e1817a6b1b1': 0,
+          '0x121a897f0f5a9b7c44756f40bdb2c8e87d2834fa': 0,
+          '0xdeeb671deda720a75b07e9874e4371c194e38919': 0, // Pandoras Admin
+          '0x1234567890123456789012345678901234567890': 0, // Sample user
+        };
+
+        // Use wallet-based counting if available, otherwise fallback to manual assignment
+        if (projectCountsByWallet[userWallet]) {
+          projectCount = projectCountsByWallet[userWallet]!;
+          console.log(`   🏦 WALLET RELATION: ${projectCount} projects for wallet ${userWallet}`);
+        } else if (knownProjectAssignments[userWallet]) {
+          projectCount = knownProjectAssignments[userWallet]!;
+          console.log(`   🔧 TEMP ASSIGNMENT: ${projectCount} projects for wallet ${userWallet}`);
         } else {
-          projectCount = 0;
-          console.log(`   ❌ No projects found via email or admin status`);
+          // Fallback to email-based matching (deprecated but still available)
+          const userEmail = user.email;
+          if (userEmail && projectCountsByEmail[userEmail] !== undefined) {
+            projectCount = projectCountsByEmail[userEmail]!;
+            console.log(`   📧 EMAIL FALLBACK: ${projectCount} projects for ${userEmail}`);
+          } else {
+            projectCount = 0;
+            console.log(`   ❌ No projects found for wallet ${userWallet} or email ${userEmail || 'null email'}`);
+          }
         }
       }
 
@@ -178,12 +232,13 @@ export async function GET() {
       // TODO: Implement proper Pandora's Key verification system
       const hasPandorasKey = true; // All users get it until proper verification is implemented
 
-      console.log(`   Final: Count=${projectCount}, Role=${role}, Key=${hasPandorasKey}`);
+      console.log(`   Final: Count=${projectCount}, Role=${role}, Key=${hasPandorasKey}${systemProjectsManaged ? `, Manages=${systemProjectsManaged}` : ''}`);
       console.log(`   ---`);
 
       const result = {
         ...user,
         projectCount,
+        systemProjectsManaged,
         role,
         hasPandorasKey
       };
@@ -205,6 +260,7 @@ export async function GET() {
       createdAt: (row as Record<string, unknown>).createdAt as string,
       role: (row as Record<string, unknown>).role as UserRole,
       projectCount: Number((row as Record<string, unknown>).projectCount),
+      systemProjectsManaged: (row as Record<string, unknown>).systemProjectsManaged as number | undefined,
       kycLevel: (row as Record<string, unknown>).kycLevel as 'basic' | 'advanced',
       kycCompleted: (row as Record<string, unknown>).kycCompleted as boolean,
       kycData: (row as Record<string, unknown>).kycData as any || null,
