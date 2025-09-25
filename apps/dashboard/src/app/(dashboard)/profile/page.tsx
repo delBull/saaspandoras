@@ -312,6 +312,7 @@ export default function ProfilePage() {
                       onClick={() => {
                         toast.info('Funcionalidad de recovery kit próximamente disponible desde thirdweb');
                       }}
+                      disabled={true}
                     >
                       Exportar Recovery Keys
                     </Button>
