@@ -1,6 +1,6 @@
 "use client";
 
-/* eslint-disable @typescript-eslint/no-floating-promises */
+
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useMemo, useEffect, useRef } from "react";
@@ -26,11 +26,10 @@ import {
   useActiveAccount,
   useDisconnect,
   useActiveWallet,
-  useConnectModal,
 } from "thirdweb/react";
+import { ConnectButton } from "thirdweb/react";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { client } from "@/lib/thirdweb-client";
-import { config } from "@/config";
 
 interface SidebarProps {
   wallet?: string;
@@ -59,30 +58,9 @@ export function Sidebar({
   const account = useActiveAccount();
   const wallet = useActiveWallet();
   const { disconnect } = useDisconnect();
-  const { connect, isConnecting } = useConnectModal();
 
-  // Handle wallet connection - Use SAME wallet config as NFT gate for session detection
-  const handleWalletConnect = () => {
-    connect({
-      client,
-      chain: config.chain,
-      showThirdwebBranding: false,
-      wallets: [
-        // Same as NFT gate: inAppWallet for social login
-        inAppWallet({
-          auth: {
-            options: ["email", "google", "apple", "facebook", "passkey"],
-          },
-          executionMode: {
-            mode: "EIP7702",
-            sponsorGas: true,
-          },
-        }),
-        // Also include MetaMask for users who connected with it
-        createWallet("io.metamask"),
-      ],
-    });
-  };
+  // Debug thirdweb context
+  console.log('Sidebar - Account active:', !!account, 'Wallet ID:', wallet?.id);
 
   // State for client-side admin status, initialized with server-side props
   const [adminStatus, setAdminStatus] = useState({
@@ -432,23 +410,33 @@ export function Sidebar({
 
                       <div className="border-t border-zinc-700 my-2"></div>
 
-                      {/* Wallet Modal Trigger */}
-                      <button
-                        onClick={() => {
-                          setProfileDropdown(false);
-                          void handleWalletConnect();
-                        }}
-                        disabled={isConnecting}
-                        className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
+                      {/* Thirdweb ConnectButton - Maneja automáticamente conectar vs gestionar */}
+                      <div className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full">
                         <UserIcon className="w-5 h-5 text-gray-400" />
-                        <div className="flex-1">
-                          <div className="text-white text-sm">Wallet</div>
-                          <div className="text-gray-400 text-xs">
-                            {isConnecting ? 'Conectando...' : 'Gestionar wallet'}
-                          </div>
-                        </div>
-                      </button>
+                        <ConnectButton
+                          client={client}
+                          wallets={[
+                            // Same wallets as NFT-gate for consistent session management
+                            inAppWallet({
+                              auth: {
+                                options: ["email", "google", "apple", "facebook", "passkey"],
+                              },
+                              executionMode: {
+                                mode: "EIP7702",
+                                sponsorGas: true,
+                              },
+                            }),
+                            createWallet("io.metamask"),
+                          ]}
+                          theme="dark"
+                          onDisconnect={() => {
+                            setProfileDropdown(false);
+                          }}
+                          onConnect={() => {
+                            setProfileDropdown(false);
+                          }}
+                        />
+                      </div>
 
 
                     </div>
