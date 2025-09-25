@@ -1,22 +1,58 @@
 'use client';
 
-import React from 'react';
-import { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useEffect } from 'react';
 import { Button } from '@saasfly/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@saasfly/ui/card';
+import { ClipboardDocumentIcon, CheckIcon, WalletIcon, ShieldCheckIcon, ArrowTopRightOnSquareIcon, BoltIcon, KeyIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { toast } from 'sonner';
 import type { UserData } from '@/types/admin';
 import Image from 'next/image';
+
+// TODO: Implementar recovery kit cuando useShowRecoveryKit esté disponible en thirdweb v6
+// function ExportRecoveryKitButton() {
+//   const wallet = useActiveWallet();
+//   const { showRecoveryKit, isLoading } = useShowRecoveryKit();
+//
+//   if (!wallet || wallet.id !== 'inApp') return null;
+//
+//   return (
+//     <Button onClick={() => showRecoveryKit({ wallet })} disabled={isLoading}>
+//       {isLoading ? 'Abriendo...' : 'Exportar recovery kit / seed phrase'}
+//     </Button>
+//   );
+// }
 
 export default function ProfilePage() {
   const [userProfile, setUserProfile] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [sessionLoading, setSessionLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
   const [sessionUser, setSessionUser] = useState<{
     walletAddress?: string;
     name?: string;
     email?: string;
     image?: string;
   } | null>(null);
+
+  // Function to format wallet address with ellipsis
+  const formatWalletAddress = (address: string) => {
+    if (!address) return '';
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
+
+  // Function to copy wallet address to clipboard
+  const copyWalletAddress = async (address: string) => {
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopied(true);
+      toast.success('Wallet address copiada al portapapeles');
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      toast.error('Error al copiar');
+    }
+  };
 
   useEffect(() => {
     // Get user session from cookies (wallet-address)
@@ -131,9 +167,61 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-gray-400">Wallet Address</label>
-              <div className="font-mono text-sm text-white bg-zinc-800 rounded p-2 mt-1 overflow-hidden">
-                {sessionUser.walletAddress}
+              <label className="text-sm font-medium text-gray-400 mb-2 block">Dirección de Wallet</label>
+              <div className="bg-zinc-800/60 rounded-lg p-4 border border-zinc-700/50">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <WalletIcon className="w-4 h-4 text-lime-400" />
+                    <span className="text-xs text-gray-300 font-medium">Ethereum</span>
+                  </div>
+                  <button
+                    onClick={() => copyWalletAddress(sessionUser.walletAddress || '')}
+                    className="flex items-center gap-1 text-gray-400 hover:text-lime-400 transition-colors p-1 rounded"
+                    title="Copiar dirección completa"
+                  >
+                    {copied ? (
+                      <CheckIcon className="w-4 h-4 text-green-400" />
+                    ) : (
+                      <ClipboardDocumentIcon className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+
+                <div className="font-mono text-sm text-white mb-3">
+                  {sessionUser.walletAddress ? formatWalletAddress(sessionUser.walletAddress) : ''}
+                </div>
+
+                {/* Información adicional de wallet */}
+                <div className="space-y-2 pt-3 border-t border-zinc-700/30">
+                  <div className="flex items-center gap-2 text-xs text-gray-400">
+                    <ShieldCheckIcon className="w-3 h-3 text-blue-400" />
+                    <span>Wallet no custodial - Tú controlas tus fondos</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-gray-400">
+                    <BoltIcon className="w-3 h-3 text-yellow-400" />
+                    <span>Permite inversiones seguras en proyectos DeFi</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-gray-400">
+                    <ArrowTopRightOnSquareIcon className="w-3 h-3 text-purple-400" />
+                    <span>Compatible con MetaMask, Trust Wallet, Coinbase Wallet</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Información sobre qué puedes hacer con tu wallet */}
+              <div className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 rounded-lg p-3 border border-blue-700/20 mt-5">
+                <div className="flex items-start gap-2">
+                  <div className="w-2 h-2 rounded-full bg-blue-400 mt-0.5 flex-shrink-0"></div>
+                  <div>
+                    <p className="font-medium mb-1 text-gray-300 text-sm">💡 ¿Qué puedes hacer con tu wallet?</p>
+                    <ul className="space-y-0.5 text-xs text-gray-400 ml-1">
+                      <li>• Invertir en proyectos verificados</li>
+                      <li>• Recibir pagos de inversiones</li>
+                      <li>• Transferir fondos de forma segura</li>
+                      <li>• Interactuar con contratos inteligentes</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -184,6 +272,94 @@ export default function ProfilePage() {
                       {userProfile?.kycCompleted ? 'Verificado' : 'Pendiente'}
                     </span>
                   </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <KeyIcon className="w-5 h-5" />
+                Seguridad de Wallet
+              </CardTitle>
+              <CardDescription>
+                Información importante sobre tu wallet y recuperación de fondos
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Critical Warning */}
+              <div className="bg-gradient-to-r from-red-900/40 to-orange-900/40 rounded-lg p-4 border border-red-700/30">
+                <div className="flex items-start gap-3">
+                  <ExclamationTriangleIcon className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-medium text-red-200 mb-1">⚠️ ¡Guarda tus claves privadas en lugar seguro!</p>
+                    <p className="text-sm text-gray-300">
+                      Si pierdes el acceso a tu wallet, solo podrás recuperarlo con tus claves privadas.
+                      Guarda tu seed phrase/recovery kit en un lugar físico seguro y privado.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Recovery Options */}
+              <div className="bg-zinc-800/60 rounded-lg p-4 border border-zinc-700/50">
+                <div className="flex items-center justify-between mb-4">
+                  <h5 className="text-sm font-medium text-gray-300">Opciones de Recuperación</h5>
+                  <ShieldCheckIcon className="w-4 h-4 text-green-400" />
+                </div>
+
+                <div className="space-y-3">
+                  {/* In-App Wallet Recovery */}
+                  <div className="flex items-center justify-between p-3 bg-zinc-700/30 rounded border border-zinc-600/50">
+                    <div className="flex items-center gap-3">
+                      <WalletIcon className="w-4 h-4 text-lime-400" />
+                      <div>
+                        <span className="text-sm font-medium text-gray-300">Wallet integrada</span>
+                        <p className="text-xs text-gray-400">Via thirdweb recovery kit</p>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs bg-lime-500 hover:bg-lime-600 text-zinc-900 border-lime-500"
+                      onClick={() => {
+                        // TODO: Cuando thirdweb lance useShowRecoveryKit, usar este código:
+                        // const { showRecoveryKit } = useShowRecoveryKit();
+                        // showRecoveryKit({ wallet: wallet_object });
+
+                        toast.info('Funcionalidad de recovery kit próximamente disponible desde thirdweb');
+                      }}
+                    >
+                      Exportar Recovery Keys
+                    </Button>
+                  </div>
+
+                  {/* External Wallet Message */}
+                  <div className="flex items-center justify-between p-3 bg-zinc-700/30 rounded border border-zinc-600/50">
+                    <div className="flex items-center gap-3">
+                      <ArrowTopRightOnSquareIcon className="w-4 h-4 text-purple-400" />
+                      <div>
+                        <span className="text-sm font-medium text-gray-300">Wallet externa</span>
+                        <p className="text-xs text-gray-400">MetaMask, Trust Wallet, etc.</p>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs bg-transparent border-zinc-600 hover:bg-zinc-700 text-gray-400"
+                      disabled={true}
+                    >
+                      En tu app
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-zinc-600/50">
+                  <p className="text-xs text-gray-500">
+                    <strong>Wallet integrada:</strong> Usa el recovery kit proporcionado por thirdweb<br/>
+                    <strong>Wallet externa:</strong> Recupera desde tu aplicación oficial (MetaMask, etc.)
+                  </p>
                 </div>
               </div>
             </CardContent>
