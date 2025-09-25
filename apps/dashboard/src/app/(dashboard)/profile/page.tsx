@@ -9,20 +9,6 @@ import { toast } from 'sonner';
 import type { UserData } from '@/types/admin';
 import Image from 'next/image';
 
-// TODO: Implementar recovery kit cuando useShowRecoveryKit esté disponible en thirdweb v6
-// function ExportRecoveryKitButton() {
-//   const wallet = useActiveWallet();
-//   const { showRecoveryKit, isLoading } = useShowRecoveryKit();
-//
-//   if (!wallet || wallet.id !== 'inApp') return null;
-//
-//   return (
-//     <Button onClick={() => showRecoveryKit({ wallet })} disabled={isLoading}>
-//       {isLoading ? 'Abriendo...' : 'Exportar recovery kit / seed phrase'}
-//     </Button>
-//   );
-// }
-
 export default function ProfilePage() {
   const [userProfile, setUserProfile] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -293,7 +279,7 @@ export default function ProfilePage() {
                 <div className="flex items-start gap-3">
                   <ExclamationTriangleIcon className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="font-medium text-red-200 mb-1">⚠️ ¡Guarda tus claves privadas en lugar seguro!</p>
+                    <p className="font-medium text-red-200 mb-1"> ¡Guarda tus claves privadas en lugar seguro!</p>
                     <p className="text-sm text-gray-300">
                       Si pierdes el acceso a tu wallet, solo podrás recuperarlo con tus claves privadas.
                       Guarda tu seed phrase/recovery kit en un lugar físico seguro y privado.
@@ -322,12 +308,8 @@ export default function ProfilePage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="text-xs bg-lime-500 hover:bg-lime-600 text-zinc-900 border-lime-500"
+                      className="text-xs bg-transparent border-zinc-600 hover:bg-zinc-700 text-gray-400"
                       onClick={() => {
-                        // TODO: Cuando thirdweb lance useShowRecoveryKit, usar este código:
-                        // const { showRecoveryKit } = useShowRecoveryKit();
-                        // showRecoveryKit({ wallet: wallet_object });
-
                         toast.info('Funcionalidad de recovery kit próximamente disponible desde thirdweb');
                       }}
                     >
