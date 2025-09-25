@@ -302,7 +302,7 @@ export default function ProfilePage() {
                       <WalletIcon className="w-4 h-4 text-lime-400" />
                       <div>
                         <span className="text-sm font-medium text-gray-300">Wallet integrada</span>
-                        <p className="text-xs text-gray-400">Via thirdweb recovery kit</p>
+                        <p className="text-xs text-gray-400">Via thirdweb recovery</p>
                       </div>
                     </div>
                     <Button
