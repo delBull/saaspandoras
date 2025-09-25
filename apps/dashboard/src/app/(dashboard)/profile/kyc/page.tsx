@@ -180,7 +180,7 @@ export default function KYCPage() {
       <div className="mb-6">
         <Button
           variant="ghost"
-          onClick={() => router.push('/dashboard/profile')}
+          onClick={() => router.push('/profile')}
           className="mb-4"
         >
           <ArrowLeftIcon className="w-4 h-4 mr-2" />

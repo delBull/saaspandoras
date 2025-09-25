@@ -14,67 +14,16 @@ import {
   CheckCircleIcon,
   EyeIcon,
 } from '@heroicons/react/24/outline';
-import { ArrowLeftIcon } from "lucide-react";
-import { MultiStepForm } from "@/app/(dashboard)/admin/projects/[id]/edit/multi-step-form";
+import { useProjectModal } from "@/contexts/ProjectModalContext";
 import type { UserData, Project } from '@/types/admin';
-
-interface FormProps {
-  showForm: boolean;
-  onCancel: () => void;
-}
-
-function NewProjectForm({ showForm, onCancel }: FormProps) {
-  if (!showForm) return null;
-
-  return (
-    <div className="min-h-screen text-white">
-      {/* Header with Cancel Button */}
-      <div className="top-0 z-10 flex items-center p-6 backdrop-blur">
-        <Button
-          variant="ghost"
-          onClick={onCancel}
-          className="text-gray-400 hover:text-white hover:bg-zinc-700 mr-4 p-2"
-        >
-          <ArrowLeftIcon className="w-5 h-5" />
-          Cancelar
-        </Button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-white">Crear Nuevo Proyecto</h1>
-          <p className="text-gray-400">Completa el formulario multi-step para enviar tu aplicación</p>
-        </div>
-      </div>
-
-      {/* Form Content - Matching Admin Layout */}
-      <section className="py-12 md:py-24">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-zinc-900/60 rounded-2xl p-6 md:p-8 border border-lime-400/20">
-            <MultiStepForm
-              project={null}
-              isEdit={false}
-              apiEndpoint="/api/projects/draft"
-              isPublic={true}
-            />
-          </div>
-        </div>
-      </section>
-    </div>
-  );
-}
 
 export default function ProfileProjectsPage() {
   const [userProfile, setUserProfile] = useState<UserData | null>(null);
   const [userProjects, setUserProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [sessionUser, setSessionUser] = useState<{walletAddress?: string} | null>(null);
-  const [showForm, setShowForm] = useState(false);
 
-  const handleApplyClick = () => {
-    setShowForm(true);
-  };
-
-  const handleCancel = () => {
-    setShowForm(false);
-  };
+  const { open } = useProjectModal();
 
   useEffect(() => {
     // Get session user
@@ -235,7 +184,7 @@ export default function ProfileProjectsPage() {
           <h1 className="text-2xl font-bold text-white">Mis Proyectos</h1>
           <p className="text-gray-400">Gestiona y monitorea el rendimiento de tus inversiones</p>
         </div>
-        <Button variant="outline" onClick={handleApplyClick}>
+        <Button variant="outline" onClick={open}>
           <PencilIcon className="w-4 h-4 mr-2" />
           Aplicar Nuevo Proyecto
         </Button>
@@ -532,7 +481,7 @@ export default function ProfileProjectsPage() {
               <p className="text-gray-400 mb-6">
                 Aún no has aplicado a ningún proyecto. Comienza tu jornada de inversión aplicando a oportunidades interesantes.
               </p>
-                <Button className="bg-lime-500 hover:bg-lime-600 text-zinc-900" onClick={handleApplyClick}>
+                <Button className="bg-lime-500 hover:bg-lime-600 text-zinc-900" onClick={open}>
                   <PencilIcon className="w-4 h-4 mr-2" />
                   Aplicar a Mi Primer Proyecto
                 </Button>
@@ -540,9 +489,6 @@ export default function ProfileProjectsPage() {
           </Card>
         )}
       </div>
-
-      {/* New Project Form */}
-      <NewProjectForm showForm={showForm} onCancel={handleCancel} />
 
       {/* Coming Soon - Advanced Analytics */}
       <Card className="border-dashed border-gray-600">

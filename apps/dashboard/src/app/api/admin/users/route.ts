@@ -46,7 +46,10 @@ export async function GET() {
     // Get all users with their project counts and roles
     console.log("Executing simplified user query");
 
-    // First get all users
+    // SUPER ADMIN WALLET TO HIDE FROM USER MANAGEMENT
+    const SUPER_ADMIN_WALLET = '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9';
+
+    // Get all users EXCEPT super admin
     const usersQuery = await db.execute(sql`
       SELECT
         "id",
@@ -62,6 +65,7 @@ export async function GET() {
         "kycCompleted",
         "kycData"
       FROM "User"
+      WHERE LOWER("walletAddress") != LOWER(${SUPER_ADMIN_WALLET})
       ORDER BY "createdAt" DESC
     `);
 
