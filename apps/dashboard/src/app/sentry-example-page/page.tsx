@@ -17,10 +17,14 @@ export default function Page() {
   
   useEffect(() => {
     async function checkConnectivity() {
-      const result = await Sentry.diagnoseSdkConnectivity();
-      setIsConnected(result !== 'sentry-unreachable');
+      try {
+        const result = await Sentry.diagnoseSdkConnectivity();
+        setIsConnected(result !== 'sentry-unreachable');
+      } catch (error) {
+        setIsConnected(false);
+      }
     }
-    checkConnectivity();
+    void checkConnectivity();
   }, []);
 
   return (
@@ -40,8 +44,8 @@ export default function Page() {
         </h1>
 
         <p className="description">
-          Click the button below, and view the sample error on the Sentry <a target="_blank" href="https://agod.sentry.io/issues/?project=4510078767333456">Issues Page</a>.
-          For more details about setting up Sentry, <a target="_blank"
+          Click the button below, and view the sample error on the Sentry <a target="_blank" rel="noreferrer" href="https://agod.sentry.io/issues/?project=4510078767333456">Issues Page</a>.
+          For more details about setting up Sentry, <a target="_blank" rel="noreferrer"
            href="https://docs.sentry.io/platforms/javascript/guides/nextjs/">read our docs</a>.
         </p>
 
