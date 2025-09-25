@@ -14,6 +14,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { useProjectModal } from "@/contexts/ProjectModalContext";
 import type { UserData } from '@/types/admin';
 
 export default function PandoriansDashboardPage() {
@@ -22,6 +23,8 @@ export default function PandoriansDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [sessionUser, setSessionUser] = useState<{walletAddress?: string} | null>(null);
   const [betaToastShown, setBetaToastShown] = useState(false);
+
+  const { open } = useProjectModal();
 
   useEffect(() => {
     // Get session user
@@ -371,7 +374,7 @@ export default function PandoriansDashboardPage() {
                   </div>
                 </button>
 
-                <button className="w-full flex items-center gap-3 p-3 rounded-lg bg-purple-600 hover:bg-purple-700 transition-colors text-left">
+                <button onClick={open} className="w-full flex items-center gap-3 p-3 rounded-lg bg-purple-600 hover:bg-purple-700 transition-colors text-left">
                   <UserGroupIcon className="w-5 h-5 text-white" />
                   <div>
                     <div className="text-white text-sm font-medium">Aplicar Nuevo Proyecto</div>

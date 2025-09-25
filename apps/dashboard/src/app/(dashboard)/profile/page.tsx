@@ -139,8 +139,8 @@ export default function ProfilePage() {
 
             {userProfile?.kycLevel === 'basic' && (
               <Button
-                className="w-full bg-lime-500 hover:bg-lime-600 text-zinc-900"
-                onClick={() => window.location.href = '/dashboard/profile/kyc'}
+                className="w-full bg-lime-500 hover:bg-lime-600 text-black font-bold px-4 py-2 shadow-lg flex-shrink-0 text-base whitespace-nowrap"
+                onClick={() => window.location.href = '/profile/kyc'}
               >
                 🔒 Completa KYC Avanzado
               </Button>
@@ -203,7 +203,7 @@ export default function ProfilePage() {
                   'N/A'
                 }</p>
                 <p className="mt-2">Proyecto aplicado: {userProfile?.projectCount ?? 0}</p>
-                <p>Tiene Pandora&quote;s Key: {userProfile?.hasPandorasKey ? '✅' : '❌'}</p>
+                <p>Tiene Pandora&apos;s Key: {userProfile?.hasPandorasKey ? '✅' : '❌'}</p>
               </div>
             </CardContent>
           </Card>
