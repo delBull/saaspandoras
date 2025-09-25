@@ -22,12 +22,7 @@ import {
   FolderIcon,
 } from "@heroicons/react/24/outline";
 import { cn } from "@saasfly/ui";
-import {
-  useActiveAccount,
-  useDisconnect,
-  useActiveWallet,
-} from "thirdweb/react";
-import { ConnectButton } from "thirdweb/react";
+import { useActiveAccount, useDisconnect, useActiveWallet, ConnectButton } from "thirdweb/react";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { client } from "@/lib/thirdweb-client";
 
@@ -58,9 +53,6 @@ export function Sidebar({
   const account = useActiveAccount();
   const wallet = useActiveWallet();
   const { disconnect } = useDisconnect();
-
-  // Debug thirdweb context
-  console.log('Sidebar - Account active:', !!account, 'Wallet ID:', wallet?.id);
 
   // State for client-side admin status, initialized with server-side props
   const [adminStatus, setAdminStatus] = useState({
