@@ -1,11 +1,12 @@
 import {
-  ComputedFields,
+  type ComputedFields,
   defineDocumentType,
   makeSource,
 } from "contentlayer2/source-files";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypePrettyCode from "rehype-pretty-code";
 import rehypeSlug from "rehype-slug";
+import type { Element } from "hast";
 import remarkGfm from "remark-gfm";
 
 /** @type {import('contentlayer/source-files').ComputedFields} */
@@ -189,7 +190,7 @@ export default makeSource({
         rehypePrettyCode,
         {
           theme: "github-dark",
-          onVisitLine(node: { children: string | any[] }) {
+          onVisitLine(node: Element) {
             // Prevent lines from collapsing in `display: grid` mode, and allow empty
             // lines to be copy/pasted
             if (node.children.length === 0) {
