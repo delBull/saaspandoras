@@ -6,6 +6,9 @@ import { db } from "~/db";
 import { sql } from "drizzle-orm";
 import type { KYCData } from "@/types/admin";
 
+// ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
+export const runtime = "nodejs";
+
 export async function POST(request: Request) {
   try {
     const { session } = await getAuth(await headers());

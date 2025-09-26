@@ -1,5 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-assignment */
 import { NextResponse } from "next/server";
+
+// ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
+export const runtime = "nodejs";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { db } from "~/db";
 import { sql } from "drizzle-orm";

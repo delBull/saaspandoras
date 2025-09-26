@@ -3,6 +3,9 @@ import { getAuth, isAdmin } from "@/lib/auth";
 import { headers } from "next/headers";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 
+// ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
+export const runtime = "nodejs";
+
 export async function GET() {
   const { session } = await getAuth(await headers());
 
