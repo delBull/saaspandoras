@@ -3,6 +3,7 @@ import { db } from "~/db";
 import { projects as projectsSchema } from "~/db/schema";
 import { projectApiSchema } from "@/lib/project-schema-api";
 import { getAuth } from "@/lib/auth";
+import { headers } from "next/headers";
 import slugify from "slugify";
 
 export async function POST(request: Request) {
@@ -11,7 +12,7 @@ export async function POST(request: Request) {
     const parsedData = projectApiSchema.safeParse(body);
 
     // Obtener wallet address del usuario conectado
-    const { session } = await getAuth();
+    const { session } = await getAuth(await headers());
     const applicantWalletAddress = session?.userId ?? null;
 
     if (!parsedData.success) {

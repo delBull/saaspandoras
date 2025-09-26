@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { getAuth, isAdmin } from "@/lib/auth";
+import { headers } from "next/headers";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 
 export async function GET() {
-  const { session } = await getAuth();
+  const { session } = await getAuth(await headers());
 
   console.log("VERIFY: session:", session);
 

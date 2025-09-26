@@ -5,10 +5,11 @@ import { projects as projectsSchema } from "~/db/schema";
 import { sql } from "drizzle-orm";
 import { projectApiSchema } from "@/lib/project-schema-api";
 import { getAuth, isAdmin } from "@/lib/auth";
+import { headers } from "next/headers";
 import slugify from "slugify";
 
 export async function GET(_request: Request) {
-  const { session } = await getAuth();
+  const { session } = await getAuth(await headers());
   const userIsAdmin = await isAdmin(session?.userId);
 
   if (!userIsAdmin) {
@@ -31,7 +32,7 @@ export async function GET(_request: Request) {
 }
 
 export async function POST(request: Request) {
-  const { session } = await getAuth();
+  const { session } = await getAuth(await headers());
   const userIsAdmin = await isAdmin(session?.userId);
 
   if (!userIsAdmin) {

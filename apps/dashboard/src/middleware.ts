@@ -16,8 +16,8 @@ export async function middleware(request: NextRequest) {
       return NextResponse.next();
     }
 
-    // Obtenemos la sesión usando nuestra función unificada con la dirección del wallet
-    const { session } = await getAuth(walletAddress);
+    // Obtenemos la sesión usando headers primero, luego wallet address como fallback
+    const { session } = await getAuth(request.headers, walletAddress);
 
     // Si no hay sesión o el usuario no es un administrador,
     // permitimos que el client-side maneje la verificación
