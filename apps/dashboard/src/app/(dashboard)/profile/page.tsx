@@ -69,20 +69,10 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (sessionUser?.walletAddress) {
-      // Fetch user profile data from database
-      fetch('/api/admin/users')
-        .then(res => res.json())
-        .then((users: UserData[]) => {
-          const currentUser = users.find((u: UserData) =>
-            u.walletAddress.toLowerCase() === sessionUser.walletAddress?.toLowerCase()
-          );
-          setUserProfile(currentUser ?? null);
-          setLoading(false);
-        })
-        .catch(err => {
-          console.error('Error fetching user profile:', err);
-          setLoading(false);
-        });
+      // For now, don't fetch user profile data to avoid 403 errors
+      // TODO: Create a proper /api/profile endpoint for user data
+      setUserProfile(null);
+      setLoading(false);
     } else if (!sessionLoading) {
       setLoading(false);
     }
@@ -129,7 +119,7 @@ export default function ProfilePage() {
         <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
-              <div className="relative">
+              <div className="relative mb-5">
                 <Image
                   src={userProfile?.image ?? sessionUser.image ?? '/images/avatars/rasta.png'}
                   alt="Profile"
@@ -138,7 +128,7 @@ export default function ProfilePage() {
                   className="w-16 h-16 rounded-full border-2 border-lime-400"
                 />
                 <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-zinc-900 ${
-                  userProfile?.kycLevel === 'advanced' ? 'bg-green-500' : 'bg-yellow-500'
+                  userProfile?.kycLevel === 'basic' ? 'bg-green-500' : 'bg-yellow-500'
                 }`}></div>
               </div>
               <div>
@@ -146,10 +136,19 @@ export default function ProfilePage() {
                   {userProfile?.name ?? sessionUser.name ?? 'Usuario'}
                 </div>
                 <div className="text-sm text-gray-400">
-                  Nivel {userProfile?.kycLevel === 'advanced' ? 'Avanzado' : 'Básico'}
+                  Nivel {userProfile?.kycLevel === 'basic' ? 'Básico' : 'N/A'}
                 </div>
               </div>
             </CardTitle>
+            {/* KYC Básico Button */}
+            {(!userProfile || userProfile.kycLevel !== 'basic') && (
+              <Button
+                className="w-full bg-lime-500 hover:bg-lime-600 text-black font-medium px-4 py-2 shadow-lg flex-shrink-0 text-base whitespace-nowrap"
+                onClick={() => window.location.href = '/profile/kyc'}
+              >
+                🔒 Completa KYC Básico
+              </Button>
+            )}
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -210,15 +209,6 @@ export default function ProfilePage() {
                 </div>
               </div>
             </div>
-
-            {userProfile?.kycLevel === 'basic' && (
-              <Button
-                className="w-full bg-lime-500 hover:bg-lime-600 text-black font-bold px-4 py-2 shadow-lg flex-shrink-0 text-base whitespace-nowrap"
-                onClick={() => window.location.href = '/profile/kyc'}
-              >
-                🔒 Completa KYC Avanzado
-              </Button>
-            )}
           </CardContent>
         </Card>
 

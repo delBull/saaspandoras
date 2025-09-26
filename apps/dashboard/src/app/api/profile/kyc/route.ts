@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     // Update user KYC data
     await db.execute(sql`
       UPDATE "User"
-      SET "kycLevel" = 'advanced',
+      SET "kycLevel" = 'basic',
           "kycCompleted" = true,
           "kycData" = ${JSON.stringify(kycData)}
       WHERE "walletAddress" = ${body.walletAddress}
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       message: "KYC completado exitosamente",
-      kycLevel: "advanced",
+      kycLevel: "basic",
       kycCompleted: true
     });
 

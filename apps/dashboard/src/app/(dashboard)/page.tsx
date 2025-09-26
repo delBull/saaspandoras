@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useActiveAccount, useReadContract } from "thirdweb/react";
 import Link from "next/link";
 import { config } from "@/config";
@@ -94,13 +94,28 @@ function SecondaryTabs({ activeTab, setActiveTab }: { activeTab: string, setActi
 export default function DashboardPage() {
   const [secondaryTab, setSecondaryTab] = useState("Access");
   const account = useActiveAccount();
-  
-  const contract = getContract({ client, chain: config.chain, address: config.poolContractAddress ?? ZERO_ADDRESS, abi: PANDORAS_POOL_ABI });
-  const { data: poolStats, isLoading: isLoadingPool } = useReadContract({ contract: contract, method: "getUserStats", params: [account?.address ?? ZERO_ADDRESS], queryOptions: { enabled: !!account && !!config.poolContractAddress, }, });
+
+  // Memoize contract to prevent recreation on every render
+  const contract = useMemo(() =>
+    getContract({ client, chain: config.chain, address: config.poolContractAddress ?? ZERO_ADDRESS, abi: PANDORAS_POOL_ABI }),
+    []
+  );
+
+  const { data: poolStats, isLoading: isLoadingPool } = useReadContract({
+    contract: contract,
+    method: "getUserStats",
+    params: [account?.address ?? ZERO_ADDRESS],
+    queryOptions: {
+      enabled: !!account && !!config.poolContractAddress,
+    },
+  });
 
   const ethAmount = poolStats ? Number(poolStats[0]) / 1e18 : 0;
   const usdcAmount = poolStats ? Number(poolStats[1]) / 1e6 : 0;
   const totalInvestmentValue = usdcAmount + (ethAmount * 3000);
+
+  // Add console.log to track renders (remove in production)
+  console.log('DashboardPage render - account:', account?.address?.substring(0, 8));
 
   return (
     <>

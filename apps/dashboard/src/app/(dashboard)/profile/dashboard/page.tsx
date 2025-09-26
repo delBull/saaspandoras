@@ -1,7 +1,7 @@
 'use client';
 
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@saasfly/ui/card';
 import {
   ChartBarIcon,
@@ -22,7 +22,8 @@ export default function PandoriansDashboardPage() {
   const [userProjects, setUserProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [sessionUser, setSessionUser] = useState<{walletAddress?: string} | null>(null);
-  const [betaToastShown, setBetaToastShown] = useState(false);
+  const [showBetaToast, setShowBetaToast] = useState(false);
+  const toastShownRef = useRef(false);
 
   const { open } = useProjectModal();
 
@@ -37,6 +38,7 @@ export default function PandoriansDashboardPage() {
 
         if (walletAddress) {
           setSessionUser({ walletAddress });
+          setShowBetaToast(true); // Show toast only when we have a session
         }
       } catch (error) {
         console.error('Error getting session:', error);
@@ -47,10 +49,8 @@ export default function PandoriansDashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (sessionUser?.walletAddress && !betaToastShown) {
-      console.log('🔍 Profile Dashboard: Fetching data for wallet:', String(sessionUser.walletAddress));
-
-      // Show beta notification toast
+    if (showBetaToast && !toastShownRef.current) {
+      // Show beta notification toast only once
       toast.info(
         "Dashboard en Versión Beta",
         {
@@ -62,65 +62,82 @@ export default function PandoriansDashboardPage() {
           },
         }
       );
-      setBetaToastShown(true);
+      toastShownRef.current = true;
+      setShowBetaToast(false); // Prevent future shows
+    }
+
+    if (sessionUser?.walletAddress) {
+      console.log('🔍 Profile Dashboard: Fetching data for wallet:', String(sessionUser?.walletAddress));
 
       // Fetch user profile data and their projects
       Promise.all([
         fetch('/api/admin/users'),
         fetch('/api/admin/projects')
       ])
-        .then(([usersRes, projectsRes]) => Promise.all([usersRes.json(), projectsRes.json()]))
-        .then(([users, allProjects]: [UserData[], any[]]) => {
-          const currentUser = users.find((u: UserData) =>
-            u.walletAddress.toLowerCase() === sessionUser.walletAddress?.toLowerCase()
-          );
-
-          console.log('👤 Profile Dashboard: Found user:', currentUser);
-          console.log('📊 Profile Dashboard: User project count:', currentUser?.projectCount);
-
-          setUserProfile(currentUser ?? null);
-
-          // Use wallet-based filtering for consistency with admin panel
-          const SUPER_ADMIN_WALLETS = ['0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9'];
-          const isSuperAdmin = SUPER_ADMIN_WALLETS.includes(currentUser?.walletAddress || '');
-          const userWalletAddress = currentUser?.walletAddress?.toLowerCase();
-
-          let filteredUserProjects: any[] = [];
-          if (isSuperAdmin) {
-            // Super admin sees all active/manageable projects
-            filteredUserProjects = allProjects.filter((p: any) =>
-              ['pending', 'approved', 'live', 'completed'].includes(p.status)
-            );
-          } else {
-            // PRIORITIZE wallet-based filtering over email
-            // First try wallet address
-            filteredUserProjects = allProjects.filter((p: any) => {
-              // If project has wallet address, use it
-              if (p.applicantWalletAddress) {
-                return p.applicantWalletAddress.toLowerCase() === userWalletAddress;
-              }
-              // Fallback to email
-              return p.applicantEmail?.toLowerCase() === currentUser?.email?.toLowerCase();
-            });
-
-            // Fallback: if no projects found but user should have projects, use temp mapping
-            if (filteredUserProjects.length === 0 && currentUser?.projectCount && currentUser.projectCount > 0) {
-              filteredUserProjects = allProjects.slice(0, currentUser.projectCount);
-            }
-          }
-
-          console.log('🚀 Profile Dashboard: Filtered user projects:', filteredUserProjects.length);
-          setUserProjects(filteredUserProjects);
-        })
-        .catch(err => {
-          console.error('Error fetching user profile:', err);
+      .then(([usersRes, projectsRes]) => {
+        if (!usersRes.ok || !projectsRes.ok) {
+          // If not authorized, set empty data
+          console.log('Not authorized to fetch admin data, using empty data');
           setUserProfile(null);
-        })
-        .finally(() => setLoading(false));
-    } else if (!sessionUser) {
+          setUserProjects([]);
+          setLoading(false);
+          return;
+        }
+        return Promise.all([usersRes.json(), projectsRes.json()]);
+      })
+        .then((data) => {
+        if (!data) return; // Already handled
+        const [users, allProjects] = data;
+        const usersTyped = users as UserData[];
+        const currentUser = usersTyped.find((u) =>
+          u.walletAddress.toLowerCase() === sessionUser.walletAddress?.toLowerCase()
+        );
+
+        console.log('👤 Profile Dashboard: Found user:', currentUser);
+        console.log('📊 Profile Dashboard: User project count:', currentUser?.projectCount);
+
+        setUserProfile(currentUser ?? null);
+
+      // Use wallet-based filtering for consistency with admin panel
+      const SUPER_ADMIN_WALLETS = ['0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9'];
+      const isSuperAdmin = SUPER_ADMIN_WALLETS.includes(currentUser?.walletAddress || '');
+      const userWalletAddress = currentUser?.walletAddress?.toLowerCase();
+
+      let filteredUserProjects: any[] = [];
+      if (isSuperAdmin) {
+        // Super admin sees all active/manageable projects
+        filteredUserProjects = allProjects.filter((p: any) =>
+          ['pending', 'approved', 'live', 'completed'].includes(p.status)
+        );
+      } else {
+        // PRIORITIZE wallet-based filtering over email
+        // First try wallet address
+        filteredUserProjects = allProjects.filter((p: any) => {
+          // If project has wallet address, use it
+          if (p.applicantWalletAddress) {
+            return p.applicantWalletAddress.toLowerCase() === userWalletAddress;
+          }
+          // Fallback to email
+          return p.applicantEmail?.toLowerCase() === currentUser?.email?.toLowerCase();
+        });
+
+        // Fallback: if no projects found but user should have projects, use temp mapping
+        if (filteredUserProjects.length === 0 && currentUser?.projectCount && currentUser.projectCount > 0) {
+          filteredUserProjects = allProjects.slice(0, currentUser.projectCount);
+        }
+      }
+
+      console.log('🚀 Profile Dashboard: Filtered user projects:', filteredUserProjects.length);
+      setUserProjects(filteredUserProjects);
       setLoading(false);
+    })
+    .catch(err => {
+      console.error('Error fetching user profile:', err);
+      setUserProfile(null);
+      setLoading(false);
+    });
     }
-  }, [sessionUser, betaToastShown]);
+  }, [sessionUser, showBetaToast]);
 
   if (loading) {
     return (
@@ -238,10 +255,10 @@ export default function PandoriansDashboardPage() {
         </div>
         <div className="flex items-center space-x-2">
           <div className={`w-3 h-3 rounded-full ${
-            userProfile?.kycLevel === 'advanced' ? 'bg-green-500' : 'bg-yellow-500'
+            userProfile?.kycLevel === 'basic' ? 'bg-green-500' : 'bg-yellow-500'
           }`}></div>
           <span className="text-sm text-gray-400">
-            Nivel {userProfile?.kycLevel === 'advanced' ? 'Avanzado' : 'Básico'}
+            Nivel {userProfile?.kycLevel === 'basic' ? 'Básico' : 'N/A'}
           </span>
         </div>
       </div>

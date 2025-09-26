@@ -111,14 +111,14 @@ export function Sidebar({
   // Handle click outside anywhere on screen and escape key to close dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // Only close if dropdown is open and click is not on the avatar/sidebare
+      // Only close if dropdown is open and click is not on the dropdown
       if (!profileDropdown) return;
 
       const target = event.target as Element;
 
-      // Check if click is inside the sidebar area (including dropdown)
+      // Check if click is inside the dropdown overlay
       if (sidebarRef.current?.contains(target)) {
-        return; // Don't close if click is inside sidebar
+        return; // Don't close if click is inside dropdown
       }
 
       // Close dropdown if click is anywhere else on the page
@@ -132,16 +132,15 @@ export function Sidebar({
     };
 
     if (profileDropdown) {
-      // Use capture phase to ensure we get the event before others might stopPropagation
-      document.addEventListener('mousedown', handleClickOutside, true);
+      document.addEventListener('mousedown', handleClickOutside, false); // Changed from capture to bubble
       document.addEventListener('keydown', handleEscapeKey, true);
     } else {
-      document.removeEventListener('mousedown', handleClickOutside, true);
+      document.removeEventListener('mousedown', handleClickOutside, false);
       document.removeEventListener('keydown', handleEscapeKey, true);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside, true);
+      document.removeEventListener('mousedown', handleClickOutside, false);
       document.removeEventListener('keydown', handleEscapeKey, true);
     };
   }, [profileDropdown]);
@@ -298,7 +297,7 @@ export function Sidebar({
                           height={32}
                           className="w-8 h-8 rounded-full border border-lime-400"
                         />
-                  {userProfile?.kycLevel === 'advanced' && (
+                  {userProfile?.kycLevel === 'basic' && (
                     <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border border-zinc-900 bg-green-500"></div>
                   )}
                 </button>
@@ -602,7 +601,7 @@ export function Sidebar({
                           height={32}
                           className="w-8 h-8 rounded-full border border-lime-400"
                         />
-                        {userProfile?.kycLevel === 'advanced' && (
+                        {userProfile?.kycLevel === 'basic' && (
                           <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border border-zinc-900 bg-green-500"></div>
                         )}
                       </button>
