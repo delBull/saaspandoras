@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "~/db";
 import { administrators } from "~/db/schema";
 import { getAuth, isAdmin } from "@/lib/auth";
+import { headers } from "next/headers";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 
   // Super admins hardcodeados que aparecen en la UI
@@ -24,7 +25,7 @@ const addAdminSchema = z.object({
 });
 
 export async function GET() {
-  const { session } = await getAuth();
+  const { session } = await getAuth(await headers());
 
   if (!await isAdmin(session?.userId)) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
@@ -42,7 +43,7 @@ export async function GET() {
  * Solo accesible por el Super Admin.
  */
 export async function POST(request: Request) {
-  const { session } = await getAuth();
+  const { session } = await getAuth(await headers());
 
   if (session?.userId?.toLowerCase() !== SUPER_ADMIN_WALLET) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });

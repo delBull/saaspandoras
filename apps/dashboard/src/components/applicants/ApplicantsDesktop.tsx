@@ -26,8 +26,8 @@ export function ApplicantsDesktop({
         isPendingPanelCollapsed ? 'pr-16' : 'pr-[320px]'
       }`}>
         <div className="flex-row items-center gap-8">
-          <h1 className="text-3xl font-bold text-white">Aplicantes</h1>
-          <p className="text-gray-400 text-base">Proyectos aprobados listos para invertir</p>
+          <h1 className="text-3xl font-bold text-white">Proyectos</h1>
+          <p className="text-gray-400 text-base">Aprobados listos para invertir</p>
         </div>
         <Button
           onClick={onApplyClick}

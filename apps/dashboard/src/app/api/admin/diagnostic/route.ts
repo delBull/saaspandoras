@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
 import { NextResponse } from "next/server";
 import { getAuth, isAdmin } from "@/lib/auth";
+import { headers } from "next/headers";
 import { db } from "~/db";
 import { sql } from "drizzle-orm";
 
@@ -17,7 +18,7 @@ export async function GET() {
 
     // Intentar obtener información detallada solo si está autenticado
     try {
-      const { session } = await getAuth();
+      const { session } = await getAuth(await headers());
       _userIsAdmin = await isAdmin(session?.userId);
 
       if (_userIsAdmin) {

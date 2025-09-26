@@ -3,11 +3,12 @@ import { NextResponse } from "next/server";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { db } from "~/db";
 import { sql } from "drizzle-orm";
+import { headers } from "next/headers";
 import type { UserData, UserRole } from "@/types/admin";
 
 export async function GET() {
   try {
-    const { session } = await getAuth();
+    const { session } = await getAuth(await headers());
     const userIsAdmin = await isAdmin(session?.userId);
 
     if (!userIsAdmin) {

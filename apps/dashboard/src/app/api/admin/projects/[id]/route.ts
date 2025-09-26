@@ -3,6 +3,7 @@ import { db } from "~/db";
 import { projects as projectsSchema } from "~/db/schema";
 import { projectApiSchema } from "@/lib/project-schema-api";
 import { getAuth, isAdmin } from "@/lib/auth";
+import { headers } from "next/headers";
 import { eq } from "drizzle-orm";
 import slugify from "slugify";
 
@@ -11,7 +12,7 @@ interface RouteParams {
 }
 
 export async function PATCH(request: Request, { params }: RouteParams) {
-  const { session } = await getAuth();
+  const { session } = await getAuth(await headers());
   const userIsAdmin = await isAdmin(session?.userId);
 
   if (!userIsAdmin) {
@@ -72,7 +73,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 }
 
 export async function PUT(request: Request, { params }: RouteParams) {
-  const { session } = await getAuth();
+  const { session } = await getAuth(await headers());
   const userIsAdmin = await isAdmin(session?.userId);
 
   if (!userIsAdmin) {
@@ -204,7 +205,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
 }
 
 export async function DELETE(request: Request, { params }: RouteParams) {
-  const { session } = await getAuth();
+  const { session } = await getAuth(await headers());
   const userIsAdmin = await isAdmin(session?.userId);
 
   if (!userIsAdmin) {

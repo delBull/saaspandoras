@@ -1,13 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
 import { NextResponse } from "next/server";
 import { getAuth } from "@/lib/auth";
+import { headers } from "next/headers";
 import { db } from "~/db";
 import { sql } from "drizzle-orm";
 import type { KYCData } from "@/types/admin";
 
 export async function POST(request: Request) {
   try {
-    const { session } = await getAuth();
+    const { session } = await getAuth(await headers());
     if (!session?.userId) {
       return NextResponse.json({ message: "No autorizado" }, { status: 403 });
     }
@@ -73,7 +74,7 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
-    const { session } = await getAuth();
+    const { session } = await getAuth(await headers());
     if (!session?.userId) {
       return NextResponse.json({ message: "No autorizado" }, { status: 403 });
     }

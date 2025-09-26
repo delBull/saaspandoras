@@ -24,7 +24,7 @@ export function ApplicantsMobile({
       {/* Header */}
       <div className="sticky top-0 z-20 flex justify-between items-center px-4 py-6 gap-6 bg-zinc-950/80 backdrop-blur-sm">
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold text-white truncate">Aplicantes</h1>
+          <h1 className="text-2xl font-bold text-white truncate">Proyectos</h1>
           <p className="text-gray-400 text-sm truncate">Proyectos aprobados listos para invertir</p>
         </div>
         <Button

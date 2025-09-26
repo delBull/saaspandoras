@@ -38,14 +38,28 @@ export async function isAdmin(address?: string | null): Promise<boolean> {
   }
 }
 
+interface MinimalHeaders {
+  get(name: string): string | null;
+  has(name: string): boolean;
+  entries(): IterableIterator<[string, string]>;
+}
+
 /**
  * Obtiene la sesión autenticada del usuario en Thirdweb v5.
- * Lee la dirección del wallet desde cookies si no se proporciona directamente.
+ * En producción, lee desde headers primero, luego cookies.
  */
-export async function getAuth(userAddress?: string) {
+export async function getAuth(headers?: MinimalHeaders, userAddress?: string) {
   let address: string | null = userAddress ?? null;
 
-  // Si no se proporciona address, intentar obtenerla desde cookies
+  // Primero intentar desde headers (para server-side auth)
+  if (headers) {
+    const headerAddress = headers.get('x-thirdweb-address');
+    if (headerAddress) {
+      address = headerAddress;
+    }
+  }
+
+  // Si no se encontro en headers, intentar cookies
   if (!address) {
     try {
       // Intentar obtener desde cookies

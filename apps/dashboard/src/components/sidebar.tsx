@@ -7,7 +7,6 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   HomeIcon,
-  ArrowPathIcon,
   BanknotesIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -153,44 +152,28 @@ export function Sidebar({
   const links = useMemo(
     () => [
       {
-        label: "Inicio",
+        label: "Overview",
         href: "/",
-        icon: <HomeIcon className="h-5 w-5 shrink-0 font-mono text-gray-400" />,
+        icon: <HomeIcon className="h-5 w-5 shrink-0 text-gray-400" />,
         disabled: false,
       },
+
       {
-        label: "Invertir",
-        href: "#",
+        label: "Invest",
+        href: "/applicants",
         icon: (
-          <ArrowPathIcon className="h-5 w-5 shrink-0 font-mono text-gray-400" />
+          <UserGroupIcon className="h-5 w-5 shrink-0 text-gray-400" />
         ),
-        comingSoon: true,
-        disabled: true,
+        disabled: false,
       },
       {
         label: "Pools",
         href: "#",
         icon: (
-          <BanknotesIcon className="h-5 w-5 shrink-0 font-mono text-gray-400" />
+          <BanknotesIcon className="h-5 w-5 shrink-0 text-gray-400" />
         ),
         comingSoon: true,
         disabled: true,
-      },
-      {
-        label: "Swap",
-        href: "/swap",
-        icon: (
-          <ArrowPathIcon className="h-5 w-5 shrink-0 font-mono text-gray-400" />
-        ),
-        disabled: true,
-      },
-      {
-        label: "Aplicantes",
-        href: "/applicants",
-        icon: (
-          <UserGroupIcon className="h-5 w-5 shrink-0 font-mono text-gray-400" />
-        ),
-        disabled: false,
       },
       // Enlace solo visible para admin
       ...(isAdmin
@@ -199,7 +182,7 @@ export function Sidebar({
               label: "Dashboard",
               href: "/admin/dashboard",
               icon: (
-                <ChartPieIcon className="h-5 w-5 shrink-0 font-mono text-lime-400" />
+                <ChartPieIcon className="h-5 w-5 shrink-0 text-lime-400" />
               ),
               disabled: false,
               admin: true,
@@ -359,90 +342,95 @@ export function Sidebar({
                 </motion.div>
               </div>
 
-              {/* Profile Dropdown */}
+              {/* Profile Dropdown - Fixed width to prevent compression */}
               <AnimatePresence>
                 {profileDropdown && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className="absolute top-full left-0 right-0 mt-2 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50"
-                  >
-                    <div className="p-3 space-y-2">
-                      {/* Profile */}
-                      <Link
-                        href="/profile"
-                        onClick={() => setProfileDropdown(false)}
-                        className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
+                  <>
+                    {/* Invisible overlay to position dropdown fixed to viewport */}
+                    <div className="fixed inset-0 z-50 pointer-events-none" ref={sidebarRef}>
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className="absolute left-4 top-[152px] w-80 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 pointer-events-auto"
                       >
-                        <UserIcon className="w-5 h-5 text-gray-400" />
-                        <div>
-                          <div className="text-white text-sm">Perfil</div>
-                          <div className="text-gray-400 text-xs">Información personal</div>
-                        </div>
-                      </Link>
+                        <div className="p-3 space-y-2">
+                          {/* Profile */}
+                          <Link
+                            href="/profile"
+                            onClick={() => setProfileDropdown(false)}
+                            className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
+                          >
+                            <UserIcon className="w-5 h-5 text-gray-400" />
+                            <div>
+                              <div className="text-white text-sm">Perfil</div>
+                              <div className="text-gray-400 text-xs">Información personal</div>
+                            </div>
+                          </Link>
 
-                      {/* Dashboard */}
-                      <Link
-                        href="/profile/dashboard"
-                        onClick={() => setProfileDropdown(false)}
-                        className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
-                      >
-                        <ChartBarIcon className="w-5 h-5 text-gray-400" />
-                        <div>
-                          <div className="text-white text-sm">Dashboard</div>
-                          <div className="text-gray-400 text-xs">Métricas e inversiones</div>
-                        </div>
-                      </Link>
+                          {/* Dashboard */}
+                          <Link
+                            href="/profile/dashboard"
+                            onClick={() => setProfileDropdown(false)}
+                            className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
+                          >
+                            <ChartBarIcon className="w-5 h-5 text-gray-400" />
+                            <div>
+                              <div className="text-white text-sm">Dashboard</div>
+                              <div className="text-gray-400 text-xs">Métricas e inversiones</div>
+                            </div>
+                          </Link>
 
-                      {/* Projects */}
-                      <Link
-                        href="/profile/projects"
-                        onClick={() => setProfileDropdown(false)}
-                        className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
-                      >
-                        <FolderIcon className="w-5 h-5 text-gray-400" />
-                        <div>
-                          <div className="text-white text-sm">Proyectos</div>
-                          <div className="text-gray-400 text-xs">
-                            {userProfile?.projectCount ? `${userProfile.projectCount} proyectos` : 'Gestionar proyectos'}
+                          {/* Projects */}
+                          <Link
+                            href="/profile/projects"
+                            onClick={() => setProfileDropdown(false)}
+                            className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
+                          >
+                            <FolderIcon className="w-5 h-5 text-gray-400" />
+                            <div>
+                              <div className="text-white text-sm">Proyectos</div>
+                              <div className="text-gray-400 text-xs">
+                                {userProfile?.projectCount ? `${userProfile.projectCount} proyectos` : 'Gestionar proyectos'}
+                              </div>
+                            </div>
+                          </Link>
+
+                          <div className="border-t border-zinc-700 my-2"></div>
+
+                          {/* Thirdweb ConnectButton - Maneja automáticamente conectar vs gestionar */}
+                          <div className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full">
+                            <UserIcon className="w-5 h-5 text-gray-400" />
+                            <ConnectButton
+                              client={client}
+                              wallets={[
+                                // Same wallets as NFT-gate for consistent session management
+                                inAppWallet({
+                                  auth: {
+                                    options: ["email", "google", "apple", "facebook", "passkey"],
+                                  },
+                                  executionMode: {
+                                    mode: "EIP7702",
+                                    sponsorGas: true,
+                                  },
+                                }),
+                                createWallet("io.metamask"),
+                              ]}
+                              theme="dark"
+                              onDisconnect={() => {
+                                setProfileDropdown(false);
+                              }}
+                              onConnect={() => {
+                                setProfileDropdown(false);
+                              }}
+                            />
                           </div>
+
+
                         </div>
-                      </Link>
-
-                      <div className="border-t border-zinc-700 my-2"></div>
-
-                      {/* Thirdweb ConnectButton - Maneja automáticamente conectar vs gestionar */}
-                      <div className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full">
-                        <UserIcon className="w-5 h-5 text-gray-400" />
-                        <ConnectButton
-                          client={client}
-                          wallets={[
-                            // Same wallets as NFT-gate for consistent session management
-                            inAppWallet({
-                              auth: {
-                                options: ["email", "google", "apple", "facebook", "passkey"],
-                              },
-                              executionMode: {
-                                mode: "EIP7702",
-                                sponsorGas: true,
-                              },
-                            }),
-                            createWallet("io.metamask"),
-                          ]}
-                          theme="dark"
-                          onDisconnect={() => {
-                            setProfileDropdown(false);
-                          }}
-                          onConnect={() => {
-                            setProfileDropdown(false);
-                          }}
-                        />
-                      </div>
-
-
+                      </motion.div>
                     </div>
-                  </motion.div>
+                  </>
                 )}
               </AnimatePresence>
             </div>
@@ -450,13 +438,13 @@ export function Sidebar({
         </div>
 
         <nav className="mt-4 flex flex-1 flex-col justify-between">
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-0">
             {links.map((link) => (
               <Link
                 key={link.label}
                 href={link.href}
                 className={cn(
-                  "relative flex items-center rounded-lg py-2 text-gray-400 transition-all duration-200",
+                  "relative flex items-center rounded-lg py-5 text-gray-400 transition-all duration-200 border-b border-gray-800",
                   open ? "px-4" : "w-full justify-center",
                   link.disabled
                     ? "cursor-not-allowed opacity-60"
@@ -473,7 +461,7 @@ export function Sidebar({
                     width: open ? "auto" : 0,
                     marginLeft: open ? "0.75rem" : "0",
                   }}
-                  className="whitespace-nowrap font-medium font-mono"
+                  className="whitespace-nowrap font-medium"
                 >
                   {link.label}
                 </motion.span>
@@ -696,25 +684,55 @@ export function Sidebar({
                               </div>
                             </Link>
 
-                            {/* Projects (only if user has projects) */}
-                            {(userProfile?.projectCount ?? 0) > 0 && (
-                              <Link
-                                href="/projects"
-                                onClick={() => {
-                                  setProfileDropdown(false);
-                                  setMobileOpen(false);
-                                }}
-                                className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
-                              >
-                                <FolderIcon className="w-5 h-5 text-gray-400" />
-                                <div>
-                                  <div className="text-white text-sm">Proyectos</div>
-                                  <div className="text-gray-400 text-xs">{userProfile?.projectCount} activos</div>
-                                </div>
-                              </Link>
-                            )}
+                        {/* Projects (always show like desktop) */}
+                        <Link
+                          href="/profile/projects"
+                          onClick={() => {
+                            setProfileDropdown(false);
+                            setMobileOpen(false);
+                          }}
+                          className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
+                        >
+                          <FolderIcon className="w-5 h-5 text-gray-400" />
+                          <div>
+                            <div className="text-white text-sm">Proyectos</div>
+                            <div className="text-gray-400 text-xs">
+                              {userProfile?.projectCount ? `${userProfile.projectCount} proyectos` : 'Gestionar proyectos'}
+                            </div>
+                          </div>
+                        </Link>
 
-                            <div className="border-t border-zinc-700 my-2"></div>
+                        <div className="border-t border-zinc-700 my-2"></div>
+
+                        {/* Thirdweb ConnectButton - Maneja automáticamente conectar vs gestionar */}
+                        <div className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full">
+                          <UserIcon className="w-5 h-5 text-gray-400" />
+                          <ConnectButton
+                            client={client}
+                            wallets={[
+                              // Same wallets as NFT-gate for consistent session management
+                              inAppWallet({
+                                auth: {
+                                  options: ["email", "google", "apple", "facebook", "passkey"],
+                                },
+                                executionMode: {
+                                  mode: "EIP7702",
+                                  sponsorGas: true,
+                                },
+                              }),
+                              createWallet("io.metamask"),
+                            ]}
+                            theme="dark"
+                            onDisconnect={() => {
+                              setProfileDropdown(false);
+                              setMobileOpen(false);
+                            }}
+                            onConnect={() => {
+                              setProfileDropdown(false);
+                              setMobileOpen(false);
+                            }}
+                          />
+                        </div>
                           </div>
                         </motion.div>
                       )}

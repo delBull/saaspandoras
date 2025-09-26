@@ -5,6 +5,7 @@ import { db } from "~/db";
 import { administrators } from "~/db/schema";
 import { eq } from "drizzle-orm";
 import { getAuth } from "@/lib/auth";
+import { headers } from "next/headers";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 
 const updateAliasSchema = z.object({
@@ -13,7 +14,7 @@ const updateAliasSchema = z.object({
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const contextParams = await params;
-  const { session } = await getAuth();
+  const { session } = await getAuth(await headers());
 
   if (session?.userId?.toLowerCase() !== SUPER_ADMIN_WALLET) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
@@ -50,7 +51,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const contextParams = await params;
-  const { session } = await getAuth();
+  const { session } = await getAuth(await headers());
 
   if (session?.userId?.toLowerCase() !== SUPER_ADMIN_WALLET) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
