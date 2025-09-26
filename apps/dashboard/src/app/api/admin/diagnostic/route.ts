@@ -5,6 +5,9 @@ import { headers } from "next/headers";
 import { db } from "~/db";
 import { sql } from "drizzle-orm";
 
+// ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
+export const runtime = "nodejs";
+
 export async function GET() {
   try {
     // Información básica sin autenticación

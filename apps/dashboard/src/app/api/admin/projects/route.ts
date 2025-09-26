@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 import { NextResponse } from "next/server";
 import { db } from "~/db";
+
+// ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
+export const runtime = "nodejs";
 import { projects as projectsSchema } from "~/db/schema";
 import { sql } from "drizzle-orm";
 import { projectApiSchema } from "@/lib/project-schema-api";

@@ -2,6 +2,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "~/db";
+
+// ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
+export const runtime = "nodejs";
 import { administrators } from "~/db/schema";
 import { eq } from "drizzle-orm";
 import { getAuth } from "@/lib/auth";
