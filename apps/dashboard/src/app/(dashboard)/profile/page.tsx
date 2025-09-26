@@ -340,7 +340,7 @@ export default function ProfilePage() {
 
                 <div className="mt-4 pt-3 border-t border-zinc-600/50">
                   <p className="text-xs text-gray-500">
-                    <strong>Wallet integrada:</strong> Usa el recovery kit proporcionado por thirdweb<br/>
+                    <strong>Wallet integrada:</strong> Usa el recovery proporcionado por thirdweb<br/>
                     <strong>Wallet externa:</strong> Recupera desde tu aplicación oficial (MetaMask, etc.)
                   </p>
                 </div>
