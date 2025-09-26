@@ -12,9 +12,18 @@ export const runtime = "nodejs";
 export async function POST(request: Request) {
   try {
     const { session } = await getAuth(await headers());
+
+    // 🔒 Validación defensiva para userId requerido en KYC
     if (!session?.userId) {
-      return NextResponse.json({ message: "No autorizado" }, { status: 403 });
+      console.error("🔐 AUTH ERROR: No userId for KYC submission", {
+        timestamp: new Date().toISOString(),
+        session: JSON.stringify(session),
+        headers: await headers()
+      });
+      return NextResponse.json({ message: "No autorizado - Sesión inválida" }, { status: 403 });
     }
+
+    const userId = session.userId;
 
     const body = await request.json() as {
       walletAddress: string;
@@ -22,7 +31,7 @@ export async function POST(request: Request) {
     };
 
     // Verify the wallet address matches the session
-    if (body.walletAddress.toLowerCase() !== session.userId.toLowerCase()) {
+    if (body.walletAddress.toLowerCase() !== userId.toLowerCase()) {
       return NextResponse.json({ message: "Wallet address mismatch" }, { status: 403 });
     }
 

@@ -9,10 +9,32 @@ import { sql } from "drizzle-orm";
 import { headers } from "next/headers";
 import type { UserData, UserRole } from "@/types/admin";
 
+// 🔐 Helper function for routes that require authenticated user
+async function requireAuthenticatedUser(session: any): Promise<{ error: NextResponse | null; userId: string | null }> {
+  if (!session?.userId) {
+    console.error('🔐 AUTH ERROR: No userId in session', {
+      timestamp: new Date().toISOString(),
+      session: JSON.stringify(session),
+      headers: await headers() // Log headers for debugging
+    });
+    return {
+      error: NextResponse.json({ message: "No autorizado - Sesión inválida" }, { status: 401 }),
+      userId: null
+    };
+  }
+
+  return { error: null, userId: session.userId };
+}
+
 export async function GET() {
   try {
     const { session } = await getAuth(await headers());
-    const userIsAdmin = await isAdmin(session?.userId);
+
+    // 🔒 Validación defensiva usando el helper
+    const { error: authError, userId } = await requireAuthenticatedUser(session);
+    if (authError) return authError;
+
+    const userIsAdmin = await isAdmin(userId);
 
     if (!userIsAdmin) {
       return NextResponse.json({ message: "No autorizado" }, { status: 403 });
