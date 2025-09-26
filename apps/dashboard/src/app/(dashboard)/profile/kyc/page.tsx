@@ -141,7 +141,7 @@ export default function KYCPage() {
 
       if (response.ok) {
         toast.success('KYC completado exitosamente');
-        router.push('/dashboard/profile');
+        router.push('/profile');
       } else {
         toast.error('Error al procesar KYC');
       }
@@ -188,10 +188,10 @@ export default function KYCPage() {
         </Button>
 
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold text-white">KYC - Nivel Avanzado</h1>
+          <h1 className="text-2xl font-bold text-white">KYC - Nivel Básico</h1>
           <div className="flex items-center gap-2 text-sm text-gray-400">
             <ShieldCheckIcon className="w-5 h-5 text-yellow-500" />
-            Nivel Actual: Básico
+            Nivel Actual: N/A
           </div>
         </div>
 
@@ -411,7 +411,7 @@ export default function KYCPage() {
             <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-4">
               <p className="text-sm text-blue-300">
                 <CheckCircleIcon className="w-4 h-4 inline mr-2" />
-                Una vez completado el KYC, tu nivel se actualizará a &quote;Avanzado&quote; y tendrás acceso a funciones adicionales
+                Una vez completado el KYC, tu nivel se actualizará a &apos;Básico&apos; y tendrás acceso a funciones adicionales
                 de la plataforma como límites más altos y verificación prioritaria.
               </p>
             </div>

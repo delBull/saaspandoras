@@ -52,10 +52,20 @@ export default function ProfileProjectsPage() {
         fetch('/api/admin/users'),
         fetch('/api/admin/projects')
       ])
-        .then(([usersRes, projectsRes]) =>
-          Promise.all([usersRes.json(), projectsRes.json()])
-        )
-        .then(([users, projects]: [UserData[], Project[]]) => {
+        .then(([usersRes, projectsRes]) => {
+          if (!usersRes.ok || !projectsRes.ok) {
+            // If not authorized, set empty data
+            console.log('Not authorized to fetch admin data, using empty data');
+            setUserProfile(null);
+            setUserProjects([]);
+            setLoading(false);
+            return;
+          }
+          return Promise.all([usersRes.json(), projectsRes.json()]);
+        })
+        .then((data) => {
+          if (!data) return; // Already handled
+          const [users, projects] = data as [UserData[], Project[]];
           const currentUser = users.find((u: UserData) =>
             u.walletAddress.toLowerCase() === sessionUser.walletAddress?.toLowerCase()
           );

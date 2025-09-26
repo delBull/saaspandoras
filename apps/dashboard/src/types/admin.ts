@@ -71,7 +71,7 @@ export interface UserData {
   systemProjectsManaged?: number; // For super admins only
 
   // KYC related fields
-  kycLevel: 'basic' | 'advanced';
+  kycLevel: 'N/A' | 'basic';
   kycCompleted: boolean;
   kycData?: KYCData | null;
 }

@@ -291,7 +291,7 @@ export async function GET() {
       role: (row as Record<string, unknown>).role as UserRole,
       projectCount: Number((row as Record<string, unknown>).projectCount),
       systemProjectsManaged: (row as Record<string, unknown>).systemProjectsManaged as number | undefined,
-      kycLevel: (row as Record<string, unknown>).kycLevel as 'basic' | 'advanced',
+      kycLevel: (row as Record<string, unknown>).kycLevel as 'N/A' | 'basic',
       kycCompleted: (row as Record<string, unknown>).kycCompleted as boolean,
       kycData: (row as Record<string, unknown>).kycData as any || null,
     }));
