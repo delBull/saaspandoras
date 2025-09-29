@@ -21,19 +21,6 @@ export default async function IndexPage(props: {
   const { lang } = params;
   const dict = await getDictionary(lang);
 
-    const typewriterTexts = [
-    { text: "Pandora's Finance", cursorColor: "#A3E635", contentColor: "#A3E635" },
-    { text: "Tokeniza tu Mundo", cursorColor: "#FFFFFF", contentColor: "#FFFFFF" },
-    { text: "Invierte en Activos Reales", cursorColor: "#A3E635", contentColor: "#A3E635" },
-  ];
-
-const typewriterFont = {
-  fontFamily: "monospace",
-  fontWeight: 400,
-  fontSize: "48px",
-  textAlign: "center",
-} as const;
-
   return (
     <>
       <NFTGatingMint />

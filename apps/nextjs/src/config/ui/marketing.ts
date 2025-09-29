@@ -31,14 +31,6 @@ export const getMarketingConfig = async ({
         hidden: false,
       },
       {
-        title: dict.marketing.main_nav_documentation,
-        href: "#",
-        disabled: true,
-        tooltip: "Coming Soon",
-        external: false,
-        hidden: false,
-      },
-      {
         title: dict.marketing.main_nav_business,
         href: "#",
         disabled: true,
