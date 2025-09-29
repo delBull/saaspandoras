@@ -8,11 +8,6 @@ import { chain } from "~/lib/thirdweb-chain";
 import { motion, AnimatePresence } from "framer-motion";
 import { InformationCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
-const FREEMINT_WALLETS = [
-  "inApp",
-  "io.metamask",
-];
-
 export function ConnectWalletButton() {
   const { connect, isConnecting } = useConnectModal();
   const wallet = useActiveWallet();
@@ -57,7 +52,7 @@ export function ConnectWalletButton() {
       <b className="text-white">¿Por qué solo algunas wallets son recomendadas?</b>
       <ul className="mt-4 list-disc pl-5 space-y-2 text-gray-400">
         <li>
-          Solo wallets como <b>MetaMask</b> y <b>Social Login</b> (Email, Google, etc.) soportan la tecnología de "Smart Accounts" que nos permite pagar el gas por ti de forma segura.
+          Solo wallets como <b>MetaMask</b> y <b>Social Login</b> (Email, Google, etc.) soportan la tecnología de &apos;Smart Accounts&apos; que nos permite pagar el gas por ti de forma segura.
         </li>
         <li>
           Otras wallets (Phantom, 1inch, etc.) tienen restricciones técnicas que no permiten esta función por ahora.
@@ -122,7 +117,7 @@ export function ConnectWalletButton() {
           <motion.div className="absolute inset-px rounded-[40px]" style={{ backgroundColor: "rgb(0, 0, 0)" }} whileHover={{ opacity: 0.75 }} transition={{ duration: 0.25, ease: [0.12, 0.23, 0.5, 1] }} />
           <div className="relative flex flex-row items-center justify-between p-0 w-full">
             <span className="z-10 text-[14px] leading-[1.7em] text-gray-200 whitespace-nowrap">
-              Get your Pandora's Key
+              Get your Pandora&apos;s Key
             </span>
             <span className="z-10 text-[14px] leading-[1.7em] text-gray-200 pl-2">
               {isConnecting ? "Conectando..." : "🔑"}
