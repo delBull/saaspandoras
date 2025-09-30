@@ -71,44 +71,22 @@ export default function ProfileProjectsPage() {
           );
           setUserProfile(currentUser ?? null);
 
-          // Improved logic: Use wallet-based filtering for consistency
-          // The user profile already has the correct project count from the API
+          // 🏦 WALLET-BASED FILTERING ONLY (no email fallbacks, no manual mappings)
           const SUPER_ADMIN_WALLETS = ['0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9'];
           const isSuperAdmin = SUPER_ADMIN_WALLETS.includes(currentUser?.walletAddress.toLowerCase() || '');
-          const userWalletAddress = currentUser?.walletAddress.toLowerCase();
+          const userWalletAddress = currentUser?.walletAddress;
 
-          let userProjects;
+          let userProjects: Project[] = [];
           if (isSuperAdmin) {
-            // Super admin sees all projects for management
+            // Super admin sees all manageable projects
             userProjects = projects.filter(p =>
-              p.status === 'pending' || p.status === 'approved' || p.status === 'live' || p.status === 'completed'
+              ['pending', 'approved', 'live', 'completed'].includes(p.status)
             );
-          } else {
-            // PREFER wallet-based filtering over email (more reliable)
-            // First try filtering by wallet address for projects that have it
-            userProjects = projects.filter(p => {
-              // If project has applicant_wallet_address, use it
-              if (p.applicantWalletAddress) {
-                return p.applicantWalletAddress.toLowerCase() === userWalletAddress;
-              }
-              // Fallback to email (legacy support)
-              return p.applicantEmail?.toLowerCase() === currentUser?.email?.toLowerCase();
-            });
-
-            // If no projects found and user should have projects according to profile count,
-            // use temporary manual mapping (same as admin API)
-            if (userProjects.length === 0 && currentUser?.projectCount && currentUser.projectCount > 0) {
-              console.log('Using fallback project assignment for existing projects');
-              const tempWalletMapping: Record<string, number> = {
-                '0xb2d4c368b9c21e3fde04197d6ea176b44c5c7d18': 1, // One specific project
-              };
-
-              if (tempWalletMapping[userWalletAddress || '']) {
-                // For this user, find the project that should belong to them (temporary)
-                // This is a stopgap until all historical projects are assigned wallet addresses
-                userProjects = projects.slice(0, 1); // Take first project as temporary assignment
-              }
-            }
+          } else if (userWalletAddress) {
+            // Regular users see ONLY their projects by wallet address
+            userProjects = projects.filter(p =>
+              p.applicantWalletAddress?.toLowerCase() === userWalletAddress.toLowerCase()
+            );
           }
 
           setUserProjects(userProjects);
