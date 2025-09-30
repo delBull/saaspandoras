@@ -8,51 +8,71 @@ import { sql } from "drizzle-orm";
 export const runtime = "nodejs";
 
 export async function GET() {
+  let walletAddress: string | undefined;
+
   try {
     const { session } = await getAuth(await headers());
 
-    const walletAddress = session?.userId;
+    walletAddress = session?.userId ?? undefined;
     if (!walletAddress) {
       return NextResponse.json({ message: "No autorizado - Sesión inválida" }, { status: 401 });
     }
 
     console.log("🛠️ [Profile API] User wallet:", walletAddress);
 
-    const result = await db.execute(sql`
-      SELECT json_build_object(
-        'id', u."id",
-        'name', u."name",
-        'email', u."email",
-        'image', u."image",
-        'walletAddress', u."walletAddress",
-        'connectionCount', u."connectionCount",
-        'lastConnectionAt', u."lastConnectionAt",
-        'createdAt', u."createdAt",
-        'kycLevel', u."kycLevel",
-        'kycCompleted', u."kycCompleted",
-        'kycData', u."kycData",
-        'projects', COALESCE(json_agg(p.*) FILTER (WHERE p.id IS NOT NULL), '[]')
-      ) AS profile
-      FROM "User" u
-      LEFT JOIN "projects" p
-        ON LOWER(u."walletAddress") = LOWER(p."applicant_wallet_address")
-      WHERE LOWER(u."walletAddress") = LOWER(${walletAddress})
-      GROUP BY u."id"
+    // Get user data directly from User table
+    const userResult = await db.execute(sql`
+      SELECT "id", "name", "email", "image", "walletAddress",
+             "connectionCount", "lastConnectionAt", "createdAt",
+             "kycLevel", "kycCompleted", "kycData"
+      FROM "User"
+      WHERE LOWER("walletAddress") = LOWER(${walletAddress})
     `);
 
-    console.log("🛠️ [Profile API] SQL result count:", result.length);
+    console.log("🛠️ [Profile API] User data direct query result length:", userResult.length);
+    console.log("🛠️ [Profile API] User data direct query first item:", userResult[0]);
 
-    if (result.length === 0) {
+    if (userResult.length === 0 || !userResult[0]) {
       console.log("🛠️ [Profile API] User not found for wallet:", walletAddress);
       return NextResponse.json({ message: "Usuario no encontrado" }, { status: 404 });
     }
 
-    const profile = (result[0] as any).profile;
-    const projectsData = profile.projects;
-    const projectsCount = Array.isArray(projectsData) ? projectsData.length : 0;
-    console.log("🛠️ [Profile API] Profile projects count:", projectsCount);
-    const projectsArray = Array.isArray(projectsData) ? projectsData.slice(0, 2) : [];
-    console.log("🛠️ [Profile API] First few projects:", projectsArray);
+    const userData = userResult[0] as any;
+
+    // Get user projects
+    const userProjects = await db.execute(sql`
+      SELECT * FROM "projects"
+      WHERE LOWER("applicant_wallet_address") = LOWER(${walletAddress})
+      ORDER BY "created_at" DESC
+    `);
+
+    console.log("🛠️ [Profile API] User projects count:", userProjects.length);
+
+    // Build profile object
+    const profile = {
+      id: userData.id,
+      name: userData.name,
+      email: userData.email,
+      image: userData.image,
+      walletAddress: userData.walletAddress,
+      connectionCount: userData.connectionCount,
+      lastConnectionAt: userData.lastConnectionAt,
+      createdAt: userData.createdAt,
+      kycLevel: userData.kycLevel,
+      kycCompleted: userData.kycCompleted,
+      kycData: userData.kycData,
+      projects: userProjects
+    };
+
+    console.log("🛠️ [Profile API] Constructed profile:", {
+      id: profile.id,
+      name: profile.name,
+      email: profile.email,
+      kycLevel: profile.kycLevel,
+      kycCompleted: profile.kycCompleted,
+      hasKycData: !!profile.kycData
+    });
+
 
     // Agregar cálculo de rol y proyectos gestionados aquí mismo:
     const [adminCheck] = await db.execute(sql`
@@ -85,7 +105,16 @@ export async function GET() {
       hasPandorasKey: true,
     });
   } catch (error) {
-    console.error("Error optimized profile:", error);
-    return NextResponse.json({ message: "Error interno" }, { status: 500 });
+    console.error("💥 [Profile API] Critical error occurred:");
+    console.error("Error name:", error instanceof Error ? error.name : "Unknown error type");
+    console.error("Error message:", error instanceof Error ? error.message : "No message");
+    console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
+    console.error("Error object:", error);
+    console.error("Wallet address that caused error:", walletAddress);
+    return NextResponse.json({
+      message: "Error interno del servidor",
+      error: error instanceof Error ? error.message : "Unknown error",
+      walletAddress: walletAddress
+    }, { status: 500 });
   }
 }
