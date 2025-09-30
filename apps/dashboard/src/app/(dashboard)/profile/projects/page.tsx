@@ -49,13 +49,13 @@ export default function ProfileProjectsPage() {
     if (sessionUser?.walletAddress) {
       // Fetch user profile and projects data
       Promise.all([
-        fetch('/api/admin/users'),
-        fetch('/api/admin/projects')
+        fetch('/api/profile'),
+        fetch('/api/projects')
       ])
         .then(([usersRes, projectsRes]) => {
           if (!usersRes.ok || !projectsRes.ok) {
             // If not authorized, set empty data
-            console.log('Not authorized to fetch admin data, using empty data');
+            console.log('Not authorized to fetch profile data, using empty data');
             setUserProfile(null);
             setUserProjects([]);
             setLoading(false);
@@ -65,16 +65,13 @@ export default function ProfileProjectsPage() {
         })
         .then((data) => {
           if (!data) return; // Already handled
-          const [users, projects] = data as [UserData[], Project[]];
-          const currentUser = users.find((u: UserData) =>
-            u.walletAddress.toLowerCase() === sessionUser.walletAddress?.toLowerCase()
-          );
-          setUserProfile(currentUser ?? null);
+          const [userProfile, projects] = data as [UserData, Project[]];
+          setUserProfile(userProfile);
 
-          // 🏦 WALLET-BASED FILTERING ONLY (no email fallbacks, no manual mappings)
+          // 🏦 WALLET-BASED FILTERING ONLY
           const SUPER_ADMIN_WALLETS = ['0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9'];
-          const isSuperAdmin = SUPER_ADMIN_WALLETS.includes(currentUser?.walletAddress.toLowerCase() || '');
-          const userWalletAddress = currentUser?.walletAddress;
+          const isSuperAdmin = SUPER_ADMIN_WALLETS.includes(userProfile?.walletAddress.toLowerCase() || '');
+          const userWalletAddress = userProfile?.walletAddress;
 
           let userProjects: Project[] = [];
           if (isSuperAdmin) {
