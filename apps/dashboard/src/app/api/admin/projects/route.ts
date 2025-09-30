@@ -141,6 +141,7 @@ export async function POST(request: Request) {
         applicantPosition: data.applicantPosition ?? null,
         applicantEmail: data.applicantEmail ?? null,
         applicantPhone: data.applicantPhone ?? null,
+        applicantWalletAddress: creatorWallet, // 🔥 CRITICAL: Save the wallet address of the project creator
         verificationAgreement: data.verificationAgreement,
 
         // --- Campo de Estado: String (Enum) ---
