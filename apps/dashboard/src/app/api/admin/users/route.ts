@@ -150,11 +150,15 @@ export async function GET() {
       let projectCount = Number(user.projectCount) || 0;
       let systemProjectsManaged: number | undefined;
 
-      // For super admins, don't show personal projects - they only manage the system
+      // Set system management for different admin types
       if (isSuperAdmin) {
         projectCount = 0; // No personal projects for super admin
         systemProjectsManaged = totalProjectsInDb; // System management count
         console.log(`   ✅ SUPER ADMIN: 0 personal projects, manages ${systemProjectsManaged} total projects`);
+      } else if (isAdmin) {
+        // Regular admins manage all projects but show their personal count too
+        systemProjectsManaged = totalProjectsInDb; // Normal admin can manage all projects
+        console.log(`   ⚙️ ADMIN: ${projectCount} personal projects, manages ${systemProjectsManaged} projects total`);
       } else {
         console.log(`   🏦 WALLET RELATION: ${projectCount} projects for wallet ${userWallet}`);
       }
