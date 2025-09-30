@@ -9,7 +9,6 @@ import { Label } from '@saasfly/ui/label';
 import {
   ArrowLeftIcon,
   UserIcon,
-  HomeIcon,
   ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
@@ -243,7 +242,7 @@ export default function ProfileEditPage() {
       <div className="mb-6">
         <Button
           variant="ghost"
-          onClick={() => window.location.href = '/profile'}
+          onClick={() => router.push('/profile')}
           className="mb-4"
         >
           <ArrowLeftIcon className="w-4 h-4 mr-2" />
@@ -306,6 +305,7 @@ export default function ProfileEditPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="name">Nombre *</Label>
                 <Input
@@ -359,134 +359,78 @@ export default function ProfileEditPage() {
                 placeholder="Número de identificación fiscal"
               />
             </div>
+            </div>
           </CardContent>
         </Card>
 
-        {/* KYC Information */}
-        <Card>
+        {/* KYC Status Control */}
+        <Card className="border-orange-500/20 bg-orange-500/5">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-orange-500">
               <ShieldCheckIcon className="w-5 h-5" />
-              Información KYC
+              Estado de KYC
             </CardTitle>
             <CardDescription>
-              Datos de verificación de identidad (requeridos para inversiones)
+              Marque esta opción si ha completado toda la información de KYC requerida
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="fullName">{formData.kycCompleted ? 'Nombre Completo *' : 'Nombre Completo'}</Label>
-                <Input
-                  id="fullName"
-                  value={formData.fullName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
-                  className={errors.fullName ? 'border-red-500' : ''}
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  id="kycCompleted"
+                  checked={formData.kycCompleted}
+                  onChange={(e) => {
+                    const isCompleted = e.target.checked;
+
+                    // Validate required KYC fields if marking as completed
+                    if (isCompleted) {
+                      const kycFieldsFilled = formData.fullName?.trim() &&
+                                             formData.phoneNumber?.trim() &&
+                                             formData.nationality?.trim() &&
+                                             formData.address?.country?.trim();
+
+                      if (!kycFieldsFilled) {
+                        toast.error('Complete todos los campos KYC requeridos antes de marcar como completado');
+                        return;
+                      }
+                    }
+
+                    setFormData(prev => ({
+                      ...prev,
+                      kycCompleted: isCompleted,
+                      kycLevel: isCompleted ? 'basic' : 'N/A',
+                    }));
+                  }}
+                  className="w-4 h-4 text-lime-600 bg-gray-100 border-gray-300 rounded focus:ring-lime-500"
                 />
-                {errors.fullName && <p className="text-sm text-red-500 mt-1">{errors.fullName}</p>}
+                <label htmlFor="kycCompleted" className="text-sm font-medium text-white">
+                  KYC Básico completado - Estoy listo para invertir
+                </label>
               </div>
 
-              <div>
-                <Label htmlFor="phoneNumber">{formData.kycCompleted ? 'Teléfono *' : 'Teléfono'}</Label>
-                <Input
-                  id="phoneNumber"
-                  type="tel"
-                  value={formData.phoneNumber}
-                  onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))}
-                  placeholder="+52 555 123 4567"
-                  className={errors.phoneNumber ? 'border-red-500' : ''}
-                />
-                {errors.phoneNumber && <p className="text-sm text-red-500 mt-1">{errors.phoneNumber}</p>}
-              </div>
-            </div>
+              {formData.kycCompleted && (
+                <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-green-400 text-sm font-medium">
+                      ✅ KYC Básico verificado - Ahora puede participar en proyectos de inversión
+                    </span>
+                  </div>
+                </div>
+              )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="dateOfBirth">Fecha de Nacimiento</Label>
-                <Input
-                  id="dateOfBirth"
-                  type="date"
-                  value={formData.dateOfBirth}
-                  onChange={(e) => setFormData(prev => ({ ...prev, dateOfBirth: e.target.value }))}
-                  className={errors.dateOfBirth ? 'border-red-500' : ''}
-                />
-                {errors.dateOfBirth && <p className="text-sm text-red-500 mt-1">{errors.dateOfBirth}</p>}
-              </div>
-
-              <div>
-                <Label htmlFor="nationality">{formData.kycCompleted ? 'Nacionalidad *' : 'Nacionalidad'}</Label>
-                <Input
-                  id="nationality"
-                  value={formData.nationality}
-                  onChange={(e) => setFormData(prev => ({ ...prev, nationality: e.target.value }))}
-                  className={errors.nationality ? 'border-red-500' : ''}
-                />
-                {errors.nationality && <p className="text-sm text-red-500 mt-1">{errors.nationality}</p>}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Address Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <HomeIcon className="w-5 h-5" />
-              Dirección
-            </CardTitle>
-            <CardDescription>
-              Dirección residencial completa
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="street">{formData.kycCompleted ? 'Dirección *' : 'Dirección'}</Label>
-              <Input
-                id="street"
-                value={formData.address?.street}
-                onChange={(e) => updateAddress('street', e.target.value)}
-                placeholder="Calle, número, colonia"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="city">Ciudad</Label>
-                <Input
-                  id="city"
-                  value={formData.address?.city}
-                  onChange={(e) => updateAddress('city', e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="state">Estado / Provincia</Label>
-                <Input
-                  id="state"
-                  value={formData.address?.state}
-                  onChange={(e) => updateAddress('state', e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="country">{formData.kycCompleted ? 'País *' : 'País'}</Label>
-                <Input
-                  id="country"
-                  value={formData.address?.country}
-                  onChange={(e) => updateAddress('country', e.target.value)}
-                  className={errors['address.country'] ? 'border-red-500' : ''}
-                />
-                {errors['address.country'] && <p className="text-sm text-red-500 mt-1">{errors['address.country']}</p>}
-              </div>
-              <div>
-                <Label htmlFor="postalCode">Código Postal</Label>
-                <Input
-                  id="postalCode"
-                  value={formData.address?.postalCode}
-                  onChange={(e) => updateAddress('postalCode', e.target.value)}
-                />
-              </div>
+              {!formData.kycCompleted && (
+                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                    <span className="text-yellow-400 text-sm font-medium">
+                      ⚠️ Complete la información KYC para acceder a inversiones
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -496,7 +440,7 @@ export default function ProfileEditPage() {
       <div className="flex justify-end space-x-4 mt-8">
         <Button
           variant="outline"
-          onClick={() => window.location.href = '/profile'}
+          onClick={() => router.push('/profile')}
           disabled={loading}
         >
           Cancelar
