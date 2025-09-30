@@ -19,13 +19,12 @@ import { useProfile } from "@/hooks/useProfile";
 export default function PandoriansDashboardPage() {
   const { profile, projects, isLoading, isError } = useProfile();
   const [sessionUser, setSessionUser] = useState<{walletAddress?: string} | null>(null);
-  const [showBetaToast, setShowBetaToast] = useState(false);
   const toastShownRef = useRef(false);
 
   const { open } = useProjectModal();
 
   useEffect(() => {
-    // Get session user
+    // Get session user first (always needed for authentication)
     const getSession = () => {
       try {
         const walletAddress = document.cookie
@@ -35,7 +34,22 @@ export default function PandoriansDashboardPage() {
 
         if (walletAddress) {
           setSessionUser({ walletAddress });
-          setShowBetaToast(true); // Show toast only when we have a session
+
+          // Show beta notification toast only once when session is first detected
+          if (!toastShownRef.current) {
+            toast.info(
+              "Dashboard en Versión Beta",
+              {
+                description: "Esta información puede incluir datos de demostración mientras desarrollamos nuevas funciones. La información financiera real se integrará progresivamente.",
+                duration: 8000,
+                action: {
+                  label: "Entendido",
+                  onClick: () => console.log("Beta acknowledgment"),
+                },
+              }
+            );
+            toastShownRef.current = true;
+          }
         }
       } catch (error) {
         console.error('Error getting session:', error);
@@ -44,25 +58,6 @@ export default function PandoriansDashboardPage() {
 
     getSession();
   }, []);
-
-  useEffect(() => {
-    if (showBetaToast && !toastShownRef.current) {
-      // Show beta notification toast only once
-      toast.info(
-        "Dashboard en Versión Beta",
-        {
-          description: "Esta información puede incluir datos de demostración mientras desarrollamos nuevas funciones. La información financiera real se integrará progresivamente.",
-          duration: 8000,
-          action: {
-            label: "Entendido",
-            onClick: () => console.log("Beta acknowledgment"),
-          },
-        }
-      );
-      toastShownRef.current = true;
-      setShowBetaToast(false); // Prevent future shows
-    }
-  }, [showBetaToast, sessionUser]);
 
   // Handle loading and error states
   if (isLoading) {
