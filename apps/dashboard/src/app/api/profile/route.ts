@@ -16,6 +16,8 @@ export async function GET() {
       return NextResponse.json({ message: "No autorizado - Sesión inválida" }, { status: 401 });
     }
 
+    console.log("🛠️ [Profile API] User wallet:", walletAddress);
+
     const result = await db.execute(sql`
       SELECT json_build_object(
         'id', u."id",
@@ -38,11 +40,19 @@ export async function GET() {
       GROUP BY u."id"
     `);
 
+    console.log("🛠️ [Profile API] SQL result count:", result.length);
+
     if (result.length === 0) {
+      console.log("🛠️ [Profile API] User not found for wallet:", walletAddress);
       return NextResponse.json({ message: "Usuario no encontrado" }, { status: 404 });
     }
 
     const profile = (result[0] as any).profile;
+    const projectsData = profile.projects;
+    const projectsCount = Array.isArray(projectsData) ? projectsData.length : 0;
+    console.log("🛠️ [Profile API] Profile projects count:", projectsCount);
+    const projectsArray = Array.isArray(projectsData) ? projectsData.slice(0, 2) : [];
+    console.log("🛠️ [Profile API] First few projects:", projectsArray);
 
     // Agregar cálculo de rol y proyectos gestionados aquí mismo:
     const [adminCheck] = await db.execute(sql`

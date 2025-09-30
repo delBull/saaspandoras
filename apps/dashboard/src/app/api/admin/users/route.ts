@@ -92,7 +92,7 @@ export async function GET() {
         u."kycLevel",
         u."kycCompleted",
         u."kycData",
-        COALESCE(COUNT(p.*), 0) as "projectCount"
+        COALESCE(COUNT(DISTINCT p.id), 0) as "projectCount"
       FROM "User" u
       LEFT JOIN "projects" p
         ON LOWER(u."walletAddress") = LOWER(p."applicant_wallet_address")
@@ -113,7 +113,11 @@ export async function GET() {
       ORDER BY u."createdAt" DESC
     `);
 
-    console.log("Users with projects query result:", usersWithProjects.length, "users found");
+    console.log("🛠️ [Admin/Users] Users with projects query result:", usersWithProjects.length, "users found");
+    usersWithProjects.forEach((user: any) => {
+      const wallet = user.walletAddress || "unknown";
+      console.log(`🛠️ [Admin/Users] User ${String(wallet).substring(0, 8)}: projectCount=${user.projectCount}`);
+    });
 
     // Get total projects for super admin calculation
     const totalProjectsQuery = await db.execute(sql`SELECT COUNT(*) as count FROM "projects"`);

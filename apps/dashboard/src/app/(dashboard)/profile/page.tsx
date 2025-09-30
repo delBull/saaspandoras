@@ -1,25 +1,17 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@saasfly/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@saasfly/ui/card';
 import { ClipboardDocumentIcon, CheckIcon, WalletIcon, ShieldCheckIcon, ArrowTopRightOnSquareIcon, BoltIcon, KeyIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
-import type { UserData } from '@/types/admin';
+import { useProfile } from '@/hooks/useProfile';
 import Image from 'next/image';
 
 export default function ProfilePage() {
-  const [userProfile, setUserProfile] = useState<UserData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [sessionLoading, setSessionLoading] = useState(true);
+  const { profile, isLoading, isError } = useProfile();
+  const [sessionUser, setSessionUser] = useState<{walletAddress?: string} | null>(null);
   const [copied, setCopied] = useState(false);
-  const [sessionUser, setSessionUser] = useState<{
-    walletAddress?: string;
-    name?: string;
-    email?: string;
-    image?: string;
-  } | null>(null);
 
   // Function to format wallet address with ellipsis
   const formatWalletAddress = (address: string) => {
@@ -41,7 +33,7 @@ export default function ProfilePage() {
   };
 
   useEffect(() => {
-    // Get user session from cookies (wallet-address)
+    // Get user session from cookies
     const getSession = () => {
       try {
         const walletAddress = document.cookie
@@ -50,35 +42,17 @@ export default function ProfilePage() {
           ?.split('=')[1];
 
         if (walletAddress) {
-          setSessionUser({
-            walletAddress: walletAddress,
-            name: undefined,
-            email: undefined,
-            image: undefined,
-          });
+          setSessionUser({ walletAddress });
         }
       } catch (error) {
         console.error('Error getting session from cookies:', error);
-      } finally {
-        setSessionLoading(false);
       }
     };
 
     getSession();
   }, []);
 
-  useEffect(() => {
-    if (sessionUser?.walletAddress) {
-      // For now, don't fetch user profile data to avoid 403 errors
-      // TODO: Create a proper /api/profile endpoint for user data
-      setUserProfile(null);
-      setLoading(false);
-    } else if (!sessionLoading) {
-      setLoading(false);
-    }
-  }, [sessionUser, sessionLoading]);
-
-  if (sessionLoading || loading) {
+  if (isLoading) {
     return (
       <div className="p-6">
         <div className="animate-pulse">
@@ -92,7 +66,7 @@ export default function ProfilePage() {
     );
   }
 
-  if (!sessionUser) {
+  if (isError || !sessionUser || !profile) {
     return (
       <div className="p-6">
         <Card>
@@ -121,27 +95,27 @@ export default function ProfilePage() {
             <CardTitle className="flex items-center gap-3">
               <div className="relative mb-5">
                 <Image
-                  src={userProfile?.image ?? sessionUser.image ?? '/images/avatars/rasta.png'}
+                  src={profile?.image ?? '/images/avatars/rasta.png'}
                   alt="Profile"
                   width={64}
                   height={64}
                   className="w-16 h-16 rounded-full border-2 border-lime-400"
                 />
                 <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-zinc-900 ${
-                  userProfile?.kycLevel === 'basic' ? 'bg-green-500' : 'bg-yellow-500'
+                  profile?.kycLevel === 'basic' ? 'bg-green-500' : 'bg-yellow-500'
                 }`}></div>
               </div>
               <div>
                 <div className="text-lg font-semibold text-white">
-                  {userProfile?.name ?? sessionUser.name ?? 'Usuario'}
+                  {profile?.name ?? 'Usuario'}
                 </div>
                 <div className="text-sm text-gray-400">
-                  Nivel {userProfile?.kycLevel === 'basic' ? 'Básico' : 'N/A'}
+                  Nivel {profile?.kycLevel === 'basic' ? 'Básico' : 'N/A'}
                 </div>
               </div>
             </CardTitle>
             {/* KYC Básico Button */}
-            {(!userProfile || userProfile.kycLevel !== 'basic') && (
+            {profile?.kycLevel !== 'basic' && (
               <Button
                 className="w-full bg-lime-500 hover:bg-lime-600 text-black font-medium px-4 py-2 shadow-lg flex-shrink-0 text-base whitespace-nowrap"
                 onClick={() => window.location.href = '/profile/kyc'}
@@ -225,27 +199,27 @@ export default function ProfilePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-gray-400">Email</label>
-                  <p className="text-white">{userProfile?.email ?? sessionUser.email ?? 'No registrado'}</p>
+                  <p className="text-white">{profile?.email ?? 'No registrado'}</p>
                 </div>
 
                 <div>
                   <label className="text-sm font-medium text-gray-400">Rol</label>
-                  <p className="text-white capitalize">{userProfile?.role ?? 'pandorian'}</p>
+                  <p className="text-white capitalize">{profile?.role ?? 'pandorian'}</p>
                 </div>
 
                 <div>
                   <label className="text-sm font-medium text-gray-400">Connections</label>
-                  <p className="text-white">{userProfile?.connectionCount ?? 1}</p>
+                  <p className="text-white">{profile?.connectionCount ?? 1}</p>
                 </div>
 
                 <div>
                   <label className="text-sm font-medium text-gray-400">Estado KYC</label>
                   <div className="flex items-center gap-2">
                     <div className={`w-2 h-2 rounded-full ${
-                      userProfile?.kycCompleted ? 'bg-green-500' : 'bg-yellow-500'
+                      profile?.kycCompleted ? 'bg-green-500' : 'bg-yellow-500'
                     }`}></div>
                     <span className="text-white">
-                      {userProfile?.kycCompleted ? 'Verificado' : 'Pendiente'}
+                      {profile?.kycCompleted ? 'Verificado' : 'Pendiente'}
                     </span>
                   </div>
                 </div>
@@ -347,12 +321,12 @@ export default function ProfilePage() {
             </CardHeader>
             <CardContent>
               <div className="text-gray-400">
-                <p>Última conexión: {userProfile?.lastConnectionAt ?
-                  new Date(userProfile.lastConnectionAt).toLocaleString('es-ES') :
+                <p>Última conexión: {profile?.lastConnectionAt ?
+                  new Date(profile.lastConnectionAt).toLocaleString('es-ES') :
                   'N/A'
                 }</p>
-                <p className="mt-2">Proyecto aplicado: {userProfile?.projectCount ?? 0}</p>
-                <p>Tiene Pandora&apos;s Key: {userProfile?.hasPandorasKey ? '✅' : '❌'}</p>
+                <p className="mt-2">Proyecto aplicado: {profile?.projectCount ?? 0}</p>
+                <p>Tiene Pandora&apos;s Key: {profile?.hasPandorasKey ? '✅' : '❌'}</p>
               </div>
             </CardContent>
           </Card>
