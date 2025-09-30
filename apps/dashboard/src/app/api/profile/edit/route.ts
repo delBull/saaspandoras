@@ -1,9 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
 import { NextResponse } from "next/server";
 import { getAuth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { db } from "~/db";
-import { sql } from "drizzle-orm";
+import { users } from "~/db/schema";
+import { eq, sql } from "drizzle-orm";
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
 export const runtime = "nodejs";
@@ -31,6 +31,8 @@ interface ProfileUpdateData {
 
 export async function POST(request: Request) {
   try {
+    console.log("🚀 POST /api/profile/edit - ===== START REQUEST =====");
+
     const { session } = await getAuth(await headers());
 
     // 🔒 Validación defensiva para userId requerido
@@ -44,14 +46,26 @@ export async function POST(request: Request) {
     }
 
     const userId = session.userId;
+    console.log(`👤 POST /api/profile/edit - User authenticated: ${userId}`);
 
     const body = await request.json() as {
       walletAddress: string;
       profileData: ProfileUpdateData;
     };
 
+    console.log(`📨 POST /api/profile/edit - Received request body:`, JSON.stringify(body, null, 2));
+    console.log(`🏠 Requested wallet to update: ${body.walletAddress}`);
+    console.log(`👤 Session user: ${userId}`);
+    console.log(`📝 Data to save:`, {
+      name: body.profileData.name,
+      email: body.profileData.email,
+      occupation: body.profileData.occupation,
+      nationality: body.profileData.nationality
+    });
+
     // Verify the wallet address matches the session
     if (body.walletAddress.toLowerCase() !== userId.toLowerCase()) {
+      console.log(`POST /api/profile/edit - Wallet mismatch: ${body.walletAddress} vs ${userId}`);
       return NextResponse.json({ message: "Wallet address mismatch" }, { status: 403 });
     }
 
@@ -59,10 +73,12 @@ export async function POST(request: Request) {
 
     // Validate basic required fields
     if (!profileData.name?.trim()) {
+      console.log("POST /api/profile/edit - Name validation failed");
       return NextResponse.json({ message: "Nombre es requerido" }, { status: 400 });
     }
 
     if (!profileData.email?.trim()) {
+      console.log("POST /api/profile/edit - Email validation failed");
       return NextResponse.json({ message: "Email es requerido" }, { status: 400 });
     }
 
@@ -70,12 +86,15 @@ export async function POST(request: Request) {
     if (profileData.kycCompleted) {
       if (!profileData.fullName?.trim() || !profileData.phoneNumber?.trim() ||
           !profileData.nationality?.trim() || !profileData.address?.country?.trim()) {
+        console.log("POST /api/profile/edit - KYC fields validation failed");
         return NextResponse.json({ message: "Campos KYC requeridos incompletos" }, { status: 400 });
       }
     }
 
-    // Update user profile data
-    await db.execute(sql`
+    console.log("POST /api/profile/edit - Validations passed, preparing DB update");
+
+    // Update user profile data using direct SQL for debugging
+    const updateQuery = sql`
       UPDATE "User"
       SET "name" = ${profileData.name},
           "email" = ${profileData.email},
@@ -90,12 +109,26 @@ export async function POST(request: Request) {
             taxId: profileData.taxId,
             nationality: profileData.nationality,
             address: profileData.address,
-          })},
-          "updatedAt" = NOW()
-      WHERE "walletAddress" = ${body.walletAddress}
-    `);
+          })}
+      WHERE LOWER("walletAddress") = LOWER(${body.walletAddress})
+    `;
 
-    console.log(`Profile updated for user: ${body.walletAddress}`);
+    console.log("POST /api/profile/edit - Executing query:", updateQuery);
+
+    const updateResult = await db.execute(updateQuery);
+    console.log("POST /api/profile/edit - Query result:", updateResult);
+
+    console.log(`Profile updated successfully for user: ${body.walletAddress}`);
+    console.log('Updated fields:', {
+      name: profileData.name,
+      email: profileData.email,
+      kycCompleted: profileData.kycCompleted,
+      kycDataSample: {
+        occupation: profileData.occupation,
+        nationality: profileData.nationality,
+        hasAddress: !!profileData.address?.country
+      }
+    });
 
     return NextResponse.json({
       message: "Perfil actualizado exitosamente",
@@ -104,8 +137,9 @@ export async function POST(request: Request) {
 
   } catch (error) {
     console.error("Error updating profile:", error);
+    console.error("Stack trace:", error instanceof Error ? error.stack : "No stack trace");
     return NextResponse.json(
-      { message: "Error interno del servidor" },
+      { message: "Error interno del servidor", details: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 }
     );
   }
@@ -118,18 +152,38 @@ export async function GET() {
       return NextResponse.json({ message: "No autorizado" }, { status: 403 });
     }
 
-    // Get current user profile data
-    const userResult = await db.execute(sql`
-      SELECT "name", "email", "image", "kycLevel", "kycCompleted", "kycData"
-      FROM "User"
-      WHERE "walletAddress" = ${session.userId}
-    `);
+    console.log(`GET /api/profile/edit - Fetching data for user: ${session.userId}`);
+
+    // Get current user profile data using Drizzle ORM
+    const userResult = await db.select({
+      name: users.name,
+      email: users.email,
+      image: users.image,
+      kycLevel: users.kycLevel,
+      kycCompleted: users.kycCompleted,
+      kycData: users.kycData,
+    })
+    .from(users)
+    .where(eq(users.walletAddress, session.userId))
+    .limit(1);
 
     if (userResult.length === 0) {
+      console.log(`GET /api/profile/edit - User not found: ${session.userId}`);
       return NextResponse.json({ message: "Usuario no encontrado" }, { status: 404 });
     }
 
-    const user = userResult[0] as any;
+    const user = userResult[0];
+
+    if (!user) {
+      console.log(`GET /api/profile/edit - User data is undefined: ${session.userId}`);
+      return NextResponse.json({ message: "Datos de usuario no encontrados" }, { status: 404 });
+    }
+
+    console.log(`GET /api/profile/edit - User data retrieved for: ${session.userId}`, {
+      name: user.name,
+      kycLevel: user.kycLevel,
+      kycCompleted: user.kycCompleted
+    });
 
     return NextResponse.json({
       name: user.name,

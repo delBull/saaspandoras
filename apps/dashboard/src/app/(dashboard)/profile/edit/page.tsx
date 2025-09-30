@@ -142,31 +142,59 @@ export default function ProfileEditPage() {
   };
 
   const handleSubmit = async () => {
-    if (!validateForm() || !sessionUser?.walletAddress) {
+    console.log('🎛️ handleSubmit called - starting form submission');
+    console.log('📝 Form data to submit:', formData);
+
+    // Check validations
+    const validationPassed = validateForm();
+    console.log('✅ Validations passed:', validationPassed);
+
+    const hasSessionUser = !!sessionUser?.walletAddress;
+    console.log('👤 Has session user:', hasSessionUser, 'Wallet:', sessionUser?.walletAddress);
+
+    if (!validationPassed || !hasSessionUser) {
+      console.log('❌ Validation failed or no session user - showing error toast');
       toast.error('Revisa los campos requeridos');
       return;
     }
 
+    console.log('🚀 Starting API call...');
     setLoading(true);
     try {
+      const requestBody = {
+        walletAddress: sessionUser.walletAddress,
+        profileData: formData,
+      };
+      console.log('📤 Request body:', requestBody);
+
       const response = await fetch('/api/profile/edit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          walletAddress: sessionUser.walletAddress,
-          profileData: formData,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
+      console.log('📦 API response status:', response.status, response.ok ? 'SUCCESS' : 'FAILED');
+
       if (response.ok) {
+        console.log('🎉 API call successful - updating profile');
         toast.success('Perfil actualizado exitosamente');
-        // Refresh profile data
-        void mutate();
+
+        // Force immediate revalidation and update cache
+        console.log('🔄 Forcing immediate profile data refresh...');
+        await mutate(async () => fetch('/api/profile').then(res => res.json()), {
+          revalidate: true
+        });
+        console.log('✅ Data refresh completed');
+
+        console.log('📱 Navigating to profile...');
         router.push('/profile');
       } else {
+        const errorMessage = await response.text();
+        console.error('❌ API call failed with response:', response.status, errorMessage);
         toast.error('Error al actualizar perfil');
       }
     } catch (error) {
+      console.error('💥 Error in fetch:', error);
       toast.error('Error de conexión');
     } finally {
       setLoading(false);
@@ -215,7 +243,7 @@ export default function ProfileEditPage() {
       <div className="mb-6">
         <Button
           variant="ghost"
-          onClick={() => router.push('/profile')}
+          onClick={() => window.location.href = '/profile'}
           className="mb-4"
         >
           <ArrowLeftIcon className="w-4 h-4 mr-2" />
@@ -468,7 +496,7 @@ export default function ProfileEditPage() {
       <div className="flex justify-end space-x-4 mt-8">
         <Button
           variant="outline"
-          onClick={() => router.push('/profile')}
+          onClick={() => window.location.href = '/profile'}
           disabled={loading}
         >
           Cancelar
