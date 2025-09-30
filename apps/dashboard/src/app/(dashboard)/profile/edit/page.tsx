@@ -15,12 +15,9 @@ import { toast } from 'sonner';
 import { useProfile } from '@/hooks/useProfile';
 
 interface ProfileEditData {
-  // Basic profile data
   name: string;
   email: string;
   image: string;
-
-  // KYC data
   kycLevel: 'basic' | 'advanced' | 'N/A';
   kycCompleted: boolean;
   fullName: string;
@@ -29,8 +26,6 @@ interface ProfileEditData {
   occupation: string;
   taxId: string;
   nationality: string;
-
-  // Address
   address: {
     street: string;
     city: string;
@@ -166,7 +161,7 @@ export default function ProfileEditPage() {
       };
       console.log('📤 Request body:', requestBody);
 
-      const response = await fetch('/api/profile/edit', {
+      const response = await fetch('/api/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
@@ -198,16 +193,6 @@ export default function ProfileEditPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const updateAddress = (field: keyof typeof formData.address, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      address: {
-        ...prev.address,
-        [field]: value,
-      },
-    }));
   };
 
   if (isLoading) {
@@ -305,7 +290,6 @@ export default function ProfileEditPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="name">Nombre *</Label>
                 <Input
@@ -358,7 +342,6 @@ export default function ProfileEditPage() {
                 onChange={(e) => setFormData(prev => ({ ...prev, taxId: e.target.value }))}
                 placeholder="Número de identificación fiscal"
               />
-            </div>
             </div>
           </CardContent>
         </Card>
