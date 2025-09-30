@@ -85,19 +85,14 @@ export function Sidebar({
       }
     })().catch(console.error);
 
-    // Fetch user profile data
+    // Fetch user profile data using the regular profile API
     const fetchProfile = async () => {
       if (account?.address) {
         try {
-          const response = await fetch('/api/admin/users');
+          const response = await fetch('/api/profile');
           if (response.ok) {
-            const users: any[] = await response.json();
-            const currentUser = users.find((u: any) =>
-              u.walletAddress.toLowerCase() === account.address?.toLowerCase()
-            );
-            if (currentUser) {
-              setUserProfile(currentUser);
-            }
+            const userData = await response.json();
+            setUserProfile(userData);
           }
         } catch (error) {
           console.error('Error fetching user profile:', error);
@@ -286,7 +281,10 @@ export function Sidebar({
               <div className="flex items-center space-x-2">
                 {/* Avatar (clickeable para dropdown) */}
                 <button
-                  onClick={() => setProfileDropdown(!profileDropdown)}
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent event bubbling
+                    setProfileDropdown(!profileDropdown);
+                  }}
                   className="flex-shrink-0 relative hover:bg-zinc-700/30 p-1 rounded transition-colors"
                   title="Menú de perfil"
                 >
@@ -302,32 +300,33 @@ export function Sidebar({
                   )}
                 </button>
 
-                {/* Wallet display - copiar al hacer click en cualquier parte */}
+                {/* Wallet display - copiar al hacer click */}
                 <motion.div
                   animate={{ opacity: open ? 1 : 0 }}
                   className="flex-1 flex items-center gap-2"
                 >
-                  <div className="flex items-center gap-2 cursor-pointer hover:bg-zinc-800/30 rounded px-2 py-1 transition-colors group"
-                       onClick={(e) => {
-                         e.stopPropagation();
-                         const fullAddress = account?.address ?? userName ?? walletProp ?? '';
-                         void navigator.clipboard.writeText(fullAddress);
-                         // You could add a toast notification here
-                       }}
-                       title={`${account?.address ?? userName ?? walletProp ?? ''} - Click to copy entire wallet address`}
+                  <button
+                    className="flex items-center gap-2 cursor-pointer hover:bg-zinc-800/30 rounded px-2 py-1 transition-colors group w-full text-left"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const fullAddress = account?.address ?? userName ?? walletProp ?? '';
+                      void navigator.clipboard.writeText(fullAddress);
+                      // You could add a toast notification here
+                    }}
+                    title={`${account?.address ?? userName ?? walletProp ?? ''} - Click to copy entire wallet address`}
                   >
-                    <motion.span
+                    <span
                       className="overflow-hidden whitespace-nowrap font-mono text-xs text-gray-400 flex-shrink-0"
                     >
                       {open ? "C:\\USER\\" : ""}
-                    </motion.span>
-                    <motion.span
+                    </span>
+                    <span
                       className="truncate font-mono text-xs text-lime-400 group-hover:text-lime-300 transition-colors"
                     >
                       {isClient
                         ? (account?.address ?? walletProp ?? userName ?? "...").substring(0, 8) + '...' + (account?.address ?? walletProp ?? userName ?? "...").substring(36, 42)
                         : "..." }
-                    </motion.span>
+                    </span>
                     {/* Copy icon */}
                     <svg
                       className="w-3 h-3 text-gray-500 group-hover:text-gray-300 transition-colors flex-shrink-0"
@@ -337,7 +336,7 @@ export function Sidebar({
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                     </svg>
-                  </div>
+                  </button>
                 </motion.div>
               </div>
 
@@ -590,7 +589,10 @@ export function Sidebar({
                     <div className="flex items-center space-x-2">
                       {/* Avatar (clickeable para dropdown) */}
                       <button
-                        onClick={() => setProfileDropdown(!profileDropdown)}
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent event bubbling
+                          setProfileDropdown(!profileDropdown);
+                        }}
                         className="flex-shrink-0 relative hover:bg-zinc-700/30 p-1 rounded transition-colors"
                         title="Menú de perfil"
                       >
@@ -606,19 +608,20 @@ export function Sidebar({
                         )}
                       </button>
 
-                      {/* Wallet display - copiar al hacer click en cualquier parte */}
+                      {/* Wallet display - copiar al hacer click */}
                       <motion.div
                         animate={{ opacity: open ? 1 : 0 }}
                         className="flex-1 flex items-center gap-2"
                       >
-                        <div className="flex items-center gap-2 cursor-pointer hover:bg-zinc-800/30 rounded px-2 py-1 transition-colors group"
-                             onClick={(e) => {
-                               e.stopPropagation();
-                               const fullAddress = account?.address ?? userName ?? walletProp ?? '';
-                               void navigator.clipboard.writeText(fullAddress);
-                               // You could add a toast notification here
-                             }}
-                             title={`${account?.address ?? userName ?? walletProp ?? ''} - Click to copy entire wallet address`}
+                        <button
+                          className="flex items-center gap-2 cursor-pointer hover:bg-zinc-800/30 rounded px-2 py-1 transition-colors group w-full text-left"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const fullAddress = account?.address ?? userName ?? walletProp ?? '';
+                            void navigator.clipboard.writeText(fullAddress);
+                            // You could add a toast notification here
+                          }}
+                          title={`${account?.address ?? userName ?? walletProp ?? ''} - Click to copy entire wallet address`}
                         >
                           <span className="font-mono text-xs text-gray-400 flex-shrink-0">
                             C:\USER\
@@ -637,7 +640,7 @@ export function Sidebar({
                           >
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                           </svg>
-                        </div>
+                        </button>
                       </motion.div>
                     </div>
 
