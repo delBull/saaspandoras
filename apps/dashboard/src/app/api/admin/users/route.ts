@@ -26,8 +26,34 @@ async function requireAuthenticatedUser(session: any): Promise<{ error: NextResp
   return { error: null, userId: session.userId };
 }
 
+// TEMPORARY DIAGNOSTIC ENDPOINT - Remove after debugging
 export async function GET() {
   try {
+    // Add diagnostic mode for debugging
+    const requestHeaders = await headers();
+    const host = requestHeaders.get('host')?? 'localhost:3000';
+    const url = new URL(`http://${host}`);
+    const diagnosticParam = url.searchParams.get('diagnostic') ?? requestHeaders.get('x-diagnostic');
+    if (diagnosticParam === 'true') {
+      // Diagnostic mode - no auth required
+      console.log('🔍 Running diagnostic mode...');
+
+      const totalProjects = await db.execute(sql`SELECT COUNT(*) as count FROM projects`);
+      const projectsWithWallets = await db.execute(sql`SELECT COUNT(*) as count FROM projects WHERE applicant_wallet_address IS NOT NULL`);
+      const projectsWithoutWallets = await db.execute(sql`SELECT id, title, applicant_email, status FROM projects WHERE applicant_wallet_address IS NULL LIMIT 5`);
+      const sampleWithWallets = await db.execute(sql`SELECT id, title, applicant_wallet_address, status FROM projects WHERE applicant_wallet_address IS NOT NULL LIMIT 3`);
+      const users = await db.execute(sql`SELECT "walletAddress", name, email FROM "User" WHERE LOWER("walletAddress") != LOWER('0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9') LIMIT 5`);
+
+      return NextResponse.json({
+        diagnostic: true,
+        totalProjects: totalProjects[0]?.count || 0,
+        projectsWithWallets: projectsWithWallets[0]?.count || 0,
+        projectsWithoutWallets: projectsWithoutWallets,
+        sampleWithWallets: sampleWithWallets,
+        users: users
+      });
+    }
+
     const { session } = await getAuth(await headers());
 
     // 🔒 Validación defensiva usando el helper
