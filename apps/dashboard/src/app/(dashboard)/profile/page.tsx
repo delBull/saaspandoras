@@ -103,7 +103,7 @@ export default function ProfilePage() {
                   className="w-16 h-16 rounded-full border-2 border-lime-400"
                 />
                 <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-zinc-900 ${
-                  profile?.kycLevel === 'basic' ? 'bg-green-500' : 'bg-yellow-500'
+                  (profile?.kycCompleted && profile?.kycLevel === 'basic') ? 'bg-green-500' : 'bg-yellow-500'
                 }`}></div>
               </div>
               <div>
@@ -111,12 +111,12 @@ export default function ProfilePage() {
                   {profile?.name ?? 'Usuario'}
                 </div>
                 <div className="text-sm text-gray-400">
-                  Nivel {profile?.kycLevel === 'basic' ? 'Básico' : 'N/A'}
+                  Nivel {(profile?.kycCompleted && profile?.kycLevel === 'basic') ? 'Básico' : 'N/A'}
                 </div>
               </div>
             </CardTitle>
             {/* KYC Básico Button */}
-            {profile?.kycLevel !== 'basic' && (
+            {!(profile?.kycCompleted && profile?.kycLevel === 'basic') && (
               <Link href="/profile/kyc">
                 <Button
                   className="w-full bg-lime-500 hover:bg-lime-600 text-black font-medium px-4 py-2 shadow-lg flex-shrink-0 text-base whitespace-nowrap"
