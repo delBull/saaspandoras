@@ -20,75 +20,12 @@ import {
   FolderIcon,
 } from "@heroicons/react/24/outline";
 import { cn } from "@saasfly/ui";
-// import { useReadContract } from "thirdweb/react"; // TODO: Add back when implementing ERC20 support
-import { useActiveAccount, useDisconnect, useActiveWallet, ConnectButton, useWalletBalance } from "thirdweb/react";
-// import { Token } from "thirdweb"; // TODO: Check correct import for token prices in thirdweb v5
+import { useActiveAccount, useDisconnect, useActiveWallet, ConnectButton } from "thirdweb/react";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { client } from "@/lib/thirdweb-client";
-import { ethereum, base, polygon } from "thirdweb/chains";
-
-// TODO: Add ERC20 ABI when implementing ERC20 token support
-// const ERC20_ABI = [
-//   {
-//     inputs: [{ name: "account", type: "address" }],
-//     name: "balanceOf",
-//     outputs: [{ name: "", type: "uint256" }],
-//     stateMutability: "view",
-//     type: "function",
-//   },
-//   {
-//     inputs: [],
-//     name: "decimals",
-//     outputs: [{ name: "", type: "uint8" }],
-//     stateMutability: "view",
-//     type: "function",
-//   },
-// ] as const;
-
-// Custom hook for fetching real-time token prices
-function useTokenPrices() {
-  const [prices, setPrices] = useState<Record<string, number>>({
-    ETH: 2500,
-    POL: 0.8,
-    USDC: 1,
-    USDT: 1,
-  });
-
-  useEffect(() => {
-    const fetchPrices = async (): Promise<void> => {
-      try {
-        // Using CoinGecko API (free tier) for real-time prices
-        const response = await fetch(
-          'https://api.coingecko.com/api/v3/simple/price?ids=ethereum,matic-network,usd-coin,tether&vs_currencies=usd'
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-
-          setPrices({
-            ETH: data.ethereum?.usd || 2500,
-            POL: data['matic-network']?.usd || 0.8, // Using MATIC ID for POL price
-            USDC: data['usd-coin']?.usd || 1,
-            USDT: data.tether?.usd || 1,
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching token prices:', error);
-        // Keep default prices on error
-      }
-    };
-
-    // Fetch prices immediately
-    void fetchPrices();
-
-    // Set up interval to fetch prices every 30 seconds
-    const interval = setInterval(() => void fetchPrices(), 30000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  return prices;
-}
+import { ethereum, base, polygon, arbitrum } from "thirdweb/chains";
+import { WalletBalance, NetworkSelector } from "@/components/wallet";
+import { SUPPORTED_NETWORKS, DEFAULT_NETWORK } from "@/config/networks";
 
 interface SidebarProps {
   wallet?: string;
@@ -100,7 +37,7 @@ interface SidebarProps {
 export function Sidebar({
   wallet: walletProp,
   userName,
-  isAdmin: isAdminProp, // This is the server-side rendered value
+  isAdmin: isAdminProp,
   isSuperAdmin: isSuperAdminProp,
 }: SidebarProps) {
   const [isClient, setIsClient] = useState(false);
@@ -119,11 +56,8 @@ export function Sidebar({
   const wallet = useActiveWallet();
   const { disconnect } = useDisconnect();
 
-  // Get real-time token prices
-  const tokenPrices = useTokenPrices();
-
   // Multi-chain wallet state
-  const [selectedChain, setSelectedChain] = useState(ethereum);
+  const [selectedChain, setSelectedChain] = useState(DEFAULT_NETWORK?.chain || ethereum);
 
   // State for client-side admin status, initialized with server-side props
   const [adminStatus, setAdminStatus] = useState({
@@ -217,74 +151,8 @@ export function Sidebar({
   // The final isAdmin status is a combination of regular admin and super admin
   const isAdmin = adminStatus.isAdmin || adminStatus.isSuperAdmin;
 
-  // Multi-chain configuration with token contracts
-  const supportedNetworks = [
-    {
-      chain: ethereum,
-      name: "Ethereum",
-      symbol: "ETH",
-      tokens: [
-        { name: "Ethereum", symbol: "ETH", isNative: true },
-        { name: "USD Coin", symbol: "USDC", address: "0xA0b86a33E6441a8d5ffF2f2C5A1A8A6FEa8E5A8E" }, // USDC on Ethereum
-        { name: "Tether", symbol: "USDT", address: "0xdAC17F958D2ee523a2206206994597C13D831ec7" }, // USDT on Ethereum
-      ]
-    },
-    {
-      chain: base,
-      name: "Base",
-      symbol: "ETH",
-      tokens: [
-        { name: "Ethereum", symbol: "ETH", isNative: true },
-        { name: "USD Coin", symbol: "USDC", address: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913" }, // USDC on Base
-      ]
-    },
-    {
-      chain: polygon,
-      name: "Polygon",
-      symbol: "POL",
-      tokens: [
-        { name: "Polygon", symbol: "POL", isNative: true },
-        { name: "USD Coin", symbol: "USDC", address: "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359" }, // USDC on Polygon
-      ]
-    },
-  ];
-
-  // Get balances for selected chain using hooks at component level
-  const network = supportedNetworks.find(n => n.chain.id === selectedChain.id);
-
-  // Native token balance
-  const { data: nativeBalance, isLoading: nativeLoading } = useWalletBalance({
-    client,
-    chain: selectedChain,
-    address: account?.address || "",
-  });
-
-  const realBalances = useMemo(() => {
-    if (!network || !account?.address) return [];
-
-    const balances = [];
-
-    // Add native token balance
-    const nativeToken = network.tokens.find(token => token.isNative);
-    if (nativeToken) {
-      const balanceValue = nativeBalance?.displayValue || "0";
-      const numBalance = parseFloat(balanceValue) || 0;
-
-      const tokenPrice = tokenPrices[nativeToken.symbol] || 0;
-      const usdValue = numBalance * tokenPrice;
-
-      balances.push({
-        symbol: nativeToken.symbol,
-        balance: nativeLoading ? "--" : numBalance.toFixed(4),
-        value: nativeLoading ? "$--" : `$${usdValue.toFixed(2)}`,
-        isLoading: nativeLoading,
-      });
-    }
-
-    // For now, just return native token balance
-    // TODO: Add ERC20 token support in future iterations
-    return balances;
-  }, [network, account?.address, nativeBalance, nativeLoading, tokenPrices]);
+  // Use centralized network configuration
+  const supportedNetworks = SUPPORTED_NETWORKS;
 
 
   const links = useMemo(
@@ -545,7 +413,7 @@ export function Sidebar({
                             <UserIcon className="w-5 h-5 text-gray-400" />
                             <ConnectButton
                               client={client}
-                              chains={[ethereum, base, polygon]}
+                              chains={[ethereum, base, polygon, arbitrum]}
                               wallets={[
                                 // Same wallets as NFT-gate for consistent session management
                                 inAppWallet({
@@ -581,89 +449,18 @@ export function Sidebar({
               {isClient && account && (
                 <div className="mt-3 space-y-2">
                   {/* Network Selector */}
-                  <div className="relative">
-                    <button
-                      onClick={() => setNetworkDropdown(!networkDropdown)}
-                      className="w-full flex items-center justify-between p-2 bg-zinc-800/50 border border-zinc-700 rounded-lg hover:bg-zinc-700/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-xs font-mono text-gray-300">
-                          {supportedNetworks.find(n => n.chain.id === selectedChain.id)?.name || "Ethereum"}
-                        </span>
-                      </div>
-                      <svg
-                        className="w-3 h-3 text-gray-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
-
-                    {/* Network Dropdown */}
-                    <AnimatePresence>
-                      {networkDropdown && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          className="absolute top-full left-0 right-0 mt-1 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50"
-                        >
-                          <div className="p-2 space-y-1">
-                            {supportedNetworks.map((network) => (
-                              <button
-                                key={network.chain.id}
-                                onClick={() => {
-                                  setSelectedChain(network.chain);
-                                  setNetworkDropdown(false);
-                                }}
-                                className="w-full flex items-center gap-2 p-2 hover:bg-zinc-800 rounded transition-colors"
-                              >
-                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                <span className="text-xs font-mono text-gray-300">{network.name}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
+                  <NetworkSelector
+                    selectedChain={selectedChain}
+                    onChainChange={(chain) => setSelectedChain(chain)}
+                    supportedNetworks={supportedNetworks}
+                  />
 
                   {/* Wallet Balances */}
-                  <div className="bg-zinc-800/30 border border-zinc-700 rounded-lg p-3">
-                    <div className="text-xs font-mono text-gray-400 mb-2">WALLET BALANCES</div>
-                    <div className="space-y-2 max-h-32 overflow-y-auto">
-                      {(realBalances || []).map((token, index) => (
-                        <div key={index} className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-                              <span className="text-xs font-bold text-white">
-                                {token.symbol.substring(0, 2)}
-                              </span>
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="text-xs font-mono text-gray-300 truncate">
-                                {token.symbol}
-                                {token.isLoading && <span className="animate-pulse">...</span>}
-                              </div>
-                              <div className="text-xs font-mono text-gray-500 truncate" title={token.balance}>
-                                {typeof token.balance === 'string' ? parseFloat(token.balance || '0').toFixed(4) : token.balance}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="text-right flex-shrink-0">
-                            <div className="text-xs font-mono text-lime-400" title={token.value}>
-                              {typeof token.value === 'string' && token.value.startsWith('$')
-                                ? `$${parseFloat(token.value.replace('$', '') || '0').toFixed(2)}`
-                                : token.value}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <WalletBalance
+                    selectedChain={selectedChain}
+                    accountAddress={account?.address}
+                    supportedNetworks={supportedNetworks}
+                  />
                 </div>
               )}
             </div>
@@ -946,7 +743,7 @@ export function Sidebar({
                           <UserIcon className="w-5 h-5 text-gray-400" />
                           <ConnectButton
                             client={client}
-                            chains={[ethereum, base, polygon]}
+                            chains={[ethereum, base, polygon, arbitrum]}
                             wallets={[
                               // Same wallets as NFT-gate for consistent session management
                               inAppWallet({
@@ -980,89 +777,18 @@ export function Sidebar({
                     {isClient && account && (
                       <div className="mt-3 space-y-2">
                         {/* Network Selector - Mobile */}
-                        <div className="relative">
-                          <button
-                            onClick={() => setNetworkDropdown(!networkDropdown)}
-                            className="w-full flex items-center justify-between p-2 bg-zinc-800/50 border border-zinc-700 rounded-lg hover:bg-zinc-700/50 transition-colors"
-                          >
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                              <span className="text-xs font-mono text-gray-300">
-                                {supportedNetworks.find(n => n.chain.id === selectedChain.id)?.name || "Ethereum"}
-                              </span>
-                            </div>
-                            <svg
-                              className="w-3 h-3 text-gray-400"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                          </button>
-
-                          {/* Network Dropdown - Mobile */}
-                          <AnimatePresence>
-                            {networkDropdown && (
-                              <motion.div
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                className="absolute top-full left-0 right-0 mt-1 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50"
-                              >
-                                <div className="p-2 space-y-1">
-                                  {supportedNetworks.map((network) => (
-                                    <button
-                                      key={network.chain.id}
-                                      onClick={() => {
-                                        setSelectedChain(network.chain);
-                                        setNetworkDropdown(false);
-                                      }}
-                                      className="w-full flex items-center gap-2 p-2 hover:bg-zinc-800 rounded transition-colors"
-                                    >
-                                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                      <span className="text-xs font-mono text-gray-300">{network.name}</span>
-                                    </button>
-                                  ))}
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
+                        <NetworkSelector
+                          selectedChain={selectedChain}
+                          onChainChange={(chain) => setSelectedChain(chain)}
+                          supportedNetworks={supportedNetworks}
+                        />
 
                         {/* Wallet Balances - Mobile */}
-                        <div className="bg-zinc-800/30 border border-zinc-700 rounded-lg p-3">
-                          <div className="text-xs font-mono text-gray-400 mb-2">WALLET BALANCES</div>
-                          <div className="space-y-2 max-h-32 overflow-y-auto">
-                            {(realBalances || []).map((token, index) => (
-                              <div key={index} className="flex items-center justify-between gap-2">
-                                <div className="flex items-center gap-2 min-w-0 flex-1">
-                                  <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-                                    <span className="text-xs font-bold text-white">
-                                      {token.symbol.substring(0, 2)}
-                                    </span>
-                                  </div>
-                                  <div className="min-w-0 flex-1">
-                                    <div className="text-xs font-mono text-gray-300 truncate">
-                                      {token.symbol}
-                                      {token.isLoading && <span className="animate-pulse">...</span>}
-                                    </div>
-                                    <div className="text-xs font-mono text-gray-500 truncate" title={token.balance}>
-                                      {typeof token.balance === 'string' ? parseFloat(token.balance || '0').toFixed(4) : token.balance}
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="text-right flex-shrink-0">
-                                  <div className="text-xs font-mono text-lime-400" title={token.value}>
-                                    {typeof token.value === 'string' && token.value.startsWith('$')
-                                      ? `$${parseFloat(token.value.replace('$', '') || '0').toFixed(2)}`
-                                      : token.value}
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
+                        <WalletBalance
+                          selectedChain={selectedChain}
+                          accountAddress={account?.address}
+                          supportedNetworks={supportedNetworks}
+                        />
                       </div>
                     )}
                   </div>
