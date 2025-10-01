@@ -50,7 +50,9 @@ export function WalletBalance({ selectedChain, accountAddress, supportedNetworks
       const balanceValue = nativeBalance?.displayValue ?? "0";
       const numBalance = parseFloat(balanceValue) || 0;
 
-      const tokenPrice = tokenPrices[nativeToken.symbol as keyof typeof tokenPrices] || 0;
+      // Extract just the price numbers from TokenPriceState
+      const { isLoading: _isLoading, lastUpdated: _lastUpdated, error: _error, ...priceMap } = tokenPrices;
+      const tokenPrice = priceMap[nativeToken.symbol as keyof typeof priceMap] ?? 0;
       const usdValue = numBalance * tokenPrice;
 
       balances.push({
