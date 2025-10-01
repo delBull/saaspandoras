@@ -13,18 +13,16 @@ import {
   UserGroupIcon,
   ShieldCheckIcon,
   ArrowLeftOnRectangleIcon,
+  UserIcon,
   ChevronDoubleRightIcon,
   ChartPieIcon,
-  UserIcon,
   ChartBarIcon,
   FolderIcon,
 } from "@heroicons/react/24/outline";
 import { cn } from "@saasfly/ui";
-import { useActiveAccount, useDisconnect, useActiveWallet, ConnectButton } from "thirdweb/react";
-import { inAppWallet, createWallet } from "thirdweb/wallets";
-import { client } from "@/lib/thirdweb-client";
-import { ethereum, base, polygon, arbitrum } from "thirdweb/chains";
-import { WalletBalance, NetworkSelector } from "@/components/wallet";
+import { useActiveAccount, useDisconnect, useActiveWallet } from "thirdweb/react";
+import { ethereum } from "thirdweb/chains";
+import { WalletBalance, NetworkSelector, ConnectWalletButton } from "@/components/wallet";
 import { SUPPORTED_NETWORKS, DEFAULT_NETWORK } from "@/config/networks";
 
 interface SidebarProps {
@@ -410,30 +408,10 @@ export function Sidebar({
 
                           {/* Thirdweb ConnectButton - Maneja automáticamente conectar vs gestionar */}
                           <div className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full">
-                            <UserIcon className="w-5 h-5 text-gray-400" />
-                            <ConnectButton
-                              client={client}
-                              chains={[ethereum, base, polygon, arbitrum]}
-                              wallets={[
-                                // Same wallets as NFT-gate for consistent session management
-                                inAppWallet({
-                                  auth: {
-                                    options: ["email", "google", "apple", "facebook", "passkey"],
-                                  },
-                                  executionMode: {
-                                    mode: "EIP7702",
-                                    sponsorGas: true,
-                                  },
-                                }),
-                                createWallet("io.metamask"),
-                              ]}
-                              theme="dark"
-                              onDisconnect={() => {
-                                setProfileDropdown(false);
-                              }}
-                              onConnect={() => {
-                                setProfileDropdown(false);
-                              }}
+                            <ConnectWalletButton
+                             className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full"
+                             onConnect={() => setProfileDropdown(false)}
+                             onDisconnect={() => setProfileDropdown(false)}
                             />
                           </div>
 
@@ -740,29 +718,13 @@ export function Sidebar({
 
                         {/* Thirdweb ConnectButton - Maneja automáticamente conectar vs gestionar */}
                         <div className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full">
-                          <UserIcon className="w-5 h-5 text-gray-400" />
-                          <ConnectButton
-                            client={client}
-                            chains={[ethereum, base, polygon, arbitrum]}
-                            wallets={[
-                              // Same wallets as NFT-gate for consistent session management
-                              inAppWallet({
-                                auth: {
-                                  options: ["email", "google", "apple", "facebook", "passkey"],
-                                },
-                                executionMode: {
-                                  mode: "EIP7702",
-                                  sponsorGas: true,
-                                },
-                              }),
-                              createWallet("io.metamask"),
-                            ]}
-                            theme="dark"
-                            onDisconnect={() => {
+                          <ConnectWalletButton
+                            className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full"
+                            onConnect={() => {
                               setProfileDropdown(false);
                               setMobileOpen(false);
                             }}
-                            onConnect={() => {
+                            onDisconnect={() => {
                               setProfileDropdown(false);
                               setMobileOpen(false);
                             }}
@@ -868,4 +830,3 @@ export function Sidebar({
     </>
   );
 }
-
