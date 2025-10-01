@@ -22,6 +22,7 @@ import {
 import { cn } from "@saasfly/ui";
 // import { useReadContract } from "thirdweb/react"; // TODO: Add back when implementing ERC20 support
 import { useActiveAccount, useDisconnect, useActiveWallet, ConnectButton, useWalletBalance } from "thirdweb/react";
+// import { Token } from "thirdweb"; // TODO: Check correct import for token prices in thirdweb v5
 import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { client } from "@/lib/thirdweb-client";
 import { ethereum, base, polygon } from "thirdweb/chains";
@@ -43,6 +44,51 @@ import { ethereum, base, polygon } from "thirdweb/chains";
 //     type: "function",
 //   },
 // ] as const;
+
+// Custom hook for fetching real-time token prices
+function useTokenPrices() {
+  const [prices, setPrices] = useState<Record<string, number>>({
+    ETH: 2500,
+    POL: 0.8,
+    USDC: 1,
+    USDT: 1,
+  });
+
+  useEffect(() => {
+    const fetchPrices = async (): Promise<void> => {
+      try {
+        // Using CoinGecko API (free tier) for real-time prices
+        const response = await fetch(
+          'https://api.coingecko.com/api/v3/simple/price?ids=ethereum,matic-network,usd-coin,tether&vs_currencies=usd'
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+
+          setPrices({
+            ETH: data.ethereum?.usd || 2500,
+            POL: data['matic-network']?.usd || 0.8, // Using MATIC ID for POL price
+            USDC: data['usd-coin']?.usd || 1,
+            USDT: data.tether?.usd || 1,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching token prices:', error);
+        // Keep default prices on error
+      }
+    };
+
+    // Fetch prices immediately
+    void fetchPrices();
+
+    // Set up interval to fetch prices every 30 seconds
+    const interval = setInterval(() => void fetchPrices(), 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return prices;
+}
 
 interface SidebarProps {
   wallet?: string;
@@ -72,6 +118,9 @@ export function Sidebar({
   const account = useActiveAccount();
   const wallet = useActiveWallet();
   const { disconnect } = useDisconnect();
+
+  // Get real-time token prices
+  const tokenPrices = useTokenPrices();
 
   // Multi-chain wallet state
   const [selectedChain, setSelectedChain] = useState(ethereum);
@@ -192,9 +241,9 @@ export function Sidebar({
     {
       chain: polygon,
       name: "Polygon",
-      symbol: "MATIC",
+      symbol: "POL",
       tokens: [
-        { name: "Polygon", symbol: "MATIC", isNative: true },
+        { name: "Polygon", symbol: "POL", isNative: true },
         { name: "USD Coin", symbol: "USDC", address: "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359" }, // USDC on Polygon
       ]
     },
@@ -221,15 +270,7 @@ export function Sidebar({
       const balanceValue = nativeBalance?.displayValue || "0";
       const numBalance = parseFloat(balanceValue) || 0;
 
-      // Price conversion rates (these should ideally come from an API)
-      const tokenPrices = {
-        ETH: 2500, // Current ETH price in USD
-        MATIC: 0.8, // Current MATIC price in USD
-        USDC: 1, // Stablecoin
-        USDT: 1, // Stablecoin
-      };
-
-      const tokenPrice = tokenPrices[nativeToken.symbol as keyof typeof tokenPrices] || 0;
+      const tokenPrice = tokenPrices[nativeToken.symbol] || 0;
       const usdValue = numBalance * tokenPrice;
 
       balances.push({
@@ -243,7 +284,7 @@ export function Sidebar({
     // For now, just return native token balance
     // TODO: Add ERC20 token support in future iterations
     return balances;
-  }, [network, account?.address, nativeBalance, nativeLoading]);
+  }, [network, account?.address, nativeBalance, nativeLoading, tokenPrices]);
 
 
   const links = useMemo(
