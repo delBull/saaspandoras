@@ -5,7 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 
 import * as Icons from "@saasfly/ui/icons";
-//import { DocumentGuide } from "~/components/document-guide";
 import { MobileNav } from "~/components/mobile-nav";
 
 import type { MainNavItem } from "~/types";

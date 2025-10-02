@@ -1,6 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
-
+import Image from "next/image";
 import { cn } from "@saasfly/ui";
 
 import { siteConfig } from "~/config/site";
@@ -26,7 +26,7 @@ export function MobileNav({ items, children, menuItemClick, url }: MobileNavProp
     >
       <div className="relative z-20 grid gap-6 rounded-md bg-popover p-4 text-popover-foreground shadow-md">
         <Link href="/" className="flex items-center space-x-2">
-          <img
+          <Image
               src="/images/logo.png"
               alt="Pandora's Logo"
               width={24}
