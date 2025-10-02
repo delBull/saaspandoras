@@ -10,12 +10,6 @@ import { LocaleChange } from "~/components/locale-change";
 import { useScrollDirection } from "~/hooks/use-scroll-direction";
 import type { MainNavItem, MarketingDictionary } from "~/types";
 import { ConnectWalletButton } from "./connect-wallet-button";
-import { Shadows_Into_Light } from "next/font/google";
-
-const shadowsIntoLight = Shadows_Into_Light({
-  subsets: ["latin"],
-  weight: "400",
-});
 
 interface MarketingType {
   main_nav_assets: string;

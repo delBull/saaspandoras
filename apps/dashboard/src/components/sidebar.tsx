@@ -1,6 +1,5 @@
 "use client";
 
-
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useMemo, useEffect, useRef } from "react";
@@ -14,16 +13,17 @@ import {
   UserGroupIcon,
   ShieldCheckIcon,
   ArrowLeftOnRectangleIcon,
+  UserIcon,
   ChevronDoubleRightIcon,
   ChartPieIcon,
-  UserIcon,
   ChartBarIcon,
   FolderIcon,
 } from "@heroicons/react/24/outline";
 import { cn } from "@saasfly/ui";
-import { useActiveAccount, useDisconnect, useActiveWallet, ConnectButton } from "thirdweb/react";
-import { inAppWallet, createWallet } from "thirdweb/wallets";
-import { client } from "@/lib/thirdweb-client";
+import { useActiveAccount, useDisconnect, useActiveWallet } from "thirdweb/react";
+import { ethereum } from "thirdweb/chains";
+import { WalletBalance, NetworkSelector, ConnectWalletButton } from "@/components/wallet";
+import { SUPPORTED_NETWORKS, DEFAULT_NETWORK } from "@/config/networks";
 
 interface SidebarProps {
   wallet?: string;
@@ -35,7 +35,7 @@ interface SidebarProps {
 export function Sidebar({
   wallet: walletProp,
   userName,
-  isAdmin: isAdminProp, // This is the server-side rendered value
+  isAdmin: isAdminProp,
   isSuperAdmin: isSuperAdminProp,
 }: SidebarProps) {
   const [isClient, setIsClient] = useState(false);
@@ -47,57 +47,112 @@ export function Sidebar({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileDropdown, setProfileDropdown] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [networkDropdown, setNetworkDropdown] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const toggleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const account = useActiveAccount();
   const wallet = useActiveWallet();
   const { disconnect } = useDisconnect();
 
-  // State for client-side admin status, initialized with server-side props
-  const [adminStatus, setAdminStatus] = useState({
-    isAdmin: isAdminProp ?? false,
+  // Multi-chain wallet state
+  const [selectedChain, setSelectedChain] = useState(DEFAULT_NETWORK?.chain || ethereum);
+
+  // State for client-side admin status - Can show admin based on server props initially
+  const [adminStatus, setAdminStatus] = useState<{
+    isAdmin: boolean;
+    isSuperAdmin: boolean;
+    verified: boolean; // Track if we've verified with API
+  }>({
+    isAdmin: isAdminProp ?? false, // Can show admin based on server initially
     isSuperAdmin: isSuperAdminProp ?? false,
+    verified: !!isAdminProp || !!isSuperAdminProp, // Mark as verified if server says admin
   });
 
-  // Store wallet address in cookie when connected and fetch admin status
+  // Track if this is the initial load to avoid resetting admin status
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // Debug logging for admin status
   useEffect(() => {
-    if (!account?.address) {
-      // Clear cookie when disconnected
-      document.cookie = `wallet-address=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-      setAdminStatus({ isAdmin: false, isSuperAdmin: false }); // Reset on disconnect
+    console.log('🔍 Admin status check:', {
+      serverSide: { isAdmin: isAdminProp, isSuperAdmin: isSuperAdminProp },
+      clientSide: adminStatus,
+      finalIsAdmin: adminStatus.isAdmin || adminStatus.isSuperAdmin,
+      account: account?.address?.substring(0, 8)
+    });
+  }, [adminStatus, isAdminProp, isSuperAdminProp, account?.address]);
+
+  // Check for pending wallet address from sessionStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !account?.address) {
+      const pendingWallet = sessionStorage.getItem('pendingWalletAddress');
+      if (pendingWallet) {
+        console.log("🔄 Pending wallet found in sessionStorage:", pendingWallet);
+        // The wallet should auto-reconnect, but we keep this for debugging
+      }
+    }
+  }, [account?.address]);
+
+  // Fetch admin status and user profile when account changes
+  useEffect(() => {
+    // Don't reset admin status on initial load
+    if (isInitialLoad && !account?.address) {
+      setIsInitialLoad(false);
       return;
     }
 
-    // Store wallet address in cookie when connected
-    const expires = new Date();
-    expires.setDate(expires.getDate() + 30); // Cookie expires in 30 days
-    document.cookie = `wallet-address=${account.address}; path=/; expires=${expires.toUTCString()}; Secure; SameSite=Strict`;
+    // Reset admin status when wallet disconnects
+    if (account?.address === undefined && !isInitialLoad) {
+      console.log("🔌 Wallet disconnected, resetting admin status");
+      setAdminStatus({ isAdmin: false, isSuperAdmin: false, verified: true });
+      return;
+    }
+
+    // When wallet connects OR changes, always re-verify admin status
+    if (!account?.address) {
+      // No wallet connected, ensure admin status is false
+      console.log("🔍 No wallet connected, ensuring admin status is false");
+      setAdminStatus({ isAdmin: false, isSuperAdmin: false, verified: true });
+      return;
+    }
+
+    console.log("🔍 Wallet connected/changed, re-verifying admin status for:", account.address);
 
     (async () => {
       try {
-        const res = await fetch("/api/admin/verify");
+        console.log("🔍 Verifying admin status for:", account.address);
+        const res = await fetch("/api/admin/verify", {
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+
         if (res.ok) {
-          const data = (await res.json()) as { isAdmin: boolean; isSuperAdmin: boolean };
-          setAdminStatus(data);
+          const data = await res.json() as { isAdmin: boolean; isSuperAdmin: boolean };
+          console.log("✅ Admin status verified:", data);
+
+          // Always update admin status when we get a response - THIS OVERRIDES SERVER PROPS
+          setAdminStatus({ ...data, verified: true });
+        } else {
+          console.error("❌ Admin verification failed:", res.status, res.statusText);
+          // Reset admin status to false on API failure - REGARDLESS OF INITIAL SERVER PROPS
+          setAdminStatus({ isAdmin: false, isSuperAdmin: false, verified: false });
         }
       } catch (e) {
-        console.error("Error verifying admin status:", e);
+        console.error("❌ Error verifying admin status:", e);
+        // Reset admin status to false on error - NEVER show admin when verification fails
+        setAdminStatus({ isAdmin: false, isSuperAdmin: false, verified: false });
       }
     })().catch(console.error);
 
-    // Fetch user profile data
+    // Fetch user profile data using the regular profile API
     const fetchProfile = async () => {
       if (account?.address) {
         try {
-          const response = await fetch('/api/admin/users');
+          const response = await fetch('/api/profile');
           if (response.ok) {
-            const users: any[] = await response.json();
-            const currentUser = users.find((u: any) =>
-              u.walletAddress.toLowerCase() === account.address?.toLowerCase()
-            );
-            if (currentUser) {
-              setUserProfile(currentUser);
-            }
+            const userData = await response.json();
+            setUserProfile(userData);
           }
         } catch (error) {
           console.error('Error fetching user profile:', error);
@@ -106,28 +161,49 @@ export function Sidebar({
     };
 
     void fetchProfile();
-  }, [account?.address]);
+  }, [account?.address, isInitialLoad]); // Removed adminStatus.isAdmin dependency
 
-  // Handle click outside anywhere on screen and escape key to close dropdown
+  // Handle click outside anywhere on screen and escape key to close dropdowns
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // Only close if dropdown is open and click is not on the dropdown
-      if (!profileDropdown) return;
+      // Only close if any dropdown is open and click is not on the dropdown
+      if (!profileDropdown && !networkDropdown) return;
 
       const target = event.target as Element;
 
       // Check if click is inside the dropdown overlay
       if (sidebarRef.current?.contains(target)) {
-        return; // Don't close if click is inside dropdown
+        // For profile dropdown: allow clicking on avatar button without closing
+        if (profileDropdown) {
+          const avatarButton = sidebarRef.current.querySelector('button[title="Menú de perfil"]');
+          const profileDropdownContent = sidebarRef.current.querySelector('.profile-dropdown-content');
+
+          // If clicking on avatar button or inside dropdown content, don't close
+          if (avatarButton?.contains(target) || profileDropdownContent?.contains(target)) {
+            return;
+          }
+        }
+
+        // For network dropdown: allow clicking inside dropdown
+        if (networkDropdown) {
+          const networkDropdownContent = sidebarRef.current.querySelector('.network-dropdown-content');
+          if (networkDropdownContent?.contains(target)) {
+            return;
+          }
+        }
+
+        return; // Don't close if click is inside any dropdown
       }
 
-      // Close dropdown if click is anywhere else on the page
+      // Close dropdowns if click is anywhere else on the page
       setProfileDropdown(false);
+      setNetworkDropdown(false);
     };
 
     const handleEscapeKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && profileDropdown) {
+      if (event.key === 'Escape' && (profileDropdown || networkDropdown)) {
         setProfileDropdown(false);
+        setNetworkDropdown(false);
       }
     };
 
@@ -142,11 +218,18 @@ export function Sidebar({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside, false);
       document.removeEventListener('keydown', handleEscapeKey, true);
+      if (toggleTimeoutRef.current) {
+        clearTimeout(toggleTimeoutRef.current);
+      }
     };
-  }, [profileDropdown]);
+  }, [profileDropdown, networkDropdown]);
 
-  // The final isAdmin status is a combination of regular admin and super admin
-  const isAdmin = adminStatus.isAdmin || adminStatus.isSuperAdmin;
+  // The final isAdmin status - ONLY show if verified AND actually admin
+  const isAdmin = adminStatus.verified && (adminStatus.isAdmin || adminStatus.isSuperAdmin);
+
+  // Use centralized network configuration
+  const supportedNetworks = SUPPORTED_NETWORKS;
+
 
   const links = useMemo(
     () => [
@@ -178,7 +261,7 @@ export function Sidebar({
       ...(isAdmin
         ? [
             {
-              label: "Dashboard",
+              label: "Admin Dash",
               href: "/admin/dashboard",
               icon: (
                 <ChartPieIcon className="h-5 w-5 shrink-0 text-lime-400" />
@@ -286,7 +369,22 @@ export function Sidebar({
               <div className="flex items-center space-x-2">
                 {/* Avatar (clickeable para dropdown) */}
                 <button
-                  onClick={() => setProfileDropdown(!profileDropdown)}
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent event bubbling
+
+                    // Clear any existing timeout
+                    if (toggleTimeoutRef.current) {
+                      clearTimeout(toggleTimeoutRef.current);
+                    }
+
+                    // Use setTimeout to ensure the toggle happens after any other click handlers
+                    toggleTimeoutRef.current = setTimeout(() => {
+                      setProfileDropdown(!profileDropdown);
+                    }, 0);
+                  }}
+                  onMouseDown={(e) => {
+                    e.stopPropagation(); // Also prevent mousedown propagation
+                  }}
                   className="flex-shrink-0 relative hover:bg-zinc-700/30 p-1 rounded transition-colors"
                   title="Menú de perfil"
                 >
@@ -297,37 +395,35 @@ export function Sidebar({
                           height={32}
                           className="w-8 h-8 rounded-full border border-lime-400"
                         />
-                  {userProfile?.kycLevel === 'basic' && (
-                    <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border border-zinc-900 bg-green-500"></div>
-                  )}
                 </button>
 
-                {/* Wallet display - copiar al hacer click en cualquier parte */}
+                {/* Wallet display - copiar al hacer click */}
                 <motion.div
                   animate={{ opacity: open ? 1 : 0 }}
                   className="flex-1 flex items-center gap-2"
                 >
-                  <div className="flex items-center gap-2 cursor-pointer hover:bg-zinc-800/30 rounded px-2 py-1 transition-colors group"
-                       onClick={(e) => {
-                         e.stopPropagation();
-                         const fullAddress = account?.address ?? userName ?? walletProp ?? '';
-                         void navigator.clipboard.writeText(fullAddress);
-                         // You could add a toast notification here
-                       }}
-                       title={`${account?.address ?? userName ?? walletProp ?? ''} - Click to copy entire wallet address`}
+                  <button
+                    className="flex items-center gap-2 cursor-pointer hover:bg-zinc-800/30 rounded px-2 py-1 transition-colors group w-full text-left"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const fullAddress = account?.address ?? userName ?? walletProp ?? '';
+                      void navigator.clipboard.writeText(fullAddress);
+                      // You could add a toast notification here
+                    }}
+                    title={`${account?.address ?? userName ?? walletProp ?? ''} - Click to copy entire wallet address`}
                   >
-                    <motion.span
+                    <span
                       className="overflow-hidden whitespace-nowrap font-mono text-xs text-gray-400 flex-shrink-0"
                     >
                       {open ? "C:\\USER\\" : ""}
-                    </motion.span>
-                    <motion.span
+                    </span>
+                    <span
                       className="truncate font-mono text-xs text-lime-400 group-hover:text-lime-300 transition-colors"
                     >
                       {isClient
                         ? (account?.address ?? walletProp ?? userName ?? "...").substring(0, 8) + '...' + (account?.address ?? walletProp ?? userName ?? "...").substring(36, 42)
                         : "..." }
-                    </motion.span>
+                    </span>
                     {/* Copy icon */}
                     <svg
                       className="w-3 h-3 text-gray-500 group-hover:text-gray-300 transition-colors flex-shrink-0"
@@ -337,7 +433,7 @@ export function Sidebar({
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                     </svg>
-                  </div>
+                  </button>
                 </motion.div>
               </div>
 
@@ -351,7 +447,7 @@ export function Sidebar({
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 10 }}
-                        className="absolute left-4 top-[152px] w-80 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 pointer-events-auto"
+                        className="absolute left-4 top-[152px] w-80 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 pointer-events-auto profile-dropdown-content"
                       >
                         <div className="p-3 space-y-2">
                           {/* Profile */}
@@ -399,29 +495,10 @@ export function Sidebar({
 
                           {/* Thirdweb ConnectButton - Maneja automáticamente conectar vs gestionar */}
                           <div className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full">
-                            <UserIcon className="w-5 h-5 text-gray-400" />
-                            <ConnectButton
-                              client={client}
-                              wallets={[
-                                // Same wallets as NFT-gate for consistent session management
-                                inAppWallet({
-                                  auth: {
-                                    options: ["email", "google", "apple", "facebook", "passkey"],
-                                  },
-                                  executionMode: {
-                                    mode: "EIP7702",
-                                    sponsorGas: true,
-                                  },
-                                }),
-                                createWallet("io.metamask"),
-                              ]}
-                              theme="dark"
-                              onDisconnect={() => {
-                                setProfileDropdown(false);
-                              }}
-                              onConnect={() => {
-                                setProfileDropdown(false);
-                              }}
+                            <ConnectWalletButton
+                             className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full"
+                             onConnect={() => setProfileDropdown(false)}
+                             onDisconnect={() => setProfileDropdown(false)}
                             />
                           </div>
 
@@ -432,6 +509,25 @@ export function Sidebar({
                   </>
                 )}
               </AnimatePresence>
+
+              {/* Multi-Chain Wallet Interface */}
+              {isClient && account && (
+                <div className="mt-3 space-y-2">
+                  {/* Network Selector */}
+                  <NetworkSelector
+                    selectedChain={selectedChain}
+                    onChainChange={(chain) => setSelectedChain(chain)}
+                    supportedNetworks={supportedNetworks}
+                  />
+
+                  {/* Wallet Balances */}
+                  <WalletBalance
+                    selectedChain={selectedChain}
+                    accountAddress={account?.address}
+                    supportedNetworks={supportedNetworks}
+                  />
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -590,7 +686,22 @@ export function Sidebar({
                     <div className="flex items-center space-x-2">
                       {/* Avatar (clickeable para dropdown) */}
                       <button
-                        onClick={() => setProfileDropdown(!profileDropdown)}
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent event bubbling
+
+                          // Clear any existing timeout
+                          if (toggleTimeoutRef.current) {
+                            clearTimeout(toggleTimeoutRef.current);
+                          }
+
+                          // Use setTimeout to ensure the toggle happens after any other click handlers
+                          toggleTimeoutRef.current = setTimeout(() => {
+                            setProfileDropdown(!profileDropdown);
+                          }, 0);
+                        }}
+                        onMouseDown={(e) => {
+                          e.stopPropagation(); // Also prevent mousedown propagation
+                        }}
                         className="flex-shrink-0 relative hover:bg-zinc-700/30 p-1 rounded transition-colors"
                         title="Menú de perfil"
                       >
@@ -606,19 +717,20 @@ export function Sidebar({
                         )}
                       </button>
 
-                      {/* Wallet display - copiar al hacer click en cualquier parte */}
+                      {/* Wallet display - copiar al hacer click */}
                       <motion.div
                         animate={{ opacity: open ? 1 : 0 }}
                         className="flex-1 flex items-center gap-2"
                       >
-                        <div className="flex items-center gap-2 cursor-pointer hover:bg-zinc-800/30 rounded px-2 py-1 transition-colors group"
-                             onClick={(e) => {
-                               e.stopPropagation();
-                               const fullAddress = account?.address ?? userName ?? walletProp ?? '';
-                               void navigator.clipboard.writeText(fullAddress);
-                               // You could add a toast notification here
-                             }}
-                             title={`${account?.address ?? userName ?? walletProp ?? ''} - Click to copy entire wallet address`}
+                        <button
+                          className="flex items-center gap-2 cursor-pointer hover:bg-zinc-800/30 rounded px-2 py-1 transition-colors group w-full text-left"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const fullAddress = account?.address ?? userName ?? walletProp ?? '';
+                            void navigator.clipboard.writeText(fullAddress);
+                            // You could add a toast notification here
+                          }}
+                          title={`${account?.address ?? userName ?? walletProp ?? ''} - Click to copy entire wallet address`}
                         >
                           <span className="font-mono text-xs text-gray-400 flex-shrink-0">
                             C:\USER\
@@ -637,7 +749,7 @@ export function Sidebar({
                           >
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                           </svg>
-                        </div>
+                        </button>
                       </motion.div>
                     </div>
 
@@ -648,7 +760,7 @@ export function Sidebar({
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: 10 }}
-                          className="absolute left-0 right-0 top-full mt-2 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50"
+                          className="absolute left-0 right-0 top-full mt-2 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 profile-dropdown-content"
                         >
                           <div className="p-3 space-y-2">
                             {/* Profile */}
@@ -705,28 +817,13 @@ export function Sidebar({
 
                         {/* Thirdweb ConnectButton - Maneja automáticamente conectar vs gestionar */}
                         <div className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full">
-                          <UserIcon className="w-5 h-5 text-gray-400" />
-                          <ConnectButton
-                            client={client}
-                            wallets={[
-                              // Same wallets as NFT-gate for consistent session management
-                              inAppWallet({
-                                auth: {
-                                  options: ["email", "google", "apple", "facebook", "passkey"],
-                                },
-                                executionMode: {
-                                  mode: "EIP7702",
-                                  sponsorGas: true,
-                                },
-                              }),
-                              createWallet("io.metamask"),
-                            ]}
-                            theme="dark"
-                            onDisconnect={() => {
+                          <ConnectWalletButton
+                            className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full"
+                            onConnect={() => {
                               setProfileDropdown(false);
                               setMobileOpen(false);
                             }}
-                            onConnect={() => {
+                            onDisconnect={() => {
                               setProfileDropdown(false);
                               setMobileOpen(false);
                             }}
@@ -736,6 +833,25 @@ export function Sidebar({
                         </motion.div>
                       )}
                     </AnimatePresence>
+
+                    {/* Multi-Chain Wallet Interface - Mobile */}
+                    {isClient && account && (
+                      <div className="mt-3 space-y-2">
+                        {/* Network Selector - Mobile */}
+                        <NetworkSelector
+                          selectedChain={selectedChain}
+                          onChainChange={(chain) => setSelectedChain(chain)}
+                          supportedNetworks={supportedNetworks}
+                        />
+
+                        {/* Wallet Balances - Mobile */}
+                        <WalletBalance
+                          selectedChain={selectedChain}
+                          accountAddress={account?.address}
+                          supportedNetworks={supportedNetworks}
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

@@ -1,25 +1,18 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@saasfly/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@saasfly/ui/card';
 import { ClipboardDocumentIcon, CheckIcon, WalletIcon, ShieldCheckIcon, ArrowTopRightOnSquareIcon, BoltIcon, KeyIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
-import type { UserData } from '@/types/admin';
+import { useProfile } from '@/hooks/useProfile';
+import Link from 'next/link';
 import Image from 'next/image';
 
 export default function ProfilePage() {
-  const [userProfile, setUserProfile] = useState<UserData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [sessionLoading, setSessionLoading] = useState(true);
+  const { profile, isLoading, isError } = useProfile();
+  const [sessionUser, setSessionUser] = useState<{walletAddress?: string} | null>(null);
   const [copied, setCopied] = useState(false);
-  const [sessionUser, setSessionUser] = useState<{
-    walletAddress?: string;
-    name?: string;
-    email?: string;
-    image?: string;
-  } | null>(null);
 
   // Function to format wallet address with ellipsis
   const formatWalletAddress = (address: string) => {
@@ -41,7 +34,7 @@ export default function ProfilePage() {
   };
 
   useEffect(() => {
-    // Get user session from cookies (wallet-address)
+    // Get user session from cookies
     const getSession = () => {
       try {
         const walletAddress = document.cookie
@@ -50,35 +43,17 @@ export default function ProfilePage() {
           ?.split('=')[1];
 
         if (walletAddress) {
-          setSessionUser({
-            walletAddress: walletAddress,
-            name: undefined,
-            email: undefined,
-            image: undefined,
-          });
+          setSessionUser({ walletAddress });
         }
       } catch (error) {
         console.error('Error getting session from cookies:', error);
-      } finally {
-        setSessionLoading(false);
       }
     };
 
     getSession();
   }, []);
 
-  useEffect(() => {
-    if (sessionUser?.walletAddress) {
-      // For now, don't fetch user profile data to avoid 403 errors
-      // TODO: Create a proper /api/profile endpoint for user data
-      setUserProfile(null);
-      setLoading(false);
-    } else if (!sessionLoading) {
-      setLoading(false);
-    }
-  }, [sessionUser, sessionLoading]);
-
-  if (sessionLoading || loading) {
+  if (isLoading) {
     return (
       <div className="p-6">
         <div className="animate-pulse">
@@ -92,7 +67,7 @@ export default function ProfilePage() {
     );
   }
 
-  if (!sessionUser) {
+  if (isError || !sessionUser || !profile) {
     return (
       <div className="p-6">
         <Card>
@@ -121,33 +96,34 @@ export default function ProfilePage() {
             <CardTitle className="flex items-center gap-3">
               <div className="relative mb-5">
                 <Image
-                  src={userProfile?.image ?? sessionUser.image ?? '/images/avatars/rasta.png'}
+                  src={profile?.image ?? '/images/avatars/rasta.png'}
                   alt="Profile"
                   width={64}
                   height={64}
                   className="w-16 h-16 rounded-full border-2 border-lime-400"
                 />
                 <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-zinc-900 ${
-                  userProfile?.kycLevel === 'basic' ? 'bg-green-500' : 'bg-yellow-500'
+                  (profile?.kycCompleted && profile?.kycLevel === 'basic') ? 'bg-green-500' : 'bg-yellow-500'
                 }`}></div>
               </div>
               <div>
                 <div className="text-lg font-semibold text-white">
-                  {userProfile?.name ?? sessionUser.name ?? 'Usuario'}
+                  {profile?.name ?? 'Usuario'}
                 </div>
                 <div className="text-sm text-gray-400">
-                  Nivel {userProfile?.kycLevel === 'basic' ? 'Básico' : 'N/A'}
+                  Nivel {(profile?.kycCompleted && profile?.kycLevel === 'basic') ? 'Básico' : 'N/A'}
                 </div>
               </div>
             </CardTitle>
             {/* KYC Básico Button */}
-            {(!userProfile || userProfile.kycLevel !== 'basic') && (
-              <Button
-                className="w-full bg-lime-500 hover:bg-lime-600 text-black font-medium px-4 py-2 shadow-lg flex-shrink-0 text-base whitespace-nowrap"
-                onClick={() => window.location.href = '/profile/kyc'}
-              >
-                🔒 Completa KYC Básico
-              </Button>
+            {!(profile?.kycCompleted && profile?.kycLevel === 'basic') && (
+              <Link href="/profile/kyc">
+                <Button
+                  className="w-full bg-lime-500 hover:bg-lime-600 text-black font-medium px-4 py-2 shadow-lg flex-shrink-0 text-base whitespace-nowrap"
+                >
+                  🔒 Completa KYC Básico
+                </Button>
+              </Link>
             )}
           </CardHeader>
           <CardContent className="space-y-4">
@@ -216,37 +192,136 @@ export default function ProfilePage() {
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Información Personal</CardTitle>
-              <CardDescription>
-                Detalles de tu cuenta y estado de verificación
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Información Personal</CardTitle>
+                  <CardDescription>
+                    Detalles de tu cuenta y estado de verificación
+                  </CardDescription>
+                </div>
+                <Link href="/profile/edit">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2 text-gray-400 hover:text-white"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                    Editar Datos
+                  </Button>
+                </Link>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-400">Email</label>
-                  <p className="text-white">{userProfile?.email ?? sessionUser.email ?? 'No registrado'}</p>
-                </div>
+            <CardContent className="space-y-6">
+              {/* Información Básica */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-300 mb-3">Información Básica</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-400">Nombre</label>
+                    <p className="text-white">{profile?.name ?? 'No registrado'}</p>
+                  </div>
 
-                <div>
-                  <label className="text-sm font-medium text-gray-400">Rol</label>
-                  <p className="text-white capitalize">{userProfile?.role ?? 'pandorian'}</p>
-                </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-400">Email</label>
+                    <p className="text-white">{profile?.email ?? 'No registrado'}</p>
+                  </div>
 
-                <div>
-                  <label className="text-sm font-medium text-gray-400">Connections</label>
-                  <p className="text-white">{userProfile?.connectionCount ?? 1}</p>
-                </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-400">Ocupación</label>
+                    <p className="text-white">{profile?.kycData?.occupation ?? 'No especificada'}</p>
+                  </div>
 
+                  <div>
+                    <label className="text-sm font-medium text-gray-400">ID Fiscal / RFC</label>
+                    <p className="text-white font-mono">{profile?.kycData?.taxId ?? 'No registrado'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Información KYC */}
+              {profile?.kycCompleted && (
                 <div>
-                  <label className="text-sm font-medium text-gray-400">Estado KYC</label>
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${
-                      userProfile?.kycCompleted ? 'bg-green-500' : 'bg-yellow-500'
-                    }`}></div>
-                    <span className="text-white">
-                      {userProfile?.kycCompleted ? 'Verificado' : 'Pendiente'}
-                    </span>
+                  <h4 className="text-sm font-medium text-gray-300 mb-3">Información KYC</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-400">Nombre Completo</label>
+                      <p className="text-white">{profile?.kycData?.fullName ?? 'No registrado'}</p>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-gray-400">Teléfono</label>
+                      <p className="text-white">{profile?.kycData?.phoneNumber ?? 'No registrado'}</p>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-gray-400">Fecha de Nacimiento</label>
+                      <p className="text-white">{profile?.kycData?.dateOfBirth ?
+                        new Date(profile.kycData.dateOfBirth).toLocaleDateString('es-ES') :
+                        'No registrada'}</p>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-gray-400">Nacionalidad</label>
+                      <p className="text-white">{profile?.kycData?.nationality ?? 'No registrada'}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Dirección */}
+              {profile?.kycData?.address && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-300 mb-3">Dirección</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-400">Dirección</label>
+                      <p className="text-white">{profile.kycData.address.street ?? 'No registrada'}</p>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-gray-400">Ciudad</label>
+                      <p className="text-white">{profile.kycData.address.city ?? 'No registrada'}</p>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-gray-400">País</label>
+                      <p className="text-white">{profile.kycData.address.country ?? 'No registrado'}</p>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-gray-400">Código Postal</label>
+                      <p className="text-white font-mono">{profile.kycData.address.postalCode ?? 'No registrado'}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Estado de Cuenta */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-300 mb-3">Estado de Cuenta</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-400">Rol</label>
+                    <p className="text-white capitalize">{profile?.role ?? 'pandorian'}</p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-400">Connections</label>
+                    <p className="text-white">{profile?.connectionCount ?? 1}</p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-400">Estado KYC</label>
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${
+                        profile?.kycCompleted ? 'bg-green-500' : 'bg-yellow-500'
+                      }`}></div>
+                      <span className="text-white">
+                        {profile?.kycCompleted ? 'Verificado' : 'Pendiente'}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -347,12 +422,12 @@ export default function ProfilePage() {
             </CardHeader>
             <CardContent>
               <div className="text-gray-400">
-                <p>Última conexión: {userProfile?.lastConnectionAt ?
-                  new Date(userProfile.lastConnectionAt).toLocaleString('es-ES') :
+                <p>Última conexión: {profile?.lastConnectionAt ?
+                  new Date(profile.lastConnectionAt).toLocaleString('es-ES') :
                   'N/A'
                 }</p>
-                <p className="mt-2">Proyecto aplicado: {userProfile?.projectCount ?? 0}</p>
-                <p>Tiene Pandora&apos;s Key: {userProfile?.hasPandorasKey ? '✅' : '❌'}</p>
+                <p className="mt-2">Proyecto aplicado: {profile?.projectCount ?? 0}</p>
+                <p>Tiene Pandora&apos;s Key: {profile?.hasPandorasKey ? '✅' : '❌'}</p>
               </div>
             </CardContent>
           </Card>
