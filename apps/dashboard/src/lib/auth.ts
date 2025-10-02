@@ -87,8 +87,8 @@ export async function getAuth(headers?: MinimalHeaders, userAddress?: string) {
 
   return {
     session: {
-      userId: address,
-      address: address,
+      userId: address ? address.toLowerCase() : null,
+      address: address ? address.toLowerCase() : null,
     },
   };
 }
