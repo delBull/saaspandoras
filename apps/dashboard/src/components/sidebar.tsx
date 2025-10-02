@@ -58,15 +58,15 @@ export function Sidebar({
   // Multi-chain wallet state
   const [selectedChain, setSelectedChain] = useState(DEFAULT_NETWORK?.chain || ethereum);
 
-  // State for client-side admin status - Start as 'checking' state
+  // State for client-side admin status - Can show admin based on server props initially
   const [adminStatus, setAdminStatus] = useState<{
     isAdmin: boolean;
     isSuperAdmin: boolean;
     verified: boolean; // Track if we've verified with API
   }>({
-    isAdmin: false, // Don't show admin features until verified
-    isSuperAdmin: false,
-    verified: false,
+    isAdmin: isAdminProp ?? false, // Can show admin based on server initially
+    isSuperAdmin: isSuperAdminProp ?? false,
+    verified: !!isAdminProp || !!isSuperAdminProp, // Mark as verified if server says admin
   });
 
   // Track if this is the initial load to avoid resetting admin status
