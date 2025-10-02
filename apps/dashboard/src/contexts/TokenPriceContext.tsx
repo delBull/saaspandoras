@@ -100,10 +100,14 @@ function useTokenPrices(): TokenPriceState {
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
+        // Don't log "Failed to fetch" as error - it's usually network related
+        // and we have fallback prices
         if (error instanceof Error && error.name === 'AbortError') {
           console.warn('⚠️ Token price fetch timed out, using default prices');
-        } else {
+        } else if (!errorMessage.includes('Failed to fetch')) {
           console.error('❌ Error fetching token prices:', errorMessage);
+        } else {
+          console.warn('⚠️ Network error fetching token prices, using defaults');
         }
 
         // Set error state but keep previous prices

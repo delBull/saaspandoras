@@ -58,10 +58,15 @@ export function Sidebar({
   // Multi-chain wallet state
   const [selectedChain, setSelectedChain] = useState(DEFAULT_NETWORK?.chain || ethereum);
 
-  // State for client-side admin status, initialized with server-side props
-  const [adminStatus, setAdminStatus] = useState({
-    isAdmin: isAdminProp ?? false,
-    isSuperAdmin: isSuperAdminProp ?? false,
+  // State for client-side admin status - Start as 'checking' state
+  const [adminStatus, setAdminStatus] = useState<{
+    isAdmin: boolean;
+    isSuperAdmin: boolean;
+    verified: boolean; // Track if we've verified with API
+  }>({
+    isAdmin: false, // Don't show admin features until verified
+    isSuperAdmin: false,
+    verified: false,
   });
 
   // Track if this is the initial load to avoid resetting admin status
@@ -96,18 +101,22 @@ export function Sidebar({
       return;
     }
 
-    // Only reset admin status if we had an account and now it's disconnected
-    if (account?.address === undefined && adminStatus.isAdmin && !isInitialLoad) {
+    // Reset admin status when wallet disconnects
+    if (account?.address === undefined && !isInitialLoad) {
       console.log("🔌 Wallet disconnected, resetting admin status");
-      setAdminStatus({ isAdmin: false, isSuperAdmin: false });
+      setAdminStatus({ isAdmin: false, isSuperAdmin: false, verified: true });
       return;
     }
 
+    // When wallet connects OR changes, always re-verify admin status
     if (!account?.address) {
-      return; // Don't do anything if no account
+      // No wallet connected, ensure admin status is false
+      console.log("🔍 No wallet connected, ensuring admin status is false");
+      setAdminStatus({ isAdmin: false, isSuperAdmin: false, verified: true });
+      return;
     }
 
-    console.log("🔍 Wallet connected, verifying admin status for:", account.address);
+    console.log("🔍 Wallet connected/changed, re-verifying admin status for:", account.address);
 
     (async () => {
       try {
@@ -121,14 +130,18 @@ export function Sidebar({
         if (res.ok) {
           const data = await res.json() as { isAdmin: boolean; isSuperAdmin: boolean };
           console.log("✅ Admin status verified:", data);
-          setAdminStatus(data);
+
+          // Always update admin status when we get a response
+          setAdminStatus({ ...data, verified: true });
         } else {
           console.warn("⚠️ Admin verification failed:", res.status, res.statusText);
-          // Keep default admin status (false) on API failure
+          // Reset admin status to false on API failure
+          setAdminStatus({ isAdmin: false, isSuperAdmin: false, verified: true });
         }
       } catch (e) {
         console.error("❌ Error verifying admin status:", e);
-        // Keep default admin status (false) on error
+        // Reset admin status to false on error
+        setAdminStatus({ isAdmin: false, isSuperAdmin: false, verified: true });
       }
     })().catch(console.error);
 
@@ -148,7 +161,7 @@ export function Sidebar({
     };
 
     void fetchProfile();
-  }, [account?.address, adminStatus.isAdmin, isInitialLoad]);
+  }, [account?.address, isInitialLoad]); // Removed adminStatus.isAdmin dependency
 
   // Handle click outside anywhere on screen and escape key to close dropdowns
   useEffect(() => {
@@ -211,8 +224,8 @@ export function Sidebar({
     };
   }, [profileDropdown, networkDropdown]);
 
-  // The final isAdmin status is a combination of regular admin and super admin
-  const isAdmin = adminStatus.isAdmin || adminStatus.isSuperAdmin;
+  // The final isAdmin status - ONLY show if verified AND actually admin
+  const isAdmin = adminStatus.verified && (adminStatus.isAdmin || adminStatus.isSuperAdmin);
 
   // Use centralized network configuration
   const supportedNetworks = SUPPORTED_NETWORKS;
