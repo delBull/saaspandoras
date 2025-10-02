@@ -131,12 +131,12 @@ export function Sidebar({
           const data = await res.json() as { isAdmin: boolean; isSuperAdmin: boolean };
           console.log("✅ Admin status verified:", data);
 
-          // Always update admin status when we get a response
+          // Always update admin status when we get a response - THIS OVERRIDES SERVER PROPS
           setAdminStatus({ ...data, verified: true });
         } else {
-          console.warn("⚠️ Admin verification failed:", res.status, res.statusText);
-          // Reset admin status to false on API failure
-          setAdminStatus({ isAdmin: false, isSuperAdmin: false, verified: true });
+          console.error("❌ Admin verification failed:", res.status, res.statusText);
+          // Reset admin status to false on API failure - REGARDLESS OF INITIAL SERVER PROPS
+          setAdminStatus({ isAdmin: false, isSuperAdmin: false, verified: false });
         }
       } catch (e) {
         console.error("❌ Error verifying admin status:", e);
