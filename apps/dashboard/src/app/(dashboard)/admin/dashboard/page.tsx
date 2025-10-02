@@ -145,8 +145,29 @@ export default function AdminDashboardPage() {
 
     const fetchData = async () => {
       try {
-        // Fetch projects
-        const projectsRes = await fetch('/api/admin/projects');
+        // Get current wallet address for headers
+        let currentWalletAddress = null;
+        if (typeof window !== 'undefined') {
+          if (window.localStorage) {
+            try {
+              const sessionData = localStorage.getItem('wallet-session');
+              if (sessionData) {
+                const parsedSession = JSON.parse(sessionData) as unknown as WalletSession;
+                currentWalletAddress = parsedSession.address?.toLowerCase();
+              }
+            } catch (e) {
+              console.warn('Error getting wallet for API calls:', e);
+            }
+          }
+        }
+
+        // Fetch projects - Send wallet authentication header
+        const projectsRes = await fetch('/api/admin/projects', {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(currentWalletAddress && { 'x-thirdweb-address': currentWalletAddress }),
+          }
+        });
         console.log('Projects API response:', projectsRes.status, projectsRes.statusText);
         if (projectsRes.ok) {
           const projectsData = await projectsRes.json() as Project[];
@@ -157,8 +178,13 @@ export default function AdminDashboardPage() {
           console.error('Failed to fetch projects:', projectsRes.status, errorResponse);
         }
 
-        // Fetch administrators (esto se usa en AdminSettings)
-        const adminsRes = await fetch('/api/admin/administrators');
+        // Fetch administrators - Send wallet authentication header
+        const adminsRes = await fetch('/api/admin/administrators', {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(currentWalletAddress && { 'x-thirdweb-address': currentWalletAddress }),
+          }
+        });
         console.log('Admins API response:', adminsRes.status, adminsRes.statusText);
         if (adminsRes.ok) {
           const rawAdminsData = await adminsRes.json() as (Omit<AdminData, 'role'> & { role?: string })[];
@@ -176,8 +202,13 @@ export default function AdminDashboardPage() {
           console.error('Failed to fetch admins:', adminsRes.status, errorResponse);
         }
 
-        // Fetch users
-        const usersRes = await fetch('/api/admin/users');
+        // Fetch users - Send wallet authentication header
+        const usersRes = await fetch('/api/admin/users', {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(currentWalletAddress && { 'x-thirdweb-address': currentWalletAddress }),
+          }
+        });
         console.log('Users API response:', usersRes.status, usersRes.statusText);
         if (usersRes.ok) {
           const usersData = await usersRes.json() as UserData[];
