@@ -7,53 +7,48 @@ export function usePersistedAccount() {
   const account = useActiveAccount();
   const [savedWalletAddress, setSavedWalletAddress] = useState<string | null>(null);
 
-  // 1. Guardar la wallet en cookies al conectar
+  // Guardar en cookie cuando conecte
   useEffect(() => {
-    if (account?.address && typeof window !== 'undefined') {
+    if (account?.address && typeof window !== "undefined") {
       const expires = new Date();
-      expires.setDate(expires.getDate() + 7); // Cookie expires in 7 days
+      expires.setDate(expires.getDate() + 7);
       document.cookie = `wallet-address=${account.address}; path=/; expires=${expires.toUTCString()}; Secure; SameSite=Strict`;
       setSavedWalletAddress(account.address);
-      console.log("💾 Wallet address saved to cookie:", account.address);
+      console.log("💾 Guardada wallet en cookie:", account.address);
     }
   }, [account?.address]);
 
-  // 2. Cargar wallet guardada al montar el componente
+  // Cargar cookie al montar
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const saved = document.cookie
         .split("; ")
-        .find(row => row.startsWith("wallet-address="))
+        .find((row) => row.startsWith("wallet-address="))
         ?.split("=")[1];
 
-      if (saved && saved !== 'undefined' && saved !== 'null') {
+      if (saved && saved !== "undefined" && saved !== "null") {
         setSavedWalletAddress(saved);
-        console.log("🔍 Saved wallet found:", saved);
+        console.log("🔍 Wallet guardada encontrada:", saved);
       }
     }
   }, []);
 
-  // 3. Trigger admin verification when saved wallet is detected
+  // Logging para debugging de sesión
   useEffect(() => {
     if (savedWalletAddress && !account?.address) {
       console.log("🔄 Wallet guardada detectada:", savedWalletAddress);
-      console.log("💡 Wallet disponible para reconexión automática");
-
-      // Store the saved wallet address in sessionStorage for the sidebar to use
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('pendingWalletAddress', savedWalletAddress);
-      }
+      console.log("💡 Usuario debe reconectar manualmente para restaurar la sesión");
     }
   }, [savedWalletAddress, account?.address]);
 
-  // 4. Logout manual: limpiar cookie y recargar
+  // Logout
   const logout = useCallback(() => {
     console.log("🚪 Cerrando sesión de wallet");
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       document.cookie = `wallet-address=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
       setSavedWalletAddress(null);
-      window.location.reload(); // Recargar para limpiar el estado
     }
+    // Nota: El disconnect se debe hacer en el componente que tiene acceso al wallet
   }, []);
 
   return {
@@ -61,6 +56,6 @@ export function usePersistedAccount() {
     logout,
     savedWalletAddress,
     hasSavedWallet: !!savedWalletAddress,
-    canAutoReconnect: !account?.address && !!savedWalletAddress
+    canAutoReconnect: !account?.address && !!savedWalletAddress,
   };
 }
