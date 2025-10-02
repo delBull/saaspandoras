@@ -110,8 +110,13 @@ export function Sidebar({
 
     // When wallet connects OR changes, always re-verify admin status
     if (!account?.address) {
-      // No wallet connected, ensure admin status is false
-      console.log("🔍 No wallet connected, ensuring admin status is false");
+      // si servidor ya dijo que era admin, no quitar (evita flicker durante rehidratación)
+      if (!adminStatus.verified && isAdminProp) {
+        console.log("🏚️ Manteniendo admin status por server prop durante rehidratacion");
+        return;
+      }
+      // No wallet connected and no server admin prop, ensure admin status is false
+      console.log("🐭 No wallet connected and no server admin, ensuring admin status is false");
       setAdminStatus({ isAdmin: false, isSuperAdmin: false, verified: true });
       return;
     }
@@ -161,7 +166,7 @@ export function Sidebar({
     };
 
     void fetchProfile();
-  }, [account?.address, isInitialLoad]); // Removed adminStatus.isAdmin dependency
+  }, [account?.address, isInitialLoad, adminStatus.verified, isAdminProp]);
 
   // Handle click outside anywhere on screen and escape key to close dropdowns
   useEffect(() => {
