@@ -46,7 +46,6 @@ export function DashboardClientWrapper({
 
   return (
     <ProjectModalProvider>
-      <AutoLoginGate serverSession={serverSession}>
         <TokenPriceProvider>
           <DashboardShell
             wallet={account?.address}
@@ -54,6 +53,7 @@ export function DashboardClientWrapper({
             isAdmin={isAdmin}
             isSuperAdmin={isSuperAdmin}
           >
+           <AutoLoginGate serverSession={serverSession}>
             <NFTGate>
               <AnimatePresence mode="wait">
                 <motion.div
@@ -76,9 +76,9 @@ export function DashboardClientWrapper({
                 </motion.div>
               </AnimatePresence>
             </NFTGate>
+           </AutoLoginGate>
           </DashboardShell>
         </TokenPriceProvider>
-      </AutoLoginGate>
     </ProjectModalProvider>
   );
 }
