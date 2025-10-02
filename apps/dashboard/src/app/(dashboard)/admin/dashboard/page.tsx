@@ -53,7 +53,29 @@ export default function AdminDashboardPage() {
     const checkAdminStatus = async () => {
       try {
         console.log('🔐 Admin dashboard - Checking user admin privileges...');
-        const response = await fetch('/api/admin/verify');
+
+        // Need to get the current wallet address to send in header
+        const walletAddress = typeof window !== 'undefined'
+          ? document.cookie
+              .split('; ')
+              .find((row) => row.startsWith('wallet-address='))
+              ?.split('=')[1]
+          : null;
+
+        const requestHeaders: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+
+        // Send wallet address if we have it (crucial for admin verification)
+        if (walletAddress) {
+          requestHeaders['x-thirdweb-address'] = walletAddress;
+          console.log('🆔 Admin dashboard - Using wallet:', walletAddress);
+        }
+
+        const response = await fetch('/api/admin/verify', {
+          headers: requestHeaders,
+        });
+
         if (!response.ok) {
           throw new Error(`API request failed: ${response.status}`);
         }

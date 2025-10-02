@@ -9,7 +9,23 @@ interface UserProfile extends UserData {
 }
 
 async function fetcher(url: string): Promise<UserProfile> {
-  const res = await fetch(url);
+  // Send wallet address header to authenticate the request
+  const walletAddress = typeof window !== 'undefined'
+    ? document.cookie
+        .split('; ')
+        .find((row) => row.startsWith('wallet-address='))
+        ?.split('=')[1]
+    : null;
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  if (walletAddress) {
+    headers['x-thirdweb-address'] = walletAddress;
+  }
+
+  const res = await fetch(url, { headers });
   if (!res.ok) {
     throw new Error(`Error ${res.status}: ${res.statusText}`);
   }
