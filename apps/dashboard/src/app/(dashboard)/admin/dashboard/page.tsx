@@ -21,7 +21,7 @@ export default function AdminDashboardPage() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [admins, setAdmins] = useState<AdminData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null); // null = not verified yet
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | 'all'>('all');
   const [expandedProject, setExpandedProject] = useState<string | null>(null); // Para controlar el dropdown de detalles
   const [statusDropdown, setStatusDropdown] = useState<string | null>(null); // Para controlar el dropdown de estado
@@ -35,11 +35,16 @@ export default function AdminDashboardPage() {
     setActionsLoading,
   });
 
-  // Check admin status first with timeout fallback
+  // 🙋‍♂️ IMPORTANT: This page requires CONFIRMED admin status, not tentative
+  // Sidebars can show based on initial server props, but this endpoint requires API verification
+
+  // Check admin status first with timeout fallback - ONLY ONCE
   useEffect(() => {
+    if (isAdmin !== null) return; // Don't run if already determined
+
     const timeoutId: NodeJS.Timeout = setTimeout(() => {
       if (isAdmin === null) {
-        console.log('Admin verification timeout - assuming no admin access');
+        console.log('⏰ Admin dashboard verification timeout - DENYING ACCESS');
         setAuthError('Timeout al verificar permisos administrativos');
         setIsAdmin(false);
       }
@@ -47,6 +52,7 @@ export default function AdminDashboardPage() {
 
     const checkAdminStatus = async () => {
       try {
+        console.log('🔐 Admin dashboard - Checking user admin privileges...');
         const response = await fetch('/api/admin/verify');
         if (!response.ok) {
           throw new Error(`API request failed: ${response.status}`);
@@ -56,15 +62,15 @@ export default function AdminDashboardPage() {
 
         // User is admin if they have admin privileges OR super admin privileges
         const userIsAdmin = (data.isAdmin ?? false) || (data.isSuperAdmin ?? false);
-        console.log('Admin dashboard - User is admin:', userIsAdmin, { data });
+        console.log('🏛️ Admin dashboard result:', userIsAdmin, { data });
+
         setIsAdmin(userIsAdmin);
         setAuthError(null);
+
       } catch (error) {
-        console.error('Error checking admin status:', error);
+        console.error('❌ Admin dashboard verification FAILED:', error);
         setAuthError('Error al verificar permisos administrativos');
         setIsAdmin(false);
-      } finally {
-        clearTimeout(timeoutId);
       }
     };
 
@@ -72,7 +78,7 @@ export default function AdminDashboardPage() {
     checkAdminStatus().catch(console.error);
 
     return () => clearTimeout(timeoutId);
-  }, [isAdmin]); // Added isAdmin dependency
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     // Set loading to false immediately if user is not admin (prevents infinite loading)
@@ -204,7 +210,7 @@ export default function AdminDashboardPage() {
         <div>
           <h1 className="text-2xl font-bold text-white">Dashboard Admin</h1>
           <p className="text-gray-400">
-            Bienvenido a la gestión completa de la plataforma
+            Gestión de la plataforma
           </p>
         </div>
         <Link

@@ -40,6 +40,7 @@ const config = {
     "dist",
     "pnpm-lock.yaml",
     "bun.lockb",
+    "**/scripts/**",
   ],
   reportUnusedDisableDirectives: true,
 };

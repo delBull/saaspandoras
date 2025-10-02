@@ -1,6 +1,5 @@
 'use client';
 
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import React, { useEffect, useState, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@saasfly/ui/card';
 import {
@@ -15,20 +14,17 @@ import {
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { useProjectModal } from "@/contexts/ProjectModalContext";
-import type { UserData } from '@/types/admin';
+import { useProfile } from "@/hooks/useProfile";
 
 export default function PandoriansDashboardPage() {
-  const [userProfile, setUserProfile] = useState<UserData | null>(null);
-  const [userProjects, setUserProjects] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { profile, projects, isLoading, isError } = useProfile();
   const [sessionUser, setSessionUser] = useState<{walletAddress?: string} | null>(null);
-  const [showBetaToast, setShowBetaToast] = useState(false);
   const toastShownRef = useRef(false);
 
   const { open } = useProjectModal();
 
   useEffect(() => {
-    // Get session user
+    // Get session user first (always needed for authentication)
     const getSession = () => {
       try {
         const walletAddress = document.cookie
@@ -38,7 +34,22 @@ export default function PandoriansDashboardPage() {
 
         if (walletAddress) {
           setSessionUser({ walletAddress });
-          setShowBetaToast(true); // Show toast only when we have a session
+
+          // Show beta notification toast only once when session is first detected
+          if (!toastShownRef.current) {
+            toast.info(
+              "Dashboard en Versión Beta",
+              {
+                description: "Esta información puede incluir datos de demostración mientras desarrollamos nuevas funciones. La información financiera real se integrará progresivamente.",
+                duration: 8000,
+                action: {
+                  label: "Entendido",
+                  onClick: () => console.log("Beta acknowledgment"),
+                },
+              }
+            );
+            toastShownRef.current = true;
+          }
         }
       } catch (error) {
         console.error('Error getting session:', error);
@@ -48,98 +59,8 @@ export default function PandoriansDashboardPage() {
     getSession();
   }, []);
 
-  useEffect(() => {
-    if (showBetaToast && !toastShownRef.current) {
-      // Show beta notification toast only once
-      toast.info(
-        "Dashboard en Versión Beta",
-        {
-          description: "Esta información puede incluir datos de demostración mientras desarrollamos nuevas funciones. La información financiera real se integrará progresivamente.",
-          duration: 8000,
-          action: {
-            label: "Entendido",
-            onClick: () => console.log("Beta acknowledgment"),
-          },
-        }
-      );
-      toastShownRef.current = true;
-      setShowBetaToast(false); // Prevent future shows
-    }
-
-    if (sessionUser?.walletAddress) {
-      console.log('🔍 Profile Dashboard: Fetching data for wallet:', String(sessionUser?.walletAddress));
-
-      // Fetch user profile data and their projects
-      Promise.all([
-        fetch('/api/admin/users'),
-        fetch('/api/admin/projects')
-      ])
-      .then(([usersRes, projectsRes]) => {
-        if (!usersRes.ok || !projectsRes.ok) {
-          // If not authorized, set empty data
-          console.log('Not authorized to fetch admin data, using empty data');
-          setUserProfile(null);
-          setUserProjects([]);
-          setLoading(false);
-          return;
-        }
-        return Promise.all([usersRes.json(), projectsRes.json()]);
-      })
-        .then((data) => {
-        if (!data) return; // Already handled
-        const [users, allProjects] = data;
-        const usersTyped = users as UserData[];
-        const currentUser = usersTyped.find((u) =>
-          u.walletAddress.toLowerCase() === sessionUser.walletAddress?.toLowerCase()
-        );
-
-        console.log('👤 Profile Dashboard: Found user:', currentUser);
-        console.log('📊 Profile Dashboard: User project count:', currentUser?.projectCount);
-
-        setUserProfile(currentUser ?? null);
-
-      // Use wallet-based filtering for consistency with admin panel
-      const SUPER_ADMIN_WALLETS = ['0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9'];
-      const isSuperAdmin = SUPER_ADMIN_WALLETS.includes(currentUser?.walletAddress || '');
-      const userWalletAddress = currentUser?.walletAddress?.toLowerCase();
-
-      let filteredUserProjects: any[] = [];
-      if (isSuperAdmin) {
-        // Super admin sees all active/manageable projects
-        filteredUserProjects = allProjects.filter((p: any) =>
-          ['pending', 'approved', 'live', 'completed'].includes(p.status)
-        );
-      } else {
-        // PRIORITIZE wallet-based filtering over email
-        // First try wallet address
-        filteredUserProjects = allProjects.filter((p: any) => {
-          // If project has wallet address, use it
-          if (p.applicantWalletAddress) {
-            return p.applicantWalletAddress.toLowerCase() === userWalletAddress;
-          }
-          // Fallback to email
-          return p.applicantEmail?.toLowerCase() === currentUser?.email?.toLowerCase();
-        });
-
-        // Fallback: if no projects found but user should have projects, use temp mapping
-        if (filteredUserProjects.length === 0 && currentUser?.projectCount && currentUser.projectCount > 0) {
-          filteredUserProjects = allProjects.slice(0, currentUser.projectCount);
-        }
-      }
-
-      console.log('🚀 Profile Dashboard: Filtered user projects:', filteredUserProjects.length);
-      setUserProjects(filteredUserProjects);
-      setLoading(false);
-    })
-    .catch(err => {
-      console.error('Error fetching user profile:', err);
-      setUserProfile(null);
-      setLoading(false);
-    });
-    }
-  }, [sessionUser, showBetaToast]);
-
-  if (loading) {
+  // Handle loading and error states
+  if (isLoading) {
     return (
       <div className="p-6">
         <div className="animate-pulse space-y-6">
@@ -154,7 +75,7 @@ export default function PandoriansDashboardPage() {
     );
   }
 
-  if (!sessionUser) {
+  if (isError || !sessionUser) {
     return (
       <div className="p-6">
         <Card>
@@ -167,18 +88,28 @@ export default function PandoriansDashboardPage() {
     );
   }
 
-  // Calculate metrics from actual project data instead of placeholders
-  const calculateDashboardMetrics = () => {
-    const projectCount = userProjects.length;
+  if (!profile) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardContent className="p-6">
+            <p>No se encontró información de perfil.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-    // Calculate total target amounts from real project data
-    const totalTarget = userProjects.reduce((sum: number, project: any) => {
+  // Calculate metrics from profile projects data
+  const calculateDashboardMetrics = () => {
+    // Calculate total target amounts from project data
+    const totalTarget = projects.reduce((sum: number, project: any) => {
       const target = Number(project.targetAmount) || 0;
       return sum + target;
     }, 0);
 
     // Calculate returns (assume 12.5% APY on current invested amount)
-    const currentInvested = userProjects.reduce((sum: number, project: any) => {
+    const currentInvested = projects.reduce((sum: number, project: any) => {
       const raised = Number(project.raisedAmount) || 0;
       return sum + raised;
     }, 0);
@@ -187,7 +118,7 @@ export default function PandoriansDashboardPage() {
     const totalReturns = currentInvested * 0.125; // 12.5% annual returns estimate
 
     // Count project statuses
-    const statusCounts = userProjects.reduce((counts: any, project: any) => {
+    const statusCounts = projects.reduce((counts: any, project: any) => {
       if (project.status === 'live' || project.status === 'approved' || project.status === 'pending') {
         counts.active += 1;
       }
@@ -201,7 +132,7 @@ export default function PandoriansDashboardPage() {
     }, { active: 0, completed: 0, pending: 0 });
 
     // Calculate average APY for active projects (in production, this would be dynamic per project)
-    const averageAPY = projectCount > 0 ? 12.5 : 0;
+    const averageAPY = projects.length > 0 ? 12.5 : 0;
 
     return {
       // Total target amount from all user's projects
@@ -210,7 +141,7 @@ export default function PandoriansDashboardPage() {
       // Estimated returns (in production, this would be actual paid returns)
       totalReturns: Math.round(totalReturns),
 
-      // Counts from real project data
+      // Counts from project data
       activeProjects: statusCounts.active,
       pendingProjects: statusCounts.pending,
       completedProjects: statusCounts.completed,
@@ -255,10 +186,10 @@ export default function PandoriansDashboardPage() {
         </div>
         <div className="flex items-center space-x-2">
           <div className={`w-3 h-3 rounded-full ${
-            userProfile?.kycLevel === 'basic' ? 'bg-green-500' : 'bg-yellow-500'
+            profile.kycLevel === 'basic' ? 'bg-green-500' : 'bg-yellow-500'
           }`}></div>
           <span className="text-sm text-gray-400">
-            Nivel {userProfile?.kycLevel === 'basic' ? 'Básico' : 'N/A'}
+            Nivel {profile.kycLevel === 'basic' ? 'Básico' : 'N/A'}
           </span>
         </div>
       </div>
