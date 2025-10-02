@@ -39,9 +39,6 @@ export function Sidebar({
   isSuperAdmin: isSuperAdminProp,
 }: SidebarProps) {
 
-  // Estado para controlar lista de admins dinámicos de BD
-  const [dbAdmins, setDbAdmins] = useState<Set<string>>(new Set());
-  const [dbAdminCheckDone, setDbAdminCheckDone] = useState(false);
   const [isClient, setIsClient] = useState(false);
   useEffect(() => {
     setIsClient(true);
@@ -86,28 +83,7 @@ export function Sidebar({
     });
   }, [adminStatus, isAdminProp, isSuperAdminProp, account?.address]);
 
-  // Fetch and cache database admin list
-  useEffect(() => {
-    if (!dbAdminCheckDone && account?.address) {
-      console.log("📋 Fetching admin list from database...");
-      fetch('/api/admin/administrators')
-        .then(res => res.ok ? res.json() : [])
-        .then((admins: { walletAddress: string; wallet_address: string }[]) => {
-          const adminAddresses = new Set<string>();
-          admins.forEach(admin => {
-            const addr = admin.walletAddress || admin.wallet_address;
-            if (addr) adminAddresses.add(addr.toLowerCase());
-          });
-          setDbAdmins(adminAddresses);
-          setDbAdminCheckDone(true);
-          console.log("✅ Admin list cached:", Array.from(adminAddresses));
-        })
-        .catch(err => {
-          console.error("❌ Failed to fetch admin list:", err);
-          setDbAdminCheckDone(true); // Mark as done even on error
-        });
-    }
-  }, [account?.address, dbAdminCheckDone]);
+  // Admin verification happens in the main useEffect below
 
   // Fetch admin status and user profile when account changes
   useEffect(() => {
@@ -245,10 +221,9 @@ export function Sidebar({
     };
   }, [profileDropdown, networkDropdown]);
 
-  // The final isAdmin status - Allow access based on server props, verified status, hardcoded super admin, or dynamic database admins
+  // The final isAdmin status - Allow access based on server props, verified status, or hardcoded super admin
   const isSuperAdminWallet = account?.address?.toLowerCase() === "0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9";
-  const isDynamicAdminWallet = dbAdmins.has(account?.address?.toLowerCase() || '');
-  const isAdmin = (isAdminProp || isSuperAdminProp || isSuperAdminWallet || isDynamicAdminWallet) || (adminStatus.verified && (adminStatus.isAdmin || adminStatus.isSuperAdmin));
+  const isAdmin = (isAdminProp || isSuperAdminProp || isSuperAdminWallet) || (adminStatus.verified && (adminStatus.isAdmin || adminStatus.isSuperAdmin));
 
   // Use centralized network configuration
   const supportedNetworks = SUPPORTED_NETWORKS;
