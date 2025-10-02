@@ -49,6 +49,7 @@ export function Sidebar({
   const [userProfile, setUserProfile] = useState<any>(null);
   const [networkDropdown, setNetworkDropdown] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const toggleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const account = useActiveAccount();
   const wallet = useActiveWallet();
@@ -63,29 +64,63 @@ export function Sidebar({
     isSuperAdmin: isSuperAdminProp ?? false,
   });
 
-  // Store wallet address in cookie when connected and fetch admin status
+  // Debug logging for admin status
   useEffect(() => {
-    if (!account?.address) {
-      // Clear cookie when disconnected
-      document.cookie = `wallet-address=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-      setAdminStatus({ isAdmin: false, isSuperAdmin: false }); // Reset on disconnect
+    console.log('🔍 Admin status check:', {
+      serverSide: { isAdmin: isAdminProp, isSuperAdmin: isSuperAdminProp },
+      clientSide: adminStatus,
+      finalIsAdmin: adminStatus.isAdmin || adminStatus.isSuperAdmin,
+      account: account?.address?.substring(0, 8)
+    });
+  }, [adminStatus, isAdminProp, isSuperAdminProp, account?.address]);
+
+  // Check for pending wallet address from sessionStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !account?.address) {
+      const pendingWallet = sessionStorage.getItem('pendingWalletAddress');
+      if (pendingWallet) {
+        console.log("🔄 Pending wallet found in sessionStorage:", pendingWallet);
+        // The wallet should auto-reconnect, but we keep this for debugging
+      }
+    }
+  }, [account?.address]);
+
+  // Fetch admin status and user profile when account changes
+  useEffect(() => {
+    // Don't reset admin status on initial load (when account is undefined)
+    // Only reset if we had an account before and now it's disconnected
+    if (account?.address === undefined && adminStatus.isAdmin) {
+      console.log("🔌 Wallet disconnected, resetting admin status");
+      setAdminStatus({ isAdmin: false, isSuperAdmin: false });
       return;
     }
 
-    // Store wallet address in cookie when connected
-    const expires = new Date();
-    expires.setDate(expires.getDate() + 30); // Cookie expires in 30 days
-    document.cookie = `wallet-address=${account.address}; path=/; expires=${expires.toUTCString()}; Secure; SameSite=Strict`;
+    if (!account?.address) {
+      return; // Don't do anything if no account (initial load)
+    }
+
+    console.log("🔍 Wallet connected, verifying admin status for:", account.address);
 
     (async () => {
       try {
-        const res = await fetch("/api/admin/verify");
+        console.log("🔍 Verifying admin status for:", account.address);
+        const res = await fetch("/api/admin/verify", {
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+
         if (res.ok) {
-          const data = (await res.json()) as { isAdmin: boolean; isSuperAdmin: boolean };
+          const data = await res.json() as { isAdmin: boolean; isSuperAdmin: boolean };
+          console.log("✅ Admin status verified:", data);
           setAdminStatus(data);
+        } else {
+          console.warn("⚠️ Admin verification failed:", res.status, res.statusText);
+          // Keep default admin status (false) on API failure
         }
       } catch (e) {
-        console.error("Error verifying admin status:", e);
+        console.error("❌ Error verifying admin status:", e);
+        // Keep default admin status (false) on error
       }
     })().catch(console.error);
 
@@ -105,7 +140,7 @@ export function Sidebar({
     };
 
     void fetchProfile();
-  }, [account?.address]);
+  }, [account?.address, adminStatus.isAdmin]);
 
   // Handle click outside anywhere on screen and escape key to close dropdowns
   useEffect(() => {
@@ -117,7 +152,26 @@ export function Sidebar({
 
       // Check if click is inside the dropdown overlay
       if (sidebarRef.current?.contains(target)) {
-        return; // Don't close if click is inside dropdown
+        // For profile dropdown: allow clicking on avatar button without closing
+        if (profileDropdown) {
+          const avatarButton = sidebarRef.current.querySelector('button[title="Menú de perfil"]');
+          const profileDropdownContent = sidebarRef.current.querySelector('.profile-dropdown-content');
+
+          // If clicking on avatar button or inside dropdown content, don't close
+          if (avatarButton?.contains(target) || profileDropdownContent?.contains(target)) {
+            return;
+          }
+        }
+
+        // For network dropdown: allow clicking inside dropdown
+        if (networkDropdown) {
+          const networkDropdownContent = sidebarRef.current.querySelector('.network-dropdown-content');
+          if (networkDropdownContent?.contains(target)) {
+            return;
+          }
+        }
+
+        return; // Don't close if click is inside any dropdown
       }
 
       // Close dropdowns if click is anywhere else on the page
@@ -143,6 +197,9 @@ export function Sidebar({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside, false);
       document.removeEventListener('keydown', handleEscapeKey, true);
+      if (toggleTimeoutRef.current) {
+        clearTimeout(toggleTimeoutRef.current);
+      }
     };
   }, [profileDropdown, networkDropdown]);
 
@@ -183,7 +240,7 @@ export function Sidebar({
       ...(isAdmin
         ? [
             {
-              label: "Dashboard",
+              label: "Admin Dash",
               href: "/admin/dashboard",
               icon: (
                 <ChartPieIcon className="h-5 w-5 shrink-0 text-lime-400" />
@@ -293,7 +350,19 @@ export function Sidebar({
                 <button
                   onClick={(e) => {
                     e.stopPropagation(); // Prevent event bubbling
-                    setProfileDropdown(!profileDropdown);
+
+                    // Clear any existing timeout
+                    if (toggleTimeoutRef.current) {
+                      clearTimeout(toggleTimeoutRef.current);
+                    }
+
+                    // Use setTimeout to ensure the toggle happens after any other click handlers
+                    toggleTimeoutRef.current = setTimeout(() => {
+                      setProfileDropdown(!profileDropdown);
+                    }, 0);
+                  }}
+                  onMouseDown={(e) => {
+                    e.stopPropagation(); // Also prevent mousedown propagation
                   }}
                   className="flex-shrink-0 relative hover:bg-zinc-700/30 p-1 rounded transition-colors"
                   title="Menú de perfil"
@@ -305,9 +374,6 @@ export function Sidebar({
                           height={32}
                           className="w-8 h-8 rounded-full border border-lime-400"
                         />
-                  {userProfile?.kycLevel === 'basic' && (
-                    <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border border-zinc-900 bg-green-500"></div>
-                  )}
                 </button>
 
                 {/* Wallet display - copiar al hacer click */}
@@ -360,7 +426,7 @@ export function Sidebar({
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 10 }}
-                        className="absolute left-4 top-[152px] w-80 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 pointer-events-auto"
+                        className="absolute left-4 top-[152px] w-80 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 pointer-events-auto profile-dropdown-content"
                       >
                         <div className="p-3 space-y-2">
                           {/* Profile */}
@@ -601,7 +667,19 @@ export function Sidebar({
                       <button
                         onClick={(e) => {
                           e.stopPropagation(); // Prevent event bubbling
-                          setProfileDropdown(!profileDropdown);
+
+                          // Clear any existing timeout
+                          if (toggleTimeoutRef.current) {
+                            clearTimeout(toggleTimeoutRef.current);
+                          }
+
+                          // Use setTimeout to ensure the toggle happens after any other click handlers
+                          toggleTimeoutRef.current = setTimeout(() => {
+                            setProfileDropdown(!profileDropdown);
+                          }, 0);
+                        }}
+                        onMouseDown={(e) => {
+                          e.stopPropagation(); // Also prevent mousedown propagation
                         }}
                         className="flex-shrink-0 relative hover:bg-zinc-700/30 p-1 rounded transition-colors"
                         title="Menú de perfil"
@@ -613,9 +691,6 @@ export function Sidebar({
                           height={32}
                           className="w-8 h-8 rounded-full border border-lime-400"
                         />
-                        {userProfile?.kycLevel === 'basic' && (
-                          <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border border-zinc-900 bg-green-500"></div>
-                        )}
                       </button>
 
                       {/* Wallet display - copiar al hacer click */}
@@ -661,7 +736,7 @@ export function Sidebar({
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: 10 }}
-                          className="absolute left-0 right-0 top-full mt-2 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50"
+                          className="absolute left-0 right-0 top-full mt-2 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 profile-dropdown-content"
                         >
                           <div className="p-3 space-y-2">
                             {/* Profile */}

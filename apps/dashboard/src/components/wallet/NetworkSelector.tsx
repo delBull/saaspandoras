@@ -57,7 +57,7 @@ export function NetworkSelector({ selectedChain, onChainChange, supportedNetwork
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="absolute top-full left-0 right-0 mt-1 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50"
+            className="absolute top-full left-0 right-0 mt-1 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 network-dropdown-content"
           >
             <div className="p-2 space-y-1">
               {supportedNetworks.map((network) => (
