@@ -21,7 +21,7 @@ export default function AdminDashboardPage() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [admins, setAdmins] = useState<AdminData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null); // null = not verified yet
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null); // null = checking, false = not admin, true = admin
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | 'all'>('all');
   const [expandedProject, setExpandedProject] = useState<string | null>(null); // Para controlar el dropdown de detalles
   const [statusDropdown, setStatusDropdown] = useState<string | null>(null); // Para controlar el dropdown de estado
@@ -35,8 +35,10 @@ export default function AdminDashboardPage() {
     setActionsLoading,
   });
 
-  // Check admin status first with timeout fallback
+  // Check admin status first with timeout fallback - ONLY ONCE
   useEffect(() => {
+    if (isAdmin !== null) return; // Don't run if already determined
+
     const timeoutId: NodeJS.Timeout = setTimeout(() => {
       if (isAdmin === null) {
         console.log('Admin verification timeout - assuming no admin access');
@@ -57,14 +59,14 @@ export default function AdminDashboardPage() {
         // User is admin if they have admin privileges OR super admin privileges
         const userIsAdmin = (data.isAdmin ?? false) || (data.isSuperAdmin ?? false);
         console.log('Admin dashboard - User is admin:', userIsAdmin, { data });
+
         setIsAdmin(userIsAdmin);
         setAuthError(null);
+
       } catch (error) {
         console.error('Error checking admin status:', error);
         setAuthError('Error al verificar permisos administrativos');
         setIsAdmin(false);
-      } finally {
-        clearTimeout(timeoutId);
       }
     };
 
@@ -72,7 +74,7 @@ export default function AdminDashboardPage() {
     checkAdminStatus().catch(console.error);
 
     return () => clearTimeout(timeoutId);
-  }, [isAdmin]); // Added isAdmin dependency
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     // Set loading to false immediately if user is not admin (prevents infinite loading)

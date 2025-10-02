@@ -28,7 +28,11 @@ export default async function DashboardLayout({
   console.log('🏠 DashboardLayout: Final results:', { userIsAdmin, userIsSuperAdmin });
 
   return (
-    <DashboardClientWrapper isAdmin={userIsAdmin} isSuperAdmin={userIsSuperAdmin}>
+    <DashboardClientWrapper
+      isAdmin={userIsAdmin}
+      isSuperAdmin={userIsSuperAdmin}
+      serverSession={session ? { address: session.address ?? undefined, hasSession: true } : null}
+    >
       {children}
     </DashboardClientWrapper>
   );
