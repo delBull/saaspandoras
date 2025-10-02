@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useMemo } from "react";
-import { useActiveAccount, useReadContract } from "thirdweb/react";
+import { useReadContract } from "thirdweb/react";
+import { usePersistedAccount } from "@/hooks/usePersistedAccount";
 import Link from "next/link";
 import { config } from "@/config";
 import { PromotionalBanner } from "@/components/promotional-banners";
@@ -93,7 +94,7 @@ function SecondaryTabs({ activeTab, setActiveTab }: { activeTab: string, setActi
 
 export default function DashboardPage() {
   const [secondaryTab, setSecondaryTab] = useState("Access");
-  const account = useActiveAccount();
+  const { account } = usePersistedAccount();
 
   // Memoize contract to prevent recreation on every render
   const contract = useMemo(() =>

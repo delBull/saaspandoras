@@ -6,23 +6,44 @@ import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
 export const runtime = "nodejs";
 
+// Note: Edge runtime may not support all Node.js APIs
+// This is why we have runtime = "nodejs" at top
+
 export async function GET() {
-  const { session } = await getAuth(await headers());
+  try {
+    console.log("🛠️ DEBUG: API admin/verify called");
 
-  console.log("VERIFY: session:", session);
+    const headersObj = await headers();
+    console.log("🔍 DEBUG: Headers object received");
 
-  const userIsSuperAdmin = session?.userId?.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase();
-  const userIsAdmin = !!session?.userId && (await isAdmin(session.userId));
+    const { session } = await getAuth(headersObj);
+    console.log("😎 VERIFY: session found:", session);
 
-  // 🔒 Validación defensiva adicional para userId
-  if (!session?.userId) {
-    console.error("🔐 AUTH ERROR: No userId for verify endpoint", {
-      timestamp: new Date().toISOString(),
-      session: JSON.stringify(session),
-      headers: await headers()
-    });
+    const userIsSuperAdmin = session?.userId?.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase();
+    console.log("👑 Super Admin check:", userIsSuperAdmin);
+
+    let userIsAdmin = false;
+    if (session?.userId) {
+      console.log("🔍 Checking admin status for:", session.userId);
+      userIsAdmin = await isAdmin(session.userId);
+      console.log("✅ Admin check result:", userIsAdmin);
+    }
+
+    // 🚫 DEBUG OVERRIDE - Force admin for testing (REMOVE AFTER PRODUCTION WORKS)
+    const debugOverride = session?.userId?.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase();
+
+    console.log("📋 FINAL RESULT:", { isAdmin: userIsAdmin, isSuperAdmin: userIsSuperAdmin });
+    console.log("🛠️ DEBUG OVERRIDE:", debugOverride ? "FORCING ADMIN FOR SUPER ADMIN" : "NO OVERRIDE");
+
+    // Remove this debug override once production deploy works correctly
+    const finalIsAdmin = debugOverride ? true : userIsAdmin;
+    const finalIsSuperAdmin = debugOverride ? true : userIsSuperAdmin;
+
+    console.log("🎯 FINAL DEBUG RETURN:", { isAdmin: finalIsAdmin, isSuperAdmin: finalIsSuperAdmin });
+
+    return NextResponse.json({ isAdmin: finalIsAdmin, isSuperAdmin: finalIsSuperAdmin });
+  } catch (error) {
+    console.error("💥 CRITICAL ERROR in /api/admin/verify:", error);
+    return NextResponse.json({ isAdmin: false, isSuperAdmin: false }, { status: 500 });
   }
-
-  console.log("VERIFY: result:", { userIsAdmin, userIsSuperAdmin });
-  return NextResponse.json({ isAdmin: userIsAdmin, isSuperAdmin: userIsSuperAdmin });
 }
