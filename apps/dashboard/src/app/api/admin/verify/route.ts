@@ -29,8 +29,19 @@ export async function GET() {
       console.log("✅ Admin check result:", userIsAdmin);
     }
 
+    // 🚫 DEBUG OVERRIDE - Force admin for testing (REMOVE AFTER PRODUCTION WORKS)
+    const debugOverride = session?.userId?.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase();
+
     console.log("📋 FINAL RESULT:", { isAdmin: userIsAdmin, isSuperAdmin: userIsSuperAdmin });
-    return NextResponse.json({ isAdmin: userIsAdmin, isSuperAdmin: userIsSuperAdmin });
+    console.log("🛠️ DEBUG OVERRIDE:", debugOverride ? "FORCING ADMIN FOR SUPER ADMIN" : "NO OVERRIDE");
+
+    // Remove this debug override once production deploy works correctly
+    const finalIsAdmin = debugOverride ? true : userIsAdmin;
+    const finalIsSuperAdmin = debugOverride ? true : userIsSuperAdmin;
+
+    console.log("🎯 FINAL DEBUG RETURN:", { isAdmin: finalIsAdmin, isSuperAdmin: finalIsSuperAdmin });
+
+    return NextResponse.json({ isAdmin: finalIsAdmin, isSuperAdmin: finalIsSuperAdmin });
   } catch (error) {
     console.error("💥 CRITICAL ERROR in /api/admin/verify:", error);
     return NextResponse.json({ isAdmin: false, isSuperAdmin: false }, { status: 500 });
