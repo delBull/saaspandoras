@@ -7,7 +7,7 @@ import { ProjectModalProvider } from "@/contexts/ProjectModalContext";
 import { TokenPriceProvider } from "@/contexts/TokenPriceContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from 'next/navigation';
-import { useActiveAccount } from "thirdweb/react";
+import { usePersistedAccount } from "@/hooks/usePersistedAccount";
 
 async function fetchUserName(address: string): Promise<string | null> {
   if (address.toLowerCase() === "0xdd2fd4581271e230360230f9337d5c0430bf44c0") {
@@ -28,7 +28,7 @@ export function DashboardClientWrapper({
   isSuperAdmin: boolean;
 }) {
   const pathname = usePathname();
-  const account = useActiveAccount();
+  const { account } = usePersistedAccount();
   const [userName, setUserName] = useState<string | null>(null);
 
   useEffect(() => {
