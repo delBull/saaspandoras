@@ -121,6 +121,7 @@ export function Sidebar({
         const res = await fetch("/api/admin/verify", {
           headers: {
             'Content-Type': 'application/json',
+            'x-thirdweb-address': account.address, // 🔥 Send wallet address header
           }
         });
 
