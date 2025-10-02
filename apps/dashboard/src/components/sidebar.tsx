@@ -229,8 +229,9 @@ export function Sidebar({
     };
   }, [profileDropdown, networkDropdown]);
 
-  // The final isAdmin status - ONLY show if verified AND actually admin
-  const isAdmin = adminStatus.verified && (adminStatus.isAdmin || adminStatus.isSuperAdmin);
+  // The final isAdmin status - Allow access based on server props, verified status, or hardcoded super admin
+  const isSuperAdminWallet = account?.address?.toLowerCase() === "0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9";
+  const isAdmin = (isAdminProp || isSuperAdminProp || isSuperAdminWallet) || (adminStatus.verified && (adminStatus.isAdmin || adminStatus.isSuperAdmin));
 
   // Use centralized network configuration
   const supportedNetworks = SUPPORTED_NETWORKS;
