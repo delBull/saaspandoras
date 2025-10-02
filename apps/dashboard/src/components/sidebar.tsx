@@ -64,6 +64,9 @@ export function Sidebar({
     isSuperAdmin: isSuperAdminProp ?? false,
   });
 
+  // Track if this is the initial load to avoid resetting admin status
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
   // Debug logging for admin status
   useEffect(() => {
     console.log('🔍 Admin status check:', {
@@ -87,16 +90,21 @@ export function Sidebar({
 
   // Fetch admin status and user profile when account changes
   useEffect(() => {
-    // Don't reset admin status on initial load (when account is undefined)
-    // Only reset if we had an account before and now it's disconnected
-    if (account?.address === undefined && adminStatus.isAdmin) {
+    // Don't reset admin status on initial load
+    if (isInitialLoad && !account?.address) {
+      setIsInitialLoad(false);
+      return;
+    }
+
+    // Only reset admin status if we had an account and now it's disconnected
+    if (account?.address === undefined && adminStatus.isAdmin && !isInitialLoad) {
       console.log("🔌 Wallet disconnected, resetting admin status");
       setAdminStatus({ isAdmin: false, isSuperAdmin: false });
       return;
     }
 
     if (!account?.address) {
-      return; // Don't do anything if no account (initial load)
+      return; // Don't do anything if no account
     }
 
     console.log("🔍 Wallet connected, verifying admin status for:", account.address);
@@ -140,7 +148,7 @@ export function Sidebar({
     };
 
     void fetchProfile();
-  }, [account?.address, adminStatus.isAdmin]);
+  }, [account?.address, adminStatus.isAdmin, isInitialLoad]);
 
   // Handle click outside anywhere on screen and escape key to close dropdowns
   useEffect(() => {
@@ -691,6 +699,9 @@ export function Sidebar({
                           height={32}
                           className="w-8 h-8 rounded-full border border-lime-400"
                         />
+                        {userProfile?.kycLevel === 'basic' && (
+                          <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border border-zinc-900 bg-green-500"></div>
+                        )}
                       </button>
 
                       {/* Wallet display - copiar al hacer click */}
