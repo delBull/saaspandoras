@@ -53,20 +53,26 @@ export async function getAuth(headers?: MinimalHeaders, userAddress?: string) {
 
   // Primero intentar desde headers (para server-side auth)
   if (headers) {
-    const headerAddress = headers.get('x-thirdweb-address');
-    if (headerAddress) {
-      address = headerAddress;
+    try {
+      // Basic headers access - compatible with both Node.js and Edge runtime
+      const headerAddress = headers.get('x-thirdweb-address');
+      if (headerAddress) {
+        address = headerAddress;
+      }
+    } catch (error) {
+      console.error('Error accessing headers:', error);
+      // Continue to cookie fallback
     }
   }
 
   // Si no se encontro en headers, intentar cookies
   if (!address) {
     try {
-      // Intentar obtener desde cookies
+      // Intentar obtener desde cookies - this works in both runtimes
       const cookieStore = await cookies();
       address = cookieStore.get('wallet-address')?.value ?? null;
-    } catch {
-      // Silently ignore cookie access errors
+    } catch (error) {
+      console.error('Error accessing cookies:', error);
     }
   }
 
