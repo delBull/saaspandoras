@@ -16,6 +16,12 @@ const mockSwaps = [
   { txHash: '0x789abc...', from: '0xdef789...', toToken: 'WETH', fromAmountUsd: 50.00, feeUsd: 0.25, status: 'failed' },
 ];
 
+interface WalletSession {
+  address: string;
+  walletType: string;
+  shouldReconnect: boolean;
+}
+
 export default function AdminDashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<UserData[]>([]);
@@ -54,22 +60,45 @@ export default function AdminDashboardPage() {
       try {
         console.log('🔐 Admin dashboard - Checking user admin privileges...');
 
-        // Need to get the current wallet address to send in header
-        const walletAddress = typeof window !== 'undefined'
-          ? document.cookie
-              .split('; ')
-              .find((row) => row.startsWith('wallet-address='))
-              ?.split('=')[1]
-          : null;
+        // Try multiple sources for wallet address (client-side only)
+        let walletAddress = null;
+        if (typeof window !== 'undefined') {
+          // 1. First try localStorage (most reliable)
+          if (window.localStorage) {
+            try {
+              const sessionData = localStorage.getItem('wallet-session');
+              if (sessionData) {
+                const parsedSession = JSON.parse(sessionData) as unknown as WalletSession;
+                walletAddress = parsedSession.address?.toLowerCase();
+              }
+            } catch (e) {
+              console.warn('❌ Error reading wallet session from localStorage:', e);
+            }
+          }
+
+          // 2. Fallback to cookies
+          if (!walletAddress) {
+            try {
+              walletAddress = document.cookie
+                .split('; ')
+                .find((row) => row.startsWith('wallet-address='))
+                ?.split('=')[1];
+            } catch (e) {
+              console.warn('❌ Error reading wallet address from cookies:', e);
+            }
+          }
+        }
 
         const requestHeaders: Record<string, string> = {
           'Content-Type': 'application/json',
         };
 
-        // Send wallet address if we have it (crucial for admin verification)
+        // Send wallet address if we found it (crucial for admin verification)
         if (walletAddress) {
           requestHeaders['x-thirdweb-address'] = walletAddress;
           console.log('🆔 Admin dashboard - Using wallet:', walletAddress);
+        } else {
+          console.log('⚠️ Admin dashboard - No wallet address found in localStorage or cookies!');
         }
 
         const response = await fetch('/api/admin/verify', {
