@@ -140,8 +140,8 @@ export function Sidebar({
         }
       } catch (e) {
         console.error("❌ Error verifying admin status:", e);
-        // Reset admin status to false on error
-        setAdminStatus({ isAdmin: false, isSuperAdmin: false, verified: true });
+        // Reset admin status to false on error - NEVER show admin when verification fails
+        setAdminStatus({ isAdmin: false, isSuperAdmin: false, verified: false });
       }
     })().catch(console.error);
 
