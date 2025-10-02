@@ -9,31 +9,40 @@ import { cookies } from "next/headers";
  */
 export async function isAdmin(address?: string | null): Promise<boolean> {
   if (!address) {
-    if (process.env.NODE_ENV === "development") {
-      console.log("isAdmin: No address provided");
-    }
+    console.log("🛑 isAdmin DEBUG: No address provided");
     return false;
   }
 
   const lower = address.toLowerCase();
-  if (process.env.NODE_ENV === "development") {
-    console.log("isAdmin: Checking", lower);
+  console.log("🔍 isAdmin DEBUG: Checking address:", lower.substring(0, 10) + "...");
+
+  // 📍 Step 1: Check if super admin
+  const isSuperAdminCheck = lower === SUPER_ADMIN_WALLET.toLowerCase();
+  console.log("👑 isAdmin DEBUG: Super admin check result:", isSuperAdminCheck);
+
+  if (isSuperAdminCheck) {
+    console.log("🎉 isAdmin DEBUG: ✅ SUPER ADMIN CONFIRMED");
+    return true;
   }
 
-  if (lower === SUPER_ADMIN_WALLET.toLowerCase()) return true;
+  console.log("🔍 isAdmin DEBUG: Checking database for regular admin");
 
   try {
-    console.log("isAdmin: Querying database for address:", lower);
+    // 📍 Step 2: Database check for regular admin
     const result = await db
       .select()
       .from(administrators)
       .where(eq(administrators.walletAddress, lower));
 
-    console.log("isAdmin: Database result:", result.length, "rows found");
-    return result.length > 0;
+    const isAdmin = result.length > 0;
+    console.log("📊 isAdmin DEBUG: Database result:", result.length, "admin records found");
+    console.log("✅ isAdmin DEBUG: FINAL RESULT:", isAdmin, "(super admin:", isSuperAdminCheck, ")");
+
+    return isAdmin;
   } catch (error) {
-    console.error("isAdmin: Database query failed:", error);
+    console.error("💥 isAdmin DEBUG: Database query FAILED:", error);
     // If database query fails, fall back to false
+    console.log("🚫 isAdmin DEBUG: FALLBACK to false due to database error");
     return false;
   }
 }
@@ -53,20 +62,26 @@ export async function getAuth(headers?: MinimalHeaders, userAddress?: string) {
 
   // Primero intentar desde headers (para server-side auth)
   if (headers) {
-    const headerAddress = headers.get('x-thirdweb-address');
-    if (headerAddress) {
-      address = headerAddress;
+    try {
+      // Basic headers access - compatible with both Node.js and Edge runtime
+      const headerAddress = headers.get('x-thirdweb-address');
+      if (headerAddress) {
+        address = headerAddress;
+      }
+    } catch (error) {
+      console.error('Error accessing headers:', error);
+      // Continue to cookie fallback
     }
   }
 
   // Si no se encontro en headers, intentar cookies
   if (!address) {
     try {
-      // Intentar obtener desde cookies
+      // Intentar obtener desde cookies - this works in both runtimes
       const cookieStore = await cookies();
       address = cookieStore.get('wallet-address')?.value ?? null;
-    } catch {
-      // Silently ignore cookie access errors
+    } catch (error) {
+      console.error('Error accessing cookies:', error);
     }
   }
 
