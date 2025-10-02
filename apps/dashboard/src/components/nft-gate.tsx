@@ -34,19 +34,8 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const hasStartedProcessing = useRef(false);
 
-  // Store wallet address in cookie when connected (same as sidebar)
-  useEffect(() => {
-    if (!account?.address) {
-      // Clear cookie when disconnected
-      document.cookie = `wallet-address=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-      return;
-    }
-
-    // Store wallet address in cookie when connected
-    const expires = new Date();
-    expires.setDate(expires.getDate() + 30); // Cookie expires in 30 days
-    document.cookie = `wallet-address=${account.address}; path=/; expires=${expires.toUTCString()}; Secure; SameSite=Strict`;
-  }, [account?.address]);
+  // Cookie management is now handled by usePersistedAccount hook in dashboard-client-wrapper
+  // This ensures consistent session persistence across the entire application
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') { setShowInfo(false); } };

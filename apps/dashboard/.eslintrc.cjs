@@ -5,6 +5,9 @@ module.exports = {
     '@saasfly/eslint-config/nextjs',
     '@saasfly/eslint-config/react',
   ],
+  ignorePatterns: [
+    'scripts/**',
+  ],
   overrides: [
     {
       files: ['*.mjs'],

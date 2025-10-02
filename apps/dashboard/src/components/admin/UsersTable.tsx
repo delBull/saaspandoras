@@ -219,6 +219,20 @@ export function UsersTable({ users }: UsersTableProps) {
           <div className="text-xs text-gray-400">Usuarios → Conexiones</div>
         </div>
       </div>
+
+      {/* Debug Info in Development */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="bg-yellow-900/20 border border-yellow-500/20 rounded-lg p-4">
+          <h4 className="text-yellow-300 font-semibold mb-2">🔧 Development Debug Info</h4>
+          <div className="text-xs text-gray-300 space-y-1">
+            <p>Total users loaded: {users.length}</p>
+            <p>Users with projects: {users.filter(u => u.projectCount > 0).length}</p>
+            <p>Project counts: {users.map(u => `${u.walletAddress?.slice(0, 6)}...=${u.projectCount}`).join(', ')}</p>
+            <p>System projects managed: {users.filter(u => u.systemProjectsManaged && u.systemProjectsManaged > 0).length > 0 &&
+              users.find(u => u.systemProjectsManaged)?.systemProjectsManaged} total</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
