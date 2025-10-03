@@ -1,7 +1,5 @@
 import type { Config } from "tailwindcss";
 // import colors from "tailwindcss/colors";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-expect-error
 import flattenColorPalette from "tailwindcss/lib/util/flattenColorPalette";
 
 export default {
