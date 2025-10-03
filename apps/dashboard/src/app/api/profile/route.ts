@@ -12,14 +12,26 @@ export async function GET() {
   let walletAddress: string | undefined;
 
   try {
-    const { session } = await getAuth(await headers());
+    const requestHeaders = await headers();
 
-    walletAddress = session?.userId ?? undefined;
-    if (!walletAddress) {
-      return NextResponse.json({ message: "No autorizado - Sesión inválida" }, { status: 401 });
+    // 🔍 First try to get wallet from header (same as admin API)
+    const headerWallet = requestHeaders.get('x-thirdweb-address');
+    if (headerWallet) {
+      walletAddress = headerWallet.toLowerCase();
+      console.log("🛠️ [Profile API] Using wallet from header:", walletAddress.substring(0, 10) + '...');
+    } else {
+      // Fallback to session auth (if no header provided)
+      const { session } = await getAuth(requestHeaders);
+      walletAddress = session?.userId ?? undefined;
+      console.log("🛠️ [Profile API] Using wallet from session:", walletAddress?.substring(0, 10) + '...');
+
+      if (!walletAddress) {
+        return NextResponse.json({
+          message: "No autorizado - Sesión inválida y sin header de wallet",
+          noWallet: true
+        }, { status: 401 });
+      }
     }
-
-    console.log("🛠️ [Profile API] User wallet:", walletAddress);
 
     // Ensure user exists
     await ensureUser(walletAddress);
