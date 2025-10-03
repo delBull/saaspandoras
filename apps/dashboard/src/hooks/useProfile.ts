@@ -9,10 +9,10 @@ interface UserProfile extends UserData {
 }
 
 async function fetcher(url: string): Promise<UserProfile> {
-  // Send wallet address header to authenticate the request
+  // Get wallet address from multiple sources - same logic as admin dashboard
   let walletAddress = null;
   if (typeof window !== 'undefined') {
-    // Try localStorage first (more reliable)
+    // 1. Try localStorage first (most reliable)
     if (window.localStorage) {
       try {
         const sessionData = localStorage.getItem('wallet-session');
@@ -25,13 +25,23 @@ async function fetcher(url: string): Promise<UserProfile> {
       }
     }
 
-    // Fallback to cookies
+    // 2. Fallback to cookies (ssr-compatible but less reliable)
     if (!walletAddress) {
       walletAddress = document.cookie
         .split('; ')
         .find((row) => row.startsWith('wallet-address='))
         ?.split('=')[1];
     }
+
+    // 3. Check for saved wallet in cookies as final fallback
+    if (!walletAddress) {
+      walletAddress = document.cookie
+        .split('; ')
+        .find((row) => row.startsWith('wallet-address='))
+        ?.split('=')[1];
+    }
+
+    console.log('💳 useProfile: Wallet sources checked - localStorage, cookies', walletAddress ? 'FOUND' : 'NOT FOUND');
   }
 
   const headers: Record<string, string> = {
@@ -40,19 +50,28 @@ async function fetcher(url: string): Promise<UserProfile> {
 
   if (walletAddress) {
     headers['x-thirdweb-address'] = walletAddress;
-    console.log('💳 useProfile: Using wallet for auth:', walletAddress.substring(0, 10) + '...');
+    console.log('💳 useProfile: Auth header sent with wallet:', walletAddress.substring(0, 15) + '...');
   } else {
-    console.log('⚠️ useProfile: No wallet address found for auth');
+    console.error('❌ useProfile: CRITICAL - No wallet address available for authentication');
   }
 
-  const res = await fetch(url, { headers });
+  const res = await fetch(url, {
+    headers,
+    cache: 'no-store' // Disable cache for dynamic content
+  });
 
   if (!res.ok) {
-    console.error('❌ useProfile: Fetch failed', url, res.status, res.statusText);
-    throw new Error(`Profile fetch failed: ${res.status}`);
+    console.error('❌ useProfile: API REJECTED', {
+      url,
+      status: res.status,
+      statusText: res.statusText,
+      walletAddress,
+      headers
+    });
+    throw new Error(`Profile API failed: ${res.status} - ${res.statusText}`);
   }
 
-  console.log('✅ useProfile: Successfully fetched profile');
+  console.log('✅ useProfile: Profile fetched successfully');
   return res.json();
 }
 

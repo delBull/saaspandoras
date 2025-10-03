@@ -22,6 +22,8 @@ interface WalletSession {
   shouldReconnect: boolean;
 }
 
+export const dynamic = 'force-dynamic'; // Disable prerendering for pages using cookies
+
 export default function AdminDashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<UserData[]>([]);
@@ -48,15 +50,10 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     if (isAdmin !== null) return; // Don't run if already determined
 
-    const timeoutId: NodeJS.Timeout = setTimeout(() => {
-      if (isAdmin === null) {
-        console.log('⏰ Admin dashboard verification timeout - DENYING ACCESS');
-        setAuthError('Timeout al verificar permisos administrativos');
-        setIsAdmin(false);
-      }
-    }, 12000); // Even more time for APIs to complete
-
     const checkAdminStatus = async () => {
+      // If already determined, don't check again
+      if (isAdmin !== null) return;
+
       try {
         console.log('🔐 Admin dashboard - Checking user admin privileges...');
 
@@ -99,6 +96,9 @@ export default function AdminDashboardPage() {
           console.log('🆔 Admin dashboard - Using wallet:', walletAddress);
         } else {
           console.log('⚠️ Admin dashboard - No wallet address found in localStorage or cookies!');
+          setAuthError('No se pudo obtener dirección de wallet');
+          setIsAdmin(false);
+          return;
         }
 
         const response = await fetch('/api/admin/verify', {
@@ -106,7 +106,11 @@ export default function AdminDashboardPage() {
         });
 
         if (!response.ok) {
-          throw new Error(`API request failed: ${response.status}`);
+          const errorText = await response.text();
+          console.error('❌ API verification failed:', response.status, errorText);
+          setAuthError(`Verificación fallida: ${response.status}`);
+          setIsAdmin(false);
+          return;
         }
 
         const data = await response.json() as { isAdmin?: boolean; isSuperAdmin?: boolean };
@@ -125,10 +129,8 @@ export default function AdminDashboardPage() {
       }
     };
 
-    // Start admin verification
-    checkAdminStatus().catch(console.error);
-
-    return () => clearTimeout(timeoutId);
+    // Start admin verification without timeout - let it complete naturally
+    void checkAdminStatus();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {

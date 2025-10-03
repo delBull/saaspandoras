@@ -9,6 +9,9 @@ import { useProfile } from '@/hooks/useProfile';
 import Link from 'next/link';
 import Image from 'next/image';
 
+// Force dynamic rendering - this page uses cookies and should not be prerendered
+export const dynamic = 'force-dynamic';
+
 export default function ProfilePage() {
   const { profile, isLoading, isError } = useProfile();
   const [sessionUser, setSessionUser] = useState<{walletAddress?: string} | null>(null);
