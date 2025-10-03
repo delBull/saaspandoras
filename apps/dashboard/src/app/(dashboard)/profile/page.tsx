@@ -70,13 +70,43 @@ export default function ProfilePage() {
     );
   }
 
-  if (isError || !sessionUser || !profile) {
+  // Only deny access if there's an error AND we're not loading
+  if (!sessionUser) {
     return (
       <div className="p-6">
         <Card>
           <CardHeader>
             <CardTitle>Acceso Denegado</CardTitle>
-            <CardDescription>Necesitas estar conectado para ver tu perfil.</CardDescription>
+            <CardDescription>No se encontró tu sesión. Conéctate a tu wallet para ver tu perfil.</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show loading state briefly while profile loads
+  if (isLoading && !profile) {
+    return (
+      <div className="p-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-zinc-700 rounded mb-4 w-64"></div>
+          <div className="space-y-4">
+            <div className="h-32 bg-zinc-700 rounded"></div>
+            <div className="h-48 bg-zinc-700 rounded"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Only deny access if there's a REAL error (not loading state)
+  if (isError) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Error Loading Profile</CardTitle>
+            <CardDescription>No se pudo cargar tu información de perfil. Intenta refrescar la página.</CardDescription>
           </CardHeader>
         </Card>
       </div>
