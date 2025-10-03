@@ -133,7 +133,7 @@ export default function ProfilePage() {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <WalletIcon className="w-4 h-4 text-lime-400" />
-                    <span className="text-xs text-gray-300 font-medium">Ethereum</span>
+                    <span className="text-xs text-gray-300 font-medium">Ethereum Compatible</span>
                   </div>
                   <button
                     onClick={() => copyWalletAddress(sessionUser.walletAddress || '')}
