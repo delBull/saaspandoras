@@ -8,7 +8,7 @@ interface UserProfile extends UserData {
   projects: Project[];
 }
 
-async function fetcher(url: string): Promise<UserProfile> {
+async function fetcher(): Promise<UserProfile> {
   // Get CURRENT wallet address from useActiveAccount pattern (similar to admin dashboard)
   let walletAddress = null;
   if (typeof window !== 'undefined') {
@@ -60,7 +60,7 @@ async function fetcher(url: string): Promise<UserProfile> {
     throw new Error('No wallet authentication available');
   }
 
-  const res = await fetch(url, {
+  const res = await fetch('/api/profile', {
     headers,
     cache: 'no-store' // Critical for dynamic content
   });
@@ -69,7 +69,7 @@ async function fetcher(url: string): Promise<UserProfile> {
     console.error('🚨 useProfile: API REQUEST FAILED', {
       status: res.status,
       statusText: res.statusText,
-      url,
+      url: '/api/profile',
       walletAddress: walletAddress?.substring(0, 10) + '...',
       hasHeader: !!headers['x-thirdweb-address']
     });
@@ -90,10 +90,44 @@ async function fetcher(url: string): Promise<UserProfile> {
 }
 
 export function useProfile() {
+  // Create dynamic SWR key based on current wallet
+  const getWalletKey = (): string | null => {
+    if (typeof window === 'undefined') return null;
+
+    try {
+      // Check localStorage first
+      const sessionData = localStorage.getItem('wallet-session');
+      if (sessionData) {
+        const parsedSession = JSON.parse(sessionData) as unknown as { address?: string };
+        const address = parsedSession.address?.toLowerCase();
+        if (address) return `profile-${address}`;
+      }
+
+      // Fallback to cookies
+      const cookieWallet = document.cookie
+        .split('; ')
+        .find((row) => row.startsWith('wallet-address='))
+        ?.split('=')[1];
+
+      if (cookieWallet) return `profile-${cookieWallet.toLowerCase()}`;
+
+    } catch (error) {
+      console.warn('useProfile: Error creating SWR key:', error);
+    }
+
+    return null;
+  };
+
+  const walletSWRKey = getWalletKey();
+
   const { data, error, isLoading, mutate } = useSWR<UserProfile>(
-    "/api/profile",
+    walletSWRKey, // Unique key per wallet
     fetcher,
-    { refreshInterval: 60000 } // refresca cada minuto
+    {
+      refreshInterval: 30000, // More frequent refresh
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true
+    }
   );
 
   return {
