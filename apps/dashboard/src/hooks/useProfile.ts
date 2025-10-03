@@ -10,12 +10,29 @@ interface UserProfile extends UserData {
 
 async function fetcher(url: string): Promise<UserProfile> {
   // Send wallet address header to authenticate the request
-  const walletAddress = typeof window !== 'undefined'
-    ? document.cookie
+  let walletAddress = null;
+  if (typeof window !== 'undefined') {
+    // Try localStorage first (more reliable)
+    if (window.localStorage) {
+      try {
+        const sessionData = localStorage.getItem('wallet-session');
+        if (sessionData) {
+          const parsedSession = JSON.parse(sessionData) as unknown as { address?: string };
+          walletAddress = parsedSession.address?.toLowerCase();
+        }
+      } catch (error) {
+        console.warn('useProfile: Error reading wallet from localStorage:', error);
+      }
+    }
+
+    // Fallback to cookies
+    if (!walletAddress) {
+      walletAddress = document.cookie
         .split('; ')
         .find((row) => row.startsWith('wallet-address='))
-        ?.split('=')[1]
-    : null;
+        ?.split('=')[1];
+    }
+  }
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -23,12 +40,19 @@ async function fetcher(url: string): Promise<UserProfile> {
 
   if (walletAddress) {
     headers['x-thirdweb-address'] = walletAddress;
+    console.log('💳 useProfile: Using wallet for auth:', walletAddress.substring(0, 10) + '...');
+  } else {
+    console.log('⚠️ useProfile: No wallet address found for auth');
   }
 
   const res = await fetch(url, { headers });
+
   if (!res.ok) {
-    throw new Error(`Error ${res.status}: ${res.statusText}`);
+    console.error('❌ useProfile: Fetch failed', url, res.status, res.statusText);
+    throw new Error(`Profile fetch failed: ${res.status}`);
   }
+
+  console.log('✅ useProfile: Successfully fetched profile');
   return res.json();
 }
 

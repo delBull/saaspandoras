@@ -54,7 +54,7 @@ export default function AdminDashboardPage() {
         setAuthError('Timeout al verificar permisos administrativos');
         setIsAdmin(false);
       }
-    }, 2000); // Reduced timeout for faster feedback
+    }, 8000); // Give time for slow APIs but still reasonable
 
     const checkAdminStatus = async () => {
       try {
