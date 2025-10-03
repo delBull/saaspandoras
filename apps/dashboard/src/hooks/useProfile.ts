@@ -9,39 +9,43 @@ interface UserProfile extends UserData {
 }
 
 async function fetcher(url: string): Promise<UserProfile> {
-  // Get wallet address from multiple sources - same logic as admin dashboard
+  // Get CURRENT wallet address from useActiveAccount pattern (similar to admin dashboard)
   let walletAddress = null;
   if (typeof window !== 'undefined') {
-    // 1. Try localStorage first (most reliable)
+    console.log('🧪 useProfile: Debug wallet sources...');
+
+    // 1. Try localStorage first (most reliable - from usePersistedAccount)
     if (window.localStorage) {
       try {
         const sessionData = localStorage.getItem('wallet-session');
         if (sessionData) {
           const parsedSession = JSON.parse(sessionData) as unknown as { address?: string };
           walletAddress = parsedSession.address?.toLowerCase();
+          console.log('💾 useProfile: Found wallet in localStorage:', walletAddress?.substring(0, 10) + '...');
+        } else {
+          console.log('⚠️ useProfile: No wallet-session in localStorage');
         }
       } catch (error) {
-        console.warn('useProfile: Error reading wallet from localStorage:', error);
+        console.warn('useProfile: Error reading localStorage:', error);
       }
     }
 
-    // 2. Fallback to cookies (ssr-compatible but less reliable)
+    // 2. Fallback to cookies (same pattern as admin dashboard)
     if (!walletAddress) {
-      walletAddress = document.cookie
+      const cookieWallet = document.cookie
         .split('; ')
         .find((row) => row.startsWith('wallet-address='))
         ?.split('=')[1];
+
+      if (cookieWallet) {
+        walletAddress = cookieWallet.toLowerCase();
+        console.log('🍪 useProfile: Found wallet in cookies:', walletAddress?.substring(0, 10) + '...');
+      } else {
+        console.log('⚠️ useProfile: No wallet-address cookie');
+      }
     }
 
-    // 3. Check for saved wallet in cookies as final fallback
-    if (!walletAddress) {
-      walletAddress = document.cookie
-        .split('; ')
-        .find((row) => row.startsWith('wallet-address='))
-        ?.split('=')[1];
-    }
-
-    console.log('💳 useProfile: Wallet sources checked - localStorage, cookies', walletAddress ? 'FOUND' : 'NOT FOUND');
+    console.log('💳 useProfile: Final wallet address:', walletAddress ? walletAddress.substring(0, 20) + '...' : 'NONE');
   }
 
   const headers: Record<string, string> = {
@@ -50,28 +54,38 @@ async function fetcher(url: string): Promise<UserProfile> {
 
   if (walletAddress) {
     headers['x-thirdweb-address'] = walletAddress;
-    console.log('💳 useProfile: Auth header sent with wallet:', walletAddress.substring(0, 15) + '...');
+    console.log('� useProfile: Sending request with auth header for wallet:', walletAddress.substring(0, 15) + '...');
   } else {
-    console.error('❌ useProfile: CRITICAL - No wallet address available for authentication');
+    console.error('❌ useProfile: CRITICAL ERROR - No wallet address found in localStorage or cookies');
+    throw new Error('No wallet authentication available');
   }
 
   const res = await fetch(url, {
     headers,
-    cache: 'no-store' // Disable cache for dynamic content
+    cache: 'no-store' // Critical for dynamic content
   });
 
   if (!res.ok) {
-    console.error('❌ useProfile: API REJECTED', {
-      url,
+    console.error('🚨 useProfile: API REQUEST FAILED', {
       status: res.status,
       statusText: res.statusText,
-      walletAddress,
-      headers
+      url,
+      walletAddress: walletAddress?.substring(0, 10) + '...',
+      hasHeader: !!headers['x-thirdweb-address']
     });
-    throw new Error(`Profile API failed: ${res.status} - ${res.statusText}`);
+
+    // Try to read response for debugging
+    try {
+      const errorText = await res.text();
+      console.error('🚨 useProfile: API Error Response:', errorText);
+    } catch (e) {
+      console.error('🚨 useProfile: Could not read error response');
+    }
+
+    throw new Error(`Profile fetch failed: ${res.status} ${res.statusText}`);
   }
 
-  console.log('✅ useProfile: Profile fetched successfully');
+  console.log('✅ useProfile: API Request SUCCESS - Profile data retrieved');
   return res.json();
 }
 
