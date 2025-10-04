@@ -7,7 +7,9 @@ import { sql } from "drizzle-orm";
 import { ensureUser } from "@/lib/user";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
+// Force this route to be dynamic to avoid static generation issues with cookies
 export async function GET() {
   let walletAddress: string | undefined;
   let authMethod: 'header' | 'body' | 'session' | 'none' = 'none';
