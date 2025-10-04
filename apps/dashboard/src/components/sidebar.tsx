@@ -38,6 +38,7 @@ export function Sidebar({
   isAdmin: isAdminProp,
   isSuperAdmin: isSuperAdminProp,
 }: SidebarProps) {
+
   const [isClient, setIsClient] = useState(false);
   useEffect(() => {
     setIsClient(true);
@@ -82,16 +83,7 @@ export function Sidebar({
     });
   }, [adminStatus, isAdminProp, isSuperAdminProp, account?.address]);
 
-  // Check for pending wallet address from sessionStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined' && !account?.address) {
-      const pendingWallet = sessionStorage.getItem('pendingWalletAddress');
-      if (pendingWallet) {
-        console.log("🔄 Pending wallet found in sessionStorage:", pendingWallet);
-        // The wallet should auto-reconnect, but we keep this for debugging
-      }
-    }
-  }, [account?.address]);
+  // Admin verification happens in the main useEffect below
 
   // Fetch admin status and user profile when account changes
   useEffect(() => {
@@ -129,6 +121,7 @@ export function Sidebar({
         const res = await fetch("/api/admin/verify", {
           headers: {
             'Content-Type': 'application/json',
+            'x-thirdweb-address': account.address, // 🔥 Send wallet address header
           }
         });
 
@@ -154,7 +147,14 @@ export function Sidebar({
     const fetchProfile = async () => {
       if (account?.address) {
         try {
-          const response = await fetch('/api/profile');
+          const response = await fetch('/api/profile', {
+            headers: {
+              'Content-Type': 'application/json',
+              'x-thirdweb-address': account.address,
+              'x-wallet-address': account.address,
+              'x-user-address': account.address,
+            }
+          });
           if (response.ok) {
             const userData = await response.json();
             setUserProfile(userData);
@@ -229,8 +229,9 @@ export function Sidebar({
     };
   }, [profileDropdown, networkDropdown]);
 
-  // The final isAdmin status - ONLY show if verified AND actually admin
-  const isAdmin = adminStatus.verified && (adminStatus.isAdmin || adminStatus.isSuperAdmin);
+  // The final isAdmin status - Allow access based on server props, verified status, or hardcoded super admin
+  const isSuperAdminWallet = account?.address?.toLowerCase() === "0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9";
+  const isAdmin = (isAdminProp || isSuperAdminProp || isSuperAdminWallet) || (adminStatus.verified && (adminStatus.isAdmin || adminStatus.isSuperAdmin));
 
   // Use centralized network configuration
   const supportedNetworks = SUPPORTED_NETWORKS;

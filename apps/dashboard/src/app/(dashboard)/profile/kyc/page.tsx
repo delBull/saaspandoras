@@ -1,6 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+// Force dynamic rendering - this page uses cookies and should not be prerendered
+export const dynamic = 'force-dynamic';
+
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@saasfly/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@saasfly/ui/card';
@@ -16,6 +19,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import type { KYCData } from '@/types/admin';
+import { useActiveAccount } from 'thirdweb/react';
 
 interface KYCFormData extends Omit<KYCData, 'address'> {
   address: {
@@ -30,9 +34,9 @@ interface KYCFormData extends Omit<KYCData, 'address'> {
 
 export default function KYCPage() {
   const router = useRouter();
+  const account = useActiveAccount();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [sessionUser, setSessionUser] = useState<{walletAddress?: string} | null>(null);
 
   const [formData, setFormData] = useState<KYCFormData>({
     fullName: '',
@@ -53,25 +57,8 @@ export default function KYCPage() {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    // Get session user
-    const getSession = () => {
-      try {
-        const walletAddress = document.cookie
-          .split('; ')
-          .find(row => row.startsWith('wallet-address='))
-          ?.split('=')[1];
-
-        if (walletAddress) {
-          setSessionUser({ walletAddress });
-        }
-      } catch (error) {
-        console.error('Error getting session:', error);
-      }
-    };
-
-    getSession();
-  }, []);
+  // Use account from useActiveAccount hook instead of cookies
+  const walletAddress = account?.address;
 
   const validateStep = (stepNumber: number): boolean => {
     const newErrors: Record<string, string> = {};
@@ -116,18 +103,25 @@ export default function KYCPage() {
   };
 
   const handleSubmit = async () => {
-    if (!validateStep(3) || !sessionUser?.walletAddress) {
+    if (!validateStep(3) || !walletAddress) {
       return;
     }
 
     setLoading(true);
     try {
-      const response = await fetch('/api/profile/kyc', {
+      const response = await fetch('/api/profile', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-thirdweb-address': walletAddress,
+          'x-wallet-address': walletAddress,
+          'x-user-address': walletAddress,
+        },
         body: JSON.stringify({
-          walletAddress: sessionUser.walletAddress,
-          kycData: {
+          walletAddress: walletAddress,
+          profileData: {
+            kycLevel: 'basic',
+            kycCompleted: true,
             fullName: formData.fullName,
             phoneNumber: formData.phoneNumber,
             dateOfBirth: formData.dateOfBirth,
@@ -162,7 +156,7 @@ export default function KYCPage() {
     }));
   };
 
-  if (!sessionUser) {
+  if (!walletAddress) {
     return (
       <div className="p-6">
         <Card>

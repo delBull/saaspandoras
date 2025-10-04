@@ -11,17 +11,11 @@ export function middleware(request: NextRequest) {
 
   console.log("Middleware: Interceptando ruta:", request.nextUrl.pathname);
 
-  // Para rutas admin, verificamos al menos que haya una sesión vía cookie
+  // Para rutas admin, permitimos acceso inicial - la verificación se hace en client-side
   if (request.nextUrl.pathname.startsWith("/admin")) {
-    const walletAddress = request.cookies.get("wallet-address")?.value;
-
-    if (!walletAddress) {
-      console.log("Middleware: No cookie encontrada, redirigiendo a login");
-      // Podríamos redirigir, pero mejor dejamos que el componente de client-side maneje
-      return NextResponse.next();
-    }
-
-    console.log("Middleware: Usuario autenticado con cookie, permitiendo acceso");
+    console.log("Middleware: Permitir acceso inicial a ruta admin");
+    // Dejamos que llegue al componente donde se hace la verificación completa
+    return NextResponse.next();
   }
 
   return NextResponse.next();

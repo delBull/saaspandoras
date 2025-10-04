@@ -16,6 +16,14 @@ const mockSwaps = [
   { txHash: '0x789abc...', from: '0xdef789...', toToken: 'WETH', fromAmountUsd: 50.00, feeUsd: 0.25, status: 'failed' },
 ];
 
+interface WalletSession {
+  address: string;
+  walletType: string;
+  shouldReconnect: boolean;
+}
+
+export const dynamic = 'force-dynamic'; // Disable prerendering for pages using cookies
+
 export default function AdminDashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<UserData[]>([]);
@@ -42,20 +50,70 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     if (isAdmin !== null) return; // Don't run if already determined
 
-    const timeoutId: NodeJS.Timeout = setTimeout(() => {
-      if (isAdmin === null) {
-        console.log('⏰ Admin dashboard verification timeout - DENYING ACCESS');
-        setAuthError('Timeout al verificar permisos administrativos');
-        setIsAdmin(false);
-      }
-    }, 5000);
-
     const checkAdminStatus = async () => {
+      // If already determined, don't check again
+      if (isAdmin !== null) return;
+
       try {
         console.log('🔐 Admin dashboard - Checking user admin privileges...');
-        const response = await fetch('/api/admin/verify');
+
+        // Try multiple sources for wallet address (client-side only)
+        let walletAddress = null;
+        if (typeof window !== 'undefined') {
+          // 1. First try localStorage (most reliable)
+          if (window.localStorage) {
+            try {
+              const sessionData = localStorage.getItem('wallet-session');
+              if (sessionData) {
+                const parsedSession = JSON.parse(sessionData) as unknown as WalletSession;
+                walletAddress = parsedSession.address?.toLowerCase();
+              }
+            } catch (e) {
+              console.warn('❌ Error reading wallet session from localStorage:', e);
+            }
+          }
+
+          // 2. Fallback to cookies
+          if (!walletAddress) {
+            try {
+              walletAddress = document.cookie
+                .split('; ')
+                .find((row) => row.startsWith('wallet-address='))
+                ?.split('=')[1];
+            } catch (e) {
+              console.warn('❌ Error reading wallet address from cookies:', e);
+            }
+          }
+        }
+
+        const requestHeaders: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+
+        // Send wallet address if we found it (crucial for admin verification)
+        if (walletAddress) {
+          // Try multiple header names in case Vercel filters some
+          requestHeaders['x-thirdweb-address'] = walletAddress;
+          requestHeaders['x-wallet-address'] = walletAddress;
+          requestHeaders['x-user-address'] = walletAddress;
+          console.log('🆔 Admin dashboard - Using wallet:', walletAddress);
+        } else {
+          console.log('⚠️ Admin dashboard - No wallet address found in localStorage or cookies!');
+          setAuthError('No se pudo obtener dirección de wallet');
+          setIsAdmin(false);
+          return;
+        }
+
+        const response = await fetch('/api/admin/verify', {
+          headers: requestHeaders,
+        });
+
         if (!response.ok) {
-          throw new Error(`API request failed: ${response.status}`);
+          const errorText = await response.text();
+          console.error('❌ API verification failed:', response.status, errorText);
+          setAuthError(`Verificación fallida: ${response.status}`);
+          setIsAdmin(false);
+          return;
         }
 
         const data = await response.json() as { isAdmin?: boolean; isSuperAdmin?: boolean };
@@ -74,10 +132,8 @@ export default function AdminDashboardPage() {
       }
     };
 
-    // Start admin verification
-    checkAdminStatus().catch(console.error);
-
-    return () => clearTimeout(timeoutId);
+    // Start admin verification without timeout - let it complete naturally
+    void checkAdminStatus();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -94,8 +150,33 @@ export default function AdminDashboardPage() {
 
     const fetchData = async () => {
       try {
-        // Fetch projects
-        const projectsRes = await fetch('/api/admin/projects');
+        // Get current wallet address for headers
+        let currentWalletAddress = null;
+        if (typeof window !== 'undefined') {
+          if (window.localStorage) {
+            try {
+              const sessionData = localStorage.getItem('wallet-session');
+              if (sessionData) {
+                const parsedSession = JSON.parse(sessionData) as unknown as WalletSession;
+                currentWalletAddress = parsedSession.address?.toLowerCase();
+              }
+            } catch (e) {
+              console.warn('Error getting wallet for API calls:', e);
+            }
+          }
+        }
+
+        // Fetch projects - Send wallet authentication header
+        const projectsRes = await fetch('/api/admin/projects', {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(currentWalletAddress && {
+              'x-thirdweb-address': currentWalletAddress,
+              'x-wallet-address': currentWalletAddress,
+              'x-user-address': currentWalletAddress
+            }),
+          }
+        });
         console.log('Projects API response:', projectsRes.status, projectsRes.statusText);
         if (projectsRes.ok) {
           const projectsData = await projectsRes.json() as Project[];
@@ -106,8 +187,17 @@ export default function AdminDashboardPage() {
           console.error('Failed to fetch projects:', projectsRes.status, errorResponse);
         }
 
-        // Fetch administrators (esto se usa en AdminSettings)
-        const adminsRes = await fetch('/api/admin/administrators');
+        // Fetch administrators - Send wallet authentication header
+        const adminsRes = await fetch('/api/admin/administrators', {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(currentWalletAddress && {
+              'x-thirdweb-address': currentWalletAddress,
+              'x-wallet-address': currentWalletAddress,
+              'x-user-address': currentWalletAddress
+            }),
+          }
+        });
         console.log('Admins API response:', adminsRes.status, adminsRes.statusText);
         if (adminsRes.ok) {
           const rawAdminsData = await adminsRes.json() as (Omit<AdminData, 'role'> & { role?: string })[];
@@ -125,8 +215,17 @@ export default function AdminDashboardPage() {
           console.error('Failed to fetch admins:', adminsRes.status, errorResponse);
         }
 
-        // Fetch users
-        const usersRes = await fetch('/api/admin/users');
+        // Fetch users - Send wallet authentication header
+        const usersRes = await fetch('/api/admin/users', {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(currentWalletAddress && {
+              'x-thirdweb-address': currentWalletAddress,
+              'x-wallet-address': currentWalletAddress,
+              'x-user-address': currentWalletAddress
+            }),
+          }
+        });
         console.log('Users API response:', usersRes.status, usersRes.statusText);
         if (usersRes.ok) {
           const usersData = await usersRes.json() as UserData[];
