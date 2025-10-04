@@ -91,7 +91,9 @@ export default function ProfileProjectsPage() {
           setUserProjects(userProjects);
         })
         .catch(err => {
-          console.error('Error fetching data:', err);
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Error fetching data:', err);
+          }
           setUserProfile(null);
           setUserProjects([]);
         })

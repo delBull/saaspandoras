@@ -80,8 +80,8 @@ export async function GET() {
     // Get user data directly from User table
     const [user] = await db.execute(sql`
       SELECT "id", "name", "email", "image", "walletAddress",
-             "connectionCount", "lastConnectionAt", "createdAt",
-             "kycLevel", "kycCompleted", "kycData"
+              "connectionCount", "lastConnectionAt", "createdAt",
+              "kycLevel", "kycCompleted", "kycData"
       FROM "User"
       WHERE LOWER("walletAddress") = LOWER(${walletAddress})
     `);
@@ -214,8 +214,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Wallet mismatch" }, { status: 403 });
     }
 
-    console.log("🚀 [Profile API] POST - Updating profile for:", walletAddress);
-
     // Ensure user exists
     await ensureUser(walletAddress);
 
@@ -241,16 +239,7 @@ export async function POST(request: Request) {
       WHERE LOWER("walletAddress") = LOWER(${walletAddress})
     `;
 
-    console.log("💾 [Profile API] Executing unified update");
-
     await db.execute(updateQuery);
-
-    console.log("✅ [Profile API] Profile updated successfully:", {
-      wallet: walletAddress,
-      name: profileData.name,
-      email: profileData.email,
-      kycCompleted: profileData.kycCompleted,
-    });
 
     return NextResponse.json({
       message: "Perfil actualizado exitosamente",
