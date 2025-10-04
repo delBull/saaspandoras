@@ -47,18 +47,11 @@ export default function ProfileProjectsPage() {
         fetch('/api/projects')
       ])
         .then(async ([usersRes, projectsRes]) => {
-          console.log('Profile API response:', usersRes.status, usersRes.ok);
-          console.log('Projects API response:', projectsRes.status, projectsRes.ok);
-
           if (!usersRes.ok) {
-            const errorText = await usersRes.text();
-            console.error('Profile API failed:', usersRes.status, errorText);
             throw new Error(`Profile API failed: ${usersRes.status}`);
           }
 
           if (!projectsRes.ok) {
-            const errorText = await projectsRes.text();
-            console.error('Projects API failed:', projectsRes.status, errorText);
             throw new Error(`Projects API failed: ${projectsRes.status}`);
           }
 
@@ -66,7 +59,6 @@ export default function ProfileProjectsPage() {
         })
         .then((data) => {
           const [userProfile, projects] = data as [UserData, Project[]];
-          console.log('Profile data received:', userProfile);
           setUserProfile(userProfile);
 
           // 🏦 WALLET-BASED FILTERING ONLY
@@ -87,11 +79,12 @@ export default function ProfileProjectsPage() {
             );
           }
 
-          console.log('Filtered projects:', userProjects.length);
           setUserProjects(userProjects);
         })
         .catch(err => {
-          console.error('Error fetching data:', err);
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Error fetching data:', err);
+          }
           setUserProfile(null);
           setUserProjects([]);
         })
