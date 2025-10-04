@@ -3,62 +3,24 @@
 
 import useSWR from "swr";
 import type { UserData, Project } from "@/types/admin";
+import { useActiveAccount } from "thirdweb/react";
 
 interface UserProfile extends UserData {
   projects: Project[];
 }
 
-async function fetcher(): Promise<UserProfile> {
-  // Get CURRENT wallet address from useActiveAccount pattern (similar to admin dashboard)
-  let walletAddress = null;
-  if (typeof window !== 'undefined') {
-    console.log('🧪 useProfile: Debug wallet sources...');
+async function fetcher(walletAddress?: string): Promise<UserProfile> {
+   const headers: Record<string, string> = {
+     'Content-Type': 'application/json',
+   };
 
-    // 1. Try localStorage first (most reliable - from usePersistedAccount)
-    if (window.localStorage) {
-      try {
-        const sessionData = localStorage.getItem('wallet-session');
-        if (sessionData) {
-          const parsedSession = JSON.parse(sessionData) as unknown as { address?: string };
-          walletAddress = parsedSession.address?.toLowerCase();
-          console.log('💾 useProfile: Found wallet in localStorage:', walletAddress?.substring(0, 10) + '...');
-        } else {
-          console.log('⚠️ useProfile: No wallet-session in localStorage');
-        }
-      } catch (error) {
-        console.warn('useProfile: Error reading localStorage:', error);
-      }
-    }
-
-    // 2. Fallback to cookies (same pattern as admin dashboard)
-    if (!walletAddress) {
-      const cookieWallet = document.cookie
-        .split('; ')
-        .find((row) => row.startsWith('wallet-address='))
-        ?.split('=')[1];
-
-      if (cookieWallet) {
-        walletAddress = cookieWallet.toLowerCase();
-        console.log('🍪 useProfile: Found wallet in cookies:', walletAddress?.substring(0, 10) + '...');
-      } else {
-        console.log('⚠️ useProfile: No wallet-address cookie');
-      }
-    }
-
-    console.log('💳 useProfile: Final wallet address:', walletAddress ? walletAddress.substring(0, 20) + '...' : 'NONE');
-  }
-
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
-
-  if (walletAddress) {
-    headers['x-thirdweb-address'] = walletAddress;
-    console.log('� useProfile: Sending request with auth header for wallet:', walletAddress.substring(0, 15) + '...');
-  } else {
-    console.error('❌ useProfile: CRITICAL ERROR - No wallet address found in localStorage or cookies');
-    throw new Error('No wallet authentication available');
-  }
+   if (walletAddress) {
+     headers['x-thirdweb-address'] = walletAddress;
+     console.log('✅ useProfile: Sending request with auth header for wallet:', walletAddress.substring(0, 15) + '...');
+   } else {
+     console.error('❌ useProfile: CRITICAL ERROR - No wallet address provided');
+     throw new Error('No wallet authentication available');
+   }
 
   const res = await fetch('/api/profile', {
     headers,
@@ -90,45 +52,21 @@ async function fetcher(): Promise<UserProfile> {
 }
 
 export function useProfile() {
-  // Create dynamic SWR key based on current wallet
-  const getWalletKey = (): string | null => {
-    if (typeof window === 'undefined') return null;
+   const account = useActiveAccount();
+   const walletAddress = account?.address?.toLowerCase();
 
-    try {
-      // Check localStorage first
-      const sessionData = localStorage.getItem('wallet-session');
-      if (sessionData) {
-        const parsedSession = JSON.parse(sessionData) as unknown as { address?: string };
-        const address = parsedSession.address?.toLowerCase();
-        if (address) return `profile-${address}`;
-      }
+   // Create dynamic SWR key based on current wallet
+   const walletSWRKey = walletAddress ? `profile-${walletAddress}` : null;
 
-      // Fallback to cookies
-      const cookieWallet = document.cookie
-        .split('; ')
-        .find((row) => row.startsWith('wallet-address='))
-        ?.split('=')[1];
-
-      if (cookieWallet) return `profile-${cookieWallet.toLowerCase()}`;
-
-    } catch (error) {
-      console.warn('useProfile: Error creating SWR key:', error);
-    }
-
-    return null;
-  };
-
-  const walletSWRKey = getWalletKey();
-
-  const { data, error, isLoading, mutate } = useSWR<UserProfile>(
-    walletSWRKey, // Unique key per wallet
-    fetcher,
-    {
-      refreshInterval: 30000, // More frequent refresh
-      revalidateOnFocus: true,
-      revalidateOnReconnect: true
-    }
-  );
+   const { data, error, isLoading, mutate } = useSWR<UserProfile>(
+     walletSWRKey, // Unique key per wallet
+     () => fetcher(walletAddress),
+     {
+       refreshInterval: 30000, // More frequent refresh
+       revalidateOnFocus: true,
+       revalidateOnReconnect: true
+     }
+   );
 
   return {
     profile: data,
