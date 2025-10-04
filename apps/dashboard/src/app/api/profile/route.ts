@@ -24,8 +24,13 @@ export async function GET() {
     });
 
     // 🔍 First try to get wallet from header (same as admin API)
-    const headerWallet = requestHeaders.get('x-thirdweb-address');
-    console.log("🔍 [Profile API] x-thirdweb-address header value:", headerWallet);
+    // Try multiple header names in case Vercel filters some
+    const headerWallet = requestHeaders.get('x-thirdweb-address') ??
+                        requestHeaders.get('x-wallet-address') ??
+                        requestHeaders.get('x-user-address');
+    console.log("🔍 [Profile API] x-thirdweb-address header value:", requestHeaders.get('x-thirdweb-address'));
+    console.log("🔍 [Profile API] x-wallet-address header value:", requestHeaders.get('x-wallet-address'));
+    console.log("🔍 [Profile API] x-user-address header value:", requestHeaders.get('x-user-address'));
 
     if (headerWallet) {
       walletAddress = headerWallet.toLowerCase().trim(); // Ensure lowercase and trim
@@ -154,8 +159,29 @@ export async function GET() {
  */
 export async function POST(request: Request) {
   try {
-    const { session } = await getAuth(await headers());
-    if (!session?.userId) {
+    const requestHeaders = await headers();
+
+    // 🔍 DEBUG: LOG ALL HEADERS (ONLY FOR DEBUGGING - REMOVE IN PRODUCTION)
+    console.log("🏷️ [Profile API POST] All request headers:");
+    requestHeaders.forEach((value, key) => {
+      console.log(`Header: ${key} = ${value}`);
+    });
+
+    // Try multiple header names in case Vercel filters some
+    const headerWallet = requestHeaders.get('x-thirdweb-address') ??
+                        requestHeaders.get('x-wallet-address') ??
+                        requestHeaders.get('x-user-address');
+
+    console.log("🔍 [Profile API POST] x-thirdweb-address header value:", requestHeaders.get('x-thirdweb-address'));
+    console.log("🔍 [Profile API POST] x-wallet-address header value:", requestHeaders.get('x-wallet-address'));
+    console.log("🔍 [Profile API POST] x-user-address header value:", requestHeaders.get('x-user-address'));
+
+    if (headerWallet) {
+      console.log("✅ [Profile API POST] Using header wallet:", headerWallet);
+    }
+
+    const { session } = await getAuth(requestHeaders);
+    if (!session?.userId && !headerWallet) {
       return NextResponse.json({ message: "No autorizado" }, { status: 403 });
     }
 
@@ -184,7 +210,7 @@ export async function POST(request: Request) {
     };
 
     const walletAddress = body.walletAddress.toLowerCase();
-    if (walletAddress !== session.userId.toLowerCase()) {
+    if (session.userId && walletAddress !== session.userId.toLowerCase()) {
       return NextResponse.json({ message: "Wallet mismatch" }, { status: 403 });
     }
 

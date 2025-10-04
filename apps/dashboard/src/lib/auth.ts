@@ -76,7 +76,10 @@ export async function getAuth(headers?: MinimalHeaders, userAddress?: string) {
   if (headers) {
     try {
       // Basic headers access - compatible with both Node.js and Edge runtime
-      const headerAddress = headers.get('x-thirdweb-address');
+      // Try multiple header names in case Vercel filters some
+      const headerAddress = headers.get('x-thirdweb-address') ??
+                          headers.get('x-wallet-address') ??
+                          headers.get('x-user-address');
       if (headerAddress) {
         address = headerAddress;
       }

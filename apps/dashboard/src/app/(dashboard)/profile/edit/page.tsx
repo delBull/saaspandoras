@@ -166,7 +166,14 @@ export default function ProfileEditPage() {
 
       const response = await fetch('/api/profile', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(sessionUser.walletAddress && {
+            'x-thirdweb-address': sessionUser.walletAddress,
+            'x-wallet-address': sessionUser.walletAddress,
+            'x-user-address': sessionUser.walletAddress,
+          }),
+        },
         body: JSON.stringify(requestBody),
       });
 

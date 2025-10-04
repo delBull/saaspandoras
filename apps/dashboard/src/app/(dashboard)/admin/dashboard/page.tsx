@@ -92,7 +92,10 @@ export default function AdminDashboardPage() {
 
         // Send wallet address if we found it (crucial for admin verification)
         if (walletAddress) {
+          // Try multiple header names in case Vercel filters some
           requestHeaders['x-thirdweb-address'] = walletAddress;
+          requestHeaders['x-wallet-address'] = walletAddress;
+          requestHeaders['x-user-address'] = walletAddress;
           console.log('🆔 Admin dashboard - Using wallet:', walletAddress);
         } else {
           console.log('⚠️ Admin dashboard - No wallet address found in localStorage or cookies!');
@@ -167,7 +170,11 @@ export default function AdminDashboardPage() {
         const projectsRes = await fetch('/api/admin/projects', {
           headers: {
             'Content-Type': 'application/json',
-            ...(currentWalletAddress && { 'x-thirdweb-address': currentWalletAddress }),
+            ...(currentWalletAddress && {
+              'x-thirdweb-address': currentWalletAddress,
+              'x-wallet-address': currentWalletAddress,
+              'x-user-address': currentWalletAddress
+            }),
           }
         });
         console.log('Projects API response:', projectsRes.status, projectsRes.statusText);
@@ -184,7 +191,11 @@ export default function AdminDashboardPage() {
         const adminsRes = await fetch('/api/admin/administrators', {
           headers: {
             'Content-Type': 'application/json',
-            ...(currentWalletAddress && { 'x-thirdweb-address': currentWalletAddress }),
+            ...(currentWalletAddress && {
+              'x-thirdweb-address': currentWalletAddress,
+              'x-wallet-address': currentWalletAddress,
+              'x-user-address': currentWalletAddress
+            }),
           }
         });
         console.log('Admins API response:', adminsRes.status, adminsRes.statusText);
@@ -208,7 +219,11 @@ export default function AdminDashboardPage() {
         const usersRes = await fetch('/api/admin/users', {
           headers: {
             'Content-Type': 'application/json',
-            ...(currentWalletAddress && { 'x-thirdweb-address': currentWalletAddress }),
+            ...(currentWalletAddress && {
+              'x-thirdweb-address': currentWalletAddress,
+              'x-wallet-address': currentWalletAddress,
+              'x-user-address': currentWalletAddress
+            }),
           }
         });
         console.log('Users API response:', usersRes.status, usersRes.statusText);
