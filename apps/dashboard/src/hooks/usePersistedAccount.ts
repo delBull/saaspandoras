@@ -41,7 +41,9 @@ export function usePersistedAccount() {
             setSession(parsed);
           }
         } catch (error) {
-          console.warn("⚠️ Sesión guardada corrupta, limpiando:", error);
+          if (process.env.NODE_ENV === 'development') {
+            console.warn("⚠️ Sesión guardada corrupta, limpiando:", error);
+          }
           localStorage.removeItem("wallet-session");
         }
       }
@@ -126,12 +128,14 @@ export function usePersistedAccount() {
       // Evitar reconexiones simultáneas con debouncing (5 segundos mínimo entre intentos)
       const now = Date.now();
       if (lastReconnectAttempt && now - lastReconnectAttempt < 5000) {
-        console.log("⏳ Reconexión en cooldown, esperando antes del próximo intento");
         return;
       }
 
       setLastReconnectAttempt(now);
-      console.log("🔄 Verificando wallet para rehidratación:", session.walletType);
+      // Only log in development
+      if (process.env.NODE_ENV === 'development') {
+        console.log("🔄 Verificando wallet para rehidratación:", session.walletType);
+      }
 
       // Solo intentar reconectar wallets injected (no social wallets: inApp, inAppWallet, etc)
       const walletTypeStr = String(session.walletType);
@@ -184,14 +188,15 @@ export function usePersistedAccount() {
           (typeof err === 'object' && err !== null && 'code' in err && typeof (err as { code: unknown }).code === 'number' && (err as { code: number }).code === -32002);
 
         if (isRequestPending) {
-          console.warn("⏳ Solicitud de wallet ya está pendiente, esperando a que el usuario responda");
           // Para este error específico, NO deshabilitamos la reconexión automática
           // Simplemente esperamos que el usuario complete la solicitud existente
           setLastReconnectAttempt(Date.now() + 30000); // Bloquear reconexiones por 30 segundos
           return;
         }
 
-        console.warn("⚠️ Error reconectando wallet injected, deshabilitando reconexión automática:", errorMessage);
+        if (process.env.NODE_ENV === 'development') {
+          console.warn("⚠️ Error reconectando wallet injected, deshabilitando reconexión automática:", errorMessage);
+        }
 
         // Marcar que no se debe reconectar automáticamente después de errores graves
         if (typeof window !== "undefined") {
@@ -214,24 +219,23 @@ export function usePersistedAccount() {
       // Ejecutar disconnect inmediatamente (no es async)
       if (activeWallet) {
         disconnect(activeWallet);
-        console.log("✅ Wallet desconectada exitosamente");
       }
 
       // Limpiar localStorage completamente después del disconnect
       if (typeof window !== "undefined") {
         localStorage.removeItem("wallet-session");
         setSession(null);
-        console.log("🗑️ Sesión de wallet eliminada completamente");
       }
 
     } catch (error) {
-      console.error("⚠️ Error durante logout:", error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error("⚠️ Error durante logout:", error);
+      }
     } finally {
       // Reset del flag de logout inmediatamente después de la limpieza
       setTimeout(() => {
         setIsLogoutInProgress(false);
-        console.log("🔄 Logout completado");
-      }, 500); // Delay más corto ya que disconnect es síncrono
+      }, 500);
     }
   }, [disconnect, activeWallet]);
 

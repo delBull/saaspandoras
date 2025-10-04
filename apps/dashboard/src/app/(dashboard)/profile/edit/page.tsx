@@ -123,9 +123,6 @@ export default function ProfileEditPage() {
   };
 
   const handleSubmit = async () => {
-    console.log('🎛️ handleSubmit called - starting form submission');
-    console.log('📝 Form data to submit:', formData);
-
     // Check validations
     const validationPassed = validateForm();
     console.log('✅ Validations passed:', validationPassed);
@@ -139,14 +136,12 @@ export default function ProfileEditPage() {
       return;
     }
 
-    console.log('🚀 Starting API call...');
     setLoading(true);
     try {
       const requestBody = {
         walletAddress: walletAddress,
         profileData: formData,
       };
-      console.log('📤 Request body:', requestBody);
 
       const response = await fetch('/api/profile', {
         method: 'POST',
@@ -159,10 +154,7 @@ export default function ProfileEditPage() {
         body: JSON.stringify(requestBody),
       });
 
-      console.log('📦 API response status:', response.status, response.ok ? 'SUCCESS' : 'FAILED');
-
       if (response.ok) {
-        console.log('🎉 API call successful - updating profile');
         toast.success('Perfil actualizado exitosamente');
 
         // Force immediate revalidation and update cache
@@ -184,17 +176,12 @@ export default function ProfileEditPage() {
         }, {
           revalidate: true
         });
-        console.log('✅ Data refresh completed');
 
-        console.log('📱 Navigating to profile...');
         router.push('/profile');
       } else {
-        const errorMessage = await response.text();
-        console.error('❌ API call failed with response:', response.status, errorMessage);
         toast.error('Error al actualizar perfil');
       }
     } catch (error) {
-      console.error('💥 Error in fetch:', error);
       toast.error('Error de conexión');
     } finally {
       setLoading(false);
