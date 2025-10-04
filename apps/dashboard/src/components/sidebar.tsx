@@ -73,14 +73,16 @@ export function Sidebar({
   // Track if this is the initial load to avoid resetting admin status
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  // Debug logging for admin status
+  // Debug logging for admin status (only in development)
   useEffect(() => {
-    console.log('🔍 Admin status check:', {
-      serverSide: { isAdmin: isAdminProp, isSuperAdmin: isSuperAdminProp },
-      clientSide: adminStatus,
-      finalIsAdmin: adminStatus.isAdmin || adminStatus.isSuperAdmin,
-      account: account?.address?.substring(0, 8)
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 Admin status check:', {
+        serverSide: { isAdmin: isAdminProp, isSuperAdmin: isSuperAdminProp },
+        clientSide: adminStatus,
+        finalIsAdmin: adminStatus.isAdmin || adminStatus.isSuperAdmin,
+        account: account?.address?.substring(0, 8)
+      });
+    }
   }, [adminStatus, isAdminProp, isSuperAdminProp, account?.address]);
 
   // Admin verification happens in the main useEffect below
@@ -95,7 +97,9 @@ export function Sidebar({
 
     // Reset admin status when wallet disconnects
     if (account?.address === undefined && !isInitialLoad) {
-      console.log("🔌 Wallet disconnected, resetting admin status");
+      if (process.env.NODE_ENV === 'development') {
+        console.log("🔌 Wallet disconnected, resetting admin status");
+      }
       setAdminStatus({ isAdmin: false, isSuperAdmin: false, verified: true });
       return;
     }
@@ -104,20 +108,28 @@ export function Sidebar({
     if (!account?.address) {
       // si servidor ya dijo que era admin, no quitar (evita flicker durante rehidratación)
       if (!adminStatus.verified && isAdminProp) {
-        console.log("🏚️ Manteniendo admin status por server prop durante rehidratacion");
+        if (process.env.NODE_ENV === 'development') {
+          console.log("🏚️ Manteniendo admin status por server prop durante rehidratacion");
+        }
         return;
       }
       // No wallet connected and no server admin prop, ensure admin status is false
-      console.log("🐭 No wallet connected and no server admin, ensuring admin status is false");
+      if (process.env.NODE_ENV === 'development') {
+        console.log("🐭 No wallet connected and no server admin, ensuring admin status is false");
+      }
       setAdminStatus({ isAdmin: false, isSuperAdmin: false, verified: true });
       return;
     }
 
-    console.log("🔍 Wallet connected/changed, re-verifying admin status for:", account.address);
+    if (process.env.NODE_ENV === 'development') {
+      console.log("🔍 Wallet connected/changed, re-verifying admin status for:", account.address);
+    }
 
     (async () => {
       try {
-        console.log("🔍 Verifying admin status for:", account.address);
+        if (process.env.NODE_ENV === 'development') {
+          console.log("🔍 Verifying admin status for:", account.address);
+        }
         const res = await fetch("/api/admin/verify", {
           headers: {
             'Content-Type': 'application/json',
@@ -127,13 +139,8 @@ export function Sidebar({
 
         if (res.ok) {
           const data = await res.json() as { isAdmin: boolean; isSuperAdmin: boolean };
-          console.log("✅ Admin status verified:", data);
-
-          // Always update admin status when we get a response - THIS OVERRIDES SERVER PROPS
           setAdminStatus({ ...data, verified: true });
         } else {
-          console.error("❌ Admin verification failed:", res.status, res.statusText);
-          // Reset admin status to false on API failure - REGARDLESS OF INITIAL SERVER PROPS
           setAdminStatus({ isAdmin: false, isSuperAdmin: false, verified: false });
         }
       } catch (e) {
@@ -160,7 +167,9 @@ export function Sidebar({
             setUserProfile(userData);
           }
         } catch (error) {
-          console.error('Error fetching user profile:', error);
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Error fetching user profile:', error);
+          }
         }
       }
     };

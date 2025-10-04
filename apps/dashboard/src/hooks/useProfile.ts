@@ -19,10 +19,7 @@ async function fetcher(walletAddress?: string): Promise<UserProfile> {
      headers['x-thirdweb-address'] = walletAddress;
      headers['x-wallet-address'] = walletAddress;
      headers['x-user-address'] = walletAddress;
-     console.log('✅ useProfile: Sending request with auth headers for wallet:', walletAddress.substring(0, 15) + '...');
-     console.log('🔍 useProfile: Headers being sent:', headers);
    } else {
-     console.error('❌ useProfile: CRITICAL ERROR - No wallet address provided');
      throw new Error('No wallet authentication available');
    }
 
@@ -32,26 +29,9 @@ async function fetcher(walletAddress?: string): Promise<UserProfile> {
    });
 
   if (!res.ok) {
-    console.error('🚨 useProfile: API REQUEST FAILED', {
-      status: res.status,
-      statusText: res.statusText,
-      url: '/api/profile',
-      walletAddress: walletAddress?.substring(0, 10) + '...',
-      hasHeader: !!headers['x-thirdweb-address']
-    });
-
-    // Try to read response for debugging
-    try {
-      const errorText = await res.text();
-      console.error('🚨 useProfile: API Error Response:', errorText);
-    } catch (e) {
-      console.error('🚨 useProfile: Could not read error response');
-    }
-
     throw new Error(`Profile fetch failed: ${res.status} ${res.statusText}`);
   }
 
-  console.log('✅ useProfile: API Request SUCCESS - Profile data retrieved');
   return res.json();
 }
 
