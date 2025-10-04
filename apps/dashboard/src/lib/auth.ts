@@ -109,9 +109,11 @@ export async function getAuth(headers?: MinimalHeaders, userAddress?: string) {
                 username: decoded.username
               });
 
-              // The userId in the JWT might be the wallet address
-              // Based on the logs, it looks like it could be encoded
-              address = decoded.userId ?? decoded.sub ?? null;
+              // The userId in the JWT is NOT the wallet address - it's an internal Thirdweb identifier
+              // We need to find the actual wallet address associated with this user
+              // For now, return null and let the application handle this case
+              console.log('❌ [Auth] JWT userId is not a wallet address:', decoded.userId);
+              address = null;
 
               if (address) {
                 console.log('✅ [Auth] Successfully extracted address from JWT:', address);
