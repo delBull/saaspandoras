@@ -5,6 +5,7 @@ import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 // Note: Edge runtime may not support all Node.js APIs
 // This is why we have runtime = "nodejs" at top
