@@ -54,29 +54,35 @@ export default function ProfileProjectsPage() {
       Promise.all([
         fetch('/api/profile', {
           headers: {
-            ...(sessionUser.walletAddress && {
-              'x-thirdweb-address': sessionUser.walletAddress,
-              'x-wallet-address': sessionUser.walletAddress,
-              'x-user-address': sessionUser.walletAddress,
-            }),
+            'Content-Type': 'application/json',
+            'x-thirdweb-address': sessionUser.walletAddress,
+            'x-wallet-address': sessionUser.walletAddress,
+            'x-user-address': sessionUser.walletAddress,
           }
         }),
         fetch('/api/projects')
       ])
-        .then(([usersRes, projectsRes]) => {
-          if (!usersRes.ok || !projectsRes.ok) {
-            // If not authorized, set empty data
-            console.log('Not authorized to fetch profile data, using empty data');
-            setUserProfile(null);
-            setUserProjects([]);
-            setLoading(false);
-            return;
+        .then(async ([usersRes, projectsRes]) => {
+          console.log('Profile API response:', usersRes.status, usersRes.ok);
+          console.log('Projects API response:', projectsRes.status, projectsRes.ok);
+
+          if (!usersRes.ok) {
+            const errorText = await usersRes.text();
+            console.error('Profile API failed:', usersRes.status, errorText);
+            throw new Error(`Profile API failed: ${usersRes.status}`);
           }
+
+          if (!projectsRes.ok) {
+            const errorText = await projectsRes.text();
+            console.error('Projects API failed:', projectsRes.status, errorText);
+            throw new Error(`Projects API failed: ${projectsRes.status}`);
+          }
+
           return Promise.all([usersRes.json(), projectsRes.json()]);
         })
         .then((data) => {
-          if (!data) return; // Already handled
           const [userProfile, projects] = data as [UserData, Project[]];
+          console.log('Profile data received:', userProfile);
           setUserProfile(userProfile);
 
           // 🏦 WALLET-BASED FILTERING ONLY
@@ -97,6 +103,7 @@ export default function ProfileProjectsPage() {
             );
           }
 
+          console.log('Filtered projects:', userProjects.length);
           setUserProjects(userProjects);
         })
         .catch(err => {
