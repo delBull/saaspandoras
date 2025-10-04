@@ -36,6 +36,9 @@ export function WalletBalance({ selectedChain, accountAddress, supportedNetworks
 
   const tokenPrices = useTokenPricesContext();
 
+  // For now, show native tokens only to avoid hook complexity
+  // Later we can add ERC20 balances using individual useReadContract calls for each token
+
   const realBalances = useMemo(() => {
     if (!accountAddress) return [];
 

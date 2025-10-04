@@ -3,6 +3,18 @@ import { administrators } from "~/db/schema";
 import { eq } from "drizzle-orm";
 import { SUPER_ADMIN_WALLET } from "./constants";
 import { cookies } from "next/headers";
+import jwt from "jsonwebtoken";
+
+interface JWTPayload {
+  userId?: string;
+  sub?: string;
+  username?: string;
+  avatar?: string;
+  ownerId?: string;
+  aud?: string;
+  iat?: number;
+  exp?: number;
+}
 
 /**
  * Comprueba si una dirección es admin o super admin.
@@ -79,7 +91,43 @@ export async function getAuth(headers?: MinimalHeaders, userAddress?: string) {
     try {
       // Intentar obtener desde cookies - this works in both runtimes
       const cookieStore = await cookies();
+
+      // First try the simple wallet-address cookie
       address = cookieStore.get('wallet-address')?.value ?? null;
+
+      // If not found, try to decode the JWT token
+      if (!address) {
+        const jwtToken = cookieStore.get('_vercel_jwt')?.value;
+        if (jwtToken) {
+          try {
+            console.log('🔍 [Auth] Attempting to decode JWT token');
+            const decoded = jwt.decode(jwtToken) as JWTPayload | null;
+            if (decoded) {
+              console.log('🔍 [Auth] JWT decoded payload:', {
+                userId: decoded.userId,
+                sub: decoded.sub,
+                username: decoded.username
+              });
+
+              // The userId in the JWT might be the wallet address
+              // Based on the logs, it looks like it could be encoded
+              address = decoded.userId ?? decoded.sub ?? null;
+
+              if (address) {
+                console.log('✅ [Auth] Successfully extracted address from JWT:', address);
+              } else {
+                console.log('❌ [Auth] No address found in JWT payload');
+              }
+            } else {
+              console.log('❌ [Auth] Failed to decode JWT token');
+            }
+          } catch (jwtError) {
+            console.error('❌ [Auth] Error decoding JWT:', jwtError);
+          }
+        } else {
+          console.log('❌ [Auth] No JWT token found in cookies');
+        }
+      }
     } catch (error) {
       console.error('Error accessing cookies:', error);
     }
