@@ -16,6 +16,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import { useProfile } from '@/hooks/useProfile';
+import { useActiveAccount } from 'thirdweb/react';
 
 interface ProfileEditData {
   name: string;
@@ -41,7 +42,7 @@ interface ProfileEditData {
 export default function ProfileEditPage() {
   const router = useRouter();
   const { profile, isLoading, isError, mutate } = useProfile();
-  const [sessionUser, setSessionUser] = useState<{walletAddress?: string} | null>(null);
+  const account = useActiveAccount();
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -66,29 +67,12 @@ export default function ProfileEditPage() {
     },
   });
 
-  useEffect(() => {
-    // Get session user first
-    const getSession = () => {
-      try {
-        const walletAddress = document.cookie
-          .split('; ')
-          .find(row => row.startsWith('wallet-address='))
-          ?.split('=')[1];
-
-        if (walletAddress) {
-          setSessionUser({ walletAddress });
-        }
-      } catch (error) {
-        console.error('Error getting session:', error);
-      }
-    };
-
-    getSession();
-  }, []);
+  // Use account from useActiveAccount hook instead of cookies
+  const walletAddress = account?.address;
 
   // Populate form data when profile loads
   useEffect(() => {
-    if (profile && sessionUser?.walletAddress) {
+    if (profile && walletAddress) {
       const kycData = profile.kycData ?? {};
 
       setFormData({
@@ -112,7 +96,7 @@ export default function ProfileEditPage() {
         },
       });
     }
-  }, [profile, sessionUser]);
+  }, [profile, walletAddress]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -146,11 +130,11 @@ export default function ProfileEditPage() {
     const validationPassed = validateForm();
     console.log('✅ Validations passed:', validationPassed);
 
-    const hasSessionUser = !!sessionUser?.walletAddress;
-    console.log('👤 Has session user:', hasSessionUser, 'Wallet:', sessionUser?.walletAddress);
+    const hasWalletAddress = !!walletAddress;
+    console.log('👤 Has wallet address:', hasWalletAddress, 'Wallet:', walletAddress);
 
-    if (!validationPassed || !hasSessionUser) {
-      console.log('❌ Validation failed or no session user - showing error toast');
+    if (!validationPassed || !hasWalletAddress) {
+      console.log('❌ Validation failed or no wallet address - showing error toast');
       toast.error('Revisa los campos requeridos');
       return;
     }
@@ -159,7 +143,7 @@ export default function ProfileEditPage() {
     setLoading(true);
     try {
       const requestBody = {
-        walletAddress: sessionUser.walletAddress,
+        walletAddress: walletAddress,
         profileData: formData,
       };
       console.log('📤 Request body:', requestBody);
@@ -168,11 +152,9 @@ export default function ProfileEditPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(sessionUser.walletAddress && {
-            'x-thirdweb-address': sessionUser.walletAddress,
-            'x-wallet-address': sessionUser.walletAddress,
-            'x-user-address': sessionUser.walletAddress,
-          }),
+          'x-thirdweb-address': walletAddress,
+          'x-wallet-address': walletAddress,
+          'x-user-address': walletAddress,
         },
         body: JSON.stringify(requestBody),
       });
@@ -189,11 +171,9 @@ export default function ProfileEditPage() {
           const response = await fetch('/api/profile', {
             headers: {
               'Content-Type': 'application/json',
-              ...(sessionUser.walletAddress && {
-                'x-thirdweb-address': sessionUser.walletAddress,
-                'x-wallet-address': sessionUser.walletAddress,
-                'x-user-address': sessionUser.walletAddress,
-              }),
+              'x-thirdweb-address': walletAddress,
+              'x-wallet-address': walletAddress,
+              'x-user-address': walletAddress,
             }
           });
           if (response.ok) {
@@ -235,7 +215,7 @@ export default function ProfileEditPage() {
     );
   }
 
-  if (isError || !sessionUser) {
+  if (isError || !walletAddress) {
     return (
       <div className="p-6">
         <Card>

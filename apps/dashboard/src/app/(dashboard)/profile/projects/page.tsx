@@ -19,45 +19,29 @@ import {
 } from '@heroicons/react/24/outline';
 import { useProjectModal } from "@/contexts/ProjectModalContext";
 import type { UserData, Project } from '@/types/admin';
+import { useActiveAccount } from 'thirdweb/react';
 
 export default function ProfileProjectsPage() {
   const [userProfile, setUserProfile] = useState<UserData | null>(null);
   const [userProjects, setUserProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sessionUser, setSessionUser] = useState<{walletAddress?: string} | null>(null);
+  const account = useActiveAccount();
 
   const { open } = useProjectModal();
 
-  useEffect(() => {
-    // Get session user
-    const getSession = () => {
-      try {
-        const walletAddress = document.cookie
-          .split('; ')
-          .find(row => row.startsWith('wallet-address='))
-          ?.split('=')[1];
-
-        if (walletAddress) {
-          setSessionUser({ walletAddress });
-        }
-      } catch (error) {
-        console.error('Error getting session:', error);
-      }
-    };
-
-    getSession();
-  }, []);
+  // Use account from useActiveAccount hook instead of cookies
+  const walletAddress = account?.address;
 
   useEffect(() => {
-    if (sessionUser?.walletAddress) {
+    if (walletAddress) {
       // Fetch user profile and projects data
       Promise.all([
         fetch('/api/profile', {
           headers: {
             'Content-Type': 'application/json',
-            'x-thirdweb-address': sessionUser.walletAddress,
-            'x-wallet-address': sessionUser.walletAddress,
-            'x-user-address': sessionUser.walletAddress,
+            'x-thirdweb-address': walletAddress,
+            'x-wallet-address': walletAddress,
+            'x-user-address': walletAddress,
           }
         }),
         fetch('/api/projects')
@@ -112,10 +96,10 @@ export default function ProfileProjectsPage() {
           setUserProjects([]);
         })
         .finally(() => setLoading(false));
-    } else if (!sessionUser) {
+    } else if (!walletAddress) {
       setLoading(false);
     }
-  }, [sessionUser]);
+  }, [walletAddress]);
 
   if (loading) {
     return (
@@ -131,7 +115,7 @@ export default function ProfileProjectsPage() {
     );
   }
 
-  if (!sessionUser) {
+  if (!walletAddress) {
     return (
       <div className="p-6">
         <Card>
@@ -201,7 +185,7 @@ export default function ProfileProjectsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-400">
-                    {sessionUser?.walletAddress?.toLowerCase() === '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9'
+                    {walletAddress?.toLowerCase() === '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9'
                       ? 'Proyectos Gestionados'
                       : 'Mis Proyectos'
                     }
@@ -214,7 +198,7 @@ export default function ProfileProjectsPage() {
           </Card>
 
           {/* Only show investment metrics for non-admin users or if user has personal projects */}
-          {sessionUser?.walletAddress?.toLowerCase() !== '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9' && userProjects.reduce((total, p) => total + calculateProjectMetrics(p).raisedAmount, 0) > 0 ? (
+          {walletAddress?.toLowerCase() !== '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9' && userProjects.reduce((total, p) => total + calculateProjectMetrics(p).raisedAmount, 0) > 0 ? (
             <>
               <Card>
                 <CardContent className="p-6">
@@ -258,7 +242,7 @@ export default function ProfileProjectsPage() {
                 </CardContent>
               </Card>
             </>
-          ) : sessionUser?.walletAddress?.toLowerCase() === '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9' ? (
+          ) : walletAddress?.toLowerCase() === '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9' ? (
             <>
               {/* Alternative metrics for admin dashboard */}
               <Card>
