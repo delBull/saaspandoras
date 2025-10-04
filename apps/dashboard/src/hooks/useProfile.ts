@@ -15,8 +15,11 @@ async function fetcher(walletAddress?: string): Promise<UserProfile> {
    };
 
    if (walletAddress) {
+     // Try multiple header names in case Vercel filters some
      headers['x-thirdweb-address'] = walletAddress;
-     console.log('✅ useProfile: Sending request with auth header for wallet:', walletAddress.substring(0, 15) + '...');
+     headers['x-wallet-address'] = walletAddress;
+     headers['x-user-address'] = walletAddress;
+     console.log('✅ useProfile: Sending request with auth headers for wallet:', walletAddress.substring(0, 15) + '...');
      console.log('🔍 useProfile: Headers being sent:', headers);
    } else {
      console.error('❌ useProfile: CRITICAL ERROR - No wallet address provided');

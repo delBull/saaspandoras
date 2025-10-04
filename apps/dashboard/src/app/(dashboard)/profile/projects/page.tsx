@@ -52,7 +52,15 @@ export default function ProfileProjectsPage() {
     if (sessionUser?.walletAddress) {
       // Fetch user profile and projects data
       Promise.all([
-        fetch('/api/profile'),
+        fetch('/api/profile', {
+          headers: {
+            ...(sessionUser.walletAddress && {
+              'x-thirdweb-address': sessionUser.walletAddress,
+              'x-wallet-address': sessionUser.walletAddress,
+              'x-user-address': sessionUser.walletAddress,
+            }),
+          }
+        }),
         fetch('/api/projects')
       ])
         .then(([usersRes, projectsRes]) => {
