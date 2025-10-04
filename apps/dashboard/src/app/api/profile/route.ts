@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 
 export async function GET() {
   let walletAddress: string | undefined;
-  let authMethod: 'header' | 'session' | 'none' = 'none';
+  let authMethod: 'header' | 'body' | 'session' | 'none' = 'none';
 
   try {
     const requestHeaders = await headers();

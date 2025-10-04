@@ -17,15 +17,16 @@ async function fetcher(walletAddress?: string): Promise<UserProfile> {
    if (walletAddress) {
      headers['x-thirdweb-address'] = walletAddress;
      console.log('✅ useProfile: Sending request with auth header for wallet:', walletAddress.substring(0, 15) + '...');
+     console.log('🔍 useProfile: Headers being sent:', headers);
    } else {
      console.error('❌ useProfile: CRITICAL ERROR - No wallet address provided');
      throw new Error('No wallet authentication available');
    }
 
-  const res = await fetch('/api/profile', {
-    headers,
-    cache: 'no-store' // Critical for dynamic content
-  });
+   const res = await fetch('/api/profile', {
+     headers,
+     cache: 'no-store' // Critical for dynamic content
+   });
 
   if (!res.ok) {
     console.error('🚨 useProfile: API REQUEST FAILED', {
