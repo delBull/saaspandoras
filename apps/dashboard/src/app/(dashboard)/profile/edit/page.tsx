@@ -185,7 +185,23 @@ export default function ProfileEditPage() {
 
         // Force immediate revalidation and update cache
         console.log('🔄 Forcing immediate profile data refresh...');
-        await mutate(async () => fetch('/api/profile').then(res => res.json()), {
+        await mutate(async () => {
+          const response = await fetch('/api/profile', {
+            headers: {
+              'Content-Type': 'application/json',
+              ...(sessionUser.walletAddress && {
+                'x-thirdweb-address': sessionUser.walletAddress,
+                'x-wallet-address': sessionUser.walletAddress,
+                'x-user-address': sessionUser.walletAddress,
+              }),
+            }
+          });
+          if (response.ok) {
+            return response.json();
+          } else {
+            throw new Error(`Profile fetch failed: ${response.status}`);
+          }
+        }, {
           revalidate: true
         });
         console.log('✅ Data refresh completed');

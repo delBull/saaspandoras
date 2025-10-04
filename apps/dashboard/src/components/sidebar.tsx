@@ -147,7 +147,14 @@ export function Sidebar({
     const fetchProfile = async () => {
       if (account?.address) {
         try {
-          const response = await fetch('/api/profile');
+          const response = await fetch('/api/profile', {
+            headers: {
+              'Content-Type': 'application/json',
+              'x-thirdweb-address': account.address,
+              'x-wallet-address': account.address,
+              'x-user-address': account.address,
+            }
+          });
           if (response.ok) {
             const userData = await response.json();
             setUserProfile(userData);
