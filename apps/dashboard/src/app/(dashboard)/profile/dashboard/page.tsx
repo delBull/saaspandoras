@@ -3,7 +3,7 @@
 // Force dynamic rendering - this page uses cookies and should not be prerendered
 export const dynamic = 'force-dynamic';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@saasfly/ui/card';
 import {
   ChartBarIcon,
@@ -18,49 +18,35 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 import { useProjectModal } from "@/contexts/ProjectModalContext";
 import { useProfile } from "@/hooks/useProfile";
+import { useActiveAccount } from 'thirdweb/react';
 
 export default function PandoriansDashboardPage() {
   const { profile, projects, isLoading, isError } = useProfile();
-  const [sessionUser, setSessionUser] = useState<{walletAddress?: string} | null>(null);
+  const account = useActiveAccount();
   const toastShownRef = useRef(false);
 
   const { open } = useProjectModal();
 
+  // Use account from useActiveAccount hook instead of cookies
+  const walletAddress = account?.address;
+
   useEffect(() => {
-    // Get session user first (always needed for authentication)
-    const getSession = () => {
-      try {
-        const walletAddress = document.cookie
-          .split('; ')
-          .find(row => row.startsWith('wallet-address='))
-          ?.split('=')[1];
-
-        if (walletAddress) {
-          setSessionUser({ walletAddress });
-
-          // Show beta notification toast only once when session is first detected
-          if (!toastShownRef.current) {
-            toast.info(
-              "Dashboard en Versión Beta",
-              {
-                description: "Esta información puede incluir datos de demostración mientras desarrollamos nuevas funciones. La información financiera real se integrará progresivamente.",
-                duration: 8000,
-                action: {
-                  label: "Entendido",
-                  onClick: () => console.log("Beta acknowledgment"),
-                },
-              }
-            );
-            toastShownRef.current = true;
-          }
+    // Show beta notification toast only once when account is connected
+    if (walletAddress && !toastShownRef.current) {
+      toast.info(
+        "Dashboard en Versión Beta",
+        {
+          description: "Esta información puede incluir datos de demostración mientras desarrollamos nuevas funciones. La información financiera real se integrará progresivamente.",
+          duration: 8000,
+          action: {
+            label: "Entendido",
+            onClick: () => console.log("Beta acknowledgment"),
+          },
         }
-      } catch (error) {
-        console.error('Error getting session:', error);
-      }
-    };
-
-    getSession();
-  }, []);
+      );
+      toastShownRef.current = true;
+    }
+  }, [walletAddress]);
 
   // Handle loading and error states
   if (isLoading) {
@@ -78,7 +64,7 @@ export default function PandoriansDashboardPage() {
     );
   }
 
-  if (isError || !sessionUser) {
+  if (isError || !walletAddress) {
     return (
       <div className="p-6">
         <Card>
