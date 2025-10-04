@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { db } from "~/db";
 import { sql } from "drizzle-orm";

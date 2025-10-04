@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@saasfly/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@saasfly/ui/card';
 import { ClipboardDocumentIcon, CheckIcon, WalletIcon, ShieldCheckIcon, ArrowTopRightOnSquareIcon, BoltIcon, KeyIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
@@ -8,10 +8,14 @@ import { toast } from 'sonner';
 import { useProfile } from '@/hooks/useProfile';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useActiveAccount } from 'thirdweb/react';
+
+// Force dynamic rendering - this page uses cookies and should not be prerendered
+export const dynamic = 'force-dynamic';
 
 export default function ProfilePage() {
   const { profile, isLoading, isError } = useProfile();
-  const [sessionUser, setSessionUser] = useState<{walletAddress?: string} | null>(null);
+  const account = useActiveAccount();
   const [copied, setCopied] = useState(false);
 
   // Function to format wallet address with ellipsis
@@ -33,25 +37,8 @@ export default function ProfilePage() {
     }
   };
 
-  useEffect(() => {
-    // Get user session from cookies
-    const getSession = () => {
-      try {
-        const walletAddress = document.cookie
-          .split('; ')
-          .find(row => row.startsWith('wallet-address='))
-          ?.split('=')[1];
-
-        if (walletAddress) {
-          setSessionUser({ walletAddress });
-        }
-      } catch (error) {
-        console.error('Error getting session from cookies:', error);
-      }
-    };
-
-    getSession();
-  }, []);
+  // Use account from useActiveAccount hook instead of cookies
+  const walletAddress = account?.address;
 
   if (isLoading) {
     return (
@@ -67,13 +54,43 @@ export default function ProfilePage() {
     );
   }
 
-  if (isError || !sessionUser || !profile) {
+  // Only deny access if there's an error AND we're not loading AND no profile data
+  if (isError && !profile && !walletAddress) {
     return (
       <div className="p-6">
         <Card>
           <CardHeader>
             <CardTitle>Acceso Denegado</CardTitle>
-            <CardDescription>Necesitas estar conectado para ver tu perfil.</CardDescription>
+            <CardDescription>No se encontró tu sesión. Conéctate a tu wallet para ver tu perfil.</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show loading state briefly while profile loads
+  if (isLoading && !profile) {
+    return (
+      <div className="p-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-zinc-700 rounded mb-4 w-64"></div>
+          <div className="space-y-4">
+            <div className="h-32 bg-zinc-700 rounded"></div>
+            <div className="h-48 bg-zinc-700 rounded"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Only deny access if there's a REAL error (not loading state)
+  if (isError) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Error Loading Profile</CardTitle>
+            <CardDescription>No se pudo cargar tu información de perfil. Intenta refrescar la página.</CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -133,10 +150,10 @@ export default function ProfilePage() {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <WalletIcon className="w-4 h-4 text-lime-400" />
-                    <span className="text-xs text-gray-300 font-medium">Ethereum</span>
+                    <span className="text-xs text-gray-300 font-medium">Ethereum Compatible</span>
                   </div>
                   <button
-                    onClick={() => copyWalletAddress(sessionUser.walletAddress || '')}
+                    onClick={() => copyWalletAddress(walletAddress || profile?.walletAddress || '')}
                     className="flex items-center gap-1 text-gray-400 hover:text-lime-400 transition-colors p-1 rounded"
                     title="Copiar dirección completa"
                   >
@@ -149,7 +166,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="font-mono text-sm text-white mb-3">
-                  {sessionUser.walletAddress ? formatWalletAddress(sessionUser.walletAddress) : ''}
+                  {walletAddress ? formatWalletAddress(walletAddress) : profile?.walletAddress ? formatWalletAddress(profile.walletAddress) : ''}
                 </div>
 
                 {/* Información adicional de wallet */}
