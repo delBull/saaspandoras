@@ -63,6 +63,11 @@ export function usePersistedAccount() {
       localStorage.setItem("wallet-session", JSON.stringify(data));
       setSession(data);
       console.log("💾 Guardada sesión wallet real:", data);
+      console.log("🔍 Wallet type analysis:", {
+        walletId: activeWallet.id,
+        isSocialWallet,
+        shouldReconnect: !isSocialWallet
+      });
     }
   }, [account?.address, activeWallet]);
 
@@ -83,12 +88,41 @@ export function usePersistedAccount() {
       localStorage.setItem("wallet-session", JSON.stringify(data));
       setSession(data);
       console.log("💾 Guardada sesión social login:", data);
+      console.log("🚫 Social login detectado - shouldReconnect:", data.shouldReconnect);
+      console.log("🔒 Social login wallet - reconnection disabled");
     }
   }, [account?.address, activeWallet]);
 
   // Rehidratación automática con debouncing
   useEffect(() => {
     if (isBootstrapped && !isLogoutInProgress && session && session.shouldReconnect && !account?.address && !isConnecting) {
+      // Additional safety check: never reconnect if this was originally a social login
+      const originalWalletType = String(session.walletType);
+      const isOriginallySocial = originalWalletType.includes('inApp') ||
+                                originalWalletType.includes('inAppWallet') ||
+                                originalWalletType === 'email' ||
+                                originalWalletType === 'google' ||
+                                originalWalletType === 'apple' ||
+                                originalWalletType === 'facebook' ||
+                                originalWalletType.includes('social');
+
+      if (isOriginallySocial) {
+        console.log("🚫 Originally social wallet - disabling reconnection:", session.walletType);
+        console.log("🔍 Original wallet type analysis:", {
+          walletType: session.walletType,
+          isInApp: originalWalletType.includes('inApp'),
+          isInAppWallet: originalWalletType.includes('inAppWallet'),
+          isEmail: originalWalletType === 'email',
+          isGoogle: originalWalletType === 'google',
+          isApple: originalWalletType === 'apple',
+          isFacebook: originalWalletType === 'facebook',
+          isSocial: originalWalletType.includes('social')
+        });
+        const correctedSession = { ...session, shouldReconnect: false };
+        localStorage.setItem("wallet-session", JSON.stringify(correctedSession));
+        setSession(correctedSession);
+        return;
+      }
       // Evitar reconexiones simultáneas con debouncing (5 segundos mínimo entre intentos)
       const now = Date.now();
       if (lastReconnectAttempt && now - lastReconnectAttempt < 5000) {
@@ -106,10 +140,21 @@ export function usePersistedAccount() {
                              walletTypeStr === 'email' ||
                              walletTypeStr === 'google' ||
                              walletTypeStr === 'apple' ||
-                             walletTypeStr === 'facebook';
+                             walletTypeStr === 'facebook' ||
+                             walletTypeStr.includes('social'); // Add general social wallet detection
 
       if (isSocialWallet) {
         console.log("🚫 Wallet social detectada, saltando reconexión automática:", session.walletType);
+        console.log("🔍 Social wallet detection details:", {
+          walletType: session.walletType,
+          isInApp: walletTypeStr.includes('inApp'),
+          isInAppWallet: walletTypeStr.includes('inAppWallet'),
+          isEmail: walletTypeStr === 'email',
+          isGoogle: walletTypeStr === 'google',
+          isApple: walletTypeStr === 'apple',
+          isFacebook: walletTypeStr === 'facebook',
+          isSocial: walletTypeStr.includes('social')
+        });
         // Marcar como no reconectar para wallets sociales
         const correctedSession = { ...session, shouldReconnect: false };
         localStorage.setItem("wallet-session", JSON.stringify(correctedSession));
@@ -119,6 +164,12 @@ export function usePersistedAccount() {
 
       // Solo reconectar wallets reales (MetaMask, etc.)
       console.log("✅ Intentando reconectar wallet injected:", session.walletType);
+      console.log("🔒 Wallet reconnection requirements check:", {
+        hasSession: !!session,
+        shouldReconnect: session.shouldReconnect,
+        hasAccount: !!account?.address,
+        isConnecting: isConnecting
+      });
 
       void connect(async () => {
         const wallet = createWallet(session.walletType);
