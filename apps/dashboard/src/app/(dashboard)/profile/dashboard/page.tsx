@@ -1,5 +1,8 @@
 'use client';
 
+// Force dynamic rendering - this page uses cookies and should not be prerendered
+export const dynamic = 'force-dynamic';
+
 import React, { useEffect, useState, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@saasfly/ui/card';
 import {
