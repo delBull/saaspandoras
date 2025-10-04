@@ -17,22 +17,41 @@ export async function GET() {
   try {
     const requestHeaders = await headers();
 
-    // First try to get wallet from header (same as admin API)
+    // 🔍 DEBUG: LOG ALL HEADERS (ONLY FOR DEBUGGING - REMOVE IN PRODUCTION)
+    console.log("🏷️ [Profile API] All request headers:");
+    requestHeaders.forEach((value, key) => {
+      console.log(`Header: ${key} = ${value}`);
+    });
+
+    // 🔍 First try to get wallet from header (same as admin API)
     // Try multiple header names in case Vercel filters some
     const headerWallet = requestHeaders.get('x-thirdweb-address') ??
                         requestHeaders.get('x-wallet-address') ??
                         requestHeaders.get('x-user-address');
+    console.log("🔍 [Profile API] x-thirdweb-address header value:", requestHeaders.get('x-thirdweb-address'));
+    console.log("🔍 [Profile API] x-wallet-address header value:", requestHeaders.get('x-wallet-address'));
+    console.log("🔍 [Profile API] x-user-address header value:", requestHeaders.get('x-user-address'));
 
     if (headerWallet) {
       walletAddress = headerWallet.toLowerCase().trim(); // Ensure lowercase and trim
       authMethod = 'header';
+      console.log("✅ [Profile API] AUTH METHOD - HEADER:", walletAddress);
     } else {
+      console.log("❌ [Profile API] NO 'x-thirdweb-address' header found");
+
       // Fallback to session auth (if no header provided)
+      console.log("🔄 [Profile API] Falling back to session auth...");
       const { session } = await getAuth(requestHeaders);
       walletAddress = session?.userId ?? undefined;
       authMethod = 'session';
 
+      console.log("🔄 [Profile API] AUTH METHOD - SESSION:", {
+        userId: session?.userId,
+        hasAuth: !!session?.userId
+      });
+
       if (!walletAddress) {
+        console.error("❌ [Profile API] NO AUTH METHOD WORKED - Returning 401");
         return NextResponse.json({
           message: "No autorizado - No se encontró wallet ni sesión válida",
           authMethod,
@@ -53,6 +72,8 @@ export async function GET() {
       }, { status: 401 });
     }
 
+    console.log("🎯 [Profile API] AUTHORIZED REQUEST - METHOD:", authMethod, "WALLET:", walletAddress);
+
     // Ensure user exists
     await ensureUser(walletAddress);
 
@@ -65,12 +86,23 @@ export async function GET() {
       WHERE LOWER("walletAddress") = LOWER(${walletAddress})
     `);
 
+    console.log("✅ [Profile API] User data retrieved:", {
+      id: user?.id,
+      name: user?.name,
+      email: user?.email,
+      kycLevel: user?.kycLevel,
+      kycCompleted: user?.kycCompleted,
+      authMethod
+    });
+
     // Get user projects
     const projects = await db.execute(sql`
       SELECT * FROM "projects"
       WHERE LOWER("applicant_wallet_address") = LOWER(${walletAddress})
       ORDER BY "created_at" DESC
     `);
+
+    console.log("✅ [Profile API] User projects count:", projects?.length);
 
     // Calculate user role
     const [adminCheck] = await db.execute(sql`
@@ -95,6 +127,7 @@ export async function GET() {
       systemProjectsManaged = Number((totalProjects as any).count) || 0;
     }
 
+    console.log("🎉 [Profile API] SUCCESS RESPONSE - authMethod:", authMethod);
 
     return NextResponse.json({
       ...user,
@@ -128,10 +161,24 @@ export async function POST(request: Request) {
   try {
     const requestHeaders = await headers();
 
+    // 🔍 DEBUG: LOG ALL HEADERS (ONLY FOR DEBUGGING - REMOVE IN PRODUCTION)
+    console.log("🏷️ [Profile API POST] All request headers:");
+    requestHeaders.forEach((value, key) => {
+      console.log(`Header: ${key} = ${value}`);
+    });
+
     // Try multiple header names in case Vercel filters some
     const headerWallet = requestHeaders.get('x-thirdweb-address') ??
                         requestHeaders.get('x-wallet-address') ??
                         requestHeaders.get('x-user-address');
+
+    console.log("🔍 [Profile API POST] x-thirdweb-address header value:", requestHeaders.get('x-thirdweb-address'));
+    console.log("🔍 [Profile API POST] x-wallet-address header value:", requestHeaders.get('x-wallet-address'));
+    console.log("🔍 [Profile API POST] x-user-address header value:", requestHeaders.get('x-user-address'));
+
+    if (headerWallet) {
+      console.log("✅ [Profile API POST] Using header wallet:", headerWallet);
+    }
 
     const { session } = await getAuth(requestHeaders);
     if (!session?.userId && !headerWallet) {
