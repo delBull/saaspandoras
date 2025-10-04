@@ -3,25 +3,74 @@
 
 import useSWR from "swr";
 import type { UserData, Project } from "@/types/admin";
+import { useActiveAccount } from "thirdweb/react";
 
 interface UserProfile extends UserData {
   projects: Project[];
 }
 
-async function fetcher(url: string): Promise<UserProfile> {
-  const res = await fetch(url);
+async function fetcher(walletAddress?: string): Promise<UserProfile> {
+   const headers: Record<string, string> = {
+     'Content-Type': 'application/json',
+   };
+
+   if (walletAddress) {
+     // Try multiple header names in case Vercel filters some
+     headers['x-thirdweb-address'] = walletAddress;
+     headers['x-wallet-address'] = walletAddress;
+     headers['x-user-address'] = walletAddress;
+     console.log('✅ useProfile: Sending request with auth headers for wallet:', walletAddress.substring(0, 15) + '...');
+     console.log('🔍 useProfile: Headers being sent:', headers);
+   } else {
+     console.error('❌ useProfile: CRITICAL ERROR - No wallet address provided');
+     throw new Error('No wallet authentication available');
+   }
+
+   const res = await fetch('/api/profile', {
+     headers,
+     cache: 'no-store' // Critical for dynamic content
+   });
+
   if (!res.ok) {
-    throw new Error(`Error ${res.status}: ${res.statusText}`);
+    console.error('🚨 useProfile: API REQUEST FAILED', {
+      status: res.status,
+      statusText: res.statusText,
+      url: '/api/profile',
+      walletAddress: walletAddress?.substring(0, 10) + '...',
+      hasHeader: !!headers['x-thirdweb-address']
+    });
+
+    // Try to read response for debugging
+    try {
+      const errorText = await res.text();
+      console.error('🚨 useProfile: API Error Response:', errorText);
+    } catch (e) {
+      console.error('🚨 useProfile: Could not read error response');
+    }
+
+    throw new Error(`Profile fetch failed: ${res.status} ${res.statusText}`);
   }
+
+  console.log('✅ useProfile: API Request SUCCESS - Profile data retrieved');
   return res.json();
 }
 
 export function useProfile() {
-  const { data, error, isLoading, mutate } = useSWR<UserProfile>(
-    "/api/profile",
-    fetcher,
-    { refreshInterval: 60000 } // refresca cada minuto
-  );
+   const account = useActiveAccount();
+   const walletAddress = account?.address?.toLowerCase();
+
+   // Create dynamic SWR key based on current wallet
+   const walletSWRKey = walletAddress ? `profile-${walletAddress}` : null;
+
+   const { data, error, isLoading, mutate } = useSWR<UserProfile>(
+     walletSWRKey, // Unique key per wallet
+     () => fetcher(walletAddress),
+     {
+       refreshInterval: 30000, // More frequent refresh
+       revalidateOnFocus: true,
+       revalidateOnReconnect: true
+     }
+   );
 
   return {
     profile: data,
