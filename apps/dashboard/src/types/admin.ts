@@ -26,6 +26,12 @@ export interface Project {
   applicantEmail?: string;
   applicantPhone?: string;
   applicantWalletAddress?: string;
+  // Featured project fields
+  featured?: boolean;
+  featuredButtonText?: string;
+  coverPhotoUrl?: string;
+  tagline?: string;
+  slug?: string;
 }
 
 export interface AdminData {

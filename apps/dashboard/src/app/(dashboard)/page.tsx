@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useReadContract } from "thirdweb/react";
 import { usePersistedAccount } from "@/hooks/usePersistedAccount";
 import Link from "next/link";
 import { config } from "@/config";
-import { PromotionalBanner } from "@/components/promotional-banners";
+import { FeaturedProjectCard } from "@/components/FeaturedProjectCard";
 import { PandorasPoolRows } from "~/components/PandorasPoolRows";
 import { getContract } from "thirdweb";
 import { PANDORAS_POOL_ABI } from "@/lib/pandoras-pool-abi";
@@ -13,7 +13,7 @@ import { QrCodeIcon, UserGroupIcon, ArrowPathIcon, BanknotesIcon, LockClosedIcon
 import Image from "next/image";
 import { client } from "@/lib/thirdweb-client";
 import { motion, AnimatePresence } from "framer-motion";
-import useEmblaCarousel from 'embla-carousel-react'; 
+import useEmblaCarousel from 'embla-carousel-react';
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -55,35 +55,107 @@ function ActionButton({ icon, label, disabled = false, href }: { icon: React.Rea
   );
 }
 
+interface FeaturedProjectCardData {
+  id: string;
+  title: string;
+  subtitle: string;
+  actionText: string;
+  imageUrl?: string;
+  projectSlug: string;
+}
+
+// Función para obtener proyectos featured desde la API
+async function getFeaturedProjects(): Promise<FeaturedProjectCardData[]> {
+  console.log('🔍 Getting featured projects from API...');
+
+  try {
+    // Usar la API projects-basic que ya está funcionando
+    const baseUrl = typeof window !== 'undefined' ? '' : 'http://localhost:3000';
+    const response = await fetch(`${baseUrl}/api/projects-basic`, {
+      cache: 'no-store', // Asegurar datos frescos
+    });
+
+    if (!response.ok) {
+      throw new Error(`API responded with status ${response.status}`);
+    }
+
+    const projects = await response.json() as Record<string, unknown>[];
+
+    // Convertir proyectos reales a formato FeaturedProjectCardData
+    return projects.slice(0, 3).map((project: Record<string, unknown>, index: number) => ({
+      id: String(project.id ?? `fallback-${index}`),
+      title: String(project.title ?? 'Proyecto sin título'),
+      subtitle: String(project.description ?? 'Descripción no disponible'),
+      actionText: 'Learn More',
+      imageUrl: String(project.coverPhotoUrl ?? '/images/default-project.jpg'),
+      projectSlug: String(project.slug ?? `project-${String(project.id)}`),
+    }));
+  } catch (error) {
+    console.error('❌ Error fetching featured projects:', error);
+
+    // Si la API falla, retornar array vacío - no necesitamos fallback hardcodeado
+    return [];
+  }
+}
+
 function BannersSection() {
   const [emblaRef] = useEmblaCarousel({ align: 'start', skipSnaps: true, });
-  const initialBanners = [ { 
-    id: 1, title: "Hemp Project", subtitle: "Green GENESIS Become an early supporter", actionText: "Do more with hemp!", variant: "purple", imageUrl:"/images/sem.jpeg" }, { id: 2, title: "Mining Project", subtitle: "Ever dream about being a miner?", actionText: "Soon to be launched", variant: "green", imageUrl: "/images/blockbunny.jpg" }, { id: 3, title: "RA Wallet", subtitle: "Best blockchain wallet, rewards like no other", actionText: "Win by holding", variant: "red", imageUrl: "/images/narailoft.jpg" }, ] as const;
-  type BannerData = typeof initialBanners[number];
-  const [displayedBanners, setDisplayedBanners] = useState<readonly BannerData[]>(initialBanners);
-  const handleClose = (idToClose: number) => { setDisplayedBanners(prevBanners => prevBanners.filter(b => b.id !== idToClose)); };
-  if (displayedBanners.length === 0) return null;
-  return ( 
-  <div className="my-5"> 
-    <div className="hidden md:grid md:grid-cols-3 gap-2"> 
-      <AnimatePresence> 
-        {displayedBanners.map((banner) => ( 
-          <motion.div key={banner.id} layout initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} transition={{ type: "spring" }}> 
-          <PromotionalBanner {...banner} onClose={() => handleClose(banner.id)} /> 
-          </motion.div> ))} 
-          </AnimatePresence> 
-          </div> 
-          <div className="md:hidden overflow-hidden" ref={emblaRef}> 
-            <div className="flex -ml-4"> 
-              <AnimatePresence> 
-                {displayedBanners.map((banner) => ( 
-                  <motion.div key={banner.id} layout initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ x: -300, opacity: 0 }} transition={{ duration: 0.3 }} className="flex-none w-[90%] pl-4"> 
-                  <PromotionalBanner {...banner} onClose={() => handleClose(banner.id)} /> 
-                  </motion.div> ))} 
-                  </AnimatePresence> 
-                  </div> 
-                  </div> 
-                  </div> 
+  const [featuredProjects, setFeaturedProjects] = useState<{id: string; title: string; subtitle: string; actionText: string; imageUrl?: string; projectSlug: string}[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFeaturedProjects = async () => {
+      try {
+        const projects = await getFeaturedProjects();
+        setFeaturedProjects(projects);
+      } catch (error) {
+        console.error('Error in fetchFeaturedProjects:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void fetchFeaturedProjects();
+  }, []);
+
+  const handleClose = (idToClose: string) => {
+    setFeaturedProjects(prevProjects => prevProjects.filter(p => p.id !== idToClose));
+  };
+
+  if (loading) {
+    return (
+      <div className="my-5">
+        <div className="hidden md:grid md:grid-cols-3 gap-2">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="aspect-[1.1/1] bg-zinc-800 rounded-xl animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (featuredProjects.length === 0) return null;
+  return (
+  <div className="my-5">
+    <div className="hidden md:grid md:grid-cols-3 gap-2">
+      <AnimatePresence>
+        {featuredProjects.map((project) => (
+          <motion.div key={project.id} layout initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} transition={{ type: "spring" }}>
+          <FeaturedProjectCard {...project} onClose={() => handleClose(project.id)} />
+          </motion.div> ))}
+          </AnimatePresence>
+          </div>
+          <div className="md:hidden overflow-hidden" ref={emblaRef}>
+            <div className="flex -ml-4">
+              <AnimatePresence>
+                {featuredProjects.map((project) => (
+                  <motion.div key={project.id} layout initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ x: -300, opacity: 0 }} transition={{ duration: 0.3 }} className="flex-none w-[90%] pl-4">
+                  <FeaturedProjectCard {...project} onClose={() => handleClose(project.id)} />
+                  </motion.div> ))}
+                  </AnimatePresence>
+                  </div>
+                  </div>
+                  </div>
                   );
 }
 

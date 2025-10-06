@@ -9,7 +9,7 @@ import { Button } from "@saasfly/ui/button";
 import { ApplicantsDesktop } from "./ApplicantsDesktop";
 import { ApplicantsMobile } from "./ApplicantsMobile";
 import { MultiStepForm } from "../../app/(dashboard)/admin/projects/[id]/edit/multi-step-form";
-import { useApplicantsData, type ApplicantsData } from "../../hooks/applicants/useApplicantsData";
+import { useApplicantsDataBasic, type ApplicantsData } from "../../hooks/applicants/useApplicantsDataBasic";
 
 interface FormProps {
   showForm: boolean;
@@ -63,7 +63,7 @@ export default function ApplicantsPage() {
     showMobilePendingModal,
     setIsPendingPanelCollapsed,
     setShowMobilePendingModal,
-  }: ApplicantsData = useApplicantsData();
+  }: ApplicantsData = useApplicantsDataBasic();
   const [showForm, setShowForm] = React.useState(false);
 
   const handleApplyClick = () => {

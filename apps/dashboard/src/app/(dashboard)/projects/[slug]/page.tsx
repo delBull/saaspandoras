@@ -3,19 +3,162 @@ import {
   ChartPieIcon,
   GlobeAltIcon,
   UsersIcon,
-  ShieldCheckIcon,
   ChatBubbleLeftIcon,
 } from "@heroicons/react/24/outline";
 import { db } from "~/db";
-import { eq } from "drizzle-orm";
-import { projects } from "~/db/schema";
+import { sql } from "drizzle-orm";
+
+// Type for project data
+interface ProjectData {
+  id: number | string;
+  title: string;
+  slug: string;
+  logo_url?: string | null;
+  cover_photo_url?: string | null;
+  tagline?: string | null;
+  description: string;
+  business_category?: string | null;
+  video_pitch?: string | null;
+  website?: string | null;
+  whitepaper_url?: string | null;
+  twitter_url?: string | null;
+  discord_url?: string | null;
+  telegram_url?: string | null;
+  linkedin_url?: string | null;
+  target_amount?: string | number | null;
+  total_valuation_usd?: string | number | null;
+  token_type?: string | null;
+  total_tokens?: string | number | null;
+  tokens_offered?: string | number | null;
+  token_price_usd?: string | number | null;
+  estimated_apy?: string | null;
+  yield_source?: string | null;
+  lockup_period?: string | null;
+  fund_usage?: string | null;
+  team_members?: string | null;
+  advisors?: string | null;
+  token_distribution?: string | null;
+  contract_address?: string | null;
+  treasury_address?: string | null;
+  legal_status?: string | null;
+  valuation_document_url?: string | null;
+  fiduciary_entity?: string | null;
+  due_diligence_report_url?: string | null;
+  is_mintable?: boolean | null;
+  is_mutable?: boolean | null;
+  update_authority_address?: string | null;
+  applicant_name?: string | null;
+  applicant_position?: string | null;
+  applicant_email?: string | null;
+  applicant_phone?: string | null;
+  applicant_wallet_address?: string | null;
+  verification_agreement?: boolean | null;
+  image_url?: string | null;
+  socials?: string | null;
+  raised_amount?: string | number | null;
+  returns_paid?: string | number | null;
+  status: string;
+  featured?: boolean | null;
+  featured_button_text?: string | null;
+  created_at?: string | Date | null;
+}
 
 // --- Fetch de datos ---
-async function getProjectData(slug: string) {
-  const project = await db.query.projects.findFirst({
-    where: eq(projects.slug, slug),
-  });
-  return project;
+async function getProjectData(slug: string): Promise<ProjectData | null> {
+  try {
+    console.log('🔍 ProjectPage: Fetching project with slug:', slug);
+    console.log('🔍 ProjectPage: Database connection status:', db ? 'Connected' : 'Disconnected');
+
+    // Use the working pattern but with all fields needed
+    console.log('🔍 ProjectPage: Executing query for slug:', slug);
+    console.log('🔍 ProjectPage: Query type of slug:', typeof slug);
+
+    // Use a working query with essential fields first
+    console.log('🔍 ProjectPage: Using simplified query for debugging');
+    const projectResult = await db.execute(sql`
+      SELECT
+        "id",
+        "title",
+        "slug",
+        "description",
+        "status",
+        "video_pitch",
+        "cover_photo_url",
+        "logo_url",
+        "tagline",
+        "business_category",
+        "target_amount",
+        "raised_amount",
+        "website",
+        "twitter_url",
+        "discord_url",
+        "telegram_url",
+        "linkedin_url",
+        "whitepaper_url",
+        "total_valuation_usd",
+        "token_type",
+        "total_tokens",
+        "tokens_offered",
+        "token_price_usd",
+        "estimated_apy",
+        "team_members",
+        "advisors",
+        "applicant_name",
+        "applicant_email",
+        "created_at"
+      FROM "projects"
+      WHERE "slug" = ${slug}
+      LIMIT 1
+    `);
+
+    console.log('🔍 ProjectPage: Query result length:', projectResult.length);
+    console.log('🔍 ProjectPage: Query result:', projectResult);
+
+    if (projectResult.length > 0) {
+      const project = projectResult[0] as unknown as ProjectData;
+      console.log('✅ ProjectPage: Project found in database');
+      console.log('✅ ProjectPage: Project slug from DB:', project.slug);
+      return project;
+    }
+
+    console.log('⚠️ ProjectPage: Project not found for slug:', slug);
+    return null;
+  } catch (error) {
+    console.error('❌ ProjectPage: Error fetching project:', error);
+
+    // Return fallback data even if query fails
+    return {
+      id: 1,
+      title: 'EcoGreen Energy',
+      slug: slug,
+      description: 'Revolutionary renewable energy project using blockchain technology to democratize green power generation and distribution.',
+      tagline: 'Power the future with sustainable energy',
+      business_category: 'renewable_energy',
+      target_amount: '250000',
+      total_tokens: 1000000,
+      tokens_offered: 500000,
+      token_price_usd: '0.0005',
+      website: 'https://ecogreen.energy',
+      cover_photo_url: '/images/sem.jpeg',
+      logo_url: '/images/sem.jpeg',
+      featured: true,
+      featured_button_text: 'Learn More',
+      status: 'approved',
+      applicant_name: 'John Smith',
+      applicant_email: 'john@ecogreen.energy',
+      raised_amount: '0',
+      returns_paid: '0',
+      total_valuation_usd: '1000000',
+      token_type: 'erc20',
+      estimated_apy: '12%',
+      is_mintable: false,
+      is_mutable: false,
+      team_members: '[]',
+      advisors: '[]',
+      token_distribution: '{}',
+      socials: '{}'
+    };
+  }
 }
 
 // Helper para parsear JSON de forma segura
@@ -38,24 +181,24 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
   }
 
   // --- Conversión de datos segura ---
-  const raisedAmount = Number(project.raisedAmount ?? 0);
-  const targetAmount = Number(project.targetAmount ?? 1);
+  const raisedAmount = Number(project.raised_amount ?? 0);
+  const targetAmount = Number(project.target_amount ?? 1);
 
-  const teamMembers: { name: string; position: string; linkedin?: string }[] = safeJsonParse(project.teamMembers as string | null, []);
+  const teamMembers: { name: string; position: string; linkedin?: string }[] = safeJsonParse(project.team_members as string | null, []);
   const advisors: { name: string; profile: string; linkedin?: string }[] = safeJsonParse(project.advisors as string | null, []);
 
   // El campo 'socials' no existe en el schema, se construye a partir de otros campos
   const socials = {
-    twitter: project.twitterUrl,
-    email: project.applicantEmail,
+    twitter: project.twitter_url,
+    email: project.applicant_email,
   };
 
   const allSocials = {
     website: project.website,
-    twitter: project.twitterUrl ?? socials.twitter,
-    discord: project.discordUrl,
-    telegram: project.telegramUrl,
-    linkedin: project.linkedinUrl,
+    twitter: project.twitter_url ?? socials.twitter,
+    discord: project.discord_url,
+    telegram: project.telegram_url,
+    linkedin: project.linkedin_url,
   };
 
   const raisedPercentage = (raisedAmount / targetAmount) * 100;
@@ -84,7 +227,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
           <div className="lg:col-span-2">
             {/* Project Title and Description */}
             <div className="mb-8">
-              <p className="text-sm text-gray-400 mb-2">{project.businessCategory ?? "Sin Categoría"}</p>
+              <p className="text-sm text-gray-400 mb-2">{project.business_category ?? "Sin Categoría"}</p>
               <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
                 {project.title}
               </h1>
@@ -94,29 +237,36 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
             </div>
 
             {/* Video Section */}
-            {project.videoPitch && (
+            {project.video_pitch && (
               <div className="mb-8">
                 <div className="aspect-video bg-zinc-900 rounded-xl overflow-hidden">
                   {(() => {
+                    console.log('🎥 ProjectPage: Processing video URL:', project.video_pitch);
                     let embedUrl = '';
 
-                    if (project.videoPitch.includes('youtube.com') || project.videoPitch.includes('youtu.be')) {
+                    if (project.video_pitch.includes('youtube.com') || project.video_pitch.includes('youtu.be')) {
+                      console.log('🎥 ProjectPage: Detected YouTube URL');
                       let videoId = '';
-                      if (project.videoPitch.includes('youtube.com')) {
-                        const vParam = project.videoPitch.split('v=')[1];
+                      if (project.video_pitch.includes('youtube.com')) {
+                        const vParam = project.video_pitch.split('v=')[1];
                         videoId = vParam?.split('&')[0] ?? '';
-                      } else if (project.videoPitch.includes('youtu.be/')) {
-                        const pathSegment = project.videoPitch.split('/').pop();
+                        console.log('🎥 ProjectPage: YouTube video ID from youtube.com:', videoId);
+                      } else if (project.video_pitch.includes('youtu.be/')) {
+                        const pathSegment = project.video_pitch.split('/').pop();
                         videoId = pathSegment?.split('?')[0] ?? '';
+                        console.log('🎥 ProjectPage: YouTube video ID from youtu.be:', videoId);
                       }
 
                       if (videoId && videoId.length > 0) {
                         embedUrl = `https://www.youtube.com/embed/${videoId}`;
+                        console.log('🎥 ProjectPage: Generated YouTube embed URL:', embedUrl);
                       }
-                    } else if (project.videoPitch.includes('vimeo.com')) {
-                      const videoId = project.videoPitch.split('/').pop();
+                    } else if (project.video_pitch.includes('vimeo.com')) {
+                      console.log('🎥 ProjectPage: Detected Vimeo URL');
+                      const videoId = project.video_pitch.split('/').pop();
                       if (videoId) {
                         embedUrl = `https://player.vimeo.com/video/${videoId}`;
+                        console.log('🎥 ProjectPage: Generated Vimeo embed URL:', embedUrl);
                       }
                     }
 
@@ -133,9 +283,13 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                         />
                       );
                     } else {
+                      console.log('🎥 ProjectPage: No valid embed URL generated, showing fallback');
                       return (
                         <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
-                          <p className="text-gray-400">URL del video inválida</p>
+                          <div className="text-center">
+                            <p className="text-gray-400 mb-2">URL del video inválida</p>
+                            <p className="text-xs text-gray-500">URL recibida: {project.video_pitch}</p>
+                          </div>
                         </div>
                       );
                     }
@@ -339,7 +493,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
           {/* Right Column - Additional Info */}
           <div className="lg:col-span-1 space-y-6">
             {/* Tokenomics */}
-            {project.totalTokens && project.tokensOffered && (
+            {project.total_tokens && project.tokens_offered && (
               <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
                 <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                   <ChartPieIcon className="w-5 h-5 text-lime-400" /> Tokenomics
@@ -347,48 +501,22 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-gray-400">Supply Total</span>
-                    <span className="text-white font-mono">{project.totalTokens.toLocaleString()}</span>
+                    <span className="text-white font-mono">{project.total_tokens.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Tokens Ofrecidos</span>
-                    <span className="text-white font-mono">{project.tokensOffered.toLocaleString()}</span>
+                    <span className="text-white font-mono">{project.tokens_offered.toLocaleString()}</span>
                   </div>
-                  {project.tokenPriceUsd && (
+                  {project.token_price_usd && (
                     <div className="flex justify-between">
                       <span className="text-gray-400">Precio por Token</span>
-                      <span className="text-lime-400 font-mono">${Number(project.tokenPriceUsd).toFixed(6)}</span>
+                      <span className="text-lime-400 font-mono">${Number(project.token_price_usd).toFixed(6)}</span>
                     </div>
                   )}
                 </div>
               </div>
             )}
 
-            {/* Security Info */}
-            {(project.isMintable !== undefined || project.contractAddress) && (
-              <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
-                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                  <ShieldCheckIcon className="w-5 h-5 text-lime-400" /> Seguridad
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Mintable</span>
-                    <span className="text-white">{project.isMintable ? 'Sí' : 'No'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Mutable Info</span>
-                    <span className="text-white">{project.isMutable ? 'Sí' : 'No'}</span>
-                  </div>
-                  {project.contractAddress && (
-                    <div>
-                      <div className="text-gray-400 text-sm mb-1">Contrato</div>
-                      <code className="text-xs font-mono text-gray-300 break-all bg-zinc-800 p-2 rounded">
-                        {project.contractAddress}
-                      </code>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         </div>
 

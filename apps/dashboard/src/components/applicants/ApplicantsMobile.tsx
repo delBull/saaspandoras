@@ -1,5 +1,5 @@
-import { PlusIcon } from "lucide-react";
-import { Button } from "@saasfly/ui/button";
+//import { PlusIcon } from "lucide-react";
+//import { Button } from "@saasfly/ui/button";
 import { MobileModal } from "./shared/MobileModal";
 import { ProjectGrid } from "./shared/ProjectGrid";
 import type { Project } from "../../hooks/applicants/useApplicantsData";
@@ -17,16 +17,17 @@ export function ApplicantsMobile({
   approvedProjects,
   showMobileModal,
   setShowMobileModal,
-  onApplyClick,
+  //onApplyClick,
 }: ApplicantsMobileProps) {
   return (
     <div className="lg:hidden min-h-screen text-white">
       {/* Header */}
-      <div className="sticky top-0 z-20 flex justify-between items-center px-4 py-6 gap-6 bg-zinc-950/80 backdrop-blur-sm">
+      <div className="top-0 z-20 flex justify-between items-center px-4 py-6 gap-6 bg-zinc-950/80 backdrop-blur-sm">
         <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-bold text-white truncate">Proyectos</h1>
           <p className="text-gray-400 text-sm truncate">Proyectos aprobados listos para invertir</p>
         </div>
+        {/*
         <Button
           onClick={onApplyClick}
           size="sm"
@@ -35,6 +36,7 @@ export function ApplicantsMobile({
           <PlusIcon className="w-4 h-4 mr-1" />
           Aplicar
         </Button>
+        */}
       </div>
 
       {/* Mobile Button for pending projects */}
