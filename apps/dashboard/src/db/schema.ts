@@ -137,6 +137,11 @@ export const projects = pgTable("projects", {
   raisedAmount: decimal("raised_amount", { precision: 18, scale: 2 }).default("0.00"),
   returnsPaid: decimal("returns_paid", { precision: 18, scale: 2 }).default("0.00"),
   status: projectStatusEnum("status").default("pending").notNull(),
+
+  // Campos para featured projects
+  featured: boolean("featured").default(false).notNull(),
+  featuredButtonText: varchar("featured_button_text", { length: 100 }).default("Learn More"),
+
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

@@ -117,7 +117,7 @@ export default function AdminDashboardPage() {
         const userIsAdmin = (data.isAdmin ?? false) || (data.isSuperAdmin ?? false);
         // Debug logging only in development
         if (process.env.NODE_ENV === 'development') {
-          console.log('🏛️ Admin dashboard result:', userIsAdmin, { data });
+          console.log('🏛️ Admin dashboard auth result:', userIsAdmin, { data, walletAddress });
         }
 
         setIsAdmin(userIsAdmin);
@@ -147,6 +147,7 @@ export default function AdminDashboardPage() {
 
     const fetchData = async () => {
       try {
+        console.log('🏛️ Admin dashboard: Starting data fetch...');
         // Get current wallet address for headers
         let currentWalletAddress = null;
         if (typeof window !== 'undefined') {
@@ -164,6 +165,7 @@ export default function AdminDashboardPage() {
         }
 
         // Fetch projects - Send wallet authentication header
+        console.log('🏛️ Admin dashboard: Calling /api/admin/projects with wallet:', currentWalletAddress?.substring(0, 10) + '...');
         const projectsRes = await fetch('/api/admin/projects', {
           headers: {
             'Content-Type': 'application/json',
@@ -174,9 +176,20 @@ export default function AdminDashboardPage() {
             }),
           }
         });
+
+        console.log('🏛️ Admin dashboard: Projects response status:', projectsRes.status, projectsRes.statusText);
+
         if (projectsRes.ok) {
           const projectsData = await projectsRes.json() as Project[];
+          console.log('🏛️ Admin dashboard: Projects loaded successfully:', projectsData.length, projectsData);
           setProjects(projectsData);
+        } else {
+          const errorText = await projectsRes.text();
+          console.error('🏛️ Admin dashboard: Failed to load projects:', {
+            status: projectsRes.status,
+            statusText: projectsRes.statusText,
+            errorBody: errorText
+          });
         }
 
         // Fetch administrators - Send wallet authentication header
@@ -218,6 +231,7 @@ export default function AdminDashboardPage() {
           setUsers(usersData);
         }
       } catch (error) {
+        console.error('🏛️ Admin dashboard: Error fetching data:', error);
         // Silent error handling in production
       } finally {
         setLoading(false);
@@ -350,6 +364,7 @@ export default function AdminDashboardPage() {
                     {statusFilter === 'draft' && 'Completitud'}
                     {statusFilter !== 'draft' && 'Estado'}
                   </th>
+                  <th className="px-4 py-3 text-center font-semibold text-gray-300">Featured</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-300">Sitio Web</th>
                   <th className="px-4 py-3 text-center font-semibold text-gray-300">Detalles</th>
                   <th className="px-4 py-3 text-right font-semibold text-gray-300">Acciones</th>
@@ -358,7 +373,7 @@ export default function AdminDashboardPage() {
               <tbody className="divide-y divide-zinc-700 bg-zinc-900">
                 {filteredProjects.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-6 text-center text-gray-500">
+                    <td colSpan={7} className="px-4 py-6 text-center text-gray-500">
                       No hay proyectos registrados{statusFilter !== 'all' ? ` con estado "${statusFilter}"` : ''}.
                     </td>
                   </tr>
@@ -413,6 +428,39 @@ export default function AdminDashboardPage() {
                           </div>
                         </td>
                       )}
+
+                      {/* Featured Column */}
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          onClick={async () => {
+                            try {
+                              const response = await fetch(`/api/admin/projects/${p.id}/featured`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ featured: !p.featured })
+                              });
+
+                              if (response.ok) {
+                                // Update local state
+                                setProjects(prevProjects =>
+                                  prevProjects.map(proj =>
+                                    proj.id === p.id ? { ...proj, featured: !proj.featured } : proj
+                                  )
+                                );
+                              }
+                            } catch (error) {
+                              console.error('Error toggling featured status:', error);
+                            }
+                          }}
+                          className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                            p.featured
+                              ? 'bg-lime-500 hover:bg-lime-600 text-black'
+                              : 'bg-zinc-700 hover:bg-zinc-600 text-gray-300 hover:text-white'
+                          }`}
+                        >
+                          {p.featured ? '✓ Featured' : '☆ Feature'}
+                        </button>
+                      </td>
                       <td className="px-4 py-3">
                         {p.website ? (
                           <a href={p.website} target="_blank" className="text-lime-400 hover:underline" rel="noopener noreferrer">
@@ -467,7 +515,7 @@ export default function AdminDashboardPage() {
                     {/* Fila expandida con detalles de due diligence */}
                     {expandedProject === p.id && (
                       <tr className="bg-zinc-800/50">
-                        <td colSpan={6} className="px-6 py-4">
+                        <td colSpan={7} className="px-6 py-4">
                           <div className="space-y-4">
                             <h4 className="font-semibold text-lime-400 text-sm flex items-center gap-2">
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
