@@ -71,6 +71,13 @@
       "when": 1758826343708,
       "tag": "0009_nice_lady_mastermind",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1759619340859,
+      "tag": "0010_rich_marauders",
+      "breakpoints": true
     }
   ]
 }

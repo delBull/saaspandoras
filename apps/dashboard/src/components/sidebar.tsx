@@ -525,8 +525,8 @@ export function Sidebar({
                 )}
               </AnimatePresence>
 
-              {/* Multi-Chain Wallet Interface */}
-              {isClient && account && (
+              {/* Multi-Chain Wallet Interface - Only show when sidebar is expanded */}
+              {isClient && account && open && (
                 <div className="mt-3 space-y-2">
                   {/* Network Selector */}
                   <NetworkSelector

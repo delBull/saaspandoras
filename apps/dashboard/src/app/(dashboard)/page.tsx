@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useReadContract } from "thirdweb/react";
 import { usePersistedAccount } from "@/hooks/usePersistedAccount";
 import Link from "next/link";
 import { config } from "@/config";
-import { PromotionalBanner } from "@/components/promotional-banners";
+import { FeaturedProjectCard } from "@/components/FeaturedProjectCard";
 import { PandorasPoolRows } from "~/components/PandorasPoolRows";
 import { getContract } from "thirdweb";
 import { PANDORAS_POOL_ABI } from "@/lib/pandoras-pool-abi";
@@ -13,7 +13,7 @@ import { QrCodeIcon, UserGroupIcon, ArrowPathIcon, BanknotesIcon, LockClosedIcon
 import Image from "next/image";
 import { client } from "@/lib/thirdweb-client";
 import { motion, AnimatePresence } from "framer-motion";
-import useEmblaCarousel from 'embla-carousel-react'; 
+import useEmblaCarousel from 'embla-carousel-react';
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -55,36 +55,226 @@ function ActionButton({ icon, label, disabled = false, href }: { icon: React.Rea
   );
 }
 
+interface FeaturedProjectCardData {
+  id: string;
+  title: string;
+  subtitle: string;
+  actionText: string;
+  imageUrl?: string;
+  projectSlug: string;
+}
+
+// Función para obtener proyectos featured desde la API
+async function getFeaturedProjects(): Promise<FeaturedProjectCardData[]> {
+  console.log('🔍 Getting featured projects from API...');
+
+  try {
+    // Usar la API projects-basic que ya está funcionando
+    const baseUrl = typeof window !== 'undefined' ? '' : 'http://localhost:3000';
+    const response = await fetch(`${baseUrl}/api/projects-basic`, {
+      cache: 'no-store', // Asegurar datos frescos
+    });
+
+    if (!response.ok) {
+      throw new Error(`API responded with status ${response.status}`);
+    }
+
+    const projects = await response.json() as Record<string, unknown>[];
+
+    // Filtrar solo proyectos que estén marcados como featured en localStorage
+    const featuredProjects = projects.filter((project: Record<string, unknown>) => {
+      const projectId = Number(project.id);
+      const isFeatured = localStorage.getItem(`featured_${projectId}`) === 'true';
+      console.log(`🔍 Project "${String(project.title)}" (ID: ${projectId}) virtual featured status:`, isFeatured);
+      console.log(`🔍 localStorage key: featured_${projectId}, value:`, localStorage.getItem(`featured_${projectId}`));
+      return isFeatured;
+    });
+
+    console.log(`✅ Found ${featuredProjects.length} virtually featured projects out of ${projects.length} total projects`);
+
+    // Convertir proyectos featured a formato FeaturedProjectCardData
+    return featuredProjects.map((project: Record<string, unknown>, index: number) => ({
+      id: String(project.id ?? `featured-${index}`),
+      title: String(project.title ?? 'Proyecto sin título'),
+      subtitle: String(project.description ?? 'Descripción no disponible'),
+      actionText: 'Learn More',
+      imageUrl: String(project.coverPhotoUrl ?? '/images/default-project.jpg'),
+      projectSlug: String(project.slug ?? `project-${String(project.id)}`),
+    }));
+  } catch (error) {
+    console.error('❌ Error fetching featured projects:', error);
+
+    // Si la API falla, retornar array vacío - no necesitamos fallback hardcodeado
+    return [];
+  }
+}
+
 function BannersSection() {
-  const [emblaRef] = useEmblaCarousel({ align: 'start', skipSnaps: true, });
-  const initialBanners = [ { 
-    id: 1, title: "Hemp Project", subtitle: "Green GENESIS Become an early supporter", actionText: "Do more with hemp!", variant: "purple", imageUrl:"/images/sem.jpeg" }, { id: 2, title: "Mining Project", subtitle: "Ever dream about being a miner?", actionText: "Soon to be launched", variant: "green", imageUrl: "/images/blockbunny.jpg" }, { id: 3, title: "RA Wallet", subtitle: "Best blockchain wallet, rewards like no other", actionText: "Win by holding", variant: "red", imageUrl: "/images/narailoft.jpg" }, ] as const;
-  type BannerData = typeof initialBanners[number];
-  const [displayedBanners, setDisplayedBanners] = useState<readonly BannerData[]>(initialBanners);
-  const handleClose = (idToClose: number) => { setDisplayedBanners(prevBanners => prevBanners.filter(b => b.id !== idToClose)); };
-  if (displayedBanners.length === 0) return null;
-  return ( 
-  <div className="my-5"> 
-    <div className="hidden md:grid md:grid-cols-3 gap-2"> 
-      <AnimatePresence> 
-        {displayedBanners.map((banner) => ( 
-          <motion.div key={banner.id} layout initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} transition={{ type: "spring" }}> 
-          <PromotionalBanner {...banner} onClose={() => handleClose(banner.id)} /> 
-          </motion.div> ))} 
-          </AnimatePresence> 
-          </div> 
-          <div className="md:hidden overflow-hidden" ref={emblaRef}> 
-            <div className="flex -ml-4"> 
-              <AnimatePresence> 
-                {displayedBanners.map((banner) => ( 
-                  <motion.div key={banner.id} layout initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ x: -300, opacity: 0 }} transition={{ duration: 0.3 }} className="flex-none w-[90%] pl-4"> 
-                  <PromotionalBanner {...banner} onClose={() => handleClose(banner.id)} /> 
-                  </motion.div> ))} 
-                  </AnimatePresence> 
-                  </div> 
-                  </div> 
-                  </div> 
-                  );
+  const [emblaRef] = useEmblaCarousel({
+    align: 'start',
+    skipSnaps: false,
+    dragFree: false,
+    containScroll: 'trimSnaps'
+  });
+  const [emblaRefDesktop, emblaApiDesktop] = useEmblaCarousel({
+    align: 'start',
+    skipSnaps: false,
+    dragFree: false,
+    containScroll: 'trimSnaps'
+  });
+  const [featuredProjects, setFeaturedProjects] = useState<{id: string; title: string; subtitle: string; actionText: string; imageUrl?: string; projectSlug: string}[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [canScrollPrev, setCanScrollPrev] = useState(false);
+  const [canScrollNext, setCanScrollNext] = useState(false);
+
+  const scrollPrev = () => emblaApiDesktop?.scrollPrev();
+  const scrollNext = () => emblaApiDesktop?.scrollNext();
+
+  // Actualizar estado de navegación cuando cambie el scroll
+  const updateScrollState = useCallback(() => {
+    if (emblaApiDesktop) {
+      setCanScrollPrev(emblaApiDesktop.canScrollPrev());
+      setCanScrollNext(emblaApiDesktop.canScrollNext());
+    }
+  }, [emblaApiDesktop]);
+
+  useEffect(() => {
+    if (emblaApiDesktop) {
+      updateScrollState();
+      emblaApiDesktop.on('select', updateScrollState);
+      emblaApiDesktop.on('init', updateScrollState);
+    }
+  }, [emblaApiDesktop, updateScrollState]);
+
+  useEffect(() => {
+    const fetchFeaturedProjects = async () => {
+      try {
+        const projects = await getFeaturedProjects();
+        setFeaturedProjects(projects);
+      } catch (error) {
+        console.error('Error in fetchFeaturedProjects:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void fetchFeaturedProjects();
+  }, []);
+
+  const handleClose = (idToClose: string) => {
+    setFeaturedProjects(prevProjects => prevProjects.filter(p => p.id !== idToClose));
+  };
+
+  if (loading) {
+    return (
+      <div className="my-5">
+        <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="aspect-[1.1/1] bg-zinc-800 rounded-xl animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (featuredProjects.length === 0) return null;
+
+  return (
+    <div className="my-5">
+      {/* Desktop: Scroll horizontal cuando hay más de 3 proyectos */}
+      <div className="hidden md:block">
+        {featuredProjects.length <= 3 ? (
+          // 1-3 proyectos: Grid fijo de 3 columnas (vacías si hay menos)
+          <div className="grid grid-cols-3 gap-2">
+            {Array.from({ length: 3 }).map((_, index) => {
+              const project = featuredProjects[index];
+              return project ? (
+                <motion.div
+                  key={project.id}
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.8, opacity: 0 }}
+                  transition={{ type: "spring", duration: 0.5 }}
+                >
+                  <FeaturedProjectCard {...project} onClose={() => handleClose(project.id)} />
+                </motion.div>
+              ) : (
+                <div key={`empty-${index}`} className="aspect-[1.1/1]" />
+              );
+            })}
+          </div>
+        ) : (
+          // 4+ proyectos: Scroll horizontal con flechas
+          <div className="relative">
+            {/* Flecha izquierda - solo visible si puede hacer scroll hacia atrás */}
+            {canScrollPrev && (
+              <button
+                onClick={scrollPrev}
+                className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white/80 hover:text-white transition-all shadow-lg backdrop-blur-sm"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+            )}
+
+            {/* Contenedor scrollable */}
+            <div className="overflow-hidden" ref={emblaRefDesktop}>
+              <div className="flex gap-2">
+                <AnimatePresence mode="popLayout">
+                  {featuredProjects.map((project) => (
+                    <motion.div
+                      key={project.id}
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0.8, opacity: 0 }}
+                      transition={{ type: "spring", duration: 0.5 }}
+                      className="flex-none w-[calc(33.333333%-8px)] min-w-0"
+                    >
+                      <FeaturedProjectCard {...project} onClose={() => handleClose(project.id)} />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            </div>
+
+            {/* Flecha derecha - solo visible si puede hacer scroll hacia adelante */}
+            {canScrollNext && (
+              <button
+                onClick={scrollNext}
+                className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white/80 hover:text-white transition-all shadow-lg backdrop-blur-sm"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Mobile: Scroll horizontal mejorado */}
+      <div className="md:hidden overflow-hidden" ref={emblaRef}>
+        <div className="flex -ml-4">
+          <AnimatePresence mode="popLayout">
+            {featuredProjects.map((project) => (
+              <motion.div
+                key={project.id}
+                layout
+                initial={{ scale: 0.9, opacity: 0, x: 50 }}
+                animate={{ scale: 1, opacity: 1, x: 0 }}
+                exit={{ x: -300, opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="flex-none w-[85%] pl-4"
+              >
+                <FeaturedProjectCard {...project} onClose={() => handleClose(project.id)} />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function SecondaryTabs({ activeTab, setActiveTab }: { activeTab: string, setActiveTab: (tab: string) => void }) {
