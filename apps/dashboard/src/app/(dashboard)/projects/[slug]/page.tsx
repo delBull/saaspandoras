@@ -118,6 +118,16 @@ async function getProjectData(slug: string): Promise<ProjectData | null> {
       const project = projectResult[0] as unknown as ProjectData;
       console.log('✅ ProjectPage: Project found in database');
       console.log('✅ ProjectPage: Project slug from DB:', project.slug);
+
+      // Override featured status with virtual localStorage value
+      if (typeof window !== 'undefined') {
+        const virtualFeatured = localStorage.getItem(`featured_${project.id}`) === 'true';
+        if (virtualFeatured !== project.featured) {
+          console.log('🔄 ProjectPage: Overriding featured status with virtual value:', virtualFeatured);
+          project.featured = virtualFeatured;
+        }
+      }
+
       return project;
     }
 

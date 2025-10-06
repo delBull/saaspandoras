@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "~/db";
+import { sql } from "drizzle-orm";
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
 export const runtime = "nodejs";
@@ -31,6 +32,61 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
   try {
     const body: unknown = await request.json();
+    const url = new URL(request.url);
+
+    // Check if this is a request for featured functionality
+    if (url.pathname.includes('/featured')) {
+      console.log('🔄 Main API: Redirecting to featured API for project:', projectId);
+
+      // Re-export the featured API functionality here to avoid conflicts
+      const { featured, featuredButtonText } = body as { featured?: boolean; featuredButtonText?: string };
+
+      const updateData: { featured?: boolean; featuredButtonText?: string } = {};
+      if (typeof featured === 'boolean') {
+        updateData.featured = featured;
+      }
+      if (featuredButtonText !== undefined) {
+        updateData.featuredButtonText = featuredButtonText;
+      }
+
+      // Verificar que el proyecto existe
+      const existingProject = await db.query.projects.findFirst({
+        where: eq(projectsSchema.id, projectId),
+      });
+
+      if (!existingProject) {
+        return NextResponse.json({ message: "Proyecto no encontrado" }, { status: 404 });
+      }
+
+      // Actualizar featured status - simplified query
+      console.log('🔄 Main API: Executing featured update for project:', projectId);
+      console.log('🔄 Main API: Update data:', updateData);
+
+      // First, let's check what columns actually exist in the database
+      try {
+        const columnCheck = await db.execute(sql`SELECT column_name FROM information_schema.columns WHERE table_name = 'projects' AND column_name = 'featured_button_text'`);
+        console.log('🔄 Main API: Column check result:', columnCheck);
+      } catch (columnError) {
+        console.error('🔄 Main API: Column check failed:', columnError);
+      }
+
+      // Use Drizzle ORM syntax correctly - only return columns that definitely exist
+      const [updatedProject] = await db
+        .update(projectsSchema)
+        .set(updateData)
+        .where(eq(projectsSchema.id, projectId))
+        .returning({
+          id: projectsSchema.id,
+          title: projectsSchema.title,
+          slug: projectsSchema.slug,
+          featured: projectsSchema.featured,
+          status: projectsSchema.status
+        });
+
+      console.log('🔄 Main API: Drizzle result:', updatedProject);
+
+      return NextResponse.json(updatedProject, { status: 200 });
+    }
 
     // For PATCH, we only allow status updates for now
     if (typeof body !== 'object' || body === null || !('status' in body)) {
@@ -67,7 +123,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
     return NextResponse.json(updatedProject, { status: 200 });
   } catch (error) {
-    console.error("Error al actualizar el estado del proyecto:", error);
+    console.error("Error al actualizar el proyecto:", error);
     return NextResponse.json(
       { message: "Error interno del servidor." },
       { status: 500 }

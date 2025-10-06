@@ -78,6 +78,7 @@ export function FeaturedProjectCard({
     "bg-gradient-to-t from-black/70 via-black/40 to-transparent",
     "flex flex-col justify-between",
     "transition-all duration-300",
+    "min-h-[200px] md:min-h-[220px]",
   ].join(" ");
 
   return (
@@ -122,27 +123,32 @@ export function FeaturedProjectCard({
       />
       <div className="absolute inset-0 p-[1px] rounded-xl bg-gradient-to-r from-white/10 to-white/5" style={{ zIndex: 3 }}>
         <div className={cn(contentContainerClasses)}>
-          <div>
-            <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
-            <p className="text-sm text-gray-300/90 mb-4">{subtitle}</p>
+          <div className="flex-1 min-h-0">
+            <h3 className="text-lg font-semibold text-white mb-2 leading-tight">{title}</h3>
+            <p className="text-sm text-gray-300/90 mb-4 leading-relaxed line-clamp-3 overflow-hidden">
+              {subtitle.length > 120 ? `${subtitle.substring(0, 120)}...` : subtitle}
+            </p>
           </div>
-          <Link href={`/projects/${projectSlug}`}>
-            <button
-              className={
-                cn(
-                  "relative z-10 text-sm font-medium",
-                  "px-4 py-2 rounded-lg",
-                  "bg-gradient-to-r from-lime-400 to-emerald-400",
-                  "text-black font-semibold",
-                  "hover:opacity-90 hover:scale-105",
-                  "transform transition-all duration-200",
-                  "shadow-lg backdrop-blur-sm",
-                ) as unknown as string
-              }
-            >
-              {actionText}
-            </button>
-          </Link>
+          <div className="flex-shrink-0 mt-auto">
+            <Link href={`/projects/${projectSlug}`}>
+              <button
+                className={
+                  cn(
+                    "relative z-10 text-sm font-medium w-full sm:w-auto",
+                    "px-4 py-2.5 rounded-lg min-w-[120px]",
+                    "bg-gradient-to-r from-lime-400 to-emerald-400",
+                    "text-black font-semibold",
+                    "hover:opacity-90 hover:scale-105",
+                    "transform transition-all duration-200",
+                    "shadow-lg backdrop-blur-sm",
+                    "flex items-center justify-center"
+                  ) as unknown as string
+                }
+              >
+                {actionText}
+              </button>
+            </Link>
+          </div>
         </div>
       </div>
     </motion.div>
