@@ -32,27 +32,117 @@ export async function GET(_request: Request) {
       );
     }
 
-    // Try simple query first
+    // Try comprehensive query first
     try {
       const projectsData = await db.query.projects.findMany({
         orderBy: (projects, { desc }) => desc(projects.createdAt),
+        columns: {
+          // Basic info
+          id: true,
+          title: true,
+          description: true,
+          slug: true,
+          tagline: true,
+          businessCategory: true,
+          targetAmount: true,
+          status: true,
+          createdAt: true,
+
+          // URLs and links
+          website: true,
+          whitepaperUrl: true,
+          twitterUrl: true,
+          discordUrl: true,
+          telegramUrl: true,
+          linkedinUrl: true,
+          logoUrl: true,
+          coverPhotoUrl: true,
+          videoPitch: true,
+
+          // Due diligence
+          valuationDocumentUrl: true,
+          dueDiligenceReportUrl: true,
+          legalStatus: true,
+          fiduciaryEntity: true,
+
+          // Applicant info
+          applicantName: true,
+          applicantEmail: true,
+          applicantPhone: true,
+          applicantWalletAddress: true,
+
+          // Featured status
+          featured: true,
+          featuredButtonText: true,
+
+          // Financial info
+          totalValuationUsd: true,
+          tokenPriceUsd: true,
+          totalTokens: true,
+          tokensOffered: true,
+          tokenType: true,
+          estimatedApy: true,
+          yieldSource: true,
+          lockupPeriod: true,
+          fundUsage: true,
+
+          // Team and distribution
+          teamMembers: true,
+          advisors: true,
+          tokenDistribution: true,
+          contractAddress: true,
+          treasuryAddress: true,
+
+          // Technical
+          isMintable: true,
+          isMutable: true,
+          updateAuthorityAddress: true,
+          applicantPosition: true,
+          verificationAgreement: true,
+        }
       });
       console.log(`📊 Admin API: Found ${projectsData.length} projects`);
-      console.log('📊 Admin API: Projects data:', projectsData.slice(0, 2)); // Log first 2 projects
+      console.log('📊 Admin API: First project sample:', projectsData[0] ? {
+        id: projectsData[0].id,
+        title: projectsData[0].title,
+        website: projectsData[0].website,
+        hasLinks: !!(projectsData[0].website ?? projectsData[0].whitepaperUrl ?? projectsData[0].twitterUrl)
+      } : 'No projects');
 
       return NextResponse.json(projectsData);
     } catch (queryError) {
-      console.error('❌ Admin API: Query failed, trying simpler query:', queryError);
+      console.error('❌ Admin API: Comprehensive query failed, trying fallback query:', queryError);
 
-      // Try even simpler query
+      // Fallback: Try to get all columns using raw SQL
       try {
-        const simpleProjects = await db.execute(sql`SELECT id, title, status FROM projects ORDER BY created_at DESC`);
-        console.log(`📊 Admin API: Simple query found ${simpleProjects.length} projects`);
-        return NextResponse.json(simpleProjects);
-      } catch (simpleError) {
-        console.error('❌ Admin API: Even simple query failed:', simpleError);
+        const fallbackProjects = await db.execute(sql`
+          SELECT * FROM projects ORDER BY created_at DESC
+        `);
+        console.log(`📊 Admin API: Fallback query found ${fallbackProjects.length} projects`);
+
+        // Convert snake_case to camelCase for consistency
+        const formattedProjects = fallbackProjects.map(project => ({
+          id: project.id,
+          title: project.title,
+          description: project.description,
+          website: project.website,
+          whitepaperUrl: project.whitepaper_url,
+          twitterUrl: project.twitter_url,
+          discordUrl: project.discord_url,
+          telegramUrl: project.telegram_url,
+          linkedinUrl: project.linkedin_url,
+          businessCategory: project.business_category,
+          targetAmount: project.target_amount,
+          status: project.status,
+          createdAt: project.created_at,
+          // Add other fields as needed
+        }));
+
+        return NextResponse.json(formattedProjects);
+      } catch (fallbackError) {
+        console.error('❌ Admin API: Fallback query also failed:', fallbackError);
         return NextResponse.json(
-          { message: "Query failed", error: simpleError instanceof Error ? simpleError.message : 'Unknown query error' },
+          { message: "All queries failed", error: fallbackError instanceof Error ? fallbackError.message : 'Unknown query error' },
           { status: 500 }
         );
       }

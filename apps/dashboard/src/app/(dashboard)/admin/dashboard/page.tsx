@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { AdminSettings } from "@/components/admin/AdminSettings";
@@ -43,7 +43,35 @@ export default function AdminDashboardPage() {
     setActionsLoading,
   });
 
-  // 🙋‍♂️ IMPORTANT: This page requires CONFIRMED admin status, not tentative
+  // Load featured status from localStorage for all projects
+  const updateFeaturedStatus = useCallback(() => {
+    console.log('🔧 Admin: Loading featured status from localStorage for all projects');
+    setProjects(currentProjects => {
+      if (currentProjects.length > 0) {
+        const updatedProjects = currentProjects.map(project => {
+          const savedFeatured = localStorage.getItem(`featured_${project.id}`);
+          const virtualFeatured = savedFeatured === 'true';
+          console.log(`🔧 Admin: Project ${project.id} (${project.title}) virtual featured:`, virtualFeatured, 'raw value:', savedFeatured);
+          return {
+            ...project,
+            featured: virtualFeatured
+          };
+        });
+
+        console.log('🔧 Admin: Updated projects with featured status:', updatedProjects.map(p => ({ id: p.id, title: p.title, featured: p.featured })));
+        return updatedProjects;
+      }
+      return currentProjects;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (projects.length > 0) {
+      updateFeaturedStatus();
+    }
+  }, [projects.length, updateFeaturedStatus]);
+
+  // �‍♂️ IMPORTANT: This page requires CONFIRMED admin status, not tentative
   // Sidebars can show based on initial server props, but this endpoint requires API verification
 
   // Check admin status first with timeout fallback - ONLY ONCE
@@ -365,7 +393,6 @@ export default function AdminDashboardPage() {
                     {statusFilter !== 'draft' && 'Estado'}
                   </th>
                   <th className="px-4 py-3 text-center font-semibold text-gray-300">Featured</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-300">Sitio Web</th>
                   <th className="px-4 py-3 text-center font-semibold text-gray-300">Detalles</th>
                   <th className="px-4 py-3 text-right font-semibold text-gray-300">Acciones</th>
                 </tr>
@@ -373,7 +400,7 @@ export default function AdminDashboardPage() {
               <tbody className="divide-y divide-zinc-700 bg-zinc-900">
                 {filteredProjects.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-6 text-center text-gray-500">
+                    <td colSpan={6} className="px-4 py-6 text-center text-gray-500">
                       No hay proyectos registrados{statusFilter !== 'all' ? ` con estado "${statusFilter}"` : ''}.
                     </td>
                   </tr>
@@ -431,44 +458,48 @@ export default function AdminDashboardPage() {
 
                       {/* Featured Column */}
                       <td className="px-4 py-3 text-center">
-                        <button
-                          onClick={async () => {
-                            try {
-                              const response = await fetch(`/api/admin/projects/${p.id}/featured`, {
-                                method: 'PATCH',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ featured: !p.featured })
-                              });
+                        <div className="flex flex-col items-center gap-2">
+                          {p.featured && (
+                            <div className="flex items-center gap-1 text-lime-400 text-xs">
+                              <div className="w-2 h-2 bg-lime-400 rounded-full animate-pulse"></div>
+                            </div>
+                          )}
+                          <button
+                            onClick={() => {
+                              try {
+                                const newFeaturedStatus = !p.featured;
+                                console.log('🔧 Admin: Toggling featured status for project:', p.id, 'from:', p.featured, 'to:', newFeaturedStatus);
+                                console.log('🔧 Admin: Project details:', { id: p.id, title: p.title, currentFeatured: p.featured });
 
-                              if (response.ok) {
-                                // Update local state
+                                // Use virtual featured management with localStorage
+                                console.log('🔧 Admin: Saving to localStorage:', `featured_${p.id}`, newFeaturedStatus);
+                                localStorage.setItem(`featured_${p.id}`, JSON.stringify(newFeaturedStatus));
+
+                                // Update local state immediately
                                 setProjects(prevProjects =>
                                   prevProjects.map(proj =>
-                                    proj.id === p.id ? { ...proj, featured: !proj.featured } : proj
+                                    proj.id === p.id ? { ...proj, featured: newFeaturedStatus } : proj
                                   )
                                 );
+
+                                console.log('🔧 Admin: Featured status updated virtually for project:', p.id, 'new status:', newFeaturedStatus);
+
+                                // Verify the change was saved
+                                const verifyValue = localStorage.getItem(`featured_${p.id}`);
+                                console.log('🔧 Admin: Verification - localStorage value for', `featured_${p.id}`, 'is:', verifyValue);
+                              } catch (error) {
+                                console.error('🔧 Admin: Error updating featured status:', error);
                               }
-                            } catch (error) {
-                              console.error('Error toggling featured status:', error);
-                            }
-                          }}
-                          className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                            p.featured
-                              ? 'bg-lime-500 hover:bg-lime-600 text-black'
-                              : 'bg-zinc-700 hover:bg-zinc-600 text-gray-300 hover:text-white'
-                          }`}
-                        >
-                          {p.featured ? '✓ Featured' : '☆ Feature'}
-                        </button>
-                      </td>
-                      <td className="px-4 py-3">
-                        {p.website ? (
-                          <a href={p.website} target="_blank" className="text-lime-400 hover:underline" rel="noopener noreferrer">
-                            Visitar
-                          </a>
-                        ) : (
-                          <span className="text-gray-400">—</span>
-                        )}
+                            }}
+                            className={`px-3 py-1.5 rounded text-xs font-medium transition-all duration-200 ${
+                              p.featured
+                                ? 'bg-lime-500 hover:bg-lime-600 text-black shadow-lg ring-2 ring-lime-400/30'
+                                : 'bg-zinc-700 hover:bg-zinc-600 text-gray-300 hover:text-white border border-zinc-600 hover:border-zinc-500'
+                            }`}
+                          >
+                            {p.featured ? '✓ Featured' : '☆ Feature'}
+                          </button>
+                        </div>
                       </td>
                   {/* Columna de Detalles/Due Diligence */}
                   <td className="px-4 py-3 text-center">
@@ -515,8 +546,20 @@ export default function AdminDashboardPage() {
                     {/* Fila expandida con detalles de due diligence */}
                     {expandedProject === p.id && (
                       <tr className="bg-zinc-800/50">
-                        <td colSpan={7} className="px-6 py-4">
+                        <td colSpan={6} className="px-6 py-4">
                           <div className="space-y-4">
+                            {/* Debug info - remove in production */}
+                            {process.env.NODE_ENV === 'development' && (
+                              <div className="bg-yellow-900/20 border border-yellow-600 rounded p-2 text-xs">
+                                <strong>Debug - Project {p.id} data:</strong><br/>
+                                website: {p.website ?? 'null'}<br/>
+                                whitepaperUrl: {p.whitepaperUrl ?? 'null'}<br/>
+                                twitterUrl: {p.twitterUrl ?? 'null'}<br/>
+                                discordUrl: {p.discordUrl ?? 'null'}<br/>
+                                telegramUrl: {p.telegramUrl ?? 'null'}<br/>
+                                linkedinUrl: {p.linkedinUrl ?? 'null'}
+                              </div>
+                            )}
                             <h4 className="font-semibold text-lime-400 text-sm flex items-center gap-2">
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -585,6 +628,16 @@ export default function AdminDashboardPage() {
                               <div className="space-y-2">
                                 <h5 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Enlaces Públicos</h5>
                                 <div className="space-y-1">
+                                  {p.website && (
+                                    <a
+                                      href={p.website}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="block px-2 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-xs text-emerald-300 hover:text-emerald-200"
+                                    >
+                                      🌐 Sitio Web
+                                    </a>
+                                  )}
                                   {p.whitepaperUrl && (
                                     <a
                                       href={p.whitepaperUrl}
@@ -635,7 +688,7 @@ export default function AdminDashboardPage() {
                                       💼 LinkedIn
                                     </a>
                                   )}
-                                  {!p.whitepaperUrl && !p.twitterUrl && !p.discordUrl && !p.telegramUrl && !p.linkedinUrl && (
+                                  {!p.website && !p.whitepaperUrl && !p.twitterUrl && !p.discordUrl && !p.telegramUrl && !p.linkedinUrl && (
                                     <span className="block px-2 py-1 bg-zinc-800 text-gray-500 rounded text-xs">
                                       Sin enlaces registrados
                                     </span>

@@ -54,7 +54,7 @@ export async function GET() {
 
       const projects = realProjects as unknown as ProjectQueryResult[];
       console.log(`✅ Basic API: Found ${projects.length} real projects in database`);
-      console.log('🔍 Basic API: Project slugs from DB:', projects.map(p => p.slug));
+      console.log('🔍 Basic API: Real project IDs and titles:', projects.map(p => ({ id: p.id, title: p.title, slug: p.slug })));
 
       if (projects.length > 0) {
         const formattedProjects: FormattedProject[] = projects.map((project: ProjectQueryResult): FormattedProject => ({

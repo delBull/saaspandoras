@@ -81,9 +81,20 @@ async function getFeaturedProjects(): Promise<FeaturedProjectCardData[]> {
 
     const projects = await response.json() as Record<string, unknown>[];
 
-    // Convertir proyectos reales a formato FeaturedProjectCardData
-    return projects.slice(0, 3).map((project: Record<string, unknown>, index: number) => ({
-      id: String(project.id ?? `fallback-${index}`),
+    // Filtrar solo proyectos que estén marcados como featured en localStorage
+    const featuredProjects = projects.filter((project: Record<string, unknown>) => {
+      const projectId = Number(project.id);
+      const isFeatured = localStorage.getItem(`featured_${projectId}`) === 'true';
+      console.log(`🔍 Project "${String(project.title)}" (ID: ${projectId}) virtual featured status:`, isFeatured);
+      console.log(`🔍 localStorage key: featured_${projectId}, value:`, localStorage.getItem(`featured_${projectId}`));
+      return isFeatured;
+    });
+
+    console.log(`✅ Found ${featuredProjects.length} virtually featured projects out of ${projects.length} total projects`);
+
+    // Convertir proyectos featured a formato FeaturedProjectCardData
+    return featuredProjects.slice(0, 3).map((project: Record<string, unknown>, index: number) => ({
+      id: String(project.id ?? `featured-${index}`),
       title: String(project.title ?? 'Proyecto sin título'),
       subtitle: String(project.description ?? 'Descripción no disponible'),
       actionText: 'Learn More',
