@@ -458,11 +458,9 @@ export default function AdminDashboardPage() {
 
                       {/* Featured Column */}
                       <td className="px-4 py-3 text-center">
-                        <div className="flex flex-col items-center gap-2">
+                        <div className="flex items-center justify-center gap-2">
                           {p.featured && (
-                            <div className="flex items-center gap-1 text-lime-400 text-xs">
-                              <div className="w-2 h-2 bg-lime-400 rounded-full animate-pulse"></div>
-                            </div>
+                            <div className="w-2 h-2 bg-lime-400 rounded-full animate-pulse"></div>
                           )}
                           <button
                             onClick={() => {
