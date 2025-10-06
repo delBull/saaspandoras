@@ -83,6 +83,8 @@ export default function AdminDashboardPage() {
       if (isAdmin !== null) return;
 
       try {
+        console.log('🔐 Admin dashboard - Checking user admin privileges...');
+
         // Try multiple sources for wallet address (client-side only)
         let walletAddress = null;
         if (typeof window !== 'undefined') {
@@ -95,9 +97,7 @@ export default function AdminDashboardPage() {
                 walletAddress = parsedSession.address?.toLowerCase();
               }
             } catch (e) {
-              if (process.env.NODE_ENV === 'development') {
-                console.warn('❌ Error reading wallet session from localStorage:', e);
-              }
+              console.warn('❌ Error reading wallet session from localStorage:', e);
             }
           }
 
@@ -109,31 +109,36 @@ export default function AdminDashboardPage() {
                 .find((row) => row.startsWith('wallet-address='))
                 ?.split('=')[1];
             } catch (e) {
-              if (process.env.NODE_ENV === 'development') {
-                console.warn('❌ Error reading wallet address from cookies:', e);
-              }
+              console.warn('❌ Error reading wallet address from cookies:', e);
             }
           }
         }
 
-        if (!walletAddress) {
+        const requestHeaders: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+
+        // Send wallet address if we found it (crucial for admin verification)
+        if (walletAddress) {
+          // Try multiple header names in case Vercel filters some
+          requestHeaders['x-thirdweb-address'] = walletAddress;
+          requestHeaders['x-wallet-address'] = walletAddress;
+          requestHeaders['x-user-address'] = walletAddress;
+          console.log('🆔 Admin dashboard - Using wallet:', walletAddress);
+        } else {
+          console.log('⚠️ Admin dashboard - No wallet address found in localStorage or cookies!');
           setAuthError('No se pudo obtener dirección de wallet');
           setIsAdmin(false);
           return;
         }
-
-        const requestHeaders: Record<string, string> = {
-          'Content-Type': 'application/json',
-          'x-thirdweb-address': walletAddress,
-          'x-wallet-address': walletAddress,
-          'x-user-address': walletAddress,
-        };
 
         const response = await fetch('/api/admin/verify', {
           headers: requestHeaders,
         });
 
         if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ API verification failed:', response.status, errorText);
           setAuthError(`Verificación fallida: ${response.status}`);
           setIsAdmin(false);
           return;
@@ -145,7 +150,7 @@ export default function AdminDashboardPage() {
         const userIsAdmin = (data.isAdmin ?? false) || (data.isSuperAdmin ?? false);
         // Debug logging only in development
         if (process.env.NODE_ENV === 'development') {
-          console.log('🏛️ Admin dashboard auth result:', userIsAdmin, { data, walletAddress });
+          console.log('🏛️ Admin dashboard result:', userIsAdmin, { data });
         }
 
         setIsAdmin(userIsAdmin);
@@ -175,7 +180,6 @@ export default function AdminDashboardPage() {
 
     const fetchData = async () => {
       try {
-        console.log('🏛️ Admin dashboard: Starting data fetch...');
         // Get current wallet address for headers
         let currentWalletAddress = null;
         if (typeof window !== 'undefined') {
@@ -193,7 +197,6 @@ export default function AdminDashboardPage() {
         }
 
         // Fetch projects - Send wallet authentication header
-        console.log('🏛️ Admin dashboard: Calling /api/admin/projects with wallet:', currentWalletAddress?.substring(0, 10) + '...');
         const projectsRes = await fetch('/api/admin/projects', {
           headers: {
             'Content-Type': 'application/json',
@@ -204,20 +207,10 @@ export default function AdminDashboardPage() {
             }),
           }
         });
-
-        console.log('🏛️ Admin dashboard: Projects response status:', projectsRes.status, projectsRes.statusText);
-
+        console.log('Projects API response:', projectsRes.status, projectsRes.statusText);
         if (projectsRes.ok) {
           const projectsData = await projectsRes.json() as Project[];
-          console.log('🏛️ Admin dashboard: Projects loaded successfully:', projectsData.length, projectsData);
           setProjects(projectsData);
-        } else {
-          const errorText = await projectsRes.text();
-          console.error('🏛️ Admin dashboard: Failed to load projects:', {
-            status: projectsRes.status,
-            statusText: projectsRes.statusText,
-            errorBody: errorText
-          });
         }
 
         // Fetch administrators - Send wallet authentication header
@@ -231,6 +224,7 @@ export default function AdminDashboardPage() {
             }),
           }
         });
+        console.log('Admins API response:', adminsRes.status, adminsRes.statusText);
         if (adminsRes.ok) {
           const rawAdminsData = await adminsRes.json() as (Omit<AdminData, 'role'> & { role?: string })[];
           // Ensure each admin has a role property (default to 'admin')
@@ -254,12 +248,12 @@ export default function AdminDashboardPage() {
             }),
           }
         });
+        console.log('Users API response:', usersRes.status, usersRes.statusText);
         if (usersRes.ok) {
           const usersData = await usersRes.json() as UserData[];
           setUsers(usersData);
         }
       } catch (error) {
-        console.error('🏛️ Admin dashboard: Error fetching data:', error);
         // Silent error handling in production
       } finally {
         setLoading(false);
