@@ -23,7 +23,7 @@ interface WalletSession {
   shouldReconnect: boolean;
 }
 
-export const dynamic = 'force-dynamic'; // Disable prerendering for pages using cookies
+export const dynamic = 'force-dynamic';
 
 export default function AdminDashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -319,7 +319,7 @@ export default function AdminDashboardPage() {
     <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-white">Dashboard Admin</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-white">Admin Dashboard</h1>
           <p className="text-gray-400 text-sm sm:text-base">
             Gestión de la plataforma
           </p>
