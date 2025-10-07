@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useReadContract } from "thirdweb/react";
 import { usePersistedAccount } from "@/hooks/usePersistedAccount";
+import { useFeaturedProjects } from "@/hooks/useFeaturedProjects";
 import Link from "next/link";
 import { config } from "@/config";
 import { FeaturedProjectCard } from "@/components/FeaturedProjectCard";
@@ -64,9 +65,9 @@ interface FeaturedProjectCardData {
   projectSlug: string;
 }
 
-// Función para obtener proyectos featured desde la API
-async function getFeaturedProjects(): Promise<FeaturedProjectCardData[]> {
-  console.log('🔍 Getting featured projects from API...');
+// Función para obtener proyectos featured desde la API usando el hook global
+async function getFeaturedProjects(featuredProjectIds: Set<number>): Promise<FeaturedProjectCardData[]> {
+  console.log('🔍 Getting featured projects from API...', Array.from(featuredProjectIds));
 
   try {
     // Usar la API projects-basic que ya está funcionando
@@ -81,16 +82,15 @@ async function getFeaturedProjects(): Promise<FeaturedProjectCardData[]> {
 
     const projects = await response.json() as Record<string, unknown>[];
 
-    // Filtrar solo proyectos que estén marcados como featured en localStorage
+    // Filtrar solo proyectos que estén marcados como featured usando el hook global
     const featuredProjects = projects.filter((project: Record<string, unknown>) => {
       const projectId = Number(project.id);
-      const isFeatured = localStorage.getItem(`featured_${projectId}`) === 'true';
-      console.log(`🔍 Project "${String(project.title)}" (ID: ${projectId}) virtual featured status:`, isFeatured);
-      console.log(`🔍 localStorage key: featured_${projectId}, value:`, localStorage.getItem(`featured_${projectId}`));
+      const isFeatured = featuredProjectIds.has(projectId);
+      console.log(`🔍 Project "${String(project.title)}" (ID: ${projectId}) featured status:`, isFeatured);
       return isFeatured;
     });
 
-    console.log(`✅ Found ${featuredProjects.length} virtually featured projects out of ${projects.length} total projects`);
+    console.log(`✅ Found ${featuredProjects.length} featured projects out of ${projects.length} total projects`);
 
     // Convertir proyectos featured a formato FeaturedProjectCardData
     return featuredProjects.map((project: Record<string, unknown>, index: number) => ({
@@ -127,6 +127,9 @@ function BannersSection() {
   const [canScrollPrev, setCanScrollPrev] = useState(false);
   const [canScrollNext, setCanScrollNext] = useState(false);
 
+  // Usar el hook global de featured projects
+  const { featuredProjectIds } = useFeaturedProjects();
+
   const scrollPrev = () => emblaApiDesktop?.scrollPrev();
   const scrollNext = () => emblaApiDesktop?.scrollNext();
 
@@ -149,7 +152,7 @@ function BannersSection() {
   useEffect(() => {
     const fetchFeaturedProjects = async () => {
       try {
-        const projects = await getFeaturedProjects();
+        const projects = await getFeaturedProjects(featuredProjectIds);
         setFeaturedProjects(projects);
       } catch (error) {
         console.error('Error in fetchFeaturedProjects:', error);
@@ -159,7 +162,7 @@ function BannersSection() {
     };
 
     void fetchFeaturedProjects();
-  }, []);
+  }, [featuredProjectIds]); // Depend on featuredProjectIds to re-fetch when featured status changes
 
   const handleClose = (idToClose: string) => {
     setFeaturedProjects(prevProjects => prevProjects.filter(p => p.id !== idToClose));
