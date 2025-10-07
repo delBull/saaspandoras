@@ -549,9 +549,13 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                 </div>
               </div>
             </div>
+          </div>
         </div>
+
+        {/* Additional Content Sections */}
+        <div className="relative">
           {/* Left Column - Project Details */}
-          <div className="xl:mr-80 2xl:mr-96 space-y-8">
+          <div className="lg:mr-80 xl:mr-80 2xl:mr-80 space-y-8">
             {/* Social Links */}
             <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
               <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
