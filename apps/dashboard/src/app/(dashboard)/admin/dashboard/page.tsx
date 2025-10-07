@@ -321,7 +321,7 @@ export default function AdminDashboardPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-white">Admin Dashboard</h1>
           <p className="text-gray-400 text-sm sm:text-base">
-            Gestión de la plataforma
+            Gestionar plataforma
           </p>
         </div>
         <Link
