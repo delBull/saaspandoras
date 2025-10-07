@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { AdminSettings } from "@/components/admin/AdminSettings";
 import { UnauthorizedAccess } from "@/components/admin/UnauthorizedAccess";
 import { calculateProjectCompletion } from "@/lib/project-utils";
 import { useProjectActions } from "@/hooks/useProjectActions";
+import { useFeaturedProjects } from "@/hooks/useFeaturedProjects";
 import type { ProjectStatus, Project, AdminData, UserData } from "@/types/admin";
 
 // Datos de ejemplo para swaps (puedes conectar esto a tu API real después)
@@ -43,33 +44,22 @@ export default function AdminDashboardPage() {
     setActionsLoading,
   });
 
-  // Load featured status from localStorage for all projects
-  const updateFeaturedStatus = useCallback(() => {
-    console.log('🔧 Admin: Loading featured status from localStorage for all projects');
-    setProjects(currentProjects => {
-      if (currentProjects.length > 0) {
-        const updatedProjects = currentProjects.map(project => {
-          const savedFeatured = localStorage.getItem(`featured_${project.id}`);
-          const virtualFeatured = savedFeatured === 'true';
-          console.log(`🔧 Admin: Project ${project.id} (${project.title}) virtual featured:`, virtualFeatured, 'raw value:', savedFeatured);
-          return {
-            ...project,
-            featured: virtualFeatured
-          };
-        });
+  // Use global featured projects hook
+  const { toggleFeatured, isFeatured } = useFeaturedProjects();
 
-        console.log('🔧 Admin: Updated projects with featured status:', updatedProjects.map(p => ({ id: p.id, title: p.title, featured: p.featured })));
-        return updatedProjects;
-      }
-      return currentProjects;
-    });
-  }, []);
-
+  // Update projects with featured status from global hook
   useEffect(() => {
+    console.log('🔧 Admin: Updating projects with featured status from global hook');
     if (projects.length > 0) {
-      updateFeaturedStatus();
+      const updatedProjects = projects.map(project => ({
+        ...project,
+        featured: isFeatured(Number(project.id))
+      }));
+
+      setProjects(updatedProjects);
+      console.log('🔧 Admin: Updated projects with featured status:', updatedProjects.map(p => ({ id: p.id, title: p.title, featured: p.featured })));
     }
-  }, [projects.length, updateFeaturedStatus]);
+  }, [projects, isFeatured]);
 
   // �‍♂️ IMPORTANT: This page requires CONFIRMED admin status, not tentative
   // Sidebars can show based on initial server props, but this endpoint requires API verification
@@ -326,17 +316,17 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Dashboard Admin</h1>
-          <p className="text-gray-400">
+          <h1 className="text-xl sm:text-2xl font-bold text-white">Dashboard Admin</h1>
+          <p className="text-gray-400 text-sm sm:text-base">
             Gestión de la plataforma
           </p>
         </div>
         <Link
           href="/admin/projects/new/edit"
-          className="px-4 py-2 bg-lime-500 hover:bg-lime-600 text-zinc-900 rounded-md font-semibold transition"
+          className="px-3 sm:px-4 py-2 bg-lime-500 hover:bg-lime-600 text-zinc-900 rounded-md font-semibold transition text-sm sm:text-base whitespace-nowrap"
         >
           ➕ Añadir Proyecto
         </Link>
@@ -346,10 +336,10 @@ export default function AdminDashboardPage() {
         {/* Tab de proyectos */}
         <div key="projects-tab" className="space-y-6">
           {/* Filtros de estado */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
             <button
               onClick={() => setStatusFilter('all')}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+              className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors ${
                 statusFilter === 'all'
                   ? 'bg-lime-500 text-black'
                   : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600'
@@ -362,7 +352,7 @@ export default function AdminDashboardPage() {
                 <button
                   key={status}
                   onClick={() => setStatusFilter(status as ProjectStatus)}
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                  className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors ${
                     statusFilter === status
                       ? 'bg-lime-500 text-black'
                       : `${
@@ -465,13 +455,12 @@ export default function AdminDashboardPage() {
                           <button
                             onClick={() => {
                               try {
+                                const projectId = Number(p.id);
                                 const newFeaturedStatus = !p.featured;
-                                console.log('🔧 Admin: Toggling featured status for project:', p.id, 'from:', p.featured, 'to:', newFeaturedStatus);
-                                console.log('🔧 Admin: Project details:', { id: p.id, title: p.title, currentFeatured: p.featured });
+                                console.log('🔧 Admin: Toggling featured status for project:', projectId, 'from:', p.featured, 'to:', newFeaturedStatus);
 
-                                // Use virtual featured management with localStorage
-                                console.log('🔧 Admin: Saving to localStorage:', `featured_${p.id}`, newFeaturedStatus);
-                                localStorage.setItem(`featured_${p.id}`, JSON.stringify(newFeaturedStatus));
+                                // Use global featured hook
+                                toggleFeatured(projectId);
 
                                 // Update local state immediately
                                 setProjects(prevProjects =>
@@ -480,11 +469,7 @@ export default function AdminDashboardPage() {
                                   )
                                 );
 
-                                console.log('🔧 Admin: Featured status updated virtually for project:', p.id, 'new status:', newFeaturedStatus);
-
-                                // Verify the change was saved
-                                const verifyValue = localStorage.getItem(`featured_${p.id}`);
-                                console.log('🔧 Admin: Verification - localStorage value for', `featured_${p.id}`, 'is:', verifyValue);
+                                console.log('🔧 Admin: Featured status updated globally for project:', projectId);
                               } catch (error) {
                                 console.error('🔧 Admin: Error updating featured status:', error);
                               }
