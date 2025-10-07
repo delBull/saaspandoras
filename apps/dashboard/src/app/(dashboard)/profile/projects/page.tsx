@@ -59,6 +59,7 @@ export default function ProfileProjectsPage() {
         })
         .then((data) => {
           const [userProfile, projects] = data as [UserData, Project[]];
+          console.log('Profile data received:', userProfile);
           setUserProfile(userProfile);
 
           // 🏦 WALLET-BASED FILTERING ONLY
@@ -79,6 +80,7 @@ export default function ProfileProjectsPage() {
             );
           }
 
+          console.log('Filtered projects:', userProjects.length);
           setUserProjects(userProjects);
         })
         .catch(err => {

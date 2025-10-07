@@ -65,6 +65,11 @@ export function usePersistedAccount() {
       localStorage.setItem("wallet-session", JSON.stringify(data));
       setSession(data);
       console.log("💾 Guardada sesión wallet real:", data);
+      console.log("🔍 Wallet type analysis:", {
+        walletId: activeWallet.id,
+        isSocialWallet,
+        shouldReconnect: !isSocialWallet
+      });
     }
   }, [account?.address, activeWallet]);
 
@@ -85,6 +90,8 @@ export function usePersistedAccount() {
       localStorage.setItem("wallet-session", JSON.stringify(data));
       setSession(data);
       console.log("💾 Guardada sesión social login:", data);
+      console.log("🚫 Social login detectado - shouldReconnect:", data.shouldReconnect);
+      console.log("🔒 Social login wallet - reconnection disabled");
     }
   }, [account?.address, activeWallet]);
 
