@@ -37,24 +37,11 @@ export async function GET() {
       console.log("❌ NO SESSION USERID FOUND");
     }
 
-    // 🚫 DEBUG OVERRIDE - Force admin for testing
-    const debugOverride = session?.userId?.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase();
-    console.log("🛠️ DEBUG OVERRIDE LOGIC:");
-    console.log("- session?.userId exists:", !!session?.userId);
-    console.log("- session?.userId.toLowerCase():", session?.userId?.toLowerCase());
-    console.log("- SUPER_ADMIN_WALLET.toLowerCase():", SUPER_ADMIN_WALLET.toLowerCase());
-    console.log("- override should be:", debugOverride);
+    console.log("� FINAL RESULT:", { isAdmin: userIsAdmin, isSuperAdmin: userIsSuperAdmin });
 
-    console.log("📋 FINAL RESULT:", { isAdmin: userIsAdmin, isSuperAdmin: userIsSuperAdmin });
-    console.log("🛠️ DEBUG OVERRIDE:", debugOverride ? "FORCE ACTIVATED" : "FORCE NOT ACTIVATED");
+    console.log("🎯 FINAL DEBUG RETURN:", { isAdmin: userIsAdmin, isSuperAdmin: userIsSuperAdmin });
 
-    // Remove this debug override once production deploy works correctly
-    const finalIsAdmin = debugOverride ? true : userIsAdmin;
-    const finalIsSuperAdmin = debugOverride ? true : userIsSuperAdmin;
-
-    console.log("🎯 FINAL DEBUG RETURN:", { isAdmin: finalIsAdmin, isSuperAdmin: finalIsSuperAdmin });
-
-    return NextResponse.json({ isAdmin: finalIsAdmin, isSuperAdmin: finalIsSuperAdmin });
+    return NextResponse.json({ isAdmin: userIsAdmin, isSuperAdmin: userIsSuperAdmin });
   } catch (error) {
     console.error("💥 CRITICAL ERROR in /api/admin/verify:", error);
     return NextResponse.json({ isAdmin: false, isSuperAdmin: false }, { status: 500 });

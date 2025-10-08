@@ -47,20 +47,6 @@ export default function AdminDashboardPage() {
   // Use global featured projects hook
   const { toggleFeatured, isFeatured } = useFeaturedProjects();
 
-  // Update projects with featured status from global hook
-  useEffect(() => {
-    console.log('🔧 Admin: Updating projects with featured status from global hook');
-    if (projects.length > 0) {
-      const updatedProjects = projects.map(project => ({
-        ...project,
-        featured: isFeatured(Number(project.id))
-      }));
-
-      setProjects(updatedProjects);
-      console.log('🔧 Admin: Updated projects with featured status:', updatedProjects.map(p => ({ id: p.id, title: p.title, featured: p.featured })));
-    }
-  }, [projects, isFeatured]);
-
   // �‍♂️ IMPORTANT: This page requires CONFIRMED admin status, not tentative
   // Sidebars can show based on initial server props, but this endpoint requires API verification
 
@@ -449,20 +435,21 @@ export default function AdminDashboardPage() {
                       {/* Featured Column */}
                       <td className="px-4 py-3 text-center">
                         <div className="flex items-center justify-center gap-2">
-                          {p.featured && (
+                          {isFeatured(Number(p.id)) && (
                             <div className="w-2 h-2 bg-lime-400 rounded-full animate-pulse"></div>
                           )}
                           <button
                             onClick={() => {
                               try {
                                 const projectId = Number(p.id);
-                                const newFeaturedStatus = !p.featured;
-                                console.log('🔧 Admin: Toggling featured status for project:', projectId, 'from:', p.featured, 'to:', newFeaturedStatus);
+                                const currentFeaturedStatus = isFeatured(projectId);
+                                const newFeaturedStatus = !currentFeaturedStatus;
+                                console.log('🔧 Admin: Toggling featured status for project:', projectId, 'from:', currentFeaturedStatus, 'to:', newFeaturedStatus);
 
                                 // Use global featured hook
                                 toggleFeatured(projectId);
 
-                                // Update local state immediately
+                                // Update local state immediately for visual feedback
                                 setProjects(prevProjects =>
                                   prevProjects.map(proj =>
                                     proj.id === p.id ? { ...proj, featured: newFeaturedStatus } : proj
@@ -475,12 +462,12 @@ export default function AdminDashboardPage() {
                               }
                             }}
                             className={`px-3 py-1.5 rounded text-xs font-medium transition-all duration-200 ${
-                              p.featured
+                              isFeatured(Number(p.id))
                                 ? 'bg-lime-500 hover:bg-lime-600 text-black shadow-lg ring-2 ring-lime-400/30'
                                 : 'bg-zinc-700 hover:bg-zinc-600 text-gray-300 hover:text-white border border-zinc-600 hover:border-zinc-500'
                             }`}
                           >
-                            {p.featured ? '✓ Featured' : '☆ Feature'}
+                            {isFeatured(Number(p.id)) ? '✓ Featured' : '☆ Feature'}
                           </button>
                         </div>
                       </td>
