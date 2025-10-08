@@ -78,8 +78,8 @@ export function useProjectActions({ setActionsLoading }: ProjectActionsProps) {
   const rejectProject = async (projectId: string, projectTitle: string) => {
     const rejectionType = window.confirm(`Proyecto: "${projectTitle}"\n\n¿Es un "No completado" (continúa aplicando) o "Rechazado" definitivamente?`);
 
-    const newStatus = rejectionType ? 'rejected' : 'incomplete';
-    const statusText = rejectionType ? 'rechazado' : 'marcado como no completado';
+    const newStatus = 'rejected';
+    const statusText = 'rechazado';
 
     const confirmMessage = `¿${statusText} el proyecto "${projectTitle}"?\n\n${
       rejectionType
@@ -113,14 +113,12 @@ export function useProjectActions({ setActionsLoading }: ProjectActionsProps) {
     }
   };
 
-  // Function to change project status to any value
+  // Function to change project status to any valid value (only DB ENUM values)
   const changeProjectStatus = async (projectId: string, projectTitle: string, newStatus: ProjectStatus) => {
     const statusLabels: Record<ProjectStatus, string> = {
-      draft: 'Borrador',
       pending: 'Pendiente',
       approved: 'Aprobado',
       rejected: 'Rechazado',
-      incomplete: 'Incompleto',
       live: 'En Vivo',
       completed: 'Completado'
     };
