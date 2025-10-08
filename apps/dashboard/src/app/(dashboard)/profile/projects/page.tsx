@@ -70,7 +70,7 @@ export default function ProfileProjectsPage() {
           if (isSuperAdmin) {
             // Super admin sees all manageable projects
             userProjects = projects.filter(p =>
-              ['pending', 'approved', 'live', 'completed'].includes(p.status)
+              ['pending', 'approved', 'live', 'completed', 'rejected'].includes(p.status)
             );
           } else if (userWalletAddress) {
             // Regular users see ONLY their projects by wallet address
@@ -336,7 +336,6 @@ export default function ProfileProjectsPage() {
                           project.status === 'live' ? '🏃‍♂️ Activo' :
                           project.status === 'approved' ? '✅ Aprobado' :
                           project.status === 'pending' ? '⏳ En Revisión' :
-                          project.status === 'draft' ? '📝 Borrador' :
                           project.status === 'rejected' ? '❌ Rechazado' :
                           project.status === 'completed' ? '🏁 Completado' :
                           project.status
