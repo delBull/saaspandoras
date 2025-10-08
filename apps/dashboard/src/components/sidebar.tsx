@@ -24,6 +24,7 @@ import { useActiveAccount, useDisconnect, useActiveWallet } from "thirdweb/react
 import { ethereum } from "thirdweb/chains";
 import { WalletBalance, NetworkSelector, ConnectWalletButton } from "@/components/wallet";
 import { SUPPORTED_NETWORKS, DEFAULT_NETWORK } from "@/config/networks";
+import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 
 interface SidebarProps {
   wallet?: string;
@@ -59,15 +60,15 @@ export function Sidebar({
   // Multi-chain wallet state
   const [selectedChain, setSelectedChain] = useState(DEFAULT_NETWORK?.chain || ethereum);
 
-  // State for client-side admin status - Can show admin based on server props initially
+  // State for client-side admin status - Only trust server props if they're explicitly true
   const [adminStatus, setAdminStatus] = useState<{
     isAdmin: boolean;
     isSuperAdmin: boolean;
     verified: boolean; // Track if we've verified with API
   }>({
-    isAdmin: isAdminProp ?? false, // Can show admin based on server initially
-    isSuperAdmin: isSuperAdminProp ?? false,
-    verified: !!isAdminProp || !!isSuperAdminProp, // Mark as verified if server says admin
+    isAdmin: false, // Start with false, only trust verified API responses
+    isSuperAdmin: false,
+    verified: false, // Don't trust server props initially for security
   });
 
   // Track if this is the initial load to avoid resetting admin status
@@ -95,29 +96,25 @@ export function Sidebar({
       return;
     }
 
-    // Reset admin status when wallet disconnects
+    // When wallet disconnects, DON'T reset admin status if we have server confirmation
+    // This prevents flickering during wallet reconnection
     if (account?.address === undefined && !isInitialLoad) {
       if (process.env.NODE_ENV === 'development') {
-        console.log("🔌 Wallet disconnected, resetting admin status");
+        console.log("🔌 Wallet disconnected - preserving server admin status");
       }
-      setAdminStatus({ isAdmin: false, isSuperAdmin: false, verified: true });
+      // Don't reset admin status - keep server-side confirmation
       return;
     }
 
-    // When wallet connects OR changes, always re-verify admin status
+    // When wallet connects OR changes, verify admin status
     if (!account?.address) {
-      // si servidor ya dijo que era admin, no quitar (evita flicker durante rehidratación)
-      if (!adminStatus.verified && isAdminProp) {
+      // No wallet connected - only reset if no server admin confirmation
+      if (!isAdminProp && !isSuperAdminProp) {
         if (process.env.NODE_ENV === 'development') {
-          console.log("🏚️ Manteniendo admin status por server prop durante rehidratacion");
+          console.log("🐭 No wallet connected and no server admin, ensuring admin status is false");
         }
-        return;
+        setAdminStatus({ isAdmin: false, isSuperAdmin: false, verified: true });
       }
-      // No wallet connected and no server admin prop, ensure admin status is false
-      if (process.env.NODE_ENV === 'development') {
-        console.log("🐭 No wallet connected and no server admin, ensuring admin status is false");
-      }
-      setAdminStatus({ isAdmin: false, isSuperAdmin: false, verified: true });
       return;
     }
 
@@ -141,12 +138,21 @@ export function Sidebar({
           const data = await res.json() as { isAdmin: boolean; isSuperAdmin: boolean };
           setAdminStatus({ ...data, verified: true });
         } else {
-          setAdminStatus({ isAdmin: false, isSuperAdmin: false, verified: false });
+          // If API fails, fall back to server-side props but mark as unverified
+          setAdminStatus({
+            isAdmin: isAdminProp ?? false,
+            isSuperAdmin: isSuperAdminProp ?? false,
+            verified: false
+          });
         }
       } catch (e) {
         console.error("❌ Error verifying admin status:", e);
-        // Reset admin status to false on error - NEVER show admin when verification fails
-        setAdminStatus({ isAdmin: false, isSuperAdmin: false, verified: false });
+        // On error, fall back to server-side props but mark as unverified
+        setAdminStatus({
+          isAdmin: isAdminProp ?? false,
+          isSuperAdmin: isSuperAdminProp ?? false,
+          verified: false
+        });
       }
     })().catch(console.error);
 
@@ -175,7 +181,7 @@ export function Sidebar({
     };
 
     void fetchProfile();
-  }, [account?.address, isInitialLoad, adminStatus.verified, isAdminProp]);
+  }, [account?.address, isInitialLoad, isAdminProp, isSuperAdminProp]);
 
   // Handle click outside anywhere on screen and escape key to close dropdowns
   useEffect(() => {
@@ -238,9 +244,9 @@ export function Sidebar({
     };
   }, [profileDropdown, networkDropdown]);
 
-  // The final isAdmin status - Allow access based on server props, verified status, or hardcoded super admin
-  const isSuperAdminWallet = account?.address?.toLowerCase() === "0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9";
-  const isAdmin = (isAdminProp || isSuperAdminProp || isSuperAdminWallet) || (adminStatus.verified && (adminStatus.isAdmin || adminStatus.isSuperAdmin));
+  // The final isAdmin status - Only trust verified API responses for security
+  const isSuperAdminWallet = account?.address?.toLowerCase() === SUPER_ADMIN_WALLET;
+  const isAdmin = adminStatus.verified && (adminStatus.isAdmin || adminStatus.isSuperAdmin || isSuperAdminWallet);
 
   // Use centralized network configuration
   const supportedNetworks = SUPPORTED_NETWORKS;

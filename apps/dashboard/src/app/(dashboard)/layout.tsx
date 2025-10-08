@@ -24,7 +24,9 @@ export default async function DashboardLayout({
   const userIsAdmin = await isAdmin(session?.userId);
   console.log('🏠 DashboardLayout: isAdmin result:', userIsAdmin);
 
-  const userIsSuperAdmin = session?.userId?.toLowerCase() === SUPER_ADMIN_WALLET;
+  // Check if user is super admin using either userId or address
+  const userIsSuperAdmin = session?.userId?.toLowerCase() === SUPER_ADMIN_WALLET ||
+                          session?.address?.toLowerCase() === SUPER_ADMIN_WALLET;
   console.log('🏠 DashboardLayout: isSuperAdmin result:', userIsSuperAdmin);
   console.log('🏠 DashboardLayout: Expected SUPER_ADMIN:', SUPER_ADMIN_WALLET);
 
