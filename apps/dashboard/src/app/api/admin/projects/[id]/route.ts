@@ -30,10 +30,14 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   }
 
   try {
+    console.log('🔄 PATCH: Starting project status update for ID:', projectId);
+
     const body: unknown = await request.json();
+    console.log('🔄 PATCH: Request body:', body);
 
     // For PATCH, we only allow status updates for now
     if (typeof body !== 'object' || body === null || !('status' in body)) {
+      console.log('🔄 PATCH: Invalid body structure');
       return NextResponse.json(
         { message: "Solo se permite actualizar el estado del proyecto" },
         { status: 400 }
@@ -42,21 +46,28 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
     const { status } = body as { status: string | number | boolean };
     const statusString = String(status);
+    console.log('🔄 PATCH: Status to update:', statusString);
 
     // Validar que el status sea válido (debe coincidir con el ENUM de la base de datos)
     const validStatuses = ['pending', 'approved', 'live', 'completed', 'rejected'];
     if (!validStatuses.includes(statusString)) {
+      console.log('🔄 PATCH: Invalid status value:', statusString);
       return NextResponse.json({ message: "Estado inválido" }, { status: 400 });
     }
 
     // Verificar que el proyecto existe
+    console.log('🔄 PATCH: Checking if project exists...');
     const existingProject = await db.query.projects.findFirst({
       where: eq(projectsSchema.id, projectId),
     });
 
     if (!existingProject) {
+      console.log('🔄 PATCH: Project not found:', projectId);
       return NextResponse.json({ message: "Proyecto no encontrado" }, { status: 404 });
     }
+
+    console.log('🔄 PATCH: Existing project status:', existingProject.status);
+    console.log('🔄 PATCH: Updating project status...');
 
     // Actualizar solo el status del proyecto
     const [updatedProject] = await db
@@ -65,11 +76,12 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       .where(eq(projectsSchema.id, projectId))
       .returning();
 
+    console.log('🔄 PATCH: Update successful:', updatedProject);
     return NextResponse.json(updatedProject, { status: 200 });
   } catch (error) {
-    console.error("Error al actualizar el proyecto:", error);
+    console.error("🔄 PATCH: Error al actualizar el proyecto:", error);
     return NextResponse.json(
-      { message: "Error interno del servidor." },
+      { message: "Error interno del servidor.", error: String(error) },
       { status: 500 }
     );
   }
