@@ -43,8 +43,8 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     const { status } = body as { status: string | number | boolean };
     const statusString = String(status);
 
-    // Validar que el status sea válido
-    const validStatuses = ['pending', 'approved', 'live', 'completed', 'rejected', 'incomplete'];
+    // Validar que el status sea válido (debe coincidir con el ENUM de la base de datos)
+    const validStatuses = ['pending', 'approved', 'live', 'completed', 'rejected'];
     if (!validStatuses.includes(statusString)) {
       return NextResponse.json({ message: "Estado inválido" }, { status: 400 });
     }

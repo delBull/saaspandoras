@@ -5,10 +5,12 @@ import Link from "next/link";
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { AdminSettings } from "@/components/admin/AdminSettings";
 import { UnauthorizedAccess } from "@/components/admin/UnauthorizedAccess";
-import { calculateProjectCompletion } from "@/lib/project-utils";
+
 import { useProjectActions } from "@/hooks/useProjectActions";
 import { useFeaturedProjects } from "@/hooks/useFeaturedProjects";
 import type { ProjectStatus, Project, AdminData, UserData } from "@/types/admin";
+
+// NOTE: Using 'draft' and 'incomplete' in UI but DB ENUM needs migration to include these values
 
 // Datos de ejemplo para swaps (puedes conectar esto a tu API real después)
 const mockSwaps = [
@@ -245,11 +247,11 @@ export default function AdminDashboardPage() {
     void fetchData();
   }, [isAdmin]);
 
-  // Calculate completion for draft projects
+  // Enhanced projects with completion data (simplified for now)
   const enhancedProjects = useMemo(() => {
     return projects.map(project => ({
       ...project,
-      completionData: project.status === 'draft' ? calculateProjectCompletion(project as unknown as Record<string, unknown>) : undefined
+      completionData: undefined // Simplified - can be enhanced later if needed
     }));
   }, [projects]);
 
@@ -262,17 +264,17 @@ export default function AdminDashboardPage() {
   // Get status counts for filter badges
   const statusCounts = useMemo(() => {
     const counts: Record<ProjectStatus, number> = {
-      draft: 0,
       pending: 0,
       approved: 0,
       live: 0,
       completed: 0,
-      incomplete: 0,
       rejected: 0,
     };
 
     enhancedProjects.forEach(project => {
-      counts[project.status]++;
+      if (project.status in counts) {
+        counts[project.status]++;
+      }
     });
 
     return counts;
@@ -342,12 +344,10 @@ export default function AdminDashboardPage() {
                     statusFilter === status
                       ? 'bg-lime-500 text-black'
                       : `${
-                          status === 'draft' ? 'text-purple-300' :
                           status === 'pending' ? 'text-yellow-300' :
                           status === 'approved' ? 'text-blue-300' :
                           status === 'live' ? 'text-green-300' :
                           status === 'completed' ? 'text-emerald-300' :
-                          status === 'incomplete' ? 'text-orange-300' :
                           'text-red-300'
                         } bg-zinc-700 hover:bg-zinc-600`
                   }`}
@@ -364,10 +364,7 @@ export default function AdminDashboardPage() {
                 <tr>
                   <th className="px-4 py-3 text-left font-semibold text-gray-300">Título</th>
                   <th className="px-4 py-3 text-left font-semibold text-gray-300">Monto (USD)</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-300">
-                    {statusFilter === 'draft' && 'Completitud'}
-                    {statusFilter !== 'draft' && 'Estado'}
-                  </th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-300">Estado</th>
                   <th className="px-4 py-3 text-center font-semibold text-gray-300">Featured</th>
                   <th className="px-4 py-3 text-center font-semibold text-gray-300">Detalles</th>
                   <th className="px-4 py-3 text-right font-semibold text-gray-300">Acciones</th>
@@ -388,49 +385,25 @@ export default function AdminDashboardPage() {
                       <td className="px-4 py-3 text-gray-200">
                         ${Number(p.targetAmount).toLocaleString()}
                       </td>
-                      {statusFilter === 'draft' && p.completionData ? (
-                        <td className="px-4 py-3">
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-xs text-gray-400">
-                              <span>{p.completionData.percentage}%</span>
-                            </div>
-                            <div className="w-full bg-zinc-700 rounded-full h-2">
-                              <div
-                                className="bg-lime-500 h-2 rounded-full transition-all duration-300"
-                                style={{ width: `${p.completionData.percentage}%` }}
-                              ></div>
-                            </div>
-                            {p.completionData.missingFields.length > 0 && (
-                              <div className="text-xs text-orange-300">
-                                Faltan: {p.completionData.missingFields.slice(0, 2).join(', ')}
-                                {p.completionData.missingFields.length > 2 && '...'}
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                      ) : (
-                        <td className="px-4 py-3">
-                          <div className="relative">
-                            <button
-                              onClick={() => setStatusDropdown(statusDropdown === p.id ? null : p.id)}
-                              className={`px-2 py-1 rounded text-xs font-semibold cursor-pointer transition-all ${
-                                p.status === "draft" ? "bg-purple-600 hover:bg-purple-700" :
-                                p.status === "pending" ? "bg-yellow-600 hover:bg-yellow-700" :
-                                p.status === "approved" ? "bg-blue-600 hover:bg-blue-700" :
-                                p.status === "live" ? "bg-green-600 hover:bg-green-700" :
-                                p.status === "completed" ? "bg-emerald-600 hover:bg-emerald-700" :
-                                p.status === "incomplete" ? "bg-orange-600 hover:bg-orange-700" :
-                                "bg-red-600 hover:bg-red-700"
-                              } text-white flex items-center gap-1`}
-                            >
-                              <span>{p.status}</span>
-                              <svg className="w-3 h-3 transition-transform" style={{transform: statusDropdown === p.id ? 'rotate(180deg)' : 'rotate(0deg)'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                              </svg>
-                            </button>
-                          </div>
-                        </td>
-                      )}
+                      <td className="px-4 py-3">
+                        <div className="relative">
+                          <button
+                            onClick={() => setStatusDropdown(statusDropdown === p.id ? null : p.id)}
+                            className={`px-2 py-1 rounded text-xs font-semibold cursor-pointer transition-all ${
+                              p.status === "pending" ? "bg-yellow-600 hover:bg-yellow-700" :
+                              p.status === "approved" ? "bg-blue-600 hover:bg-blue-700" :
+                              p.status === "live" ? "bg-green-600 hover:bg-green-700" :
+                              p.status === "completed" ? "bg-emerald-600 hover:bg-emerald-700" :
+                              "bg-red-600 hover:bg-red-700"
+                            } text-white flex items-center gap-1`}
+                          >
+                            <span>{p.status}</span>
+                            <svg className="w-3 h-3 transition-transform" style={{transform: statusDropdown === p.id ? 'rotate(180deg)' : 'rotate(0deg)'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
 
                       {/* Featured Column */}
                       <td className="px-4 py-3 text-center">
@@ -726,7 +699,7 @@ export default function AdminDashboardPage() {
             tabIndex={-1}
           >
             <div className="py-1" role="none">
-              {["draft", "pending", "approved", "rejected", "incomplete", "live", "completed"].map((statusOption) => {
+              {["pending", "approved", "rejected", "live", "completed"].map((statusOption) => {
                 const currentProject = projects.find(p => p.id === statusDropdown);
                 return (
                   <button
