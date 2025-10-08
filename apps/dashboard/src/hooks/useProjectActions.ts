@@ -141,7 +141,9 @@ export function useProjectActions({ setActionsLoading }: ProjectActionsProps) {
         window.location.reload(); // Reload to update the list
         alert('Status del proyecto actualizado exitosamente');
       } else {
-        alert('Error al cambiar el status del proyecto');
+        const errorText = await response.text().catch(() => 'Error desconocido');
+        console.error('Error response:', response.status, errorText);
+        alert(`Error al cambiar el status del proyecto: ${response.status} - ${errorText}`);
       }
     } catch (error) {
       alert('Error de conexión');
