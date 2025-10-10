@@ -60,13 +60,13 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
     // Verificar que el proyecto existe
     console.log('🔄 PATCH: Checking if project exists...');
-    const existingProjects = await db
-      .select()
-      .from(projectsSchema)
-      .where(eq(projectsSchema.id, projectId))
-      .limit(1);
-
-    const existingProject = existingProjects[0];
+    const existingProject = await db.query.projects.findFirst({
+      where: eq(projectsSchema.id, projectId),
+      columns: {
+        id: true,
+        status: true,
+      }
+    });
 
     if (!existingProject) {
       console.log('🔄 PATCH: Project not found:', projectId);
@@ -77,14 +77,13 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     console.log('🔄 PATCH: Updating project status...');
 
     // Actualizar solo el status del proyecto
-    const [updatedProject] = await db
+    await db
       .update(projectsSchema)
       .set({ status: statusString as "pending" | "approved" | "live" | "completed" | "rejected" | "incomplete" })
-      .where(eq(projectsSchema.id, projectId))
-      .returning();
+      .where(eq(projectsSchema.id, projectId));
 
-    console.log('🔄 PATCH: Update successful:', updatedProject);
-    return NextResponse.json(updatedProject, { status: 200 });
+    console.log('🔄 PATCH: Update successful for project:', projectId);
+    return NextResponse.json({ message: "Status actualizado exitosamente" }, { status: 200 });
   } catch (error) {
     console.error("🔄 PATCH: Error al actualizar el proyecto:", error);
     return NextResponse.json(
@@ -129,13 +128,14 @@ export async function PUT(request: Request, { params }: RouteParams) {
     const data = parsedData.data;
 
     // Verificar que el proyecto existe
-    const existingProjects = await db
-      .select()
-      .from(projectsSchema)
-      .where(eq(projectsSchema.id, projectId))
-      .limit(1);
-
-    const existingProject = existingProjects[0];
+    const existingProject = await db.query.projects.findFirst({
+      where: eq(projectsSchema.id, projectId),
+      columns: {
+        id: true,
+        slug: true,
+        status: true,
+      }
+    });
 
     if (!existingProject) {
       return NextResponse.json({ message: "Proyecto no encontrado" }, { status: 404 });
@@ -146,6 +146,9 @@ export async function PUT(request: Request, { params }: RouteParams) {
     if (slug !== existingProject.slug) {
       const existingSlugCheck = await db.query.projects.findFirst({
         where: eq(projectsSchema.slug, slug),
+        columns: {
+          id: true,
+        }
       });
       if (existingSlugCheck && existingSlugCheck.id !== projectId) {
         slug = `${slug}-${Date.now()}`;
@@ -153,7 +156,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
     }
 
     // Actualizar el proyecto en la base de datos
-    const [updatedProject] = await db
+    await db
       .update(projectsSchema)
       .set({
         // --- Sección 1: Strings / Enums ---
@@ -220,10 +223,9 @@ export async function PUT(request: Request, { params }: RouteParams) {
         // Mantener el status existente, a menos que se especifique cambiarlo
         status: existingProject.status,
       })
-      .where(eq(projectsSchema.id, projectId))
-      .returning();
+      .where(eq(projectsSchema.id, projectId));
 
-    return NextResponse.json(updatedProject, { status: 200 });
+    return NextResponse.json({ message: "Proyecto actualizado exitosamente" }, { status: 200 });
   } catch (error) {
     console.error("Error al actualizar el proyecto:", error);
     return NextResponse.json(
@@ -253,13 +255,12 @@ export async function DELETE(request: Request, { params }: RouteParams) {
 
   try {
     // Verificar que el proyecto existe
-    const existingProjects = await db
-      .select()
-      .from(projectsSchema)
-      .where(eq(projectsSchema.id, projectId))
-      .limit(1);
-
-    const existingProject = existingProjects[0];
+    const existingProject = await db.query.projects.findFirst({
+      where: eq(projectsSchema.id, projectId),
+      columns: {
+        id: true,
+      }
+    });
 
     if (!existingProject) {
       return NextResponse.json({ message: "Proyecto no encontrado" }, { status: 404 });
