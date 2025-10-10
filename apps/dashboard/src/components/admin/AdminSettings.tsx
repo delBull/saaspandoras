@@ -6,6 +6,7 @@ import { Input } from "@saasfly/ui/input";
 import { Button } from "@saasfly/ui/button";
 import { Trash2, PlusCircle, Loader2, Pencil } from "lucide-react";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
+import { useActiveAccount } from "thirdweb/react";
 
 interface Admin {
   id: number;
