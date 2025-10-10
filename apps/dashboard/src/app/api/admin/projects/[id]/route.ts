@@ -60,9 +60,13 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
     // Verificar que el proyecto existe
     console.log('🔄 PATCH: Checking if project exists...');
-    const existingProject = await db.query.projects.findFirst({
-      where: eq(projectsSchema.id, projectId),
-    });
+    const existingProjects = await db
+      .select()
+      .from(projectsSchema)
+      .where(eq(projectsSchema.id, projectId))
+      .limit(1);
+
+    const existingProject = existingProjects[0];
 
     if (!existingProject) {
       console.log('🔄 PATCH: Project not found:', projectId);
@@ -125,9 +129,13 @@ export async function PUT(request: Request, { params }: RouteParams) {
     const data = parsedData.data;
 
     // Verificar que el proyecto existe
-    const existingProject = await db.query.projects.findFirst({
-      where: eq(projectsSchema.id, projectId),
-    });
+    const existingProjects = await db
+      .select()
+      .from(projectsSchema)
+      .where(eq(projectsSchema.id, projectId))
+      .limit(1);
+
+    const existingProject = existingProjects[0];
 
     if (!existingProject) {
       return NextResponse.json({ message: "Proyecto no encontrado" }, { status: 404 });
@@ -245,9 +253,13 @@ export async function DELETE(request: Request, { params }: RouteParams) {
 
   try {
     // Verificar que el proyecto existe
-    const existingProject = await db.query.projects.findFirst({
-      where: eq(projectsSchema.id, projectId),
-    });
+    const existingProjects = await db
+      .select()
+      .from(projectsSchema)
+      .where(eq(projectsSchema.id, projectId))
+      .limit(1);
+
+    const existingProject = existingProjects[0];
 
     if (!existingProject) {
       return NextResponse.json({ message: "Proyecto no encontrado" }, { status: 404 });
