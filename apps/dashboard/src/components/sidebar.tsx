@@ -249,6 +249,45 @@ export function Sidebar({
   // Use centralized network configuration
   const supportedNetworks = SUPPORTED_NETWORKS;
 
+  // Centralized profile dropdown menu items
+  const getProfileDropdownItems = (isMobile = false) => {
+    const baseItems = [
+      {
+        href: "/profile",
+        icon: <UserIcon className="w-5 h-5 text-gray-400" />,
+        label: "Perfil",
+        description: "Información personal",
+        onClick: () => {
+          setProfileDropdown(false);
+          if (isMobile) setMobileOpen(false);
+        }
+      },
+      {
+        href: "/profile/dashboard",
+        icon: <ChartBarIcon className="w-5 h-5 text-gray-400" />,
+        label: "Dashboard",
+        description: "Métricas e inversiones",
+        onClick: () => {
+          setProfileDropdown(false);
+          if (isMobile) setMobileOpen(false);
+        }
+      }
+    ];
+
+    // Projects link - only show for admins or applicants with projects
+    const projectsItem = (isAdmin || (userProfile?.role === 'applicant' && userProfile?.projectCount > 0)) ? [{
+      href: "/profile/projects",
+      icon: <FolderIcon className="w-5 h-5 text-gray-400" />,
+      label: "Proyectos",
+      description: userProfile?.projectCount ? `${userProfile.projectCount} proyectos` : 'Gestionar proyectos',
+      onClick: () => {
+        setProfileDropdown(false);
+        if (isMobile) setMobileOpen(false);
+      }
+    }] : [];
+
+    return [...baseItems, ...projectsItem];
+  };
 
   const links = useMemo(
     () => [
@@ -470,46 +509,20 @@ export function Sidebar({
                         className="absolute left-4 top-[152px] w-80 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 pointer-events-auto profile-dropdown-content"
                       >
                         <div className="p-3 space-y-2">
-                          {/* Profile */}
-                          <Link
-                            href="/profile"
-                            onClick={() => setProfileDropdown(false)}
-                            className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
-                          >
-                            <UserIcon className="w-5 h-5 text-gray-400" />
-                            <div>
-                              <div className="text-white text-sm">Perfil</div>
-                              <div className="text-gray-400 text-xs">Información personal</div>
-                            </div>
-                          </Link>
-
-                          {/* Dashboard */}
-                          <Link
-                            href="/profile/dashboard"
-                            onClick={() => setProfileDropdown(false)}
-                            className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
-                          >
-                            <ChartBarIcon className="w-5 h-5 text-gray-400" />
-                            <div>
-                              <div className="text-white text-sm">Dashboard</div>
-                              <div className="text-gray-400 text-xs">Métricas e inversiones</div>
-                            </div>
-                          </Link>
-
-                          {/* Projects */}
-                          <Link
-                            href="/profile/projects"
-                            onClick={() => setProfileDropdown(false)}
-                            className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
-                          >
-                            <FolderIcon className="w-5 h-5 text-gray-400" />
-                            <div>
-                              <div className="text-white text-sm">Proyectos</div>
-                              <div className="text-gray-400 text-xs">
-                                {userProfile?.projectCount ? `${userProfile.projectCount} proyectos` : 'Gestionar proyectos'}
+                          {getProfileDropdownItems().map((item) => (
+                            <Link
+                              key={item.href}
+                              href={item.href}
+                              onClick={item.onClick}
+                              className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
+                            >
+                              {item.icon}
+                              <div>
+                                <div className="text-white text-sm">{item.label}</div>
+                                <div className="text-gray-400 text-xs">{item.description}</div>
                               </div>
-                            </div>
-                          </Link>
+                            </Link>
+                          ))}
 
                           <div className="border-t border-zinc-700 my-2"></div>
 
@@ -790,55 +803,20 @@ export function Sidebar({
                           className="absolute left-0 right-0 top-full mt-2 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 profile-dropdown-content"
                         >
                           <div className="p-3 space-y-2">
-                            {/* Profile */}
-                            <Link
-                              href="/profile"
-                              onClick={() => {
-                                setProfileDropdown(false);
-                                setMobileOpen(false);
-                              }}
-                              className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
-                            >
-                              <UserIcon className="w-5 h-5 text-gray-400" />
-                              <div>
-                                <div className="text-white text-sm">Perfil</div>
-                                <div className="text-gray-400 text-xs">Información personal</div>
-                              </div>
-                            </Link>
-
-                            {/* Dashboard */}
-                            <Link
-                              href="/profile/dashboard"
-                              onClick={() => {
-                                setProfileDropdown(false);
-                                setMobileOpen(false);
-                              }}
-                              className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
-                            >
-                              <ChartBarIcon className="w-5 h-5 text-gray-400" />
-                              <div>
-                                <div className="text-white text-sm">Dashboard</div>
-                                <div className="text-gray-400 text-xs">Métricas e inversiones</div>
-                              </div>
-                            </Link>
-
-                        {/* Projects (always show like desktop) */}
-                        <Link
-                          href="/profile/projects"
-                          onClick={() => {
-                            setProfileDropdown(false);
-                            setMobileOpen(false);
-                          }}
-                          className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
-                        >
-                          <FolderIcon className="w-5 h-5 text-gray-400" />
-                          <div>
-                            <div className="text-white text-sm">Proyectos</div>
-                            <div className="text-gray-400 text-xs">
-                              {userProfile?.projectCount ? `${userProfile.projectCount} proyectos` : 'Gestionar proyectos'}
-                            </div>
-                          </div>
-                        </Link>
+                            {getProfileDropdownItems(true).map((item) => (
+                              <Link
+                                key={item.href}
+                                href={item.href}
+                                onClick={item.onClick}
+                                className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
+                              >
+                                {item.icon}
+                                <div>
+                                  <div className="text-white text-sm">{item.label}</div>
+                                  <div className="text-gray-400 text-xs">{item.description}</div>
+                                </div>
+                              </Link>
+                            ))}
 
                         <div className="border-t border-zinc-700 my-2"></div>
 
