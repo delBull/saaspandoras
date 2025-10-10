@@ -16,7 +16,10 @@ interface RouteParams {
 
 export async function PATCH(request: Request, { params }: RouteParams) {
   const { session } = await getAuth(await headers());
-  const userIsAdmin = await isAdmin(session?.userId);
+
+  // Check if user is admin using either userId or address
+  const userIsAdmin = await isAdmin(session?.userId) ||
+                     await isAdmin(session?.address);
 
   if (!userIsAdmin) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
@@ -93,7 +96,10 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
 export async function PUT(request: Request, { params }: RouteParams) {
   const { session } = await getAuth(await headers());
-  const userIsAdmin = await isAdmin(session?.userId);
+
+  // Check if user is admin using either userId or address
+  const userIsAdmin = await isAdmin(session?.userId) ||
+                     await isAdmin(session?.address);
 
   if (!userIsAdmin) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
@@ -138,14 +144,10 @@ export async function PUT(request: Request, { params }: RouteParams) {
     // Generar un nuevo slug si cambió el título
     let slug = slugify(title, { lower: true, strict: true });
     if (slug !== existingProject.slug) {
-      const existingSlugs = await db
-        .select()
-        .from(projectsSchema)
-        .where(eq(projectsSchema.slug, slug))
-        .limit(1);
-
-      const existingSlug = existingSlugs[0];
-      if (existingSlug && existingSlug.id !== projectId) {
+      const existingSlugCheck = await db.query.projects.findFirst({
+        where: eq(projectsSchema.slug, slug),
+      });
+      if (existingSlugCheck && existingSlugCheck.id !== projectId) {
         slug = `${slug}-${Date.now()}`;
       }
     }
@@ -233,7 +235,10 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
 export async function DELETE(request: Request, { params }: RouteParams) {
   const { session } = await getAuth(await headers());
-  const userIsAdmin = await isAdmin(session?.userId);
+
+  // Check if user is admin using either userId or address
+  const userIsAdmin = await isAdmin(session?.userId) ||
+                     await isAdmin(session?.address);
 
   if (!userIsAdmin) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
