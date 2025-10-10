@@ -49,7 +49,11 @@ export async function GET() {
 export async function POST(request: Request) {
   const { session } = await getAuth(await headers());
 
-  if (session?.userId?.toLowerCase() !== SUPER_ADMIN_WALLET) {
+  // Check if user is super admin using either userId or address
+  const isSuperAdmin = session?.userId?.toLowerCase() === SUPER_ADMIN_WALLET ||
+                      session?.address?.toLowerCase() === SUPER_ADMIN_WALLET;
+
+  if (!isSuperAdmin) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
   }
 
