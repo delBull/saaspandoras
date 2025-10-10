@@ -2,15 +2,21 @@ import type { ProjectStatus } from '@/types/admin';
 
 interface ProjectActionsProps {
   setActionsLoading: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+  walletAddress?: string;
 }
 
-export function useProjectActions({ setActionsLoading }: ProjectActionsProps) {
+export function useProjectActions({ setActionsLoading, walletAddress }: ProjectActionsProps) {
   // Function to handle project deletion with confirmation
   const deleteProject = async (projectId: string, projectTitle: string) => {
     const confirmMessage = `¿Eliminar proyecto "${projectTitle}"?\n\nEsta acción NO SE PUEDE deshacer.`;
     const isConfirmed = window.confirm(confirmMessage);
 
     if (!isConfirmed) return;
+
+    if (!walletAddress) {
+      alert('Error: No se pudo obtener la dirección de tu wallet. Conecta tu wallet primero.');
+      return;
+    }
 
     const actionKey = `delete-${projectId}`;
     setActionsLoading((prev) => ({ ...prev, [actionKey]: true }));
@@ -19,6 +25,11 @@ export function useProjectActions({ setActionsLoading }: ProjectActionsProps) {
       console.log('Deleting project:', projectId);
       const response = await fetch(`/api/admin/projects/${projectId}`, {
         method: 'DELETE',
+        headers: {
+          'x-thirdweb-address': walletAddress,
+          'x-wallet-address': walletAddress,
+          'x-user-address': walletAddress,
+        },
       });
 
       if (response.ok) {
@@ -50,13 +61,23 @@ export function useProjectActions({ setActionsLoading }: ProjectActionsProps) {
 
     if (!isConfirmed) return;
 
+    if (!walletAddress) {
+      alert('Error: No se pudo obtener la dirección de tu wallet. Conecta tu wallet primero.');
+      return;
+    }
+
     const actionKey = `approve-${projectId}`;
     setActionsLoading((prev) => ({ ...prev, [actionKey]: true }));
 
     try {
       const response = await fetch(`/api/admin/projects/${projectId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-thirdweb-address': walletAddress,
+          'x-wallet-address': walletAddress,
+          'x-user-address': walletAddress,
+        },
         body: JSON.stringify({ status: 'approved' }),
       });
 
@@ -89,13 +110,23 @@ export function useProjectActions({ setActionsLoading }: ProjectActionsProps) {
 
     if (!window.confirm(confirmMessage)) return;
 
+    if (!walletAddress) {
+      alert('Error: No se pudo obtener la dirección de tu wallet. Conecta tu wallet primero.');
+      return;
+    }
+
     const actionKey = `reject-${projectId}`;
     setActionsLoading((prev) => ({ ...prev, [actionKey]: true }));
 
     try {
       const response = await fetch(`/api/admin/projects/${projectId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-thirdweb-address': walletAddress,
+          'x-wallet-address': walletAddress,
+          'x-user-address': walletAddress,
+        },
         body: JSON.stringify({ status: newStatus }),
       });
 
@@ -127,13 +158,23 @@ export function useProjectActions({ setActionsLoading }: ProjectActionsProps) {
 
     if (!window.confirm(confirmMessage)) return;
 
+    if (!walletAddress) {
+      alert('Error: No se pudo obtener la dirección de tu wallet. Conecta tu wallet primero.');
+      return;
+    }
+
     const actionKey = `change-status-${projectId}`;
     setActionsLoading((prev) => ({ ...prev, [actionKey]: true }));
 
     try {
       const response = await fetch(`/api/admin/projects/${projectId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-thirdweb-address': walletAddress,
+          'x-wallet-address': walletAddress,
+          'x-user-address': walletAddress,
+        },
         body: JSON.stringify({ status: newStatus }),
       });
 
