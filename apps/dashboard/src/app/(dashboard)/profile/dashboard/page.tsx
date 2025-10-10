@@ -184,7 +184,11 @@ export default function PandoriansDashboardPage() {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className={`grid gap-6 ${
+        profile.role === 'applicant'
+          ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
+          : 'grid-cols-1 md:grid-cols-3'
+      }`}>
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -213,19 +217,22 @@ export default function PandoriansDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-400">Proyectos Activos</p>
-                <p className="text-2xl font-bold text-white">
-                  {dashboardData.activeProjects}
-                </p>
+        {/* Proyectos Activos - Only for applicants */}
+        {profile.role === 'applicant' && (
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-400">Proyectos Activos</p>
+                  <p className="text-2xl font-bold text-white">
+                    {dashboardData.activeProjects}
+                  </p>
+                </div>
+                <FolderIcon className="h-8 w-8 text-blue-500" />
               </div>
-              <FolderIcon className="h-8 w-8 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardContent className="p-6">
@@ -323,21 +330,30 @@ export default function PandoriansDashboardPage() {
               <div className="text-center py-6">
                 <ExclamationCircleIcon className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
                 <p className="text-gray-400 text-sm mb-4">
-                  Aún no tienes inversiones activas
+                  {profile.role === 'applicant'
+                    ? 'Aún no tienes inversiones activas'
+                    : 'No tienes inversiones activas'
+                  }
                 </p>
-                <Link href="/profile/projects">
-                  <button className="px-4 py-2 bg-lime-500 hover:bg-lime-600 text-zinc-900 rounded-lg text-sm font-medium transition-colors">
-                    Ver Mis Proyectos Aplicados
+                {profile.role === 'applicant' ? (
+                  <Link href="/profile/projects">
+                    <button className="px-4 py-2 bg-lime-500 hover:bg-lime-600 text-zinc-900 rounded-lg text-sm font-medium transition-colors">
+                      Ver Mis Proyectos Aplicados
+                    </button>
+                  </Link>
+                ) : (
+                  <button className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors">
+                    Reclamar Retornos
                   </button>
-                </Link>
+                )}
               </div>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Project Status Overview (if they have projects) */}
-      {dashboardData.activeProjects > 0 && (
+      {/* Project Status Overview (only for applicants with projects) */}
+      {profile.role === 'applicant' && dashboardData.activeProjects > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Estado de Proyectos</CardTitle>
