@@ -6,6 +6,7 @@ import { Input } from "@saasfly/ui/input";
 import { Button } from "@saasfly/ui/button";
 import { Trash2, PlusCircle, Loader2, Pencil } from "lucide-react";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
+import { useActiveAccount } from "thirdweb/react";
 
 interface Admin {
   id: number;
@@ -25,6 +26,8 @@ const getWalletAddress = (admin: Admin): string => {
 };
 
 export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
+  const account = useActiveAccount();
+
   // Filter out admins without wallet address and system admins (id: 999 or super admin wallet)
   const validAdmins = initialAdmins.filter(admin =>
     getWalletAddress(admin) !== 'N/A' &&
@@ -43,12 +46,23 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
       toast.error("Por favor, introduce una dirección de wallet válida.");
       return;
     }
+
+    if (!account?.address) {
+      toast.error("No se pudo obtener la dirección de tu wallet. Conecta tu wallet primero.");
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await fetch("/api/admin/administrators", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ walletAddress: newAddress, alias: newAlias.trim() || null }),
+        headers: {
+          "Content-Type": "application/json",
+          'x-thirdweb-address': account.address,
+          'x-wallet-address': account.address,
+          'x-user-address': account.address,
+        },
+        body: JSON.stringify({ walletAddress: newAddress, alias: newAlias.trim() || null }),
       });
 
       if (!response.ok) {
@@ -72,9 +86,20 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
     if (!confirm("¿Estás seguro de que quieres eliminar a este administrador?")) {
       return;
     }
+
+    if (!account?.address) {
+      toast.error("No se pudo obtener la dirección de tu wallet. Conecta tu wallet primero.");
+      return;
+    }
+
     try {
       const response = await fetch(`/api/admin/administrators/${id.toString()}`, {
         method: "DELETE",
+        headers: {
+          'x-thirdweb-address': account.address,
+          'x-wallet-address': account.address,
+          'x-user-address': account.address,
+        },
       });
 
       if (!response.ok) {
@@ -102,10 +127,20 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
   const handleUpdateAlias = async () => {
     if (editingAliasId === null) return;
 
+    if (!account?.address) {
+      toast.error("No se pudo obtener la dirección de tu wallet. Conecta tu wallet primero.");
+      return;
+    }
+
     try {
       const response = await fetch(`/api/admin/administrators/${editingAliasId}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          'x-thirdweb-address': account.address,
+          'x-wallet-address': account.address,
+          'x-user-address': account.address,
+        },
         body: JSON.stringify({ alias: editingAliasValue.trim() || null }),
       });
 
