@@ -19,7 +19,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const contextParams = await params;
   const { session } = await getAuth(await headers());
 
-  if (session?.userId?.toLowerCase() !== SUPER_ADMIN_WALLET) {
+  if (session?.userId?.toLowerCase() !== SUPER_ADMIN_WALLET.toLowerCase()) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
   }
 
@@ -56,7 +56,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   const contextParams = await params;
   const { session } = await getAuth(await headers());
 
-  if (session?.userId?.toLowerCase() !== SUPER_ADMIN_WALLET) {
+  if (session?.userId?.toLowerCase() !== SUPER_ADMIN_WALLET.toLowerCase()) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
   }
 

@@ -32,9 +32,14 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
     if (typeof window !== 'undefined') {
       try {
         const sessionData = localStorage.getItem('wallet-session');
+        console.log('🔍 AdminSettings: wallet-session data:', sessionData);
         if (sessionData) {
           const parsedSession = JSON.parse(sessionData) as { address?: string };
-          setWalletAddress(parsedSession.address?.toLowerCase() ?? null);
+          const address = parsedSession.address?.toLowerCase() ?? null;
+          console.log('🔍 AdminSettings: parsed wallet address:', address);
+          setWalletAddress(address);
+        } else {
+          console.log('🔍 AdminSettings: no wallet-session data found');
         }
       } catch (e) {
         console.warn('Error getting wallet address for AdminSettings:', e);
@@ -43,11 +48,26 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
   }, []);
 
   // Filter out admins without wallet address and system admins (id: 999 or super admin wallet)
-  const validAdmins = initialAdmins.filter(admin =>
-    getWalletAddress(admin) !== 'N/A' &&
-    admin.id !== 999 &&
-    getWalletAddress(admin).toLowerCase() !== SUPER_ADMIN_WALLET
-  );
+  const validAdmins = initialAdmins.filter(admin => {
+    const walletAddr = getWalletAddress(admin);
+    const isValid = walletAddr !== 'N/A' &&
+                   admin.id !== 999 &&
+                   walletAddr.toLowerCase() !== SUPER_ADMIN_WALLET.toLowerCase();
+
+    // Debug logging for super admin filtering
+    if (!isValid) {
+      console.log('🔍 AdminSettings: Filtering out admin:', {
+        id: admin.id,
+        walletAddr: walletAddr,
+        isSuperAdmin: walletAddr.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase(),
+        reason: admin.id === 999 ? 'id: 999' :
+                walletAddr.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase() ? 'super admin wallet' :
+                'invalid wallet'
+      });
+    }
+
+    return isValid;
+  });
   const [admins, setAdmins] = useState<Admin[]>(validAdmins);
   const [newAddress, setNewAddress] = useState("");
   const [newAlias, setNewAlias] = useState("");
@@ -56,16 +76,20 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
   const [editingAliasValue, setEditingAliasValue] = useState("");
 
   const handleAddAdmin = async () => {
+    console.log('🔍 AdminSettings: handleAddAdmin called, walletAddress:', walletAddress);
+
     if (!/^0x[a-fA-F0-9]{40}$/.test(newAddress)) {
       toast.error("Por favor, introduce una dirección de wallet válida.");
       return;
     }
 
     if (!walletAddress) {
+      console.log('❌ AdminSettings: No wallet address available');
       toast.error("No se pudo obtener la dirección de tu wallet. Conecta tu wallet primero.");
       return;
     }
 
+    console.log('✅ AdminSettings: Making API call with wallet address:', walletAddress);
     setIsLoading(true);
     try {
       const response = await fetch("/api/admin/administrators", {

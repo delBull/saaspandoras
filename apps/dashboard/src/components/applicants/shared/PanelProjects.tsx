@@ -12,7 +12,7 @@ export function PanelProjects({ pendingProjects, isCollapsed, onToggleCollapse }
   return (
     <div
       className={`fixed right-0 top-0 h-screen bg-zinc-900/95 backdrop-blur-xl border-l border-zinc-800 transition-all duration-500 ease-in-out ${
-        isCollapsed ? 'w-16' : 'w-1/5 min-w-[280px] max-w-[320px]'
+        isCollapsed ? 'w-20' : 'w-1/5 min-w-[300px] max-w-[320px]'
       } z-20 overflow-hidden flex flex-col`}
     >
       {/* Panel Header */}

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   HomeIcon,
@@ -50,8 +50,7 @@ export function Sidebar({
   const [profileDropdown, setProfileDropdown] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [networkDropdown, setNetworkDropdown] = useState(false);
-  const sidebarRef = useRef<HTMLDivElement>(null);
-  const toggleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [dropdownOpenedAt, setDropdownOpenedAt] = useState<number>(0);
 
   const account = useActiveAccount();
   const wallet = useActiveWallet();
@@ -190,34 +189,36 @@ export function Sidebar({
       if (!profileDropdown && !networkDropdown) return;
 
       const target = event.target as Element;
+      const now = Date.now();
 
-      // Check if click is inside the dropdown overlay
-      if (sidebarRef.current?.contains(target)) {
-        // For profile dropdown: allow clicking on avatar button without closing
-        if (profileDropdown) {
-          const avatarButton = sidebarRef.current.querySelector('button[title="Menú de perfil"]');
-          const profileDropdownContent = sidebarRef.current.querySelector('.profile-dropdown-content');
-
-          // If clicking on avatar button or inside dropdown content, don't close
-          if (avatarButton?.contains(target) || profileDropdownContent?.contains(target)) {
-            return;
-          }
+      // For profile dropdown: check if click is outside dropdown content
+      if (profileDropdown) {
+        // Ignore clicks that happen too soon after opening (prevent accidental closes)
+        if (now - dropdownOpenedAt < 150) {
+          return;
         }
 
-        // For network dropdown: allow clicking inside dropdown
-        if (networkDropdown) {
-          const networkDropdownContent = sidebarRef.current.querySelector('.network-dropdown-content');
-          if (networkDropdownContent?.contains(target)) {
-            return;
-          }
-        }
+        const profileDropdownContent = document.querySelector('.profile-dropdown-content');
+        const avatarButton = document.querySelector('button[title="Menú de perfil"]');
 
-        return; // Don't close if click is inside any dropdown
+        const isOnAvatar = avatarButton?.contains(target);
+        const isInDropdown = profileDropdownContent?.contains(target);
+
+        // If click is NOT on avatar button AND NOT inside dropdown content, close it
+        if (!isOnAvatar && !isInDropdown) {
+          setProfileDropdown(false);
+          return;
+        }
       }
 
-      // Close dropdowns if click is anywhere else on the page
-      setProfileDropdown(false);
-      setNetworkDropdown(false);
+      // For network dropdown: check if click is outside dropdown content
+      if (networkDropdown) {
+        const networkDropdownContent = document.querySelector('.network-dropdown-content');
+        if (!networkDropdownContent?.contains(target)) {
+          setNetworkDropdown(false);
+          return;
+        }
+      }
     };
 
     const handleEscapeKey = (event: KeyboardEvent) => {
@@ -238,11 +239,8 @@ export function Sidebar({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside, false);
       document.removeEventListener('keydown', handleEscapeKey, true);
-      if (toggleTimeoutRef.current) {
-        clearTimeout(toggleTimeoutRef.current);
-      }
     };
-  }, [profileDropdown, networkDropdown]);
+  }, [profileDropdown, networkDropdown, dropdownOpenedAt]);
 
   // The final isAdmin status - Only trust verified API responses for security
   const isSuperAdminWallet = account?.address?.toLowerCase() === SUPER_ADMIN_WALLET;
@@ -391,20 +389,21 @@ export function Sidebar({
                 {/* Avatar (clickeable para dropdown) */}
                 <button
                   onClick={(e) => {
+                    e.preventDefault(); // Prevent default behavior
                     e.stopPropagation(); // Prevent event bubbling
 
-                    // Clear any existing timeout
-                    if (toggleTimeoutRef.current) {
-                      clearTimeout(toggleTimeoutRef.current);
-                    }
+                    // Immediately toggle the dropdown
+                    const isOpening = !profileDropdown;
+                    setProfileDropdown(!profileDropdown);
 
-                    // Use setTimeout to ensure the toggle happens after any other click handlers
-                    toggleTimeoutRef.current = setTimeout(() => {
-                      setProfileDropdown(!profileDropdown);
-                    }, 0);
+                    // If opening the dropdown, record the timestamp
+                    if (isOpening) {
+                      setDropdownOpenedAt(Date.now());
+                    }
                   }}
                   onMouseDown={(e) => {
-                    e.stopPropagation(); // Also prevent mousedown propagation
+                    e.preventDefault(); // Prevent default mousedown behavior
+                    e.stopPropagation(); // Prevent mousedown propagation
                   }}
                   className="flex-shrink-0 relative hover:bg-zinc-700/30 p-1 rounded transition-colors"
                   title="Menú de perfil"
@@ -463,7 +462,7 @@ export function Sidebar({
                 {profileDropdown && (
                   <>
                     {/* Invisible overlay to position dropdown fixed to viewport */}
-                    <div className="fixed inset-0 z-50 pointer-events-none" ref={sidebarRef}>
+                    <div className="fixed inset-0 z-50 pointer-events-none">
                       <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -517,9 +516,15 @@ export function Sidebar({
                           {/* Thirdweb ConnectButton - Maneja automáticamente conectar vs gestionar */}
                           <div className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full">
                             <ConnectWalletButton
-                             className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full"
-                             onConnect={() => setProfileDropdown(false)}
-                             onDisconnect={() => setProfileDropdown(false)}
+                              className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full"
+                              onConnect={() => {
+                                // Don't close dropdown on connect - let user stay in dropdown
+                                console.log('🔗 Wallet connected - keeping dropdown open');
+                              }}
+                              onDisconnect={() => {
+                                // Don't close dropdown on disconnect - let user stay in dropdown
+                                console.log('🔌 Wallet disconnected - keeping dropdown open');
+                              }}
                             />
                           </div>
 
@@ -708,20 +713,21 @@ export function Sidebar({
                       {/* Avatar (clickeable para dropdown) */}
                       <button
                         onClick={(e) => {
+                          e.preventDefault(); // Prevent default behavior
                           e.stopPropagation(); // Prevent event bubbling
 
-                          // Clear any existing timeout
-                          if (toggleTimeoutRef.current) {
-                            clearTimeout(toggleTimeoutRef.current);
-                          }
+                          // Immediately toggle the dropdown
+                          const isOpening = !profileDropdown;
+                          setProfileDropdown(!profileDropdown);
 
-                          // Use setTimeout to ensure the toggle happens after any other click handlers
-                          toggleTimeoutRef.current = setTimeout(() => {
-                            setProfileDropdown(!profileDropdown);
-                          }, 0);
+                          // If opening the dropdown, record the timestamp
+                          if (isOpening) {
+                            setDropdownOpenedAt(Date.now());
+                          }
                         }}
                         onMouseDown={(e) => {
-                          e.stopPropagation(); // Also prevent mousedown propagation
+                          e.preventDefault(); // Prevent default mousedown behavior
+                          e.stopPropagation(); // Prevent mousedown propagation
                         }}
                         className="flex-shrink-0 relative hover:bg-zinc-700/30 p-1 rounded transition-colors"
                         title="Menú de perfil"
@@ -841,12 +847,14 @@ export function Sidebar({
                           <ConnectWalletButton
                             className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full"
                             onConnect={() => {
-                              setProfileDropdown(false);
-                              setMobileOpen(false);
+                              // Don't close dropdown on connect - let user stay in dropdown
+                              console.log('🔗 Mobile wallet connected - keeping dropdown open');
+                              setMobileOpen(false); // Still close mobile sidebar
                             }}
                             onDisconnect={() => {
-                              setProfileDropdown(false);
-                              setMobileOpen(false);
+                              // Don't close dropdown on disconnect - let user stay in dropdown
+                              console.log('🔌 Mobile wallet disconnected - keeping dropdown open');
+                              setMobileOpen(false); // Still close mobile sidebar
                             }}
                           />
                         </div>
