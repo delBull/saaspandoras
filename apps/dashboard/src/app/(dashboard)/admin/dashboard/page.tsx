@@ -41,9 +41,13 @@ export default function AdminDashboardPage() {
   const [actionsLoading, setActionsLoading] = useState<Record<string, boolean>>({}); // Track loading states for actions
   const [authError, setAuthError] = useState<string | null>(null); // Para mostrar errores de autenticación
 
+  // State for wallet address
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+
   // Use project actions hook
   const { deleteProject, approveProject, rejectProject, changeProjectStatus } = useProjectActions({
     setActionsLoading,
+    walletAddress: walletAddress ?? undefined,
   });
 
   // Use global featured projects hook
@@ -99,6 +103,9 @@ export default function AdminDashboardPage() {
           setIsAdmin(false);
           return;
         }
+
+        // Store wallet address for use in hooks
+        setWalletAddress(walletAddress);
 
         const requestHeaders: Record<string, string> = {
           'Content-Type': 'application/json',
