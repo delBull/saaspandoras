@@ -22,8 +22,8 @@ export function ApplicantsDesktop({
   return (
     <div className="hidden lg:block min-h-screen">
       {/* Fila 1: Header */}
-      <div className={`top-0 z-10 flex justify-between items-center px-6 py-6 gap-8 w-full transition-all duration-500 ease-in-out ${
-        isPendingPanelCollapsed ? 'pr-16' : 'pr-[320px]'
+      <div className={`top-0 z-10 flex justify-between items-center px-6 lg:px-8 py-6 gap-8 w-full transition-all duration-500 ease-in-out ${
+        isPendingPanelCollapsed ? 'pr-20' : 'pr-[340px]'
       }`}>
         <div className="flex-row items-center gap-8">
           <h1 className="text-3xl font-bold text-white">Proyectos</h1>
@@ -42,8 +42,8 @@ export function ApplicantsDesktop({
       </div>
 
       {/* Fila 2: Proyectos Aprobados */}
-      <div className={`w-full px-8 py-8 transition-all duration-500 ease-in-out ${
-        isPendingPanelCollapsed ? 'pr-16' : 'pr-[320px]'
+      <div className={`w-full px-6 lg:px-8 py-8 transition-all duration-500 ease-in-out ${
+        isPendingPanelCollapsed ? 'pr-20' : 'pr-[340px]'
       }`}>
         <ProjectGrid projects={approvedProjects} variant="approved" />
       </div>
