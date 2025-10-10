@@ -16,8 +16,8 @@ export function ProjectCard({ project, variant = 'approved' }: ProjectCardProps)
   const isPending = project.status === 'pending';
 
   return (
-    <div className={`bg-zinc-800/50 rounded-xl overflow-hidden border hover:border-lime-500/50 transition-all duration-300 group flex flex-col ${
-      variant === 'pending' ? 'hover:border-yellow-500/50 border-zinc-700 min-w-0' : 'min-w-[300px]'
+    <div className={`bg-zinc-800/50 rounded-xl overflow-hidden border hover:border-lime-500/50 transition-all duration-300 group flex flex-col w-full ${
+      variant === 'pending' ? 'hover:border-yellow-500/50 border-zinc-700' : ''
     }`}>
       <div className="relative w-full bg-zinc-700" style={{ paddingBottom: isPending ? '75%' : '50%' }}>
         {project.coverPhotoUrl ? (
