@@ -1,11 +1,13 @@
+import { toast } from 'sonner';
 import type { ProjectStatus } from '@/types/admin';
 
 interface ProjectActionsProps {
   setActionsLoading: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
   walletAddress?: string;
+  refreshCallback?: () => void | Promise<void>;
 }
 
-export function useProjectActions({ setActionsLoading, walletAddress }: ProjectActionsProps) {
+export function useProjectActions({ setActionsLoading, walletAddress, refreshCallback }: ProjectActionsProps) {
   // Function to handle project deletion with confirmation
   const deleteProject = async (projectId: string, projectTitle: string) => {
     const confirmMessage = `¿Eliminar proyecto "${projectTitle}"?\n\nEsta acción NO SE PUEDE deshacer.`;
@@ -33,17 +35,19 @@ export function useProjectActions({ setActionsLoading, walletAddress }: ProjectA
       });
 
       if (response.ok) {
-        // Reload page to update the list
-        window.location.reload();
-        alert('Proyecto eliminado exitosamente');
+        toast.success('Proyecto eliminado exitosamente');
         console.log('Project deleted successfully');
+        // Refresh data instead of reloading page
+        if (refreshCallback) {
+          await refreshCallback();
+        }
       } else {
         const errorText = await response.text().catch(() => 'Error desconocido');
         let errorMessage = 'Error desconocido';
         if (errorText) {
           errorMessage = errorText;
         }
-        alert(`Error al eliminar el proyecto: ${errorMessage}`);
+        toast.error(`Error al eliminar el proyecto: ${errorMessage}`);
         console.error('Failed to delete project:', response.status, errorMessage);
       }
     } catch (error) {
@@ -82,10 +86,13 @@ export function useProjectActions({ setActionsLoading, walletAddress }: ProjectA
       });
 
       if (response.ok) {
-        window.location.reload(); // Reload to update the list
-        alert('Proyecto aprobado exitosamente');
+        toast.success('Proyecto aprobado exitosamente');
+        // Refresh data instead of reloading page
+        if (refreshCallback) {
+          await refreshCallback();
+        }
       } else {
-        alert('Error al aprobar el proyecto');
+        toast.error('Error al aprobar el proyecto');
       }
     } catch (error) {
       alert('Error de conexión');
@@ -131,10 +138,13 @@ export function useProjectActions({ setActionsLoading, walletAddress }: ProjectA
       });
 
       if (response.ok) {
-        window.location.reload(); // Reload to update the list
-        alert(`Proyecto ${statusText} exitosamente`);
+        toast.success(`Proyecto ${statusText} exitosamente`);
+        // Refresh data instead of reloading page
+        if (refreshCallback) {
+          await refreshCallback();
+        }
       } else {
-        alert(`Error al ${statusText} el proyecto`);
+        toast.error(`Error al ${statusText} el proyecto`);
       }
     } catch (error) {
       alert('Error de conexión');
@@ -179,12 +189,15 @@ export function useProjectActions({ setActionsLoading, walletAddress }: ProjectA
       });
 
       if (response.ok) {
-        window.location.reload(); // Reload to update the list
-        alert('Status del proyecto actualizado exitosamente');
+        toast.success('Status del proyecto actualizado exitosamente');
+        // Refresh data instead of reloading page
+        if (refreshCallback) {
+          await refreshCallback();
+        }
       } else {
         const errorText = await response.text().catch(() => 'Error desconocido');
         console.error('Error response:', response.status, errorText);
-        alert(`Error al cambiar el status del proyecto: ${response.status} - ${errorText}`);
+        toast.error(`Error al cambiar el status del proyecto: ${response.status} - ${errorText}`);
       }
     } catch (error) {
       alert('Error de conexión');

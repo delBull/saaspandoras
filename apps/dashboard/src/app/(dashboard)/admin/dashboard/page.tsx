@@ -44,10 +44,92 @@ export default function AdminDashboardPage() {
   // State for wallet address
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
 
-  // Use project actions hook
+  // Function to refresh all data
+  const refreshData = async () => {
+    console.log('🔄 Admin dashboard: Refreshing data...');
+    try {
+      // Get current wallet address for headers
+      let currentWalletAddress = null;
+      if (typeof window !== 'undefined') {
+        if (window.localStorage) {
+          try {
+            const sessionData = localStorage.getItem('wallet-session');
+            if (sessionData) {
+              const parsedSession = JSON.parse(sessionData) as unknown as WalletSession;
+              currentWalletAddress = parsedSession.address?.toLowerCase();
+            }
+          } catch (e) {
+            console.warn('Error getting wallet for refresh:', e);
+          }
+        }
+      }
+
+      // Fetch projects
+      const projectsRes = await fetch('/api/admin/projects', {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(currentWalletAddress && {
+            'x-thirdweb-address': currentWalletAddress,
+            'x-wallet-address': currentWalletAddress,
+            'x-user-address': currentWalletAddress
+          }),
+        }
+      });
+
+      if (projectsRes.ok) {
+        const projectsData = await projectsRes.json() as Project[];
+        setProjects(projectsData);
+        console.log('🔄 Admin dashboard: Projects refreshed successfully');
+      }
+
+      // Fetch administrators
+      const adminsRes = await fetch('/api/admin/administrators', {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(currentWalletAddress && {
+            'x-thirdweb-address': currentWalletAddress,
+            'x-wallet-address': currentWalletAddress,
+            'x-user-address': currentWalletAddress
+          }),
+        }
+      });
+      if (adminsRes.ok) {
+        const rawAdminsData = await adminsRes.json() as (Omit<AdminData, 'role'> & { role?: string })[];
+        const processedAdmins = rawAdminsData.map((admin) => ({
+          id: admin.id,
+          walletAddress: admin.walletAddress,
+          alias: admin.alias,
+          role: admin.role ?? 'admin'
+        } as AdminData));
+        setAdmins(processedAdmins);
+      }
+
+      // Fetch users
+      const usersRes = await fetch('/api/admin/users', {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(currentWalletAddress && {
+            'x-thirdweb-address': currentWalletAddress,
+            'x-wallet-address': currentWalletAddress,
+            'x-user-address': currentWalletAddress
+          }),
+        }
+      });
+      if (usersRes.ok) {
+        const usersData = await usersRes.json() as UserData[];
+        setUsers(usersData);
+      }
+
+    } catch (error) {
+      console.error('🔄 Admin dashboard: Error refreshing data:', error);
+    }
+  };
+
+  // Use project actions hook with refresh callback
   const { deleteProject, approveProject, rejectProject, changeProjectStatus } = useProjectActions({
     setActionsLoading,
     walletAddress: walletAddress ?? undefined,
+    refreshCallback: refreshData,
   });
 
   // Use global featured projects hook
