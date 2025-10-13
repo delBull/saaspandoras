@@ -86,20 +86,20 @@ interface TokenDistribution {
 
 
 // Componentes UI inline (reutilizados de ProjectForm)
-const Button = ({
-  children,
-  className = "",
-  onClick,
-  type = "button",
-  disabled = false,
-  variant = "primary"
-}: {
+const Button: React.FC<{
   children: React.ReactNode;
   className?: string;
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   type?: "button" | "submit";
   disabled?: boolean;
   variant?: "primary" | "secondary" | "outline";
+}> = ({
+  children,
+  className = "",
+  onClick,
+  type = "button",
+  disabled = false,
+  variant = "primary"
 }) => (
   <button
     type={type}
@@ -293,24 +293,24 @@ export function MultiStepForm({
       yieldSource: project?.yieldSource as FullProjectFormData['yieldSource'],
       lockupPeriod: project?.lockupPeriod ?? undefined,
       fundUsage: project?.fundUsage ?? undefined,
-      
+
       teamMembers: safeParseArray<TeamMember>(project?.teamMembers),
       advisors: safeParseArray<Advisor>(project?.advisors),
       tokenDistribution: safeParseObject<TokenDistribution>(project?.tokenDistribution, { publicSale: 0, team: 0, treasury: 0, marketing: 0 }),
       contractAddress: project?.contractAddress ?? undefined,
       treasuryAddress: project?.treasuryAddress ?? undefined,
-      
+
       // Sección 5
       legalStatus: project?.legalStatus ?? undefined,
       valuationDocumentUrl: project?.valuationDocumentUrl ?? undefined,
       fiduciaryEntity: project?.fiduciaryEntity ?? undefined,
       dueDiligenceReportUrl: project?.dueDiligenceReportUrl ?? undefined,
-      
+
       // Sección 6
       isMintable: Boolean(project?.isMintable ?? false),
       isMutable: Boolean(project?.isMutable ?? false),
       updateAuthorityAddress: project?.updateAuthorityAddress ?? undefined,
-      
+
       // Sección 7
       applicantName: project?.applicantName ?? undefined,
       applicantPosition: project?.applicantPosition ?? undefined,
@@ -319,6 +319,7 @@ export function MultiStepForm({
       verificationAgreement: Boolean(project?.verificationAgreement ?? false),
     },
   });
+
 
   const { handleSubmit, watch, setValue, formState: { errors }, trigger } = methods;
 
