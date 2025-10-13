@@ -207,10 +207,60 @@ export function useProjectActions({ setActionsLoading, walletAddress, refreshCal
     }
   };
 
+  // Function to transfer project ownership
+  const transferProject = async (projectId: string, projectTitle: string, newOwnerWallet: string) => {
+    const confirmMessage = `¿Transferir la propiedad del proyecto "${projectTitle}" a la wallet ${newOwnerWallet.substring(0, 8)}...?`;
+
+    if (!window.confirm(confirmMessage)) return;
+
+    if (!walletAddress) {
+      alert('Error: No se pudo obtener la dirección de tu wallet. Conecta tu wallet primero.');
+      return;
+    }
+
+    const actionKey = `transfer-${projectId}`;
+    setActionsLoading((prev) => ({ ...prev, [actionKey]: true }));
+
+    try {
+      console.log('🔄 CLIENT: Transfer request - walletAddress:', walletAddress);
+      console.log('🔄 CLIENT: Transfer request - newOwnerWallet:', newOwnerWallet);
+
+      const response = await fetch(`/api/admin/projects/${projectId}/transfer`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-thirdweb-address': walletAddress,
+          'x-wallet-address': walletAddress,
+          'x-user-address': walletAddress,
+        },
+        body: JSON.stringify({ newOwnerWallet }),
+      });
+
+      console.log('🔄 CLIENT: Transfer response status:', response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Error desconocido' })) as { message?: string };
+        throw new Error(errorData.message ?? 'No se pudo transferir el proyecto.');
+      }
+
+      toast.success('Proyecto transferido exitosamente');
+      // Refresh data instead of reloading page
+      if (refreshCallback) {
+        await refreshCallback();
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Error al transferir el proyecto');
+      console.error('Error transferring project:', error);
+    } finally {
+      setActionsLoading((prev) => ({ ...prev, [actionKey]: false }));
+    }
+  };
+
   return {
     deleteProject,
     approveProject,
     rejectProject,
     changeProjectStatus,
+    transferProject,
   };
 }

@@ -69,7 +69,7 @@ export async function GET(_request: Request) {
           applicantName: true,
           applicantEmail: true,
           applicantPhone: true,
-          applicantWalletAddress: true,
+          applicantWalletAddress: true, // ✅ Ya está incluido
 
           // Featured status
           featured: true,

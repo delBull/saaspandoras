@@ -28,6 +28,21 @@ export async function GET() {
       const projects = await db.query.projects.findMany({
         where: inArray(projectsSchema.status, ["pending", "approved", "live", "completed"]),
         orderBy: (projects, { desc }) => [desc(projects.createdAt)],
+        columns: {
+          // Basic info
+          id: true,
+          title: true,
+          description: true,
+          slug: true,
+          status: true,
+          createdAt: true,
+          coverPhotoUrl: true,
+          targetAmount: true,
+          // Applicant info - CRITICAL for ownership display
+          applicantWalletAddress: true, // ✅ AGREGADO - Campo faltante
+          applicantName: true,
+          applicantEmail: true,
+        }
       });
 
       console.log(`📊 Public API: Found ${projects.length} projects`);
@@ -40,7 +55,8 @@ export async function GET() {
       // Fallback to raw SQL query
       try {
         const rawProjects = await db.execute(sql`
-          SELECT id, title, description, slug, status, created_at, cover_photo_url, target_amount
+          SELECT id, title, description, slug, status, created_at, cover_photo_url, target_amount,
+                 applicant_wallet_address, applicant_name, applicant_email
           FROM projects
           WHERE status IN ('pending', 'approved', 'live', 'completed')
           ORDER BY created_at DESC
