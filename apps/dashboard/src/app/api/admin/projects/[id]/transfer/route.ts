@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "~/db";
-import { projects as projectsSchema } from "~/db/schema";
 import { isAdmin } from "@/lib/auth";
 import { headers } from "next/headers";
-import { eq } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
 export const runtime = "nodejs";
@@ -13,47 +12,45 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
+// TEMPORARY TEST - Remove after debugging
+export function GET(_request: Request, _params: RouteParams) {
+  console.log('🔄 TRANSFER: ===== GET TEST ENDPOINT =====');
+  return new Response('Transfer endpoint is working', { status: 200 });
+}
+
 export async function POST(request: Request, { params }: RouteParams) {
-  console.log('🔄 TRANSFER: Starting transfer request');
-
-  // Get headers directly from the request (same as other working admin endpoints)
-  const requestHeaders = await headers();
-
-  // Try multiple header names in case Vercel filters some
-  const walletAddress = requestHeaders.get('x-thirdweb-address') ??
-                       requestHeaders.get('x-wallet-address') ??
-                       requestHeaders.get('x-user-address');
-
-  console.log('🔄 TRANSFER: Headers received:', {
-    'x-thirdweb-address': requestHeaders.get('x-thirdweb-address'),
-    'x-wallet-address': requestHeaders.get('x-wallet-address'),
-    'x-user-address': requestHeaders.get('x-user-address'),
-    walletAddress
-  });
-
-  // Use the SAME authentication logic as other working admin endpoints
-  const userIsAdmin = await isAdmin(walletAddress);
-
-  console.log('🔄 TRANSFER: Admin check result:', userIsAdmin, {
-    walletAddress
-  });
-
-  if (!userIsAdmin) {
-    console.log('🔄 TRANSFER: Access denied - user is not admin');
-    return NextResponse.json({ message: "No autorizado" }, { status: 403 });
-  }
-
-  const { id } = await params;
-  const projectId = Number(id);
-
-  if (isNaN(projectId)) {
-    return NextResponse.json({ message: "ID de proyecto inválido" }, { status: 400 });
-  }
+  console.log('🔄 TRANSFER: ===== STARTING TRANSFER REQUEST =====');
 
   try {
-    console.log('🔄 TRANSFER: Parsing request body');
-    const body: unknown = await request.json();
-    console.log('🔄 TRANSFER: Request body:', body);
+    console.log('🔄 TRANSFER: Step 1 - Getting headers');
+    const requestHeaders = await headers();
+
+    console.log('🔄 TRANSFER: Step 2 - Extracting wallet address');
+    const walletAddress = requestHeaders.get('x-thirdweb-address') ??
+                         requestHeaders.get('x-wallet-address') ??
+                         requestHeaders.get('x-user-address');
+
+    console.log('🔄 TRANSFER: Step 3 - Checking admin status');
+    const userIsAdmin = await isAdmin(walletAddress);
+
+    console.log('🔄 TRANSFER: Step 4 - Admin check result:', userIsAdmin);
+
+    if (!userIsAdmin) {
+      console.log('🔄 TRANSFER: Access denied - user is not admin');
+      return NextResponse.json({ message: "No autorizado" }, { status: 403 });
+    }
+
+    console.log('🔄 TRANSFER: Step 5 - Getting params');
+    const { id } = await params;
+    const projectId = Number(id);
+
+    if (isNaN(projectId)) {
+      return NextResponse.json({ message: "ID de proyecto inválido" }, { status: 400 });
+    }
+
+    console.log('🔄 TRANSFER: Step 6 - Parsing body');
+    const body = await request.json();
+    console.log('🔄 TRANSFER: Body:', body);
 
     if (typeof body !== 'object' || body === null || !('newOwnerWallet' in body)) {
       console.log('🔄 TRANSFER: Invalid body structure');
@@ -77,25 +74,25 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     const newOwnerWalletLower = newOwnerWallet.toLowerCase();
 
-    // Verificar que el proyecto existe
-    console.log('🔄 TRANSFER: Checking if project exists, ID:', projectId);
-    const existingProject = await db.query.projects.findFirst({
-      where: eq(projectsSchema.id, projectId),
+    console.log('🔄 TRANSFER: Step 7 - Checking if project exists');
+    // Verificar que el proyecto existe - Use SQL raw to avoid Drizzle compilation issues
+    const existingProject = await db.execute(sql`SELECT * FROM projects WHERE id = ${projectId}`);
+    const projectData = existingProject[0] as any;
+
+    console.log('🔄 TRANSFER: Step 8 - Project found:', !!projectData, {
+      id: projectData?.id,
+      title: projectData?.title,
+      currentOwner: projectData?.applicant_wallet_address
     });
 
-    console.log('🔄 TRANSFER: Project found:', !!existingProject, {
-      id: existingProject?.id,
-      title: existingProject?.title,
-      currentOwner: existingProject?.applicantWalletAddress
-    });
-
-    if (!existingProject) {
+    if (!projectData) {
       console.log('🔄 TRANSFER: Project not found');
       return NextResponse.json({ message: "Proyecto no encontrado" }, { status: 404 });
     }
 
+    console.log('🔄 TRANSFER: Step 9 - Checking ownership conflict');
     // Verificar que no se está transfiriendo al mismo propietario
-    if (existingProject.applicantWalletAddress?.toLowerCase() === newOwnerWalletLower) {
+    if (projectData.applicant_wallet_address?.toLowerCase() === newOwnerWalletLower) {
       console.log('🔄 TRANSFER: Transfer to same owner attempted');
       return NextResponse.json(
         { message: "El proyecto ya pertenece a esta wallet" },
@@ -103,38 +100,35 @@ export async function POST(request: Request, { params }: RouteParams) {
       );
     }
 
-    // Actualizar el propietario del proyecto
-    console.log('🔄 TRANSFER: Updating project ownership');
-    const [updatedProject] = await db
-      .update(projectsSchema)
-      .set({
-        applicantWalletAddress: newOwnerWalletLower,
-        // Reset applicant info since it's a new owner
-        applicantName: null,
-        applicantPosition: null,
-        applicantEmail: null,
-        applicantPhone: null,
-      })
-      .where(eq(projectsSchema.id, projectId))
-      .returning();
+    console.log('🔄 TRANSFER: Step 10 - Updating project ownership');
+    // Actualizar el propietario del proyecto - Use SQL raw to avoid Drizzle compilation issues
+    const updateResult = await db.execute(sql`
+      UPDATE projects
+      SET applicant_wallet_address = ${newOwnerWalletLower},
+          applicant_name = NULL,
+          applicant_position = NULL,
+          applicant_email = NULL,
+          applicant_phone = NULL
+      WHERE id = ${projectId}
+      RETURNING *
+    `);
+    const updatedProject = updateResult[0] as any;
 
-    console.log('🔄 TRANSFER: Project updated successfully:', {
+    console.log('🔄 TRANSFER: Step 11 - Project updated successfully:', {
       id: updatedProject?.id,
-      newOwner: updatedProject?.applicantWalletAddress
+      newOwner: updatedProject?.applicant_wallet_address
     });
 
+    console.log('🔄 TRANSFER: ===== TRANSFER COMPLETED SUCCESSFULLY =====');
     return NextResponse.json({
       message: "Proyecto transferido exitosamente",
       project: updatedProject
     }, { status: 200 });
 
   } catch (error) {
-    console.error("🔄 TRANSFER: Error transferring project:", error);
+    console.error("🔄 TRANSFER: ===== ERROR IN TRANSFER =====");
+    console.error("🔄 TRANSFER: Error:", error);
     console.error("🔄 TRANSFER: Error stack:", error instanceof Error ? error.stack : 'No stack');
-    console.error("🔄 TRANSFER: Error details:", {
-      projectId,
-      walletAddress
-    });
 
     return NextResponse.json(
       { message: "Error interno del servidor.", error: error instanceof Error ? error.message : 'Unknown error' },
