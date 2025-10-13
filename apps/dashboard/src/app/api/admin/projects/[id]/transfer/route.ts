@@ -12,6 +12,13 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
+interface Project {
+  id: number;
+  title: string;
+  applicant_wallet_address: string | null;
+  // Agrega aquí otros campos del proyecto si los necesitas
+}
+
 // TEMPORARY TEST - Remove after debugging
 export function GET(_request: Request, _params: RouteParams) {
   console.log('🔄 TRANSFER: ===== GET TEST ENDPOINT =====');
@@ -49,7 +56,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     }
 
     console.log('🔄 TRANSFER: Step 6 - Parsing body');
-    const body = await request.json();
+    const body: unknown = await request.json();
     console.log('🔄 TRANSFER: Body:', body);
 
     if (typeof body !== 'object' || body === null || !('newOwnerWallet' in body)) {
@@ -76,13 +83,13 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     console.log('🔄 TRANSFER: Step 7 - Checking if project exists');
     // Verificar que el proyecto existe - Use SQL raw to avoid Drizzle compilation issues
-    const existingProject = await db.execute(sql`SELECT * FROM projects WHERE id = ${projectId}`);
-    const projectData = existingProject[0] as any;
+    const existingProjectResult = await db.execute(sql`SELECT id, title, applicant_wallet_address FROM projects WHERE id = ${projectId}`);
+    const projectData = existingProjectResult[0] as Project | undefined;
 
     console.log('🔄 TRANSFER: Step 8 - Project found:', !!projectData, {
       id: projectData?.id,
       title: projectData?.title,
-      currentOwner: projectData?.applicant_wallet_address
+      currentOwner: projectData?.applicant_wallet_address,
     });
 
     if (!projectData) {
@@ -102,17 +109,17 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     console.log('🔄 TRANSFER: Step 10 - Updating project ownership');
     // Actualizar el propietario del proyecto - Use SQL raw to avoid Drizzle compilation issues
-    const updateResult = await db.execute(sql`
+    const updateResult = await db.execute(sql<Project>`
       UPDATE projects
       SET applicant_wallet_address = ${newOwnerWalletLower},
           applicant_name = NULL,
           applicant_position = NULL,
           applicant_email = NULL,
           applicant_phone = NULL
-      WHERE id = ${projectId}
+      WHERE id = ${projectId} 
       RETURNING *
     `);
-    const updatedProject = updateResult[0] as any;
+    const updatedProject = updateResult[0];
 
     console.log('🔄 TRANSFER: Step 11 - Project updated successfully:', {
       id: updatedProject?.id,
