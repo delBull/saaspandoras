@@ -44,22 +44,22 @@ export const administrators = pgTable("administrators", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const users = pgTable("User", {
+export const users = pgTable("users", {
   id: varchar("id", { length: 255 }).primaryKey(),
   name: varchar("name", { length: 255 }),
   email: varchar("email", { length: 255 }).unique(),
   image: text("image"),
-  walletAddress: varchar("walletAddress", { length: 42 }).unique(),
-  hasPandorasKey: boolean("hasPandorasKey").default(false).notNull(),
+  walletAddress: varchar("wallet_address", { length: 42 }).unique(),
+  hasPandorasKey: boolean("has_pandoras_key").default(false).notNull(),
 
   // KYC Related Fields - New additions for user profile system
-  kycLevel: varchar("kycLevel", { length: 20 }).default('basic').notNull(), // 'basic' or 'advanced'
-  kycCompleted: boolean("kycCompleted").default(false).notNull(), // Whether advanced KYC is complete
-  kycData: jsonb("kycData"), // JSON object with KYC information (phone, address, SSN, etc.)
+  kycLevel: varchar("kyc_level", { length: 20 }).default('basic').notNull(), // 'basic' or 'advanced'
+  kycCompleted: boolean("kyc_completed").default(false).notNull(), // Whether advanced KYC is complete
+  kycData: jsonb("kyc_data"), // JSON object with KYC information (phone, address, SSN, etc.)
 
-  connectionCount: integer("connectionCount").default(1).notNull(),
-  lastConnectionAt: timestamp("lastConnectionAt").defaultNow(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  connectionCount: integer("connection_count").default(1).notNull(),
+  lastConnectionAt: timestamp("last_connection_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const businessCategoryEnum = pgEnum("business_category", [

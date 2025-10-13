@@ -126,7 +126,7 @@ export default function AdminDashboardPage() {
   };
 
   // Use project actions hook with refresh callback
-  const { deleteProject, approveProject, rejectProject, changeProjectStatus } = useProjectActions({
+  const { deleteProject, approveProject, rejectProject, changeProjectStatus, transferProject } = useProjectActions({
     setActionsLoading,
     walletAddress: walletAddress ?? undefined,
     refreshCallback: refreshData,
@@ -580,18 +580,6 @@ export default function AdminDashboardPage() {
                       <tr className="bg-zinc-800/50">
                         <td colSpan={6} className="px-6 py-4">
                           <div className="space-y-4">
-                            {/* Debug info - remove in production */}
-                            {process.env.NODE_ENV === 'development' && (
-                              <div className="bg-yellow-900/20 border border-yellow-600 rounded p-2 text-xs">
-                                <strong>Debug - Project {p.id} data:</strong><br/>
-                                website: {p.website ?? 'null'}<br/>
-                                whitepaperUrl: {p.whitepaperUrl ?? 'null'}<br/>
-                                twitterUrl: {p.twitterUrl ?? 'null'}<br/>
-                                discordUrl: {p.discordUrl ?? 'null'}<br/>
-                                telegramUrl: {p.telegramUrl ?? 'null'}<br/>
-                                linkedinUrl: {p.linkedinUrl ?? 'null'}
-                              </div>
-                            )}
                             <h4 className="font-semibold text-lime-400 text-sm flex items-center gap-2">
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -743,6 +731,12 @@ export default function AdminDashboardPage() {
                                 <div>
                                   <span className="text-gray-400">Entidad fiduciaria: </span>
                                   <span className="text-white">{p.fiduciaryEntity ?? "Sin completar"}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-400">Propiedad: </span>
+                                  <span className="text-white font-mono text-xs">
+                                    {p.applicantWalletAddress ? `${p.applicantWalletAddress.substring(0, 6)}...${p.applicantWalletAddress.substring(38)}` : "Sin asignar"}
+                                  </span>
                                 </div>
                               </div>
                             </div>
@@ -921,8 +915,34 @@ export default function AdminDashboardPage() {
                     </button>
                   );
                 } else {
-                  // BOTÓN EDITAR - disponible para TODOS los proyectos que no estén pending
+                  // BOTÓN TRANSFERIR - disponible para TODOS los proyectos
                   actions.unshift(
+                    <button
+                      key="transfer"
+                      onClick={async () => {
+                        const newOwnerWallet = prompt('Introduce la dirección de wallet del nuevo propietario:');
+                        if (newOwnerWallet && /^0x[a-fA-F0-9]{40}$/.test(newOwnerWallet)) {
+                          await transferProject(currentProject.id, currentProject.title, newOwnerWallet);
+                          setActionsDropdown(null);
+                        } else if (newOwnerWallet) {
+                          alert('Dirección de wallet inválida. Debe ser una dirección Ethereum válida (0x...).');
+                        }
+                      }}
+                      disabled={actionsLoading[`transfer-${currentProject.id}`]}
+                      className={`w-full text-left px-4 py-3 text-sm hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between text-purple-400 hover:text-purple-300`}
+                      role="menuitem"
+                      type="button"
+                      tabIndex={0}
+                    >
+                      <span>🔄 Transferir</span>
+                      {actionsLoading[`transfer-${currentProject.id}`] && (
+                        <div className="w-2 h-2 border border-current border-t-transparent rounded-full animate-spin"></div>
+                      )}
+                    </button>
+                  );
+
+                  // BOTÓN EDITAR - disponible para TODOS los proyectos que no estén pending
+                  actions.splice(1, 0,
                     <Link
                       key="edit"
                       href={`/admin/projects/${currentProject.id}/edit`}

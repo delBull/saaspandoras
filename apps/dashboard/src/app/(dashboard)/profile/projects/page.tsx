@@ -66,17 +66,51 @@ export default function ProfileProjectsPage() {
           const isSuperAdmin = SUPER_ADMIN_WALLETS.includes(userProfile?.walletAddress.toLowerCase() || '');
           const userWalletAddress = userProfile?.walletAddress;
 
+          console.log('🔍 Profile Projects Debug:', {
+            userWalletAddress,
+            isSuperAdmin,
+            totalProjects: projects.length,
+            projectsSample: projects.slice(0, 2).map(p => ({
+              id: p.id,
+              title: p.title,
+              applicantWalletAddress: p.applicantWalletAddress,
+              status: p.status
+            }))
+          });
+
           let userProjects: Project[] = [];
           if (isSuperAdmin) {
             // Super admin sees all manageable projects
             userProjects = projects.filter(p =>
               ['pending', 'approved', 'live', 'completed', 'rejected'].includes(p.status)
             );
+            console.log('👑 Super admin projects:', userProjects.length);
           } else if (userWalletAddress) {
             // Regular users see ONLY their projects by wallet address
-            userProjects = projects.filter(p =>
-              p.applicantWalletAddress?.toLowerCase() === userWalletAddress.toLowerCase()
-            );
+            const filteredProjects = projects.filter(p => {
+              const projectWallet = p.applicantWalletAddress?.toLowerCase();
+              const userWallet = userWalletAddress.toLowerCase();
+              const matches = projectWallet === userWallet;
+
+              if (process.env.NODE_ENV === 'development') {
+                console.log('🔍 Project filter check:', {
+                  projectId: p.id,
+                  projectWallet,
+                  userWallet,
+                  matches,
+                  projectStatus: p.status
+                });
+              }
+
+              return matches;
+            });
+
+            userProjects = filteredProjects;
+            console.log('👤 Regular user projects:', {
+              userWallet: userWalletAddress,
+              filteredCount: userProjects.length,
+              totalProjects: projects.length
+            });
           }
 
           setUserProjects(userProjects);

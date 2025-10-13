@@ -69,7 +69,7 @@ export async function GET(_request: Request) {
           applicantName: true,
           applicantEmail: true,
           applicantPhone: true,
-          applicantWalletAddress: true,
+          applicantWalletAddress: true, // ✅ Ya está incluido
 
           // Featured status
           featured: true,
@@ -260,7 +260,7 @@ export async function POST(request: Request) {
         updateAuthorityAddress: data.updateAuthorityAddress ?? null,
 
         // --- Sección 7: Strings y Booleans ---
-        applicantName: data.applicantName ?? null,
+        applicantName: data.applicantName ?? creatorWallet.toLowerCase(), // 🔥 Asignar la wallet del creador si no hay nombre
         applicantPosition: data.applicantPosition ?? null,
         applicantEmail: data.applicantEmail ?? null,
         applicantPhone: data.applicantPhone ?? null,
