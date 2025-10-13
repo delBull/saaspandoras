@@ -112,7 +112,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     const updateResult = await db.execute(sql<Project>`
       UPDATE projects
       SET applicant_wallet_address = ${newOwnerWalletLower},
-          applicant_name = NULL,
+          applicant_name = ${newOwnerWalletLower},
           applicant_position = NULL,
           applicant_email = NULL,
           applicant_phone = NULL
