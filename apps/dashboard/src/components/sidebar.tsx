@@ -51,6 +51,7 @@ export function Sidebar({
   const [userProfile, setUserProfile] = useState<any>(null);
   const [networkDropdown, setNetworkDropdown] = useState(false);
   const [dropdownOpenedAt, setDropdownOpenedAt] = useState<number>(0);
+  const [copyAnimation, setCopyAnimation] = useState(false);
 
   const account = useActiveAccount();
   const wallet = useActiveWallet();
@@ -248,6 +249,18 @@ export function Sidebar({
 
   // Use centralized network configuration
   const supportedNetworks = SUPPORTED_NETWORKS;
+
+  // Copy wallet address with animation feedback
+  const copyWalletAddress = async (address: string) => {
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopyAnimation(true);
+      // Reset animation after 2 seconds
+      setTimeout(() => setCopyAnimation(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy wallet address:', error);
+    }
+  };
 
   // Centralized profile dropdown menu items
   const getProfileDropdownItems = (isMobile = false) => {
@@ -466,8 +479,7 @@ export function Sidebar({
                     onClick={(e) => {
                       e.stopPropagation();
                       const fullAddress = account?.address ?? userName ?? walletProp ?? '';
-                      void navigator.clipboard.writeText(fullAddress);
-                      // You could add a toast notification here
+                      void copyWalletAddress(fullAddress);
                     }}
                     title={`${account?.address ?? userName ?? walletProp ?? ''} - Click to copy entire wallet address`}
                   >
@@ -477,21 +489,43 @@ export function Sidebar({
                       {open ? "C:\\USER\\" : ""}
                     </span>
                     <span
-                      className="truncate font-mono text-xs text-lime-400 group-hover:text-lime-300 transition-colors"
+                      className={`truncate font-mono text-xs transition-colors ${
+                        copyAnimation ? 'text-green-400' : 'text-lime-400 group-hover:text-lime-300'
+                      }`}
                     >
                       {isClient
                         ? (account?.address ?? walletProp ?? userName ?? "...").substring(0, 8) + '...' + (account?.address ?? walletProp ?? userName ?? "...").substring(36, 42)
                         : "..." }
                     </span>
-                    {/* Copy icon */}
-                    <svg
-                      className="w-3 h-3 text-gray-500 group-hover:text-gray-300 transition-colors flex-shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                    {/* Copy icon with animation */}
+                    <motion.div
+                      animate={{
+                        scale: copyAnimation ? [1, 1.2, 1] : 1,
+                        color: copyAnimation ? '#10b981' : undefined
+                      }}
+                      transition={{ duration: 0.3 }}
+                      className="flex-shrink-0"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
+                      {copyAnimation ? (
+                        <svg
+                          className="w-3 h-3 text-green-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        <svg
+                          className="w-3 h-3 text-gray-500 group-hover:text-gray-300 transition-colors"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      )}
+                    </motion.div>
                   </button>
                 </motion.div>
               </div>
@@ -767,28 +801,51 @@ export function Sidebar({
                           onClick={(e) => {
                             e.stopPropagation();
                             const fullAddress = account?.address ?? userName ?? walletProp ?? '';
-                            void navigator.clipboard.writeText(fullAddress);
-                            // You could add a toast notification here
+                            void copyWalletAddress(fullAddress);
                           }}
                           title={`${account?.address ?? userName ?? walletProp ?? ''} - Click to copy entire wallet address`}
                         >
                           <span className="font-mono text-xs text-gray-400 flex-shrink-0">
                             C:\USER\
                           </span>
-                          <span className="truncate font-mono text-xs text-lime-400 group-hover:text-lime-300 transition-colors">
+                          <span
+                            className={`truncate font-mono text-xs transition-colors ${
+                              copyAnimation ? 'text-green-400' : 'text-lime-400 group-hover:text-lime-300'
+                            }`}
+                          >
                             {isClient
                               ? (account?.address ?? walletProp ?? userName ?? "...").substring(0, 8) + '...' + (account?.address ?? walletProp ?? userName ?? "...").substring(36, 42)
                               : "..." }
                           </span>
-                          {/* Copy icon */}
-                          <svg
-                            className="w-3 h-3 text-gray-500 group-hover:text-gray-300 transition-colors flex-shrink-0"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+                          {/* Copy icon with animation */}
+                          <motion.div
+                            animate={{
+                              scale: copyAnimation ? [1, 1.2, 1] : 1,
+                              color: copyAnimation ? '#10b981' : undefined
+                            }}
+                            transition={{ duration: 0.3 }}
+                            className="flex-shrink-0"
                           >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                          </svg>
+                            {copyAnimation ? (
+                              <svg
+                                className="w-3 h-3 text-green-400"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            ) : (
+                              <svg
+                                className="w-3 h-3 text-gray-500 group-hover:text-gray-300 transition-colors"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
+                            )}
+                          </motion.div>
                         </button>
                       </motion.div>
                     </div>
