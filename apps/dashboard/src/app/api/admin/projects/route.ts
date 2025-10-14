@@ -10,6 +10,7 @@ import { projectApiSchema } from "@/lib/project-schema-api";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { headers } from "next/headers";
 import slugify from "slugify";
+import { validateRequestBody } from "@/lib/security-utils";
 
 export async function GET(_request: Request) {
   try {
@@ -167,6 +168,13 @@ export async function POST(request: Request) {
 
   try {
     const body: unknown = await request.json();
+
+    // Validación inmediata del body
+    const validation = validateRequestBody(body);
+    if (!validation.isValid) {
+      return NextResponse.json({ message: validation.error }, { status: 400 });
+    }
+
     // Los admins pueden tener un schema menos estricto si es necesario,
     // pero por ahora usamos el mismo para consistencia.
     const parsedData = projectApiSchema.safeParse(body);

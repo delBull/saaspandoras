@@ -9,6 +9,7 @@ import { getAuth, isAdmin } from "@/lib/auth";
 import { headers } from "next/headers";
 import { eq } from "drizzle-orm";
 import slugify from "slugify";
+import { sanitizeLogData, validateRequestBody } from "@/lib/security-utils";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -36,7 +37,14 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     console.log('🔄 PATCH: Starting project status update for ID:', projectId);
 
     const body: unknown = await request.json();
-    console.log('🔄 PATCH: Request body:', body);
+
+    // Validación inmediata del body
+    const validation = validateRequestBody(body);
+    if (!validation.isValid) {
+      return NextResponse.json({ message: validation.error }, { status: 400 });
+    }
+
+    console.log('🔄 PATCH: Request body:', sanitizeLogData(body));
 
     // For PATCH, we only allow status updates for now
     if (typeof body !== 'object' || body === null || !('status' in body)) {

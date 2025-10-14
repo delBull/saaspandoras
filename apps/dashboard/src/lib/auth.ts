@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { SUPER_ADMIN_WALLET } from "./constants";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
+import { sanitizeLogData } from "./security-utils";
 
 interface JWTPayload {
   userId?: string;
@@ -106,11 +107,11 @@ export async function getAuth(headers?: MinimalHeaders, userAddress?: string) {
             console.log('🔍 [Auth] Attempting to decode JWT token');
             const decoded = jwt.decode(jwtToken) as JWTPayload | null;
             if (decoded) {
-              console.log('🔍 [Auth] JWT decoded payload:', {
-                userId: decoded.userId,
-                sub: decoded.sub,
+              console.log('🔍 [Auth] JWT decoded payload:', sanitizeLogData({
+                userId: decoded.userId?.substring(0, 10) + '...',
+                sub: decoded.sub?.substring(0, 10) + '...',
                 username: decoded.username
-              });
+              }));
 
               // The userId in the JWT is NOT the wallet address - it's an internal Thirdweb identifier
               // We need to find the actual wallet address associated with this user
