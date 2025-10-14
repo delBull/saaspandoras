@@ -8,8 +8,10 @@ import { Loader2, ArrowLeftIcon } from "lucide-react";
 import { Button } from "@saasfly/ui/button";
 import { ApplicantsDesktop } from "./ApplicantsDesktop";
 import { ApplicantsMobile } from "./ApplicantsMobile";
+import { ApplicantsFilters } from "./ApplicantsFilters";
 import { MultiStepForm } from "../../app/(dashboard)/admin/projects/[id]/edit/multi-step-form";
 import { useApplicantsDataBasic, type ApplicantsData } from "../../hooks/applicants/useApplicantsDataBasic";
+import { useProjectFilters } from "../../hooks/applicants/useProjectFilters";
 
 interface FormProps {
   showForm: boolean;
@@ -64,6 +66,23 @@ export default function ApplicantsPage() {
     setIsPendingPanelCollapsed,
     setShowMobilePendingModal,
   }: ApplicantsData = useApplicantsDataBasic();
+
+  // Sistema de filtros mejorado
+  const {
+    viewMode,
+    setViewMode,
+    gridColumns,
+    setGridColumns,
+    filters,
+    setFilters,
+    filteredProjects,
+    updateFilter,
+    clearFilters,
+    hasActiveFilters,
+    totalProjects,
+    filteredCount,
+  } = useProjectFilters([...pendingProjects, ...approvedProjects]);
+
   const [showForm, setShowForm] = React.useState(false);
 
   const handleApplyClick = () => {
@@ -90,23 +109,53 @@ export default function ApplicantsPage() {
     return <NewProjectForm showForm={showForm} onCancel={handleCancel} />;
   }
 
-  return (
-    <>
-      <ApplicantsDesktop
-        pendingProjects={pendingProjects}
-        approvedProjects={approvedProjects}
-        isPendingPanelCollapsed={isPendingPanelCollapsed}
-        onTogglePanelCollapse={() => setIsPendingPanelCollapsed(!isPendingPanelCollapsed)}
-        onApplyClick={handleApplyClick}
-      />
+  // Separar proyectos filtrados en pending y approved
+  const filteredPendingProjects = filteredProjects.filter(p => p.status === 'pending');
+  const filteredApprovedProjects = filteredProjects.filter(p => ['approved', 'live', 'completed'].includes(p.status));
 
-      <ApplicantsMobile
-        pendingProjects={pendingProjects}
-        approvedProjects={approvedProjects}
-        showMobileModal={showMobilePendingModal}
-        setShowMobileModal={setShowMobilePendingModal}
-        onApplyClick={handleApplyClick}
-      />
-    </>
+  return (
+    <div className="min-h-screen bg-white dark:bg-zinc-950/0">
+      {/* Filtros y controles mejorados */}
+      <div className="sticky top-0 z-30 bg-white/80 dark:bg-zinc-950/0 backdrop-blur-xl border-b border-gray-200 dark:border-zinc-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <ApplicantsFilters
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            gridColumns={gridColumns}
+            onGridColumnsChange={setGridColumns}
+            filters={filters}
+            onFiltersChange={setFilters}
+            updateFilter={updateFilter}
+            clearFilters={clearFilters}
+            hasActiveFilters={hasActiveFilters}
+            totalProjects={totalProjects}
+            filteredCount={filteredCount}
+          />
+        </div>
+      </div>
+
+      {/* Contenido principal */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <ApplicantsDesktop
+          pendingProjects={filteredPendingProjects}
+          approvedProjects={filteredApprovedProjects}
+          isPendingPanelCollapsed={isPendingPanelCollapsed}
+          onTogglePanelCollapse={() => setIsPendingPanelCollapsed(!isPendingPanelCollapsed)}
+          onApplyClick={handleApplyClick}
+          viewMode={viewMode}
+          gridColumns={gridColumns}
+        />
+
+        <ApplicantsMobile
+          pendingProjects={filteredPendingProjects}
+          approvedProjects={filteredApprovedProjects}
+          showMobileModal={showMobilePendingModal}
+          setShowMobileModal={setShowMobilePendingModal}
+          onApplyClick={handleApplyClick}
+          viewMode={viewMode}
+          gridColumns={gridColumns}
+        />
+      </div>
+    </div>
   );
 }

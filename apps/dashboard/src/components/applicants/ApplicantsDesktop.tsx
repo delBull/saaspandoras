@@ -1,8 +1,9 @@
 //import { PlusIcon } from "lucide-react";
 //import { Button } from "@saasfly/ui/button";
-import { PanelProjects } from "./shared/PanelProjects";
+//import { PanelProjects } from "./shared/PanelProjects";
 import { ProjectGrid } from "./shared/ProjectGrid";
 import type { Project } from "../../hooks/applicants/useApplicantsData";
+import type { ViewMode, GridColumns } from "./shared/ProjectGrid";
 
 interface ApplicantsDesktopProps {
   pendingProjects: Project[];
@@ -10,14 +11,18 @@ interface ApplicantsDesktopProps {
   isPendingPanelCollapsed: boolean;
   onTogglePanelCollapse: () => void;
   onApplyClick: () => void;
+  viewMode: ViewMode;
+  gridColumns: GridColumns;
 }
 
 export function ApplicantsDesktop({
-  pendingProjects,
+  //pendingProjects,
   approvedProjects,
   isPendingPanelCollapsed,
-  onTogglePanelCollapse,
-  //onApplyClick,
+  //onTogglePanelCollapse,
+  onApplyClick: _onApplyClick,
+  viewMode,
+  gridColumns,
 }: ApplicantsDesktopProps) {
   return (
     <div className="hidden lg:block min-h-screen">
@@ -45,15 +50,21 @@ export function ApplicantsDesktop({
       <div className={`w-full px-6 lg:px-8 py-8 transition-all duration-500 ease-in-out ${
         isPendingPanelCollapsed ? 'pr-20' : 'pr-[340px]'
       }`}>
-        <ProjectGrid projects={approvedProjects} variant="approved" />
+        <ProjectGrid
+          projects={approvedProjects}
+          variant="approved"
+          viewMode={viewMode}
+          gridColumns={gridColumns}
+        />
       </div>
 
-      {/* Panel Derecho */}
+      {/* Panel Derecho 
       <PanelProjects
         pendingProjects={pendingProjects}
         isCollapsed={isPendingPanelCollapsed}
         onToggleCollapse={onTogglePanelCollapse}
       />
+      */}
     </div>
   );
 }
