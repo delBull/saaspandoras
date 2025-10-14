@@ -16,10 +16,10 @@ export function ProjectCard({ project, variant = 'approved' }: ProjectCardProps)
   const isPending = project.status === 'pending';
 
   return (
-    <div className={`bg-zinc-800/50 rounded-xl overflow-hidden border hover:border-lime-500/50 transition-all duration-300 group flex flex-col w-full ${
-      variant === 'pending' ? 'hover:border-yellow-500/50 border-zinc-700' : ''
+    <div className={`bg-gray-50 dark:bg-zinc-800/50 rounded-xl overflow-hidden border hover:border-lime-500/50 transition-all duration-300 group flex flex-col w-full ${
+      variant === 'pending' ? 'hover:border-yellow-500/50 border-gray-200 dark:border-zinc-700' : 'border-gray-200 dark:border-zinc-700'
     }`}>
-      <div className="relative w-full bg-zinc-700" style={{ paddingBottom: isPending ? '75%' : '50%' }}>
+      <div className="relative w-full bg-gray-200 dark:bg-zinc-700" style={{ paddingBottom: isPending ? '75%' : '50%' }}>
         {project.coverPhotoUrl ? (
           <Image
             src={project.coverPhotoUrl}
@@ -44,12 +44,12 @@ export function ProjectCard({ project, variant = 'approved' }: ProjectCardProps)
       </div>
 
       <div className={`flex flex-col flex-grow ${variant === 'pending' ? 'p-3' : 'p-5'}`}>
-        <h3 className={`font-bold text-white mb-2 line-clamp-1 ${
+        <h3 className={`font-bold text-gray-900 dark:text-white mb-2 line-clamp-1 ${
           isPending ? 'text-base' : 'text-xl'
         }`}>
           {project.title}
         </h3>
-        <p className={`text-gray-400 mb-4 line-clamp-2 flex-grow ${
+        <p className={`text-gray-600 dark:text-gray-400 mb-4 line-clamp-2 flex-grow ${
           isPending ? 'text-xs h-8' : 'text-sm h-10'
         }`}>
           {project.description}
@@ -57,23 +57,23 @@ export function ProjectCard({ project, variant = 'approved' }: ProjectCardProps)
 
         {!isPending && project.status !== 'pending' && (
           <div className="mb-4">
-            <div className="flex justify-between items-center text-xs text-gray-400 mb-1">
+            <div className="flex justify-between items-center text-xs text-gray-600 dark:text-gray-400 mb-1">
               <span>Recaudado</span>
-              <span className="font-semibold text-white">${raisedAmount.toLocaleString()}</span>
+              <span className="font-semibold text-gray-900 dark:text-white">${raisedAmount.toLocaleString()}</span>
             </div>
-            <div className="w-full bg-zinc-700 rounded-full h-2">
+            <div className="w-full bg-gray-200 dark:bg-zinc-700 rounded-full h-2">
               <div
                 className="bg-gradient-to-r from-lime-500 to-emerald-500 h-2 rounded-full"
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <div className="text-right text-xs text-gray-400 mt-1">
-              Meta <span className="font-semibold text-white">${targetAmount.toLocaleString()}</span>
+            <div className="text-right text-xs text-gray-600 dark:text-gray-400 mt-1">
+              Meta <span className="font-semibold text-gray-900 dark:text-white">${targetAmount.toLocaleString()}</span>
             </div>
           </div>
         )}
 
-        <div className={`flex justify-between items-center ${isPending ? 'pt-2' : 'pt-4'} border-t border-zinc-700 mt-auto`}>
+        <div className={`flex justify-between items-center ${isPending ? 'pt-2' : 'pt-4'} border-t border-gray-200 dark:border-zinc-700 mt-auto`}>
           {variant === 'pending' ? (
             <span className="px-2 py-1 text-xs font-medium bg-yellow-500/20 text-yellow-300 rounded-full">
               En Revisión
