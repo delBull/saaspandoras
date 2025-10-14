@@ -3,6 +3,7 @@
 import { MobileModal } from "./shared/MobileModal";
 import { ProjectGrid } from "./shared/ProjectGrid";
 import type { Project } from "../../hooks/applicants/useApplicantsData";
+import type { ViewMode, GridColumns } from "./shared/ProjectGrid";
 
 interface ApplicantsMobileProps {
   pendingProjects: Project[];
@@ -10,6 +11,8 @@ interface ApplicantsMobileProps {
   showMobileModal: boolean;
   setShowMobileModal: (show: boolean) => void;
   onApplyClick: () => void;
+  viewMode: ViewMode;
+  gridColumns: GridColumns;
 }
 
 export function ApplicantsMobile({
@@ -17,7 +20,9 @@ export function ApplicantsMobile({
   approvedProjects,
   showMobileModal,
   setShowMobileModal,
-  //onApplyClick,
+  onApplyClick: _onApplyClick,
+  viewMode,
+  gridColumns,
 }: ApplicantsMobileProps) {
   return (
     <div className="lg:hidden min-h-screen text-white">
@@ -51,7 +56,12 @@ export function ApplicantsMobile({
 
       {/* Mobile Main Content - Approved Projects */}
       <div className="px-4 py-8">
-        <ProjectGrid projects={approvedProjects} variant="approved" />
+        <ProjectGrid
+          projects={approvedProjects}
+          variant="approved"
+          viewMode={viewMode}
+          gridColumns={gridColumns}
+        />
       </div>
 
       {/* Mobile Modal for Pending Projects */}

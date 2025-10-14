@@ -312,7 +312,7 @@ export function Sidebar({
       },
 
       {
-        label: "Invest",
+        label: "Projects",
         href: "/applicants",
         icon: (
           <UserGroupIcon className="h-5 w-5 shrink-0 text-gray-400" />
