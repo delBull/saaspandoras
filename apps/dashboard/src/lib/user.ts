@@ -11,7 +11,7 @@ export async function ensureUser(walletAddress: string) {
   if (user) return user;
 
   const [newUser] = await db.execute(sql`
-    INSERT INTO "User" ("walletAddress", "createdAt")
+    INSERT INTO "users" ("walletAddress", "createdAt")
     VALUES (LOWER(${walletAddress}), NOW())
     RETURNING "id"
   `);

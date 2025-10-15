@@ -16,8 +16,16 @@ export async function GET(_request: Request) {
   try {
     console.log('🔍 Admin API: Starting GET request...');
 
-    // TEMPORAL: Skip auth for debugging
-    console.log('🔍 Admin API: ⚠️ TEMPORAL: Skipping auth for debugging');
+    // Check admin authentication
+    const { session } = await getAuth(await headers());
+    const userIsAdmin = await isAdmin(session?.userId);
+
+    if (!userIsAdmin) {
+      console.log('❌ Admin API: Access denied for user:', session?.userId);
+      return NextResponse.json({ message: "No autorizado" }, { status: 403 });
+    }
+
+    console.log('✅ Admin API: Authentication passed for user:', session?.userId);
 
     console.log('🔍 Admin API: Fetching projects from database...');
 

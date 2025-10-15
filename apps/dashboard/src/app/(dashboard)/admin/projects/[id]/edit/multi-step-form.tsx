@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod"; // FIX 1: Reactivado
 import { z } from "zod";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 import { ProjectSection1 } from "./sections/ProjectSection1";
 import { ProjectSection2 } from "./sections/ProjectSection2";
 import { ProjectSection3 } from "./sections/ProjectSection3";
@@ -221,7 +222,51 @@ export function MultiStepForm({
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
-  const isAdminUser = !isPublic; // El estado de admin se deriva directamente de la prop.
+
+  // FIX: Proper admin wallet verification instead of relying on isPublic prop
+  const [isAdminUser, setIsAdminUser] = useState(false);
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (account?.address) {
+        const walletAddress = account.address.toLowerCase();
+        const superAdminWallet = SUPER_ADMIN_WALLET.toLowerCase();
+
+        // Check if it's super admin first
+        if (walletAddress === superAdminWallet) {
+          setIsAdminUser(true);
+        } else {
+          // Check if wallet exists in administrators table
+          try {
+            const response = await fetch('/api/admin/verify');
+            if (response.ok) {
+              const data = await response.json() as { isAdmin?: boolean; isSuperAdmin?: boolean };
+              setIsAdminUser(Boolean(data.isAdmin ?? data.isSuperAdmin ?? false));
+            } else {
+              console.error('Admin verification failed:', response.status, response.statusText);
+              setIsAdminUser(false);
+            }
+          } catch (error) {
+            console.error('Error checking admin status:', error);
+            setIsAdminUser(false);
+          }
+        }
+      } else {
+        setIsAdminUser(false);
+      }
+    };
+
+    void checkAdminStatus();
+  }, [account?.address]);
+
+  // Redirect non-admin users
+  useEffect(() => {
+    if (account?.address && !isAdminUser && !isPublic) {
+      console.log('❌ Non-admin user attempting to access admin form, redirecting...');
+      window.location.href = '/admin/dashboard';
+    }
+  }, [account?.address, isAdminUser, isPublic]);
+
   const totalSteps = 7;
   
   // Funciones de parseo seguro para inicializar el formulario
@@ -616,10 +661,10 @@ export function MultiStepForm({
     console.log('📤 apiEndpoint prop:', apiEndpoint);
 
     try {
-      // FIX: Use the apiEndpoint prop if it's different from default, otherwise use built-in logic
-      const finalEndpoint = apiEndpoint !== "/api/admin/projects" ? apiEndpoint : (
-        isEdit ? `/api/admin/projects/${project?.id}` : "/api/projects/draft"
-      );
+       // FIX: Use the apiEndpoint prop if it's different from default, otherwise use built-in logic
+       const finalEndpoint = apiEndpoint !== "/api/admin/projects" ? apiEndpoint : (
+         isEdit ? `/api/admin/projects/${project?.id}` : "/api/admin/projects"
+       );
 
       console.log('📡 Submitting to endpoint:', finalEndpoint);
 
@@ -904,8 +949,8 @@ export function MultiStepForm({
             </div>
           </div>
 
-          {/* Botones de Acción - Siempre visible el borrar para usuarios públicos */}
-          {isPublic && (
+          {/* Botón Guardar Borrador - Disponible en TODOS los pasos para usuarios públicos Y admins */}
+          {(isPublic || isAdminUser) && (
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
               <Button
                 type="button"
@@ -937,7 +982,6 @@ export function MultiStepForm({
                 <Button
                   type="button"
                   variant="primary"
-                  // FIX 5: Envolver el handler en handleSubmit para que valide primero
                   onClick={handleSubmit(onAdminQuickSubmit, onValidationErrors)}
                   disabled={isLoading}
                   className="w-full sm:w-auto"
