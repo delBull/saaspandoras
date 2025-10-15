@@ -281,11 +281,11 @@ export async function POST(request: Request) {
         updateAuthorityAddress: data.updateAuthorityAddress ?? null,
 
         // --- Sección 7: Strings y Booleans ---
-        applicantName: data.applicantName ?? creatorWallet.toLowerCase(), // 🔥 Asignar la wallet del creador si no hay nombre
+        applicantName: data.applicantName ?? null,
         applicantPosition: data.applicantPosition ?? null,
         applicantEmail: data.applicantEmail ?? null,
         applicantPhone: data.applicantPhone ?? null,
-        applicantWalletAddress: creatorWallet.toLowerCase(), // 🔥 Normalizada a lowercase para consistencia
+        applicantWalletAddress: creatorWallet.toLowerCase(), // ✅ Admin crea el proyecto, mantiene propiedad correcta
         verificationAgreement: data.verificationAgreement,
 
         // --- Campo de Estado: String (Enum) ---

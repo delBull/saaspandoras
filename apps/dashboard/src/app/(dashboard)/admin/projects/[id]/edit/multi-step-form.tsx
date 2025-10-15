@@ -18,53 +18,54 @@ import { ProjectSection6 } from "./sections/ProjectSection6";
 import { ProjectSection7 } from "./sections/ProjectSection7";
 
 interface Project {
-  id?: number;
-  slug?: string;
-  title?: string | null;
-  description?: string | null;
-  tagline?: string | null;
-  businessCategory?: string | null;
-  logoUrl?: string | null;
-  coverPhotoUrl?: string | null;
-  videoPitch?: string | null;
-  website?: string | null;
-  whitepaperUrl?: string | null;
-  twitterUrl?: string | null;
-  discordUrl?: string | null;
-  telegramUrl?: string | null;
-  linkedinUrl?: string | null;
-  targetAmount?: string | number | null;
-  totalValuationUsd?: string | number | null;
-  tokenType?: string | null;
-  totalTokens?: string | number | null;
-  tokensOffered?: string | number | null;
-  tokenPriceUsd?: string | number | null;
-  estimatedApy?: string | null;
-  yieldSource?: string | null;
-  lockupPeriod?: string | null;
-  fundUsage?: string | null;
-  teamMembers?: unknown;
-  advisors?: unknown;
-  tokenDistribution?: unknown;
-  contractAddress?: string | null;
-  treasuryAddress?: string | null;
-  legalStatus?: string | null;
-  valuationDocumentUrl?: string | null;
-  fiduciaryEntity?: string | null;
-  dueDiligenceReportUrl?: string | null;
-  isMintable?: boolean | string | null;
-  isMutable?: boolean | string | null;
-  updateAuthorityAddress?: string | null;
-  applicantName?: string | null;
-  applicantPosition?: string | null;
-  applicantEmail?: string | null;
-  applicantPhone?: string | null;
-  verificationAgreement?: boolean | string | null;
-  createdAt?: Date;
-  raisedAmount?: string | number | null;
-  returnsPaid?: string | number | null;
-  status?: string | null;
-}
+   id?: number;
+   slug?: string;
+   title?: string | null;
+   description?: string | null;
+   tagline?: string | null;
+   businessCategory?: string | null;
+   logoUrl?: string | null;
+   coverPhotoUrl?: string | null;
+   videoPitch?: string | null;
+   website?: string | null;
+   whitepaperUrl?: string | null;
+   twitterUrl?: string | null;
+   discordUrl?: string | null;
+   telegramUrl?: string | null;
+   linkedinUrl?: string | null;
+   targetAmount?: string | number | null;
+   totalValuationUsd?: string | number | null;
+   tokenType?: string | null;
+   totalTokens?: string | number | null;
+   tokensOffered?: string | number | null;
+   tokenPriceUsd?: string | number | null;
+   estimatedApy?: string | null;
+   yieldSource?: string | null;
+   lockupPeriod?: string | null;
+   fundUsage?: string | null;
+   teamMembers?: unknown;
+   advisors?: unknown;
+   tokenDistribution?: unknown;
+   contractAddress?: string | null;
+   treasuryAddress?: string | null;
+   legalStatus?: string | null;
+   valuationDocumentUrl?: string | null;
+   fiduciaryEntity?: string | null;
+   dueDiligenceReportUrl?: string | null;
+   isMintable?: boolean | string | null;
+   isMutable?: boolean | string | null;
+   updateAuthorityAddress?: string | null;
+   applicantName?: string | null;
+   applicantPosition?: string | null;
+   applicantEmail?: string | null;
+   applicantPhone?: string | null;
+   applicantWalletAddress?: string | null;
+   verificationAgreement?: boolean | string | null;
+   createdAt?: Date;
+   raisedAmount?: string | number | null;
+   returnsPaid?: string | number | null;
+   status?: string | null;
+ }
 
 // FIX 2: Definir tipos claros para los datos parseados
 interface TeamMember {
@@ -198,6 +199,7 @@ const fullProjectSchema = z.object({
   applicantPosition: z.string().optional(),
   applicantEmail: z.string().email("Email inválido").optional(),
   applicantPhone: z.string().optional(),
+  applicantWalletAddress: z.string().optional(),
   verificationAgreement: z.boolean(),
 });
 
@@ -361,6 +363,7 @@ export function MultiStepForm({
       applicantPosition: project?.applicantPosition ?? undefined,
       applicantEmail: project?.applicantEmail ?? undefined,
       applicantPhone: project?.applicantPhone ?? undefined,
+      applicantWalletAddress: project?.applicantWalletAddress ?? undefined,
       verificationAgreement: Boolean(project?.verificationAgreement ?? false),
     },
   });

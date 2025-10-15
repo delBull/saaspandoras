@@ -34,31 +34,25 @@ export default function ProfileProjectsPage() {
 
   useEffect(() => {
     if (walletAddress) {
-      // Fetch user profile and projects data
-      Promise.all([
-        fetch('/api/profile', {
-          headers: {
-            'Content-Type': 'application/json',
-            'x-thirdweb-address': walletAddress,
-            'x-wallet-address': walletAddress,
-            'x-user-address': walletAddress,
-          }
-        }),
-        fetch('/api/projects')
-      ])
-        .then(async ([usersRes, projectsRes]) => {
-          if (!usersRes.ok) {
-            throw new Error(`Profile API failed: ${usersRes.status}`);
+      // Fetch user profile and projects data - projects come from profile API
+      fetch('/api/profile', {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-thirdweb-address': walletAddress,
+          'x-wallet-address': walletAddress,
+          'x-user-address': walletAddress,
+        }
+      })
+        .then(async (response) => {
+          if (!response.ok) {
+            throw new Error(`Profile API failed: ${response.status}`);
           }
 
-          if (!projectsRes.ok) {
-            throw new Error(`Projects API failed: ${projectsRes.status}`);
-          }
-
-          return Promise.all([usersRes.json(), projectsRes.json()]);
+          return response.json();
         })
         .then((data) => {
-          const [userProfile, projects] = data as [UserData, Project[]];
+          const userProfile = data as UserData;
+          const projects = data.projects as Project[] || [];
           setUserProfile(userProfile);
 
           // 🏦 WALLET-BASED FILTERING ONLY
