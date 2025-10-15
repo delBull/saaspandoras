@@ -419,26 +419,36 @@ export function MultiStepForm({
     }
   }, [account?.address, setValue, hasSetDefaultAddress, project?.updateAuthorityAddress]);
 
-  // Auto-scroll to top cuando cambie el paso - POSIBLE SOLUCIÓN PARA PUBLIC USERS
+  // Auto-scroll to top cuando cambie el paso - MEJORADO PARA MODAL
   useEffect(() => {
-    // Scroll inmediato - prioridad máxima
     const scrollToTop = () => {
-      // Intentar múltiples enfoques para scroll
       try {
-        // 1. Scroll directo de window
+        // 1. Scroll del modal container (más específico para modal)
+        const modalContainer = document.querySelector('.overflow-y-auto');
+        if (modalContainer) {
+          modalContainer.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        }
+
+        // 2. Scroll del form container
+        const formContainer = document.querySelector('form');
+        if (formContainer) {
+          formContainer.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        }
+
+        // 3. Scroll del section container
+        const sectionContainer = document.querySelector('section');
+        if (sectionContainer) {
+          sectionContainer.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        }
+
+        // 4. Fallback: Scroll directo de window (por si acaso)
         window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
 
-        // 2. Scroll de document element
+        // 5. Scroll de document element
         document.documentElement.scrollTop = 0;
 
-        // 3. Scroll de body
+        // 6. Scroll de body
         document.body.scrollTop = 0;
-
-        // 4. Scroll force donde esté la navegación
-        const navElement = document.querySelector('nav, [role="navigation"], header');
-        if (navElement) {
-          navElement.scrollIntoView({ block: 'start', behavior: 'instant' });
-        }
 
         console.log('Auto-scroll ejecutado al paso:', currentStep);
       } catch (error) {
@@ -446,13 +456,19 @@ export function MultiStepForm({
       }
     };
 
-    // Ejecutar inmediatamente
+    // Ejecutar inmediatamente con múltiples estrategias
     requestAnimationFrame(scrollToTop);
 
-    // También ejecutar después de un pequeño delay por si el DOM no está listo
-    const timeoutId = setTimeout(scrollToTop, 50);
+    // También ejecutar después de delays progresivos por si el DOM no está listo
+    const timeoutId1 = setTimeout(scrollToTop, 10);
+    const timeoutId2 = setTimeout(scrollToTop, 50);
+    const timeoutId3 = setTimeout(scrollToTop, 100);
 
-    return () => clearTimeout(timeoutId);
+    return () => {
+      clearTimeout(timeoutId1);
+      clearTimeout(timeoutId2);
+      clearTimeout(timeoutId3);
+    };
   }, [currentStep]);
 
   // Auto-redirección de modales después de 5 segundos
@@ -460,7 +476,7 @@ export function MultiStepForm({
     if (showSuccessModal) {
       const timer = setTimeout(() => {
         setShowSuccessModal(false);
-        router.push(isPublic ? "/applicants" : "/admin/dashboard");
+        router.push(isPublic ? "/" : "/admin/dashboard");
         router.refresh();
       }, 5000);
       return () => clearTimeout(timer);
@@ -818,7 +834,7 @@ export function MultiStepForm({
         <button
           onClick={() => {
             setShowSuccessModal(false);
-            router.push(isPublic ? "/applicants" : "/admin/dashboard");
+            router.push(isPublic ? "/" : "/admin/dashboard");
             router.refresh();
           }}
           className="w-full bg-lime-500 hover:bg-lime-600 text-zinc-900 py-2 px-4 rounded-lg font-medium transition-colors"

@@ -144,6 +144,11 @@ export async function GET(_request: Request) {
           targetAmount: project.target_amount,
           status: project.status,
           createdAt: project.created_at,
+          // Applicant info
+          applicantName: project.applicant_name,
+          applicantEmail: project.applicant_email,
+          applicantPhone: project.applicant_phone,
+          applicantWalletAddress: project.applicant_wallet_address,
           // Add other fields as needed
         }));
 

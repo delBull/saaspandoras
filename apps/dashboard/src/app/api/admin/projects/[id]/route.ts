@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
-// import { db } from "~/db";
+//
+import { db } from "~/db";
 // 
 
 
 
-if (!connectionString) {
-  throw new Error("DATABASE_URL is not set in environment variables");
-}
 
 // 
 // // const db = drizzle(client, { schema: { projects: projectsSchema } });
