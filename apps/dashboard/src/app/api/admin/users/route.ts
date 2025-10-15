@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-assignment */
 import { NextResponse } from "next/server";
+import { db } from "~/db";
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 import { getAuth, isAdmin } from "@/lib/auth";
-import { db } from "~/db";
 import { sql } from "drizzle-orm";
 import { headers } from "next/headers";
 import type { UserData, UserRole } from "@/types/admin";
@@ -44,7 +44,7 @@ export async function GET() {
     }
 
     // First, try a simple query to check if table exists and has data
-    const simpleUserQuery = await db.execute(sql`SELECT COUNT(*) as total FROM "User"`);
+    const simpleUserQuery = await db.execute(sql`SELECT COUNT(*) as total FROM "users"`);
     console.log("Simple user count:", simpleUserQuery);
     const totalUsers = simpleUserQuery[0]?.total as string;
     console.log("Total users:", totalUsers);
@@ -94,7 +94,7 @@ export async function GET() {
         u."kycCompleted",
         u."kycData",
         COALESCE(COUNT(DISTINCT p.id), 0) as "projectCount"
-      FROM "User" u
+      FROM "users" u
       LEFT JOIN "projects" p
         ON LOWER(u."walletAddress") = LOWER(p."applicant_wallet_address")
       WHERE LOWER(u."walletAddress") != LOWER(${SUPER_ADMIN_WALLET})

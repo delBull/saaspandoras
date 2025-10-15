@@ -1,9 +1,19 @@
 import { NextResponse } from "next/server";
-import { db } from "~/db";
+// import { db } from "~/db";
+// 
+
+
+
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not set in environment variables");
+}
+
+// 
+// // const db = drizzle(client, { schema: { projects: projectsSchema } });
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
 export const runtime = "nodejs";
-import { projects as projectsSchema } from "~/db/schema";
+import { projects as projectsSchema } from "@/db/schema";
 import { projectApiSchema } from "@/lib/project-schema-api";
 import { getAuth } from "@/lib/auth";
 import { headers } from "next/headers";

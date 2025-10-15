@@ -6,6 +6,9 @@ import { db } from "~/db";
 import { sql } from "drizzle-orm";
 import { ensureUser } from "@/lib/user";
 
+// Test database connection at startup
+console.log('🔧 [Profile API] Initializing with DATABASE_URL:', process.env.DATABASE_URL ? 'Set' : 'Not set');
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -56,21 +59,45 @@ export async function GET() {
     // Ensure user exists
     await ensureUser(walletAddress);
 
-    // Get user data directly from User table
+    // Get user data directly from users table - optimized query
+    console.log('🔍 [Profile API] Querying user data for wallet:', walletAddress);
     const [user] = await db.execute(sql`
       SELECT "id", "name", "email", "image", "walletAddress",
               "connectionCount", "lastConnectionAt", "createdAt",
               "kycLevel", "kycCompleted", "kycData"
-      FROM "User"
+      FROM "users"
       WHERE LOWER("walletAddress") = LOWER(${walletAddress})
     `);
+    console.log('📊 [Profile API] User query result:', {
+      walletAddress,
+      userFound: !!user,
+      userData: user ? {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        walletAddress: user.walletAddress
+      } : null
+    });
 
-    // Get user projects
+    // Get user projects - Optimized query with essential fields only
+    console.log('🔍 [Profile API] Querying projects for wallet:', walletAddress);
     const projects = await db.execute(sql`
-      SELECT * FROM "projects"
+      SELECT id, title, description, status, created_at, business_category, logo_url, cover_photo_url
+      FROM "projects"
       WHERE LOWER("applicant_wallet_address") = LOWER(${walletAddress})
       ORDER BY "created_at" DESC
+      LIMIT 5
     `);
+    console.log('📊 [Profile API] Projects query result:', {
+      walletAddress,
+      projectsFound: projects?.length || 0,
+      firstProject: projects?.[0] ? {
+        id: projects[0].id,
+        title: projects[0].title,
+        applicantWalletAddress: projects[0].applicant_wallet_address,
+        status: projects[0].status
+      } : null
+    });
 
     // Calculate user role
     const [adminCheck] = await db.execute(sql`
@@ -112,6 +139,18 @@ export async function GET() {
       errorMessage: error instanceof Error ? error.message : "No message",
       errorStack: error instanceof Error ? error.stack : "No stack"
     });
+
+    // Check if it's a quota issue
+    if (error instanceof Error && error.message.includes('quota')) {
+      return NextResponse.json({
+        message: "Database quota exceeded",
+        error: "Your database plan has reached its data transfer limit. Please upgrade your plan or contact support.",
+        quotaExceeded: true,
+        walletAddress,
+        authMethod
+      }, { status: 503 }); // Service Unavailable
+    }
+
     return NextResponse.json({
       message: "Error interno del servidor",
       error: error instanceof Error ? error.message : "Unknown error",
@@ -174,7 +213,7 @@ export async function POST(request: Request) {
 
     // Build unified update query
     const updateQuery = sql`
-      UPDATE "User"
+      UPDATE "users"
       SET "name" = ${profileData.name ?? null},
           "email" = ${profileData.email ?? null},
           "image" = ${profileData.image ?? null},

@@ -1,10 +1,10 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
+ 
 import { NextResponse } from "next/server";
 import { db } from "~/db";
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
 export const runtime = "nodejs";
-import { projects as projectsSchema } from "~/db/schema";
+import { projects as projectsSchema } from "@/db/schema";
 import { sql } from "drizzle-orm";
 import { projectApiSchema } from "@/lib/project-schema-api";
 import { getAuth, isAdmin } from "@/lib/auth";
@@ -202,9 +202,9 @@ export async function POST(request: Request) {
     // Get creator information for better project tracking
     const creatorWallet = session?.userId ?? 'system';
     const creatorInfo = await db.execute(sql`
-      SELECT "name", "email" FROM "User" WHERE "walletAddress" = ${creatorWallet}
+      SELECT "name", "email" FROM "users" WHERE "walletAddress" = ${creatorWallet}
     `);
-    const creatorName = creatorInfo[0] ? String((creatorInfo[0] as Record<string, unknown>).name) : 'Unknown';
+    const creatorName = creatorInfo[0] ? String(creatorInfo[0].name) : 'Unknown';
 
     console.log(`🏗️ Project created by: ${creatorWallet} (${creatorName})`);
 

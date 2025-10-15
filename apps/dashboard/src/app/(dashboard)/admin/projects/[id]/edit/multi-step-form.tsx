@@ -821,7 +821,7 @@ export function MultiStepForm({
   );
 
   return (
-    <div className="min-h-screen bg-zinc-950">
+    <div className="min-h-screen bg-zinc-950/0">
       <FormProvider {...methods}>
         <form onSubmit={handleSubmit(onFinalSubmit, onValidationErrors)} className="max-w-4xl mx-auto p-4 md:p-8">
           {/* Header */}

@@ -2,7 +2,22 @@
 //import { Button } from "@saasfly/ui/button";
 import { PanelProjects } from "./shared/PanelProjects";
 import { ProjectGrid } from "./shared/ProjectGrid";
-import type { Project } from "../../hooks/applicants/useApplicantsData";
+// import { ApplicantsFilters } from "./ApplicantsFilters";
+// import { ApplicantsListView } from "./ApplicantsListView";
+// import { useProjectFilters } from "../../hooks/applicants/useProjectFilters";
+import type { Project } from "../../hooks/applicants/useApplicantsDataBasic";
+
+type ViewMode = 'grid' | 'list';
+type GridColumns = 3 | 4 | 6;
+
+interface FilterOptions {
+  search: string;
+  category: string;
+  network: string;
+  status: string;
+  minTokenPrice: string;
+  maxTokenPrice: string;
+}
 
 interface ApplicantsDesktopProps {
   pendingProjects: Project[];
@@ -10,6 +25,17 @@ interface ApplicantsDesktopProps {
   isPendingPanelCollapsed: boolean;
   onTogglePanelCollapse: () => void;
   onApplyClick: () => void;
+  // Filtros avanzados (opcionales hasta completar implementación)
+  viewMode?: ViewMode;
+  onViewModeChange?: (mode: ViewMode) => void;
+  gridColumns?: GridColumns;
+  onGridColumnsChange?: (columns: GridColumns) => void;
+  filters?: FilterOptions;
+  updateFilter?: (key: string, value: string) => void;
+  clearFilters?: () => void;
+  hasActiveFilters?: boolean;
+  totalProjects?: number;
+  filteredCount?: number;
 }
 
 export function ApplicantsDesktop({
@@ -17,8 +43,23 @@ export function ApplicantsDesktop({
   approvedProjects,
   isPendingPanelCollapsed,
   onTogglePanelCollapse,
-  //onApplyClick,
+  onApplyClick: _onApplyClick,
 }: ApplicantsDesktopProps) {
+  // const {
+  //   viewMode,
+  //   setViewMode,
+  //   gridColumns,
+  //   setGridColumns,
+  //   filters,
+  //   updateFilter,
+  //   clearFilters,
+  //   hasActiveFilters,
+  //   totalProjects,
+  //   filteredCount,
+  // } = useProjectFilters({
+  //   projects: [...pendingProjects, ...approvedProjects],
+  // });
+
   return (
     <div className="hidden lg:block min-h-screen">
       {/* Fila 1: Header */}
@@ -27,21 +68,13 @@ export function ApplicantsDesktop({
       }`}>
         <div className="flex-row items-center gap-8">
           <h1 className="text-3xl font-bold text-white">Proyectos</h1>
-          <p className="text-gray-400 text-base">Aprobados listos para invertir</p>
+          <p className="text-gray-400 text-base">
+            {`${approvedProjects.length} proyectos aprobados disponibles`}
+          </p>
         </div>
-        {/*
-        <Button
-          onClick={onApplyClick}
-          size="default"
-          className="bg-gradient-to-r from-lime-500 to-emerald-500 hover:from-lime-600 hover:to-emerald-600 text-black font-bold px-6 py-3 shadow-lg flex-shrink-0 text-base whitespace-nowrap"
-        >
-          <PlusIcon className="w-5 h-5 mr-2" />
-          Aplicar Nuevo Proyecto
-        </Button>
-        */}
       </div>
 
-      {/* Fila 2: Proyectos Aprobados */}
+      {/* Fila 2: Proyectos (Filtros comentados hasta completar implementación) */}
       <div className={`w-full px-6 lg:px-8 py-8 transition-all duration-500 ease-in-out ${
         isPendingPanelCollapsed ? 'pr-20' : 'pr-[340px]'
       }`}>

@@ -1,6 +1,16 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { db } from "~/db";
-import { projects } from "~/db/schema"; // Importa tu esquema
+// import { drizzle } from "drizzle-orm/postgres-js";
+// import postgres from "postgres";
+
+// Initialize database connection
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not set in environment variables");
+}
+
+// const client = postgres(connectionString);
+// const db = drizzle(client, { schema: { projects: projectsSchema } });
+import { projects } from "@/db/schema"; // Importa tu esquema
 import { isAdmin } from "@/lib/auth";
 import { headers } from "next/headers";
 import { sql, and, or, isNotNull, ne, isNull, eq } from "drizzle-orm";

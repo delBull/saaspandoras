@@ -10,6 +10,8 @@ import { ApplicantsDesktop } from "./ApplicantsDesktop";
 import { ApplicantsMobile } from "./ApplicantsMobile";
 import { MultiStepForm } from "../../app/(dashboard)/admin/projects/[id]/edit/multi-step-form";
 import { useApplicantsDataBasic, type ApplicantsData } from "../../hooks/applicants/useApplicantsDataBasic";
+// import { useProjectFilters } from "../../hooks/applicants/useProjectFilters";
+
 
 interface FormProps {
   showForm: boolean;
@@ -64,6 +66,23 @@ export default function ApplicantsPage() {
     setIsPendingPanelCollapsed,
     setShowMobilePendingModal,
   }: ApplicantsData = useApplicantsDataBasic();
+
+  // const {
+  //   viewMode,
+  //   setViewMode,
+  //   gridColumns,
+  //   setGridColumns,
+  //   filters,
+  //   updateFilter,
+  //   clearFilters,
+  //   hasActiveFilters,
+  //   totalProjects,
+  //   filteredCount,
+  // } = useProjectFilters({
+  //   projects: [...pendingProjects, ...approvedProjects],
+  // });
+
+
   const [showForm, setShowForm] = React.useState(false);
 
   const handleApplyClick = () => {
@@ -98,6 +117,17 @@ export default function ApplicantsPage() {
         isPendingPanelCollapsed={isPendingPanelCollapsed}
         onTogglePanelCollapse={() => setIsPendingPanelCollapsed(!isPendingPanelCollapsed)}
         onApplyClick={handleApplyClick}
+        // Filtros comentados hasta completar implementación
+        // viewMode={viewMode}
+        // onViewModeChange={setViewMode}
+        // gridColumns={gridColumns}
+        // onGridColumnsChange={setGridColumns}
+        // filters={filters}
+        // updateFilter={(key: string, value: string) => updateFilter(key as keyof typeof filters, value)}
+        // clearFilters={clearFilters}
+        // hasActiveFilters={hasActiveFilters}
+        // totalProjects={totalProjects}
+        // filteredCount={filteredCount}
       />
 
       <ApplicantsMobile
@@ -106,6 +136,9 @@ export default function ApplicantsPage() {
         showMobileModal={showMobilePendingModal}
         setShowMobileModal={setShowMobilePendingModal}
         onApplyClick={handleApplyClick}
+        // Filtros comentados hasta completar implementación
+        // viewMode={viewMode}
+        // onViewModeChange={setViewMode}
       />
     </>
   );

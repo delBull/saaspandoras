@@ -2,7 +2,9 @@
 //import { Button } from "@saasfly/ui/button";
 import { MobileModal } from "./shared/MobileModal";
 import { ProjectGrid } from "./shared/ProjectGrid";
-import type { Project } from "../../hooks/applicants/useApplicantsData";
+import type { Project } from "../../hooks/applicants/useApplicantsDataBasic";
+
+type ViewMode = 'grid' | 'list';
 
 interface ApplicantsMobileProps {
   pendingProjects: Project[];
@@ -10,6 +12,9 @@ interface ApplicantsMobileProps {
   showMobileModal: boolean;
   setShowMobileModal: (show: boolean) => void;
   onApplyClick: () => void;
+  // Filtros básicos para móvil (opcionales hasta completar implementación)
+  viewMode?: ViewMode;
+  onViewModeChange?: (mode: ViewMode) => void;
 }
 
 export function ApplicantsMobile({
@@ -18,6 +23,8 @@ export function ApplicantsMobile({
   showMobileModal,
   setShowMobileModal,
   //onApplyClick,
+  viewMode,
+  onViewModeChange: _onViewModeChange,
 }: ApplicantsMobileProps) {
   return (
     <div className="lg:hidden min-h-screen text-white">
@@ -51,7 +58,13 @@ export function ApplicantsMobile({
 
       {/* Mobile Main Content - Approved Projects */}
       <div className="px-4 py-8">
-        <ProjectGrid projects={approvedProjects} variant="approved" />
+        {viewMode === 'grid' ? (
+          <ProjectGrid projects={approvedProjects} variant="approved" />
+        ) : (
+          <div className="text-center py-8 text-gray-400">
+            Vista de lista no disponible en móvil
+          </div>
+        )}
       </div>
 
       {/* Mobile Modal for Pending Projects */}

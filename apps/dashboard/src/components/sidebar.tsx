@@ -305,14 +305,14 @@ export function Sidebar({
   const links = useMemo(
     () => [
       {
-        label: "Overview",
+        label: "Aterrizaje",
         href: "/",
         icon: <HomeIcon className="h-5 w-5 shrink-0 text-gray-400" />,
         disabled: false,
       },
 
       {
-        label: "Invest",
+        label: "Proyectos",
         href: "/applicants",
         icon: (
           <UserGroupIcon className="h-5 w-5 shrink-0 text-gray-400" />
@@ -670,7 +670,7 @@ export function Sidebar({
                     }}
                     className="whitespace-nowrap font-medium"
                   >
-                    Disconnect
+                    Desconectar
                   </motion.span>
                 </button>
               </div>
@@ -965,7 +965,7 @@ export function Sidebar({
                       >
                         <ArrowLeftOnRectangleIcon className="h-5 w-5 shrink-0" />
                         <span className="ml-3 whitespace-nowrap font-medium">
-                          Disconnect
+                          Desconectar
                         </span>
                       </button>
                     </div>
