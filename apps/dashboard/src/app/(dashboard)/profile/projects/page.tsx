@@ -61,19 +61,6 @@ export default function ProfileProjectsPage() {
           const isSuperAdmin = SUPER_ADMIN_WALLETS.includes(userProfile?.walletAddress.toLowerCase() || '');
           const profileWalletAddress = userProfile?.walletAddress;
 
-          console.log('🔍 Profile Projects Debug:', {
-            userWalletAddress,
-            isSuperAdmin,
-            totalProjects: projects.length,
-            projectsSample: projects.slice(0, 2).map(p => ({
-              id: p.id,
-              title: p.title,
-              applicantWalletAddress: p.applicantWalletAddress,
-              status: p.status
-            }))
-          });
-
-          console.log('🔍 Profile Projects - Complete projects data:', projects);
 
           let userProjects: Project[] = [];
           if (isSuperAdmin) {

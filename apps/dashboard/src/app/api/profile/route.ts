@@ -7,7 +7,6 @@ import { sql } from "drizzle-orm";
 import { ensureUser } from "@/lib/user";
 
 // Test database connection at startup
-console.log('🔧 [Profile API] Initializing with DATABASE_URL:', process.env.DATABASE_URL ? 'Set' : 'Not set');
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -60,7 +59,6 @@ export async function GET() {
     await ensureUser(walletAddress);
 
     // Get user data directly from users table - optimized query
-    console.log('🔍 [Profile API] Querying user data for wallet:', walletAddress);
     const [user] = await db.execute(sql`
       SELECT "id", "name", "email", "image", "walletAddress",
               "connectionCount", "lastConnectionAt", "createdAt",
@@ -68,19 +66,8 @@ export async function GET() {
       FROM "users"
       WHERE LOWER("walletAddress") = LOWER(${walletAddress})
     `);
-    console.log('📊 [Profile API] User query result:', {
-      walletAddress,
-      userFound: !!user,
-      userData: user ? {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        walletAddress: user.walletAddress
-      } : null
-    });
 
     // Get user projects - Optimized query with essential fields only
-    console.log('🔍 [Profile API] Querying projects for wallet:', walletAddress);
     const projects = await db.execute(sql`
       SELECT id, title, description, status, created_at, business_category, logo_url, cover_photo_url, applicant_wallet_address, target_amount, raised_amount, slug, applicant_name, applicant_email, applicant_phone
       FROM "projects"
@@ -89,16 +76,6 @@ export async function GET() {
       LIMIT 5
     `);
 
-    console.log('📊 [Profile API] Projects query result:', {
-      walletAddress,
-      projectsFound: projects?.length || 0,
-      firstProject: projects?.[0] ? {
-        id: projects[0].id,
-        title: projects[0].title,
-        applicantWalletAddress: projects[0].applicant_wallet_address,
-        status: projects[0].status
-      } : null
-    });
 
     // Calculate user role
     const [adminCheck] = await db.execute(sql`
