@@ -128,7 +128,6 @@ const ProgressBar = ({ currentStep, totalSteps }: { currentStep: number; totalSt
   </div>
 );
 
-// Schema simplificado para evitar problemas de profundidad de tipos
 const fullProjectSchema = z.object({
   // Sección 1: Identidad del Proyecto
   title: z.string().min(3, "El título es requerido."),
@@ -864,7 +863,7 @@ export function MultiStepForm({
             ¡Borrador Guardado!
           </h3>
           <p className="text-gray-300 text-sm">
-            Tu progreso ha sido guardado exitosamente. Puedes continuar completando tu aplicación en cualquier momento sin perder lo que hayas avanzado.
+            Tu progreso ha sido guardado exitosamente. Puedes continuar con tu aplicación en cualquier momento sin perder lo que hayas avanzado.
           </p>
         </div>
         <button
