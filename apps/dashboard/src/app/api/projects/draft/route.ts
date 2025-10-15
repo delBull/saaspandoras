@@ -21,9 +21,25 @@ export async function POST(request: Request) {
       );
     }
 
-    // Obtener wallet address del usuario conectado
-    const { session } = await getAuth(await headers());
-    const applicantWalletAddress = session?.userId ?? null;
+    // Obtener wallet address del usuario conectado usando headers de Thirdweb
+    const headersList = await headers();
+    const { session } = await getAuth(headersList);
+
+    // Intentar múltiples fuentes para obtener la wallet address
+    const applicantWalletAddress =
+      session?.userId ??
+      headersList.get('x-thirdweb-address') ??
+      headersList.get('x-wallet-address') ??
+      headersList.get('x-user-address') ??
+      null;
+
+    console.log('🔍 DRAFT API: Wallet sources check:', {
+      sessionUserId: session?.userId?.substring(0, 10) + '...',
+      thirdwebHeader: headersList.get('x-thirdweb-address')?.substring(0, 10) + '...',
+      walletHeader: headersList.get('x-wallet-address')?.substring(0, 10) + '...',
+      userHeader: headersList.get('x-user-address')?.substring(0, 10) + '...',
+      finalWallet: applicantWalletAddress?.substring(0, 10) + '...'
+    });
 
     // Generar un slug único
     let slug = slugify(parsedData.data.title, { lower: true, strict: true });
@@ -100,6 +116,8 @@ export async function POST(request: Request) {
         status: "draft", // FORZAR COMO DRAFT PARA GUARDAR BORRADORES
       })
       .returning();
+
+    console.log('✅ Project saved with applicantWalletAddress:', newProject?.applicantWalletAddress);
 
     return NextResponse.json(newProject, { status: 201 });
   } catch (error) {
