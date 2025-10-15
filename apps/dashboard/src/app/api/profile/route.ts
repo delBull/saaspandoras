@@ -82,12 +82,13 @@ export async function GET() {
     // Get user projects - Optimized query with essential fields only
     console.log('🔍 [Profile API] Querying projects for wallet:', walletAddress);
     const projects = await db.execute(sql`
-      SELECT id, title, description, status, created_at, business_category, logo_url, cover_photo_url
+      SELECT id, title, description, status, created_at, business_category, logo_url, cover_photo_url, applicant_wallet_address, target_amount, raised_amount, slug, applicant_name, applicant_email, applicant_phone
       FROM "projects"
       WHERE LOWER("applicant_wallet_address") = LOWER(${walletAddress})
       ORDER BY "created_at" DESC
       LIMIT 5
     `);
+
     console.log('📊 [Profile API] Projects query result:', {
       walletAddress,
       projectsFound: projects?.length || 0,

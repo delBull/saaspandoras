@@ -10,46 +10,78 @@ import { getAuth } from "@/lib/auth";
 import { headers } from "next/headers";
 import slugify from "slugify";
 
-// TEMPORARY ENDPOINT TO FIX EXISTING PROJECTS
+// TEMPORARY ENDPOINT TO FIX AND INSPECT EXISTING PROJECTS
 export async function GET() {
   try {
-    console.log('🔧 TEMPORARY FIX: Starting project wallet address correction...');
+    console.log('🔧 TEMPORARY FIX: Starting comprehensive project data correction...');
 
-    // Find projects with null wallet addresses
-    const projectsWithNullWallet = await db.execute(sql`
-      SELECT id, title, applicant_wallet_address, applicant_email, applicant_name
+    // First, let's see all projects and their current state
+    const allProjects = await db.execute(sql`
+      SELECT id, title, applicant_wallet_address, target_amount, raised_amount, slug, status, description, business_category, created_at
       FROM projects
-      WHERE applicant_wallet_address IS NULL OR applicant_wallet_address = ''
+      ORDER BY created_at DESC
     `);
 
-    console.log('🔧 Found projects with null wallet addresses:', projectsWithNullWallet.length);
+    console.log('🔍 ALL PROJECTS INSPECTION:', allProjects);
 
-    if (projectsWithNullWallet.length === 0) {
-      return NextResponse.json({ message: 'No projects need fixing', fixed: 0 });
+    // Find projects with missing or incomplete data
+    const projectsWithIssues = await db.execute(sql`
+      SELECT id, title, applicant_wallet_address, target_amount, raised_amount, slug, status, description, business_category
+      FROM projects
+      WHERE applicant_wallet_address IS NULL OR applicant_wallet_address = ''
+         OR target_amount IS NULL OR target_amount = ''
+         OR raised_amount IS NULL OR raised_amount = ''
+         OR slug IS NULL OR slug = ''
+    `);
+
+    console.log('🔧 Found projects with issues:', projectsWithIssues.length);
+
+    if (projectsWithIssues.length === 0) {
+      return NextResponse.json({
+        message: 'No projects need fixing',
+        fixed: 0,
+        allProjects: allProjects,
+        projectsWithIssues: projectsWithIssues
+      });
     }
 
     let fixedCount = 0;
 
-    for (const project of projectsWithNullWallet) {
-      // For BlockBunny project, assign it to a default wallet (you should change this to the correct wallet)
+    for (const project of projectsWithIssues) {
+      // For BlockBunny project, ensure all required data is present
       if (project.title === 'BlockBunny') {
         const correctWalletAddress = '0x121a897f0f5a9b7c44756f40bdb2c8e87d2834fa'; // User's wallet
 
         await db.execute(sql`
           UPDATE projects
-          SET applicant_wallet_address = ${correctWalletAddress}
+          SET applicant_wallet_address = COALESCE(applicant_wallet_address, ${correctWalletAddress}),
+              target_amount = COALESCE(target_amount, '1000000.00'),
+              raised_amount = COALESCE(raised_amount, '0.00'),
+              slug = COALESCE(slug, 'blockbunny'),
+              status = COALESCE(status, 'approved'),
+              description = COALESCE(description, 'BlockBunny es un casino enfocado en la comunidad web3'),
+              business_category = COALESCE(business_category, 'tech_startup')
           WHERE id = ${project.id}
         `);
 
-        console.log('✅ Fixed BlockBunny project:', project.id, 'with wallet:', correctWalletAddress);
+        console.log('✅ Fixed BlockBunny project:', project.id, 'with complete data');
         fixedCount++;
       }
     }
 
+    // Get updated project list after fixes
+    const updatedProjects = await db.execute(sql`
+      SELECT id, title, applicant_wallet_address, target_amount, raised_amount, slug, status, description, business_category, created_at
+      FROM projects
+      ORDER BY created_at DESC
+    `);
+
     return NextResponse.json({
-      message: `Fixed ${fixedCount} projects`,
-      totalFound: projectsWithNullWallet.length,
-      fixed: fixedCount
+      message: `Fixed ${fixedCount} projects with complete data correction`,
+      totalFound: projectsWithIssues.length,
+      fixed: fixedCount,
+      beforeFix: allProjects,
+      afterFix: updatedProjects
     });
 
   } catch (error) {
@@ -186,27 +218,32 @@ export async function POST(request: Request) {
       }
     }
 
-    // TEMPORARY FIX: Correct existing project with null wallet address
+    // TEMPORARY FIX: Correct existing project with missing data
     // This is a one-time fix for the existing "BlockBunny" project
     try {
-      const existingProjectsWithNullWallet = await db.execute(sql`
-        SELECT id, title, applicant_wallet_address FROM projects
-        WHERE applicant_wallet_address IS NULL OR applicant_wallet_address = ''
+      const existingProjectsWithIssues = await db.execute(sql`
+        SELECT id, title, applicant_wallet_address, target_amount, raised_amount, slug, status
+        FROM projects
+        WHERE applicant_wallet_address IS NULL OR applicant_wallet_address = '' OR target_amount IS NULL OR raised_amount IS NULL
       `);
 
-      if (existingProjectsWithNullWallet.length > 0) {
-        console.log('🔧 Found projects with null wallet addresses:', existingProjectsWithNullWallet.length);
+      if (existingProjectsWithIssues.length > 0) {
+        console.log('🔧 Found projects with missing data:', existingProjectsWithIssues.length);
 
-        for (const project of existingProjectsWithNullWallet) {
-          // For the BlockBunny project, assign it to the current user
+        for (const project of existingProjectsWithIssues) {
+          // For the BlockBunny project, ensure all required data is present
           if (project.title === 'BlockBunny' && applicantWalletAddress) {
             await db.execute(sql`
               UPDATE projects
-              SET applicant_wallet_address = ${applicantWalletAddress},
-                  applicant_name = COALESCE(applicant_name, ${applicantWalletAddress})
+              SET applicant_wallet_address = COALESCE(applicant_wallet_address, ${applicantWalletAddress}),
+                  applicant_name = COALESCE(applicant_name, ${applicantWalletAddress}),
+                  target_amount = COALESCE(target_amount, '1000000.00'),
+                  raised_amount = COALESCE(raised_amount, '0.00'),
+                  slug = COALESCE(slug, 'blockbunny'),
+                  status = COALESCE(status, 'approved')
               WHERE id = ${project.id}
             `);
-            console.log('✅ Fixed BlockBunny project wallet address for project:', project.id);
+            console.log('✅ Fixed BlockBunny project data for project:', project.id);
           }
         }
       }
