@@ -72,12 +72,12 @@ export async function GET(request: Request) {
     // Ensure user exists
     await ensureUser(walletAddress);
 
-    // Get user data directly from User table - optimized query
+    // Get user data directly from users table - optimized query
     const users = await sql`
       SELECT "id", "name", "email", "image", "walletAddress",
               "connectionCount", "lastConnectionAt", "createdAt",
               "kycLevel", "kycCompleted", "kycData"
-      FROM "User"
+      FROM "users"
       WHERE LOWER("walletAddress") = LOWER(${walletAddress})
     `;
     const user = users[0];
@@ -214,7 +214,7 @@ export async function POST(request: Request) {
 
     // Build unified update query
     await sql`
-      UPDATE "User"
+      UPDATE "users"
       SET "name" = ${profileData.name ?? null},
           "email" = ${profileData.email ?? null},
           "image" = ${profileData.image ?? null},
