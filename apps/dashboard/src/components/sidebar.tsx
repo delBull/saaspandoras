@@ -322,7 +322,7 @@ export function Sidebar({
         disabled: false,
       },
             {
-        label: "Feed",
+        label: "Feed", 
         type: "path",
         href: "#",
         icon: (
@@ -624,7 +624,7 @@ export function Sidebar({
                 key={link.label}
                 href={link.href}
                 className={cn(
-                  "relative flex items-center rounded-lg py-5 text-gray-400 transition-all duration-200 border-b border-gray-800",
+                  "relative flex items-center rounded-lg py-5 font-light text-gray-400 transition-all duration-200 border-b border-gray-800",
                   open ? "px-4" : "w-full justify-center",
                   link.disabled
                     ? "cursor-not-allowed opacity-60"
@@ -648,7 +648,7 @@ export function Sidebar({
                 {link.comingSoon && open && (
                   <motion.span
                     animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0 }}
-                    className="ml-auto text-xs text-gray-500"
+                    className="ml-auto text-xs text-gray-500 italic"
                   >
                     coming soon
                   </motion.span>

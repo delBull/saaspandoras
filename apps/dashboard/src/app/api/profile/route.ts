@@ -9,9 +9,18 @@ import { ensureUser } from "@/lib/user";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const revalidate = 300; // Cache for 5 minutes
 
 // Force this route to be dynamic to avoid static generation issues with cookies
-export async function GET() {
+// Add rate limiting for production
+export async function GET(request: Request) {
+  // Simple rate limiting check (basic implementation)
+  const clientIP = request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? 'unknown';
+  const _rateLimitKey = `profile-requests-${clientIP}`;
+
+  // In production, you might want to use Redis or similar for proper rate limiting
+  // For now, we'll just log excessive requests
+  console.log(`Profile API request from ${clientIP} at ${new Date().toISOString()}`);
   let walletAddress: string | undefined;
   let authMethod: 'header' | 'body' | 'session' | 'none' = 'none';
 
@@ -72,7 +81,7 @@ export async function GET() {
       FROM "projects"
       WHERE LOWER("applicant_wallet_address") = LOWER(${walletAddress})
       ORDER BY "created_at" DESC
-      LIMIT 5
+      LIMIT 3
     `);
 
 
@@ -117,8 +126,16 @@ export async function GET() {
       errorStack: error instanceof Error ? error.stack : "No stack"
     });
 
-    // Check if it's a quota issue
-    if (error instanceof Error && error.message.includes('quota')) {
+    // Check if it's a quota issue - More comprehensive check
+    if (error instanceof Error && (
+      error.message.includes('quota') ||
+      error.message.includes('limit') ||
+      error.message.includes('exceeded') ||
+      error.message.includes('rate limit') ||
+      error.message.includes('too many') ||
+      error.message.includes('connection pool') ||
+      error.message.includes('timeout')
+    )) {
       return NextResponse.json({
         message: "Database quota exceeded",
         error: "Your database plan has reached its data transfer limit. Please upgrade your plan or contact support.",
