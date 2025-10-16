@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
 import { db } from "~/db";
+import { sql } from "drizzle-orm";
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
 export const runtime = "nodejs";
-import { projects as projectsSchema } from "~/db/schema";
+import { projects as projectsSchema } from "@/db/schema";
 import { projectApiSchema } from "@/lib/project-schema-api";
 import { getAuth } from "@/lib/auth";
 import { headers } from "next/headers";
 import slugify from "slugify";
+
 
 export async function POST(request: Request) {
   try {
@@ -21,9 +23,25 @@ export async function POST(request: Request) {
       );
     }
 
-    // Obtener wallet address del usuario conectado
-    const { session } = await getAuth(await headers());
-    const applicantWalletAddress = session?.userId ?? null;
+    // Obtener wallet address del usuario conectado usando headers de Thirdweb
+    const headersList = await headers();
+    const { session } = await getAuth(headersList);
+
+    // Intentar múltiples fuentes para obtener la wallet address
+    const applicantWalletAddress =
+      session?.userId ??
+      headersList.get('x-thirdweb-address') ??
+      headersList.get('x-wallet-address') ??
+      headersList.get('x-user-address') ??
+      null;
+
+    console.log('🔍 DRAFT API: Wallet sources check:', {
+      sessionUserId: session?.userId?.substring(0, 10) + '...',
+      thirdwebHeader: headersList.get('x-thirdweb-address')?.substring(0, 10) + '...',
+      walletHeader: headersList.get('x-wallet-address')?.substring(0, 10) + '...',
+      userHeader: headersList.get('x-user-address')?.substring(0, 10) + '...',
+      finalWallet: applicantWalletAddress?.substring(0, 10) + '...'
+    });
 
     // Generar un slug único
     let slug = slugify(parsedData.data.title, { lower: true, strict: true });
@@ -100,6 +118,76 @@ export async function POST(request: Request) {
         status: "draft", // FORZAR COMO DRAFT PARA GUARDAR BORRADORES
       })
       .returning();
+
+    console.log('✅ Project saved with applicantWalletAddress:', newProject?.applicantWalletAddress);
+
+    // Ensure applicantWalletAddress is properly saved (defensive programming)
+    if (applicantWalletAddress && newProject && newProject.applicantWalletAddress !== applicantWalletAddress) {
+      console.warn('⚠️ Wallet address mismatch detected, updating project...');
+      try {
+        await db.execute(sql`
+          UPDATE projects
+          SET applicant_wallet_address = ${applicantWalletAddress}
+          WHERE id = ${newProject.id}
+        `);
+        console.log('✅ Fixed wallet address for project:', newProject.id);
+      } catch (fixError) {
+        console.error('❌ Failed to fix wallet address:', fixError);
+      }
+    }
+
+    // TEMPORARY FIX: Correct existing project with missing data
+    // This is a one-time fix for the existing "BlockBunny" project
+    try {
+      const existingProjectsWithIssues = await db.execute(sql`
+        SELECT id, title, applicant_wallet_address, target_amount, raised_amount, slug, status
+        FROM projects
+        WHERE applicant_wallet_address IS NULL OR applicant_wallet_address = '' OR target_amount IS NULL OR raised_amount IS NULL
+      `);
+
+      if (existingProjectsWithIssues.length > 0) {
+        console.log('🔧 Found projects with missing data:', existingProjectsWithIssues.length);
+
+        for (const project of existingProjectsWithIssues) {
+          // For the BlockBunny project, ensure all required data is present
+          if (project.title === 'BlockBunny' && applicantWalletAddress) {
+            await db.execute(sql`
+              UPDATE projects
+              SET applicant_wallet_address = COALESCE(applicant_wallet_address, ${applicantWalletAddress}),
+                  applicant_name = COALESCE(applicant_name, ${applicantWalletAddress}),
+                  target_amount = COALESCE(target_amount, '1000000.00'),
+                  raised_amount = COALESCE(raised_amount, '0.00'),
+                  slug = COALESCE(slug, 'blockbunny'),
+                  status = COALESCE(status, 'approved')
+              WHERE id = ${project.id}
+            `);
+            console.log('✅ Fixed BlockBunny project data for project:', project.id);
+          }
+        }
+      }
+    } catch (fixError) {
+      console.error('❌ Failed to fix existing projects:', fixError);
+    }
+
+    // Update user role to 'applicant' if they have projects now
+    if (applicantWalletAddress) {
+      try {
+        // Check if user has any projects (including this new one)
+        const userProjects = await db.query.projects.findMany({
+          where: (projects, { eq }) => eq(projects.applicantWalletAddress, applicantWalletAddress),
+        });
+
+        // If user has projects and is not admin, they should be 'applicant'
+        if (userProjects.length > 0) {
+          console.log('🔄 User role will be calculated as applicant for wallet:', applicantWalletAddress);
+          // Note: The role is calculated dynamically in /api/profile, so no need to store it in DB
+          // The frontend will get the updated role on next profile fetch
+        }
+      } catch (roleError) {
+        console.error('⚠️ Error checking user role:', roleError);
+        // Don't fail the project creation if role check fails
+      }
+    }
 
     return NextResponse.json(newProject, { status: 201 });
   } catch (error) {

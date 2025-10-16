@@ -36,7 +36,7 @@ export async function GET() {
 
     // First, try to get real projects from database
     try {
-      console.log('🔍 Basic API: Executing database query...');
+      console.log('🔍 Basic API: Executing optimized database query...');
       const realProjects = await db.execute(sql`
         SELECT
           "id",
@@ -47,9 +47,11 @@ export async function GET() {
           "created_at" as "createdAt",
           "cover_photo_url" as "coverPhotoUrl",
           "target_amount" as "targetAmount",
-          "raised_amount" as "raisedAmount"
+          "raised_amount" as "raisedAmount",
+          "business_category" as "businessCategory"
         FROM "projects"
         ORDER BY "created_at" DESC
+        LIMIT 5
       `);
 
       const projects = realProjects as unknown as ProjectQueryResult[];

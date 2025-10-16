@@ -25,6 +25,8 @@ import { ethereum } from "thirdweb/chains";
 import { WalletBalance, NetworkSelector, ConnectWalletButton } from "@/components/wallet";
 import { SUPPORTED_NETWORKS, DEFAULT_NETWORK } from "@/config/networks";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
+import { PanelTopIcon } from "lucide-react";
+import { useProjectModal } from "@/contexts/ProjectModalContext";
 
 interface SidebarProps {
   wallet?: string;
@@ -56,6 +58,7 @@ export function Sidebar({
   const account = useActiveAccount();
   const wallet = useActiveWallet();
   const { disconnect } = useDisconnect();
+  const { open: openProjectModal } = useProjectModal();
 
   // Multi-chain wallet state
   const [selectedChain, setSelectedChain] = useState(DEFAULT_NETWORK?.chain || ethereum);
@@ -305,19 +308,28 @@ export function Sidebar({
   const links = useMemo(
     () => [
       {
-        label: "Overview",
+        label: "Hub",
         href: "/",
         icon: <HomeIcon className="h-5 w-5 shrink-0 text-gray-400" />,
         disabled: false,
       },
-
       {
-        label: "Projects",
+        label: "Proyectos",
         href: "/applicants",
         icon: (
           <UserGroupIcon className="h-5 w-5 shrink-0 text-gray-400" />
         ),
         disabled: false,
+      },
+            {
+        label: "Feed",
+        type: "path",
+        href: "#",
+        icon: (
+          <PanelTopIcon className="h-5 w-5 shrink-0 text-gray-400" />
+        ),
+        comingSoon: true,
+        disabled: true,
       },
       {
         label: "Pools",
@@ -629,7 +641,7 @@ export function Sidebar({
                     width: open ? "auto" : 0,
                     marginLeft: open ? "0.75rem" : "0",
                   }}
-                  className="whitespace-nowrap font-medium"
+                  className="whitespace-nowrap"
                 >
                   {link.label}
                 </motion.span>
@@ -646,6 +658,37 @@ export function Sidebar({
           </div>
 
           <div className="mb-4 flex flex-col gap-2">
+            {/* Temporary Modal Access Link - Opens project application modal */}
+            <div
+              className={cn(
+                "border-t border-gray-800 pt-2",
+                !open && "mx-auto w-full"
+              )}
+            >
+              <button
+                onClick={() => {
+                  // Open the project application modal using context
+                  void openProjectModal();
+                }}
+                className={cn(
+                  "relative flex w-full items-center rounded-lg py-2 transition-all duration-200 text-gray-400 hover:bg-purple-800/20",
+                  open ? "px-4" : "justify-center"
+                )}
+              >
+                <ShieldCheckIcon className="h-4 w-4 shrink-0" />
+                <motion.span
+                  animate={{
+                    opacity: open ? 1 : 0,
+                    width: open ? "auto" : 0,
+                    marginLeft: open ? "0.75rem" : "0",
+                  }}
+                  className="whitespace-nowrap text-xs italic"
+                >
+                  {open ? "Aplicar Proyecto" : "🔗"}
+                </motion.span>
+              </button>
+            </div>
+
             {isClient && account && (
               <div
                 className={cn(
@@ -668,9 +711,9 @@ export function Sidebar({
                       width: open ? "auto" : 0,
                       marginLeft: open ? "0.75rem" : "0",
                     }}
-                    className="whitespace-nowrap font-medium"
+                    className="whitespace-nowrap"
                   >
-                    Disconnect
+                    Desconectar
                   </motion.span>
                 </button>
               </div>
@@ -940,7 +983,7 @@ export function Sidebar({
                       }}
                     >
                       {link.icon}
-                      <span className="ml-3 whitespace-nowrap font-medium">
+                      <span className="ml-3 whitespace-nowrap">
                         {link.label}
                       </span>
                       {link.comingSoon && (
@@ -953,6 +996,22 @@ export function Sidebar({
                 </div>
 
                 <div className="mb-4 flex flex-col gap-2">
+                  {/* Temporary Modal Access Link - Opens project application modal */}
+                  <div className="border-t border-gray-800 pt-2">
+                    <button
+                      onClick={() => {
+                        void openProjectModal();
+                        setMobileOpen(false);
+                      }}
+                      className="relative flex w-full items-center rounded-lg py-2 px-4 transition-all duration-200 text-gray-400 hover:bg-purple-800/20"
+                    >
+                      <ShieldCheckIcon className="h-4 w-4 shrink-0" />
+                      <span className="ml-3 whitespace-nowrap text-xs italic">
+                        Aplicar Proyecto
+                      </span>
+                    </button>
+                  </div>
+
                   {isClient && account && (
                     <div className="border-t border-gray-800 pt-2">
                       <button
@@ -964,8 +1023,8 @@ export function Sidebar({
                         className="relative flex w-full items-center rounded-lg py-2 px-4 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white disabled:opacity-50"
                       >
                         <ArrowLeftOnRectangleIcon className="h-5 w-5 shrink-0" />
-                        <span className="ml-3 whitespace-nowrap font-medium">
-                          Disconnect
+                        <span className="ml-3 whitespace-nowrap">
+                          Desconectar
                         </span>
                       </button>
                     </div>

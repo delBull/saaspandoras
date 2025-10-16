@@ -5,7 +5,7 @@ import { db } from "~/db";
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-import { administrators } from "~/db/schema";
+import { administrators } from "@/db/schema";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { headers } from "next/headers";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";

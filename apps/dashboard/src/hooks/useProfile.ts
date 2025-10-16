@@ -36,31 +36,35 @@ async function fetcher(walletAddress?: string): Promise<UserProfile> {
 }
 
 export function useProfile() {
-   const account = useActiveAccount();
-   const walletAddress = account?.address?.toLowerCase();
+    const account = useActiveAccount();
+    const walletAddress = account?.address?.toLowerCase();
 
-   // Create dynamic SWR key based on current wallet
-   const walletSWRKey = walletAddress ? `profile-${walletAddress}` : null;
+    // Create dynamic SWR key based on current wallet
+    const walletSWRKey = walletAddress ? `profile-${walletAddress}` : null;
 
-   const { data, error, isLoading, mutate } = useSWR<UserProfile>(
-     walletSWRKey, // Unique key per wallet
-     () => fetcher(walletAddress),
-     {
-       refreshInterval: 30000, // More frequent refresh
-       revalidateOnFocus: true,
-       revalidateOnReconnect: true
-     }
-   );
+    const { data, error, isLoading, mutate } = useSWR<UserProfile>(
+      walletSWRKey, // Unique key per wallet
+      () => fetcher(walletAddress),
+      {
+        refreshInterval: 30000, // More frequent refresh
+        revalidateOnFocus: true,
+        revalidateOnReconnect: true,
+        // Add mutation when wallet changes to ensure fresh data
+        dedupingInterval: 5000, // Reduce cache time for more responsive updates
+      }
+    );
 
-  return {
-    profile: data,
-    projects: data?.projects ?? [],
-    role: data?.role,
-    projectCount: data?.projectCount ?? 0,
-    systemProjectsManaged: data?.systemProjectsManaged,
-    hasPandorasKey: data?.hasPandorasKey,
-    isLoading,
-    isError: !!error,
-    mutate, // para refrescar manualmente
-  };
-}
+   return {
+     profile: data,
+     projects: data?.projects ?? [],
+     role: data?.role,
+     projectCount: data?.projectCount ?? 0,
+     systemProjectsManaged: data?.systemProjectsManaged,
+     hasPandorasKey: data?.hasPandorasKey,
+     isLoading,
+     isError: !!error,
+     mutate, // para refrescar manualmente
+     // Helper function to refresh profile data (useful after creating projects)
+     refreshProfile: () => mutate(),
+   };
+ }
