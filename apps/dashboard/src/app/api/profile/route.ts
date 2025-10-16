@@ -91,6 +91,7 @@ export async function GET(request: Request) {
       LIMIT 3
     `;
 
+
     // Calculate user role
     const adminResults = await sql`
       SELECT COUNT(*) as count FROM "administrators"
