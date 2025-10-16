@@ -43,7 +43,7 @@ export async function GET() {
     }
 
     // First, try a simple query to check if table exists and has data
-    const simpleUserQuery = await db.execute(sql`SELECT COUNT(*) as total FROM "users"`);
+    const simpleUserQuery = await db.execute(sql`SELECT COUNT(*) as total FROM "User"`);
     console.log("Simple user count:", simpleUserQuery);
     const totalUsers = simpleUserQuery[0]?.total as string;
     console.log("Total users:", totalUsers);
@@ -93,7 +93,7 @@ export async function GET() {
         u."kycCompleted",
         u."kycData",
         COALESCE(COUNT(DISTINCT p.id), 0) as "projectCount"
-      FROM "users" u
+      FROM "User" u
       LEFT JOIN "projects" p
         ON LOWER(u."walletAddress") = LOWER(p."applicant_wallet_address")
       WHERE LOWER(u."walletAddress") != LOWER(${SUPER_ADMIN_WALLET})
