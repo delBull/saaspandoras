@@ -3,6 +3,7 @@ import { db } from "~/db";
 import { sql } from "drizzle-orm";
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 600; // Cache for 10 minutes
 
 // Type for database query result
 interface ProjectQueryResult {
@@ -36,7 +37,7 @@ export async function GET() {
 
     // First, try to get real projects from database
     try {
-      console.log('🔍 Basic API: Executing database query...');
+      console.log('🔍 Basic API: Executing optimized database query...');
       const realProjects = await db.execute(sql`
         SELECT
           "id",
@@ -47,9 +48,11 @@ export async function GET() {
           "created_at" as "createdAt",
           "cover_photo_url" as "coverPhotoUrl",
           "target_amount" as "targetAmount",
-          "raised_amount" as "raisedAmount"
+          "raised_amount" as "raisedAmount",
+          "business_category" as "businessCategory"
         FROM "projects"
         ORDER BY "created_at" DESC
+        LIMIT 3
       `);
 
       const projects = realProjects as unknown as ProjectQueryResult[];
@@ -102,6 +105,24 @@ export async function GET() {
     return NextResponse.json(fallbackProjects);
   } catch (error) {
     console.error("💥 Basic API: Critical error:", error);
+
+    // Check if it's a quota issue - More comprehensive check
+    if (error instanceof Error && (
+      error.message.includes('quota') ||
+      error.message.includes('limit') ||
+      error.message.includes('exceeded') ||
+      error.message.includes('rate limit') ||
+      error.message.includes('too many') ||
+      error.message.includes('connection pool') ||
+      error.message.includes('timeout')
+    )) {
+      return NextResponse.json({
+        message: "Database quota exceeded",
+        error: "Your database plan has reached its data transfer limit. Please upgrade your plan or contact support.",
+        quotaExceeded: true
+      }, { status: 503 }); // Service Unavailable
+    }
+
     return NextResponse.json(
       { message: "Error interno del servidor", error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

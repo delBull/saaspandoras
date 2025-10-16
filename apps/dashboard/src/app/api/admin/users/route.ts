@@ -1,11 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-assignment */
 import { NextResponse } from "next/server";
+import { db } from "~/db";
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 import { getAuth, isAdmin } from "@/lib/auth";
-import { db } from "~/db";
 import { sql } from "drizzle-orm";
 import { headers } from "next/headers";
 import type { UserData, UserRole } from "@/types/admin";
@@ -44,7 +43,7 @@ export async function GET() {
     }
 
     // First, try a simple query to check if table exists and has data
-    const simpleUserQuery = await db.execute(sql`SELECT COUNT(*) as total FROM "User"`);
+    const simpleUserQuery = await db.execute(sql`SELECT COUNT(*) as total FROM "users"`);
     console.log("Simple user count:", simpleUserQuery);
     const totalUsers = simpleUserQuery[0]?.total as string;
     console.log("Total users:", totalUsers);
@@ -94,7 +93,7 @@ export async function GET() {
         u."kycCompleted",
         u."kycData",
         COALESCE(COUNT(DISTINCT p.id), 0) as "projectCount"
-      FROM "User" u
+      FROM "users" u
       LEFT JOIN "projects" p
         ON LOWER(u."walletAddress") = LOWER(p."applicant_wallet_address")
       WHERE LOWER(u."walletAddress") != LOWER(${SUPER_ADMIN_WALLET})
@@ -226,6 +225,24 @@ export async function GET() {
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined
     });
+
+    // Check if it's a quota issue - More comprehensive check
+    if (error instanceof Error && (
+      error.message.includes('quota') ||
+      error.message.includes('limit') ||
+      error.message.includes('exceeded') ||
+      error.message.includes('rate limit') ||
+      error.message.includes('too many') ||
+      error.message.includes('connection pool') ||
+      error.message.includes('timeout')
+    )) {
+      return NextResponse.json({
+        message: "Database quota exceeded",
+        error: "Your database plan has reached its data transfer limit. Please upgrade your plan or contact support.",
+        quotaExceeded: true
+      }, { status: 503 }); // Service Unavailable
+    }
+
     return NextResponse.json(
       { message: "Error al obtener usuarios", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }

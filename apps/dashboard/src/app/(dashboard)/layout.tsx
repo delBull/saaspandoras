@@ -3,6 +3,7 @@ import { headers as _headers } from "next/headers";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 import { DashboardClientWrapper } from "./dashboard-client-wrapper";
+import { ProjectModalProvider } from "@/contexts/ProjectModalContext";
 
 // Force dynamic rendering - this layout uses cookies and should not be prerendered
 export const dynamic = 'force-dynamic';
@@ -33,12 +34,14 @@ export default async function DashboardLayout({
   console.log('🏠 DashboardLayout: Final results:', { userIsAdmin, userIsSuperAdmin });
 
   return (
-    <DashboardClientWrapper
-      isAdmin={userIsAdmin}
-      isSuperAdmin={userIsSuperAdmin}
-      serverSession={session ? { address: session.address ?? undefined, hasSession: true } : null}
-    >
-      {children}
-    </DashboardClientWrapper>
+    <ProjectModalProvider>
+      <DashboardClientWrapper
+        isAdmin={userIsAdmin}
+        isSuperAdmin={userIsSuperAdmin}
+        serverSession={session ? { address: session.address ?? undefined, hasSession: true } : null}
+      >
+        {children}
+      </DashboardClientWrapper>
+    </ProjectModalProvider>
   );
 }

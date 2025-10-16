@@ -31,7 +31,7 @@ interface ApplicantsFiltersProps {
   onGridColumnsChange: (columns: GridColumns) => void;
   filters: FilterOptions;
   onFiltersChange: (filters: FilterOptions) => void;
-  updateFilter: (key: keyof FilterOptions, value: string) => void;
+  updateFilter: (key: string, value: string) => void;
   clearFilters: () => void;
   hasActiveFilters: boolean;
   totalProjects: number;
@@ -49,13 +49,13 @@ const categories = [
   { value: 'other', label: 'Otro' },
 ];
 
-const _networks = [
-  { value: 'all', label: 'Todas las redes' },
-  { value: 'ethereum', label: 'Ethereum' },
-  { value: 'polygon', label: 'Polygon' },
-  { value: 'arbitrum', label: 'Arbitrum' },
-  { value: 'base', label: 'Base' },
-];
+// const networks = [
+//   { value: 'all', label: 'Todas las redes' },
+//   { value: 'ethereum', label: 'Ethereum' },
+//   { value: 'polygon', label: 'Polygon' },
+//   { value: 'arbitrum', label: 'Arbitrum' },
+//   { value: 'base', label: 'Base' },
+// ];
 
 const statuses = [
   { value: 'all', label: 'Todos los Estados' },
@@ -187,20 +187,10 @@ export function ApplicantsFilters({
               </Button>
             </div>
 
-            {/* Mobile Grid Columns */}
+            {/* Mobile Grid Columns - Oculto según requerimiento */}
             {viewMode === 'grid' && (
-              <div className="flex items-center bg-gray-100 dark:bg-zinc-800 rounded-lg p-1">
-                {[3, 4].map((cols) => (
-                  <Button
-                    key={cols}
-                    variant={gridColumns === cols ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => onGridColumnsChange(cols as GridColumns)}
-                    className={`px-2 py-1 text-xs ${gridColumns === cols ? 'bg-lime-500 text-black' : 'text-gray-600 dark:text-gray-400'}`}
-                  >
-                    {cols}
-                  </Button>
-                ))}
+              <div className="hidden">
+                {/* Grid column controls hidden on mobile as requested */}
               </div>
             )}
           </div>

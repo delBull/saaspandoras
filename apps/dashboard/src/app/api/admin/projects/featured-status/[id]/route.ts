@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { db } from "~/db";
+import { projects as projectsSchema } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { projects } from "~/db/schema";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { headers } from "next/headers";
+
+// ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
+export const runtime = "nodejs";
 
 interface FeaturedUpdateRequest {
   featured?: boolean;
@@ -49,7 +52,7 @@ export async function PATCH(
 
     // Verificar que el proyecto existe
     const existingProject = await db.query.projects.findFirst({
-      where: eq(projects.id, projectId),
+      where: eq(projectsSchema.id, projectId),
     });
 
     if (!existingProject) {
@@ -61,16 +64,16 @@ export async function PATCH(
 
     // Actualizar featured status - simplified query
     const [updatedProject] = await db
-      .update(projects)
+      .update(projectsSchema)
       .set(updateData)
-      .where(eq(projects.id, projectId))
+      .where(eq(projectsSchema.id, projectId))
       .returning({
-        id: projects.id,
-        title: projects.title,
-        slug: projects.slug,
-        featured: projects.featured,
-        featuredButtonText: projects.featuredButtonText,
-        status: projects.status
+        id: projectsSchema.id,
+        title: projectsSchema.title,
+        slug: projectsSchema.slug,
+        featured: projectsSchema.featured,
+        featuredButtonText: projectsSchema.featuredButtonText,
+        status: projectsSchema.status
       });
 
     console.log('🚀 Featured-Status API: Update successful:', updatedProject);

@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod"; // FIX 1: Reactivado
 import { z } from "zod";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 import { ProjectSection1 } from "./sections/ProjectSection1";
 import { ProjectSection2 } from "./sections/ProjectSection2";
 import { ProjectSection3 } from "./sections/ProjectSection3";
@@ -17,53 +18,54 @@ import { ProjectSection6 } from "./sections/ProjectSection6";
 import { ProjectSection7 } from "./sections/ProjectSection7";
 
 interface Project {
-  id?: number;
-  slug?: string;
-  title?: string | null;
-  description?: string | null;
-  tagline?: string | null;
-  businessCategory?: string | null;
-  logoUrl?: string | null;
-  coverPhotoUrl?: string | null;
-  videoPitch?: string | null;
-  website?: string | null;
-  whitepaperUrl?: string | null;
-  twitterUrl?: string | null;
-  discordUrl?: string | null;
-  telegramUrl?: string | null;
-  linkedinUrl?: string | null;
-  targetAmount?: string | number | null;
-  totalValuationUsd?: string | number | null;
-  tokenType?: string | null;
-  totalTokens?: string | number | null;
-  tokensOffered?: string | number | null;
-  tokenPriceUsd?: string | number | null;
-  estimatedApy?: string | null;
-  yieldSource?: string | null;
-  lockupPeriod?: string | null;
-  fundUsage?: string | null;
-  teamMembers?: unknown;
-  advisors?: unknown;
-  tokenDistribution?: unknown;
-  contractAddress?: string | null;
-  treasuryAddress?: string | null;
-  legalStatus?: string | null;
-  valuationDocumentUrl?: string | null;
-  fiduciaryEntity?: string | null;
-  dueDiligenceReportUrl?: string | null;
-  isMintable?: boolean | string | null;
-  isMutable?: boolean | string | null;
-  updateAuthorityAddress?: string | null;
-  applicantName?: string | null;
-  applicantPosition?: string | null;
-  applicantEmail?: string | null;
-  applicantPhone?: string | null;
-  verificationAgreement?: boolean | string | null;
-  createdAt?: Date;
-  raisedAmount?: string | number | null;
-  returnsPaid?: string | number | null;
-  status?: string | null;
-}
+   id?: number;
+   slug?: string;
+   title?: string | null;
+   description?: string | null;
+   tagline?: string | null;
+   businessCategory?: string | null;
+   logoUrl?: string | null;
+   coverPhotoUrl?: string | null;
+   videoPitch?: string | null;
+   website?: string | null;
+   whitepaperUrl?: string | null;
+   twitterUrl?: string | null;
+   discordUrl?: string | null;
+   telegramUrl?: string | null;
+   linkedinUrl?: string | null;
+   targetAmount?: string | number | null;
+   totalValuationUsd?: string | number | null;
+   tokenType?: string | null;
+   totalTokens?: string | number | null;
+   tokensOffered?: string | number | null;
+   tokenPriceUsd?: string | number | null;
+   estimatedApy?: string | null;
+   yieldSource?: string | null;
+   lockupPeriod?: string | null;
+   fundUsage?: string | null;
+   teamMembers?: unknown;
+   advisors?: unknown;
+   tokenDistribution?: unknown;
+   contractAddress?: string | null;
+   treasuryAddress?: string | null;
+   legalStatus?: string | null;
+   valuationDocumentUrl?: string | null;
+   fiduciaryEntity?: string | null;
+   dueDiligenceReportUrl?: string | null;
+   isMintable?: boolean | string | null;
+   isMutable?: boolean | string | null;
+   updateAuthorityAddress?: string | null;
+   applicantName?: string | null;
+   applicantPosition?: string | null;
+   applicantEmail?: string | null;
+   applicantPhone?: string | null;
+   applicantWalletAddress?: string | null;
+   verificationAgreement?: boolean | string | null;
+   createdAt?: Date;
+   raisedAmount?: string | number | null;
+   returnsPaid?: string | number | null;
+   status?: string | null;
+ }
 
 // FIX 2: Definir tipos claros para los datos parseados
 interface TeamMember {
@@ -126,7 +128,6 @@ const ProgressBar = ({ currentStep, totalSteps }: { currentStep: number; totalSt
   </div>
 );
 
-// Schema simplificado para evitar problemas de profundidad de tipos
 const fullProjectSchema = z.object({
   // Sección 1: Identidad del Proyecto
   title: z.string().min(3, "El título es requerido."),
@@ -197,6 +198,7 @@ const fullProjectSchema = z.object({
   applicantPosition: z.string().optional(),
   applicantEmail: z.string().email("Email inválido").optional(),
   applicantPhone: z.string().optional(),
+  applicantWalletAddress: z.string().optional(),
   verificationAgreement: z.boolean(),
 });
 
@@ -221,7 +223,51 @@ export function MultiStepForm({
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
-  const isAdminUser = !isPublic; // El estado de admin se deriva directamente de la prop.
+
+  // FIX: Proper admin wallet verification instead of relying on isPublic prop
+  const [isAdminUser, setIsAdminUser] = useState(false);
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (account?.address) {
+        const walletAddress = account.address.toLowerCase();
+        const superAdminWallet = SUPER_ADMIN_WALLET.toLowerCase();
+
+        // Check if it's super admin first
+        if (walletAddress === superAdminWallet) {
+          setIsAdminUser(true);
+        } else {
+          // Check if wallet exists in administrators table
+          try {
+            const response = await fetch('/api/admin/verify');
+            if (response.ok) {
+              const data = await response.json() as { isAdmin?: boolean; isSuperAdmin?: boolean };
+              setIsAdminUser(Boolean(data.isAdmin ?? data.isSuperAdmin ?? false));
+            } else {
+              console.error('Admin verification failed:', response.status, response.statusText);
+              setIsAdminUser(false);
+            }
+          } catch (error) {
+            console.error('Error checking admin status:', error);
+            setIsAdminUser(false);
+          }
+        }
+      } else {
+        setIsAdminUser(false);
+      }
+    };
+
+    void checkAdminStatus();
+  }, [account?.address]);
+
+  // Redirect non-admin users
+  useEffect(() => {
+    if (account?.address && !isAdminUser && !isPublic) {
+      console.log('❌ Non-admin user attempting to access admin form, redirecting...');
+      window.location.href = '/admin/dashboard';
+    }
+  }, [account?.address, isAdminUser, isPublic]);
+
   const totalSteps = 7;
   
   // Funciones de parseo seguro para inicializar el formulario
@@ -316,6 +362,7 @@ export function MultiStepForm({
       applicantPosition: project?.applicantPosition ?? undefined,
       applicantEmail: project?.applicantEmail ?? undefined,
       applicantPhone: project?.applicantPhone ?? undefined,
+      applicantWalletAddress: project?.applicantWalletAddress ?? undefined,
       verificationAgreement: Boolean(project?.verificationAgreement ?? false),
     },
   });
@@ -374,26 +421,36 @@ export function MultiStepForm({
     }
   }, [account?.address, setValue, hasSetDefaultAddress, project?.updateAuthorityAddress]);
 
-  // Auto-scroll to top cuando cambie el paso - POSIBLE SOLUCIÓN PARA PUBLIC USERS
+  // Auto-scroll to top cuando cambie el paso - MEJORADO PARA MODAL
   useEffect(() => {
-    // Scroll inmediato - prioridad máxima
     const scrollToTop = () => {
-      // Intentar múltiples enfoques para scroll
       try {
-        // 1. Scroll directo de window
+        // 1. Scroll del modal container (más específico para modal)
+        const modalContainer = document.querySelector('.overflow-y-auto');
+        if (modalContainer) {
+          modalContainer.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        }
+
+        // 2. Scroll del form container
+        const formContainer = document.querySelector('form');
+        if (formContainer) {
+          formContainer.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        }
+
+        // 3. Scroll del section container
+        const sectionContainer = document.querySelector('section');
+        if (sectionContainer) {
+          sectionContainer.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        }
+
+        // 4. Fallback: Scroll directo de window (por si acaso)
         window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
 
-        // 2. Scroll de document element
+        // 5. Scroll de document element
         document.documentElement.scrollTop = 0;
 
-        // 3. Scroll de body
+        // 6. Scroll de body
         document.body.scrollTop = 0;
-
-        // 4. Scroll force donde esté la navegación
-        const navElement = document.querySelector('nav, [role="navigation"], header');
-        if (navElement) {
-          navElement.scrollIntoView({ block: 'start', behavior: 'instant' });
-        }
 
         console.log('Auto-scroll ejecutado al paso:', currentStep);
       } catch (error) {
@@ -401,13 +458,19 @@ export function MultiStepForm({
       }
     };
 
-    // Ejecutar inmediatamente
+    // Ejecutar inmediatamente con múltiples estrategias
     requestAnimationFrame(scrollToTop);
 
-    // También ejecutar después de un pequeño delay por si el DOM no está listo
-    const timeoutId = setTimeout(scrollToTop, 50);
+    // También ejecutar después de delays progresivos por si el DOM no está listo
+    const timeoutId1 = setTimeout(scrollToTop, 10);
+    const timeoutId2 = setTimeout(scrollToTop, 50);
+    const timeoutId3 = setTimeout(scrollToTop, 100);
 
-    return () => clearTimeout(timeoutId);
+    return () => {
+      clearTimeout(timeoutId1);
+      clearTimeout(timeoutId2);
+      clearTimeout(timeoutId3);
+    };
   }, [currentStep]);
 
   // Auto-redirección de modales después de 5 segundos
@@ -415,7 +478,7 @@ export function MultiStepForm({
     if (showSuccessModal) {
       const timer = setTimeout(() => {
         setShowSuccessModal(false);
-        router.push(isPublic ? "/applicants" : "/admin/dashboard");
+        router.push(isPublic ? "/" : "/admin/dashboard");
         router.refresh();
       }, 5000);
       return () => clearTimeout(timer);
@@ -616,10 +679,10 @@ export function MultiStepForm({
     console.log('📤 apiEndpoint prop:', apiEndpoint);
 
     try {
-      // FIX: Use the apiEndpoint prop if it's different from default, otherwise use built-in logic
-      const finalEndpoint = apiEndpoint !== "/api/admin/projects" ? apiEndpoint : (
-        isEdit ? `/api/admin/projects/${project?.id}` : "/api/projects/draft"
-      );
+       // FIX: Use the apiEndpoint prop if it's different from default, otherwise use built-in logic
+       const finalEndpoint = apiEndpoint !== "/api/admin/projects" ? apiEndpoint : (
+         isEdit ? `/api/admin/projects/${project?.id}` : "/api/admin/projects"
+       );
 
       console.log('📡 Submitting to endpoint:', finalEndpoint);
 
@@ -773,7 +836,7 @@ export function MultiStepForm({
         <button
           onClick={() => {
             setShowSuccessModal(false);
-            router.push(isPublic ? "/applicants" : "/admin/dashboard");
+            router.push(isPublic ? "/" : "/admin/dashboard");
             router.refresh();
           }}
           className="w-full bg-lime-500 hover:bg-lime-600 text-zinc-900 py-2 px-4 rounded-lg font-medium transition-colors"
@@ -800,7 +863,7 @@ export function MultiStepForm({
             ¡Borrador Guardado!
           </h3>
           <p className="text-gray-300 text-sm">
-            Tu progreso ha sido guardado exitosamente. Puedes continuar completando tu aplicación en cualquier momento sin perder lo que hayas avanzado.
+            Tu progreso ha sido guardado exitosamente. Puedes continuar con tu aplicación en cualquier momento sin perder lo que hayas avanzado.
           </p>
         </div>
         <button
@@ -821,7 +884,7 @@ export function MultiStepForm({
   );
 
   return (
-    <div className="min-h-screen bg-zinc-950">
+    <div className="min-h-screen bg-zinc-950/0">
       <FormProvider {...methods}>
         <form onSubmit={handleSubmit(onFinalSubmit, onValidationErrors)} className="max-w-4xl mx-auto p-4 md:p-8">
           {/* Header */}
@@ -904,8 +967,8 @@ export function MultiStepForm({
             </div>
           </div>
 
-          {/* Botones de Acción - Siempre visible el borrar para usuarios públicos */}
-          {isPublic && (
+          {/* Botón Guardar Borrador - Disponible en TODOS los pasos para usuarios públicos Y admins */}
+          {(isPublic || isAdminUser) && (
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
               <Button
                 type="button"
@@ -937,7 +1000,6 @@ export function MultiStepForm({
                 <Button
                   type="button"
                   variant="primary"
-                  // FIX 5: Envolver el handler en handleSubmit para que valide primero
                   onClick={handleSubmit(onAdminQuickSubmit, onValidationErrors)}
                   disabled={isLoading}
                   className="w-full sm:w-auto"

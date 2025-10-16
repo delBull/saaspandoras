@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 
 export async function ensureUser(walletAddress: string) {
   const [user] = await db.execute(sql`
-    SELECT "id" FROM "User"
+    SELECT "id" FROM "users"
     WHERE LOWER("walletAddress") = LOWER(${walletAddress})
     LIMIT 1
   `);
@@ -11,7 +11,7 @@ export async function ensureUser(walletAddress: string) {
   if (user) return user;
 
   const [newUser] = await db.execute(sql`
-    INSERT INTO "User" ("walletAddress", "createdAt")
+    INSERT INTO "users" ("walletAddress", "createdAt")
     VALUES (LOWER(${walletAddress}), NOW())
     RETURNING "id"
   `);

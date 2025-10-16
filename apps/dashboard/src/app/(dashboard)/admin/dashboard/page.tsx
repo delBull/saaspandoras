@@ -9,6 +9,7 @@ import { UnauthorizedAccess } from "@/components/admin/UnauthorizedAccess";
 import { useProjectActions } from "@/hooks/useProjectActions";
 import { useFeaturedProjects } from "@/hooks/useFeaturedProjects";
 import type { ProjectStatus, Project, AdminData, UserData } from "@/types/admin";
+import { ProjectApplicationButton } from "@/components/ProjectApplicationButton";
 
 // NOTE: Using 'draft' and 'incomplete' in UI but DB ENUM needs migration to include these values
 
@@ -401,12 +402,11 @@ export default function AdminDashboardPage() {
             Gestionar plataforma
           </p>
         </div>
-        <Link
-          href="/admin/projects/new/edit"
+        <ProjectApplicationButton
+          buttonText="➕ Añadir Proyecto"
           className="px-3 sm:px-4 py-2 bg-lime-500 hover:bg-lime-600 text-zinc-900 rounded-md font-semibold transition text-sm sm:text-base whitespace-nowrap"
-        >
-          ➕ Añadir Proyecto
-        </Link>
+          variant="default"
+        />
       </div>
 
       <AdminTabs swaps={mockSwaps} users={users} showSettings={true} showUsers={true}>

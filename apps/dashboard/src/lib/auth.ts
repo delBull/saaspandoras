@@ -54,9 +54,9 @@ export async function isAdmin(address?: string | null): Promise<boolean> {
     return isAdmin;
   } catch (error) {
     console.error("💥 isAdmin DEBUG: Database query FAILED:", error);
-    // If database query fails, fall back to false
-    console.log("🚫 isAdmin DEBUG: FALLBACK to false due to database error");
-    return false;
+    // If database query fails, fall back to super admin check only
+    console.log("🚫 isAdmin DEBUG: FALLBACK to super admin check only due to database error");
+    return isSuperAdminCheck;
   }
 }
 

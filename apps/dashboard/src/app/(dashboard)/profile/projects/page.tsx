@@ -31,40 +31,36 @@ export default function ProfileProjectsPage() {
 
   // Use account from useActiveAccount hook instead of cookies
   const walletAddress = account?.address;
+  const userWalletAddress = walletAddress;
 
   useEffect(() => {
     if (walletAddress) {
-      // Fetch user profile and projects data
-      Promise.all([
-        fetch('/api/profile', {
-          headers: {
-            'Content-Type': 'application/json',
-            'x-thirdweb-address': walletAddress,
-            'x-wallet-address': walletAddress,
-            'x-user-address': walletAddress,
-          }
-        }),
-        fetch('/api/projects')
-      ])
-        .then(async ([usersRes, projectsRes]) => {
-          if (!usersRes.ok) {
-            throw new Error(`Profile API failed: ${usersRes.status}`);
+      // Fetch user profile and projects data - projects come from profile API
+      fetch('/api/profile', {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-thirdweb-address': walletAddress,
+          'x-wallet-address': walletAddress,
+          'x-user-address': walletAddress,
+        }
+      })
+        .then(async (response) => {
+          if (!response.ok) {
+            throw new Error(`Profile API failed: ${response.status}`);
           }
 
-          if (!projectsRes.ok) {
-            throw new Error(`Projects API failed: ${projectsRes.status}`);
-          }
-
-          return Promise.all([usersRes.json(), projectsRes.json()]);
+          return response.json();
         })
         .then((data) => {
-          const [userProfile, projects] = data as [UserData, Project[]];
+          const userProfile = data as UserData;
+          const projects = data.projects as Project[] || [];
           setUserProfile(userProfile);
 
           // 🏦 WALLET-BASED FILTERING ONLY
           const SUPER_ADMIN_WALLETS = ['0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9'];
           const isSuperAdmin = SUPER_ADMIN_WALLETS.includes(userProfile?.walletAddress.toLowerCase() || '');
-          const userWalletAddress = userProfile?.walletAddress;
+          const profileWalletAddress = userProfile?.walletAddress;
+
 
           console.log('🔍 Profile Projects Debug:', {
             userWalletAddress,
@@ -85,29 +81,28 @@ export default function ProfileProjectsPage() {
               ['pending', 'approved', 'live', 'completed', 'rejected'].includes(p.status)
             );
             console.log('👑 Super admin projects:', userProjects.length);
-          } else if (userWalletAddress) {
+          } else if (profileWalletAddress) {
             // Regular users see ONLY their projects by wallet address
             const filteredProjects = projects.filter(p => {
               const projectWallet = p.applicantWalletAddress?.toLowerCase();
-              const userWallet = userWalletAddress.toLowerCase();
+              const userWallet = profileWalletAddress.toLowerCase();
               const matches = projectWallet === userWallet;
 
-              if (process.env.NODE_ENV === 'development') {
-                console.log('🔍 Project filter check:', {
-                  projectId: p.id,
-                  projectWallet,
-                  userWallet,
-                  matches,
-                  projectStatus: p.status
-                });
-              }
+              console.log('🔍 Project filter check:', {
+                projectId: p.id,
+                projectTitle: p.title,
+                projectWallet,
+                userWallet,
+                matches,
+                projectStatus: p.status
+              });
 
               return matches;
             });
 
             userProjects = filteredProjects;
             console.log('👤 Regular user projects:', {
-              userWallet: userWalletAddress,
+              userWallet: profileWalletAddress,
               filteredCount: userProjects.length,
               totalProjects: projects.length
             });
@@ -126,7 +121,7 @@ export default function ProfileProjectsPage() {
     } else if (!walletAddress) {
       setLoading(false);
     }
-  }, [walletAddress]);
+  }, [walletAddress, userWalletAddress]);
 
   if (loading) {
     return (
@@ -157,9 +152,9 @@ export default function ProfileProjectsPage() {
 
   // Calculate real metrics for each project individually
   const calculateProjectMetrics = (project: any) => {
-    const raised = Number(project.raised_amount || project.raisedAmount || 0);
-    const target = Number(project.target_amount || project.targetAmount || 1);
-    const returnsPaid = Number(project.returns_paid || project.returnsPaid || 0);
+    const raised = Number(project.raisedAmount || project.raised_amount || 0);
+    const target = Number(project.targetAmount || project.target_amount || 1);
+    const returnsPaid = Number(project.returnsPaid || project.returns_paid || 0);
     const fundingProgress = Math.min(Math.round((raised / target) * 100), 100);
 
     // Real investor count calculation - conditional based on project status

@@ -1,10 +1,10 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
+ 
 import { NextResponse } from "next/server";
 import { db } from "~/db";
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
 export const runtime = "nodejs";
-import { projects as projectsSchema } from "~/db/schema";
+import { projects as projectsSchema } from "@/db/schema";
 import { sql } from "drizzle-orm";
 import { projectApiSchema } from "@/lib/project-schema-api";
 import { getAuth, isAdmin } from "@/lib/auth";
@@ -16,8 +16,16 @@ export async function GET(_request: Request) {
   try {
     console.log('🔍 Admin API: Starting GET request...');
 
-    // TEMPORAL: Skip auth for debugging
-    console.log('🔍 Admin API: ⚠️ TEMPORAL: Skipping auth for debugging');
+    // Check admin authentication
+    const { session } = await getAuth(await headers());
+    const userIsAdmin = await isAdmin(session?.userId);
+
+    if (!userIsAdmin) {
+      console.log('❌ Admin API: Access denied for user:', session?.userId);
+      return NextResponse.json({ message: "No autorizado" }, { status: 403 });
+    }
+
+    console.log('✅ Admin API: Authentication passed for user:', session?.userId);
 
     console.log('🔍 Admin API: Fetching projects from database...');
 
@@ -136,6 +144,11 @@ export async function GET(_request: Request) {
           targetAmount: project.target_amount,
           status: project.status,
           createdAt: project.created_at,
+          // Applicant info
+          applicantName: project.applicant_name,
+          applicantEmail: project.applicant_email,
+          applicantPhone: project.applicant_phone,
+          applicantWalletAddress: project.applicant_wallet_address,
           // Add other fields as needed
         }));
 
@@ -151,6 +164,24 @@ export async function GET(_request: Request) {
   } catch (error) {
     console.error("💥 Admin API: Critical error:", error);
     console.error("💥 Admin API: Error stack:", error instanceof Error ? error.stack : 'No stack');
+
+    // Check if it's a quota issue - More comprehensive check
+    if (error instanceof Error && (
+      error.message.includes('quota') ||
+      error.message.includes('limit') ||
+      error.message.includes('exceeded') ||
+      error.message.includes('rate limit') ||
+      error.message.includes('too many') ||
+      error.message.includes('connection pool') ||
+      error.message.includes('timeout')
+    )) {
+      return NextResponse.json({
+        message: "Database quota exceeded",
+        error: "Your database plan has reached its data transfer limit. Please upgrade your plan or contact support.",
+        quotaExceeded: true
+      }, { status: 503 }); // Service Unavailable
+    }
+
     return NextResponse.json(
       { message: "Error interno del servidor", error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
@@ -202,9 +233,9 @@ export async function POST(request: Request) {
     // Get creator information for better project tracking
     const creatorWallet = session?.userId ?? 'system';
     const creatorInfo = await db.execute(sql`
-      SELECT "name", "email" FROM "User" WHERE "walletAddress" = ${creatorWallet}
+      SELECT "name", "email" FROM "users" WHERE "walletAddress" = ${creatorWallet}
     `);
-    const creatorName = creatorInfo[0] ? String((creatorInfo[0] as Record<string, unknown>).name) : 'Unknown';
+    const creatorName = creatorInfo[0] ? String(creatorInfo[0].name) : 'Unknown';
 
     console.log(`🏗️ Project created by: ${creatorWallet} (${creatorName})`);
 
@@ -272,7 +303,7 @@ export async function POST(request: Request) {
         applicantPosition: data.applicantPosition ?? null,
         applicantEmail: data.applicantEmail ?? null,
         applicantPhone: data.applicantPhone ?? null,
-        applicantWalletAddress: creatorWallet.toLowerCase(), // 🔥 Normalizada a lowercase para consistencia
+        applicantWalletAddress: creatorWallet.toLowerCase(), // ✅ Admin crea el proyecto, mantiene propiedad correcta
         verificationAgreement: data.verificationAgreement,
 
         // --- Campo de Estado: String (Enum) ---
@@ -283,6 +314,24 @@ export async function POST(request: Request) {
     return NextResponse.json(newProject, { status: 201 });
   } catch (error) {
     console.error("Error al crear el proyecto (admin):", error);
+
+    // Check if it's a quota issue - More comprehensive check
+    if (error instanceof Error && (
+      error.message.includes('quota') ||
+      error.message.includes('limit') ||
+      error.message.includes('exceeded') ||
+      error.message.includes('rate limit') ||
+      error.message.includes('too many') ||
+      error.message.includes('connection pool') ||
+      error.message.includes('timeout')
+    )) {
+      return NextResponse.json({
+        message: "Database quota exceeded",
+        error: "Your database plan has reached its data transfer limit. Please upgrade your plan or contact support.",
+        quotaExceeded: true
+      }, { status: 503 }); // Service Unavailable
+    }
+
     return NextResponse.json(
       { message: "Error interno del servidor." },
       { status: 500 }

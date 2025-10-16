@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "~/db";
-import { projects as projectsSchema } from "~/db/schema";
-import { inArray, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 
 export const dynamic = 'force-dynamic'; // Asegura que la ruta sea siempre dinámica
 
@@ -9,12 +8,25 @@ export async function GET() {
   try {
     console.log('🔍 Public API: Starting GET request...');
 
-    // Test database connection first
+    // Test database connection first - handle quota exceeded gracefully
     try {
-      const testQuery = await db.execute(sql`SELECT COUNT(*) as count FROM projects`);
-      console.log('✅ Public API: Database connection test passed, projects count:', testQuery[0]);
+      await db.execute(sql`SELECT 1`);
+      console.log('✅ Public API: Database connection test passed');
     } catch (dbError) {
       console.error('❌ Public API: Database connection failed:', dbError);
+
+      // Check if it's a quota issue
+      if (dbError instanceof Error && dbError.message.includes('quota')) {
+        return NextResponse.json(
+          {
+            message: "Database quota exceeded",
+            error: "Your database plan has reached its data transfer limit. Please upgrade your plan or contact support.",
+            quotaExceeded: true
+          },
+          { status: 503 } // Service Unavailable
+        );
+      }
+
       return NextResponse.json(
         { message: "Database connection failed", error: dbError instanceof Error ? dbError.message : 'Unknown DB error' },
         { status: 500 }
@@ -23,51 +35,52 @@ export async function GET() {
 
     console.log('🔍 Public API: Fetching projects from database...');
 
-    // Try simple query with basic fields first
+    // Try optimized query with essential fields only
     try {
-      const projects = await db.query.projects.findMany({
-        where: inArray(projectsSchema.status, ["pending", "approved", "live", "completed"]),
-        orderBy: (projects, { desc }) => [desc(projects.createdAt)],
-        columns: {
-          // Basic info
-          id: true,
-          title: true,
-          description: true,
-          slug: true,
-          status: true,
-          createdAt: true,
-          coverPhotoUrl: true,
-          targetAmount: true,
-          // Applicant info - CRITICAL for ownership display
-          applicantWalletAddress: true, // ✅ AGREGADO - Campo faltante
-          applicantName: true,
-          applicantEmail: true,
-        }
-      });
+      console.log('🔍 Public API: Executing optimized query with essential fields...');
+      const optimizedProjects = await db.execute(sql`
+        SELECT id, title, description, status, created_at, business_category, logo_url, cover_photo_url
+        FROM projects
+        WHERE status IN ('pending', 'approved', 'live', 'completed')
+        ORDER BY created_at DESC
+        LIMIT 3
+      `);
 
-      console.log(`📊 Public API: Found ${projects.length} projects`);
-      console.log('📊 Public API: Projects data:', projects.slice(0, 2)); // Log first 2 projects
+      console.log(`📊 Public API: Found ${optimizedProjects.length} projects with optimized query`);
 
-      return NextResponse.json(projects);
+      if (optimizedProjects.length > 0) {
+        console.log('📊 Public API: First project sample:', optimizedProjects[0]);
+      }
+
+      return NextResponse.json(optimizedProjects);
     } catch (queryError) {
-      console.error('❌ Public API: Drizzle query failed, trying raw SQL:', queryError);
+      console.error('❌ Public API: Simple query failed, trying diagnostic query:', queryError);
 
-      // Fallback to raw SQL query
+      // Try diagnostic queries
       try {
-        const rawProjects = await db.execute(sql`
-          SELECT id, title, description, slug, status, created_at, cover_photo_url, target_amount,
-                 applicant_wallet_address, applicant_name, applicant_email
-          FROM projects
-          WHERE status IN ('pending', 'approved', 'live', 'completed')
-          ORDER BY created_at DESC
-        `);
+        const basicQuery = await db.execute(sql`SELECT 1 as test`);
+        console.log('📊 Public API: Basic query works:', basicQuery[0]);
 
-        console.log(`📊 Public API: Raw SQL found ${rawProjects.length} projects`);
-        return NextResponse.json(rawProjects);
-      } catch (rawError) {
-        console.error('❌ Public API: Raw SQL also failed:', rawError);
+        // Try to check if projects table exists
+        const tableCheck = await db.execute(sql`
+          SELECT table_name FROM information_schema.tables
+          WHERE table_schema = 'public' AND table_name = 'projects'
+        `);
+        console.log('📊 Public API: Projects table exists:', tableCheck.length > 0);
+
+        return NextResponse.json({
+          message: "Database connection works but projects query failed",
+          basicQuery: basicQuery[0],
+          tableExists: tableCheck.length > 0,
+          error: queryError instanceof Error ? queryError.message : 'Unknown error'
+        });
+      } catch (basicError) {
+        console.error('❌ Public API: Even basic query failed:', basicError);
         return NextResponse.json(
-          { message: "Query failed", error: rawError instanceof Error ? rawError.message : 'Unknown query error' },
+          {
+            message: "Database connection failed",
+            error: basicError instanceof Error ? basicError.message : 'Unknown error'
+          },
           { status: 500 }
         );
       }

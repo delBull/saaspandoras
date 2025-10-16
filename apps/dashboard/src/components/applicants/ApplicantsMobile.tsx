@@ -2,8 +2,9 @@
 //import { Button } from "@saasfly/ui/button";
 import { MobileModal } from "./shared/MobileModal";
 import { ProjectGrid } from "./shared/ProjectGrid";
-import type { Project } from "../../hooks/applicants/useApplicantsData";
-import type { ViewMode, GridColumns } from "./shared/ProjectGrid";
+import type { Project } from "../../hooks/applicants/useApplicantsDataBasic";
+
+type ViewMode = 'grid' | 'list';
 
 interface ApplicantsMobileProps {
   pendingProjects: Project[];
@@ -11,8 +12,9 @@ interface ApplicantsMobileProps {
   showMobileModal: boolean;
   setShowMobileModal: (show: boolean) => void;
   onApplyClick: () => void;
-  viewMode: ViewMode;
-  gridColumns: GridColumns;
+  // Filtros básicos para móvil (opcionales hasta completar implementación)
+  viewMode?: ViewMode;
+  onViewModeChange?: (mode: ViewMode) => void;
 }
 
 export function ApplicantsMobile({
@@ -20,9 +22,9 @@ export function ApplicantsMobile({
   approvedProjects,
   showMobileModal,
   setShowMobileModal,
-  onApplyClick: _onApplyClick,
+  //onApplyClick,
   viewMode,
-  gridColumns,
+  onViewModeChange: _onViewModeChange,
 }: ApplicantsMobileProps) {
   return (
     <div className="lg:hidden min-h-screen text-white">
@@ -30,7 +32,7 @@ export function ApplicantsMobile({
       <div className="top-0 z-20 flex justify-between items-center px-4 py-6 gap-6 bg-zinc-950/80 backdrop-blur-sm">
         <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-bold text-white truncate">Proyectos</h1>
-          <p className="text-gray-400 text-sm truncate">Proyectos aprobados listos para invertir</p>
+          <p className="text-gray-400 text-sm truncate">Encunetra tu próxima oportunidad</p>
         </div>
         {/*
         <Button
@@ -56,12 +58,13 @@ export function ApplicantsMobile({
 
       {/* Mobile Main Content - Approved Projects */}
       <div className="px-4 py-8">
-        <ProjectGrid
-          projects={approvedProjects}
-          variant="approved"
-          viewMode={viewMode}
-          gridColumns={gridColumns}
-        />
+        {viewMode === 'grid' ? (
+          <ProjectGrid projects={approvedProjects} variant="approved" />
+        ) : (
+          <div className="text-center py-8 text-gray-400">
+            Vista de lista no disponible en móvil
+          </div>
+        )}
       </div>
 
       {/* Mobile Modal for Pending Projects */}

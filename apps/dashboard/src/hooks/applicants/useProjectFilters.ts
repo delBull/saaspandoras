@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import type { Project } from "./useApplicantsData";
+import { useState, useMemo } from "react";
+import type { Project } from "./useApplicantsDataBasic";
 
 export type ViewMode = 'grid' | 'list';
 export type GridColumns = 3 | 4 | 6;
@@ -15,65 +15,41 @@ export interface FilterOptions {
   maxTokenPrice: string;
 }
 
-const initialFilters: FilterOptions = {
-  search: '',
-  category: 'all',
-  network: 'all',
-  status: 'all',
-  minTokenPrice: '',
-  maxTokenPrice: '',
-};
+interface UseProjectFiltersProps {
+  projects: Project[];
+  initialViewMode?: ViewMode;
+  initialGridColumns?: GridColumns;
+}
 
-export function useProjectFilters(projects: Project[]) {
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [gridColumns, setGridColumns] = useState<GridColumns>(3);
-  const [filters, setFilters] = useState<FilterOptions>(initialFilters);
-
-  const filteredProjects = useMemo(() => {
-    return projects.filter((project) => {
-      // Search filter
-      if (filters.search) {
-        const searchLower = filters.search.toLowerCase();
-        const matchesSearch =
-          project.title.toLowerCase().includes(searchLower) ||
-          project.description.toLowerCase().includes(searchLower);
-
-        if (!matchesSearch) return false;
-      }
-
-      // Category filter (placeholder - will be implemented when category data is available)
-      if (filters.category !== 'all') {
-        // TODO: Filter by project category when available in Project interface
-        // For now, this filter is prepared for future implementation
-      }
-
-      // Network filter (placeholder - will be implemented when network data is available)
-      if (filters.network !== 'all') {
-        // TODO: Filter by blockchain network when available in Project interface
-        // For now, this filter is prepared for future implementation
-      }
-
-      // Status filter
-      if (filters.status !== 'all') {
-        if (project.status !== filters.status) return false;
-      }
-
-      // Token price range filter (placeholder - will be implemented when tokenPrice data is available)
-      if (filters.minTokenPrice || filters.maxTokenPrice) {
-        // TODO: Filter by token price when available in Project interface
-        // For now, this filter is prepared for future implementation
-      }
-
-      return true;
-    });
-  }, [projects, filters]);
+export function useProjectFilters({
+  projects,
+  initialViewMode = 'grid',
+  initialGridColumns = 4,
+}: UseProjectFiltersProps) {
+  const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode);
+  const [gridColumns, setGridColumns] = useState<GridColumns>(initialGridColumns);
+  const [filters, setFilters] = useState<FilterOptions>({
+    search: '',
+    category: 'all',
+    network: 'all',
+    status: 'all',
+    minTokenPrice: '',
+    maxTokenPrice: '',
+  });
 
   const updateFilter = (key: keyof FilterOptions, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 
   const clearFilters = () => {
-    setFilters(initialFilters);
+    setFilters({
+      search: '',
+      category: 'all',
+      network: 'all',
+      status: 'all',
+      minTokenPrice: '',
+      maxTokenPrice: '',
+    });
   };
 
   const hasActiveFilters = useMemo(() => {
@@ -85,17 +61,45 @@ export function useProjectFilters(projects: Project[]) {
            filters.maxTokenPrice !== '';
   }, [filters]);
 
+  const filteredProjects = useMemo(() => {
+    let filtered = [...projects];
+
+    // Search filter
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      filtered = filtered.filter((project: Project) =>
+        project.title.toLowerCase().includes(searchLower) ||
+        project.description.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Status filter
+    if (filters.status !== 'all') {
+      filtered = filtered.filter((project: Project) => project.status === filters.status);
+    }
+
+    // Note: Category and network filters would need additional fields in Project type
+    // For now, they act as pass-through filters
+
+    return filtered;
+  }, [projects, filters]);
+
   return {
+    // View state
     viewMode,
     setViewMode,
     gridColumns,
     setGridColumns,
+
+    // Filters
     filters,
     setFilters,
-    filteredProjects,
     updateFilter,
     clearFilters,
     hasActiveFilters,
+
+    // Filtered data
+    filteredProjects,
     totalProjects: projects.length,
     filteredCount: filteredProjects.length,
   };
