@@ -1,19 +1,12 @@
 import { NextResponse } from "next/server";
-// import { db } from "~/db";
-// 
+import { db } from "~/db";
 import { projects as projectsSchema } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { headers } from "next/headers";
 
-
-
-if (!connectionString) {
-  throw new Error("DATABASE_URL is not set in environment variables");
-}
-
-// 
-// // const db = drizzle(client, { schema: { projects: projectsSchema } });
+// ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
+export const runtime = "nodejs";
 
 interface FeaturedUpdateRequest {
   featured?: boolean;

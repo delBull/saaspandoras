@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { db } from "~/db";
 // import { drizzle } from "drizzle-orm/postgres-js";
 // import postgres from "postgres";
 

@@ -1,4 +1,4 @@
-
+import { db } from "~/db"; 
 import { NextResponse } from "next/server";
 import { syncThirdwebUser } from "@/lib/user-sync";
 // import { drizzle } from "drizzle-orm/postgres-js";
