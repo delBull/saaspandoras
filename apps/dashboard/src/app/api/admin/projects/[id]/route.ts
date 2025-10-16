@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
+//
 import { db } from "~/db";
+// 
+
+
+
+
+// 
+// // const db = drizzle(client, { schema: { projects: projectsSchema } });
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
 export const runtime = "nodejs";
-import { projects as projectsSchema } from "~/db/schema";
+import { projects as projectsSchema } from "@/db/schema";
 import { projectApiSchema } from "@/lib/project-schema-api";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { headers } from "next/headers";

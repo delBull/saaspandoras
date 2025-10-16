@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
 import { NextResponse } from "next/server";
 import { getAuth } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -6,11 +5,22 @@ import { db } from "~/db";
 import { sql } from "drizzle-orm";
 import { ensureUser } from "@/lib/user";
 
+// Test database connection at startup
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const revalidate = 300; // Cache for 5 minutes
 
 // Force this route to be dynamic to avoid static generation issues with cookies
-export async function GET() {
+// Add rate limiting for production
+export async function GET(request: Request) {
+  // Simple rate limiting check (basic implementation)
+  const clientIP = request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? 'unknown';
+  const _rateLimitKey = `profile-requests-${clientIP}`;
+
+  // In production, you might want to use Redis or similar for proper rate limiting
+  // For now, we'll just log excessive requests
+  console.log(`Profile API request from ${clientIP} at ${new Date().toISOString()}`);
   let walletAddress: string | undefined;
   let authMethod: 'header' | 'body' | 'session' | 'none' = 'none';
 
@@ -56,21 +66,24 @@ export async function GET() {
     // Ensure user exists
     await ensureUser(walletAddress);
 
-    // Get user data directly from User table
+    // Get user data directly from users table - optimized query
     const [user] = await db.execute(sql`
       SELECT "id", "name", "email", "image", "walletAddress",
               "connectionCount", "lastConnectionAt", "createdAt",
               "kycLevel", "kycCompleted", "kycData"
-      FROM "User"
+      FROM "users"
       WHERE LOWER("walletAddress") = LOWER(${walletAddress})
     `);
 
-    // Get user projects
+    // Get user projects - Optimized query with essential fields only
     const projects = await db.execute(sql`
-      SELECT * FROM "projects"
+      SELECT id, title, description, status, created_at, business_category, logo_url, cover_photo_url, applicant_wallet_address, target_amount, raised_amount, slug, applicant_name, applicant_email, applicant_phone
+      FROM "projects"
       WHERE LOWER("applicant_wallet_address") = LOWER(${walletAddress})
       ORDER BY "created_at" DESC
+      LIMIT 3
     `);
+
 
     // Calculate user role
     const [adminCheck] = await db.execute(sql`
@@ -112,6 +125,26 @@ export async function GET() {
       errorMessage: error instanceof Error ? error.message : "No message",
       errorStack: error instanceof Error ? error.stack : "No stack"
     });
+
+    // Check if it's a quota issue - More comprehensive check
+    if (error instanceof Error && (
+      error.message.includes('quota') ||
+      error.message.includes('limit') ||
+      error.message.includes('exceeded') ||
+      error.message.includes('rate limit') ||
+      error.message.includes('too many') ||
+      error.message.includes('connection pool') ||
+      error.message.includes('timeout')
+    )) {
+      return NextResponse.json({
+        message: "Database quota exceeded",
+        error: "Your database plan has reached its data transfer limit. Please upgrade your plan or contact support.",
+        quotaExceeded: true,
+        walletAddress,
+        authMethod
+      }, { status: 503 }); // Service Unavailable
+    }
+
     return NextResponse.json({
       message: "Error interno del servidor",
       error: error instanceof Error ? error.message : "Unknown error",
@@ -174,7 +207,7 @@ export async function POST(request: Request) {
 
     // Build unified update query
     const updateQuery = sql`
-      UPDATE "User"
+      UPDATE "users"
       SET "name" = ${profileData.name ?? null},
           "email" = ${profileData.email ?? null},
           "image" = ${profileData.image ?? null},

@@ -170,8 +170,15 @@ export default function PandoriansDashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Dashboard Pandorian</h1>
-          <p className="text-gray-400">Resumen de tus inversiones y métricas</p>
+          <h1 className="text-2xl font-bold text-white">
+            {profile.role === 'applicant' ? 'Dashboard de Applicant' : 'Dashboard Pandorian'}
+          </h1>
+          <p className="text-gray-400">
+            {profile.role === 'applicant'
+              ? `Tienes ${dashboardData.activeProjects} proyecto(s) activo(s) • Resumen de inversiones`
+              : 'Resumen de tus inversiones y métricas'
+            }
+          </p>
         </div>
         <div className="flex items-center space-x-2">
           <div className={`w-3 h-3 rounded-full ${
@@ -304,7 +311,7 @@ export default function PandoriansDashboardPage() {
                   <button className="w-full flex items-center gap-3 p-3 rounded-lg bg-blue-600 hover:bg-blue-700 transition-colors text-left">
                     <FolderIcon className="w-5 h-5 text-white" />
                     <div>
-                      <div className="text-white text-sm font-medium">Ver Mis Proyectos</div>
+                      <div className="text-white text-sm font-medium">Ver Mis Proyectos ({dashboardData.activeProjects})</div>
                       <div className="text-blue-200 text-xs">Gestiona tus inversiones activas</div>
                     </div>
                   </button>
@@ -353,37 +360,105 @@ export default function PandoriansDashboardPage() {
       </div>
 
       {/* Project Status Overview (only for applicants with projects) */}
-      {profile.role === 'applicant' && dashboardData.activeProjects > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Estado de Proyectos</CardTitle>
-            <CardDescription>
-              Resumen de tus inversiones actuales
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
-                <CheckCircleIcon className="w-8 h-8 text-green-500 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-white">{dashboardData.completedProjects}</div>
-                <div className="text-sm text-gray-400">Completados</div>
-              </div>
+       {profile.role === 'applicant' && dashboardData.activeProjects > 0 && (
+         <Card>
+           <CardHeader>
+             <CardTitle>Estado de Proyectos</CardTitle>
+             <CardDescription>
+               Resumen de tus inversiones actuales
+             </CardDescription>
+           </CardHeader>
+           <CardContent>
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+               <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
+                 <CheckCircleIcon className="w-8 h-8 text-green-500 mx-auto mb-2" />
+                 <div className="text-2xl font-bold text-white">{dashboardData.completedProjects}</div>
+                 <div className="text-sm text-gray-400">Completados</div>
+               </div>
 
-              <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
-                <ClockIcon className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-white">{dashboardData.pendingProjects}</div>
-                <div className="text-sm text-gray-400">En Progreso</div>
-              </div>
+               <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
+                 <ClockIcon className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
+                 <div className="text-2xl font-bold text-white">{dashboardData.pendingProjects}</div>
+                 <div className="text-sm text-gray-400">En Progreso</div>
+               </div>
 
-              <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
-                <ChartBarIcon className="w-8 h-8 text-blue-500 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-white">{dashboardData.activeProjects}</div>
-                <div className="text-sm text-gray-400">Activos</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+               <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
+                 <ChartBarIcon className="w-8 h-8 text-blue-500 mx-auto mb-2" />
+                 <div className="text-2xl font-bold text-white">{dashboardData.activeProjects}</div>
+                 <div className="text-sm text-gray-400">Activos</div>
+               </div>
+             </div>
+           </CardContent>
+         </Card>
+       )}
+
+       {/* Active Projects List (only for applicants with projects) */}
+       {profile.role === 'applicant' && projects.length > 0 && (
+         <Card>
+           <CardHeader>
+             <CardTitle className="flex items-center gap-2">
+               <FolderIcon className="w-5 h-5" />
+               Mis Proyectos Activos
+             </CardTitle>
+             <CardDescription>
+               Acceso rápido a tus proyectos aplicados
+             </CardDescription>
+           </CardHeader>
+           <CardContent>
+             <div className="space-y-3">
+               {projects.slice(0, 3).map((project) => (
+                 <div key={project.id} className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors">
+                   <div className="flex items-center gap-3">
+                     <div className={`w-3 h-3 rounded-full ${
+                       project.status === 'live' ? 'bg-green-500' :
+                       project.status === 'approved' ? 'bg-blue-500' :
+                       project.status === 'pending' ? 'bg-yellow-500' :
+                       project.status === 'completed' ? 'bg-emerald-500' :
+                       'bg-red-500'
+                     }`}></div>
+                     <div>
+                       <div className="text-white text-sm font-medium">{project.title}</div>
+                       <div className="text-gray-400 text-xs">
+                         Estado: {
+                           project.status === 'live' ? '🏃‍♂️ Activo' :
+                           project.status === 'approved' ? '✅ Aprobado' :
+                           project.status === 'pending' ? '⏳ En Revisión' :
+                           project.status === 'completed' ? '🏁 Completado' :
+                           project.status === 'rejected' ? '❌ Rechazado' :
+                           project.status
+                         }
+                       </div>
+                     </div>
+                   </div>
+                   <div className="flex gap-2">
+                     <Link href={`/projects/${(project as any).slug || project.id}`}>
+                       <button className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition-colors">
+                         Ver
+                       </button>
+                     </Link>
+                     {project.status !== 'live' && project.status !== 'completed' && (
+                       <Link href={`/admin/projects/${project.id}/edit`}>
+                         <button className="px-3 py-1 bg-zinc-600 hover:bg-zinc-700 text-white rounded text-xs font-medium transition-colors">
+                           Editar
+                         </button>
+                       </Link>
+                     )}
+                   </div>
+                 </div>
+               ))}
+               {projects.length > 3 && (
+                 <div className="text-center pt-2">
+                   <Link href="/profile/projects">
+                     <button className="px-4 py-2 bg-lime-500 hover:bg-lime-600 text-zinc-900 rounded-lg text-sm font-medium transition-colors">
+                       Ver Todos los Proyectos ({projects.length})
+                     </button>
+                   </Link>
+                 </div>
+               )}
+             </div>
+           </CardContent>
+         </Card>
+       )}
 
       {/* Coming Soon Notice */}
       <Card className="border-dashed border-gray-600">

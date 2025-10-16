@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
 import { NextResponse } from "next/server";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -50,15 +49,15 @@ export async function GET() {
     const tableCounts: { table: string; count: number }[] = [];
 
     for (const table of tablesQuery) {
-      try {
-        const countQuery = await db.execute(sql.raw(`SELECT COUNT(*) as count FROM "${(table as any).table_name}"`));
-        const count = Number(countQuery[0]?.count as string) || 0;
-        tableCounts.push({ table: (table as any).table_name, count });
-      } catch (countError) {
-        console.warn(`Could not count ${(table as any).table_name}:`, countError);
-        tableCounts.push({ table: (table as any).table_name, count: -1 });
-      }
-    }
+       try {
+         const countQuery = await db.execute(sql.raw(`SELECT COUNT(*) as count FROM "${(table as { table_name: string }).table_name}"`));
+         const count = Number(countQuery[0]?.count as string) || 0;
+         tableCounts.push({ table: (table as { table_name: string }).table_name, count });
+       } catch (countError) {
+         console.warn(`Could not count ${(table as { table_name: string }).table_name}:`, countError);
+         tableCounts.push({ table: (table as { table_name: string }).table_name, count: -1 });
+       }
+     }
 
     // Verificar estructura de tabla projects específicamente
     let projectsStructure = null;
@@ -99,7 +98,7 @@ export async function GET() {
           "walletAddress",
           "email",
           "connectionCount"
-        FROM "User"
+        FROM "users"
         LIMIT 3
       `);
       usersWithProjects = users;

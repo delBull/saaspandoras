@@ -44,6 +44,24 @@ export async function GET() {
     return NextResponse.json({ isAdmin: userIsAdmin, isSuperAdmin: userIsSuperAdmin });
   } catch (error) {
     console.error("💥 CRITICAL ERROR in /api/admin/verify:", error);
+
+    // Check if it's a quota issue - More comprehensive check
+    if (error instanceof Error && (
+      error.message.includes('quota') ||
+      error.message.includes('limit') ||
+      error.message.includes('exceeded') ||
+      error.message.includes('rate limit') ||
+      error.message.includes('too many') ||
+      error.message.includes('connection pool') ||
+      error.message.includes('timeout')
+    )) {
+      return NextResponse.json({
+        message: "Database quota exceeded",
+        error: "Your database plan has reached its data transfer limit. Please upgrade your plan or contact support.",
+        quotaExceeded: true
+      }, { status: 503 }); // Service Unavailable
+    }
+
     return NextResponse.json({ isAdmin: false, isSuperAdmin: false }, { status: 500 });
   }
 }
