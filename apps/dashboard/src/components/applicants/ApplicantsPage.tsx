@@ -8,7 +8,6 @@ import { Loader2, ArrowLeftIcon } from "lucide-react";
 import { Button } from "@saasfly/ui/button";
 import { ApplicantsDesktop } from "./ApplicantsDesktop";
 import { ApplicantsMobile } from "./ApplicantsMobile";
-import { ApplicantsFilters } from "./ApplicantsFilters";
 import { MultiStepForm } from "../../app/(dashboard)/admin/projects/[id]/edit/multi-step-form";
 import { useApplicantsDataBasic, type ApplicantsData } from "../../hooks/applicants/useApplicantsDataBasic";
 // import { useProjectFilters } from "../../hooks/applicants/useProjectFilters";
@@ -110,9 +109,9 @@ export default function ApplicantsPage() {
     return <NewProjectForm showForm={showForm} onCancel={handleCancel} />;
   }
 
-  // Separar proyectos filtrados en pending y approved
-  const filteredPendingProjects = filteredProjects.filter(p => p.status === 'pending');
-  const filteredApprovedProjects = filteredProjects.filter(p => ['approved', 'live', 'completed'].includes(p.status));
+  // Usar directamente los proyectos de la API (sin filtros por ahora)
+  const _filteredPendingProjects = pendingProjects.filter(p => p.status === 'pending');
+  const _filteredApprovedProjects = approvedProjects.filter(p => ['approved', 'live', 'completed'].includes(p.status));
 
   return (
     <>
