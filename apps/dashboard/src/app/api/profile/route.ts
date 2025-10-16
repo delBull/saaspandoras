@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
 import { getAuth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { db } from "~/db";
-import { sql } from "drizzle-orm";
+import postgres from "postgres";
 import { ensureUser } from "@/lib/user";
+
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not set");
+}
+
+const sql = postgres(connectionString);
 
 // Test database connection at startup
 
@@ -67,30 +73,31 @@ export async function GET(request: Request) {
     await ensureUser(walletAddress);
 
     // Get user data directly from users table - optimized query
-    const [user] = await db.execute(sql`
+    const users = await sql`
       SELECT "id", "name", "email", "image", "walletAddress",
               "connectionCount", "lastConnectionAt", "createdAt",
               "kycLevel", "kycCompleted", "kycData"
       FROM "users"
       WHERE LOWER("walletAddress") = LOWER(${walletAddress})
-    `);
+    `;
+    const user = users[0];
 
     // Get user projects - Optimized query with essential fields only
-    const projects = await db.execute(sql`
+    const projects = await sql`
       SELECT id, title, description, status, created_at, business_category, logo_url, cover_photo_url, applicant_wallet_address, target_amount, raised_amount, slug, applicant_name, applicant_email, applicant_phone
       FROM "projects"
       WHERE LOWER("applicant_wallet_address") = LOWER(${walletAddress})
       ORDER BY "created_at" DESC
       LIMIT 3
-    `);
+    `;
 
 
     // Calculate user role
-    const [adminCheck] = await db.execute(sql`
+    const adminResults = await sql`
       SELECT COUNT(*) as count FROM "administrators"
       WHERE LOWER("wallet_address") = LOWER(${walletAddress})
-    `);
-    const isAdmin = Number((adminCheck as any).count) > 0;
+    `;
+    const isAdmin = Number(adminResults[0]?.count || 0) > 0;
     const isSuperAdmin = walletAddress.toLowerCase() === '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9';
 
     let role: "admin" | "applicant" | "pandorian";
@@ -104,8 +111,8 @@ export async function GET(request: Request) {
 
     let systemProjectsManaged: number | undefined;
     if (isAdmin || isSuperAdmin) {
-      const [totalProjects] = await db.execute(sql`SELECT COUNT(*) as count FROM "projects"`);
-      systemProjectsManaged = Number((totalProjects as any).count) || 0;
+      const totalProjectsResults = await sql`SELECT COUNT(*) as count FROM "projects"`;
+      systemProjectsManaged = Number(totalProjectsResults[0]?.count || 0);
     }
 
 
@@ -206,7 +213,7 @@ export async function POST(request: Request) {
     const { profileData } = body;
 
     // Build unified update query
-    const updateQuery = sql`
+    await sql`
       UPDATE "users"
       SET "name" = ${profileData.name ?? null},
           "email" = ${profileData.email ?? null},
@@ -224,8 +231,6 @@ export async function POST(request: Request) {
           })}
       WHERE LOWER("walletAddress") = LOWER(${walletAddress})
     `;
-
-    await db.execute(updateQuery);
 
     return NextResponse.json({
       message: "Perfil actualizado exitosamente",

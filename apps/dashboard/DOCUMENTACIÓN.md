@@ -149,6 +149,10 @@ Antes de desplegar en producción (ej. Vercel), verifica los siguientes puntos p
 4.  **Configuración de `next.config.mjs`:**
     *   **Dominios de Imágenes:** Asegúrate de que todos los dominios de los logos de los tokens estén en la lista `images.remotePatterns`. Ejecuta `node generar-dominios.js` para actualizar esta lista automáticamente desde la lista de tokens de Uniswap.
 
+## 7. Stagin Data Base
+
+La base de datos para el deployment de staging está dada de alta en neon con el inicio de sesión de gmail de Pandoras.
+
 ```
 
 ¡Espero que esta documentación sea de gran ayuda para ti y tu equipo!
