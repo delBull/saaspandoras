@@ -62,6 +62,18 @@ export default function ProfileProjectsPage() {
           const profileWalletAddress = userProfile?.walletAddress;
 
 
+          console.log('🔍 Profile Projects Debug:', {
+            userWalletAddress,
+            isSuperAdmin,
+            totalProjects: projects.length,
+            projectsSample: projects.slice(0, 2).map(p => ({
+              id: p.id,
+              title: p.title,
+              applicantWalletAddress: p.applicantWalletAddress,
+              status: p.status
+            }))
+          });
+
           let userProjects: Project[] = [];
           if (isSuperAdmin) {
             // Super admin sees all manageable projects
