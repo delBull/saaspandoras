@@ -11,7 +11,7 @@ export async function ensureUser(walletAddress: string) {
   try {
     // First, try to find existing user
     const users = await sql`
-      SELECT "id" FROM "users"
+      SELECT "id" FROM "User"
       WHERE LOWER("walletAddress") = LOWER(${walletAddress})
       LIMIT 1
     `;
@@ -22,7 +22,7 @@ export async function ensureUser(walletAddress: string) {
 
     // If not found, create new user
     const newUsers = await sql`
-      INSERT INTO "users" ("walletAddress", "createdAt")
+      INSERT INTO "User" ("walletAddress", "createdAt")
       VALUES (LOWER(${walletAddress}), NOW())
       RETURNING "id"
     `;
