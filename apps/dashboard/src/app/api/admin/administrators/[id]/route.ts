@@ -1,4 +1,4 @@
-
+import { db } from "~/db";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 // import { drizzle } from "drizzle-orm/postgres-js";
