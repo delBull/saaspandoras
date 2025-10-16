@@ -20,7 +20,7 @@ export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGa
       <div className="flex items-center justify-center min-h-screen text-gray-400">
         <div className="text-center">
           <p>Inicializando sesión...</p>
-          <p className="text-xs mt-2">Cargando datos guardados</p>
+          <p className="text-xs mt-2">Cargando datos</p>
         </div>
       </div>
     );
