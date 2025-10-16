@@ -44,7 +44,7 @@ export const administrators = pgTable("administrators", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const users = pgTable("User", {
+export const users = pgTable("users", {
   id: varchar("id", { length: 255 }).primaryKey(),
   name: varchar("name", { length: 255 }),
   email: varchar("email", { length: 255 }).unique(),

@@ -233,7 +233,7 @@ export async function POST(request: Request) {
     // Get creator information for better project tracking
     const creatorWallet = session?.userId ?? 'system';
     const creatorInfo = await db.execute(sql`
-      SELECT "name", "email" FROM "User" WHERE "walletAddress" = ${creatorWallet}
+      SELECT "name", "email" FROM "users" WHERE "walletAddress" = ${creatorWallet}
     `);
     const creatorName = creatorInfo[0] ? String(creatorInfo[0].name) : 'Unknown';
 
