@@ -119,6 +119,18 @@ export default function ProfileProjectsPage() {
             });
           }
 
+          // Additional debugging for wallet comparison
+          if (projects?.length > 0) {
+            console.log('🔍 WALLET COMPARISON DEBUG:', {
+              userWallet: walletAddress.toLowerCase(),
+              projectWallets: projects.map(p => ({
+                id: p.id,
+                wallet: p.applicantWalletAddress,
+                walletLower: p.applicantWalletAddress?.toLowerCase()
+              }))
+            });
+          }
+
           let userProjects: Project[] = [];
           if (isSuperAdmin) {
             // Super admin sees all manageable projects
