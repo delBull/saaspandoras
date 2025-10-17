@@ -39,17 +39,23 @@ export async function GET() {
     try {
       console.log('🔍 Public API: Executing optimized query with essential fields...');
       const optimizedProjects = await db.execute(sql`
-        SELECT id, title, description, status, created_at, business_category, logo_url, cover_photo_url
+        SELECT id, title, description, status, created_at, business_category, logo_url, cover_photo_url,
+               applicant_wallet_address, target_amount, raised_amount, slug, applicant_name, applicant_email, applicant_phone
         FROM projects
         WHERE status IN ('pending', 'approved', 'live', 'completed')
         ORDER BY created_at DESC
-        LIMIT 3
       `);
 
       console.log(`📊 Public API: Found ${optimizedProjects.length} projects with optimized query`);
 
       if (optimizedProjects.length > 0) {
-        console.log('📊 Public API: First project sample:', optimizedProjects[0]);
+        const firstProject = optimizedProjects[0] as any;
+        console.log('📊 Public API: First project sample:', {
+          id: firstProject?.id,
+          title: firstProject?.title,
+          applicantWalletAddress: firstProject?.applicant_wallet_address,
+          status: firstProject?.status
+        });
       }
 
       return NextResponse.json(optimizedProjects);
