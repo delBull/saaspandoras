@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   HomeIcon,
@@ -10,7 +10,6 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   XMarkIcon,
-  UserGroupIcon,
   ShieldCheckIcon,
   ArrowLeftOnRectangleIcon,
   UserIcon,
@@ -25,9 +24,10 @@ import { ethereum } from "thirdweb/chains";
 import { WalletBalance, NetworkSelector, ConnectWalletButton } from "@/components/wallet";
 import { SUPPORTED_NETWORKS, DEFAULT_NETWORK } from "@/config/networks";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
-import { PanelTopIcon } from "lucide-react";
+import { PackageCheckIcon, PanelTopIcon } from "lucide-react";
 import { useProjectModal } from "@/contexts/ProjectModalContext";
 import { usePathname } from 'next/navigation';
+import * as Tooltip from "@radix-ui/react-tooltip";
 
 interface SidebarProps {
   wallet?: string;
@@ -55,7 +55,7 @@ export function Sidebar({
     if (defaultOpen !== undefined) {
       return defaultOpen;
     }
-    return false; // Estado por defecto cerrado
+    return true; // Estado por defecto abierto
   };
 
   const [open, setOpen] = useState(getInitialState);
@@ -89,24 +89,29 @@ export function Sidebar({
   // Track if this is the initial load to avoid resetting admin status
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  // Auto-open sidebar when user connects wallet (but not on initial page load)
-  // Only auto-open if defaultOpen is not explicitly set to false
-  useEffect(() => {
-    if (account?.address && !open && defaultOpen !== false) {
-      // Auto-open sidebar when user connects wallet for the first time
-      // But respect explicit defaultOpen=false setting
-      console.log('🔓 Auto-opening sidebar due to wallet connection');
-      setOpen(true);
-    }
-  }, [account?.address, open, defaultOpen]);
+  // Track if we've already set the initial state for /applicants page
+  const applicantsInitialStateSet = useRef(false);
 
-  // Force close sidebar when navigating to /applicants
+  // Auto-close sidebar when navigating to /applicants (but allow manual opening)
   useEffect(() => {
-    if (pathname === '/applicants' && open) {
-      console.log('🔒 Forcing sidebar close for /applicants page');
-      setOpen(false);
+    if (pathname === '/applicants' && !applicantsInitialStateSet.current) {
+      console.log('📍 /applicants page detected - setting initial closed state');
+      // Only set to closed on first visit to /applicants, but allow manual opening after
+      if (open) {
+        setOpen(false);
+      }
+      applicantsInitialStateSet.current = true;
+    } else if (pathname !== '/applicants') {
+      // Reset the flag when leaving /applicants page
+      applicantsInitialStateSet.current = false;
     }
   }, [pathname, open]);
+
+  // Manual toggle handler to ensure button works correctly
+  const handleToggleSidebar = () => {
+    console.log('🔄 Manual sidebar toggle clicked, current state:', open);
+    setOpen(!open);
+  };
 
   // Debug logging for admin status (only in development and only when status changes)
   useEffect(() => {
@@ -348,7 +353,7 @@ export function Sidebar({
         label: "Proyectos",
         href: "/applicants",
         icon: (
-          <UserGroupIcon className="h-5 w-5 shrink-0 text-gray-400" />
+          <PackageCheckIcon className="h-5 w-5 shrink-0 text-gray-400" />
         ),
         disabled: false,
       },
@@ -397,7 +402,7 @@ export function Sidebar({
 
 
   return (
-    <>
+    <Tooltip.Provider delayDuration={300}>
       {/* --- DESKTOP SIDEBAR --- */}
       <motion.div
         transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }}
@@ -448,7 +453,7 @@ export function Sidebar({
         </Link>
 
         <button
-          onClick={() => setOpen(!open)}
+          onClick={handleToggleSidebar}
           className="absolute -right-3 top-1/2 z-50 flex h-20 w-5 -translate-y-1/2 items-center justify-center rounded-md border-2 border-l-0 border-gray-800 bg-zinc-900 font-mono text-gray-400 transition-colors duration-200 hover:text-white"
         >
           {open ? (
@@ -651,41 +656,68 @@ export function Sidebar({
         <nav className="mt-4 flex flex-1 flex-col justify-between">
           <div className="flex flex-col gap-0">
             {links.map((link) => (
-              <Link
-                key={link.label}
-                href={link.href}
-                className={cn(
-                  "relative flex items-center rounded-lg py-5 font-light text-gray-400 transition-all duration-200 border-b border-gray-800",
-                  open ? "px-4" : "w-full justify-center",
-                  link.disabled
-                    ? "cursor-not-allowed opacity-60"
-                    : "hover:bg-gray-800/50 hover:text-white",
-                  link.admin &&
-                    "font-bold text-lime-400 hover:bg-lime-900/50 hover:text-lime-300"
-                )}
-                onClick={(e) => link.disabled && e.preventDefault()}
-                title={!open ? link.label : undefined}
-              >
-                {link.icon}
-                <motion.span
-                  animate={{
-                    opacity: open ? 1 : 0,
-                    width: open ? "auto" : 0,
-                    marginLeft: open ? "0.75rem" : "0",
-                  }}
-                  className="whitespace-nowrap"
+              !open ? (
+                <Tooltip.Root key={link.label}>
+                  <Tooltip.Trigger asChild>
+                    <Link
+                      href={link.href}
+                      className={cn(
+                        "relative flex items-center rounded-lg py-5 font-light text-gray-400 transition-all duration-200 border-b border-gray-800 w-full justify-center",
+                        link.disabled
+                          ? "cursor-not-allowed opacity-60"
+                          : "hover:bg-gray-800/50 hover:text-white",
+                        link.admin &&
+                          "font-bold text-lime-400 hover:bg-lime-900/50 hover:text-lime-300"
+                      )}
+                      onClick={(e) => link.disabled && e.preventDefault()}
+                    >
+                      {link.icon}
+                    </Link>
+                  </Tooltip.Trigger>
+                  <Tooltip.Portal>
+                    <Tooltip.Content
+                      className="z-50 rounded-md bg-zinc-900 ml-20 px-3 py-1.5 text-xs text-white shadow-md border border-zinc-700"
+                      sideOffset={3}
+                    >
+                      {link.label}
+                    </Tooltip.Content>
+                  </Tooltip.Portal>
+                </Tooltip.Root>
+              ) : (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  className={cn(
+                    "relative flex items-center rounded-lg py-5 font-light text-gray-400 transition-all duration-200 border-b border-gray-800 px-4",
+                    link.disabled
+                      ? "cursor-not-allowed opacity-60"
+                      : "hover:bg-gray-800/50 hover:text-white",
+                    link.admin &&
+                      "font-bold text-lime-400 hover:bg-lime-900/50 hover:text-lime-300"
+                  )}
+                  onClick={(e) => link.disabled && e.preventDefault()}
                 >
-                  {link.label}
-                </motion.span>
-                {link.comingSoon && open && (
+                  {link.icon}
                   <motion.span
-                    animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0 }}
-                    className="ml-auto text-xs text-gray-500 italic"
+                    animate={{
+                      opacity: open ? 1 : 0,
+                      width: open ? "auto" : 0,
+                      marginLeft: open ? "0.75rem" : "0",
+                    }}
+                    className="whitespace-nowrap"
                   >
-                    coming soon
+                    {link.label}
                   </motion.span>
-                )}
-              </Link>
+                  {link.comingSoon && open && (
+                    <motion.span
+                      animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0 }}
+                      className="ml-auto text-xs text-gray-500 italic"
+                    >
+                      coming soon
+                    </motion.span>
+                  )}
+                </Link>
+              )
             ))}
           </div>
 
@@ -698,29 +730,49 @@ export function Sidebar({
                   !open && "mx-auto w-full"
                 )}
               >
-                <button
-                  onClick={() => {
-                    // Open the project application modal using context
-                    void openProjectModal();
-                  }}
-                  className={cn(
-                    "relative flex w-full items-center rounded-lg py-2 transition-all duration-200 text-gray-400 hover:bg-purple-800/20",
-                    open ? "px-4" : "justify-center"
-                  )}
-                  title={!open ? "Aplicar Proyecto" : undefined}
-                >
-                  <ShieldCheckIcon className="h-4 w-4 shrink-0" />
-                  <motion.span
-                    animate={{
-                      opacity: open ? 1 : 0,
-                      width: open ? "auto" : 0,
-                      marginLeft: open ? "0.75rem" : "0",
+                {!open ? (
+                  <Tooltip.Root>
+                    <Tooltip.Trigger asChild>
+                      <button
+                        onClick={() => {
+                          // Open the project application modal using context
+                          void openProjectModal();
+                        }}
+                        className="relative flex w-full items-center rounded-lg py-2 transition-all duration-200 text-gray-400 hover:bg-purple-800/20 justify-center"
+                      >
+                        <ShieldCheckIcon className="h-4 w-4 shrink-0" />
+                      </button>
+                    </Tooltip.Trigger>
+                    <Tooltip.Portal>
+                      <Tooltip.Content
+                        className="z-50 rounded-md bg-zinc-900 ml-20 px-3 py-1.5 text-xs text-white shadow-md border border-zinc-700"
+                        sideOffset={3}
+                      >
+                        Aplicar Proyecto
+                      </Tooltip.Content>
+                    </Tooltip.Portal>
+                  </Tooltip.Root>
+                ) : (
+                  <button
+                    onClick={() => {
+                      // Open the project application modal using context
+                      void openProjectModal();
                     }}
-                    className="whitespace-nowrap text-xs italic"
+                    className="relative flex w-full items-center rounded-lg py-2 transition-all duration-200 text-gray-400 hover:bg-purple-800/20 px-4"
                   >
-                    {open ? "Aplicar Proyecto" : "🔗"}
-                  </motion.span>
-                </button>
+                    <ShieldCheckIcon className="h-4 w-4 shrink-0" />
+                    <motion.span
+                      animate={{
+                        opacity: open ? 1 : 0,
+                        width: open ? "auto" : 0,
+                        marginLeft: open ? "0.75rem" : "0",
+                      }}
+                      className="whitespace-nowrap text-xs italic"
+                    >
+                      {open ? "Aplicar Proyecto" : "🔗"}
+                    </motion.span>
+                  </button>
+                )}
               </div>
             )}
 
@@ -731,27 +783,45 @@ export function Sidebar({
                   !open && "mx-auto w-full"
                 )}
               >
-                <button
-                  onClick={() => wallet && disconnect(wallet)}
-                  disabled={!wallet}
-                  className={cn(
-                    "relative flex w-full items-center rounded-lg py-2 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white disabled:opacity-50",
-                    open ? "px-4" : "justify-center"
-                  )}
-                  title={!open ? "Desconectar Wallet" : undefined}
-                >
-                  <ArrowLeftOnRectangleIcon className="h-5 w-5 shrink-0" />
-                  <motion.span
-                    animate={{
-                      opacity: open ? 1 : 0,
-                      width: open ? "auto" : 0,
-                      marginLeft: open ? "0.75rem" : "0",
-                    }}
-                    className="whitespace-nowrap"
+                {!open ? (
+                  <Tooltip.Root>
+                    <Tooltip.Trigger asChild>
+                      <button
+                        onClick={() => wallet && disconnect(wallet)}
+                        disabled={!wallet}
+                        className="relative flex w-full items-center rounded-lg py-2 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white disabled:opacity-50 justify-center"
+                      >
+                        <ArrowLeftOnRectangleIcon className="h-5 w-5 shrink-0" />
+                      </button>
+                    </Tooltip.Trigger>
+                    <Tooltip.Portal>
+                      <Tooltip.Content
+                        className="z-50 rounded-md bg-zinc-900 ml-20 px-3 py-1.5 text-xs text-white shadow-md border border-zinc-700"
+                        sideOffset={3}
+                      >
+                        Desconectar Wallet
+                      </Tooltip.Content>
+                    </Tooltip.Portal>
+                  </Tooltip.Root>
+                ) : (
+                  <button
+                    onClick={() => wallet && disconnect(wallet)}
+                    disabled={!wallet}
+                    className="relative flex w-full items-center rounded-lg py-2 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white disabled:opacity-50 px-4"
                   >
-                    Desconectar
-                  </motion.span>
-                </button>
+                    <ArrowLeftOnRectangleIcon className="h-5 w-5 shrink-0" />
+                    <motion.span
+                      animate={{
+                        opacity: open ? 1 : 0,
+                        width: open ? "auto" : 0,
+                        marginLeft: open ? "0.75rem" : "0",
+                      }}
+                      className="whitespace-nowrap"
+                    >
+                      Desconectar
+                    </motion.span>
+                  </button>
+                )}
               </div>
             )}
             {isClient && isAdmin && (
@@ -761,25 +831,37 @@ export function Sidebar({
                   !open && "mx-auto w-full"
                 )}
               >
-                <span
-                  className={cn(
-                    "relative flex items-center rounded-lg py-2 text-red-700 transition-all duration-200 cursor-not-allowed opacity-50",
-                    open ? "px-4" : "w-full justify-center"
-                  )}
-                  title={!open ? "Panel de Administración" : undefined}
-                >
-                  <ShieldCheckIcon className="h-5 w-5 shrink-0" />
-                  <motion.span
-                    animate={{
-                      opacity: open ? 1 : 0,
-                      width: open ? "auto" : 0,
-                      marginLeft: open ? "0.75rem" : "0",
-                    }}
-                    className="whitespace-nowrap font-bold"
-                  >
-                    Admin
-                  </motion.span>
-                </span>
+                {!open ? (
+                  <Tooltip.Root>
+                    <Tooltip.Trigger asChild>
+                      <span className="relative flex items-center rounded-lg py-2 text-red-700 transition-all duration-200 cursor-not-allowed opacity-50 w-full justify-center">
+                        <ShieldCheckIcon className="h-5 w-5 shrink-0" />
+                      </span>
+                    </Tooltip.Trigger>
+                    <Tooltip.Portal>
+                      <Tooltip.Content
+                        className="z-50 rounded-md bg-zinc-900 ml-20 px-3 py-1.5 text-xs text-white shadow-md border border-zinc-700"
+                        sideOffset={3}
+                      >
+                        Panel de Administración
+                      </Tooltip.Content>
+                    </Tooltip.Portal>
+                  </Tooltip.Root>
+                ) : (
+                  <span className="relative flex items-center rounded-lg py-2 text-red-700 transition-all duration-200 cursor-not-allowed opacity-50 px-4">
+                    <ShieldCheckIcon className="h-5 w-5 shrink-0" />
+                    <motion.span
+                      animate={{
+                        opacity: open ? 1 : 0,
+                        width: open ? "auto" : 0,
+                        marginLeft: open ? "0.75rem" : "0",
+                      }}
+                      className="whitespace-nowrap font-bold"
+                    >
+                      Admin
+                    </motion.span>
+                  </span>
+                )}
               </div>
             )}
           </div>
@@ -1088,6 +1170,6 @@ export function Sidebar({
           </>
         )}
       </AnimatePresence>
-    </>
+    </Tooltip.Provider>
   );
 }
