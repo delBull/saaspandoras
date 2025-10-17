@@ -80,7 +80,9 @@ export function usePersistedAccount() {
       };
       localStorage.setItem("wallet-session", JSON.stringify(data));
       setSession(data);
-      console.log("💾 Guardada sesión wallet real:", data);
+      if (process.env.NODE_ENV === 'development') {
+        console.log("💾 Guardada sesión wallet real:", data);
+      }
     }
   }, [account?.address, activeWallet]);
 
@@ -101,7 +103,9 @@ export function usePersistedAccount() {
 
       localStorage.setItem("wallet-session", JSON.stringify(data));
       setSession(data);
-      console.log("💾 Guardada sesión social login:", data);
+      if (process.env.NODE_ENV === 'development') {
+        console.log("💾 Guardada sesión social login:", data);
+      }
     }
   }, [account?.address, activeWallet]);
 
