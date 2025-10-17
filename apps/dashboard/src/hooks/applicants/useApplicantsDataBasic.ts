@@ -31,7 +31,7 @@ export function useApplicantsDataBasic(): ApplicantsData {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [isPendingPanelCollapsed, setIsPendingPanelCollapsed] = useState(false);
-  const [showMobilePendingModal, setShowMobilePendingModal] = useState(false);
+  const [showMobilePendingModal, setShowMobilePendingModal] = useState(true);
 
   const fetchProjects = async () => {
     setLoading(true);
