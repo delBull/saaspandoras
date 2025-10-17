@@ -27,6 +27,7 @@ import { SUPPORTED_NETWORKS, DEFAULT_NETWORK } from "@/config/networks";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 import { PanelTopIcon } from "lucide-react";
 import { useProjectModal } from "@/contexts/ProjectModalContext";
+import { usePathname } from 'next/navigation';
 
 interface SidebarProps {
   wallet?: string;
@@ -69,6 +70,7 @@ export function Sidebar({
   const wallet = useActiveWallet();
   const { disconnect } = useDisconnect();
   const { open: openProjectModal } = useProjectModal();
+  const pathname = usePathname();
 
   // Multi-chain wallet state
   const [selectedChain, setSelectedChain] = useState(DEFAULT_NETWORK?.chain || ethereum);
@@ -97,6 +99,14 @@ export function Sidebar({
       setOpen(true);
     }
   }, [account?.address, open, defaultOpen]);
+
+  // Force close sidebar when navigating to /applicants
+  useEffect(() => {
+    if (pathname === '/applicants' && open) {
+      console.log('🔒 Forcing sidebar close for /applicants page');
+      setOpen(false);
+    }
+  }, [pathname, open]);
 
   // Debug logging for admin status (only in development and only when status changes)
   useEffect(() => {
@@ -654,6 +664,7 @@ export function Sidebar({
                     "font-bold text-lime-400 hover:bg-lime-900/50 hover:text-lime-300"
                 )}
                 onClick={(e) => link.disabled && e.preventDefault()}
+                title={!open ? link.label : undefined}
               >
                 {link.icon}
                 <motion.span
@@ -696,6 +707,7 @@ export function Sidebar({
                     "relative flex w-full items-center rounded-lg py-2 transition-all duration-200 text-gray-400 hover:bg-purple-800/20",
                     open ? "px-4" : "justify-center"
                   )}
+                  title={!open ? "Aplicar Proyecto" : undefined}
                 >
                   <ShieldCheckIcon className="h-4 w-4 shrink-0" />
                   <motion.span
@@ -726,6 +738,7 @@ export function Sidebar({
                     "relative flex w-full items-center rounded-lg py-2 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white disabled:opacity-50",
                     open ? "px-4" : "justify-center"
                   )}
+                  title={!open ? "Desconectar Wallet" : undefined}
                 >
                   <ArrowLeftOnRectangleIcon className="h-5 w-5 shrink-0" />
                   <motion.span
@@ -753,6 +766,7 @@ export function Sidebar({
                     "relative flex items-center rounded-lg py-2 text-red-700 transition-all duration-200 cursor-not-allowed opacity-50",
                     open ? "px-4" : "w-full justify-center"
                   )}
+                  title={!open ? "Panel de Administración" : undefined}
                 >
                   <ShieldCheckIcon className="h-5 w-5 shrink-0" />
                   <motion.span
