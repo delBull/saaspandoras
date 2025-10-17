@@ -41,10 +41,12 @@ export function usePersistedAccount() {
                                 walletTypeStr.includes('social');
 
           if (isSocialWallet) {
-            console.log("🔄 Sesión social encontrada:", parsed);
             // Para social logins, mantener shouldReconnect pero marcar como social
             const socialSession = { ...parsed, isSocial: true };
             setSession(socialSession);
+            if (process.env.NODE_ENV === 'development') {
+              console.log("🔄 Sesión social encontrada:", parsed.walletType);
+            }
           } else {
             setSession(parsed);
           }
@@ -81,7 +83,7 @@ export function usePersistedAccount() {
       localStorage.setItem("wallet-session", JSON.stringify(data));
       setSession(data);
       if (process.env.NODE_ENV === 'development') {
-        console.log("💾 Guardada sesión wallet real:", data);
+        console.log("💾 Guardada sesión wallet real:", data.walletType);
       }
     }
   }, [account?.address, activeWallet]);
@@ -104,7 +106,7 @@ export function usePersistedAccount() {
       localStorage.setItem("wallet-session", JSON.stringify(data));
       setSession(data);
       if (process.env.NODE_ENV === 'development') {
-        console.log("💾 Guardada sesión social login:", data);
+        console.log("💾 Guardada sesión social login:", data.walletType);
       }
     }
   }, [account?.address, activeWallet]);
