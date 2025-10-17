@@ -85,9 +85,9 @@ export function Sidebar({
     }
   }, [account?.address, open]);
 
-  // Debug logging for admin status (only in development)
+  // Debug logging for admin status (only in development and only when status changes)
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === 'development' && adminStatus.verified) {
       console.log('🔍 Admin status check:', {
         serverSide: { isAdmin: isAdminProp, isSuperAdmin: isSuperAdminProp },
         clientSide: adminStatus,

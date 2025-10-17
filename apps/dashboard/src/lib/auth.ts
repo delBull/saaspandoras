@@ -22,23 +22,24 @@ interface JWTPayload {
  */
 export async function isAdmin(address?: string | null): Promise<boolean> {
   if (!address) {
-    console.log("🛑 isAdmin DEBUG: No address provided");
+    // Only log in development and reduce verbosity
+    if (process.env.NODE_ENV === 'development') {
+      console.log("🛑 isAdmin: No address provided");
+    }
     return false;
   }
 
   const lower = address.toLowerCase();
-  console.log("🔍 isAdmin DEBUG: Checking address:", lower.substring(0, 10) + "...");
 
   // 📍 Step 1: Check if super admin
   const isSuperAdminCheck = lower === SUPER_ADMIN_WALLET.toLowerCase();
-  console.log("👑 isAdmin DEBUG: Super admin check result:", isSuperAdminCheck);
 
   if (isSuperAdminCheck) {
-    console.log("🎉 isAdmin DEBUG: ✅ SUPER ADMIN CONFIRMED");
+    if (process.env.NODE_ENV === 'development') {
+      console.log("🎉 isAdmin: ✅ SUPER ADMIN CONFIRMED");
+    }
     return true;
   }
-
-  console.log("🔍 isAdmin DEBUG: Checking database for regular admin");
 
   try {
     // 📍 Step 2: Database check for regular admin
@@ -48,14 +49,16 @@ export async function isAdmin(address?: string | null): Promise<boolean> {
       .where(eq(administrators.walletAddress, lower));
 
     const isAdmin = result.length > 0;
-    console.log("📊 isAdmin DEBUG: Database result:", result.length, "admin records found");
-    console.log("✅ isAdmin DEBUG: FINAL RESULT:", isAdmin, "(super admin:", isSuperAdminCheck, ")");
+
+    // Only log in development and only for important cases
+    if (process.env.NODE_ENV === 'development' && isAdmin) {
+      console.log("✅ isAdmin: Regular admin confirmed");
+    }
 
     return isAdmin;
   } catch (error) {
-    console.error("💥 isAdmin DEBUG: Database query FAILED:", error);
+    console.error("💥 isAdmin: Database query FAILED:", error);
     // If database query fails, fall back to super admin check only
-    console.log("🚫 isAdmin DEBUG: FALLBACK to super admin check only due to database error");
     return isSuperAdminCheck;
   }
 }
@@ -131,7 +134,10 @@ export async function getAuth(headers?: MinimalHeaders, userAddress?: string) {
             console.error('❌ [Auth] Error decoding JWT:', jwtError);
           }
         } else {
-          console.log('❌ [Auth] No JWT token found in cookies');
+          // Only log in development and reduce frequency
+          if (process.env.NODE_ENV === 'development') {
+            console.log('❌ [Auth] No JWT token found in cookies');
+          }
         }
       }
     } catch (error) {
