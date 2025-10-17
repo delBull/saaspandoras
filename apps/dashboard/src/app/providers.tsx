@@ -47,10 +47,14 @@ export function Providers({
           wallets={wallets}
           timeout={15000}
           onConnect={(wallet) => {
-            console.log("🔗 AutoConnect: Wallet conectada automáticamente", wallet.id);
+            if (process.env.NODE_ENV === 'development') {
+              console.log("🔗 AutoConnect: Wallet conectada automáticamente", wallet.id);
+            }
           }}
           onTimeout={() => {
-            console.log("⏰ AutoConnect: Timeout alcanzado");
+            if (process.env.NODE_ENV === 'development') {
+              console.log("⏰ AutoConnect: Timeout alcanzado");
+            }
           }}
         />
         {children}
