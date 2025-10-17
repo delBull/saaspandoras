@@ -10,7 +10,7 @@ import { ApplicantsDesktop } from "./ApplicantsDesktop";
 import { ApplicantsMobile } from "./ApplicantsMobile";
 import { MultiStepForm } from "../../app/(dashboard)/admin/projects/[id]/edit/multi-step-form";
 import { useApplicantsDataBasic, type ApplicantsData } from "../../hooks/applicants/useApplicantsDataBasic";
-// import { useProjectFilters } from "../../hooks/applicants/useProjectFilters";
+import { useProjectFilters } from "../../hooks/applicants/useProjectFilters";
 
 
 interface FormProps {
@@ -67,20 +67,20 @@ export default function ApplicantsPage() {
     setShowMobilePendingModal,
   }: ApplicantsData = useApplicantsDataBasic();
 
-  // const {
-  //   viewMode,
-  //   setViewMode,
-  //   gridColumns,
-  //   setGridColumns,
-  //   filters,
-  //   updateFilter,
-  //   clearFilters,
-  //   hasActiveFilters,
-  //   totalProjects,
-  //   filteredCount,
-  // } = useProjectFilters({
-  //   projects: [...pendingProjects, ...approvedProjects],
-  // });
+  const {
+    viewMode,
+    setViewMode,
+    gridColumns,
+    setGridColumns,
+    filters,
+    updateFilter,
+    clearFilters,
+    hasActiveFilters,
+    totalProjects,
+    filteredCount,
+  } = useProjectFilters({
+    projects: approvedProjects, // Only use approved projects for filtering
+  });
 
 
   const [showForm, setShowForm] = React.useState(false);
@@ -109,40 +109,45 @@ export default function ApplicantsPage() {
     return <NewProjectForm showForm={showForm} onCancel={handleCancel} />;
   }
 
-  // Usar directamente los proyectos de la API (sin filtros por ahora)
-  const _filteredPendingProjects = pendingProjects.filter(p => p.status === 'pending');
-  const _filteredApprovedProjects = approvedProjects.filter(p => ['approved', 'live', 'completed'].includes(p.status));
+  // Usar proyectos filtrados para los proyectos aprobados
+  const filteredApprovedProjects = approvedProjects; // Los filtros se aplican dentro del hook
 
   return (
     <>
       <ApplicantsDesktop
         pendingProjects={pendingProjects}
-        approvedProjects={approvedProjects}
+        approvedProjects={filteredApprovedProjects}
         isPendingPanelCollapsed={isPendingPanelCollapsed}
         onTogglePanelCollapse={() => setIsPendingPanelCollapsed(!isPendingPanelCollapsed)}
         onApplyClick={handleApplyClick}
-        // Filtros comentados hasta completar implementación
-        // viewMode={viewMode}
-        // onViewModeChange={setViewMode}
-        // gridColumns={gridColumns}
-        // onGridColumnsChange={setGridColumns}
-        // filters={filters}
-        // updateFilter={(key: string, value: string) => updateFilter(key as keyof typeof filters, value)}
-        // clearFilters={clearFilters}
-        // hasActiveFilters={hasActiveFilters}
-        // totalProjects={totalProjects}
-        // filteredCount={filteredCount}
+        // Filtros activados
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        gridColumns={gridColumns}
+        onGridColumnsChange={setGridColumns}
+        filters={filters}
+        updateFilter={(key: string, value: string) => updateFilter(key as keyof typeof filters, value)}
+        clearFilters={clearFilters}
+        hasActiveFilters={hasActiveFilters}
+        totalProjects={totalProjects}
+        filteredCount={filteredCount}
       />
 
       <ApplicantsMobile
         pendingProjects={pendingProjects}
-        approvedProjects={approvedProjects}
+        approvedProjects={filteredApprovedProjects}
         showMobileModal={showMobilePendingModal}
         setShowMobileModal={setShowMobilePendingModal}
         onApplyClick={handleApplyClick}
-        // Filtros comentados hasta completar implementación
-        // viewMode={viewMode}
-        // onViewModeChange={setViewMode}
+        // Filtros activados para móvil
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        filters={filters}
+        updateFilter={(key: string, value: string) => updateFilter(key as keyof typeof filters, value)}
+        clearFilters={clearFilters}
+        hasActiveFilters={hasActiveFilters}
+        totalProjects={totalProjects}
+        filteredCount={filteredCount}
       />
     </>
   );

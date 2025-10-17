@@ -39,13 +39,13 @@ export function ProjectGrid({
 
   // Grid view
   const getGridClasses = () => {
-    const baseClasses = 'gap-6 md:gap-8 place-items-center';
+    const baseClasses = 'gap-4 md:gap-6 place-items-center';
 
     if (variant === 'pending') {
       return `grid grid-cols-1 ${baseClasses}`;
     }
 
-    // Responsive grid based on selected columns
+    // Responsive grid based on selected columns with better breakpoints
     switch (gridColumns) {
       case 6:
         return `grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 ${baseClasses}`;
@@ -60,10 +60,11 @@ export function ProjectGrid({
   return (
     <div className={getGridClasses()}>
       {projects.map((project) => (
-        <div key={project.id} className="w-full max-w-md">
+        <div key={project.id} className="w-full">
           <ProjectCard
             project={project}
             variant={variant}
+            gridColumns={gridColumns}
           />
         </div>
       ))}

@@ -64,6 +64,11 @@ export function useProjectFilters({
   const filteredProjects = useMemo(() => {
     let filtered = [...projects];
 
+    // Only show approved projects (approved, live, completed)
+    filtered = filtered.filter((project: Project) =>
+      ['approved', 'live', 'completed'].includes(project.status)
+    );
+
     // Search filter
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
@@ -73,13 +78,31 @@ export function useProjectFilters({
       );
     }
 
-    // Status filter
-    if (filters.status !== 'all') {
-      filtered = filtered.filter((project: Project) => project.status === filters.status);
+    // Category filter - filter by business category (placeholder for now)
+    // TODO: Add businessCategory field to Project type when available
+    if (filters.category !== 'all') {
+      // For now, we'll filter by title containing category-related keywords
+      const categoryKeywords: Record<string, string[]> = {
+        'residential_real_estate': ['residencial', 'casa', 'apartamento', 'vivienda'],
+        'commercial_real_estate': ['comercial', 'oficina', 'local', 'comercio'],
+        'tech_startup': ['tecnología', 'tech', 'startup', 'software'],
+        'renewable_energy': ['renovable', 'solar', 'energía', 'verde'],
+        'art_collectibles': ['arte', 'colección', 'coleccionable', 'obra'],
+        'intellectual_property': ['propiedad intelectual', 'patente', 'marca'],
+        'other': ['otro', 'otros']
+      };
+
+      const keywords = categoryKeywords[filters.category] ?? [];
+      filtered = filtered.filter((project: Project) =>
+        keywords.some(keyword =>
+          project.title.toLowerCase().includes(keyword) ||
+          project.description.toLowerCase().includes(keyword)
+        )
+      );
     }
 
-    // Note: Category and network filters would need additional fields in Project type
-    // For now, they act as pass-through filters
+    // Network filter is hidden as requested
+    // Status filter is disabled - we only show approved projects
 
     return filtered;
   }, [projects, filters]);

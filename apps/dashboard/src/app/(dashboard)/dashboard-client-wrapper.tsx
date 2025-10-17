@@ -52,6 +52,7 @@ export function DashboardClientWrapper({
             userName={userName ?? undefined}
             isAdmin={isAdmin}
             isSuperAdmin={isSuperAdmin}
+            sidebarDefaultOpen={pathname === '/applicants' ? false : undefined}
           >
            <AutoLoginGate serverSession={serverSession}>
             <NFTGate>
