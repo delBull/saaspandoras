@@ -11,6 +11,7 @@ interface ProjectApplicationButtonProps {
   size?: 'default' | 'sm' | 'lg' | 'icon';
   buttonText?: string;
   disabled?: boolean;
+  showCloseButton?: boolean;
 }
 
 export function ProjectApplicationButton({
@@ -19,13 +20,22 @@ export function ProjectApplicationButton({
   variant = 'default',
   size = 'default',
   buttonText = 'Aplicar Proyecto',
-  disabled = false
+  disabled = false,
+  showCloseButton = false
 }: ProjectApplicationButtonProps) {
-  const { open } = useProjectModal();
+  const { open, close } = useProjectModal();
+
+  const handleClick = () => {
+    if (showCloseButton) {
+      close();
+    } else {
+      void open();
+    }
+  };
 
   return (
     <Button
-      onClick={open}
+      onClick={handleClick}
       variant={variant}
       size={size}
       className={className}
