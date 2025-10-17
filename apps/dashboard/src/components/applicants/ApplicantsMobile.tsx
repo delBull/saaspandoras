@@ -1,5 +1,3 @@
-//import { PlusIcon } from "lucide-react";
-//import { Button } from "@saasfly/ui/button";
 import { MobileModal } from "./shared/MobileModal";
 import { ProjectGrid } from "./shared/ProjectGrid";
 import type { Project } from "../../hooks/applicants/useApplicantsDataBasic";
@@ -37,7 +35,7 @@ export function ApplicantsMobile({
    approvedProjects,
    showMobileModal,
    setShowMobileModal,
-   onApplyClick,
+   //onApplyClick,
    viewMode,
    onViewModeChange: _onViewModeChange,
    filters: _filters,
@@ -57,12 +55,14 @@ export function ApplicantsMobile({
             {`${_filteredCount} de ${_totalProjects} proyectos aprobados`}
           </p>
         </div>
+        {/*
         <button
           onClick={onApplyClick}
           className="bg-gradient-to-r from-lime-500 to-emerald-500 hover:from-lime-600 hover:to-emerald-600 text-black font-bold shadow-lg flex-shrink-0 text-sm px-3 py-2 rounded-lg whitespace-nowrap"
         >
           Aplicar
         </button>
+        */}
       </div>
 
       {/* Mobile Button for pending projects */}
