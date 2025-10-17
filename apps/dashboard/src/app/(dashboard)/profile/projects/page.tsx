@@ -47,19 +47,25 @@ export default function ProfileProjectsPage() {
         fetch('/api/projects')
       ])
         .then(async ([usersRes, projectsRes]) => {
-          console.log('Profile API response:', usersRes.status, usersRes.ok);
-          console.log('Projects API response:', projectsRes.status, projectsRes.ok);
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Profile API response:', usersRes.status, usersRes.ok);
+            console.log('Projects API response:', projectsRes.status, projectsRes.ok);
+          }
 
           if (!usersRes.ok) {
             const errorText = await usersRes.text();
-            console.error('Profile API failed:', usersRes.status, errorText);
+            if (process.env.NODE_ENV === 'development') {
+              console.error('Profile API failed:', usersRes.status, errorText);
+            }
             // Don't throw error, continue with projects API
             return [null, await projectsRes.json()];
           }
 
           if (!projectsRes.ok) {
             const errorText = await projectsRes.text();
-            console.error('Projects API failed:', projectsRes.status, errorText);
+            if (process.env.NODE_ENV === 'development') {
+              console.error('Projects API failed:', projectsRes.status, errorText);
+            }
             throw new Error(`Projects API failed: ${projectsRes.status}`);
           }
 
@@ -67,20 +73,24 @@ export default function ProfileProjectsPage() {
         })
         .then((data) => {
           const [userProfile, projects] = data as [UserData | null, Project[]];
-          console.log('Profile data received:', userProfile);
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Profile data received:', userProfile);
+          }
 
           // Debug: Check what projects API is actually returning
-          console.log('🔍 PROJECTS API DEBUG:', {
-            projectsType: typeof projects,
-            projectsLength: projects?.length,
-            projectsRaw: projects,
-            firstProjectSample: projects?.[0] ? {
-              id: projects[0].id,
-              title: projects[0].title,
-              applicantWalletAddress: projects[0].applicantWalletAddress,
-              status: projects[0].status
-            } : null
-          });
+          if (process.env.NODE_ENV === 'development') {
+            console.log('🔍 PROJECTS API DEBUG:', {
+              projectsType: typeof projects,
+              projectsLength: projects?.length,
+              projectsRaw: projects,
+              firstProjectSample: projects?.[0] ? {
+                id: projects[0].id,
+                title: projects[0].title,
+                applicantWalletAddress: projects[0].applicantWalletAddress,
+                status: projects[0].status
+              } : null
+            });
+          }
 
           setUserProfile(userProfile);
 
@@ -89,21 +99,16 @@ export default function ProfileProjectsPage() {
           const isSuperAdmin = SUPER_ADMIN_WALLETS.includes(walletAddress.toLowerCase());
           const userWalletAddress = userProfile?.walletAddress || walletAddress;
 
-          console.log('🔍 DETAILED DEBUGGING:', {
-            connectedWallet: walletAddress,
-            userProfileWallet: userProfile?.walletAddress,
-            isSuperAdmin,
-            totalProjectsFromAPI: projects?.length || 0,
-            projectsSample: projects?.slice(0, 3).map(p => ({
-              id: p.id,
-              title: p.title,
-              applicantWalletAddress: p.applicantWalletAddress,
-              status: p.status
-            })) || []
-          });
+          if (process.env.NODE_ENV === 'development') {
+            console.log('🔍 DETAILED DEBUGGING:', {
+              connectedWallet: walletAddress,
+              isSuperAdmin,
+              totalProjectsFromAPI: projects?.length || 0
+            });
+          }
 
-          // Additional debugging for wallet comparison
-          if (projects?.length > 0) {
+          // Additional debugging for wallet comparison (only in development)
+          if (process.env.NODE_ENV === 'development' && projects?.length > 0) {
             console.log('🔍 WALLET COMPARISON DEBUG:', {
               userWallet: walletAddress.toLowerCase(),
               projectWallets: projects.map(p => ({
@@ -131,34 +136,31 @@ export default function ProfileProjectsPage() {
                              projectWallet === userWallet.replace('0x', '') ||
                              (projectWallet && userWallet && projectWallet.endsWith(userWallet.slice(-8)));
 
-              console.log('🔍 PROJECT FILTER CHECK:', {
-                projectId: p.id,
-                projectTitle: p.title,
-                projectWallet: projectWallet,
-                userWallet: userWallet,
-                directMatch: projectWallet === userWallet,
-                noPrefixMatch: projectWallet === userWallet.replace('0x', ''),
-                partialMatch: projectWallet && userWallet && projectWallet.endsWith(userWallet.slice(-8)),
-                finalMatches: matches,
-                projectWalletLength: projectWallet?.length,
-                userWalletLength: userWallet?.length
-              });
+              if (process.env.NODE_ENV === 'development') {
+                console.log('🔍 PROJECT FILTER CHECK:', {
+                  projectId: p.id,
+                  projectTitle: p.title,
+                  matches: matches
+                });
+              }
 
               return matches;
             });
           }
 
-          console.log('✅ FINAL RESULT:', {
-            filteredProjectsCount: userProjects.length,
-            isSuperAdmin,
-            userWalletAddress,
-            totalProjects: projects.length
-          });
+          if (process.env.NODE_ENV === 'development') {
+            console.log('✅ FINAL RESULT:', {
+              filteredProjectsCount: userProjects.length,
+              isSuperAdmin,
+              userWalletAddress,
+              totalProjects: projects.length
+            });
+          }
           setUserProjects(userProjects);
         })
         .catch(err => {
           if (process.env.NODE_ENV === 'development') {
-            console.error('Error fetching data:', err);
+            console.error('Error fetching profile/projects data:', err);
           }
           // If profile API fails, still try to get projects
           fetch('/api/projects')
@@ -169,17 +171,13 @@ export default function ProfileProjectsPage() {
               const SUPER_ADMIN_WALLETS = ['0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9'];
               const isSuperAdmin = SUPER_ADMIN_WALLETS.includes(walletAddress.toLowerCase());
 
-              console.log('🔄 FALLBACK DEBUG:', {
-                connectedWallet: walletAddress,
-                isSuperAdmin,
-                totalProjects: projects.length,
-                projectsSample: projects.slice(0, 3).map(p => ({
-                  id: p.id,
-                  title: p.title,
-                  applicantWalletAddress: p.applicantWalletAddress,
-                  status: p.status
-                }))
-              });
+              if (process.env.NODE_ENV === 'development') {
+                console.log('🔄 FALLBACK DEBUG:', {
+                  connectedWallet: walletAddress,
+                  isSuperAdmin,
+                  totalProjects: projects.length
+                });
+              }
 
               let userProjects: Project[] = [];
               if (isSuperAdmin) {
@@ -196,29 +194,30 @@ export default function ProfileProjectsPage() {
                                  projectWallet === userWallet.replace('0x', '') ||
                                  (projectWallet && userWallet && projectWallet.endsWith(userWallet.slice(-8)));
 
-                  console.log('🔄 FALLBACK PROJECT FILTER:', {
-                    projectId: p.id,
-                    projectTitle: p.title,
-                    projectWallet: projectWallet,
-                    userWallet: userWallet,
-                    directMatch: projectWallet === userWallet,
-                    noPrefixMatch: projectWallet === userWallet.replace('0x', ''),
-                    partialMatch: projectWallet && userWallet && projectWallet.endsWith(userWallet.slice(-8)),
-                    finalMatches: matches
-                  });
+                  if (process.env.NODE_ENV === 'development') {
+                    console.log('🔄 FALLBACK PROJECT FILTER:', {
+                      projectId: p.id,
+                      projectTitle: p.title,
+                      matches: matches
+                    });
+                  }
 
                   return matches;
                 });
               }
 
-              console.log('🔄 FALLBACK RESULT:', {
-                filteredCount: userProjects.length,
-                isSuperAdmin
-              });
+              if (process.env.NODE_ENV === 'development') {
+                console.log('🔄 FALLBACK RESULT:', {
+                  filteredCount: userProjects.length,
+                  isSuperAdmin
+                });
+              }
               setUserProjects(userProjects);
             })
             .catch(projectErr => {
-              console.error('Failed to fetch projects as fallback:', projectErr);
+              if (process.env.NODE_ENV === 'development') {
+                console.error('Failed to fetch projects as fallback:', projectErr);
+              }
               setUserProjects([]);
             });
 
