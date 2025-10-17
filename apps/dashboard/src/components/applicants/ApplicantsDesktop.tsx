@@ -75,7 +75,7 @@ export function ApplicantsDesktop({
       />
 
       {/* Contenedor principal con ajuste automático de márgenes */}
-      <div className={`min-h-screen transition-all duration-500 ease-in-out ${
+      <div className={`min-h-screen ml-20 transition-all duration-500 ease-in-out ${
         isPendingPanelCollapsed ? 'mr-20' : 'mr-[340px]'
       }`}>
         {/* Fila 1: Header con filtros */}

@@ -30,7 +30,7 @@ export interface ApplicantsData {
 export function useApplicantsDataBasic(): ApplicantsData {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isPendingPanelCollapsed, setIsPendingPanelCollapsed] = useState(false);
+  const [isPendingPanelCollapsed, setIsPendingPanelCollapsed] = useState(true);
   const [showMobilePendingModal, setShowMobilePendingModal] = useState(false);
 
   const fetchProjects = async () => {
