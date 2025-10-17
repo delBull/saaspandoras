@@ -98,7 +98,7 @@ export async function GET() {
           "walletAddress",
           "email",
           "connectionCount"
-        FROM "User"
+        FROM "users"
         LIMIT 3
       `);
       usersWithProjects = users;

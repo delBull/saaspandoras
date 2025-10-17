@@ -72,7 +72,7 @@ export async function PUT(request: Request) {
 
     // Actualizar información del usuario existente
     await db.execute(sql`
-      UPDATE "User"
+      UPDATE "users"
       SET "name" = ${name ?? null},
           "email" = ${email},
           "image" = ${image ?? null},
