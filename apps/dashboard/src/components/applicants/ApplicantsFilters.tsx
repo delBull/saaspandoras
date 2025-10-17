@@ -57,14 +57,15 @@ const categories = [
 //   { value: 'base', label: 'Base' },
 // ];
 
-const statuses = [
-  { value: 'all', label: 'Todos los Estados' },
-  { value: 'pending', label: 'En Revisión' },
-  { value: 'approved', label: 'Aprobado' },
-  { value: 'live', label: 'Activo' },
-  { value: 'completed', label: 'Completado' },
-  { value: 'rejected', label: 'Rechazado' },
-];
+// Statuses ocultos - solo mostramos proyectos aprobados
+// const statuses = [
+//   { value: 'all', label: 'Todos los Estados' },
+//   { value: 'pending', label: 'En Revisión' },
+//   { value: 'approved', label: 'Aprobado' },
+//   { value: 'live', label: 'Activo' },
+//   { value: 'completed', label: 'Completado' },
+//   { value: 'rejected', label: 'Rechazado' },
+// ];
 
 export function ApplicantsFilters({
   viewMode,
@@ -109,18 +110,7 @@ export function ApplicantsFilters({
             </SelectContent>
           </Select>
 
-          <Select value={filters.status} onValueChange={(value) => updateFilter('status', value)}>
-            <SelectTrigger className="w-40 bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-xs text-gray-900 dark:text-white">
-              <SelectValue placeholder="Estado" />
-            </SelectTrigger>
-            <SelectContent className="bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-700">
-              {statuses.map((status) => (
-                <SelectItem key={status.value} value={status.value} className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-zinc-700">
-                  {status.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* Estado oculto - solo mostramos proyectos aprobados */}
         </div>
 
         <div className="flex items-center gap-2">
@@ -219,18 +209,7 @@ export function ApplicantsFilters({
             </SelectContent>
           </Select>
 
-          <Select value={filters.status} onValueChange={(value) => updateFilter('status', value)}>
-            <SelectTrigger className="bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-white min-w-[120px]">
-              <SelectValue placeholder="Estado" />
-            </SelectTrigger>
-            <SelectContent className="bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-700">
-              {statuses.slice(0, 4).map((status) => (
-                <SelectItem key={status.value} value={status.value} className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-zinc-700">
-                  {status.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* Estado oculto en móvil también - solo mostramos proyectos aprobados */}
         </div>
       </div>
 
