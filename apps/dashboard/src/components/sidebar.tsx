@@ -47,7 +47,7 @@ export function Sidebar({
     setIsClient(true);
   }, []);
 
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileDropdown, setProfileDropdown] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -76,6 +76,14 @@ export function Sidebar({
 
   // Track if this is the initial load to avoid resetting admin status
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // Auto-open sidebar when user connects wallet (but not on initial page load)
+  useEffect(() => {
+    if (account?.address && !open) {
+      // Auto-open sidebar when user connects wallet for the first time
+      setOpen(true);
+    }
+  }, [account?.address, open]);
 
   // Debug logging for admin status (only in development)
   useEffect(() => {
@@ -658,36 +666,38 @@ export function Sidebar({
           </div>
 
           <div className="mb-4 flex flex-col gap-2">
-            {/* Temporary Modal Access Link - Opens project application modal */}
-            <div
-              className={cn(
-                "border-t border-gray-800 pt-2",
-                !open && "mx-auto w-full"
-              )}
-            >
-              <button
-                onClick={() => {
-                  // Open the project application modal using context
-                  void openProjectModal();
-                }}
+            {/* Show "Aplicar Proyecto" button only when CONNECTED */}
+            {isClient && account && (
+              <div
                 className={cn(
-                  "relative flex w-full items-center rounded-lg py-2 transition-all duration-200 text-gray-400 hover:bg-purple-800/20",
-                  open ? "px-4" : "justify-center"
+                  "border-t border-gray-800 pt-2",
+                  !open && "mx-auto w-full"
                 )}
               >
-                <ShieldCheckIcon className="h-4 w-4 shrink-0" />
-                <motion.span
-                  animate={{
-                    opacity: open ? 1 : 0,
-                    width: open ? "auto" : 0,
-                    marginLeft: open ? "0.75rem" : "0",
+                <button
+                  onClick={() => {
+                    // Open the project application modal using context
+                    void openProjectModal();
                   }}
-                  className="whitespace-nowrap text-xs italic"
+                  className={cn(
+                    "relative flex w-full items-center rounded-lg py-2 transition-all duration-200 text-gray-400 hover:bg-purple-800/20",
+                    open ? "px-4" : "justify-center"
+                  )}
                 >
-                  {open ? "Aplicar Proyecto" : "🔗"}
-                </motion.span>
-              </button>
-            </div>
+                  <ShieldCheckIcon className="h-4 w-4 shrink-0" />
+                  <motion.span
+                    animate={{
+                      opacity: open ? 1 : 0,
+                      width: open ? "auto" : 0,
+                      marginLeft: open ? "0.75rem" : "0",
+                    }}
+                    className="whitespace-nowrap text-xs italic"
+                  >
+                    {open ? "Aplicar Proyecto" : "🔗"}
+                  </motion.span>
+                </button>
+              </div>
+            )}
 
             {isClient && account && (
               <div
@@ -996,21 +1006,23 @@ export function Sidebar({
                 </div>
 
                 <div className="mb-4 flex flex-col gap-2">
-                  {/* Temporary Modal Access Link - Opens project application modal */}
-                  <div className="border-t border-gray-800 pt-2">
-                    <button
-                      onClick={() => {
-                        void openProjectModal();
-                        setMobileOpen(false);
-                      }}
-                      className="relative flex w-full items-center rounded-lg py-2 px-4 transition-all duration-200 text-gray-400 hover:bg-purple-800/20"
-                    >
-                      <ShieldCheckIcon className="h-4 w-4 shrink-0" />
-                      <span className="ml-3 whitespace-nowrap text-xs italic">
-                        Aplicar Proyecto
-                      </span>
-                    </button>
-                  </div>
+                  {/* Show "Aplicar Proyecto" button only when CONNECTED - MOBILE */}
+                  {isClient && account && (
+                    <div className="border-t border-gray-800 pt-2">
+                      <button
+                        onClick={() => {
+                          void openProjectModal();
+                          setMobileOpen(false);
+                        }}
+                        className="relative flex w-full items-center rounded-lg py-2 px-4 transition-all duration-200 text-gray-400 hover:bg-purple-800/20"
+                      >
+                        <ShieldCheckIcon className="h-4 w-4 shrink-0" />
+                        <span className="ml-3 whitespace-nowrap text-xs italic">
+                          Aplicar Proyecto
+                        </span>
+                      </button>
+                    </div>
+                  )}
 
                   {isClient && account && (
                     <div className="border-t border-gray-800 pt-2">
