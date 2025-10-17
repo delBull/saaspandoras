@@ -50,7 +50,7 @@ export function ApplicantsMobile({
   return (
     <div className="lg:hidden min-h-screen text-white">
       {/* Header */}
-      <div className="top-0 z-20 flex justify-between items-center px-4 py-6 gap-6 bg-zinc-950/80 backdrop-blur-sm">
+      <div className="top-0 z-20 flex justify-between items-center px-4 py-6 gap-6 bg-zinc-950/80 backdrop-blur-sm ml-16">
         <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-bold text-white truncate">Proyectos</h1>
           <p className="text-gray-400 text-sm truncate">
@@ -66,7 +66,7 @@ export function ApplicantsMobile({
       </div>
 
       {/* Mobile Button for pending projects */}
-      <div className="px-4 py-6">
+      <div className="px-4 py-6 ml-16">
         <button
           onClick={() => setShowMobileModal(true)}
           className="w-full flex items-center justify-center px-3 py-3 bg-yellow-500/20 text-yellow-300 rounded-lg text-sm font-medium hover:bg-yellow-500/30 transition-colors"
@@ -76,7 +76,7 @@ export function ApplicantsMobile({
       </div>
 
       {/* Mobile Main Content - Approved Projects */}
-      <div className="px-4 py-8">
+      <div className="px-4 py-8 ml-16">
         <ProjectGrid
           projects={approvedProjects}
           variant="approved"

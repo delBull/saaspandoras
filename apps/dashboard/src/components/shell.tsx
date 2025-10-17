@@ -12,6 +12,7 @@ interface DashboardShellProps {
   className?: string;
   isAdmin: boolean;
   isSuperAdmin: boolean;
+  sidebarDefaultOpen?: boolean; // Nueva prop para controlar sidebar (undefined = automático)
 }
 
 export function DashboardShell({
@@ -23,6 +24,7 @@ export function DashboardShell({
   className,
   isAdmin,
   isSuperAdmin,
+  sidebarDefaultOpen,
 }: DashboardShellProps) {
   return (
     <div
@@ -38,6 +40,7 @@ export function DashboardShell({
         userName={userName}
         isAdmin={isAdmin}
         isSuperAdmin={isSuperAdmin}
+        defaultOpen={sidebarDefaultOpen}
       />
       <main
         className={cn(

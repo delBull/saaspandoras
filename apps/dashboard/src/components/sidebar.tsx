@@ -33,6 +33,7 @@ interface SidebarProps {
   userName?: string;
   isAdmin?: boolean;
   isSuperAdmin?: boolean;
+  defaultOpen?: boolean; // Nueva prop para controlar estado inicial (undefined = automático)
 }
 
 export function Sidebar({
@@ -40,6 +41,7 @@ export function Sidebar({
   userName,
   isAdmin: isAdminProp,
   isSuperAdmin: isSuperAdminProp,
+  defaultOpen, // undefined = usar comportamiento automático, true/false = forzar estado
 }: SidebarProps) {
 
   const [isClient, setIsClient] = useState(false);
@@ -47,7 +49,15 @@ export function Sidebar({
     setIsClient(true);
   }, []);
 
-  const [open, setOpen] = useState(false);
+  // Determinar estado inicial basado en defaultOpen o comportamiento automático
+  const getInitialState = () => {
+    if (defaultOpen !== undefined) {
+      return defaultOpen;
+    }
+    return false; // Estado por defecto cerrado
+  };
+
+  const [open, setOpen] = useState(getInitialState);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileDropdown, setProfileDropdown] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -78,12 +88,15 @@ export function Sidebar({
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Auto-open sidebar when user connects wallet (but not on initial page load)
+  // Only auto-open if defaultOpen is not explicitly set to false
   useEffect(() => {
-    if (account?.address && !open) {
+    if (account?.address && !open && defaultOpen !== false) {
       // Auto-open sidebar when user connects wallet for the first time
+      // But respect explicit defaultOpen=false setting
+      console.log('🔓 Auto-opening sidebar due to wallet connection');
       setOpen(true);
     }
-  }, [account?.address, open]);
+  }, [account?.address, open, defaultOpen]);
 
   // Debug logging for admin status (only in development and only when status changes)
   useEffect(() => {
