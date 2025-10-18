@@ -13,6 +13,7 @@ interface ProjectQueryResult {
   status: string;
   slug: string;
   createdAt: string | Date;
+  businessCategory?: string;
   coverPhotoUrl?: string | null;
   targetAmount?: string | number | null;
   raisedAmount?: string | number | null;
@@ -25,6 +26,7 @@ interface FormattedProject {
   description: string;
   slug: string;
   status: string;
+  businessCategory: string;
   createdAt: string | Date;
   coverPhotoUrl: string;
   targetAmount: string | null;
@@ -52,7 +54,6 @@ export async function GET() {
           "business_category" as "businessCategory"
         FROM "projects"
         ORDER BY "created_at" DESC
-        LIMIT 3
       `);
 
       const projects = realProjects as unknown as ProjectQueryResult[];
@@ -66,6 +67,7 @@ export async function GET() {
           description: project.description,
           slug: project.slug,
           status: project.status,
+          businessCategory: project.businessCategory ?? 'other',
           createdAt: project.createdAt,
           coverPhotoUrl: project.coverPhotoUrl ?? '/images/default-project.jpg',
           targetAmount: project.targetAmount ? String(project.targetAmount) : null,
@@ -95,6 +97,7 @@ export async function GET() {
         description: 'Para ver tus proyectos reales, dirígete a admin dashboard y verifica que estén publicados.',
         slug: 'verificacion-admin-' + Date.now(),
         status: 'draft', // Mark as draft so they understand they're not real
+        businessCategory: 'other',
         createdAt: new Date().toISOString(),
         coverPhotoUrl: '/images/default-project.jpg',
         targetAmount: '0',

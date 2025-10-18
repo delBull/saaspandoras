@@ -473,13 +473,20 @@ export function MultiStepForm({
     };
   }, [currentStep]);
 
-  // Auto-redirección de modales después de 5 segundos
+  // Auto-redirección de modales después de 5 segundos con mejor manejo de sesión
   useEffect(() => {
     if (showSuccessModal) {
       const timer = setTimeout(() => {
         setShowSuccessModal(false);
-        router.push(isPublic ? "/" : "/admin/dashboard");
-        router.refresh();
+        // Usar navegación completa para preservar mejor la sesión
+        if (isPublic) {
+          // Para usuarios públicos, redirigir a "/" preservando la sesión
+          window.location.href = "/";
+        } else {
+          // Para admins, usar navegación normal
+          router.push("/admin/dashboard");
+          router.refresh();
+        }
       }, 5000);
       return () => clearTimeout(timer);
     }

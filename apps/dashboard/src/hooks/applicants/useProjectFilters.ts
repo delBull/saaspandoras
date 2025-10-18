@@ -78,26 +78,10 @@ export function useProjectFilters({
       );
     }
 
-    // Category filter - filter by business category (placeholder for now)
-    // TODO: Add businessCategory field to Project type when available
+    // Category filter - filter by business category using the actual field
     if (filters.category !== 'all') {
-      // For now, we'll filter by title containing category-related keywords
-      const categoryKeywords: Record<string, string[]> = {
-        'residential_real_estate': ['residencial', 'casa', 'apartamento', 'vivienda'],
-        'commercial_real_estate': ['comercial', 'oficina', 'local', 'comercio'],
-        'tech_startup': ['tecnología', 'tech', 'startup', 'software'],
-        'renewable_energy': ['renovable', 'solar', 'energía', 'verde'],
-        'art_collectibles': ['arte', 'colección', 'coleccionable', 'obra'],
-        'intellectual_property': ['propiedad intelectual', 'patente', 'marca'],
-        'other': ['otro', 'otros']
-      };
-
-      const keywords = categoryKeywords[filters.category] ?? [];
       filtered = filtered.filter((project: Project) =>
-        keywords.some(keyword =>
-          project.title.toLowerCase().includes(keyword) ||
-          project.description.toLowerCase().includes(keyword)
-        )
+        project.businessCategory === filters.category
       );
     }
 
