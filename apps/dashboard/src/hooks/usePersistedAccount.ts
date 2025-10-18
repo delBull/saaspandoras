@@ -111,7 +111,7 @@ export function usePersistedAccount() {
     }
   }, [account?.address, activeWallet]);
 
-  // Rehidratación automática con debouncing
+  // Rehidratación automática con debouncing y mejor manejo de sesiones
   useEffect(() => {
     if (isBootstrapped && !isLogoutInProgress && session && session.shouldReconnect && !account?.address && !isConnecting) {
       // Ahora permitimos reconexión automática para wallets sociales usando sesión del servidor
@@ -131,8 +131,8 @@ export function usePersistedAccount() {
         })
         .then(async (response) => {
           if (response.ok) {
-            const sessionData = await response.json() as { address?: string };
-            if (sessionData.address && sessionData.address === session.address) {
+            const sessionData = await response.json() as { address?: string; hasSession?: boolean };
+            if (sessionData.hasSession && sessionData.address && sessionData.address === session.address) {
               console.log("✅ Sesión social válida encontrada en servidor");
 
               // Reconectar usando el mismo tipo de wallet
@@ -147,6 +147,12 @@ export function usePersistedAccount() {
                 localStorage.setItem("wallet-session", JSON.stringify(correctedSession));
                 setSession(correctedSession);
               });
+            } else {
+              console.log("❌ No hay sesión social válida en servidor");
+              // Marcar como no reconectar
+              const correctedSession = { ...session, shouldReconnect: false };
+              localStorage.setItem("wallet-session", JSON.stringify(correctedSession));
+              setSession(correctedSession);
             }
           } else {
             console.log("❌ No hay sesión social válida en servidor");

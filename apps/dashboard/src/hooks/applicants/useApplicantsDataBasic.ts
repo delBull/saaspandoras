@@ -10,6 +10,7 @@ export interface Project {
   slug: string;
   createdAt: string;
   status: string;
+  businessCategory: string;
   coverPhotoUrl?: string | null;
   targetAmount?: string | number | null;
   raisedAmount?: string | number | null;

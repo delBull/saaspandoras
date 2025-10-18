@@ -473,13 +473,20 @@ export function MultiStepForm({
     };
   }, [currentStep]);
 
-  // Auto-redirección de modales después de 5 segundos
+  // Auto-redirección de modales después de 5 segundos con mejor manejo de sesión
   useEffect(() => {
     if (showSuccessModal) {
       const timer = setTimeout(() => {
         setShowSuccessModal(false);
-        router.push(isPublic ? "/" : "/admin/dashboard");
-        router.refresh();
+        // Usar navegación completa para preservar mejor la sesión
+        if (isPublic) {
+          // Para usuarios públicos, redirigir a "/" preservando la sesión
+          window.location.href = "/";
+        } else {
+          // Para admins, usar navegación normal
+          router.push("/admin/dashboard");
+          router.refresh();
+        }
       }, 5000);
       return () => clearTimeout(timer);
     }
@@ -603,7 +610,8 @@ export function MultiStepForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...submitData,
-          status: "draft" // Forzar status como draft para usuarios públicos
+          status: "draft", // Forzar status como draft para usuarios públicos
+          featured: false // ✅ Featured debe ser manual, nunca automático
         }),
       });
 
@@ -691,7 +699,8 @@ export function MultiStepForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...submitData,
-          status: isPublic ? "pending" : "approved"
+          status: isPublic ? "pending" : "approved",
+          featured: false // ✅ Featured debe ser manual, nunca automático
         }),
       });
 
@@ -771,7 +780,7 @@ export function MultiStepForm({
       const response = await fetch(apiEndpoint, {
         method: isEdit ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...preparedData, status: "approved" }),
+        body: JSON.stringify({ ...preparedData, status: "approved", featured: false }),
       });
 
       console.log('📡 Admin quick submit response status:', response.status);

@@ -76,6 +76,7 @@ export default function ApplicantsPage() {
     updateFilter,
     clearFilters,
     hasActiveFilters,
+    filteredProjects,
     totalProjects,
     filteredCount,
   } = useProjectFilters({
@@ -110,7 +111,7 @@ export default function ApplicantsPage() {
   }
 
   // Usar proyectos filtrados para los proyectos aprobados
-  const filteredApprovedProjects = approvedProjects; // Los filtros se aplican dentro del hook
+  const filteredApprovedProjects = filteredProjects; // Los filtros se aplican dentro del hook
 
   return (
     <>
