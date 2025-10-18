@@ -5,14 +5,26 @@ import { motion } from "framer-motion";
 import { ArrowLeftIcon, Shield, Clock, CheckCircle } from "lucide-react";
 import { Button } from "@saasfly/ui/button";
 import Link from "next/link";
-import { MultiStepForm } from "../../admin/projects/[id]/edit/multi-step-form";
 import { AnimatedBackground } from "@/components/apply/AnimatedBackground";
+import { ApplicationSuccessNotification } from "@/components/apply/ApplicationSuccessNotification";
+import { ApplicationDraftNotification } from "@/components/apply/ApplicationDraftNotification";
+import { EnhancedMultiStepForm } from "@/components/apply/EnhancedMultiStepForm";
+
+
+
 
 // Force dynamic rendering - this page uses authentication and should not be prerendered
 export const dynamic = 'force-dynamic';
 
 export default function ApplyFormPage() {
   const [isAdminMode, setIsAdminMode] = useState(false);
+  const [showSuccessNotification, setShowSuccessNotification] = useState(false);
+  const [showDraftNotification, setShowDraftNotification] = useState(false);
+  const [isFormLoading, setIsFormLoading] = useState(false);
+  const [isLoading] = useState(false);
+
+  // Mostrar indicador de carga si el formulario está procesando
+  const showLoadingIndicator = isFormLoading || isLoading;
 
   useEffect(() => {
     // Check admin status when component mounts (igual que en el modal original)
@@ -37,6 +49,113 @@ export default function ApplyFormPage() {
 
     void checkAdminStatus();
   }, []);
+
+  // Sistema de detección ultra-sensible para eventos del formulario
+  useEffect(() => {
+    let lastFormData = localStorage.getItem("pandoras-project-form");
+    let lastStep = localStorage.getItem("pandoras-project-step");
+    let lastDataSize = lastFormData ? JSON.stringify(JSON.parse(lastFormData)).length : 0;
+
+    const checkFormEvents = () => {
+      const currentFormData = localStorage.getItem("pandoras-project-form");
+      const currentStep = localStorage.getItem("pandoras-project-step");
+
+      console.log("🔍 Monitoreo localStorage:", {
+        lastFormData: lastFormData ? "presente" : "null",
+        currentFormData: currentFormData ? "presente" : "null",
+        lastStep,
+        currentStep,
+        lastDataSize,
+        currentDataSize: currentFormData ? JSON.stringify(JSON.parse(currentFormData)).length : 0
+      });
+
+      // Detectar envío exitoso: datos del formulario desaparecen después del envío
+      if (lastFormData && currentFormData === null) {
+        console.log("🎉 ¡ENVÍO DETECTADO! - localStorage limpiado después del envío");
+        const notificationShown = sessionStorage.getItem("application-success-shown");
+        if (!notificationShown) {
+          console.log("🎉 Mostrando notificación de éxito");
+          setShowSuccessNotification(true);
+          sessionStorage.setItem("application-success-shown", "true");
+        }
+      }
+
+      // Detectar borrador guardado: verificar si se agregó información significativa
+      if (currentFormData && lastFormData) {
+        try {
+          const currentData = JSON.parse(currentFormData) as Record<string, unknown>;
+          const currentSize = JSON.stringify(currentData).length;
+
+          // Si los datos aumentaron significativamente (> 200 caracteres), probablemente se guardó
+          if (currentSize > lastDataSize + 200) {
+            console.log("💾 ¡BORRADOR DETECTADO! - datos aumentaron significativamente");
+            const draftNotificationShown = sessionStorage.getItem("draft-saved-shown");
+            if (!draftNotificationShown) {
+              console.log("💾 Mostrando notificación de borrador");
+              setShowDraftNotification(true);
+              sessionStorage.setItem("draft-saved-shown", "true");
+            }
+          }
+
+          lastDataSize = currentSize;
+        } catch (error) {
+          console.error("Error parsing form data:", error);
+        }
+      }
+
+      // Actualizar valores para próxima comparación
+      lastFormData = currentFormData;
+      lastStep = currentStep;
+    };
+
+    // Verificar cada 500ms para mejor detección
+    const interval = setInterval(checkFormEvents, 500);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Sistema adicional: monitorear cambios en el DOM para detectar eventos del formulario
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "pandoras-project-form" || e.key === "pandoras-project-step") {
+        console.log("💾 Cambio detectado en localStorage:", e.key, e.newValue ? "presente" : "null");
+
+        if (e.key === "pandoras-project-form" && e.oldValue && !e.newValue) {
+          console.log("🎉 ¡ENVÍO DETECTADO vía StorageEvent! - localStorage limpiado");
+          const notificationShown = sessionStorage.getItem("application-success-shown");
+          if (!notificationShown) {
+            setShowSuccessNotification(true);
+            sessionStorage.setItem("application-success-shown", "true");
+          }
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  const handleNotificationClose = () => {
+    setShowSuccessNotification(false);
+    // Redirigir después de cerrar la notificación
+    window.location.href = "/";
+  };
+
+  const handleDraftNotificationClose = () => {
+    setShowDraftNotification(false);
+    // Limpiar la bandera para permitir futuras notificaciones de borrador
+    sessionStorage.removeItem("draft-saved-shown");
+    // Redirigir a la página de aplicantes
+    window.location.href = "/applicants";
+  };
+
+  const handleContinueApplication = () => {
+    setShowDraftNotification(false);
+    // Limpiar la bandera para permitir futuras notificaciones de borrador
+    sessionStorage.removeItem("draft-saved-shown");
+    // El usuario puede continuar con la aplicación
+  };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-black text-white relative">
@@ -174,12 +293,38 @@ export default function ApplyFormPage() {
                   </div>
                 }
               >
-                <MultiStepForm
-                  project={null}
-                  isEdit={false}
-                  apiEndpoint={isAdminMode ? "/api/admin/projects" : "/api/projects/draft"}
-                  isPublic={!isAdminMode}
-                />
+                <div className="relative">
+                  <EnhancedMultiStepForm
+                    project={null}
+                    isEdit={false}
+                    apiEndpoint={isAdminMode ? "/api/admin/projects" : "/api/projects/draft"}
+                    isPublic={!isAdminMode}
+                    onSuccess={() => {
+                      console.log("🚀 ¡Aplicación enviada exitosamente!");
+                      setShowSuccessNotification(true);
+                    }}
+                    onDraft={() => {
+                      console.log("📝 ¡Borrador guardado exitosamente!");
+                      setShowDraftNotification(true);
+                    }}
+                    onLoading={setIsFormLoading}
+                  />
+
+                  {/* Overlay de carga personalizado */}
+                  {showLoadingIndicator && (
+                    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 rounded-2xl">
+                      <div className="bg-zinc-900 border border-lime-500/30 rounded-xl p-8 text-center shadow-2xl">
+                        <div className="w-16 h-16 border-4 border-lime-500/20 border-t-lime-500 rounded-full animate-spin mx-auto mb-4" />
+                        <h3 className="text-xl font-bold text-white mb-2">
+                          Procesando...
+                        </h3>
+                        <p className="text-zinc-400">
+                          Procesando tu aplicación premium
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </Suspense>
             </div>
           </motion.div>
@@ -220,6 +365,27 @@ export default function ApplyFormPage() {
           </motion.div>
         </motion.div>
       </div>
+
+      {/* Notificación de éxito premium */}
+      <ApplicationSuccessNotification
+        isOpen={showSuccessNotification}
+        onClose={handleNotificationClose}
+        title="¡Aplicación Enviada Exitosamente!"
+        description="Tu proyecto ha sido recibido y está siendo procesado por nuestro equipo de revisión. Te contactaremos pronto con los próximos pasos del proceso de selección elite."
+        redirectDelay={8}
+        redirectUrl="/"
+      />
+
+      {/* Notificación de borrador premium */}
+      <ApplicationDraftNotification
+        isOpen={showDraftNotification}
+        onClose={handleDraftNotificationClose}
+        onContinue={handleContinueApplication}
+        title="¡Borrador Guardado Exitosamente!"
+        description="Tu progreso ha sido guardado de forma segura. Puedes continuar con tu aplicación en cualquier momento sin perder ningún avance."
+        redirectDelay={5}
+        redirectUrl="/applicants"
+      />
     </div>
   );
 }
