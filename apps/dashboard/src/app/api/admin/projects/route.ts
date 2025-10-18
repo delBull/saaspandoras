@@ -149,8 +149,18 @@ export async function GET(_request: Request) {
           applicantEmail: project.applicant_email,
           applicantPhone: project.applicant_phone,
           applicantWalletAddress: project.applicant_wallet_address,
+          // Featured info
+          featured: project.featured,
+          featuredButtonText: project.featured_button_text,
           // Add other fields as needed
         }));
+
+        console.log('📊 Admin API: Fallback formatted first project:', formattedProjects[0] ? {
+          id: formattedProjects[0].id,
+          title: formattedProjects[0].title,
+          applicantWalletAddress: formattedProjects[0].applicantWalletAddress,
+          featured: formattedProjects[0].featured
+        } : 'No projects');
 
         return NextResponse.json(formattedProjects);
       } catch (fallbackError) {
@@ -305,6 +315,9 @@ export async function POST(request: Request) {
         applicantPhone: data.applicantPhone ?? null,
         applicantWalletAddress: creatorWallet.toLowerCase(), // ✅ Admin crea el proyecto, mantiene propiedad correcta
         verificationAgreement: data.verificationAgreement,
+
+        // --- Featured: Manual, NO automático ---
+        featured: false, // ✅ Featured debe ser manual, nunca automático
 
         // --- Campo de Estado: String (Enum) ---
         status: "approved",

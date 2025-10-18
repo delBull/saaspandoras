@@ -53,7 +53,35 @@ export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGa
     return <>{fallback}</>;
   }
 
-  // ❌ Final: nada, redirigir a login
-  router.push("/");
+  // ❌ Final: nada, intentar verificar sesión en servidor antes de redirigir
+  // Esto es útil cuando se viene de una redirección y la sesión podría no estar sincronizada
+  if (typeof window !== 'undefined') {
+    // En el cliente, intentar verificar sesión antes de redirigir
+    fetch('/api/auth/session', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    })
+    .then(response => response.json())
+    .then((data: { hasSession?: boolean }) => {
+      if (data.hasSession) {
+        // Si hay sesión en servidor, recargar la página para sincronizar
+        window.location.reload();
+        return;
+      } else {
+        // Si no hay sesión, redirigir a login
+        router.push("/");
+      }
+    })
+    .catch(() => {
+      // En caso de error, redirigir a login
+      router.push("/");
+    });
+  } else {
+    // En servidor, redirigir directamente
+    router.push("/");
+  }
+
   return null;
 }
