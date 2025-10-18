@@ -278,6 +278,15 @@ export default function AdminDashboardPage() {
         if (projectsRes.ok) {
           const projectsData = await projectsRes.json() as Project[];
           console.log('🏛️ Admin dashboard: Projects loaded successfully:', projectsData.length, projectsData);
+          console.log('🏛️ Admin dashboard: First project applicantWalletAddress:', projectsData[0]?.applicantWalletAddress);
+          console.log('🏛️ Admin dashboard: First project all fields:', projectsData[0] ? {
+            id: projectsData[0].id,
+            title: projectsData[0].title,
+            applicantWalletAddress: projectsData[0].applicantWalletAddress,
+            applicantName: projectsData[0].applicantName,
+            status: projectsData[0].status,
+            featured: projectsData[0].featured
+          } : 'No projects');
           setProjects(projectsData);
         } else {
           const errorText = await projectsRes.text();
