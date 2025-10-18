@@ -25,7 +25,6 @@ import { WalletBalance, NetworkSelector, ConnectWalletButton } from "@/component
 import { SUPPORTED_NETWORKS, DEFAULT_NETWORK } from "@/config/networks";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 import { PackageCheckIcon, PanelTopIcon } from "lucide-react";
-import { useProjectModal } from "@/contexts/ProjectModalContext";
 import { usePathname } from 'next/navigation';
 import * as Tooltip from "@radix-ui/react-tooltip";
 
@@ -69,7 +68,6 @@ export function Sidebar({
   const account = useActiveAccount();
   const wallet = useActiveWallet();
   const { disconnect } = useDisconnect();
-  const { open: openProjectModal } = useProjectModal();
   const pathname = usePathname();
 
   // Multi-chain wallet state
@@ -733,15 +731,12 @@ export function Sidebar({
                 {!open ? (
                   <Tooltip.Root>
                     <Tooltip.Trigger asChild>
-                      <button
-                        onClick={() => {
-                          // Open the project application modal using context
-                          void openProjectModal();
-                        }}
+                      <Link
+                        href="/apply"
                         className="relative flex w-full items-center rounded-lg py-2 transition-all duration-200 text-gray-400 hover:bg-purple-800/20 justify-center"
                       >
                         <ShieldCheckIcon className="h-4 w-4 shrink-0" />
-                      </button>
+                      </Link>
                     </Tooltip.Trigger>
                     <Tooltip.Portal>
                       <Tooltip.Content
@@ -753,11 +748,8 @@ export function Sidebar({
                     </Tooltip.Portal>
                   </Tooltip.Root>
                 ) : (
-                  <button
-                    onClick={() => {
-                      // Open the project application modal using context
-                      void openProjectModal();
-                    }}
+                  <Link
+                    href="/apply"
                     className="relative flex w-full items-center rounded-lg py-2 transition-all duration-200 text-gray-400 hover:bg-purple-800/20 px-4"
                   >
                     <ShieldCheckIcon className="h-4 w-4 shrink-0" />
@@ -771,7 +763,7 @@ export function Sidebar({
                     >
                       {open ? "Aplicar Proyecto" : "🔗"}
                     </motion.span>
-                  </button>
+                  </Link>
                 )}
               </div>
             )}
@@ -1118,18 +1110,16 @@ export function Sidebar({
                   {/* Show "Aplicar Proyecto" button only when CONNECTED - MOBILE */}
                   {isClient && account && (
                     <div className="border-t border-gray-800 pt-2">
-                      <button
-                        onClick={() => {
-                          void openProjectModal();
-                          setMobileOpen(false);
-                        }}
+                      <Link
+                        href="/apply"
+                        onClick={() => setMobileOpen(false)}
                         className="relative flex w-full items-center rounded-lg py-2 px-4 transition-all duration-200 text-gray-400 hover:bg-purple-800/20"
                       >
                         <ShieldCheckIcon className="h-4 w-4 shrink-0" />
                         <span className="ml-3 whitespace-nowrap text-xs italic">
                           Aplicar Proyecto
                         </span>
-                      </button>
+                      </Link>
                     </div>
                   )}
 
