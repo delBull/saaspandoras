@@ -895,7 +895,13 @@ export function MultiStepForm({
   return (
     <div className="min-h-screen bg-zinc-950/0">
       <FormProvider {...methods}>
-        <form onSubmit={handleSubmit(onFinalSubmit, onValidationErrors)} className="max-w-4xl mx-auto p-4 md:p-8">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault(); // Prevenir comportamiento por defecto
+            void handleSubmit(onFinalSubmit, onValidationErrors)(e);
+          }}
+          className="max-w-4xl mx-auto p-4 md:p-8"
+        >
           {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-lime-400 to-emerald-500 bg-clip-text text-transparent mb-2">
@@ -982,7 +988,14 @@ export function MultiStepForm({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => onSaveDraft(methods.getValues())} // Skip validation for drafts
+                onClick={async () => {
+                  setIsLoading(true);
+                  try {
+                    await onSaveDraft(methods.getValues());
+                  } finally {
+                    setIsLoading(false);
+                  }
+                }}
                 disabled={isLoading}
                 className="w-full sm:w-auto"
               >
@@ -996,9 +1009,12 @@ export function MultiStepForm({
           {currentStep === totalSteps && (
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
-                type="submit"
+                type="button"
                 variant="secondary"
                 disabled={isLoading || Object.keys(errors).length > 0}
+                onClick={() => {
+                  void handleSubmit(onFinalSubmit, onValidationErrors)();
+                }}
                 className="w-full sm:w-auto"
               >
                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
@@ -1009,7 +1025,9 @@ export function MultiStepForm({
                 <Button
                   type="button"
                   variant="primary"
-                  onClick={handleSubmit(onAdminQuickSubmit, onValidationErrors)}
+                  onClick={() => {
+                    void handleSubmit(onAdminQuickSubmit, onValidationErrors)();
+                  }}
                   disabled={isLoading}
                   className="w-full sm:w-auto"
                 >
