@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeftIcon, Shield, Clock, CheckCircle } from "lucide-react";
 import { Button } from "@saasfly/ui/button";
@@ -8,7 +8,36 @@ import Link from "next/link";
 import { MultiStepForm } from "../../admin/projects/[id]/edit/multi-step-form";
 import { AnimatedBackground } from "@/components/apply/AnimatedBackground";
 
+// Force dynamic rendering - this page uses authentication and should not be prerendered
+export const dynamic = 'force-dynamic';
+
 export default function ApplyFormPage() {
+  const [isAdminMode, setIsAdminMode] = useState(false);
+
+  useEffect(() => {
+    // Check admin status when component mounts (igual que en el modal original)
+    const checkAdminStatus = async () => {
+      try {
+        const response = await fetch('/api/admin/verify', {
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+        if (response.ok) {
+          const data = await response.json() as { isAdmin?: boolean; isSuperAdmin?: boolean };
+          setIsAdminMode(Boolean(data.isAdmin ?? data.isSuperAdmin ?? false));
+        } else {
+          setIsAdminMode(false);
+        }
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+        setIsAdminMode(false);
+      }
+    };
+
+    void checkAdminStatus();
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-black text-white relative">
       <AnimatedBackground />
@@ -148,8 +177,8 @@ export default function ApplyFormPage() {
                 <MultiStepForm
                   project={null}
                   isEdit={false}
-                  apiEndpoint="/api/projects/draft"
-                  isPublic={true}
+                  apiEndpoint={isAdminMode ? "/api/admin/projects" : "/api/projects/draft"}
+                  isPublic={!isAdminMode}
                 />
               </Suspense>
             </div>
