@@ -76,10 +76,10 @@ export function ApplicantsDesktop({
 
       {/* Contenedor principal con ajuste automático de márgenes */}
       <div className={`min-h-screen transition-all duration-500 ease-in-out ${
-        isPendingPanelCollapsed ? 'mr-5' : 'mr-[250px]'
+        isPendingPanelCollapsed ? 'mr-10' : 'mr-[250px]'
       }`}>
         {/* Fila 1: Header con filtros */}
-        <div className="top-0 z-10 flex flex-col gap-4 px-6 lg:px-8 py-6">
+        <div className="top-0 z-10 flex flex-col gap-4 px-6 lg:px-0 py-6">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-white">Proyectos</h1>
@@ -106,7 +106,7 @@ export function ApplicantsDesktop({
         </div>
 
         {/* Fila 2: Proyectos */}
-        <div className="w-full px-6 lg:px-8 py-8">
+        <div className="w-full px-6 lg:px-0 py-8">
           <ProjectGrid
             projects={approvedProjects}
             variant="approved"
