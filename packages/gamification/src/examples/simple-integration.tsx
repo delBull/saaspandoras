@@ -6,7 +6,10 @@ import {
   GamificationDashboard,
   AchievementCard,
   LeaderboardComponent,
-  useGamificationContext
+  useGamificationContext,
+  AchievementCategory,
+  AchievementRarity,
+  UserAchievement
 } from '../index';
 
 // Ejemplo de integración simple en el dashboard actual
@@ -38,10 +41,25 @@ function GamificationAchievementsPanel() {
     <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
       <h3 className="text-lg font-bold text-white mb-4">🏆 Logros de Gamificación</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {gamification.achievements.slice(0, 4).map((achievement) => (
+        {gamification.achievements.slice(0, 4).map((userAchievement: UserAchievement) => (
           <AchievementCard
-            key={achievement.id}
-            achievement={achievement}
+            key={userAchievement.id}
+            achievement={{
+              id: userAchievement.achievementId,
+              name: 'Logro de Usuario',
+              description: 'Logro obtenido por el usuario',
+              icon: '🏆',
+              category: AchievementCategory.PROJECTS,
+              rarity: AchievementRarity.COMMON,
+              points: 100,
+              requirements: [],
+              isActive: true,
+              isSecret: false,
+              tags: [],
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }}
+            userAchievement={userAchievement}
             showProgress={true}
             size="sm"
           />

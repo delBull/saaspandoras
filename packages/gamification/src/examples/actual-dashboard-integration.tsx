@@ -6,7 +6,8 @@ import {
   GamificationDashboard,
   AchievementCard,
   LeaderboardComponent,
-  useGamificationContext
+  useGamificationContext,
+  EventType
 } from '../index';
 
 // Ejemplo de integración en el dashboard actual de Pandora's Finance
@@ -71,13 +72,13 @@ function GamificationPanel() {
         <h3 className="text-xl font-bold text-white mb-4">🎮 Sistema de Gamificación</h3>
         <div className="flex flex-wrap gap-4">
           <button
-            onClick={() => gamification.trackEvent('project_application_submitted')}
+            onClick={() => gamification.trackEvent(EventType.PROJECT_APPLICATION_SUBMITTED)}
             className="px-4 py-2 bg-lime-500 hover:bg-lime-600 text-black font-bold rounded-lg transition-colors"
           >
             Simular Aplicación de Proyecto
           </button>
           <button
-            onClick={() => gamification.trackEvent('daily_login')}
+            onClick={() => gamification.trackEvent(EventType.DAILY_LOGIN)}
             className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg transition-colors"
           >
             Simular Login Diario

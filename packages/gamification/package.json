@@ -4,6 +4,10 @@
   "description": "Sistema de gamificación para la plataforma Pandora's Finance",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",

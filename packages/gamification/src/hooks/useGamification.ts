@@ -64,7 +64,7 @@ export function useGamification({
   // Track gamification event
   const trackEvent = useCallback(async (
     eventType: EventType,
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ) => {
     try {
       await GamificationEngine.getInstance().trackEvent(userId, eventType, metadata);
@@ -80,7 +80,7 @@ export function useGamification({
     points: number,
     reason: string,
     category: PointsCategory,
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ) => {
     try {
       await GamificationEngine.getInstance().awardPoints(userId, points, reason, category, metadata);
@@ -124,7 +124,5 @@ export function useGamification({
     currentLevel: profile?.currentLevel || 1,
     totalPoints: profile?.totalPoints || 0,
     levelProgress: profile?.levelProgress || 0,
-    completedAchievements: achievements.filter(a => a.isCompleted),
-    availableRewards: rewards.filter(r => r.isActive)
   };
 }
