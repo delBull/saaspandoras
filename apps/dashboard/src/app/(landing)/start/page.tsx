@@ -145,7 +145,7 @@ export default function StartPage() {
 
             <div className="text-2xl md:text-3xl mb-6">
               <TypewriterText
-                text="Invierte en [Proyectos Inmobiliarios. Startups Disruptivas. Activos Exclusivos. Tu Futuro.]"
+                text="Invierte en Proyectos Inmobiliarios. Startups Disruptivas. Activos Exclusivos. Tu Futuro."
                 delay={1.5}
                 speed={80}
                 className="text-zinc-300"
