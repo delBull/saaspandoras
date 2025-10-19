@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Doc } from "contentlayer/generated";
+import type { Doc } from "contentlayer/generated";
 
 import { cn } from "@saasfly/ui";
 import { buttonVariants } from "@saasfly/ui/button";
