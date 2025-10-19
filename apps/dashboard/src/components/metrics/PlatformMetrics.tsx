@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 import { Users, DollarSign, Target, Activity, Globe, Shield } from "lucide-react";
@@ -21,7 +21,7 @@ export function PlatformMetrics() {
   const isInView = useInView(ref, { once: true, margin: "-100px" });
   const [animatedValues, setAnimatedValues] = useState<Record<number, number>>({});
 
-  const metrics: MetricData[] = [
+  const metrics: MetricData[] = useMemo(() => [
     {
       icon: <DollarSign className="w-8 h-8" />,
       value: 50000000,
@@ -76,7 +76,7 @@ export function PlatformMetrics() {
       color: "from-indigo-500 to-purple-500",
       targetValue: 99.9
     }
-  ];
+  ], []);
 
   useEffect(() => {
     if (isInView) {
@@ -233,7 +233,7 @@ export function PlatformMetrics() {
                 }}
                 transition={{
                   duration: 3,
-                  repeat: Infinity,
+                  repeat: 999,
                   ease: "linear"
                 }}
                 className="text-4xl font-bold bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent mb-2"
