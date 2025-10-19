@@ -2,7 +2,8 @@ import { unstable_noStore as noStore } from "next/cache";
 import { z } from "zod";
 
 //import { getCurrentUser } from "@saasfly/auth";
-import { Customer, db } from "@saasfly/db";
+import type { Customer} from "@saasfly/db";
+import { db } from "@saasfly/db";
 import { stripe } from "@saasfly/stripe";
 
 //import { pricingData } from "../../../common/src/subscriptions";
