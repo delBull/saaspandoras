@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 interface TypewriterTextProps {
   text: string;
@@ -19,36 +19,57 @@ export function TypewriterText({
   repeat = false
 }: TypewriterTextProps) {
   const [displayText, setDisplayText] = useState("");
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
+  const currentIndexRef = useRef(0);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const startTyping = async () => {
       await new Promise(resolve => setTimeout(resolve, delay * 1000));
 
-      const typeInterval = setInterval(() => {
-        if (currentIndex < text.length) {
-          setDisplayText(prev => prev + text[currentIndex]);
-          setCurrentIndex(prev => prev + 1);
+      // Reset state
+      currentIndexRef.current = 0;
+      setDisplayText("");
+      setIsComplete(false);
+
+      // Clear any existing interval
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+
+      intervalRef.current = setInterval(() => {
+        const currentIndex = currentIndexRef.current;
+        const currentChar = text[currentIndex];
+
+        if (currentChar !== undefined && currentIndex < text.length) {
+          setDisplayText(prev => prev + currentChar);
+          currentIndexRef.current = currentIndex + 1;
         } else {
-          clearInterval(typeInterval);
+          // Text is complete
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+          }
           setIsComplete(true);
 
           if (repeat) {
             setTimeout(() => {
+              currentIndexRef.current = 0;
               setDisplayText("");
-              setCurrentIndex(0);
               setIsComplete(false);
             }, 3000);
           }
         }
       }, speed);
-
-      return () => clearInterval(typeInterval);
     };
 
     void startTyping();
-  }, [text, delay, speed, repeat, currentIndex]);
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [text, delay, speed, repeat]);
 
   return (
     <div className={className}>
