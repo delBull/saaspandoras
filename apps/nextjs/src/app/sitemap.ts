@@ -1,4 +1,4 @@
-import { MetadataRoute } from "next";
+import type { MetadataRoute } from "next";
 
 import { siteConfig } from "~/config/site";
 import { i18n } from "~/config/i18n-config";

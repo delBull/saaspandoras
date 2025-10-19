@@ -259,13 +259,11 @@ export interface Dictionary {
   activos: {
     title: string;
     subtitle: string;
-    assets: {
-      [key: string]: {
+    assets: Record<string, {
         tag: string;
         title: string;
         description: string;
-      };
-    };
+      }>;
     info_modal: {
       title: string;
       paragraph1: string;

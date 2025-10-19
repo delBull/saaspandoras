@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { motion, Variants } from 'framer-motion';
+import type { Variants } from 'framer-motion';
+import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { FramerConfetti } from './framer-confetti';
 import { Shadows_Into_Light } from "next/font/google";
