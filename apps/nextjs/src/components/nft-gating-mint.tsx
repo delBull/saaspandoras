@@ -23,7 +23,7 @@ export function NFTGatingMint() {
 
   useEffect(() => {
     const checkAndMint = async () => {
-      if (!account || !account.address || hasStartedProcessing.current) return;
+      if (!account?.address || hasStartedProcessing.current) return;
 
       hasStartedProcessing.current = true;
       setMintingStep("checking_key");
