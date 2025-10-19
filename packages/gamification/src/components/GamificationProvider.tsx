@@ -3,24 +3,35 @@
 import { createContext, useContext, ReactNode } from 'react';
 import { useGamification } from '../hooks';
 import { GamificationHUD } from './GamificationHUD';
+import {
+  UserGamificationProfile,
+  UserAchievement,
+  Reward,
+  LeaderboardEntry,
+  EventType,
+  PointsCategory
+} from '../types';
 
+// Definir la interfaz del contexto (igual a lo que devuelve el hook)
 interface GamificationContextType {
-  profile: any;
-  achievements: any[];
-  rewards: any[];
-  leaderboard: any[];
+  profile: UserGamificationProfile | null;
+  achievements: UserAchievement[];
+  rewards: Reward[];
+  leaderboard: LeaderboardEntry[];
   isLoading: boolean;
   error: string | null;
-  trackEvent: (eventType: any, metadata?: any) => Promise<void>;
-  awardPoints: (points: number, reason: string, category: any, metadata?: any) => Promise<void>;
+  trackEvent: (eventType: EventType, metadata?: Record<string, unknown>) => Promise<void>;
+  awardPoints: (points: number, reason: string, category: PointsCategory, metadata?: Record<string, unknown>) => Promise<void>;
   refresh: () => void;
   currentLevel: number;
   totalPoints: number;
   levelProgress: number;
-  completedAchievements: any[];
-  availableRewards: any[];
+  // Propiedades computadas adicionales para compatibilidad
+  completedAchievements: UserAchievement[];
+  availableRewards: Reward[];
 }
 
+// Crear el contexto
 const GamificationContext = createContext<GamificationContextType | null>(null);
 
 interface GamificationProviderProps {
@@ -46,8 +57,15 @@ export function GamificationProvider({
     refreshInterval
   });
 
+  // Crear el contexto value con propiedades computadas adicionales
+  const contextValue: GamificationContextType = {
+    ...gamification,
+    completedAchievements: gamification.achievements.filter((a: UserAchievement) => a.isCompleted),
+    availableRewards: gamification.rewards.filter((r: Reward) => r.isActive)
+  };
+
   return (
-    <GamificationContext.Provider value={gamification}>
+    <GamificationContext.Provider value={contextValue}>
       {children}
       {showHUD && (
         <GamificationHUD
@@ -60,6 +78,7 @@ export function GamificationProvider({
   );
 }
 
+// Hook para usar el contexto de gamificación
 export function useGamificationContext() {
   const context = useContext(GamificationContext);
   if (!context) {

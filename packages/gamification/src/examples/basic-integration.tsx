@@ -6,7 +6,10 @@ import {
   GamificationDashboard,
   AchievementCard,
   LeaderboardComponent,
-  useGamificationContext
+  useGamificationContext,
+  EventType,
+  AchievementCategory,
+  AchievementRarity
 } from '../index';
 
 // Ejemplo básico de integración
@@ -27,8 +30,8 @@ export function BasicGamificationExample({ userId }: { userId: string }) {
                     name: 'Primeros Pasos',
                     description: 'Completa tu primera aplicación',
                     icon: '🚀',
-                    category: 'projects' as any,
-                    rarity: 'common' as any,
+                    category: AchievementCategory.PROJECTS,
+                    rarity: AchievementRarity.COMMON,
                     points: 50,
                     requirements: [],
                     isActive: true,
@@ -71,19 +74,19 @@ function GamificationActions({ userId }: { userId: string }) {
       <h3 className="text-xl font-bold text-white mb-4">🎮 Acciones de Gamificación</h3>
       <div className="flex flex-wrap gap-4">
         <button
-          onClick={() => trackEvent('project_application_submitted')}
+          onClick={() => trackEvent(EventType.PROJECT_APPLICATION_SUBMITTED)}
           className="px-4 py-2 bg-lime-500 hover:bg-lime-600 text-black font-bold rounded-lg transition-colors"
         >
           Simular Aplicación (+50 pts)
         </button>
         <button
-          onClick={() => trackEvent('daily_login')}
+          onClick={() => trackEvent(EventType.DAILY_LOGIN)}
           className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg transition-colors"
         >
           Simular Login Diario (+10 pts)
         </button>
         <button
-          onClick={() => trackEvent('referral_made')}
+          onClick={() => trackEvent(EventType.REFERRAL_MADE)}
           className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white font-bold rounded-lg transition-colors"
         >
           Simular Referido (+200 pts)
