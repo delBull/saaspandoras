@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, react/no-unescaped-entities */
+/* eslint-disable react/no-unescaped-entities */
 
 "use client";
 
@@ -12,20 +12,31 @@ import {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   EventType,
   type Reward,
+  type UserAchievement,
+  type UserGamificationProfile,
+  type LeaderboardEntry,
 } from '@pandoras/gamification';
 import { useState, useEffect } from 'react';
 import { Button } from '@saasfly/ui/button';
 import { motion } from 'framer-motion';
 import { getUserGamificationProfile, trackGamificationEvent, getGamificationLeaderboard, getAvailableGamificationRewards } from '@/lib/gamification/service';
 
+interface GamificationData {
+  profile: UserGamificationProfile | null;
+  achievements: UserAchievement[];
+  rewards: Reward[];
+  leaderboard: LeaderboardEntry[];
+  isLoading: boolean;
+}
+
 export default function GamificationDemoPage() {
   const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
   const [showRewardModal, setShowRewardModal] = useState(false);
-  const [gamificationData, setGamificationData] = useState({
-    profile: null as any,
-    achievements: [] as any[],
-    rewards: [] as any[],
-    leaderboard: [] as any[],
+  const [gamificationData, setGamificationData] = useState<GamificationData>({
+    profile: null,
+    achievements: [],
+    rewards: [],
+    leaderboard: [],
     isLoading: true
   });
 
@@ -38,16 +49,16 @@ export default function GamificationDemoPage() {
     setGamificationData(prev => ({ ...prev, isLoading: true }));
 
     try {
-      const [profile, achievements, rewards, leaderboard] = await Promise.all([
+      const [profile, rewards, leaderboard] = await Promise.all([
         getUserGamificationProfile('demo-user-123'),
-        [], // achievements - will be implemented later
         getAvailableGamificationRewards('demo-user-123'),
         getGamificationLeaderboard('points', 10)
       ]);
 
       setGamificationData({
         profile,
-        achievements,
+        // achievements - will be implemented later
+        achievements: [],
         rewards,
         leaderboard,
         isLoading: false

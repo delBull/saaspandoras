@@ -1,3 +1,5 @@
+"use server";
+
 import type {
   UserGamificationProfile,
   UserAchievement,
@@ -20,7 +22,7 @@ import {
 } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
-export class GamificationService {
+class GamificationService {
   private static engine: GamificationEngine;
   // private static dbService: DatabaseService; // Commented out - using direct DB access instead
 
@@ -449,14 +451,14 @@ static async validateSystemHealth(): Promise<{
 }
 
 // Export individual functions for API routes (using arrow functions to avoid 'this' issues)
-export const getUserGamificationProfile = (userId: string) => GamificationService.getUserProfile(userId);
-export const trackGamificationEvent = (userId: string, eventType: string, metadata?: Record<string, unknown>) =>
+export const getUserGamificationProfile = async (userId: string) => GamificationService.getUserProfile(userId);
+export const trackGamificationEvent = async (userId: string, eventType: string, metadata?: Record<string, unknown>) =>
 GamificationService.trackEvent(userId, eventType, metadata);
-export const awardGamificationPoints = (userId: string, points: number, reason: string, category: string, metadata?: Record<string, unknown>) =>
+export const awardGamificationPoints = async (userId: string, points: number, reason: string, category: string, metadata?: Record<string, unknown>) =>
 GamificationService.awardPoints(userId, points, reason, category, metadata);
-export const getGamificationLeaderboard = (type: string, limit?: number) => GamificationService.getLeaderboard(type, limit);
-export const getUserGamificationAchievements = (userId: string) => GamificationService.getUserAchievements(userId);
-export const getAvailableGamificationRewards = (userId: string) => GamificationService.getAvailableRewards(userId);
+export const getGamificationLeaderboard = async (type: string, limit?: number) => GamificationService.getLeaderboard(type, limit);
+export const getUserGamificationAchievements = async (userId: string) => GamificationService.getUserAchievements(userId);
+export const getAvailableGamificationRewards = async (userId: string) => GamificationService.getAvailableRewards(userId);
 
 /**
  * Initialize gamification data with sample achievements and rewards
