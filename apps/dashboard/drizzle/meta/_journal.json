@@ -5,78 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1757976883536,
-      "tag": "0000_perpetual_monster_badoon",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1757984447600,
-      "tag": "0001_update-projects-schema",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1758056827938,
-      "tag": "0002_curly_stingray",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1758086690527,
-      "tag": "0003_pink_thunderball",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1758171231840,
-      "tag": "0004_small_doctor_faustus",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1758504980425,
-      "tag": "0005_groovy_red_ghost",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1758696070677,
-      "tag": "0006_special_the_renegades",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1758697461126,
-      "tag": "0007_cynical_raider",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1758749936947,
-      "tag": "0008_odd_sebastian_shaw",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1758826343708,
-      "tag": "0009_nice_lady_mastermind",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1759619340859,
-      "tag": "0010_rich_marauders",
+      "when": 1760998916376,
+      "tag": "0000_loud_morph",
       "breakpoints": true
     }
   ]

@@ -8,6 +8,7 @@ export * from './core/event-system';
 export * from './core/leaderboard-manager';
 export * from './hooks';
 export * from './utils/tokenization-integration';
+export * from './utils/database-service';
 
 // Export components with namespace to avoid conflicts
 export {
