@@ -5,6 +5,9 @@ export * from './rewards';
 export * from './events';
 export * from './leaderboard';
 
+// Export services
+export { DatabaseService } from '../utils/database-service';
+
 // Export predefined data
 export { TOKENIZATION_ACHIEVEMENTS } from './achievements';
 export { TOKENIZATION_REWARDS } from './rewards';
