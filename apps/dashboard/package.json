@@ -41,6 +41,7 @@
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.542.0",
     "motion": "^12.23.12",
+    "net": "^1.0.2",
     "next": "15.5.4",
     "next-themes": "0.2.1",
     "react": "^19.1.0",

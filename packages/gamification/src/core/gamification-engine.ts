@@ -8,11 +8,18 @@ import {
   UserReward,
   GamificationEvent,
   EventType,
-  EventCategory
+  EventCategory,
+  LeaderboardEntry
 } from '../types';
+import { DatabaseService } from '../utils/database-service';
 
 export class GamificationEngine {
   private static instance: GamificationEngine;
+  private dbService: DatabaseService;
+
+  constructor() {
+    this.dbService = new DatabaseService();
+  }
 
   public static getInstance(): GamificationEngine {
     if (!GamificationEngine.instance) {
@@ -93,38 +100,20 @@ export class GamificationEngine {
    * Get user gamification profile
    */
   async getUserProfile(userId: string): Promise<UserGamificationProfile | null> {
-    // This would typically fetch from database
-    // For now, return a mock profile
-    return {
-      id: `profile_${userId}`,
-      userId,
-      walletAddress: userId,
-      totalPoints: 0,
-      currentLevel: 1,
-      pointsToNextLevel: 100,
-      levelProgress: 0,
-      projectsApplied: 0,
-      projectsApproved: 0,
-      totalInvested: 0,
-      communityContributions: 0,
-      currentStreak: 0,
-      longestStreak: 0,
-      lastActivityDate: new Date(),
-      totalActiveDays: 0,
-      referralsCount: 0,
-      communityRank: 0,
-      reputationScore: 0,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
+    return await this.dbService.getUserProfile(userId);
   }
 
   /**
    * Update user points and profile
    */
   private async updateUserPoints(userId: string, pointsToAdd: number): Promise<void> {
-    // This would update the database
-    console.log(`💾 Updating user ${userId} points by +${pointsToAdd}`);
+    // Use the database service to update points
+    await this.dbService.awardPoints(
+      userId,
+      pointsToAdd,
+      'Points update',
+      PointsCategory.SPECIAL_EVENT
+    );
   }
 
   /**
@@ -208,27 +197,21 @@ export class GamificationEngine {
   /**
    * Get leaderboard data
    */
-  async getLeaderboard(type: string, limit: number = 10): Promise<any[]> {
-    // This would fetch from database
-    console.log(`🏆 Fetching ${type} leaderboard, limit: ${limit}`);
-    return [];
+  async getLeaderboard(type: string, limit: number = 10): Promise<LeaderboardEntry[]> {
+    return await this.dbService.getLeaderboard(type, limit);
   }
 
   /**
    * Get user achievements
    */
   async getUserAchievements(userId: string): Promise<UserAchievement[]> {
-    // This would fetch from database
-    console.log(`🏆 Fetching achievements for user ${userId}`);
-    return [];
+    return await this.dbService.getUserAchievements(userId);
   }
 
   /**
    * Get available rewards for user
    */
   async getAvailableRewards(userId: string): Promise<Reward[]> {
-    // This would fetch from database and filter by user eligibility
-    console.log(`🎁 Fetching available rewards for user ${userId}`);
-    return [];
+    return await this.dbService.getAvailableRewards(userId);
   }
 }

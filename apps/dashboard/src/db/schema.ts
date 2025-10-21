@@ -9,6 +9,7 @@ import {
   jsonb,
   pgEnum,
   boolean,
+  uniqueIndex
 } from "drizzle-orm/pg-core";
 
 export const projectStatusEnum = pgEnum("project_status", [
@@ -44,18 +45,19 @@ export const administrators = pgTable("administrators", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const users = pgTable("users", {
-  id: varchar("id", { length: 255 }).primaryKey(),
+// Tabla User existente en la base de datos - corregido nombre a mayúscula
+export const users = pgTable("User", {
+  id: varchar("id", { length: 255 }).primaryKey(), // Restaurado a varchar para coincidir con estructura existente
   name: varchar("name", { length: 255 }),
   email: varchar("email", { length: 255 }).unique(),
   image: text("image"),
-  walletAddress: varchar("walletAddress", { length: 42 }).unique(),
+  walletAddress: varchar("walletAddress", { length: 42 }).unique(), // Restaurado nombre original
   hasPandorasKey: boolean("hasPandorasKey").default(false).notNull(),
 
-  // KYC Related Fields - New additions for user profile system
-  kycLevel: varchar("kycLevel", { length: 20 }).default('basic').notNull(), // 'basic' or 'advanced'
-  kycCompleted: boolean("kycCompleted").default(false).notNull(), // Whether advanced KYC is complete
-  kycData: jsonb("kycData"), // JSON object with KYC information (phone, address, SSN, etc.)
+  // KYC Related Fields
+  kycLevel: varchar("kycLevel", { length: 20 }).default('basic').notNull(),
+  kycCompleted: boolean("kycCompleted").default(false).notNull(),
+  kycData: jsonb("kycData"),
 
   connectionCount: integer("connectionCount").default(1).notNull(),
   lastConnectionAt: timestamp("lastConnectionAt").defaultNow(),
@@ -136,7 +138,8 @@ export const projects = pgTable("projects", {
   socials: jsonb("socials"), // Mantener para compatibilidad
   raisedAmount: decimal("raised_amount", { precision: 18, scale: 2 }).default("0.00"),
   returnsPaid: decimal("returns_paid", { precision: 18, scale: 2 }).default("0.00"),
-  status: projectStatusEnum("status").default("pending").notNull(),
+  // --- AJUSTE 2: Estado por defecto corregido a 'draft' ---
+  status: projectStatusEnum("status").default("draft").notNull(),
 
   // Campos para featured projects
   featured: boolean("featured").default(false).notNull(),
@@ -149,4 +152,211 @@ export const projectsIndexes = {
   slugIndex: { columns: ["slug"], name: "slug_index" },
 };
 
+// Gamification Enums
+export const eventTypeEnum = pgEnum("event_type", [
+  "project_application_submitted",
+  "project_application_approved",
+  "investment_made",
+  "user_registered",
+  "daily_login",
+  "referral_made",
+  "profile_completed",
+  "community_post",
+  "course_started",
+  "course_completed",
+  "quiz_passed",
+  "streak_milestone",
+  "beta_access",
+  "feature_unlock",
+  "milestone_reached"
+]);
+
+export const eventCategoryEnum = pgEnum("event_category", [
+  "projects",
+  "investments",
+  "community",
+  "learning",
+  "daily",
+  "special"
+]);
+
+export const pointsCategoryEnum = pgEnum("points_category", [
+  "project_application",
+  "investment",
+  "daily_login",
+  "community",
+  "special_event"
+]);
+
+export const achievementTypeEnum = pgEnum("achievement_type", [
+  "first_steps",
+  "investor",
+  "community_builder",
+  "tokenization_expert",
+  "early_adopter",
+  "high_roller"
+]);
+
+export const rewardTypeEnum = pgEnum("reward_type", [
+  "token_discount",
+  "badge",
+  "priority_access",
+  "bonus_points",
+  "nft"
+]);
+
+// Gamification Tables
+export const gamificationProfiles = pgTable("gamification_profiles", {
+  id: serial("id").primaryKey(),
+  // --- AJUSTE 4: Referencia a User.id (corregido nombre de tabla) ---
+  userId: varchar("user_id", { length: 255 }).notNull().unique().references(() => users.id),
+  walletAddress: varchar("wallet_address", { length: 42 }).notNull(),
+
+  // Points and Level System
+  totalPoints: integer("total_points").default(0).notNull(),
+  currentLevel: integer("current_level").default(1).notNull(),
+  levelProgress: integer("level_progress").default(0).notNull(),
+  pointsToNextLevel: integer("points_to_next_level").default(100).notNull(),
+
+  // Project Statistics
+  projectsApplied: integer("projects_applied").default(0).notNull(),
+  projectsApproved: integer("projects_approved").default(0).notNull(),
+  totalInvested: decimal("total_invested", { precision: 18, scale: 2 }).default("0.00").notNull(),
+
+  // Community Statistics
+  communityContributions: integer("community_contributions").default(0).notNull(),
+  currentStreak: integer("current_streak").default(0).notNull(),
+  longestStreak: integer("longest_streak").default(0).notNull(),
+  totalActiveDays: integer("total_active_days").default(0).notNull(),
+  referralsCount: integer("referrals_count").default(0).notNull(),
+
+  // Social Features
+  communityRank: integer("community_rank").default(0).notNull(),
+  reputationScore: integer("reputation_score").default(0).notNull(),
+
+  // Metadata
+  lastActivityDate: timestamp("last_activity_date").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const gamificationEvents = pgTable("gamification_events", {
+  id: serial("id").primaryKey(),
+  // --- AJUSTE 4: Referencia a User.id (varchar para coincidir con estructura existente) ---
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  type: eventTypeEnum("type").notNull(),
+  category: eventCategoryEnum("category").notNull(),
+  points: integer("points").default(0).notNull(),
+
+  // Context
+  projectId: integer("project_id").references(() => projects.id),
+  metadata: jsonb("metadata"),
+
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  processedAt: timestamp("processed_at"),
+});
+
+export const userPoints = pgTable("user_points", {
+  id: serial("id").primaryKey(),
+  // --- AJUSTE 4: Referencia a User.id (varchar para coincidir con estructura existente) ---
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  points: integer("points").notNull(),
+  reason: text("reason").notNull(),
+  category: pointsCategoryEnum("category").notNull(),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const achievements = pgTable("achievements", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  icon: varchar("icon", { length: 10 }).notNull(),
+  type: achievementTypeEnum("type").notNull(),
+
+  // Requirements
+  requiredPoints: integer("required_points").default(0).notNull(),
+  requiredLevel: integer("required_level").default(1).notNull(),
+  requiredEvents: jsonb("required_events"), // Array of event types needed
+
+  // Rewards
+  pointsReward: integer("points_reward").default(0).notNull(),
+  badgeUrl: text("badge_url"),
+
+  // Status
+  isActive: boolean("is_active").default(true).notNull(),
+  isSecret: boolean("is_secret").default(false).notNull(),
+
+  // Metadata
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const userAchievements = pgTable("user_achievements", {
+  id: serial("id").primaryKey(),
+  // --- AJUSTE 4: Referencia a User.id (varchar para coincidir con estructura existente) ---
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  achievementId: integer("achievement_id").references(() => achievements.id).notNull(),
+
+  // Progress
+  progress: integer("progress").default(0).notNull(),
+  isUnlocked: boolean("is_unlocked").default(false).notNull(),
+  unlockedAt: timestamp("unlocked_at"),
+
+  // Metadata
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueUserAchievement: uniqueIndex("unique_user_achievement").on(table.userId, table.achievementId),
+}));
+
+export const rewards = pgTable("rewards", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  icon: varchar("icon", { length: 10 }).notNull(),
+  type: rewardTypeEnum("type").notNull(),
+
+  // Requirements
+  requiredPoints: integer("required_points").default(0).notNull(),
+  requiredLevel: integer("required_level").default(1).notNull(),
+
+  // Reward Value
+  value: varchar("value", { length: 100 }).notNull(), // "10%", "100 tokens", etc.
+  metadata: jsonb("metadata"), // Additional reward data
+
+  // Status
+  isActive: boolean("is_active").default(true).notNull(),
+  stock: integer("stock"), // null = unlimited
+  claimedCount: integer("claimed_count").default(0).notNull(),
+
+  // Metadata
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const userRewards = pgTable("user_rewards", {
+  id: serial("id").primaryKey(),
+  // --- AJUSTE 4: Referencia a User.id (varchar para coincidir con estructura existente) ---
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  rewardId: integer("reward_id").references(() => rewards.id).notNull(),
+
+  // Claim Status
+  isClaimed: boolean("is_claimed").default(false).notNull(),
+  claimedAt: timestamp("claimed_at"),
+  claimTransactionId: varchar("claim_transaction_id", { length: 255 }),
+
+  // Metadata
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Export types
 export type Project = typeof projects.$inferSelect;
+export type User = typeof users.$inferSelect;
+export type GamificationProfile = typeof gamificationProfiles.$inferSelect;
+export type GamificationEvent = typeof gamificationEvents.$inferSelect;
+export type UserPointsRecord = typeof userPoints.$inferSelect;
+export type Achievement = typeof achievements.$inferSelect;
+export type UserAchievement = typeof userAchievements.$inferSelect;
+export type Reward = typeof rewards.$inferSelect;
+export type UserReward = typeof userRewards.$inferSelect;
