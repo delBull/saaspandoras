@@ -99,7 +99,7 @@ export default function GamificationDemoPage() {
             </span>
           </h1>
           <p className="text-xl text-zinc-400 max-w-3xl mx-auto">
-            Demo completo del sistema de gamificación con base de datos real.
+            Demo del sistema de gamificación con base de datos real.
           </p>
         </motion.div>
 
