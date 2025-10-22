@@ -110,7 +110,7 @@ export default function PandoriansDashboardPage() {
     // Calculate returns (assume 12.5% APY on current invested amount)
     const totalReturns = totalInvested * 0.125; // 12.5% annual returns estimate
 
-    // Count project statuses correctly
+    // Count project statuses correctly - include ALL statuses
     const statusCounts = projects.reduce((counts: any, project: Project) => {
       const status = project.status;
 
@@ -152,7 +152,7 @@ export default function PandoriansDashboardPage() {
       // Estimated returns (in production, this would be actual paid returns)
       totalReturns: Math.round(totalReturns),
 
-      // Counts from project data
+      // Counts from project data - use actual project count
       activeProjects: statusCounts.active,
       pendingProjects: statusCounts.pending,
       completedProjects: statusCounts.completed,
@@ -385,16 +385,16 @@ export default function PandoriansDashboardPage() {
       </div>
 
       {/* Project Status Overview (only for applicants with projects) */}
-       {profile.role === 'applicant' && dashboardData.activeProjects > 0 && (
+       {profile.role === 'applicant' && projects.length > 0 && (
          <Card>
            <CardHeader>
              <CardTitle>Estado de Proyectos</CardTitle>
              <CardDescription>
-               Resumen de tus inversiones actuales
+               Resumen de todos tus proyectos por estado
              </CardDescription>
            </CardHeader>
            <CardContent>
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
                  <CheckCircleIcon className="w-8 h-8 text-green-500 mx-auto mb-2" />
                  <div className="text-2xl font-bold text-white">{dashboardData.completedProjects}</div>
@@ -412,26 +412,38 @@ export default function PandoriansDashboardPage() {
                  <div className="text-2xl font-bold text-white">{dashboardData.activeProjects}</div>
                  <div className="text-sm text-gray-400">Activos</div>
                </div>
+
+               <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
+                 <FolderIcon className="w-8 h-8 text-gray-500 mx-auto mb-2" />
+                 <div className="text-2xl font-bold text-white">{dashboardData.draftProjects}</div>
+                 <div className="text-sm text-gray-400">Borradores</div>
+               </div>
+
+               <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
+                 <ExclamationCircleIcon className="w-8 h-8 text-red-500 mx-auto mb-2" />
+                 <div className="text-2xl font-bold text-white">{dashboardData.rejectedProjects}</div>
+                 <div className="text-sm text-gray-400">Rechazados</div>
+               </div>
              </div>
            </CardContent>
          </Card>
        )}
 
-       {/* Active Projects List (only for applicants with projects) */}
+       {/* All Projects List (only for applicants with projects) */}
        {profile.role === 'applicant' && projects.length > 0 && (
          <Card>
            <CardHeader>
              <CardTitle className="flex items-center gap-2">
                <FolderIcon className="w-5 h-5" />
-               Mis Proyectos Activos
+               Todos Mis Proyectos
              </CardTitle>
              <CardDescription>
-               Acceso rápido a tus proyectos aplicados
+               Vista completa de todos tus proyectos por estado
              </CardDescription>
            </CardHeader>
            <CardContent>
              <div className="space-y-3">
-               {projects.slice(0, 3).map((project) => (
+               {projects.map((project) => (
                  <div key={project.id} className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors">
                    <div className="flex items-center gap-3">
                      <div className={`w-3 h-3 rounded-full ${
@@ -439,7 +451,8 @@ export default function PandoriansDashboardPage() {
                        project.status === 'approved' ? 'bg-blue-500' :
                        project.status === 'pending' ? 'bg-yellow-500' :
                        project.status === 'completed' ? 'bg-emerald-500' :
-                       'bg-red-500'
+                       project.status === 'rejected' ? 'bg-red-500' :
+                       'bg-gray-500'
                      }`}></div>
                      <div>
                        <div className="text-white text-sm font-medium">{project.title}</div>
@@ -450,6 +463,7 @@ export default function PandoriansDashboardPage() {
                            project.status === 'pending' ? '⏳ En Revisión' :
                            project.status === 'completed' ? '🏁 Completado' :
                            project.status === 'rejected' ? '❌ Rechazado' :
+                           project.status === 'draft' ? '📝 Borrador' :
                            project.status
                          }
                        </div>
@@ -471,15 +485,6 @@ export default function PandoriansDashboardPage() {
                    </div>
                  </div>
                ))}
-               {projects.length > 3 && (
-                 <div className="text-center pt-2">
-                   <Link href="/profile/projects">
-                     <button className="px-4 py-2 bg-lime-500 hover:bg-lime-600 text-zinc-900 rounded-lg text-sm font-medium transition-colors">
-                       Ver Todos los Proyectos ({projects.length})
-                     </button>
-                   </Link>
-                 </div>
-               )}
              </div>
            </CardContent>
          </Card>

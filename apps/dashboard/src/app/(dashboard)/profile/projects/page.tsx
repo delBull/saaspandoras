@@ -378,6 +378,8 @@ export default function ProfileProjectsPage() {
               <p>Projects: {userProjects.length}</p>
               <p>Profile: {userProfile ? 'Loaded' : 'Not loaded'}</p>
               <p>Role: {userProfile?.role || 'Unknown'}</p>
+              <p>Profile Count: {userProfile?.projectCount || 0}</p>
+              <p>API Projects: {userProjects.length}</p>
             </div>
           )}
         </div>
@@ -388,7 +390,7 @@ export default function ProfileProjectsPage() {
       </div>
 
       {/* Summary Stats */}
-      {userProfile?.projectCount && userProfile.projectCount > 0 && (
+      {userProjects.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card>
             <CardContent className="p-6">
@@ -400,7 +402,7 @@ export default function ProfileProjectsPage() {
                       : 'Mis Proyectos'
                     }
                   </p>
-                  <p className="text-2xl font-bold text-white">{userProfile.projectCount}</p>
+                  <p className="text-2xl font-bold text-white">{userProjects.length}</p>
                 </div>
                 <FolderIcon className="h-8 w-8 text-blue-500" />
               </div>

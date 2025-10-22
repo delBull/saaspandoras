@@ -82,13 +82,12 @@ export async function GET(request: Request) {
     `;
     const user = users[0];
 
-    // Get user projects - Optimized query with essential fields only
+    // Get user projects - Get ALL projects for the user, not just 3
     const projects = await sql`
       SELECT id, title, description, status, created_at, business_category, logo_url, cover_photo_url, applicant_wallet_address, target_amount, raised_amount, slug, applicant_name, applicant_email, applicant_phone
       FROM "projects"
       WHERE LOWER("applicant_wallet_address") = LOWER(${walletAddress})
       ORDER BY "created_at" DESC
-      LIMIT 3
     `;
 
 
