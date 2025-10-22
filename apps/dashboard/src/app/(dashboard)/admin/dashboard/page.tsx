@@ -49,9 +49,11 @@ export default function AdminDashboardPage() {
   const refreshData = async () => {
     console.log('🔄 Admin dashboard: Refreshing data...');
     try {
-      // Get current wallet address for headers
-      let currentWalletAddress = null;
-      if (typeof window !== 'undefined') {
+      // Get current wallet address for headers - try multiple sources
+      let currentWalletAddress = walletAddress;
+
+      if (!currentWalletAddress && typeof window !== 'undefined') {
+        // Try localStorage first
         if (window.localStorage) {
           try {
             const sessionData = localStorage.getItem('wallet-session');
@@ -63,6 +65,37 @@ export default function AdminDashboardPage() {
             console.warn('Error getting wallet for refresh:', e);
           }
         }
+
+        // Try cookies as fallback
+        if (!currentWalletAddress) {
+          try {
+            const walletCookie = document.cookie
+              .split('; ')
+              .find((row) => row.startsWith('wallet-address='))
+              ?.split('=')[1];
+            if (walletCookie) {
+              currentWalletAddress = walletCookie.toLowerCase();
+            }
+          } catch (e) {
+            console.warn('Error getting wallet from cookies:', e);
+          }
+        }
+      }
+
+      console.log('🔄 Admin dashboard: Using wallet address:', currentWalletAddress?.substring(0, 10) + '...');
+
+      // Enhanced debugging for wallet detection
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🏛️ Admin dashboard: WALLET DETECTION DEBUG:', {
+          fromProps: walletAddress,
+          fromLocalStorage: currentWalletAddress,
+          match: walletAddress === currentWalletAddress,
+          sources: {
+            localStorage: !!localStorage.getItem('wallet-session'),
+            cookies: !!document.cookie.includes('wallet-address'),
+            thirdwebCookies: !!document.cookie.includes('thirdweb:wallet-address')
+          }
+        });
       }
 
       // Fetch projects
@@ -118,6 +151,13 @@ export default function AdminDashboardPage() {
       });
       if (usersRes.ok) {
         const usersData = await usersRes.json() as UserData[];
+        console.log('🏛️ Admin dashboard: Users loaded successfully:', usersData.length, usersData);
+        console.log('🏛️ Admin dashboard: First user sample:', usersData[0] ? {
+          id: usersData[0].id,
+          walletAddress: usersData[0].walletAddress,
+          role: usersData[0].role,
+          projectCount: usersData[0].projectCount
+        } : 'No users');
         setUsers(usersData);
       }
 
@@ -166,13 +206,40 @@ export default function AdminDashboardPage() {
             }
           }
 
-          // 2. Fallback to cookies
+          // 2. Fallback to cookies (multiple possible cookie names)
           if (!walletAddress) {
             try {
+              // Try wallet-address cookie first
               walletAddress = document.cookie
                 .split('; ')
                 .find((row) => row.startsWith('wallet-address='))
                 ?.split('=')[1];
+
+              // If not found, try thirdweb specific cookie
+              if (!walletAddress) {
+                walletAddress = document.cookie
+                  .split('; ')
+                  .find((row) => row.startsWith('thirdweb:wallet-address='))
+                  ?.split('=')[1];
+              }
+
+              // If still not found, search for any cookie containing wallet address
+              if (!walletAddress) {
+                const allCookies = document.cookie.split('; ');
+                const walletCookie = allCookies.find(cookie => {
+                  const parts = cookie.split('=');
+                  return parts.length === 2 &&
+                         parts[0] &&
+                         parts[0].includes('wallet') &&
+                         parts[0].includes('address') &&
+                         parts[1] &&
+                         parts[1].startsWith('0x') &&
+                         parts[1].length === 42;
+                });
+                if (walletCookie) {
+                  walletAddress = walletCookie.split('=')[1];
+                }
+              }
             } catch (e) {
               if (process.env.NODE_ENV === 'development') {
                 console.warn('❌ Error reading wallet address from cookies:', e);
@@ -214,6 +281,14 @@ export default function AdminDashboardPage() {
         // Debug logging only in development
         if (process.env.NODE_ENV === 'development') {
           console.log('🏛️ Admin dashboard auth result:', userIsAdmin, { data, walletAddress });
+
+          // Enhanced debugging for admin verification
+          console.log('🏛️ Admin dashboard: ENHANCED AUTH DEBUG:', {
+            walletAddress,
+            isSuperAdmin: walletAddress?.toLowerCase() === '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9',
+            apiResponse: data,
+            finalIsAdmin: userIsAdmin
+          });
         }
 
         setIsAdmin(userIsAdmin);
@@ -262,6 +337,18 @@ export default function AdminDashboardPage() {
 
         // Fetch projects - Send wallet authentication header
         console.log('🏛️ Admin dashboard: Calling /api/admin/projects with wallet:', currentWalletAddress?.substring(0, 10) + '...');
+
+        // Enhanced debugging for API calls
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🏛️ Admin dashboard: API CALL DEBUG:', {
+            walletAddress: currentWalletAddress,
+            headers: {
+              'x-thirdweb-address': currentWalletAddress,
+              'x-wallet-address': currentWalletAddress,
+              'x-user-address': currentWalletAddress
+            }
+          });
+        }
         const projectsRes = await fetch('/api/admin/projects', {
           headers: {
             'Content-Type': 'application/json',
@@ -275,6 +362,16 @@ export default function AdminDashboardPage() {
 
         console.log('🏛️ Admin dashboard: Projects response status:', projectsRes.status, projectsRes.statusText);
 
+        // Enhanced debugging for API response
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🏛️ Admin dashboard: API RESPONSE DEBUG:', {
+            status: projectsRes.status,
+            statusText: projectsRes.statusText,
+            walletAddress: currentWalletAddress,
+            responseHeaders: Object.fromEntries(projectsRes.headers.entries())
+          });
+        }
+
         if (projectsRes.ok) {
           const projectsData = await projectsRes.json() as Project[];
           console.log('🏛️ Admin dashboard: Projects loaded successfully:', projectsData.length, projectsData);
@@ -287,14 +384,45 @@ export default function AdminDashboardPage() {
             status: projectsData[0].status,
             featured: projectsData[0].featured
           } : 'No projects');
+
+          // Enhanced debugging for wallet matching in admin dashboard
+          if (projectsData.length > 0 && currentWalletAddress) {
+            console.log('🏛️ Admin dashboard: WALLET MATCHING DEBUG:', {
+              adminWallet: currentWalletAddress,
+              projectWallets: projectsData.slice(0, 5).map(p => ({
+                id: p.id,
+                title: p.title,
+                applicantWallet: p.applicantWalletAddress,
+                matches: p.applicantWalletAddress?.toLowerCase() === currentWalletAddress.toLowerCase()
+              }))
+            });
+          }
           setProjects(projectsData);
         } else {
           const errorText = await projectsRes.text();
           console.error('🏛️ Admin dashboard: Failed to load projects:', {
             status: projectsRes.status,
             statusText: projectsRes.statusText,
-            errorBody: errorText
+            errorBody: errorText,
+            walletAddress: currentWalletAddress,
+            requestHeaders: {
+              'x-thirdweb-address': currentWalletAddress,
+              'x-wallet-address': currentWalletAddress,
+              'x-user-address': currentWalletAddress
+            }
           });
+
+          // Enhanced debugging for API errors
+          if (process.env.NODE_ENV === 'development') {
+            console.log('🏛️ Admin dashboard: API ERROR DEBUG:', {
+              error: errorText,
+              status: projectsRes.status,
+              walletAddress: currentWalletAddress,
+              suggestion: projectsRes.status === 401 ? 'Authentication failed - check wallet address' :
+                         projectsRes.status === 403 ? 'Authorization failed - check admin permissions' :
+                         'Unknown error - check server logs'
+            });
+          }
         }
 
         // Fetch administrators - Send wallet authentication header
@@ -317,7 +445,30 @@ export default function AdminDashboardPage() {
             alias: admin.alias,
             role: admin.role ?? 'admin' // Default role for all admins
           } as AdminData));
+          console.log('🏛️ Admin dashboard: Admins loaded successfully:', processedAdmins.length, processedAdmins);
+
+          // Enhanced debugging for admin verification
+          if (processedAdmins.length > 0 && currentWalletAddress) {
+            console.log('🏛️ Admin dashboard: ADMIN VERIFICATION DEBUG:', {
+              currentWallet: currentWalletAddress,
+              isCurrentUserAdmin: processedAdmins.some(a => a.walletAddress?.toLowerCase() === currentWalletAddress.toLowerCase()),
+              allAdmins: processedAdmins.map(a => ({
+                wallet: a.walletAddress?.substring(0, 10) + '...' || 'undefined',
+                alias: a.alias,
+                role: a.role,
+                isCurrentUser: a.walletAddress?.toLowerCase() === currentWalletAddress.toLowerCase()
+              }))
+            });
+          }
           setAdmins(processedAdmins);
+        } else {
+          const errorText = await adminsRes.text();
+          console.error('🏛️ Admin dashboard: Failed to load admins:', {
+            status: adminsRes.status,
+            statusText: adminsRes.statusText,
+            errorBody: errorText,
+            walletAddress: currentWalletAddress
+          });
         }
 
         // Fetch users - Send wallet authentication header
@@ -331,9 +482,60 @@ export default function AdminDashboardPage() {
             }),
           }
         });
+        console.log('🏛️ Admin dashboard: Users API response status:', usersRes.status, usersRes.statusText);
+
         if (usersRes.ok) {
           const usersData = await usersRes.json() as UserData[];
+          console.log('🏛️ Admin dashboard: Users loaded successfully:', usersData.length, usersData);
+          console.log('🏛️ Admin dashboard: First user sample:', usersData[0] ? {
+            id: usersData[0].id,
+            walletAddress: usersData[0].walletAddress,
+            role: usersData[0].role,
+            projectCount: usersData[0].projectCount
+          } : 'No users');
+
+          // Enhanced debugging for user roles and project counts
+          if (usersData.length > 0 && currentWalletAddress) {
+            console.log('🏛️ Admin dashboard: USER ROLES DEBUG:', {
+              adminWallet: currentWalletAddress,
+              usersWithProjects: usersData.filter(u => u.projectCount > 0).length,
+              usersByRole: {
+                applicant: usersData.filter(u => u.role === 'applicant').length,
+                pandorian: usersData.filter(u => u.role === 'pandorian').length,
+                admin: usersData.filter(u => u.role === 'admin').length
+              },
+              sampleUsers: usersData.slice(0, 3).map(u => ({
+                wallet: u.walletAddress?.substring(0, 10) + '...' || 'undefined',
+                role: u.role,
+                projectCount: u.projectCount,
+                isCurrentUser: u.walletAddress?.toLowerCase() === currentWalletAddress.toLowerCase()
+              }))
+            });
+          } else {
+            console.log('🏛️ Admin dashboard: No users received or no current wallet address');
+          }
           setUsers(usersData);
+        } else {
+          const errorText = await usersRes.text();
+          console.error('🏛️ Admin dashboard: Failed to load users:', {
+            status: usersRes.status,
+            statusText: usersRes.statusText,
+            errorBody: errorText,
+            walletAddress: currentWalletAddress,
+            responseHeaders: Object.fromEntries(usersRes.headers.entries())
+          });
+
+          // Enhanced debugging for API errors
+          console.log('🏛️ Admin dashboard: API ERROR DEBUG:', {
+            url: usersRes.url,
+            status: usersRes.status,
+            statusText: usersRes.statusText,
+            errorBody: errorText,
+            suggestion: usersRes.status === 401 ? 'Authentication failed - check wallet address' :
+                       usersRes.status === 403 ? 'Authorization failed - check admin permissions' :
+                       usersRes.status === 500 ? 'Server error - check API logs' :
+                       'Unknown error - check network tab'
+          });
         }
       } catch (error) {
         console.error('🏛️ Admin dashboard: Error fetching data:', error);
@@ -410,6 +612,17 @@ export default function AdminDashboardPage() {
           <p className="text-gray-400 text-sm sm:text-base">
             Gestionar plataforma
           </p>
+          {/* Debug info in development */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mt-2 p-2 bg-red-900/20 border border-red-500/20 rounded text-xs text-red-200">
+              <p><strong>Admin Debug Info:</strong></p>
+              <p>Wallet: {walletAddress?.substring(0, 10)}...{walletAddress?.slice(-8)}</p>
+              <p>Is Admin: {isAdmin ? 'Yes' : 'No'}</p>
+              <p>Auth Error: {authError ?? 'None'}</p>
+              <p>Projects: {projects.length}</p>
+              <p>Users: {users.length}</p>
+            </div>
+          )}
         </div>
         <ProjectApplicationButton
           buttonText="➕ Añadir Proyecto"
