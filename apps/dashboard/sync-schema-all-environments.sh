@@ -1,6 +1,3 @@
-# Crear script de sincronización completo
-cd /Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/apps/dashboard
-cat > sync-schema-all-environments.sh << 'EOF'
 #!/bin/bash
 
 # ============================================================================
@@ -56,10 +53,6 @@ sync_environment "STAGING" "postgresql://neondb_owner:npg_uj0h1LpbAQxi@ep-wither
 
 # 3. MAIN/PRODUCCIÓN (cuando llegue el momento)
 # echo "🚀 Sincronizando ambiente PRODUCCIÓN..."
-# sync_environment "PRODUCCIÓN" "postgresql://tu-servidor-prod:5432/saaspandoras_main"
+# sync_environment "PRODUCCIÓN" "postgresql://neondb_owner:npg_MjazsA5ybWQ3@ep-summer-bread-adqdsnx4-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require"
 
 echo "🎉 ¡Sincronización completa! Todos los ambientes tienen el mismo schema"
-EOF
-
-# Hacer el script ejecutable
-chmod +x sync-schema-all-environments.sh
