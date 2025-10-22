@@ -5,12 +5,15 @@ echo "🔍 Verificando consistencia entre ambientes..."
 check_environment() {
     local ENV_NAME=$1
     local DB_URL=$2
-    
+
     echo "🔎 Verificando $ENV_NAME..."
     export DATABASE_URL="$DB_URL"
-    
+
     echo "  📊 Proyectos: $(psql $DATABASE_URL -t -c "SELECT COUNT(*) FROM projects;")"
-    echo "  👥 Usuarios: $(psql $DATABASE_URL -t -c "SELECT COUNT(*) FROM users;")"
+
+    # Verificar tabla 'User' o 'users' (flexible para ambos ambientes)
+    local users_count=$(psql $DATABASE_URL -t -c "SELECT COUNT(*) FROM \"User\";" 2>/dev/null || psql $DATABASE_URL -t -c "SELECT COUNT(*) FROM users;" 2>/dev/null || echo "ERROR")
+    echo "  👥 Usuarios: $users_count"
     echo "  ⚙️ Admins: $(psql $DATABASE_URL -t -c "SELECT COUNT(*) FROM administrators;")"
     
     # Verificar proyectos sin wallet

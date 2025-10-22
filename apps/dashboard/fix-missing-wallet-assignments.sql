@@ -58,7 +58,7 @@ SELECT
     WHEN COUNT(p."id") > 0 THEN 'applicant'
     ELSE 'pandorian'
   END as "suggested_role"
-FROM "users" u
+FROM "User" u
 LEFT JOIN "projects" p ON LOWER(u."walletAddress") = LOWER(p."applicant_wallet_address")
 WHERE LOWER(u."walletAddress") != LOWER('0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9')
 GROUP BY u."walletAddress"

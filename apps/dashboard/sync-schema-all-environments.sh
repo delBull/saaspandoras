@@ -31,7 +31,14 @@ sync_environment() {
     # 3. Ejecutar script de wallets (si hay proyectos)
     if psql $DATABASE_URL -c "SELECT COUNT(*) FROM projects;" | grep -q "[1-9]"; then
         echo "🔗 Ejecutando corrección de wallets en $ENV_NAME..."
-        psql $DATABASE_URL -f fix-missing-wallet-assignments.sql
+        # Usar el nombre correcto de tabla según el ambiente
+        if [ "$ENV_NAME" = "LOCAL" ]; then
+            # Para local, usar el script original que busca "users"
+            sed 's/FROM "User"/FROM users/g' fix-missing-wallet-assignments.sql | psql $DATABASE_URL
+        else
+            # Para staging, usar el script original que busca "User"
+            psql $DATABASE_URL -f fix-missing-wallet-assignments.sql
+        fi
     else
         echo "📭 No hay proyectos en $ENV_NAME, omitiendo corrección de wallets"
     fi
