@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 import { projects as projectsSchema } from "@/db/schema";
 import { projectApiSchema } from "@/lib/project-schema-api";
 import { getAuth } from "@/lib/auth";
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 import slugify from "slugify";
 
 
@@ -27,20 +27,63 @@ export async function POST(request: Request) {
     const headersList = await headers();
     const { session } = await getAuth(headersList);
 
-    // Intentar múltiples fuentes para obtener la wallet address
-    const applicantWalletAddress =
+    // Intentar múltiples fuentes para obtener la wallet address (mejorado)
+    let applicantWalletAddress =
+      session?.address ??  // Usar session.address en lugar de session.userId
       session?.userId ??
       headersList.get('x-thirdweb-address') ??
       headersList.get('x-wallet-address') ??
       headersList.get('x-user-address') ??
       null;
 
+    // Si no se encontró en las fuentes anteriores, intentar cookies
+    if (!applicantWalletAddress) {
+      try {
+        const cookieStore = await cookies();
+        applicantWalletAddress = cookieStore.get('wallet-address')?.value ??
+                                cookieStore.get('thirdweb:wallet-address')?.value ??
+                                null;
+      } catch (cookieError) {
+        console.warn('Failed to read cookies:', cookieError);
+      }
+    }
+
+    // Si aún no se encontró, buscar en cualquier cookie que contenga wallet address
+    if (!applicantWalletAddress) {
+      try {
+        const cookieStore = await cookies();
+        const allCookies = cookieStore.getAll();
+
+        const walletCookie = allCookies.find(cookie =>
+          cookie.name.includes('wallet') &&
+          cookie.name.includes('address') &&
+          cookie.value &&
+          cookie.value.startsWith('0x') &&
+          cookie.value.length === 42
+        );
+
+        if (walletCookie) {
+          applicantWalletAddress = walletCookie.value;
+        }
+      } catch (cookieError) {
+        console.warn('Failed to search wallet cookies:', cookieError);
+      }
+    }
+
     console.log('🔍 DRAFT API: Wallet sources check:', {
       sessionUserId: session?.userId?.substring(0, 10) + '...',
+      sessionAddress: session?.address?.substring(0, 10) + '...',
       thirdwebHeader: headersList.get('x-thirdweb-address')?.substring(0, 10) + '...',
       walletHeader: headersList.get('x-wallet-address')?.substring(0, 10) + '...',
       userHeader: headersList.get('x-user-address')?.substring(0, 10) + '...',
-      finalWallet: applicantWalletAddress?.substring(0, 10) + '...'
+      finalWallet: applicantWalletAddress?.substring(0, 10) + '...',
+      hasSession: !!session,
+      sessionDetails: session ? {
+        hasUserId: !!session.userId,
+        hasAddress: !!session.address,
+        userId: session.userId?.substring(0, 10) + '...',
+        address: session.address?.substring(0, 10) + '...'
+      } : null
     });
 
     // Generar un slug único

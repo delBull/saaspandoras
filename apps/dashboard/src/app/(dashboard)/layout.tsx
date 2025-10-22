@@ -1,5 +1,5 @@
 
-import { headers as _headers } from "next/headers";
+import { headers as _headers, cookies } from "next/headers";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 import { DashboardClientWrapper } from "./dashboard-client-wrapper";
@@ -15,7 +15,29 @@ export default async function DashboardLayout({
 }) {
   console.log('🏠 DashboardLayout: Starting authentication check');
 
-  const { session } = await getAuth();
+  // Try to get wallet address from cookies first for better server-side detection
+  const cookieStore = await cookies();
+  let walletFromCookies = cookieStore.get('wallet-address')?.value ??
+                         cookieStore.get('thirdweb:wallet-address')?.value ?? null;
+
+  // Also try to find wallet address in any cookie that contains it
+  if (!walletFromCookies) {
+    const allCookies = cookieStore.getAll();
+    const walletCookie = allCookies.find(cookie =>
+      cookie.name.includes('wallet') &&
+      cookie.name.includes('address') &&
+      cookie.value &&
+      cookie.value.startsWith('0x') &&
+      cookie.value.length === 42
+    );
+    if (walletCookie) {
+      walletFromCookies = walletCookie.value;
+    }
+  }
+
+  console.log('🏠 DashboardLayout: Wallet from cookies:', walletFromCookies?.substring(0, 10) + '...');
+
+  const { session } = await getAuth(undefined, walletFromCookies ?? undefined);
   console.log('🏠 DashboardLayout: Session result:', {
     hasSession: !!session,
     userId: session?.userId,
@@ -27,7 +49,7 @@ export default async function DashboardLayout({
 
   // Check if user is super admin using either userId or address
   const userIsSuperAdmin = session?.userId?.toLowerCase() === SUPER_ADMIN_WALLET ||
-                          session?.address?.toLowerCase() === SUPER_ADMIN_WALLET;
+                           session?.address?.toLowerCase() === SUPER_ADMIN_WALLET;
   console.log('🏠 DashboardLayout: isSuperAdmin result:', userIsSuperAdmin);
   console.log('🏠 DashboardLayout: Expected SUPER_ADMIN:', SUPER_ADMIN_WALLET);
 

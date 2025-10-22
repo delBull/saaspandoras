@@ -280,9 +280,10 @@ export function Sidebar({
     };
   }, [profileDropdown, networkDropdown, dropdownOpenedAt]);
 
-  // The final isAdmin status - Only trust verified API responses for security
+  // The final isAdmin status - Trust server props when API verification fails or is pending
   const isSuperAdminWallet = account?.address?.toLowerCase() === SUPER_ADMIN_WALLET;
-  const isAdmin = adminStatus.verified && (adminStatus.isAdmin || adminStatus.isSuperAdmin || isSuperAdminWallet);
+  const isAdmin = (adminStatus.verified && (adminStatus.isAdmin || adminStatus.isSuperAdmin || isSuperAdminWallet)) ||
+                  (!adminStatus.verified && (isAdminProp || isSuperAdminProp || isSuperAdminWallet));
 
   // Use centralized network configuration
   const supportedNetworks = SUPPORTED_NETWORKS;

@@ -80,10 +80,18 @@ export function usePersistedAccount() {
         shouldReconnect: true,
         isSocial,
       };
+
+      // Save to localStorage
       localStorage.setItem("wallet-session", JSON.stringify(data));
+
+      // Also save wallet address to cookies for server-side access
+      document.cookie = `wallet-address=${account.address}; path=/; max-age=86400; samesite=strict`;
+      document.cookie = `thirdweb:wallet-address=${account.address}; path=/; max-age=86400; samesite=strict`;
+
       setSession(data);
       if (process.env.NODE_ENV === 'development') {
         console.log("💾 Guardada sesión wallet real:", data.walletType);
+        console.log("🍪 Wallet address set in cookies for server access");
       }
     }
   }, [account?.address, activeWallet]);
@@ -103,10 +111,17 @@ export function usePersistedAccount() {
         isSocial: true,
       };
 
+      // Save to localStorage
       localStorage.setItem("wallet-session", JSON.stringify(data));
+
+      // Also save wallet address to cookies for server-side access
+      document.cookie = `wallet-address=${account.address}; path=/; max-age=86400; samesite=strict`;
+      document.cookie = `thirdweb:wallet-address=${account.address}; path=/; max-age=86400; samesite=strict`;
+
       setSession(data);
       if (process.env.NODE_ENV === 'development') {
         console.log("💾 Guardada sesión social login:", data.walletType);
+        console.log("🍪 Wallet address set in cookies for server access");
       }
     }
   }, [account?.address, activeWallet]);
@@ -241,9 +256,15 @@ export function usePersistedAccount() {
         disconnect(activeWallet);
       }
 
-      // Limpiar localStorage completamente después del disconnect
+      // Limpiar localStorage y cookies completamente después del disconnect
       if (typeof window !== "undefined") {
         localStorage.removeItem("wallet-session");
+        localStorage.removeItem("wallet-address");
+
+        // Clear wallet cookies
+        document.cookie = "wallet-address=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        document.cookie = "thirdweb:wallet-address=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+
         setSession(null);
       }
 
