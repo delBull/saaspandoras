@@ -1,223 +1,196 @@
 import { NextResponse } from "next/server";
-import { db } from "~/db";
+import { getAuth, isAdmin } from "@/lib/auth";
+import { headers } from "next/headers";
+import postgres from "postgres";
+import type { UserData } from "@/types/admin";
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
 export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-import { getAuth, isAdmin } from "@/lib/auth";
-import { sql } from "drizzle-orm";
-import { headers } from "next/headers";
-import type { UserData, UserRole } from "@/types/admin";
+export const dynamic = 'force-dynamic';
 
-// 🔐 Helper function for routes that require authenticated user
-async function requireAuthenticatedUser(session: any): Promise<{ error: NextResponse | null; userId: string | null }> {
-  if (!session?.userId) {
-    console.error('🔐 AUTH ERROR: No userId in session', {
-      timestamp: new Date().toISOString(),
-      session: JSON.stringify(session),
-      headers: await headers() // Log headers for debugging
-    });
-    return {
-      error: NextResponse.json({ message: "No autorizado - Sesión inválida" }, { status: 401 }),
-      userId: null
-    };
-  }
-
-  return { error: null, userId: session.userId };
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not set");
 }
+
+const sql = postgres(connectionString, {
+  prepare: false // Disable prepared statements for compatibility
+});
 
 // ADMIN ONLY - Users management endpoint
 export async function GET() {
   try {
+    console.log('🛠️ [Admin/Users] API called - starting authentication check');
 
     const { session } = await getAuth(await headers());
+    console.log('🛠️ [Admin/Users] Session received:', {
+      hasSession: !!session,
+      hasUserId: !!session?.userId,
+      hasAddress: !!session?.address,
+      userId: session?.userId?.substring(0, 10) + '...',
+      address: session?.address?.substring(0, 10) + '...'
+    });
 
-    // 🔒 Validación defensiva usando el helper
-    const { error: authError, userId } = await requireAuthenticatedUser(session);
-    if (authError) return authError;
+    const walletAddress = session?.address ?? session?.userId;
+    if (!walletAddress) {
+      console.error('🛠️ [Admin/Users] No wallet address in session');
+      return NextResponse.json({ message: "No autorizado - Sesión inválida" }, { status: 401 });
+    }
 
-    const userIsAdmin = await isAdmin(userId);
+    console.log('🛠️ [Admin/Users] User authenticated:', walletAddress?.substring(0, 10) + '...');
+
+    const userIsAdmin = await isAdmin(walletAddress);
+    console.log('🛠️ [Admin/Users] Is admin check result:', userIsAdmin);
 
     if (!userIsAdmin) {
+      console.error('🛠️ [Admin/Users] User is not admin:', walletAddress?.substring(0, 10) + '...');
       return NextResponse.json({ message: "No autorizado" }, { status: 403 });
     }
 
-    // First, try a simple query to check if table exists and has data
-    const simpleUserQuery = await db.execute(sql`SELECT COUNT(*) as total FROM "users"`);
-    console.log("Simple user count:", simpleUserQuery);
-    const totalUsers = simpleUserQuery[0]?.total as string;
-    console.log("Total users:", totalUsers);
+    console.log('🛠️ [Admin/Users] Fetching users from database...');
 
-    // For testing, if no users exist, create a sample user to verify the system works
-    if (totalUsers === '0') {
-      console.log("No users found in database - creating sample user for testing");
+    // Define constants first
+    const SUPER_ADMIN_WALLETS = ['0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9'] as const;
 
-      // Insert a sample user
-      await db.execute(sql`
-        INSERT INTO "users" ("id", "name", "email", "image", "walletAddress", "hasPandorasKey", "connectionCount", "lastConnectionAt", "createdAt")
-        VALUES (
-          'sample-user-uuid',
-          'Usuario de Ejemplo',
-          'sample@example.com',
-          '/images/avatars/rasta.png',
-          '0x1234567890123456789012345678901234567890',
-          true,
-          1,
-          NOW(),
-          NOW()
-        )
-      `);
-
-      console.log("Sample user created successfully");
-    }
-
-    // Get all users with their project counts and roles
-    console.log("Executing simplified user query");
-
-    // SUPER ADMIN WALLET TO HIDE FROM USER MANAGEMENT
-    const SUPER_ADMIN_WALLET = '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9';
-
-    // 🔢 Get users with project counts in a single query
-    const usersWithProjects = await db.execute(sql`
-      SELECT
-        u."id",
-        u."name",
-        u."email",
-        u."image",
-        u."walletAddress",
-        u."hasPandorasKey",
-        u."connectionCount",
-        u."lastConnectionAt",
-        u."createdAt",
-        u."kycLevel",
-        u."kycCompleted",
-        u."kycData",
-        COALESCE(COUNT(DISTINCT p.id), 0) as "projectCount"
-      FROM "users" u
-      LEFT JOIN "projects" p
-        ON LOWER(u."walletAddress") = LOWER(p."applicant_wallet_address")
-      WHERE LOWER(u."walletAddress") != LOWER(${SUPER_ADMIN_WALLET})
-      GROUP BY
-        u."id",
-        u."name",
-        u."email",
-        u."image",
-        u."walletAddress",
-        u."hasPandorasKey",
-        u."connectionCount",
-        u."lastConnectionAt",
-        u."createdAt",
-        u."kycLevel",
-        u."kycCompleted",
-        u."kycData"
-      ORDER BY u."createdAt" DESC
-    `);
-
-    console.log("🛠️ [Admin/Users] Users with projects query result:", usersWithProjects.length, "users found");
-    usersWithProjects.forEach((user: any) => {
-      const wallet = user.walletAddress || "unknown";
-      console.log(`🛠️ [Admin/Users] User ${String(wallet).substring(0, 8)}: projectCount=${user.projectCount}`);
-    });
-
-    // Get total projects for super admin calculation
-    const totalProjectsQuery = await db.execute(sql`SELECT COUNT(*) as count FROM "projects"`);
-    const totalProjectsInDb = Number(totalProjectsQuery[0]?.count as string) || 0;
-    console.log("� Total projects in DB:", totalProjectsInDb);
-
-    // Get all admin wallets for role detection (incluyendo super admins hardcodeados)
-    const SUPER_ADMIN_WALLETS = [
-      '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9' // Tú - siempre admin
-    ].map(addr => addr.toLowerCase());
-
-    const adminWallets: string[] = [];
+    // Use postgres.js directly - the simplest possible query
     try {
-      const adminQuery = await db.execute(sql`
-        SELECT "wallet_address" FROM "administrators"
-      `);
-      adminQuery.forEach((row: any) => {
-        adminWallets.push((row.wallet_address as string).toLowerCase());
+      console.log('🛠️ [Admin/Users] Testing basic query...');
+
+      // First, check if we have any users
+      const userCountResult = await sql`SELECT COUNT(*) as count FROM "users"`;
+      const userCount = Number(userCountResult[0]?.count || 0);
+      console.log('🛠️ [Admin/Users] User count:', userCount);
+
+      if (userCount === 0) {
+        console.log('🛠️ [Admin/Users] No users found, returning empty array');
+        return NextResponse.json([]);
+      }
+
+      // Get users with their project counts using a simpler approach
+      const usersQuery = await sql`
+        SELECT
+          u."id",
+          u."name",
+          u."email",
+          u."image",
+          u."walletAddress",
+          u."hasPandorasKey",
+          u."connectionCount",
+          u."lastConnectionAt",
+          u."createdAt",
+          u."kycLevel",
+          u."kycCompleted",
+          u."kycData",
+          COALESCE(project_counts.project_count, 0) as "projectCount"
+        FROM "users" u
+        LEFT JOIN (
+          SELECT
+            p."applicant_wallet_address",
+            COUNT(p.id) as project_count
+          FROM "projects" p
+          GROUP BY p."applicant_wallet_address"
+        ) project_counts ON LOWER(u."walletAddress") = LOWER(project_counts."applicant_wallet_address")
+        WHERE LOWER(u."walletAddress") != LOWER(${SUPER_ADMIN_WALLETS[0]})
+        ORDER BY u."createdAt" DESC
+      `;
+
+      console.log('🛠️ [Admin/Users] Users query executed successfully');
+      console.log('🛠️ [Admin/Users] Found users:', usersQuery.length);
+
+      if (usersQuery.length > 0) {
+        console.log('🛠️ [Admin/Users] Sample user:', {
+          id: usersQuery[0]?.id,
+          walletAddress: usersQuery[0]?.walletAddress,
+          projectCount: usersQuery[0]?.projectCount
+        });
+      }
+
+      // Get total projects for admin calculations
+      const totalProjectsResult = await sql`SELECT COUNT(*) as count FROM "projects"`;
+      const totalProjectsInDb = Number(totalProjectsResult[0]?.count || 0);
+      console.log('🛠️ [Admin/Users] Total projects in DB:', totalProjectsInDb);
+
+      // Get admin wallets
+      const adminWalletsResult = await sql`SELECT "wallet_address" FROM "administrators"`;
+      const adminWallets = adminWalletsResult
+        .filter((row: any) => row?.wallet_address)
+        .map((row: any) => row.wallet_address.toLowerCase());
+      const ALL_ADMIN_WALLETS = [...SUPER_ADMIN_WALLETS, ...adminWallets];
+
+      console.log('🛠️ [Admin/Users] Admin wallets:', ALL_ADMIN_WALLETS.length);
+
+      // Process users with role calculation
+      const usersWithRoles = usersQuery.map((user: any) => {
+        const userWallet = user.walletAddress?.toLowerCase();
+        const isSuperAdmin = user.walletAddress === SUPER_ADMIN_WALLETS[0];
+        const isAdmin = userWallet && ALL_ADMIN_WALLETS.includes(userWallet);
+
+        let role: 'admin' | 'applicant' | 'pandorian';
+        let systemProjectsManaged: number | undefined;
+
+        if (isSuperAdmin) {
+          role = 'admin';
+          systemProjectsManaged = totalProjectsInDb;
+        } else if (isAdmin) {
+          role = 'admin';
+          systemProjectsManaged = totalProjectsInDb;
+        } else if (Number(user.projectCount) > 0) {
+          role = 'applicant';
+        } else {
+          role = 'pandorian';
+        }
+
+        console.log(`🛠️ [Admin/Users] User ${userWallet?.substring(0, 8)}: role=${role}, projects=${user.projectCount}`);
+
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          image: user.image,
+          walletAddress: user.walletAddress,
+          hasPandorasKey: user.hasPandorasKey,
+          connectionCount: Number(user.connectionCount),
+          lastConnectionAt: user.lastConnectionAt,
+          createdAt: user.createdAt,
+          role: role,
+          projectCount: Number(user.projectCount),
+          systemProjectsManaged: systemProjectsManaged,
+          kycLevel: user.kycLevel,
+          kycCompleted: user.kycCompleted,
+          kycData: user.kycData,
+        } as UserData;
       });
-    } catch (error) {
-      console.warn("Could not fetch admin wallets:", error);
+
+      console.log('🛠️ [Admin/Users] Processed users:', usersWithRoles.length);
+      console.log('🛠️ [Admin/Users] Sample processed user:', usersWithRoles[0] ? {
+        id: usersWithRoles[0].id,
+        walletAddress: usersWithRoles[0].walletAddress,
+        role: usersWithRoles[0].role,
+        projectCount: usersWithRoles[0].projectCount
+      } : 'No users');
+
+      return NextResponse.json(usersWithRoles);
+    } catch (queryError) {
+      console.error('🛠️ [Admin/Users] Query failed:', queryError);
+
+      // Fallback: Try the simplest possible query
+      try {
+        const simpleQuery = await sql`SELECT "id", "walletAddress" FROM "users" LIMIT 1`;
+        console.log('🛠️ [Admin/Users] Simple query works:', simpleQuery.length);
+
+        return NextResponse.json({
+          message: "Complex query failed but simple query works",
+          simpleQueryWorks: simpleQuery.length > 0,
+          error: queryError instanceof Error ? queryError.message : 'Unknown error'
+        });
+      } catch (simpleError) {
+        console.error('🛠️ [Admin/Users] Even simple query failed:', simpleError);
+        return NextResponse.json(
+          { message: "Database query failed", error: simpleError instanceof Error ? simpleError.message : 'Unknown error' },
+          { status: 500 }
+        );
+      }
     }
-
-    // Combinar super admins con admins de BD
-    const ALL_ADMIN_WALLETS = [...SUPER_ADMIN_WALLETS, ...adminWallets];
-    console.log('📊 Total admin wallets for role detection:', ALL_ADMIN_WALLETS.length, ALL_ADMIN_WALLETS);
-
-    // Process each user with the collected data
-    const usersWithDetails = usersWithProjects.map((user: any) => {
-      const userWallet = (user.walletAddress as string).toLowerCase();
-      // Check for SUPER admin wallet address directly (case sensitive check)
-      const isSuperAdmin = user.walletAddress === '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9';
-      const isAdmin = ALL_ADMIN_WALLETS.includes(userWallet);
-
-      // Get project count directly from SQL JOIN query
-      let projectCount = Number(user.projectCount) || 0;
-      let systemProjectsManaged: number | undefined;
-
-      // Set system management for different admin types
-      if (isSuperAdmin) {
-        projectCount = 0; // No personal projects for super admin
-        systemProjectsManaged = totalProjectsInDb; // System management count
-        console.log(`   ✅ SUPER ADMIN: 0 personal projects, manages ${systemProjectsManaged} total projects`);
-      } else if (isAdmin) {
-        // Regular admins manage all projects but show their personal count too
-        systemProjectsManaged = totalProjectsInDb; // Normal admin can manage all projects
-        console.log(`   ⚙️ ADMIN: ${projectCount} personal projects, manages ${systemProjectsManaged} projects total`);
-      } else {
-        console.log(`   🏦 WALLET RELATION: ${projectCount} projects for wallet ${userWallet}`);
-      }
-
-      // Determine role
-      let role: 'admin' | 'applicant' | 'pandorian';
-      if (isAdmin) {
-        role = 'admin';
-      } else if (projectCount > 0) {
-        role = 'applicant';
-      } else {
-        role = 'pandorian';
-      }
-
-      // Determine Pandora's Key status - for now, give to all users since it's required to access platform
-      // TODO: Implement proper Pandora's Key verification system
-      const hasPandorasKey = true; // All users get it until proper verification is implemented
-
-      console.log(`🔍 Processing user ${userWallet.substring(0, 8)}... Count=${projectCount}, Role=${role}`);
-      console.log(`   Final: Count=${projectCount}, Role=${role}, Key=${hasPandorasKey}${systemProjectsManaged ? `, Manages=${systemProjectsManaged}` : ''}`);
-
-      const result = {
-        ...user,
-        projectCount,
-        systemProjectsManaged,
-        role,
-        hasPandorasKey
-      };
-
-      return result;
-    });
-
-    console.log("Users processed with roles and counts");
-
-    const users: UserData[] = usersWithDetails.map((row: any) => ({
-      id: (row as Record<string, unknown>).id as string,
-      name: (row as Record<string, unknown>).name as string | null,
-      email: (row as Record<string, unknown>).email as string | null,
-      image: (row as Record<string, unknown>).image as string | null,
-      walletAddress: (row as Record<string, unknown>).walletAddress as string,
-      hasPandorasKey: (row as Record<string, unknown>).hasPandorasKey as boolean,
-      connectionCount: Number((row as Record<string, unknown>).connectionCount),
-      lastConnectionAt: (row as Record<string, unknown>).lastConnectionAt as string,
-      createdAt: (row as Record<string, unknown>).createdAt as string,
-      role: (row as Record<string, unknown>).role as UserRole,
-      projectCount: Number((row as Record<string, unknown>).projectCount),
-      systemProjectsManaged: (row as Record<string, unknown>).systemProjectsManaged as number | undefined,
-      kycLevel: (row as Record<string, unknown>).kycLevel as 'N/A' | 'basic',
-      kycCompleted: (row as Record<string, unknown>).kycCompleted as boolean,
-      kycData: (row as Record<string, unknown>).kycData as any || null,
-    }));
-
-    return NextResponse.json(users);
   } catch (error) {
     console.error("Error retrieving users:", error);
     console.error("Error details:", {
@@ -225,23 +198,6 @@ export async function GET() {
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined
     });
-
-    // Check if it's a quota issue - More comprehensive check
-    if (error instanceof Error && (
-      error.message.includes('quota') ||
-      error.message.includes('limit') ||
-      error.message.includes('exceeded') ||
-      error.message.includes('rate limit') ||
-      error.message.includes('too many') ||
-      error.message.includes('connection pool') ||
-      error.message.includes('timeout')
-    )) {
-      return NextResponse.json({
-        message: "Database quota exceeded",
-        error: "Your database plan has reached its data transfer limit. Please upgrade your plan or contact support.",
-        quotaExceeded: true
-      }, { status: 503 }); // Service Unavailable
-    }
 
     return NextResponse.json(
       { message: "Error al obtener usuarios", details: error instanceof Error ? error.message : String(error) },

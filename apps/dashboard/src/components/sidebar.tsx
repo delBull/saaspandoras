@@ -88,20 +88,22 @@ export function Sidebar({
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Track if we've already set the initial state for /applicants page
-  const applicantsInitialStateSet = useRef(false);
+  const autoCloseStateSet = useRef(false);
 
   // Auto-close sidebar when navigating to /applicants (but allow manual opening)
   useEffect(() => {
-    if (pathname === '/applicants' && !applicantsInitialStateSet.current) {
-      console.log('📍 /applicants page detected - setting initial closed state');
+    const shouldAutoClose = pathname === '/applicants' || pathname.startsWith('/projects/');
+
+    if (shouldAutoClose && !autoCloseStateSet.current) {
+      console.log('📍 Auto-close page detected - setting initial closed state for:', pathname);
       // Only set to closed on first visit to /applicants, but allow manual opening after
       if (open) {
         setOpen(false);
       }
-      applicantsInitialStateSet.current = true;
-    } else if (pathname !== '/applicants') {
+      autoCloseStateSet.current = true;
+    } else if (!shouldAutoClose) {
       // Reset the flag when leaving /applicants page
-      applicantsInitialStateSet.current = false;
+      autoCloseStateSet.current = false;
     }
   }, [pathname, open]);
 
@@ -280,9 +282,10 @@ export function Sidebar({
     };
   }, [profileDropdown, networkDropdown, dropdownOpenedAt]);
 
-  // The final isAdmin status - Only trust verified API responses for security
+  // The final isAdmin status - Trust server props when API verification fails or is pending
   const isSuperAdminWallet = account?.address?.toLowerCase() === SUPER_ADMIN_WALLET;
-  const isAdmin = adminStatus.verified && (adminStatus.isAdmin || adminStatus.isSuperAdmin || isSuperAdminWallet);
+  const isAdmin = (adminStatus.verified && (adminStatus.isAdmin || adminStatus.isSuperAdmin || isSuperAdminWallet)) ||
+                  (!adminStatus.verified && (isAdminProp || isSuperAdminProp || isSuperAdminWallet));
 
   // Use centralized network configuration
   const supportedNetworks = SUPPORTED_NETWORKS;

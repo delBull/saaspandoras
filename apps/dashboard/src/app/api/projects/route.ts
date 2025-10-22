@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "~/db";
-import { sql } from "drizzle-orm";
+import { projects } from "~/db/schema";
+import { inArray, desc } from "drizzle-orm";
 
 export const dynamic = 'force-dynamic'; // Asegura que la ruta sea siempre dinámica
 
@@ -10,7 +11,7 @@ export async function GET() {
 
     // Test database connection first - handle quota exceeded gracefully
     try {
-      await db.execute(sql`SELECT 1`);
+      await db.select({ test: projects.id }).from(projects).limit(1);
       console.log('✅ Public API: Database connection test passed');
     } catch (dbError) {
       console.error('❌ Public API: Database connection failed:', dbError);
@@ -35,53 +36,109 @@ export async function GET() {
 
     console.log('🔍 Public API: Fetching projects from database...');
 
-    // Try optimized query with essential fields only
+    // Use Drizzle ORM query builder for proper field mapping
     try {
-      console.log('🔍 Public API: Executing optimized query with essential fields...');
-      const optimizedProjects = await db.execute(sql`
-        SELECT id, title, description, status, created_at, business_category, logo_url, cover_photo_url,
-               applicant_wallet_address, target_amount, raised_amount, slug, applicant_name, applicant_email, applicant_phone
-        FROM projects
-        WHERE status IN ('pending', 'approved', 'live', 'completed')
-        ORDER BY created_at DESC
-      `);
+      console.log('🔍 Public API: Executing Drizzle query with proper field mapping...');
 
-      console.log(`📊 Public API: Found ${optimizedProjects.length} projects with optimized query`);
+      const projectsData = await db
+        .select({
+          id: projects.id,
+          title: projects.title,
+          description: projects.description,
+          status: projects.status,
+          createdAt: projects.createdAt,
+          businessCategory: projects.businessCategory,
+          logoUrl: projects.logoUrl,
+          coverPhotoUrl: projects.coverPhotoUrl,
+          applicantWalletAddress: projects.applicantWalletAddress,
+          targetAmount: projects.targetAmount,
+          raisedAmount: projects.raisedAmount,
+          slug: projects.slug,
+          applicantName: projects.applicantName,
+          applicantEmail: projects.applicantEmail,
+          applicantPhone: projects.applicantPhone,
+          featured: projects.featured,
+          tagline: projects.tagline,
+          website: projects.website,
+          whitepaperUrl: projects.whitepaperUrl,
+          twitterUrl: projects.twitterUrl,
+          discordUrl: projects.discordUrl,
+          telegramUrl: projects.telegramUrl,
+          linkedinUrl: projects.linkedinUrl,
+          videoPitch: projects.videoPitch,
+          teamMembers: projects.teamMembers,
+          advisors: projects.advisors,
+          tokenDistribution: projects.tokenDistribution,
+          contractAddress: projects.contractAddress,
+          treasuryAddress: projects.treasuryAddress,
+          legalStatus: projects.legalStatus,
+          valuationDocumentUrl: projects.valuationDocumentUrl,
+          fiduciaryEntity: projects.fiduciaryEntity,
+          dueDiligenceReportUrl: projects.dueDiligenceReportUrl,
+          tokenType: projects.tokenType,
+          totalTokens: projects.totalTokens,
+          tokensOffered: projects.tokensOffered,
+          tokenPriceUsd: projects.tokenPriceUsd,
+          estimatedApy: projects.estimatedApy,
+          yieldSource: projects.yieldSource,
+          lockupPeriod: projects.lockupPeriod,
+          fundUsage: projects.fundUsage,
+          isMintable: projects.isMintable,
+          isMutable: projects.isMutable,
+          updateAuthorityAddress: projects.updateAuthorityAddress,
+          verificationAgreement: projects.verificationAgreement,
+          totalValuationUsd: projects.totalValuationUsd,
+          applicantPosition: projects.applicantPosition,
+          imageUrl: projects.imageUrl,
+          socials: projects.socials,
+          returnsPaid: projects.returnsPaid,
+          featuredButtonText: projects.featuredButtonText
+        })
+        .from(projects)
+        .where(inArray(projects.status, ['pending', 'approved', 'live', 'completed']))
+        .orderBy(desc(projects.createdAt));
 
-      if (optimizedProjects.length > 0) {
-        const firstProject = optimizedProjects[0] as any;
+      console.log(`📊 Public API: Found ${projectsData.length} projects with Drizzle query`);
+
+      if (projectsData.length > 0) {
+        const firstProject = projectsData[0];
         console.log('📊 Public API: First project sample:', {
           id: firstProject?.id,
           title: firstProject?.title,
-          applicantWalletAddress: firstProject?.applicant_wallet_address,
+          applicantWalletAddress: firstProject?.applicantWalletAddress,
           status: firstProject?.status
+        });
+
+        // Enhanced debugging for wallet addresses
+        console.log('📊 Public API: WALLET ADDRESSES DEBUG:', {
+          totalProjects: projectsData.length,
+          projectsWithWallet: projectsData.filter(p => p.applicantWalletAddress).length,
+          projectsWithoutWallet: projectsData.filter(p => !p.applicantWalletAddress).length,
+          sampleWallets: projectsData.slice(0, 3).map(p => ({
+            id: p.id,
+            title: p.title,
+            wallet: p.applicantWalletAddress,
+            walletLower: p.applicantWalletAddress?.toLowerCase()
+          }))
         });
       }
 
-      return NextResponse.json(optimizedProjects);
+      return NextResponse.json(projectsData);
     } catch (queryError) {
-      console.error('❌ Public API: Simple query failed, trying diagnostic query:', queryError);
+      console.error('❌ Public API: Drizzle query failed:', queryError);
 
-      // Try diagnostic queries
+      // Try basic diagnostic query
       try {
-        const basicQuery = await db.execute(sql`SELECT 1 as test`);
-        console.log('📊 Public API: Basic query works:', basicQuery[0]);
-
-        // Try to check if projects table exists
-        const tableCheck = await db.execute(sql`
-          SELECT table_name FROM information_schema.tables
-          WHERE table_schema = 'public' AND table_name = 'projects'
-        `);
-        console.log('📊 Public API: Projects table exists:', tableCheck.length > 0);
+        const basicQuery = await db.select({ test: projects.id }).from(projects).limit(1);
+        console.log('📊 Public API: Basic Drizzle query works:', basicQuery.length);
 
         return NextResponse.json({
           message: "Database connection works but projects query failed",
-          basicQuery: basicQuery[0],
-          tableExists: tableCheck.length > 0,
+          basicQueryWorks: basicQuery.length > 0,
           error: queryError instanceof Error ? queryError.message : 'Unknown error'
         });
       } catch (basicError) {
-        console.error('❌ Public API: Even basic query failed:', basicError);
+        console.error('❌ Public API: Even basic Drizzle query failed:', basicError);
         return NextResponse.json(
           {
             message: "Database connection failed",

@@ -34,6 +34,12 @@ export default function ProfileProjectsPage() {
 
   useEffect(() => {
     if (walletAddress) {
+      // Ensure wallet information is available in cookies for server-side requests
+      if (typeof window !== 'undefined') {
+        document.cookie = `wallet-address=${walletAddress}; path=/; max-age=86400; samesite=strict`;
+        document.cookie = `thirdweb:wallet-address=${walletAddress}; path=/; max-age=86400; samesite=strict`;
+      }
+
       // Fetch user profile and projects data using dual API approach
       Promise.all([
         fetch('/api/profile', {
@@ -44,7 +50,14 @@ export default function ProfileProjectsPage() {
             'x-user-address': walletAddress,
           }
         }),
-        fetch('/api/projects')
+        fetch('/api/projects', {
+          headers: {
+            'Content-Type': 'application/json',
+            'x-thirdweb-address': walletAddress,
+            'x-wallet-address': walletAddress,
+            'x-user-address': walletAddress,
+          }
+        })
       ])
         .then(async ([usersRes, projectsRes]) => {
           if (process.env.NODE_ENV === 'development') {
@@ -88,7 +101,9 @@ export default function ProfileProjectsPage() {
                 title: projects[0].title,
                 applicantWalletAddress: projects[0].applicantWalletAddress,
                 status: projects[0].status
-              } : null
+              } : null,
+              walletAddress: walletAddress,
+              walletLower: walletAddress?.toLowerCase()
             });
           }
 
@@ -133,25 +148,23 @@ export default function ProfileProjectsPage() {
 
           let userProjects: Project[] = [];
           if (isSuperAdmin) {
-            // Super admin sees all manageable projects
-            userProjects = projects.filter(p =>
-              ['pending', 'approved', 'live', 'completed'].includes(p.status)
-            );
+            // Super admin sees ALL projects regardless of status
+            userProjects = projects;
           } else {
-            // Regular users see ONLY their projects by wallet address
+            // Regular users see ALL their projects by exact wallet address match
             userProjects = projects.filter(p => {
-              const projectWallet = p.applicantWalletAddress?.toLowerCase().trim();
-              const userWallet = walletAddress.toLowerCase().trim();
+              const projectWallet = p.applicantWalletAddress?.toLowerCase();
+              const userWallet = walletAddress.toLowerCase();
 
-              // More robust matching - handle different formats
-              const matches = projectWallet === userWallet ||
-                             projectWallet === userWallet.replace('0x', '') ||
-                             (projectWallet && userWallet && projectWallet.endsWith(userWallet.slice(-8)));
+              // Simple and reliable matching
+              const matches = projectWallet === userWallet;
 
               if (process.env.NODE_ENV === 'development') {
                 console.log('🔍 PROJECT FILTER CHECK:', {
                   projectId: p.id,
                   projectTitle: p.title,
+                  projectWallet: p.applicantWalletAddress,
+                  userWallet: walletAddress,
                   matches: matches
                 });
               }
@@ -167,6 +180,21 @@ export default function ProfileProjectsPage() {
               userWalletAddress,
               totalProjects: projects.length
             });
+
+            // Enhanced debugging for wallet matching
+            console.log('🔍 ENHANCED WALLET MATCHING DEBUG:', {
+              userWallet: walletAddress,
+              userWalletLower: walletAddress?.toLowerCase(),
+              totalProjects: projects?.length || 0,
+              matchingProjects: userProjects.length,
+              nonMatchingProjects: projects ? projects.length - userProjects.length : 0,
+              sampleMatches: userProjects.slice(0, 3).map(p => ({
+                id: p.id,
+                title: p.title,
+                applicantWallet: p.applicantWalletAddress,
+                matches: p.applicantWalletAddress?.toLowerCase() === walletAddress?.toLowerCase()
+              }))
+            });
           }
           setUserProjects(userProjects);
         })
@@ -175,7 +203,14 @@ export default function ProfileProjectsPage() {
             console.error('Error fetching profile/projects data:', err);
           }
           // If profile API fails, still try to get projects
-          fetch('/api/projects')
+          fetch('/api/projects', {
+            headers: {
+              'Content-Type': 'application/json',
+              'x-thirdweb-address': walletAddress,
+              'x-wallet-address': walletAddress,
+              'x-user-address': walletAddress,
+            }
+          })
             .then(res => res.json())
             .then((projects: Project[]) => {
               console.log('🔄 FALLBACK: Projects fetched as fallback:', projects.length);
@@ -201,16 +236,26 @@ export default function ProfileProjectsPage() {
                   const projectWallet = p.applicantWalletAddress?.toLowerCase().trim();
                   const userWallet = walletAddress.toLowerCase().trim();
 
-                  // More robust matching - handle different formats
+                  // More robust matching - handle different formats and edge cases
                   const matches = projectWallet === userWallet ||
                                  projectWallet === userWallet.replace('0x', '') ||
-                                 (projectWallet && userWallet && projectWallet.endsWith(userWallet.slice(-8)));
+                                 (projectWallet && userWallet && projectWallet.endsWith(userWallet.slice(-8))) ||
+                                 // Also check if wallet ends with last 10 characters (more flexible)
+                                 (projectWallet && userWallet && projectWallet.endsWith(userWallet.slice(-10)));
 
                   if (process.env.NODE_ENV === 'development') {
                     console.log('🔄 FALLBACK PROJECT FILTER:', {
                       projectId: p.id,
                       projectTitle: p.title,
-                      matches: matches
+                      projectWallet: p.applicantWalletAddress,
+                      userWallet: walletAddress,
+                      projectWalletLower: projectWallet,
+                      userWalletLower: userWallet,
+                      matches: matches,
+                      walletLengths: {
+                        project: projectWallet?.length,
+                        user: userWallet?.length
+                      }
                     });
                   }
 
@@ -222,6 +267,21 @@ export default function ProfileProjectsPage() {
                 console.log('🔄 FALLBACK RESULT:', {
                   filteredCount: userProjects.length,
                   isSuperAdmin
+                });
+
+                // Enhanced debugging for wallet matching in fallback
+                console.log('🔄 FALLBACK ENHANCED WALLET MATCHING DEBUG:', {
+                  userWallet: walletAddress,
+                  userWalletLower: walletAddress?.toLowerCase(),
+                  totalProjects: projects?.length || 0,
+                  matchingProjects: userProjects.length,
+                  nonMatchingProjects: projects ? projects.length - userProjects.length : 0,
+                  sampleMatches: userProjects.slice(0, 3).map(p => ({
+                    id: p.id,
+                    title: p.title,
+                    applicantWallet: p.applicantWalletAddress,
+                    matches: p.applicantWalletAddress?.toLowerCase() === walletAddress?.toLowerCase()
+                  }))
                 });
               }
               setUserProjects(userProjects);
@@ -310,6 +370,16 @@ export default function ProfileProjectsPage() {
         <div>
           <h1 className="text-2xl font-bold text-white">Mis Proyectos</h1>
           <p className="text-gray-400">Gestiona y monitorea el rendimiento de tus inversiones</p>
+          {/* Debug info in development */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mt-2 p-2 bg-yellow-900/20 border border-yellow-500/20 rounded text-xs text-yellow-200">
+              <p><strong>Debug Info:</strong></p>
+              <p>Wallet: {walletAddress?.substring(0, 10)}...{walletAddress?.slice(-8)}</p>
+              <p>Projects: {userProjects.length}</p>
+              <p>Profile: {userProfile ? 'Loaded' : 'Not loaded'}</p>
+              <p>Role: {userProfile?.role || 'Unknown'}</p>
+            </div>
+          )}
         </div>
         <Button variant="outline" onClick={open}>
           <PencilIcon className="w-4 h-4 mr-2" />

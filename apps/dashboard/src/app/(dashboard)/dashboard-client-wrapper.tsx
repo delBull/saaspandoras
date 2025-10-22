@@ -39,6 +39,12 @@ export function DashboardClientWrapper({
       void fetchUserName(account.address).then(name => {
         setUserName(name);
       });
+
+      // Ensure wallet information is available in cookies for server-side requests
+      if (typeof window !== 'undefined') {
+        document.cookie = `wallet-address=${account.address}; path=/; max-age=86400; samesite=strict`;
+        document.cookie = `thirdweb:wallet-address=${account.address}; path=/; max-age=86400; samesite=strict`;
+      }
     } else {
       setUserName(null);
     }

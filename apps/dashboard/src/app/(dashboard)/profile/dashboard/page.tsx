@@ -20,6 +20,16 @@ import { useProjectModal } from "@/contexts/ProjectModalContext";
 import { useProfile } from "@/hooks/useProfile";
 import { useActiveAccount } from 'thirdweb/react';
 
+// Define a type for your project data to avoid using 'any'
+interface Project {
+  id: string | number;
+  title: string;
+  slug?: string;
+  status: 'live' | 'approved' | 'pending' | 'completed' | 'rejected' | 'draft';
+  raisedAmount?: string | number;
+  raised_amount?: string | number; // To support both property names
+}
+
 export default function PandoriansDashboardPage() {
   const { profile, projects, isLoading, isError } = useProfile();
   const account = useActiveAccount();
@@ -91,41 +101,53 @@ export default function PandoriansDashboardPage() {
 
   // Calculate metrics from profile projects data
   const calculateDashboardMetrics = () => {
-    // Calculate total target amounts from project data
-    const totalTarget = projects.reduce((sum: number, project: any) => {
-      const target = Number(project.targetAmount) || 0;
-      return sum + target;
-    }, 0);
-
-    // Calculate returns (assume 12.5% APY on current invested amount)
-    const currentInvested = projects.reduce((sum: number, project: any) => {
-      const raised = Number(project.raisedAmount) || 0;
+    // Calculate total raised amounts (actual invested amount)
+    const totalInvested = projects.reduce((sum: number, project: Project) => {
+      const raised = Number(project.raisedAmount || project.raised_amount || 0);
       return sum + raised;
     }, 0);
 
-    // Simulate returns based on invested amount (in production, this would come from actual payment records)
-    const totalReturns = currentInvested * 0.125; // 12.5% annual returns estimate
+    // Calculate returns (assume 12.5% APY on current invested amount)
+    const totalReturns = totalInvested * 0.125; // 12.5% annual returns estimate
 
-    // Count project statuses
-    const statusCounts = projects.reduce((counts: any, project: any) => {
-      if (project.status === 'live' || project.status === 'approved' || project.status === 'pending') {
+    // Count project statuses correctly
+    const statusCounts = projects.reduce((counts: any, project: Project) => {
+      const status = project.status;
+
+      // Active projects: live, approved, pending
+      if (['live', 'approved', 'pending'].includes(status)) {
         counts.active += 1;
       }
-      if (project.status === 'completed') {
+
+      // Completed projects
+      if (status === 'completed') {
         counts.completed += 1;
       }
-      if (project.status === 'pending' || project.status === 'approved') {
+
+      // Pending projects (pending, approved)
+      if (['pending', 'approved'].includes(status)) {
         counts.pending += 1;
       }
+
+      // Draft projects
+      if (status === 'draft') {
+        counts.draft += 1;
+      }
+
+      // Rejected projects
+      if (status === 'rejected') {
+        counts.rejected += 1;
+      }
+
       return counts;
-    }, { active: 0, completed: 0, pending: 0 });
+    }, { active: 0, completed: 0, pending: 0, draft: 0, rejected: 0 });
 
     // Calculate average APY for active projects (in production, this would be dynamic per project)
     const averageAPY = projects.length > 0 ? 12.5 : 0;
 
     return {
-      // Total target amount from all user's projects
-      totalInvested: totalTarget,
+      // Total raised amount (actual invested)
+      totalInvested: totalInvested,
 
       // Estimated returns (in production, this would be actual paid returns)
       totalReturns: Math.round(totalReturns),
@@ -134,6 +156,9 @@ export default function PandoriansDashboardPage() {
       activeProjects: statusCounts.active,
       pendingProjects: statusCounts.pending,
       completedProjects: statusCounts.completed,
+      draftProjects: statusCounts.draft,
+      rejectedProjects: statusCounts.rejected,
+      totalProjects: projects.length,
 
       // APY calculation
       averageAPY: averageAPY,

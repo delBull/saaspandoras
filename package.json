@@ -23,6 +23,8 @@
     "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^22.15.34",
     "check-dependency-version-consistency": "4.1.0",
+    "@typescript-eslint/eslint-plugin": "^7.10.0",
+    "eslint-plugin-turbo": "1.13.3",
     "drizzle-kit": "^0.31.4",
     "node-gyp": "^11.4.2",
     "node-gyp-build": "^4.8.4",
@@ -44,6 +46,7 @@
   "dependencies": {
     "@radix-ui/react-tooltip": "^1.2.7",
     "@vercel/analytics": "^1.5.0",
+    "react-hook-form": "7.51.4",
     "caniuse-lite": "^1.0.30001726",
     "canvas-confetti": "^1.9.3",
     "class-variance-authority": "^0.7.1",
@@ -61,7 +64,8 @@
     "sooner": "^1.1.4",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
-    "thirdweb": "^5.105.44"
+    "zod": "3.22.4",
+    "thirdweb": "^5.106.0"
   },
   "overrides": {
     "next": "15.5.4"
