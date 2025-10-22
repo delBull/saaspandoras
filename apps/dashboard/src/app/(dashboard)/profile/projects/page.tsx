@@ -148,22 +148,16 @@ export default function ProfileProjectsPage() {
 
           let userProjects: Project[] = [];
           if (isSuperAdmin) {
-            // Super admin sees all manageable projects
-            userProjects = projects.filter(p =>
-              ['pending', 'approved', 'live', 'completed'].includes(p.status)
-            );
+            // Super admin sees ALL projects regardless of status
+            userProjects = projects;
           } else {
-            // Regular users see ONLY their projects by wallet address
+            // Regular users see ALL their projects by exact wallet address match
             userProjects = projects.filter(p => {
-              const projectWallet = p.applicantWalletAddress?.toLowerCase().trim();
-              const userWallet = walletAddress.toLowerCase().trim();
+              const projectWallet = p.applicantWalletAddress?.toLowerCase();
+              const userWallet = walletAddress.toLowerCase();
 
-              // More robust matching - handle different formats and edge cases
-              const matches = projectWallet === userWallet ||
-                             projectWallet === userWallet.replace('0x', '') ||
-                             (projectWallet && userWallet && projectWallet.endsWith(userWallet.slice(-8))) ||
-                             // Also check if wallet ends with last 10 characters (more flexible)
-                             (projectWallet && userWallet && projectWallet.endsWith(userWallet.slice(-10)));
+              // Simple and reliable matching
+              const matches = projectWallet === userWallet;
 
               if (process.env.NODE_ENV === 'development') {
                 console.log('🔍 PROJECT FILTER CHECK:', {
@@ -171,13 +165,7 @@ export default function ProfileProjectsPage() {
                   projectTitle: p.title,
                   projectWallet: p.applicantWalletAddress,
                   userWallet: walletAddress,
-                  projectWalletLower: projectWallet,
-                  userWalletLower: userWallet,
-                  matches: matches,
-                  walletLengths: {
-                    project: projectWallet?.length,
-                    user: userWallet?.length
-                  }
+                  matches: matches
                 });
               }
 
