@@ -11,8 +11,8 @@ interface UsersTableProps {
 export function UsersTable({ users }: UsersTableProps) {
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
 
-  // Ensure users is always an array
-  const usersArray = Array.isArray(users) ? users : [];
+  // Ensure users is always an array - memoized to prevent unnecessary re-renders
+  const usersArray = useMemo(() => Array.isArray(users) ? users : [], [users]);
 
   // Filtered users based on selected role filter
   const filteredUsers = useMemo(() => {
