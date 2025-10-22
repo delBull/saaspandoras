@@ -83,7 +83,7 @@ export function ApplicantsFilters({
   return (
     <div className="space-y-4">
       {/* Desktop Filters Bar */}
-      <div className="hidden lg:flex items-center justify-between gap-4 p-4 bg-gray-50 dark:bg-zinc-900/50 rounded-xl border border-gray-200 dark:border-zinc-800">
+      <div className="hidden lg:flex items-center justify-between gap-4 p-4 bg-gray-50 dark:bg-zinc-900/50 rounded-xl border border-gray-200 dark:border-zinc-800 overflow-hidden">
         <div className="flex items-center gap-4 flex-1">
           {/* Search */}
           <div className="relative flex-1 max-w-md">

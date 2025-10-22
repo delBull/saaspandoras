@@ -128,20 +128,20 @@ export default function StartPage() {
           </motion.div>
 
           <div className="mb-8">
-            <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6">
-              <StaggerText
-                text="Activos Reales."
-                className="block"
-                delay={0.5}
-                staggerDelay={0.1}
-              />
-              <StaggerText
-                text="Inversión Digital."
-                className="block"
-                delay={1}
-                staggerDelay={0.1}
-              />
-            </h1>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight mb-6">
+            <StaggerText
+              text="Activos Reales."
+              className="block"
+              delay={0.5}
+              staggerDelay={0.1}
+            />
+            <StaggerText
+              text="Inversión Digital."
+              className="block"
+              delay={1}
+              staggerDelay={0.1}
+            />
+          </h1>
 
             <div className="text-2xl md:text-3xl mb-6">
               <TypewriterText
@@ -175,10 +175,12 @@ export default function StartPage() {
           >
             <Button
               size="lg"
-              className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white font-bold text-lg px-12 py-6 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg shadow-blue-500/25"
+              className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white font-bold text-base md:text-lg px-8 md:px-12 py-4 md:py-6 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg shadow-blue-500/25 w-full sm:w-auto max-w-xs md:max-w-none"
             >
-              ¿Listo para Evolucionar?
-              <ArrowRight className="ml-2 w-5 h-5" />
+              <span className="flex items-center gap-2">
+                ¿Listo para Evolucionar?
+                <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
+              </span>
             </Button>
           </motion.div>
         </motion.div>
@@ -587,7 +589,7 @@ export default function StartPage() {
 
             {!isSubscribed ? (
               <div className="space-y-4">
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     type="email"
                     placeholder="tu@email.com"
@@ -597,7 +599,7 @@ export default function StartPage() {
                   />
                   <Button
                     onClick={handleSubscription}
-                    className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white px-6"
+                    className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white px-6 w-full sm:w-auto"
                   >
                     Suscribir
                   </Button>
@@ -679,10 +681,12 @@ export default function StartPage() {
 
             <Button
               size="lg"
-              className="bg-gradient-to-r from-lime-500 to-green-500 hover:from-lime-400 hover:to-green-400 text-black font-bold text-xl px-16 py-8 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg shadow-lime-500/25"
+              className="bg-gradient-to-r from-lime-500 to-green-500 hover:from-lime-400 hover:to-green-400 text-black font-bold text-base md:text-xl px-8 md:px-16 py-4 md:py-8 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg shadow-lime-500/25 w-full sm:w-auto"
             >
-              Unirme a la Evolución Pandora
-              <ArrowRight className="ml-3 w-6 h-6" />
+              <span className="flex items-center gap-2">
+                Unirme a la Evolución Pandora
+                <ArrowRight className="w-4 h-4 md:w-6 md:h-6" />
+              </span>
             </Button>
           </div>
         </motion.div>

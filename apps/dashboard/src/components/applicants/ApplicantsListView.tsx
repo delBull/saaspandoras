@@ -30,9 +30,9 @@ export function ApplicantsListView({ projects, variant = 'approved' }: Applicant
       {projects.map((project) => (
         <div
           key={project.id}
-          className="bg-zinc-900/60 rounded-xl p-6 border border-zinc-800 hover:border-lime-400/30 transition-all duration-200"
+          className="bg-zinc-900/60 rounded-xl p-4 md:p-6 border border-zinc-800 hover:border-lime-400/30 transition-all duration-200"
         >
-          <div className="flex items-start justify-between gap-6">
+          <div className="flex items-start justify-between gap-4 md:gap-6">
             {/* Project Info */}
             <div className="flex-1 min-w-0">
               <div className="flex items-start gap-4">
