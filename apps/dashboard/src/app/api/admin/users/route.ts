@@ -50,7 +50,7 @@ export async function GET() {
     console.log('🛠️ [Admin/Users] Fetching users from database...');
 
     // Define constants first
-    const SUPER_ADMIN_WALLETS = ['0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9'];
+    const SUPER_ADMIN_WALLETS = ['0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9'] as const;
 
     // Use postgres.js directly - the simplest possible query
     try {
