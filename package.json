@@ -44,6 +44,7 @@
   "dependencies": {
     "@radix-ui/react-tooltip": "^1.2.7",
     "@vercel/analytics": "^1.5.0",
+    "react-hook-form": "7.51.4",
     "caniuse-lite": "^1.0.30001726",
     "canvas-confetti": "^1.9.3",
     "class-variance-authority": "^0.7.1",
