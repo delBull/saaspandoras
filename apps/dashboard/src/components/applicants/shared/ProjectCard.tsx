@@ -37,13 +37,8 @@ export function ProjectCard({ project, variant = 'approved', gridColumns = 3 }: 
   };
 
   const getImageAspectRatio = () => {
-    if (isPending) return '75%';
-    switch (gridColumns) {
-      case 6: return '60%'; // Más cuadrado para tarjetas pequeñas
-      case 4: return '56%'; // Proporción media
-      case 3:
-      default: return '50%'; // Más rectangular para tarjetas grandes
-    }
+    // Mantener aspect ratio consistente para todas las tarjetas
+    return '56%'; // 16:9 aspect ratio para todas las tarjetas
   };
 
   const getPadding = () => {
@@ -143,11 +138,13 @@ export function ProjectCard({ project, variant = 'approved', gridColumns = 3 }: 
               Aprobado
             </span>
           )}
-          <Link href={`/projects/${project.slug}`} className={`flex items-center gap-1 hover:opacity-80 transition-opacity ${
+          <Link href={`/projects/${project.slug}`} className={`flex items-center gap-1 hover:opacity-80 transition-opacity overflow-hidden ${
             isPending ? 'text-xs' : gridColumns === 6 ? 'text-xs' : 'text-sm'
           } ${variant === 'pending' ? 'text-lime-400' : 'text-emerald-400'}`}>
-            <EyeIcon className={`${gridColumns === 6 ? 'w-3 h-3' : 'w-4 h-4'}`} />
-            {gridColumns === 6 ? 'Ver' : 'Ver Proyecto'}
+            <EyeIcon className={`${gridColumns === 6 ? 'w-3 h-3' : 'w-4 h-4'} flex-shrink-0`} />
+            <span className={`truncate ${gridColumns === 6 ? 'hidden' : gridColumns === 4 ? 'hidden sm:inline' : 'inline'}`}>
+              {gridColumns === 6 ? 'Ver' : gridColumns === 4 ? 'Ver' : 'Ver Proyecto'}
+            </span>
           </Link>
         </div>
       </div>

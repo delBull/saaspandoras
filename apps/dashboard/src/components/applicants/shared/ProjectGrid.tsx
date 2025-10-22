@@ -39,7 +39,7 @@ export function ProjectGrid({
 
   // Grid view
   const getGridClasses = () => {
-    const baseClasses = 'gap-4 md:gap-6 place-items-center';
+    const baseClasses = 'gap-3 md:gap-4 lg:gap-6 place-items-center';
 
     if (variant === 'pending') {
       return `grid grid-cols-1 ${baseClasses}`;
@@ -48,12 +48,12 @@ export function ProjectGrid({
     // Responsive grid based on selected columns with better breakpoints
     switch (gridColumns) {
       case 6:
-        return `grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 ${baseClasses}`;
+        return `grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 ${baseClasses}`;
       case 4:
-        return `grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 ${baseClasses}`;
+        return `grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 ${baseClasses}`;
       case 3:
       default:
-        return `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 ${baseClasses}`;
+        return `grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 ${baseClasses}`;
     }
   };
 
