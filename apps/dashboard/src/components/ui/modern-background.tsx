@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import React from "react";
 import { cn } from "@saasfly/ui";
 
 interface ModernBackgroundProps {
@@ -10,12 +11,28 @@ interface ModernBackgroundProps {
   particleCount?: number;
 }
 
+interface Particle {
+  left: string;
+  top: string;
+}
+
 export function ModernBackground({
   className = "",
   showParticles = true,
   showGradient = true,
   particleCount = 20
 }: ModernBackgroundProps) {
+  const [particles, setParticles] = React.useState<Particle[]>([]);
+
+  React.useEffect(() => {
+    // Generate particle positions only on the client-side after mount
+    const newParticles = Array.from({ length: particleCount }).map(() => ({
+      left: `${Math.random() * 100}%`,
+      top: `${Math.random() * 100}%`,
+    }));
+    setParticles(newParticles);
+  }, [particleCount]);
+
   return (
     <div className={cn("fixed inset-0 overflow-hidden pointer-events-none", className)}>
       {/* Gradiente de fondo animado */}
@@ -74,13 +91,13 @@ export function ModernBackground({
       {/* Partículas flotantes */}
       {showParticles && (
         <>
-          {Array.from({ length: particleCount }, (_, i) => (
+          {particles.map((particle, i) => (
             <motion.div
               key={i}
               className="absolute w-1 h-1 bg-white/20 rounded-full"
               style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
+                left: particle.left,
+                top: particle.top,
               }}
               animate={{
                 y: [0, -100, 0],

@@ -155,7 +155,7 @@ export default function ApplyInfoPage() {
 
   const successMetrics = [
     { value: "< 5%", label: "Tasa de Aprobación", description: "Solo los mejores proyectos pasan nuestro filtro" },
-    { value: "6-8 semanas", label: "Proceso Promedio", description: "Tiempo desde aplicación hasta lanzamiento" },
+    { value: "6-8\nsemanas", label: "Proceso Promedio", description: "Tiempo desde aplicación hasta lanzamiento" },
     { value: "$50M+", label: "Capital Movilizado", description: "A través de nuestra plataforma hasta la fecha" },
     { value: "50+", label: "Proyectos Exitosos", description: "Lanzados y operando exitosamente" }
   ];
@@ -424,14 +424,16 @@ export default function ApplyInfoPage() {
                 size="lg"
                 disabled={!acceptedTerms}
                 className={cn(
-                  "bg-gradient-to-r from-lime-500 to-emerald-500 text-black font-bold text-lg px-12 py-6 rounded-xl transition-all duration-300",
+                  "bg-gradient-to-r from-lime-500 to-emerald-500 text-black font-bold text-base md:text-lg px-8 md:px-12 py-4 md:py-6 rounded-xl transition-all duration-300 w-full sm:w-auto",
                   acceptedTerms
                     ? "hover:from-lime-400 hover:to-emerald-400 hover:scale-105 shadow-lg shadow-lime-500/25"
                     : "opacity-50 cursor-not-allowed"
                 )}
               >
-                Comenzar Aplicación
-                <ArrowRight className="ml-2 w-5 h-5" />
+                <span className="flex items-center gap-2">
+                  Comenzar Aplicación
+                  <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
+                </span>
               </Button>
             </Link>
 
