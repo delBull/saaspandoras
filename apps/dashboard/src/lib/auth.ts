@@ -83,9 +83,11 @@ export async function getAuth(headers?: MinimalHeaders, userAddress?: string) {
       // Try multiple header names in case Vercel filters some
       const headerAddress = headers.get('x-thirdweb-address') ??
                           headers.get('x-wallet-address') ??
-                          headers.get('x-user-address');
+                          headers.get('x-user-address') ??
+                          headers.get('x-address');
       if (headerAddress) {
         address = headerAddress;
+        console.log('✅ [Auth] Found address in headers:', address.substring(0, 10) + '...');
       }
     } catch (error) {
       console.error('Error accessing headers:', error);
@@ -101,6 +103,26 @@ export async function getAuth(headers?: MinimalHeaders, userAddress?: string) {
 
       // First try the simple wallet-address cookie
       address = cookieStore.get('wallet-address')?.value ?? null;
+
+      // If not found, try ThirdWeb specific cookies
+      if (!address) {
+        address = cookieStore.get('thirdweb:wallet-address')?.value ?? null;
+      }
+
+      // If not found, try other possible cookie names
+      if (!address) {
+        const allCookies = cookieStore.getAll();
+        const walletCookie = allCookies.find(cookie =>
+          cookie.name.includes('wallet') &&
+          cookie.name.includes('address') &&
+          cookie.value &&
+          cookie.value.startsWith('0x') &&
+          cookie.value.length === 42
+        );
+        if (walletCookie) {
+          address = walletCookie.value;
+        }
+      }
 
       // If not found, try to decode the JWT token
       if (!address) {
@@ -140,9 +162,22 @@ export async function getAuth(headers?: MinimalHeaders, userAddress?: string) {
           }
         }
       }
+
+      if (address) {
+        console.log('✅ [Auth] Found address in cookies:', address.substring(0, 10) + '...');
+      }
     } catch (error) {
       console.error('Error accessing cookies:', error);
     }
+  }
+
+  // Log final result for debugging
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🏠 [Auth] Final session result:', {
+      hasAddress: !!address,
+      address: address ? address.substring(0, 10) + '...' : null,
+      userId: address ? address.toLowerCase().substring(0, 10) + '...' : null
+    });
   }
 
   return {

@@ -18,14 +18,14 @@ export async function GET(_request: Request) {
 
     // Check admin authentication
     const { session } = await getAuth(await headers());
-    const userIsAdmin = await isAdmin(session?.userId);
+    const userIsAdmin = await isAdmin(session?.address ?? session?.userId);
 
     if (!userIsAdmin) {
-      console.log('❌ Admin API: Access denied for user:', session?.userId);
+      console.log('❌ Admin API: Access denied for user:', session?.address ?? session?.userId);
       return NextResponse.json({ message: "No autorizado" }, { status: 403 });
     }
 
-    console.log('✅ Admin API: Authentication passed for user:', session?.userId);
+    console.log('✅ Admin API: Authentication passed for user:', session?.address ?? session?.userId);
 
     console.log('🔍 Admin API: Fetching projects from database...');
 
@@ -201,9 +201,10 @@ export async function GET(_request: Request) {
 
 export async function POST(request: Request) {
   const { session } = await getAuth(await headers());
-  const userIsAdmin = await isAdmin(session?.userId);
+  const userIsAdmin = await isAdmin(session?.address ?? session?.userId);
 
   if (!userIsAdmin) {
+    console.log('❌ Admin API POST: Access denied for user:', session?.address ?? session?.userId);
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
   }
 
@@ -241,13 +242,17 @@ export async function POST(request: Request) {
     }
 
     // Get creator information for better project tracking
-    const creatorWallet = session?.userId ?? 'system';
+    const creatorWallet = session?.address ?? session?.userId ?? 'system';
     const creatorInfo = await db.execute(sql`
       SELECT "name", "email" FROM "users" WHERE "walletAddress" = ${creatorWallet}
     `);
     const creatorName = creatorInfo[0] ? String(creatorInfo[0].name) : 'Unknown';
 
-    console.log(`🏗️ Project created by: ${creatorWallet} (${creatorName})`);
+    console.log(`🏗️ Project created by: ${creatorWallet} (${creatorName})`, {
+      sessionAddress: session?.address?.substring(0, 10) + '...',
+      sessionUserId: session?.userId?.substring(0, 10) + '...',
+      finalCreatorWallet: creatorWallet
+    });
 
     // Insertar en la base de datos con estado 'approved' and creator tracking
     const [newProject] = await db
