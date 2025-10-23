@@ -148,6 +148,43 @@ main.flex-1.p-8 {
 
 a[href$="/invest"],
 a[href$="/stake"] {
-  font-family: 'Shadows Into Light', cursive !important;
-  text-shadow: 0 0 8px rgba(255,255,255,0.8) !important;
+   font-family: 'Shadows Into Light', cursive !important;
+   text-shadow: 0 0 8px rgba(255,255,255,0.8) !important;
+}
+
+/* Terms Modal Styles */
+.terms-content {
+  line-height: 1.6;
+  padding: 1rem 0;
+}
+
+.terms-content::first-line {
+  font-weight: bold;
+  color: #a7f3d0;
+  font-size: 1.125rem;
+}
+
+.terms-content {
+  position: relative;
+}
+
+.terms-content::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+}
+
+.terms-content {
+  padding-left: 0;
+}
+
+.terms-content {
+  white-space: pre-line;
+}
+
+.terms-content {
+  color: #d1d5db;
 }
