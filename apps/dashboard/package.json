@@ -18,7 +18,8 @@
     "db:fix-production": "node call-api.mjs",
     "db:export-local": "node export-local-schema.mjs",
     "db:sync-production": "node sync-production.mjs",
-    "db:full-sync": "node full-sync.mjs"
+    "db:full-sync": "node full-sync.mjs",
+    "db:push:pg": "drizzle-kit push"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
