@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { cn } from "@saasfly/ui";
+import { cn } from '~/lib/utils';
 import { buttonVariants } from "@saasfly/ui/button";
 import {
   Card,
@@ -16,7 +16,7 @@ import * as Icons from "@saasfly/ui/icons";
 import { toast } from "@saasfly/ui/use-toast";
 
 import { formatDate } from "~/lib/utils";
-import { UserSubscriptionPlan } from "~/types";
+import type { UserSubscriptionPlan } from "~/types";
 
 interface BillingFormProps extends React.HTMLAttributes<HTMLFormElement> {
   subscriptionPlan: UserSubscriptionPlan & {

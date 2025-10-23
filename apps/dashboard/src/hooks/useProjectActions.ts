@@ -1,16 +1,24 @@
+import { toast } from 'sonner';
 import type { ProjectStatus } from '@/types/admin';
 
 interface ProjectActionsProps {
   setActionsLoading: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+  walletAddress?: string;
+  refreshCallback?: () => void | Promise<void>;
 }
 
-export function useProjectActions({ setActionsLoading }: ProjectActionsProps) {
+export function useProjectActions({ setActionsLoading, walletAddress, refreshCallback }: ProjectActionsProps) {
   // Function to handle project deletion with confirmation
   const deleteProject = async (projectId: string, projectTitle: string) => {
     const confirmMessage = `¿Eliminar proyecto "${projectTitle}"?\n\nEsta acción NO SE PUEDE deshacer.`;
     const isConfirmed = window.confirm(confirmMessage);
 
     if (!isConfirmed) return;
+
+    if (!walletAddress) {
+      alert('Error: No se pudo obtener la dirección de tu wallet. Conecta tu wallet primero.');
+      return;
+    }
 
     const actionKey = `delete-${projectId}`;
     setActionsLoading((prev) => ({ ...prev, [actionKey]: true }));
@@ -19,20 +27,27 @@ export function useProjectActions({ setActionsLoading }: ProjectActionsProps) {
       console.log('Deleting project:', projectId);
       const response = await fetch(`/api/admin/projects/${projectId}`, {
         method: 'DELETE',
+        headers: {
+          'x-thirdweb-address': walletAddress,
+          'x-wallet-address': walletAddress,
+          'x-user-address': walletAddress,
+        },
       });
 
       if (response.ok) {
-        // Reload page to update the list
-        window.location.reload();
-        alert('Proyecto eliminado exitosamente');
+        toast.success('Proyecto eliminado exitosamente');
         console.log('Project deleted successfully');
+        // Refresh data instead of reloading page
+        if (refreshCallback) {
+          await refreshCallback();
+        }
       } else {
         const errorText = await response.text().catch(() => 'Error desconocido');
         let errorMessage = 'Error desconocido';
         if (errorText) {
           errorMessage = errorText;
         }
-        alert(`Error al eliminar el proyecto: ${errorMessage}`);
+        toast.error(`Error al eliminar el proyecto: ${errorMessage}`);
         console.error('Failed to delete project:', response.status, errorMessage);
       }
     } catch (error) {
@@ -50,21 +65,34 @@ export function useProjectActions({ setActionsLoading }: ProjectActionsProps) {
 
     if (!isConfirmed) return;
 
+    if (!walletAddress) {
+      alert('Error: No se pudo obtener la dirección de tu wallet. Conecta tu wallet primero.');
+      return;
+    }
+
     const actionKey = `approve-${projectId}`;
     setActionsLoading((prev) => ({ ...prev, [actionKey]: true }));
 
     try {
       const response = await fetch(`/api/admin/projects/${projectId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-thirdweb-address': walletAddress,
+          'x-wallet-address': walletAddress,
+          'x-user-address': walletAddress,
+        },
         body: JSON.stringify({ status: 'approved' }),
       });
 
       if (response.ok) {
-        window.location.reload(); // Reload to update the list
-        alert('Proyecto aprobado exitosamente');
+        toast.success('Proyecto aprobado exitosamente');
+        // Refresh data instead of reloading page
+        if (refreshCallback) {
+          await refreshCallback();
+        }
       } else {
-        alert('Error al aprobar el proyecto');
+        toast.error('Error al aprobar el proyecto');
       }
     } catch (error) {
       alert('Error de conexión');
@@ -78,8 +106,8 @@ export function useProjectActions({ setActionsLoading }: ProjectActionsProps) {
   const rejectProject = async (projectId: string, projectTitle: string) => {
     const rejectionType = window.confirm(`Proyecto: "${projectTitle}"\n\n¿Es un "No completado" (continúa aplicando) o "Rechazado" definitivamente?`);
 
-    const newStatus = rejectionType ? 'rejected' : 'incomplete';
-    const statusText = rejectionType ? 'rechazado' : 'marcado como no completado';
+    const newStatus = 'rejected';
+    const statusText = 'rechazado';
 
     const confirmMessage = `¿${statusText} el proyecto "${projectTitle}"?\n\n${
       rejectionType
@@ -89,21 +117,34 @@ export function useProjectActions({ setActionsLoading }: ProjectActionsProps) {
 
     if (!window.confirm(confirmMessage)) return;
 
+    if (!walletAddress) {
+      alert('Error: No se pudo obtener la dirección de tu wallet. Conecta tu wallet primero.');
+      return;
+    }
+
     const actionKey = `reject-${projectId}`;
     setActionsLoading((prev) => ({ ...prev, [actionKey]: true }));
 
     try {
       const response = await fetch(`/api/admin/projects/${projectId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-thirdweb-address': walletAddress,
+          'x-wallet-address': walletAddress,
+          'x-user-address': walletAddress,
+        },
         body: JSON.stringify({ status: newStatus }),
       });
 
       if (response.ok) {
-        window.location.reload(); // Reload to update the list
-        alert(`Proyecto ${statusText} exitosamente`);
+        toast.success(`Proyecto ${statusText} exitosamente`);
+        // Refresh data instead of reloading page
+        if (refreshCallback) {
+          await refreshCallback();
+        }
       } else {
-        alert(`Error al ${statusText} el proyecto`);
+        toast.error(`Error al ${statusText} el proyecto`);
       }
     } catch (error) {
       alert('Error de conexión');
@@ -113,14 +154,12 @@ export function useProjectActions({ setActionsLoading }: ProjectActionsProps) {
     }
   };
 
-  // Function to change project status to any value
+  // Function to change project status to any valid value (only DB ENUM values)
   const changeProjectStatus = async (projectId: string, projectTitle: string, newStatus: ProjectStatus) => {
     const statusLabels: Record<ProjectStatus, string> = {
-      draft: 'Borrador',
       pending: 'Pendiente',
       approved: 'Aprobado',
       rejected: 'Rechazado',
-      incomplete: 'Incompleto',
       live: 'En Vivo',
       completed: 'Completado'
     };
@@ -129,25 +168,89 @@ export function useProjectActions({ setActionsLoading }: ProjectActionsProps) {
 
     if (!window.confirm(confirmMessage)) return;
 
+    if (!walletAddress) {
+      alert('Error: No se pudo obtener la dirección de tu wallet. Conecta tu wallet primero.');
+      return;
+    }
+
     const actionKey = `change-status-${projectId}`;
     setActionsLoading((prev) => ({ ...prev, [actionKey]: true }));
 
     try {
       const response = await fetch(`/api/admin/projects/${projectId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-thirdweb-address': walletAddress,
+          'x-wallet-address': walletAddress,
+          'x-user-address': walletAddress,
+        },
         body: JSON.stringify({ status: newStatus }),
       });
 
       if (response.ok) {
-        window.location.reload(); // Reload to update the list
-        alert('Status del proyecto actualizado exitosamente');
+        toast.success('Status del proyecto actualizado exitosamente');
+        // Refresh data instead of reloading page
+        if (refreshCallback) {
+          await refreshCallback();
+        }
       } else {
-        alert('Error al cambiar el status del proyecto');
+        const errorText = await response.text().catch(() => 'Error desconocido');
+        console.error('Error response:', response.status, errorText);
+        toast.error(`Error al cambiar el status del proyecto: ${response.status} - ${errorText}`);
       }
     } catch (error) {
       alert('Error de conexión');
       console.error('Error changing project status:', error);
+    } finally {
+      setActionsLoading((prev) => ({ ...prev, [actionKey]: false }));
+    }
+  };
+
+  // Function to transfer project ownership
+  const transferProject = async (projectId: string, projectTitle: string, newOwnerWallet: string) => {
+    const confirmMessage = `¿Transferir la propiedad del proyecto "${projectTitle}" a la wallet ${newOwnerWallet.substring(0, 8)}...?`;
+
+    if (!window.confirm(confirmMessage)) return;
+
+    if (!walletAddress) {
+      alert('Error: No se pudo obtener la dirección de tu wallet. Conecta tu wallet primero.');
+      return;
+    }
+
+    const actionKey = `transfer-${projectId}`;
+    setActionsLoading((prev) => ({ ...prev, [actionKey]: true }));
+
+    try {
+      console.log('🔄 CLIENT: Transfer request - walletAddress:', walletAddress);
+      console.log('🔄 CLIENT: Transfer request - newOwnerWallet:', newOwnerWallet);
+
+      const response = await fetch(`/api/admin/projects/${projectId}/transfer`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-thirdweb-address': walletAddress,
+          'x-wallet-address': walletAddress,
+          'x-user-address': walletAddress,
+        },
+        body: JSON.stringify({ newOwnerWallet }),
+      });
+
+      console.log('🔄 CLIENT: Transfer response status:', response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Error desconocido' })) as { message?: string };
+        throw new Error(errorData.message ?? 'No se pudo transferir el proyecto.');
+      }
+
+      toast.success('Proyecto transferido exitosamente');
+      // Refresh data instead of reloading page
+      if (refreshCallback) {
+        await refreshCallback();
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Error al transferir el proyecto');
+      console.error('Error transferring project:', error);
     } finally {
       setActionsLoading((prev) => ({ ...prev, [actionKey]: false }));
     }
@@ -158,5 +261,6 @@ export function useProjectActions({ setActionsLoading }: ProjectActionsProps) {
     approveProject,
     rejectProject,
     changeProjectStatus,
+    transferProject,
   };
 }

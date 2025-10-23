@@ -11,11 +11,14 @@ interface UsersTableProps {
 export function UsersTable({ users }: UsersTableProps) {
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
 
+  // Ensure users is always an array - memoized to prevent unnecessary re-renders
+  const usersArray = useMemo(() => Array.isArray(users) ? users : [], [users]);
+
   // Filtered users based on selected role filter
   const filteredUsers = useMemo(() => {
-    if (roleFilter === 'all') return users;
-    return users.filter(user => user.role === roleFilter);
-  }, [users, roleFilter]);
+    if (roleFilter === 'all') return usersArray;
+    return usersArray.filter(user => user.role === roleFilter);
+  }, [usersArray, roleFilter]);
 
   // Role counts for filter badges
   const roleCounts = useMemo(() => {
@@ -25,12 +28,12 @@ export function UsersTable({ users }: UsersTableProps) {
       admin: 0,
     };
 
-    users.forEach(user => {
+    usersArray.forEach(user => {
       counts[user.role]++;
     });
 
     return counts;
-  }, [users]);
+  }, [usersArray]);
 
   // Function to get role display text and styling
   const getRoleDisplay = (role: UserRole) => {
@@ -66,7 +69,7 @@ export function UsersTable({ users }: UsersTableProps) {
           </p>
         </div>
         <div className="text-right">
-          <div className="text-2xl font-bold text-cyan-400">{users.length}</div>
+          <div className="text-2xl font-bold text-cyan-400">{usersArray.length}</div>
           <div className="text-xs text-gray-400">Total Usuarios</div>
         </div>
       </div>
@@ -110,7 +113,7 @@ export function UsersTable({ users }: UsersTableProps) {
               <th className="px-4 py-3 text-left font-semibold text-gray-300">Usuario</th>
               <th className="px-4 py-3 text-left font-semibold text-gray-300">Wallet</th>
               <th className="px-4 py-3 text-left font-semibold text-gray-300">Rol</th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-300">Proyectos</th>
+              <th className="px-4 py-3 text-left font-semibold text-gray-300">Creaciones</th>
               <th className="px-4 py-3 text-left font-semibold text-gray-300">Conexiones</th>
               <th className="px-4 py-3 text-left font-semibold text-gray-300">Última Conex.</th>
               <th className="px-4 py-3 text-left font-semibold text-gray-300">Pandoras Key</th>
@@ -206,7 +209,7 @@ export function UsersTable({ users }: UsersTableProps) {
         <div className="bg-zinc-800 rounded-lg p-4 text-center">
           <div className="text-cyan-400 text-lg">📊</div>
           <div className="text-2xl font-bold text-white">{users.filter(u => u.projectCount > 0).length}</div>
-          <div className="text-xs text-gray-400">Con Proyectos</div>
+          <div className="text-xs text-gray-400">Con Creaciones</div>
         </div>
         <div className="bg-zinc-800 rounded-lg p-4 text-center">
           <div className="text-orange-400 text-lg">🔗</div>

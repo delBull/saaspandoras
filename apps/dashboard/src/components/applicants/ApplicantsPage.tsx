@@ -5,11 +5,13 @@ export const dynamic = 'force-dynamic';
 
 import React from "react";
 import { Loader2, ArrowLeftIcon } from "lucide-react";
-import { Button } from "@saasfly/ui/button";
+import { Button } from "@/components/ui/button";
 import { ApplicantsDesktop } from "./ApplicantsDesktop";
 import { ApplicantsMobile } from "./ApplicantsMobile";
 import { MultiStepForm } from "../../app/(dashboard)/admin/projects/[id]/edit/multi-step-form";
-import { useApplicantsData, type ApplicantsData } from "../../hooks/applicants/useApplicantsData";
+import { useApplicantsDataBasic, type ApplicantsData } from "../../hooks/applicants/useApplicantsDataBasic";
+import { useProjectFilters } from "../../hooks/applicants/useProjectFilters";
+
 
 interface FormProps {
   showForm: boolean;
@@ -63,7 +65,25 @@ export default function ApplicantsPage() {
     showMobilePendingModal,
     setIsPendingPanelCollapsed,
     setShowMobilePendingModal,
-  }: ApplicantsData = useApplicantsData();
+  }: ApplicantsData = useApplicantsDataBasic();
+
+  const {
+    viewMode,
+    setViewMode,
+    gridColumns,
+    setGridColumns,
+    filters,
+    updateFilter,
+    clearFilters,
+    hasActiveFilters,
+    filteredProjects,
+    totalProjects,
+    filteredCount,
+  } = useProjectFilters({
+    projects: approvedProjects, // Only use approved projects for filtering
+  });
+
+
   const [showForm, setShowForm] = React.useState(false);
 
   const handleApplyClick = () => {
@@ -79,7 +99,7 @@ export default function ApplicantsPage() {
       <div className="flex items-center justify-center min-h-screen text-white">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-12 h-12 animate-spin text-lime-500" />
-          <p className="text-lg text-gray-400">Cargando Proyectos...</p>
+          <p className="text-lg text-gray-400">Cargando Creaciones...</p>
         </div>
       </div>
     );
@@ -90,22 +110,45 @@ export default function ApplicantsPage() {
     return <NewProjectForm showForm={showForm} onCancel={handleCancel} />;
   }
 
+  // Usar proyectos filtrados para los proyectos aprobados
+  const filteredApprovedProjects = filteredProjects; // Los filtros se aplican dentro del hook
+
   return (
     <>
       <ApplicantsDesktop
         pendingProjects={pendingProjects}
-        approvedProjects={approvedProjects}
+        approvedProjects={filteredApprovedProjects}
         isPendingPanelCollapsed={isPendingPanelCollapsed}
         onTogglePanelCollapse={() => setIsPendingPanelCollapsed(!isPendingPanelCollapsed)}
         onApplyClick={handleApplyClick}
+        // Filtros activados
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        gridColumns={gridColumns}
+        onGridColumnsChange={setGridColumns}
+        filters={filters}
+        updateFilter={(key: string, value: string) => updateFilter(key as keyof typeof filters, value)}
+        clearFilters={clearFilters}
+        hasActiveFilters={hasActiveFilters}
+        totalProjects={totalProjects}
+        filteredCount={filteredCount}
       />
 
       <ApplicantsMobile
         pendingProjects={pendingProjects}
-        approvedProjects={approvedProjects}
+        approvedProjects={filteredApprovedProjects}
         showMobileModal={showMobilePendingModal}
         setShowMobileModal={setShowMobilePendingModal}
         onApplyClick={handleApplyClick}
+        // Filtros activados para móvil
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        filters={filters}
+        updateFilter={(key: string, value: string) => updateFilter(key as keyof typeof filters, value)}
+        clearFilters={clearFilters}
+        hasActiveFilters={hasActiveFilters}
+        totalProjects={totalProjects}
+        filteredCount={filteredCount}
       />
     </>
   );

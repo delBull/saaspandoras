@@ -37,26 +37,31 @@ export async function GET() {
       console.log("❌ NO SESSION USERID FOUND");
     }
 
-    // 🚫 DEBUG OVERRIDE - Force admin for testing
-    const debugOverride = session?.userId?.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase();
-    console.log("🛠️ DEBUG OVERRIDE LOGIC:");
-    console.log("- session?.userId exists:", !!session?.userId);
-    console.log("- session?.userId.toLowerCase():", session?.userId?.toLowerCase());
-    console.log("- SUPER_ADMIN_WALLET.toLowerCase():", SUPER_ADMIN_WALLET.toLowerCase());
-    console.log("- override should be:", debugOverride);
+    console.log("� FINAL RESULT:", { isAdmin: userIsAdmin, isSuperAdmin: userIsSuperAdmin });
 
-    console.log("📋 FINAL RESULT:", { isAdmin: userIsAdmin, isSuperAdmin: userIsSuperAdmin });
-    console.log("🛠️ DEBUG OVERRIDE:", debugOverride ? "FORCE ACTIVATED" : "FORCE NOT ACTIVATED");
+    console.log("🎯 FINAL DEBUG RETURN:", { isAdmin: userIsAdmin, isSuperAdmin: userIsSuperAdmin });
 
-    // Remove this debug override once production deploy works correctly
-    const finalIsAdmin = debugOverride ? true : userIsAdmin;
-    const finalIsSuperAdmin = debugOverride ? true : userIsSuperAdmin;
-
-    console.log("🎯 FINAL DEBUG RETURN:", { isAdmin: finalIsAdmin, isSuperAdmin: finalIsSuperAdmin });
-
-    return NextResponse.json({ isAdmin: finalIsAdmin, isSuperAdmin: finalIsSuperAdmin });
+    return NextResponse.json({ isAdmin: userIsAdmin, isSuperAdmin: userIsSuperAdmin });
   } catch (error) {
     console.error("💥 CRITICAL ERROR in /api/admin/verify:", error);
+
+    // Check if it's a quota issue - More comprehensive check
+    if (error instanceof Error && (
+      error.message.includes('quota') ||
+      error.message.includes('limit') ||
+      error.message.includes('exceeded') ||
+      error.message.includes('rate limit') ||
+      error.message.includes('too many') ||
+      error.message.includes('connection pool') ||
+      error.message.includes('timeout')
+    )) {
+      return NextResponse.json({
+        message: "Database quota exceeded",
+        error: "Your database plan has reached its data transfer limit. Please upgrade your plan or contact support.",
+        quotaExceeded: true
+      }, { status: 503 }); // Service Unavailable
+    }
+
     return NextResponse.json({ isAdmin: false, isSuperAdmin: false }, { status: 500 });
   }
 }

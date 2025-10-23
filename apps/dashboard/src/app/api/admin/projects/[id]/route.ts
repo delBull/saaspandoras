@@ -1,14 +1,23 @@
 import { NextResponse } from "next/server";
+//
 import { db } from "~/db";
+// 
+
+
+
+
+// 
+// // const db = drizzle(client, { schema: { projects: projectsSchema } });
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
 export const runtime = "nodejs";
-import { projects as projectsSchema } from "~/db/schema";
+import { projects as projectsSchema } from "@/db/schema";
 import { projectApiSchema } from "@/lib/project-schema-api";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { headers } from "next/headers";
 import { eq } from "drizzle-orm";
 import slugify from "slugify";
+import { sanitizeLogData, validateRequestBody } from "@/lib/security-utils";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -16,7 +25,10 @@ interface RouteParams {
 
 export async function PATCH(request: Request, { params }: RouteParams) {
   const { session } = await getAuth(await headers());
-  const userIsAdmin = await isAdmin(session?.userId);
+
+  // Check if user is admin using either userId or address
+  const userIsAdmin = await isAdmin(session?.userId) ||
+                     await isAdmin(session?.address);
 
   if (!userIsAdmin) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
@@ -30,10 +42,21 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   }
 
   try {
+    console.log('🔄 PATCH: Starting project status update for ID:', projectId);
+
     const body: unknown = await request.json();
+
+    // Validación inmediata del body
+    const validation = validateRequestBody(body);
+    if (!validation.isValid) {
+      return NextResponse.json({ message: validation.error }, { status: 400 });
+    }
+
+    console.log('🔄 PATCH: Request body:', sanitizeLogData(body));
 
     // For PATCH, we only allow status updates for now
     if (typeof body !== 'object' || body === null || !('status' in body)) {
+      console.log('🔄 PATCH: Invalid body structure');
       return NextResponse.json(
         { message: "Solo se permite actualizar el estado del proyecto" },
         { status: 400 }
@@ -42,34 +65,45 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
     const { status } = body as { status: string | number | boolean };
     const statusString = String(status);
+    console.log('🔄 PATCH: Status to update:', statusString);
 
-    // Validar que el status sea válido
+    // Validar que el status sea válido (debe coincidir con el ENUM de la base de datos)
     const validStatuses = ['pending', 'approved', 'live', 'completed', 'rejected'];
     if (!validStatuses.includes(statusString)) {
+      console.log('🔄 PATCH: Invalid status value:', statusString);
       return NextResponse.json({ message: "Estado inválido" }, { status: 400 });
     }
 
     // Verificar que el proyecto existe
+    console.log('🔄 PATCH: Checking if project exists...');
     const existingProject = await db.query.projects.findFirst({
       where: eq(projectsSchema.id, projectId),
+      columns: {
+        id: true,
+        status: true,
+      }
     });
 
     if (!existingProject) {
+      console.log('🔄 PATCH: Project not found:', projectId);
       return NextResponse.json({ message: "Proyecto no encontrado" }, { status: 404 });
     }
 
-    // Actualizar solo el status del proyecto
-    const [updatedProject] = await db
-      .update(projectsSchema)
-      .set({ status: statusString as "pending" | "approved" | "live" | "completed" | "rejected" })
-      .where(eq(projectsSchema.id, projectId))
-      .returning();
+    console.log('🔄 PATCH: Existing project status:', existingProject.status);
+    console.log('🔄 PATCH: Updating project status...');
 
-    return NextResponse.json(updatedProject, { status: 200 });
+    // Actualizar solo el status del proyecto
+    await db
+      .update(projectsSchema)
+      .set({ status: statusString as "pending" | "approved" | "live" | "completed" | "rejected" | "incomplete" })
+      .where(eq(projectsSchema.id, projectId));
+
+    console.log('🔄 PATCH: Update successful for project:', projectId);
+    return NextResponse.json({ message: "Status actualizado exitosamente" }, { status: 200 });
   } catch (error) {
-    console.error("Error al actualizar el estado del proyecto:", error);
+    console.error("🔄 PATCH: Error al actualizar el proyecto:", error);
     return NextResponse.json(
-      { message: "Error interno del servidor." },
+      { message: "Error interno del servidor.", error: String(error) },
       { status: 500 }
     );
   }
@@ -77,7 +111,10 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
 export async function PUT(request: Request, { params }: RouteParams) {
   const { session } = await getAuth(await headers());
-  const userIsAdmin = await isAdmin(session?.userId);
+
+  // Check if user is admin using either userId or address
+  const userIsAdmin = await isAdmin(session?.userId) ||
+                     await isAdmin(session?.address);
 
   if (!userIsAdmin) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
@@ -109,6 +146,11 @@ export async function PUT(request: Request, { params }: RouteParams) {
     // Verificar que el proyecto existe
     const existingProject = await db.query.projects.findFirst({
       where: eq(projectsSchema.id, projectId),
+      columns: {
+        id: true,
+        slug: true,
+        status: true,
+      }
     });
 
     if (!existingProject) {
@@ -118,16 +160,19 @@ export async function PUT(request: Request, { params }: RouteParams) {
     // Generar un nuevo slug si cambió el título
     let slug = slugify(title, { lower: true, strict: true });
     if (slug !== existingProject.slug) {
-      const existingSlug = await db.query.projects.findFirst({
+      const existingSlugCheck = await db.query.projects.findFirst({
         where: eq(projectsSchema.slug, slug),
+        columns: {
+          id: true,
+        }
       });
-      if (existingSlug && existingSlug.id !== projectId) {
+      if (existingSlugCheck && existingSlugCheck.id !== projectId) {
         slug = `${slug}-${Date.now()}`;
       }
     }
 
     // Actualizar el proyecto en la base de datos
-    const [updatedProject] = await db
+    await db
       .update(projectsSchema)
       .set({
         // --- Sección 1: Strings / Enums ---
@@ -194,10 +239,9 @@ export async function PUT(request: Request, { params }: RouteParams) {
         // Mantener el status existente, a menos que se especifique cambiarlo
         status: existingProject.status,
       })
-      .where(eq(projectsSchema.id, projectId))
-      .returning();
+      .where(eq(projectsSchema.id, projectId));
 
-    return NextResponse.json(updatedProject, { status: 200 });
+    return NextResponse.json({ message: "Proyecto actualizado exitosamente" }, { status: 200 });
   } catch (error) {
     console.error("Error al actualizar el proyecto:", error);
     return NextResponse.json(
@@ -209,7 +253,10 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
 export async function DELETE(request: Request, { params }: RouteParams) {
   const { session } = await getAuth(await headers());
-  const userIsAdmin = await isAdmin(session?.userId);
+
+  // Check if user is admin using either userId or address
+  const userIsAdmin = await isAdmin(session?.userId) ||
+                     await isAdmin(session?.address);
 
   if (!userIsAdmin) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
@@ -226,6 +273,9 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     // Verificar que el proyecto existe
     const existingProject = await db.query.projects.findFirst({
       where: eq(projectsSchema.id, projectId),
+      columns: {
+        id: true,
+      }
     });
 
     if (!existingProject) {

@@ -95,7 +95,7 @@ const ScrambleBg = (props) => {
     }
   }, [isInView]);
 
-  let segments = [];
+  const segments = [];
   switch (from) {
     case "left": {
       const leftCutoff = mapRange(progress, 0, 1, -scrambledLetters, text.length);

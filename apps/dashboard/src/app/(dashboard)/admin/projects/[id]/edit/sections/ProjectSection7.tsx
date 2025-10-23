@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import { useFormContext } from "react-hook-form";
+import { useActiveAccount } from "thirdweb/react";
 import type { FullProjectFormData } from "../multi-step-form";
 import {
   User,
@@ -80,12 +82,20 @@ const SuccessMessage = ({ children }: { children: React.ReactNode }) => (
 );
 
 export function ProjectSection7() {
-  const { register, watch, formState: { errors }, setValue } = useFormContext<FullProjectFormData>();
-  
-  const verificationAgreement = watch("verificationAgreement") || false;
-  const applicantName = watch("applicantName") ?? "";
-  const applicantEmail = watch("applicantEmail") ?? "";
-  const applicantPhone = watch("applicantPhone") ?? "";
+   const { register, watch, formState: { errors }, setValue } = useFormContext<FullProjectFormData>();
+   const account = useActiveAccount();
+
+   const verificationAgreement = watch("verificationAgreement") || false;
+   const applicantName = watch("applicantName") ?? "";
+   const applicantEmail = watch("applicantEmail") ?? "";
+   const applicantPhone = watch("applicantPhone") ?? "";
+
+   // Auto-detect wallet address from connected wallet using ThirdWeb
+   useEffect(() => {
+     if (account?.address && !watch("applicantWalletAddress")) {
+       setValue("applicantWalletAddress", account.address);
+     }
+   }, [account?.address, setValue, watch]);
 
   const isValidEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);

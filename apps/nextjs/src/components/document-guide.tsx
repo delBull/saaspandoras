@@ -1,7 +1,7 @@
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
 
-import { cn } from "@saasfly/ui";
+import { cn } from '~/lib/utils';
 import { AnimatedGradientText } from "@saasfly/ui/animated-gradient-text";
 
 export function DocumentGuide({ children }: { children: ReactNode }) {

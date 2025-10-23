@@ -1,11 +1,21 @@
-
+import { db } from "~/db";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { db } from "~/db";
+// import { drizzle } from "drizzle-orm/postgres-js";
+// import postgres from "postgres";
+import { administrators } from "@/db/schema";
+
+// Initialize database connection
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not set in environment variables");
+}
+
+// const client = postgres(connectionString);
+// const db = drizzle(client, { schema: { projects: projectsSchema } });
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
 export const runtime = "nodejs";
-import { administrators } from "~/db/schema";
 import { eq } from "drizzle-orm";
 import { getAuth } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -19,7 +29,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const contextParams = await params;
   const { session } = await getAuth(await headers());
 
-  if (session?.userId?.toLowerCase() !== SUPER_ADMIN_WALLET) {
+  if (session?.userId?.toLowerCase() !== SUPER_ADMIN_WALLET.toLowerCase()) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
   }
 
@@ -56,7 +66,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   const contextParams = await params;
   const { session } = await getAuth(await headers());
 
-  if (session?.userId?.toLowerCase() !== SUPER_ADMIN_WALLET) {
+  if (session?.userId?.toLowerCase() !== SUPER_ADMIN_WALLET.toLowerCase()) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
   }
 

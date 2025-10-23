@@ -10,7 +10,6 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   XMarkIcon,
-  UserGroupIcon,
   ShieldCheckIcon,
   ArrowLeftOnRectangleIcon,
   UserIcon,
@@ -19,17 +18,22 @@ import {
   ChartBarIcon,
   FolderIcon,
 } from "@heroicons/react/24/outline";
-import { cn } from "@saasfly/ui";
+import { cn } from "@/lib/utils";
 import { useActiveAccount, useDisconnect, useActiveWallet } from "thirdweb/react";
 import { ethereum } from "thirdweb/chains";
 import { WalletBalance, NetworkSelector, ConnectWalletButton } from "@/components/wallet";
 import { SUPPORTED_NETWORKS, DEFAULT_NETWORK } from "@/config/networks";
+import { SUPER_ADMIN_WALLET } from "@/lib/constants";
+import { PackageCheckIcon, PanelTopIcon } from "lucide-react";
+import { usePathname } from 'next/navigation';
+import * as Tooltip from "@radix-ui/react-tooltip";
 
 interface SidebarProps {
   wallet?: string;
   userName?: string;
   isAdmin?: boolean;
   isSuperAdmin?: boolean;
+  defaultOpen?: boolean; // Nueva prop para controlar estado inicial (undefined = automático)
 }
 
 export function Sidebar({
@@ -37,6 +41,7 @@ export function Sidebar({
   userName,
   isAdmin: isAdminProp,
   isSuperAdmin: isSuperAdminProp,
+  defaultOpen, // undefined = usar comportamiento automático, true/false = forzar estado
 }: SidebarProps) {
 
   const [isClient, setIsClient] = useState(false);
@@ -44,38 +49,73 @@ export function Sidebar({
     setIsClient(true);
   }, []);
 
-  const [open, setOpen] = useState(true);
+  // Determinar estado inicial basado en defaultOpen o comportamiento automático
+  const getInitialState = () => {
+    if (defaultOpen !== undefined) {
+      return defaultOpen;
+    }
+    return true; // Estado por defecto abierto
+  };
+
+  const [open, setOpen] = useState(getInitialState);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileDropdown, setProfileDropdown] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [networkDropdown, setNetworkDropdown] = useState(false);
-  const sidebarRef = useRef<HTMLDivElement>(null);
-  const toggleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [dropdownOpenedAt, setDropdownOpenedAt] = useState<number>(0);
+  const [copyAnimation, setCopyAnimation] = useState(false);
 
   const account = useActiveAccount();
   const wallet = useActiveWallet();
   const { disconnect } = useDisconnect();
+  const pathname = usePathname();
 
   // Multi-chain wallet state
   const [selectedChain, setSelectedChain] = useState(DEFAULT_NETWORK?.chain || ethereum);
 
-  // State for client-side admin status - Can show admin based on server props initially
+  // State for client-side admin status - Only trust server props if they're explicitly true
   const [adminStatus, setAdminStatus] = useState<{
     isAdmin: boolean;
     isSuperAdmin: boolean;
     verified: boolean; // Track if we've verified with API
   }>({
-    isAdmin: isAdminProp ?? false, // Can show admin based on server initially
-    isSuperAdmin: isSuperAdminProp ?? false,
-    verified: !!isAdminProp || !!isSuperAdminProp, // Mark as verified if server says admin
+    isAdmin: false, // Start with false, only trust verified API responses
+    isSuperAdmin: false,
+    verified: false, // Don't trust server props initially for security
   });
 
   // Track if this is the initial load to avoid resetting admin status
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  // Debug logging for admin status (only in development)
+  // Track if we've already set the initial state for /applicants page
+  const autoCloseStateSet = useRef(false);
+
+  // Auto-close sidebar when navigating to /applicants (but allow manual opening)
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
+    const shouldAutoClose = pathname === '/applicants' || pathname.startsWith('/projects/');
+
+    if (shouldAutoClose && !autoCloseStateSet.current) {
+      console.log('📍 Auto-close page detected - setting initial closed state for:', pathname);
+      // Only set to closed on first visit to /applicants, but allow manual opening after
+      if (open) {
+        setOpen(false);
+      }
+      autoCloseStateSet.current = true;
+    } else if (!shouldAutoClose) {
+      // Reset the flag when leaving /applicants page
+      autoCloseStateSet.current = false;
+    }
+  }, [pathname, open]);
+
+  // Manual toggle handler to ensure button works correctly
+  const handleToggleSidebar = () => {
+    console.log('🔄 Manual sidebar toggle clicked, current state:', open);
+    setOpen(!open);
+  };
+
+  // Debug logging for admin status (only in development and only when status changes)
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development' && adminStatus.verified) {
       console.log('🔍 Admin status check:', {
         serverSide: { isAdmin: isAdminProp, isSuperAdmin: isSuperAdminProp },
         clientSide: adminStatus,
@@ -95,29 +135,25 @@ export function Sidebar({
       return;
     }
 
-    // Reset admin status when wallet disconnects
+    // When wallet disconnects, DON'T reset admin status if we have server confirmation
+    // This prevents flickering during wallet reconnection
     if (account?.address === undefined && !isInitialLoad) {
       if (process.env.NODE_ENV === 'development') {
-        console.log("🔌 Wallet disconnected, resetting admin status");
+        console.log("🔌 Wallet disconnected - preserving server admin status");
       }
-      setAdminStatus({ isAdmin: false, isSuperAdmin: false, verified: true });
+      // Don't reset admin status - keep server-side confirmation
       return;
     }
 
-    // When wallet connects OR changes, always re-verify admin status
+    // When wallet connects OR changes, verify admin status
     if (!account?.address) {
-      // si servidor ya dijo que era admin, no quitar (evita flicker durante rehidratación)
-      if (!adminStatus.verified && isAdminProp) {
+      // No wallet connected - only reset if no server admin confirmation
+      if (!isAdminProp && !isSuperAdminProp) {
         if (process.env.NODE_ENV === 'development') {
-          console.log("🏚️ Manteniendo admin status por server prop durante rehidratacion");
+          console.log("🐭 No wallet connected and no server admin, ensuring admin status is false");
         }
-        return;
+        setAdminStatus({ isAdmin: false, isSuperAdmin: false, verified: true });
       }
-      // No wallet connected and no server admin prop, ensure admin status is false
-      if (process.env.NODE_ENV === 'development') {
-        console.log("🐭 No wallet connected and no server admin, ensuring admin status is false");
-      }
-      setAdminStatus({ isAdmin: false, isSuperAdmin: false, verified: true });
       return;
     }
 
@@ -141,12 +177,21 @@ export function Sidebar({
           const data = await res.json() as { isAdmin: boolean; isSuperAdmin: boolean };
           setAdminStatus({ ...data, verified: true });
         } else {
-          setAdminStatus({ isAdmin: false, isSuperAdmin: false, verified: false });
+          // If API fails, fall back to server-side props but mark as unverified
+          setAdminStatus({
+            isAdmin: isAdminProp ?? false,
+            isSuperAdmin: isSuperAdminProp ?? false,
+            verified: false
+          });
         }
       } catch (e) {
         console.error("❌ Error verifying admin status:", e);
-        // Reset admin status to false on error - NEVER show admin when verification fails
-        setAdminStatus({ isAdmin: false, isSuperAdmin: false, verified: false });
+        // On error, fall back to server-side props but mark as unverified
+        setAdminStatus({
+          isAdmin: isAdminProp ?? false,
+          isSuperAdmin: isSuperAdminProp ?? false,
+          verified: false
+        });
       }
     })().catch(console.error);
 
@@ -175,7 +220,7 @@ export function Sidebar({
     };
 
     void fetchProfile();
-  }, [account?.address, isInitialLoad, adminStatus.verified, isAdminProp]);
+  }, [account?.address, isInitialLoad, isAdminProp, isSuperAdminProp]);
 
   // Handle click outside anywhere on screen and escape key to close dropdowns
   useEffect(() => {
@@ -184,34 +229,36 @@ export function Sidebar({
       if (!profileDropdown && !networkDropdown) return;
 
       const target = event.target as Element;
+      const now = Date.now();
 
-      // Check if click is inside the dropdown overlay
-      if (sidebarRef.current?.contains(target)) {
-        // For profile dropdown: allow clicking on avatar button without closing
-        if (profileDropdown) {
-          const avatarButton = sidebarRef.current.querySelector('button[title="Menú de perfil"]');
-          const profileDropdownContent = sidebarRef.current.querySelector('.profile-dropdown-content');
-
-          // If clicking on avatar button or inside dropdown content, don't close
-          if (avatarButton?.contains(target) || profileDropdownContent?.contains(target)) {
-            return;
-          }
+      // For profile dropdown: check if click is outside dropdown content
+      if (profileDropdown) {
+        // Ignore clicks that happen too soon after opening (prevent accidental closes)
+        if (now - dropdownOpenedAt < 150) {
+          return;
         }
 
-        // For network dropdown: allow clicking inside dropdown
-        if (networkDropdown) {
-          const networkDropdownContent = sidebarRef.current.querySelector('.network-dropdown-content');
-          if (networkDropdownContent?.contains(target)) {
-            return;
-          }
-        }
+        const profileDropdownContent = document.querySelector('.profile-dropdown-content');
+        const avatarButton = document.querySelector('button[title="Menú de perfil"]');
 
-        return; // Don't close if click is inside any dropdown
+        const isOnAvatar = avatarButton?.contains(target);
+        const isInDropdown = profileDropdownContent?.contains(target);
+
+        // If click is NOT on avatar button AND NOT inside dropdown content, close it
+        if (!isOnAvatar && !isInDropdown) {
+          setProfileDropdown(false);
+          return;
+        }
       }
 
-      // Close dropdowns if click is anywhere else on the page
-      setProfileDropdown(false);
-      setNetworkDropdown(false);
+      // For network dropdown: check if click is outside dropdown content
+      if (networkDropdown) {
+        const networkDropdownContent = document.querySelector('.network-dropdown-content');
+        if (!networkDropdownContent?.contains(target)) {
+          setNetworkDropdown(false);
+          return;
+        }
+      }
     };
 
     const handleEscapeKey = (event: KeyboardEvent) => {
@@ -232,39 +279,97 @@ export function Sidebar({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside, false);
       document.removeEventListener('keydown', handleEscapeKey, true);
-      if (toggleTimeoutRef.current) {
-        clearTimeout(toggleTimeoutRef.current);
-      }
     };
-  }, [profileDropdown, networkDropdown]);
+  }, [profileDropdown, networkDropdown, dropdownOpenedAt]);
 
-  // The final isAdmin status - Allow access based on server props, verified status, or hardcoded super admin
-  const isSuperAdminWallet = account?.address?.toLowerCase() === "0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9";
-  const isAdmin = (isAdminProp || isSuperAdminProp || isSuperAdminWallet) || (adminStatus.verified && (adminStatus.isAdmin || adminStatus.isSuperAdmin));
+  // The final isAdmin status - Trust server props when API verification fails or is pending
+  const isSuperAdminWallet = account?.address?.toLowerCase() === SUPER_ADMIN_WALLET;
+  const isAdmin = (adminStatus.verified && (adminStatus.isAdmin || adminStatus.isSuperAdmin || isSuperAdminWallet)) ||
+                  (!adminStatus.verified && (isAdminProp || isSuperAdminProp || isSuperAdminWallet));
 
   // Use centralized network configuration
   const supportedNetworks = SUPPORTED_NETWORKS;
 
+  // Copy wallet address with animation feedback
+  const copyWalletAddress = async (address: string) => {
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopyAnimation(true);
+      // Reset animation after 2 seconds
+      setTimeout(() => setCopyAnimation(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy wallet address:', error);
+    }
+  };
+
+  // Centralized profile dropdown menu items
+  const getProfileDropdownItems = (isMobile = false) => {
+    const baseItems = [
+      {
+        href: "/profile",
+        icon: <UserIcon className="w-5 h-5 text-gray-400" />,
+        label: "Perfil",
+        description: "Información personal",
+        onClick: () => {
+          setProfileDropdown(false);
+          if (isMobile) setMobileOpen(false);
+        }
+      },
+      {
+        href: "/profile/dashboard",
+        icon: <ChartBarIcon className="w-5 h-5 text-gray-400" />,
+        label: "Dashboard",
+        description: "Métricas e inversiones",
+        onClick: () => {
+          setProfileDropdown(false);
+          if (isMobile) setMobileOpen(false);
+        }
+      }
+    ];
+
+    // Projects link - only show for admins or applicants with projects
+    const projectsItem = (isAdmin || (userProfile?.role === 'applicant' && userProfile?.projectCount > 0)) ? [{
+      href: "/profile/projects",
+      icon: <FolderIcon className="w-5 h-5 text-gray-400" />,
+      label: "Tus Creaciones",
+      description: userProfile?.projectCount ? `${userProfile.projectCount} creaciones` : 'Gestionar creaciones',
+      onClick: () => {
+        setProfileDropdown(false);
+        if (isMobile) setMobileOpen(false);
+      }
+    }] : [];
+
+    return [...baseItems, ...projectsItem];
+  };
 
   const links = useMemo(
     () => [
       {
-        label: "Overview",
+        label: "Hub",
         href: "/",
         icon: <HomeIcon className="h-5 w-5 shrink-0 text-gray-400" />,
         disabled: false,
       },
-
       {
-        label: "Invest",
+        label: "Creaciones",
         href: "/applicants",
         icon: (
-          <UserGroupIcon className="h-5 w-5 shrink-0 text-gray-400" />
+          <PackageCheckIcon className="h-5 w-5 shrink-0 text-gray-400" />
         ),
         disabled: false,
       },
+            {
+        label: "Feed", 
+        type: "path",
+        href: "#",
+        icon: (
+          <PanelTopIcon className="h-5 w-5 shrink-0 text-gray-400" />
+        ),
+        comingSoon: true,
+        disabled: true,
+      },
       {
-        label: "Pools",
+        label: "Recompensas",
         href: "#",
         icon: (
           <BanknotesIcon className="h-5 w-5 shrink-0 text-gray-400" />
@@ -298,7 +403,7 @@ export function Sidebar({
 
 
   return (
-    <>
+    <Tooltip.Provider delayDuration={300}>
       {/* --- DESKTOP SIDEBAR --- */}
       <motion.div
         transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }}
@@ -349,7 +454,7 @@ export function Sidebar({
         </Link>
 
         <button
-          onClick={() => setOpen(!open)}
+          onClick={handleToggleSidebar}
           className="absolute -right-3 top-1/2 z-50 flex h-20 w-5 -translate-y-1/2 items-center justify-center rounded-md border-2 border-l-0 border-gray-800 bg-zinc-900 font-mono text-gray-400 transition-colors duration-200 hover:text-white"
         >
           {open ? (
@@ -385,20 +490,21 @@ export function Sidebar({
                 {/* Avatar (clickeable para dropdown) */}
                 <button
                   onClick={(e) => {
+                    e.preventDefault(); // Prevent default behavior
                     e.stopPropagation(); // Prevent event bubbling
 
-                    // Clear any existing timeout
-                    if (toggleTimeoutRef.current) {
-                      clearTimeout(toggleTimeoutRef.current);
-                    }
+                    // Immediately toggle the dropdown
+                    const isOpening = !profileDropdown;
+                    setProfileDropdown(!profileDropdown);
 
-                    // Use setTimeout to ensure the toggle happens after any other click handlers
-                    toggleTimeoutRef.current = setTimeout(() => {
-                      setProfileDropdown(!profileDropdown);
-                    }, 0);
+                    // If opening the dropdown, record the timestamp
+                    if (isOpening) {
+                      setDropdownOpenedAt(Date.now());
+                    }
                   }}
                   onMouseDown={(e) => {
-                    e.stopPropagation(); // Also prevent mousedown propagation
+                    e.preventDefault(); // Prevent default mousedown behavior
+                    e.stopPropagation(); // Prevent mousedown propagation
                   }}
                   className="flex-shrink-0 relative hover:bg-zinc-700/30 p-1 rounded transition-colors"
                   title="Menú de perfil"
@@ -422,8 +528,7 @@ export function Sidebar({
                     onClick={(e) => {
                       e.stopPropagation();
                       const fullAddress = account?.address ?? userName ?? walletProp ?? '';
-                      void navigator.clipboard.writeText(fullAddress);
-                      // You could add a toast notification here
+                      void copyWalletAddress(fullAddress);
                     }}
                     title={`${account?.address ?? userName ?? walletProp ?? ''} - Click to copy entire wallet address`}
                   >
@@ -433,21 +538,43 @@ export function Sidebar({
                       {open ? "C:\\USER\\" : ""}
                     </span>
                     <span
-                      className="truncate font-mono text-xs text-lime-400 group-hover:text-lime-300 transition-colors"
+                      className={`truncate font-mono text-xs transition-colors ${
+                        copyAnimation ? 'text-green-400' : 'text-lime-400 group-hover:text-lime-300'
+                      }`}
                     >
                       {isClient
                         ? (account?.address ?? walletProp ?? userName ?? "...").substring(0, 8) + '...' + (account?.address ?? walletProp ?? userName ?? "...").substring(36, 42)
                         : "..." }
                     </span>
-                    {/* Copy icon */}
-                    <svg
-                      className="w-3 h-3 text-gray-500 group-hover:text-gray-300 transition-colors flex-shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                    {/* Copy icon with animation */}
+                    <motion.div
+                      animate={{
+                        scale: copyAnimation ? [1, 1.2, 1] : 1,
+                        color: copyAnimation ? '#10b981' : undefined
+                      }}
+                      transition={{ duration: 0.3 }}
+                      className="flex-shrink-0"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
+                      {copyAnimation ? (
+                        <svg
+                          className="w-3 h-3 text-green-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        <svg
+                          className="w-3 h-3 text-gray-500 group-hover:text-gray-300 transition-colors"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      )}
+                    </motion.div>
                   </button>
                 </motion.div>
               </div>
@@ -457,7 +584,7 @@ export function Sidebar({
                 {profileDropdown && (
                   <>
                     {/* Invisible overlay to position dropdown fixed to viewport */}
-                    <div className="fixed inset-0 z-50 pointer-events-none" ref={sidebarRef}>
+                    <div className="fixed inset-0 z-50 pointer-events-none">
                       <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -465,55 +592,35 @@ export function Sidebar({
                         className="absolute left-4 top-[152px] w-80 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 pointer-events-auto profile-dropdown-content"
                       >
                         <div className="p-3 space-y-2">
-                          {/* Profile */}
-                          <Link
-                            href="/profile"
-                            onClick={() => setProfileDropdown(false)}
-                            className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
-                          >
-                            <UserIcon className="w-5 h-5 text-gray-400" />
-                            <div>
-                              <div className="text-white text-sm">Perfil</div>
-                              <div className="text-gray-400 text-xs">Información personal</div>
-                            </div>
-                          </Link>
-
-                          {/* Dashboard */}
-                          <Link
-                            href="/profile/dashboard"
-                            onClick={() => setProfileDropdown(false)}
-                            className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
-                          >
-                            <ChartBarIcon className="w-5 h-5 text-gray-400" />
-                            <div>
-                              <div className="text-white text-sm">Dashboard</div>
-                              <div className="text-gray-400 text-xs">Métricas e inversiones</div>
-                            </div>
-                          </Link>
-
-                          {/* Projects */}
-                          <Link
-                            href="/profile/projects"
-                            onClick={() => setProfileDropdown(false)}
-                            className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
-                          >
-                            <FolderIcon className="w-5 h-5 text-gray-400" />
-                            <div>
-                              <div className="text-white text-sm">Proyectos</div>
-                              <div className="text-gray-400 text-xs">
-                                {userProfile?.projectCount ? `${userProfile.projectCount} proyectos` : 'Gestionar proyectos'}
+                          {getProfileDropdownItems().map((item) => (
+                            <Link
+                              key={item.href}
+                              href={item.href}
+                              onClick={item.onClick}
+                              className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
+                            >
+                              {item.icon}
+                              <div>
+                                <div className="text-white text-sm">{item.label}</div>
+                                <div className="text-gray-400 text-xs">{item.description}</div>
                               </div>
-                            </div>
-                          </Link>
+                            </Link>
+                          ))}
 
                           <div className="border-t border-zinc-700 my-2"></div>
 
                           {/* Thirdweb ConnectButton - Maneja automáticamente conectar vs gestionar */}
                           <div className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full">
                             <ConnectWalletButton
-                             className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full"
-                             onConnect={() => setProfileDropdown(false)}
-                             onDisconnect={() => setProfileDropdown(false)}
+                              className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full"
+                              onConnect={() => {
+                                // Don't close dropdown on connect - let user stay in dropdown
+                                console.log('🔗 Wallet connected - keeping dropdown open');
+                              }}
+                              onDisconnect={() => {
+                                // Don't close dropdown on disconnect - let user stay in dropdown
+                                console.log('🔌 Wallet disconnected - keeping dropdown open');
+                              }}
                             />
                           </div>
 
@@ -525,8 +632,8 @@ export function Sidebar({
                 )}
               </AnimatePresence>
 
-              {/* Multi-Chain Wallet Interface */}
-              {isClient && account && (
+              {/* Multi-Chain Wallet Interface - Only show when sidebar is expanded */}
+              {isClient && account && open && (
                 <div className="mt-3 space-y-2">
                   {/* Network Selector */}
                   <NetworkSelector
@@ -550,44 +657,73 @@ export function Sidebar({
         <nav className="mt-4 flex flex-1 flex-col justify-between">
           <div className="flex flex-col gap-0">
             {links.map((link) => (
-              <Link
-                key={link.label}
-                href={link.href}
-                className={cn(
-                  "relative flex items-center rounded-lg py-5 text-gray-400 transition-all duration-200 border-b border-gray-800",
-                  open ? "px-4" : "w-full justify-center",
-                  link.disabled
-                    ? "cursor-not-allowed opacity-60"
-                    : "hover:bg-gray-800/50 hover:text-white",
-                  link.admin &&
-                    "font-bold text-lime-400 hover:bg-lime-900/50 hover:text-lime-300"
-                )}
-                onClick={(e) => link.disabled && e.preventDefault()}
-              >
-                {link.icon}
-                <motion.span
-                  animate={{
-                    opacity: open ? 1 : 0,
-                    width: open ? "auto" : 0,
-                    marginLeft: open ? "0.75rem" : "0",
-                  }}
-                  className="whitespace-nowrap font-medium"
+              !open ? (
+                <Tooltip.Root key={link.label}>
+                  <Tooltip.Trigger asChild>
+                    <Link
+                      href={link.href}
+                      className={cn(
+                        "relative flex items-center rounded-lg py-5 font-light text-gray-400 transition-all duration-200 border-b border-gray-800 w-full justify-center",
+                        link.disabled
+                          ? "cursor-not-allowed opacity-60"
+                          : "hover:bg-gray-800/50 hover:text-white",
+                        link.admin &&
+                          "font-bold text-lime-400 hover:bg-lime-900/50 hover:text-lime-300"
+                      )}
+                      onClick={(e) => link.disabled && e.preventDefault()}
+                    >
+                      {link.icon}
+                    </Link>
+                  </Tooltip.Trigger>
+                  <Tooltip.Portal>
+                    <Tooltip.Content
+                      className="z-50 rounded-md bg-zinc-900 ml-20 px-3 py-1.5 text-xs text-white shadow-md border border-zinc-700"
+                      sideOffset={3}
+                    >
+                      {link.label}
+                    </Tooltip.Content>
+                  </Tooltip.Portal>
+                </Tooltip.Root>
+              ) : (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  className={cn(
+                    "relative flex items-center rounded-lg py-5 font-light text-gray-400 transition-all duration-200 border-b border-gray-800 px-4",
+                    link.disabled
+                      ? "cursor-not-allowed opacity-60"
+                      : "hover:bg-gray-800/50 hover:text-white",
+                    link.admin &&
+                      "font-bold text-lime-400 hover:bg-lime-900/50 hover:text-lime-300"
+                  )}
+                  onClick={(e) => link.disabled && e.preventDefault()}
                 >
-                  {link.label}
-                </motion.span>
-                {link.comingSoon && open && (
+                  {link.icon}
                   <motion.span
-                    animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0 }}
-                    className="ml-auto text-xs text-gray-500"
+                    animate={{
+                      opacity: open ? 1 : 0,
+                      width: open ? "auto" : 0,
+                      marginLeft: open ? "0.75rem" : "0",
+                    }}
+                    className="whitespace-nowrap"
                   >
-                    coming soon
+                    {link.label}
                   </motion.span>
-                )}
-              </Link>
+                  {link.comingSoon && open && (
+                    <motion.span
+                      animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0 }}
+                      className="ml-auto text-xs text-gray-500 italic"
+                    >
+                      coming soon
+                    </motion.span>
+                  )}
+                </Link>
+              )
             ))}
           </div>
 
           <div className="mb-4 flex flex-col gap-2">
+            {/* Show "Desatar tu Creación" button only when CONNECTED */}
             {isClient && account && (
               <div
                 className={cn(
@@ -595,26 +731,92 @@ export function Sidebar({
                   !open && "mx-auto w-full"
                 )}
               >
-                <button
-                  onClick={() => wallet && disconnect(wallet)}
-                  disabled={!wallet}
-                  className={cn(
-                    "relative flex w-full items-center rounded-lg py-2 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white disabled:opacity-50",
-                    open ? "px-4" : "justify-center"
-                  )}
-                >
-                  <ArrowLeftOnRectangleIcon className="h-5 w-5 shrink-0" />
-                  <motion.span
-                    animate={{
-                      opacity: open ? 1 : 0,
-                      width: open ? "auto" : 0,
-                      marginLeft: open ? "0.75rem" : "0",
-                    }}
-                    className="whitespace-nowrap font-medium"
+                {!open ? (
+                  <Tooltip.Root>
+                    <Tooltip.Trigger asChild>
+                      <Link
+                        href="/apply"
+                        className="relative flex w-full items-center rounded-lg py-2 transition-all duration-200 text-gray-400 hover:bg-purple-800/20 justify-center"
+                      >
+                        <ShieldCheckIcon className="h-4 w-4 shrink-0" />
+                      </Link>
+                    </Tooltip.Trigger>
+                    <Tooltip.Portal>
+                      <Tooltip.Content
+                        className="z-50 rounded-md bg-zinc-900 ml-20 px-3 py-1.5 text-xs text-white shadow-md border border-zinc-700"
+                        sideOffset={3}
+                      >
+                        Desatar tu Creación
+                      </Tooltip.Content>
+                    </Tooltip.Portal>
+                  </Tooltip.Root>
+                ) : (
+                  <Link
+                    href="/apply"
+                    className="relative flex w-full items-center rounded-lg py-2 transition-all duration-200 text-gray-400 hover:bg-purple-800/20 px-4"
                   >
-                    Disconnect
-                  </motion.span>
-                </button>
+                    <ShieldCheckIcon className="h-4 w-4 shrink-0" />
+                    <motion.span
+                      animate={{
+                        opacity: open ? 1 : 0,
+                        width: open ? "auto" : 0,
+                        marginLeft: open ? "0.75rem" : "0",
+                      }}
+                      className="whitespace-nowrap text-xs italic"
+                    >
+                      {open ? "Desatar tu Creación" : "🔗"}
+                    </motion.span>
+                  </Link>
+                )}
+              </div>
+            )}
+
+            {isClient && account && (
+              <div
+                className={cn(
+                  "border-t border-gray-800 pt-2",
+                  !open && "mx-auto w-full"
+                )}
+              >
+                {!open ? (
+                  <Tooltip.Root>
+                    <Tooltip.Trigger asChild>
+                      <button
+                        onClick={() => wallet && disconnect(wallet)}
+                        disabled={!wallet}
+                        className="relative flex w-full items-center rounded-lg py-2 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white disabled:opacity-50 justify-center"
+                      >
+                        <ArrowLeftOnRectangleIcon className="h-5 w-5 shrink-0" />
+                      </button>
+                    </Tooltip.Trigger>
+                    <Tooltip.Portal>
+                      <Tooltip.Content
+                        className="z-50 rounded-md bg-zinc-900 ml-20 px-3 py-1.5 text-xs text-white shadow-md border border-zinc-700"
+                        sideOffset={3}
+                      >
+                        Desconectar Wallet
+                      </Tooltip.Content>
+                    </Tooltip.Portal>
+                  </Tooltip.Root>
+                ) : (
+                  <button
+                    onClick={() => wallet && disconnect(wallet)}
+                    disabled={!wallet}
+                    className="relative flex w-full items-center rounded-lg py-2 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white disabled:opacity-50 px-4"
+                  >
+                    <ArrowLeftOnRectangleIcon className="h-5 w-5 shrink-0" />
+                    <motion.span
+                      animate={{
+                        opacity: open ? 1 : 0,
+                        width: open ? "auto" : 0,
+                        marginLeft: open ? "0.75rem" : "0",
+                      }}
+                      className="whitespace-nowrap"
+                    >
+                      Desconectar
+                    </motion.span>
+                  </button>
+                )}
               </div>
             )}
             {isClient && isAdmin && (
@@ -624,24 +826,37 @@ export function Sidebar({
                   !open && "mx-auto w-full"
                 )}
               >
-                <span
-                  className={cn(
-                    "relative flex items-center rounded-lg py-2 text-red-700 transition-all duration-200 cursor-not-allowed opacity-50",
-                    open ? "px-4" : "w-full justify-center"
-                  )}
-                >
-                  <ShieldCheckIcon className="h-5 w-5 shrink-0" />
-                  <motion.span
-                    animate={{
-                      opacity: open ? 1 : 0,
-                      width: open ? "auto" : 0,
-                      marginLeft: open ? "0.75rem" : "0",
-                    }}
-                    className="whitespace-nowrap font-bold"
-                  >
-                    Admin
-                  </motion.span>
-                </span>
+                {!open ? (
+                  <Tooltip.Root>
+                    <Tooltip.Trigger asChild>
+                      <span className="relative flex items-center rounded-lg py-2 text-red-700 transition-all duration-200 cursor-not-allowed opacity-50 w-full justify-center">
+                        <ShieldCheckIcon className="h-5 w-5 shrink-0" />
+                      </span>
+                    </Tooltip.Trigger>
+                    <Tooltip.Portal>
+                      <Tooltip.Content
+                        className="z-50 rounded-md bg-zinc-900 ml-20 px-3 py-1.5 text-xs text-white shadow-md border border-zinc-700"
+                        sideOffset={3}
+                      >
+                        Panel de Administración
+                      </Tooltip.Content>
+                    </Tooltip.Portal>
+                  </Tooltip.Root>
+                ) : (
+                  <span className="relative flex items-center rounded-lg py-2 text-red-700 transition-all duration-200 cursor-not-allowed opacity-50 px-4">
+                    <ShieldCheckIcon className="h-5 w-5 shrink-0" />
+                    <motion.span
+                      animate={{
+                        opacity: open ? 1 : 0,
+                        width: open ? "auto" : 0,
+                        marginLeft: open ? "0.75rem" : "0",
+                      }}
+                      className="whitespace-nowrap font-bold"
+                    >
+                      Admin
+                    </motion.span>
+                  </span>
+                )}
               </div>
             )}
           </div>
@@ -702,20 +917,21 @@ export function Sidebar({
                       {/* Avatar (clickeable para dropdown) */}
                       <button
                         onClick={(e) => {
+                          e.preventDefault(); // Prevent default behavior
                           e.stopPropagation(); // Prevent event bubbling
 
-                          // Clear any existing timeout
-                          if (toggleTimeoutRef.current) {
-                            clearTimeout(toggleTimeoutRef.current);
-                          }
+                          // Immediately toggle the dropdown
+                          const isOpening = !profileDropdown;
+                          setProfileDropdown(!profileDropdown);
 
-                          // Use setTimeout to ensure the toggle happens after any other click handlers
-                          toggleTimeoutRef.current = setTimeout(() => {
-                            setProfileDropdown(!profileDropdown);
-                          }, 0);
+                          // If opening the dropdown, record the timestamp
+                          if (isOpening) {
+                            setDropdownOpenedAt(Date.now());
+                          }
                         }}
                         onMouseDown={(e) => {
-                          e.stopPropagation(); // Also prevent mousedown propagation
+                          e.preventDefault(); // Prevent default mousedown behavior
+                          e.stopPropagation(); // Prevent mousedown propagation
                         }}
                         className="flex-shrink-0 relative hover:bg-zinc-700/30 p-1 rounded transition-colors"
                         title="Menú de perfil"
@@ -742,28 +958,51 @@ export function Sidebar({
                           onClick={(e) => {
                             e.stopPropagation();
                             const fullAddress = account?.address ?? userName ?? walletProp ?? '';
-                            void navigator.clipboard.writeText(fullAddress);
-                            // You could add a toast notification here
+                            void copyWalletAddress(fullAddress);
                           }}
                           title={`${account?.address ?? userName ?? walletProp ?? ''} - Click to copy entire wallet address`}
                         >
                           <span className="font-mono text-xs text-gray-400 flex-shrink-0">
                             C:\USER\
                           </span>
-                          <span className="truncate font-mono text-xs text-lime-400 group-hover:text-lime-300 transition-colors">
+                          <span
+                            className={`truncate font-mono text-xs transition-colors ${
+                              copyAnimation ? 'text-green-400' : 'text-lime-400 group-hover:text-lime-300'
+                            }`}
+                          >
                             {isClient
                               ? (account?.address ?? walletProp ?? userName ?? "...").substring(0, 8) + '...' + (account?.address ?? walletProp ?? userName ?? "...").substring(36, 42)
                               : "..." }
                           </span>
-                          {/* Copy icon */}
-                          <svg
-                            className="w-3 h-3 text-gray-500 group-hover:text-gray-300 transition-colors flex-shrink-0"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+                          {/* Copy icon with animation */}
+                          <motion.div
+                            animate={{
+                              scale: copyAnimation ? [1, 1.2, 1] : 1,
+                              color: copyAnimation ? '#10b981' : undefined
+                            }}
+                            transition={{ duration: 0.3 }}
+                            className="flex-shrink-0"
                           >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                          </svg>
+                            {copyAnimation ? (
+                              <svg
+                                className="w-3 h-3 text-green-400"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            ) : (
+                              <svg
+                                className="w-3 h-3 text-gray-500 group-hover:text-gray-300 transition-colors"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
+                            )}
+                          </motion.div>
                         </button>
                       </motion.div>
                     </div>
@@ -778,55 +1017,20 @@ export function Sidebar({
                           className="absolute left-0 right-0 top-full mt-2 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 profile-dropdown-content"
                         >
                           <div className="p-3 space-y-2">
-                            {/* Profile */}
-                            <Link
-                              href="/profile"
-                              onClick={() => {
-                                setProfileDropdown(false);
-                                setMobileOpen(false);
-                              }}
-                              className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
-                            >
-                              <UserIcon className="w-5 h-5 text-gray-400" />
-                              <div>
-                                <div className="text-white text-sm">Perfil</div>
-                                <div className="text-gray-400 text-xs">Información personal</div>
-                              </div>
-                            </Link>
-
-                            {/* Dashboard */}
-                            <Link
-                              href="/profile/dashboard"
-                              onClick={() => {
-                                setProfileDropdown(false);
-                                setMobileOpen(false);
-                              }}
-                              className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
-                            >
-                              <ChartBarIcon className="w-5 h-5 text-gray-400" />
-                              <div>
-                                <div className="text-white text-sm">Dashboard</div>
-                                <div className="text-gray-400 text-xs">Métricas e inversiones</div>
-                              </div>
-                            </Link>
-
-                        {/* Projects (always show like desktop) */}
-                        <Link
-                          href="/profile/projects"
-                          onClick={() => {
-                            setProfileDropdown(false);
-                            setMobileOpen(false);
-                          }}
-                          className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
-                        >
-                          <FolderIcon className="w-5 h-5 text-gray-400" />
-                          <div>
-                            <div className="text-white text-sm">Proyectos</div>
-                            <div className="text-gray-400 text-xs">
-                              {userProfile?.projectCount ? `${userProfile.projectCount} proyectos` : 'Gestionar proyectos'}
-                            </div>
-                          </div>
-                        </Link>
+                            {getProfileDropdownItems(true).map((item) => (
+                              <Link
+                                key={item.href}
+                                href={item.href}
+                                onClick={item.onClick}
+                                className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
+                              >
+                                {item.icon}
+                                <div>
+                                  <div className="text-white text-sm">{item.label}</div>
+                                  <div className="text-gray-400 text-xs">{item.description}</div>
+                                </div>
+                              </Link>
+                            ))}
 
                         <div className="border-t border-zinc-700 my-2"></div>
 
@@ -835,12 +1039,14 @@ export function Sidebar({
                           <ConnectWalletButton
                             className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full"
                             onConnect={() => {
-                              setProfileDropdown(false);
-                              setMobileOpen(false);
+                              // Don't close dropdown on connect - let user stay in dropdown
+                              console.log('🔗 Mobile wallet connected - keeping dropdown open');
+                              setMobileOpen(false); // Still close mobile sidebar
                             }}
                             onDisconnect={() => {
-                              setProfileDropdown(false);
-                              setMobileOpen(false);
+                              // Don't close dropdown on disconnect - let user stay in dropdown
+                              console.log('🔌 Mobile wallet disconnected - keeping dropdown open');
+                              setMobileOpen(false); // Still close mobile sidebar
                             }}
                           />
                         </div>
@@ -891,7 +1097,7 @@ export function Sidebar({
                       }}
                     >
                       {link.icon}
-                      <span className="ml-3 whitespace-nowrap font-medium">
+                      <span className="ml-3 whitespace-nowrap">
                         {link.label}
                       </span>
                       {link.comingSoon && (
@@ -904,6 +1110,22 @@ export function Sidebar({
                 </div>
 
                 <div className="mb-4 flex flex-col gap-2">
+                  {/* Show "Desatar tu Creación" button only when CONNECTED - MOBILE */}
+                  {isClient && account && (
+                    <div className="border-t border-gray-800 pt-2">
+                      <Link
+                        href="/apply"
+                        onClick={() => setMobileOpen(false)}
+                        className="relative flex w-full items-center rounded-lg py-2 px-4 transition-all duration-200 text-gray-400 hover:bg-purple-800/20"
+                      >
+                        <ShieldCheckIcon className="h-4 w-4 shrink-0" />
+                        <span className="ml-3 whitespace-nowrap text-xs italic">
+                          Desatar tu Creación
+                        </span>
+                      </Link>
+                    </div>
+                  )}
+
                   {isClient && account && (
                     <div className="border-t border-gray-800 pt-2">
                       <button
@@ -915,8 +1137,8 @@ export function Sidebar({
                         className="relative flex w-full items-center rounded-lg py-2 px-4 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white disabled:opacity-50"
                       >
                         <ArrowLeftOnRectangleIcon className="h-5 w-5 shrink-0" />
-                        <span className="ml-3 whitespace-nowrap font-medium">
-                          Disconnect
+                        <span className="ml-3 whitespace-nowrap">
+                          Desconectar
                         </span>
                       </button>
                     </div>
@@ -941,6 +1163,6 @@ export function Sidebar({
           </>
         )}
       </AnimatePresence>
-    </>
+    </Tooltip.Provider>
   );
 }

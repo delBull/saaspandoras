@@ -1,7 +1,7 @@
 'use client';
 import { animate, motion } from "motion/react";
-import React, { useEffect, useState } from "react";
-import { cn } from "@saasfly/ui";
+import React, { useEffect } from "react";
+import { cn } from '~/lib/utils';
 import Image from "next/image";
 
 // Re-creating the visual component based on user-provided code.

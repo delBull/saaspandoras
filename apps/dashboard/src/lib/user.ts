@@ -1,20 +1,35 @@
-import { db } from "~/db";
-import { sql } from "drizzle-orm";
+import postgres from "postgres";
+
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not set");
+}
+
+const sql = postgres(connectionString);
 
 export async function ensureUser(walletAddress: string) {
-  const [user] = await db.execute(sql`
-    SELECT "id" FROM "User"
-    WHERE LOWER("walletAddress") = LOWER(${walletAddress})
-    LIMIT 1
-  `);
+  try {
+    // First, try to find existing user
+    const users = await sql`
+      SELECT "id" FROM "users"
+      WHERE LOWER("walletAddress") = LOWER(${walletAddress})
+      LIMIT 1
+    `;
 
-  if (user) return user;
+    if (users.length > 0) {
+      return users[0];
+    }
 
-  const [newUser] = await db.execute(sql`
-    INSERT INTO "User" ("walletAddress", "createdAt")
-    VALUES (LOWER(${walletAddress}), NOW())
-    RETURNING "id"
-  `);
+    // If not found, create new user
+    const newUsers = await sql`
+      INSERT INTO "users" ("walletAddress", "createdAt")
+      VALUES (LOWER(${walletAddress}), NOW())
+      RETURNING "id"
+    `;
 
-  return newUser;
+    return newUsers[0];
+  } catch (error) {
+    console.error("Error in ensureUser:", error);
+    throw error;
+  }
 }

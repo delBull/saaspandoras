@@ -26,7 +26,7 @@ export const ImpactfulHero = ({ dict }: ImpactfulHeroProps) => {
   const handleSmoothScroll = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
     const href = e.currentTarget.getAttribute('href');
-    if (!href || !href.startsWith('#')) return;
+    if (!href?.startsWith('#')) return;
 
     const targetId = href.substring(1);
     const targetElement = document.getElementById(targetId);
