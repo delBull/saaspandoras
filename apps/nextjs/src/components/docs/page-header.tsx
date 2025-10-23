@@ -1,4 +1,4 @@
-import { cn } from "@saasfly/ui";
+import { cn } from '~/lib/utils';
 
 interface DocsPageHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
   heading: string;

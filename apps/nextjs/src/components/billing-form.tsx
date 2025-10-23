@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { cn } from "@saasfly/ui";
+import { cn } from '~/lib/utils';
 import { buttonVariants } from "@saasfly/ui/button";
 import {
   Card,

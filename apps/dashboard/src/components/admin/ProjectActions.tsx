@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@saasfly/ui/button';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { CheckIcon, Loader2, TrashIcon, PencilIcon, ArrowRightIcon } from 'lucide-react';
 import { XMarkIcon } from '@heroicons/react/24/solid';

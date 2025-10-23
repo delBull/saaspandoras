@@ -10,8 +10,8 @@ import {
   ArrowRight,
   Star
 } from "lucide-react";
-import { Button } from "@saasfly/ui/button";
-import { cn } from "@saasfly/ui";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface ApplicationSuccessNotificationProps {
   isOpen: boolean;

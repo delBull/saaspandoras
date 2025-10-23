@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 
 import React from "react";
 import { Loader2, ArrowLeftIcon } from "lucide-react";
-import { Button } from "@saasfly/ui/button";
+import { Button } from "@/components/ui/button";
 import { ApplicantsDesktop } from "./ApplicantsDesktop";
 import { ApplicantsMobile } from "./ApplicantsMobile";
 import { MultiStepForm } from "../../app/(dashboard)/admin/projects/[id]/edit/multi-step-form";

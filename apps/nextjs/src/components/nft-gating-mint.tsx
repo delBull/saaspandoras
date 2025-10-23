@@ -86,7 +86,7 @@ export function NFTGatingMint() {
       }
     };
 
-    checkAndMint();
+    checkAndMint(); 
   }, [account, toast, sendTransaction]);
 
   // Reset processing flag when account changes

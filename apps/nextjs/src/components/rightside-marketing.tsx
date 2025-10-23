@@ -4,7 +4,7 @@ import Link from "next/link";
 import React from "react";
 
 import { GlowingEffect } from "@saasfly/ui/glowing-effect";
-import * as Icons from "@saasfly/ui/icons";
+import * as Icons from "@saasfly/ui/icons"; 
 
 export function RightsideMarketing({
   dict,

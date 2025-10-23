@@ -10,7 +10,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Balancer from "react-wrap-balancer";
 
-import { cn } from "@saasfly/ui";
+import { cn } from "~/lib/utils";
 import { buttonVariants } from "@saasfly/ui/button";
 import * as Icons from "@saasfly/ui/icons";
 
@@ -28,7 +28,7 @@ function getPostFromParams(params: { slug?: string | string[] }) {
   const post = allPosts.find((post) => post.slugAsParams === slug);
 
   if (!post) {
-    null;
+    return null;
   }
 
   return post;

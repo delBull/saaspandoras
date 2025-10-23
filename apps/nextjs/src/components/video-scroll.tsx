@@ -5,7 +5,6 @@ import Image from "next/image";
 import { useRef, useState } from "react";
 
 import { ContainerScroll } from "@saasfly/ui/container-scroll-animation";
-import { ColourfulText } from "@saasfly/ui/colorful-text";
 
 interface VideoScrollDict {
   academic_backing?: {

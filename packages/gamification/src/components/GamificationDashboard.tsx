@@ -16,7 +16,7 @@ import {
   Zap
 } from "lucide-react";
 import { UserGamificationProfile, UserAchievement, Reward, LeaderboardEntry } from '../types';
-import { cn } from "@saasfly/ui";
+import { cn } from "../utils/cn";
 
 interface GamificationDashboardProps {
   profile: UserGamificationProfile | null;

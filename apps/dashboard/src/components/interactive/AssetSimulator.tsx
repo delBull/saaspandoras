@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Play, Building2, TrendingUp, DollarSign } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
-import { Button } from "@saasfly/ui/button";
+import { Button } from "@/components/ui/button";
 
 interface AssetSimulatorProps {
   title?: string;

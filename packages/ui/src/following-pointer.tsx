@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { AnimatePresence, motion, useMotionValue } from "framer-motion";
+import { AnimatePresence, motion, useMotionValue, type MotionValue } from "framer-motion";
 
 import { cn } from "./utils/cn";
 
@@ -66,8 +66,8 @@ export const FollowPointer = ({
   y,
   title,
 }: {
-  x: any;
-  y: any;
+  x: MotionValue<number>;
+  y: MotionValue<number>;
   title?: string | React.ReactNode;
 }) => {
   const colors = [
@@ -132,7 +132,7 @@ export const FollowPointer = ({
           "min-w-max whitespace-nowrap rounded-full bg-neutral-200 px-2 py-2 text-xs text-white"
         }
       >
-        {title || `William Shakespeare`}
+        {title ?? `William Shakespeare`}
       </motion.div>
     </motion.div>
   );

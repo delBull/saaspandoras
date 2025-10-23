@@ -15,7 +15,7 @@ import {
   Star
 } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
-import { Button } from "@saasfly/ui/button";
+import { Button } from "@/components/ui/button";
 
 interface ProcessStep {
   step: number;
