@@ -7,7 +7,7 @@ import type { User } from "next-auth";
 import { useForm } from "react-hook-form";
 import type * as z from "zod";
 
-import { cn } from "@saasfly/ui";
+import { cn } from '~/lib/utils';
 import { buttonVariants } from "@saasfly/ui/button";
 import {
   Card,

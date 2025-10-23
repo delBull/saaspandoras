@@ -32,7 +32,7 @@ import { ProgressModal } from './swap/ProgressModal';
 import { ResultModal } from './swap/ResultModal';
 import { TokenSelector } from './swap/TokenSelector';
 import { Skeleton } from "@saasfly/ui/skeleton";
-import { Button } from "@saasfly/ui/button";
+import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@saasfly/ui/sheet";
 import { toast } from "sonner";
 import { ArrowDownIcon } from "lucide-react";

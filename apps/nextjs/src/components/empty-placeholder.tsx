@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { cn } from "@saasfly/ui";
+import { cn } from '~/lib/utils';
 import * as Icons from "@saasfly/ui/icons";
 
 type EmptyPlaceholderProps = React.HTMLAttributes<HTMLDivElement>;

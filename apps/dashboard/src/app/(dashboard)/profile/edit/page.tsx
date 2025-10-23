@@ -125,13 +125,9 @@ export default function ProfileEditPage() {
   const handleSubmit = async () => {
     // Check validations
     const validationPassed = validateForm();
-    console.log('✅ Validations passed:', validationPassed);
-
     const hasWalletAddress = !!walletAddress;
-    console.log('👤 Has wallet address:', hasWalletAddress, 'Wallet:', walletAddress);
 
     if (!validationPassed || !hasWalletAddress) {
-      console.log('❌ Validation failed or no wallet address - showing error toast');
       toast.error('Revisa los campos requeridos');
       return;
     }
@@ -158,7 +154,6 @@ export default function ProfileEditPage() {
         toast.success('Perfil actualizado exitosamente');
 
         // Force immediate revalidation and update cache
-        console.log('🔄 Forcing immediate profile data refresh...');
         await mutate(async () => {
           const response = await fetch('/api/profile', {
             headers: {
@@ -391,7 +386,7 @@ export default function ProfileEditPage() {
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                     <span className="text-green-400 text-sm font-medium">
-                      ✅ KYC Básico verificado - Ahora puede participar en proyectos de inversión
+                      ✅ KYC Básico verificado - Ahora puede participar en creaciones de comunidades.
                     </span>
                   </div>
                 </div>

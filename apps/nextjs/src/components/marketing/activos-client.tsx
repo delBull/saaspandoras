@@ -7,11 +7,11 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@saasfly/ui/dialog";
-import { LucideIcon, ClipboardCheck, FileText, Box, UploadCloud, Activity } from "lucide-react";
+import type { LucideIcon} from "lucide-react";
+import { ClipboardCheck, FileText, Box, UploadCloud, Activity } from "lucide-react";
 
 
 // --- Card Component ---

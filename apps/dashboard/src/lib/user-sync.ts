@@ -46,7 +46,7 @@ export async function syncThirdwebUser(userData: {
 
     // Verificar si usuario existe
     const existing = await db.execute(sql`
-      SELECT id, "connectionCount" FROM "User" WHERE "walletAddress" = ${userData.walletAddress}
+      SELECT id, "connectionCount" FROM "users" WHERE "walletAddress" = ${userData.walletAddress}
     `);
 
     if (existing.length > 0) {
@@ -57,7 +57,7 @@ export async function syncThirdwebUser(userData: {
       console.log('🔄 Existing user found - updating connection count:', currentCount, '→', newCount);
 
       await db.execute(sql`
-        UPDATE "User"
+        UPDATE "users"
         SET "name" = COALESCE(${userData.name ?? null}, "name"),
             "email" = COALESCE(${userData.email ?? null}, "email"),
             "image" = COALESCE(${userData.image ?? null}, "image"),
@@ -73,7 +73,7 @@ export async function syncThirdwebUser(userData: {
       console.log('🆕 Creating new user in database:', userData.walletAddress);
 
       await db.execute(sql`
-        INSERT INTO "User" ("id", "walletAddress", "email", "name", "image", "hasPandorasKey", "connectionCount", "lastConnectionAt", "createdAt")
+        INSERT INTO "users" ("id", "walletAddress", "email", "name", "image", "hasPandorasKey", "connectionCount", "lastConnectionAt", "createdAt")
         VALUES (
           ${crypto.randomUUID()},
           ${userData.walletAddress},
@@ -132,7 +132,7 @@ export async function syncThirdwebUser(userData: {
 
           // Actualizar con datos sociales más ricos
           await db.execute(sql`
-            UPDATE "User"
+            UPDATE "users"
             SET "name" = COALESCE(${enrichedData.name}, "name"),
                 "email" = COALESCE(${enrichedData.email}, "email"),
                 "image" = COALESCE(${enrichedData.image}, "image")

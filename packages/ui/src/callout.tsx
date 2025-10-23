@@ -1,4 +1,4 @@
-import { cn } from "@saasfly/ui";
+import { cn } from "./utils/cn";
 
 interface CalloutProps {
   icon?: string;

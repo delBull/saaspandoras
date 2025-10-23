@@ -32,10 +32,12 @@ export const SparklesCore = (props: ParticlesProps) => {
   } = props;
   const [init, setInit] = useState(false);
   useEffect(() => {
-    initParticlesEngine(async (engine) => {
+    void initParticlesEngine(async (engine) => {
       await loadSlim(engine);
     }).then(() => {
       setInit(true);
+    }).catch((error) => {
+      console.error("Error initializing particles engine:", error);
     });
   }, []);
   const controls = useAnimation();
@@ -81,7 +83,9 @@ export const SparklesCore = (props: ParticlesProps) => {
                   enable: false,
                   mode: "repulse",
                 },
-                resize: true as any,
+                resize: {
+                  enable: true,
+                },
               },
               modes: {
                 push: {

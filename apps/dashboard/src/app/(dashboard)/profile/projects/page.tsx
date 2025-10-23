@@ -17,7 +17,6 @@ import {
   CheckCircleIcon,
   EyeIcon,
 } from '@heroicons/react/24/outline';
-import { useProjectModal } from "@/contexts/ProjectModalContext";
 import type { UserData, Project } from '@/types/admin';
 import { useActiveAccount } from 'thirdweb/react';
 
@@ -27,14 +26,20 @@ export default function ProfileProjectsPage() {
   const [loading, setLoading] = useState(true);
   const account = useActiveAccount();
 
-  const { open } = useProjectModal();
+
 
   // Use account from useActiveAccount hook instead of cookies
   const walletAddress = account?.address;
 
   useEffect(() => {
     if (walletAddress) {
-      // Fetch user profile and projects data
+      // Ensure wallet information is available in cookies for server-side requests
+      if (typeof window !== 'undefined') {
+        document.cookie = `wallet-address=${walletAddress}; path=/; max-age=86400; samesite=strict`;
+        document.cookie = `thirdweb:wallet-address=${walletAddress}; path=/; max-age=86400; samesite=strict`;
+      }
+
+      // Fetch user profile and projects data using dual API approach
       Promise.all([
         fetch('/api/profile', {
           headers: {
@@ -44,58 +49,250 @@ export default function ProfileProjectsPage() {
             'x-user-address': walletAddress,
           }
         }),
-        fetch('/api/projects')
+        fetch('/api/projects', {
+          headers: {
+            'Content-Type': 'application/json',
+            'x-thirdweb-address': walletAddress,
+            'x-wallet-address': walletAddress,
+            'x-user-address': walletAddress,
+          }
+        })
       ])
         .then(async ([usersRes, projectsRes]) => {
-          console.log('Profile API response:', usersRes.status, usersRes.ok);
-          console.log('Projects API response:', projectsRes.status, projectsRes.ok);
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Profile API response:', usersRes.status, usersRes.ok);
+            console.log('Projects API response:', projectsRes.status, projectsRes.ok);
+          }
 
           if (!usersRes.ok) {
             const errorText = await usersRes.text();
-            console.error('Profile API failed:', usersRes.status, errorText);
-            throw new Error(`Profile API failed: ${usersRes.status}`);
+            if (process.env.NODE_ENV === 'development') {
+              console.error('Profile API failed:', usersRes.status, errorText);
+            }
+            // Don't throw error, continue with projects API
+            return [null, await projectsRes.json()];
           }
 
           if (!projectsRes.ok) {
             const errorText = await projectsRes.text();
-            console.error('Projects API failed:', projectsRes.status, errorText);
+            if (process.env.NODE_ENV === 'development') {
+              console.error('Projects API failed:', projectsRes.status, errorText);
+            }
             throw new Error(`Projects API failed: ${projectsRes.status}`);
           }
 
           return Promise.all([usersRes.json(), projectsRes.json()]);
         })
         .then((data) => {
-          const [userProfile, projects] = data as [UserData, Project[]];
-          console.log('Profile data received:', userProfile);
+          const [userProfile, projects] = data as [UserData | null, Project[]];
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Profile data received:', userProfile);
+          }
+
+          // Debug: Check what projects API is actually returning
+          if (process.env.NODE_ENV === 'development') {
+            console.log('🔍 PROJECTS API DEBUG:', {
+              projectsType: typeof projects,
+              projectsLength: projects?.length,
+              projectsRaw: projects,
+              firstProjectSample: projects?.[0] ? {
+                id: projects[0].id,
+                title: projects[0].title,
+                applicantWalletAddress: projects[0].applicantWalletAddress,
+                status: projects[0].status
+              } : null,
+              walletAddress: walletAddress,
+              walletLower: walletAddress?.toLowerCase()
+            });
+          }
+
           setUserProfile(userProfile);
 
           // 🏦 WALLET-BASED FILTERING ONLY
           const SUPER_ADMIN_WALLETS = ['0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9'];
-          const isSuperAdmin = SUPER_ADMIN_WALLETS.includes(userProfile?.walletAddress.toLowerCase() || '');
-          const userWalletAddress = userProfile?.walletAddress;
+          const isSuperAdmin = SUPER_ADMIN_WALLETS.includes(walletAddress.toLowerCase());
+          const userWalletAddress = userProfile?.walletAddress || walletAddress;
+
+          if (process.env.NODE_ENV === 'development') {
+            console.log('🔍 DETAILED DEBUGGING:', {
+              connectedWallet: walletAddress,
+              isSuperAdmin,
+              totalProjectsFromAPI: projects?.length || 0
+            });
+          }
+
+          // Additional debugging for wallet comparison (only in development)
+          if (process.env.NODE_ENV === 'development' && projects?.length > 0) {
+            console.log('🔍 WALLET COMPARISON DEBUG:', {
+              userWallet: walletAddress.toLowerCase(),
+              projectWallets: projects.map(p => ({
+                id: p.id,
+                wallet: p.applicantWalletAddress,
+                walletLower: p.applicantWalletAddress?.toLowerCase()
+              }))
+            });
+          }
+
+          // Additional debugging for wallet comparison
+          if (projects?.length > 0) {
+            console.log('🔍 WALLET COMPARISON DEBUG:', {
+              userWallet: walletAddress.toLowerCase(),
+              projectWallets: projects.map(p => ({
+                id: p.id,
+                wallet: p.applicantWalletAddress,
+                walletLower: p.applicantWalletAddress?.toLowerCase()
+              }))
+            });
+          }
 
           let userProjects: Project[] = [];
           if (isSuperAdmin) {
-            // Super admin sees all manageable projects
-            userProjects = projects.filter(p =>
-              ['pending', 'approved', 'live', 'completed'].includes(p.status)
-            );
-          } else if (userWalletAddress) {
-            // Regular users see ONLY their projects by wallet address
-            userProjects = projects.filter(p =>
-              p.applicantWalletAddress?.toLowerCase() === userWalletAddress.toLowerCase()
-            );
+            // Super admin sees ALL projects regardless of status
+            userProjects = projects;
+          } else {
+            // Regular users see ALL their projects by exact wallet address match
+            userProjects = projects.filter(p => {
+              const projectWallet = p.applicantWalletAddress?.toLowerCase();
+              const userWallet = walletAddress.toLowerCase();
+
+              // Simple and reliable matching
+              const matches = projectWallet === userWallet;
+
+              if (process.env.NODE_ENV === 'development') {
+                console.log('🔍 PROJECT FILTER CHECK:', {
+                  projectId: p.id,
+                  projectTitle: p.title,
+                  projectWallet: p.applicantWalletAddress,
+                  userWallet: walletAddress,
+                  matches: matches
+                });
+              }
+
+              return matches;
+            });
           }
 
-          console.log('Filtered projects:', userProjects.length);
+          if (process.env.NODE_ENV === 'development') {
+            console.log('✅ FINAL RESULT:', {
+              filteredProjectsCount: userProjects.length,
+              isSuperAdmin,
+              userWalletAddress,
+              totalProjects: projects.length
+            });
+
+            // Enhanced debugging for wallet matching
+            console.log('🔍 ENHANCED WALLET MATCHING DEBUG:', {
+              userWallet: walletAddress,
+              userWalletLower: walletAddress?.toLowerCase(),
+              totalProjects: projects?.length || 0,
+              matchingProjects: userProjects.length,
+              nonMatchingProjects: projects ? projects.length - userProjects.length : 0,
+              sampleMatches: userProjects.slice(0, 3).map(p => ({
+                id: p.id,
+                title: p.title,
+                applicantWallet: p.applicantWalletAddress,
+                matches: p.applicantWalletAddress?.toLowerCase() === walletAddress?.toLowerCase()
+              }))
+            });
+          }
           setUserProjects(userProjects);
         })
         .catch(err => {
           if (process.env.NODE_ENV === 'development') {
-            console.error('Error fetching data:', err);
+            console.error('Error fetching profile/projects data:', err);
           }
+          // If profile API fails, still try to get projects
+          fetch('/api/projects', {
+            headers: {
+              'Content-Type': 'application/json',
+              'x-thirdweb-address': walletAddress,
+              'x-wallet-address': walletAddress,
+              'x-user-address': walletAddress,
+            }
+          })
+            .then(res => res.json())
+            .then((projects: Project[]) => {
+              console.log('🔄 FALLBACK: Projects fetched as fallback:', projects.length);
+
+              const SUPER_ADMIN_WALLETS = ['0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9'];
+              const isSuperAdmin = SUPER_ADMIN_WALLETS.includes(walletAddress.toLowerCase());
+
+              if (process.env.NODE_ENV === 'development') {
+                console.log('🔄 FALLBACK DEBUG:', {
+                  connectedWallet: walletAddress,
+                  isSuperAdmin,
+                  totalProjects: projects.length
+                });
+              }
+
+              let userProjects: Project[] = [];
+              if (isSuperAdmin) {
+                userProjects = projects.filter((p: Project) =>
+                  ['pending', 'approved', 'live', 'completed'].includes(p.status)
+                );
+              } else {
+                userProjects = projects.filter((p: Project) => {
+                  const projectWallet = p.applicantWalletAddress?.toLowerCase().trim();
+                  const userWallet = walletAddress.toLowerCase().trim();
+
+                  // More robust matching - handle different formats and edge cases
+                  const matches = projectWallet === userWallet ||
+                                 projectWallet === userWallet.replace('0x', '') ||
+                                 (projectWallet && userWallet && projectWallet.endsWith(userWallet.slice(-8))) ||
+                                 // Also check if wallet ends with last 10 characters (more flexible)
+                                 (projectWallet && userWallet && projectWallet.endsWith(userWallet.slice(-10)));
+
+                  if (process.env.NODE_ENV === 'development') {
+                    console.log('🔄 FALLBACK PROJECT FILTER:', {
+                      projectId: p.id,
+                      projectTitle: p.title,
+                      projectWallet: p.applicantWalletAddress,
+                      userWallet: walletAddress,
+                      projectWalletLower: projectWallet,
+                      userWalletLower: userWallet,
+                      matches: matches,
+                      walletLengths: {
+                        project: projectWallet?.length,
+                        user: userWallet?.length
+                      }
+                    });
+                  }
+
+                  return matches;
+                });
+              }
+
+              if (process.env.NODE_ENV === 'development') {
+                console.log('🔄 FALLBACK RESULT:', {
+                  filteredCount: userProjects.length,
+                  isSuperAdmin
+                });
+
+                // Enhanced debugging for wallet matching in fallback
+                console.log('🔄 FALLBACK ENHANCED WALLET MATCHING DEBUG:', {
+                  userWallet: walletAddress,
+                  userWalletLower: walletAddress?.toLowerCase(),
+                  totalProjects: projects?.length || 0,
+                  matchingProjects: userProjects.length,
+                  nonMatchingProjects: projects ? projects.length - userProjects.length : 0,
+                  sampleMatches: userProjects.slice(0, 3).map(p => ({
+                    id: p.id,
+                    title: p.title,
+                    applicantWallet: p.applicantWalletAddress,
+                    matches: p.applicantWalletAddress?.toLowerCase() === walletAddress?.toLowerCase()
+                  }))
+                });
+              }
+              setUserProjects(userProjects);
+            })
+            .catch(projectErr => {
+              if (process.env.NODE_ENV === 'development') {
+                console.error('Failed to fetch projects as fallback:', projectErr);
+              }
+              setUserProjects([]);
+            });
+
           setUserProfile(null);
-          setUserProjects([]);
         })
         .finally(() => setLoading(false));
     } else if (!walletAddress) {
@@ -123,7 +320,7 @@ export default function ProfileProjectsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Acceso Denegado</CardTitle>
-            <CardDescription>Necesitas estar conectado para ver tus proyectos.</CardDescription>
+            <CardDescription>Necesitas estar conectado para ver tus creaciones.</CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -132,9 +329,9 @@ export default function ProfileProjectsPage() {
 
   // Calculate real metrics for each project individually
   const calculateProjectMetrics = (project: any) => {
-    const raised = Number(project.raised_amount || project.raisedAmount || 0);
-    const target = Number(project.target_amount || project.targetAmount || 1);
-    const returnsPaid = Number(project.returns_paid || project.returnsPaid || 0);
+    const raised = Number(project.raisedAmount || project.raised_amount || 0);
+    const target = Number(project.targetAmount || project.target_amount || 1);
+    const returnsPaid = Number(project.returnsPaid || project.returns_paid || 0);
     const fundingProgress = Math.min(Math.round((raised / target) * 100), 100);
 
     // Real investor count calculation - conditional based on project status
@@ -170,17 +367,25 @@ export default function ProfileProjectsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Mis Proyectos</h1>
-          <p className="text-gray-400">Gestiona y monitorea el rendimiento de tus inversiones</p>
+          <h1 className="text-2xl font-bold text-white">Mis Creaciones</h1>
+          <p className="text-gray-400">Gestiona y monitorea tu desemepño</p>
+          {/* Debug info in development */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mt-2 p-2 bg-yellow-900/20 border border-yellow-500/20 rounded text-xs text-yellow-200">
+              <p><strong>Debug Info:</strong></p>
+              <p>Wallet: {walletAddress?.substring(0, 10)}...{walletAddress?.slice(-8)}</p>
+              <p>Projects: {userProjects.length}</p>
+              <p>Profile: {userProfile ? 'Loaded' : 'Not loaded'}</p>
+              <p>Role: {userProfile?.role || 'Unknown'}</p>
+              <p>Profile Count: {userProfile?.projectCount || 0}</p>
+              <p>API Projects: {userProjects.length}</p>
+            </div>
+          )}
         </div>
-        <Button variant="outline" onClick={open}>
-          <PencilIcon className="w-4 h-4 mr-2" />
-          Aplicar Nuevo Proyecto
-        </Button>
       </div>
 
       {/* Summary Stats */}
-      {userProfile?.projectCount && userProfile.projectCount > 0 && (
+      {userProjects.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card>
             <CardContent className="p-6">
@@ -188,11 +393,11 @@ export default function ProfileProjectsPage() {
                 <div>
                   <p className="text-sm font-medium text-gray-400">
                     {walletAddress?.toLowerCase() === '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9'
-                      ? 'Proyectos Gestionados'
-                      : 'Mis Proyectos'
+                      ? 'Creaciones Gestionados'
+                      : 'Mis Creaciones'
                     }
                   </p>
-                  <p className="text-2xl font-bold text-white">{userProfile.projectCount}</p>
+                  <p className="text-2xl font-bold text-white">{userProjects.length}</p>
                 </div>
                 <FolderIcon className="h-8 w-8 text-blue-500" />
               </div>
@@ -251,7 +456,7 @@ export default function ProfileProjectsPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-400">Proyectos Activos</p>
+                      <p className="text-sm font-medium text-gray-400">Creaciones Activas</p>
                       <p className="text-2xl font-bold text-lime-500">
                         {userProjects.filter(p => p.status === 'live' || p.status === 'approved').length}
                       </p>
@@ -345,7 +550,6 @@ export default function ProfileProjectsPage() {
                           project.status === 'live' ? '🏃‍♂️ Activo' :
                           project.status === 'approved' ? '✅ Aprobado' :
                           project.status === 'pending' ? '⏳ En Revisión' :
-                          project.status === 'draft' ? '📝 Borrador' :
                           project.status === 'rejected' ? '❌ Rechazado' :
                           project.status === 'completed' ? '🏁 Completado' :
                           project.status
@@ -466,14 +670,16 @@ export default function ProfileProjectsPage() {
           <Card>
             <CardContent className="p-12 text-center">
               <FolderIcon className="w-16 h-16 text-gray-500 mx-auto mb-4" />
-              <h3 className="text-xl font-medium text-white mb-2">Sin Proyectos Activos</h3>
+              <h3 className="text-xl font-medium text-white mb-2">Sin Creaciones Activas</h3>
               <p className="text-gray-400 mb-6">
-                Aún no has aplicado a ningún proyecto. Comienza tu jornada de inversión aplicando a oportunidades interesantes.
+                Aún no has aplicado a ningúna creación. Comienza tu jornada aplicando a oportunidades interesantes.
               </p>
-                <Button className="bg-lime-500 hover:bg-lime-600 text-zinc-900" onClick={open}>
-                  <PencilIcon className="w-4 h-4 mr-2" />
-                  Aplicar a Mi Primer Proyecto
-                </Button>
+                <Link href="/apply">
+                  <Button className="bg-lime-500 hover:bg-lime-600 text-zinc-900">
+                    <PencilIcon className="w-4 h-4 mr-2" />
+                    Aplica a tu primera Creación
+                  </Button>
+                </Link>
             </CardContent>
           </Card>
         )}

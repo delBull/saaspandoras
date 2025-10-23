@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useRouter } from "next/navigation";
-import { Button } from "@saasfly/ui/button";
+import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@saasfly/ui/dropdown-menu";
 import { i18n } from "~/config/i18n-config";
 

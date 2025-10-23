@@ -28,6 +28,9 @@ const nextConfig = {
       },
     ],
   },
+  transpilePackages: [
+    "@pandoras/gamification",
+  ],
 };
 
 export default nextConfig;

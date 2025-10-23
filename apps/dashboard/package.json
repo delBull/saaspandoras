@@ -11,12 +11,20 @@
     "format": "prettier --write '**/*.{js,cjs,mjs,ts,tsx,md,json}'",
     "start": "next start",
     "update:token-hosts": "node generar-dominios.js",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:generate": "turbo db:generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:migrate:production": "node migrate-production.mjs",
+    "db:create-users-table": "node create-users-table.mjs",
+    "db:fix-production": "node call-api.mjs",
+    "db:export-local": "node export-local-schema.mjs",
+    "db:sync-production": "node sync-production.mjs",
+    "db:full-sync": "node full-sync.mjs",
+    "db:push:pg": "drizzle-kit push"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "3.3.4",
+    "@pandoras/gamification": "workspace:*",
     "@saasfly/api": "workspace:*",
     "@saasfly/db": "workspace:*",
     "@saasfly/ui": "workspace:*",
@@ -40,6 +48,7 @@
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.542.0",
     "motion": "^12.23.12",
+    "net": "^1.0.2",
     "next": "15.5.4",
     "next-themes": "0.2.1",
     "react": "^19.1.0",
@@ -53,9 +62,12 @@
     "swr": "^2.3.6",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
-    "thirdweb": "^5.105.44",
+    "thirdweb": "^5.106.0",
     "vaul": "0.9.0",
-    "zod": "^3.22.4"
+    "viem": "^2.17.3",
+    "pg": "^8.11.3",
+    "dotenv": "^16.5.0",
+    "postgres": "^3.4.7"
   },
   "devDependencies": {
     "@saasfly/eslint-config": "workspace:*",

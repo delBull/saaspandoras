@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from "@saasfly/ui/button";
+import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 

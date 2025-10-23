@@ -5,7 +5,7 @@ import { db } from "~/db";
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-import { administrators } from "~/db/schema";
+import { administrators } from "@/db/schema";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { headers } from "next/headers";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
@@ -47,11 +47,36 @@ export async function GET() {
  * Solo accesible por el Super Admin.
  */
 export async function POST(request: Request) {
-  const { session } = await getAuth(await headers());
+  const requestHeaders = await headers();
+  console.log('🔍 POST /api/admin/administrators - Incoming headers:');
+  for (const [key, value] of requestHeaders.entries()) {
+    if (key.toLowerCase().includes('thirdweb') || key.toLowerCase().includes('wallet') || key.toLowerCase().includes('user')) {
+      console.log(`  ${key}: ${value}`);
+    }
+  }
 
-  if (session?.userId?.toLowerCase() !== SUPER_ADMIN_WALLET) {
+  const { session } = await getAuth(requestHeaders);
+
+  console.log('🔍 POST /api/admin/administrators - Session:', session);
+  console.log('🔍 POST /api/admin/administrators - SUPER_ADMIN_WALLET:', SUPER_ADMIN_WALLET);
+
+  // Check if user is super admin using either userId or address
+  const isSuperAdmin = session?.userId?.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase() ||
+                      session?.address?.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase();
+
+  console.log('🔍 POST /api/admin/administrators - isSuperAdmin check:', {
+    sessionUserId: session?.userId,
+    sessionAddress: session?.address,
+    superAdminWallet: SUPER_ADMIN_WALLET,
+    isSuperAdmin: isSuperAdmin
+  });
+
+  if (!isSuperAdmin) {
+    console.log('❌ POST /api/admin/administrators - Access denied');
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
   }
+
+  console.log('✅ POST /api/admin/administrators - Access granted');
 
   // Verificación de seguridad para asegurar que la sesión es válida
   if (!session.userId) {
