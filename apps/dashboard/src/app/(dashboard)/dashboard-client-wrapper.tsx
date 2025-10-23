@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { DashboardShell } from "@/components/shell";
 import { NFTGate } from "@/components/nft-gate";
-import { ProjectModalProvider } from "@/contexts/ProjectModalContext";
+
 import { TokenPriceProvider } from "@/contexts/TokenPriceContext";
 import { TermsModalProvider, useTermsModal } from "@/contexts/TermsModalContext";
 import { TermsModal } from "@/components/ui/terms-modal";
@@ -59,44 +59,42 @@ export function DashboardClientWrapper({
   }, [account?.address]);
 
   return (
-    <ProjectModalProvider>
-        <TokenPriceProvider>
-          <TermsModalProvider>
-            <DashboardShell
-              wallet={account?.address}
-              userName={userName ?? undefined}
-              isAdmin={isAdmin}
-              isSuperAdmin={isSuperAdmin}
-              sidebarDefaultOpen={pathname === '/applicants' ? false : undefined}
-            >
-              <AutoLoginGate serverSession={serverSession}>
-               <NFTGate>
-                 <AnimatePresence mode="wait">
-                   <motion.div
-                     key={pathname}
-                     initial={{ y: 20, opacity: 0 }}
-                     animate={{ y: 0, opacity: 1 }}
-                     exit={{ y: -20, opacity: 0 }}
-                     transition={{ duration: 0.3, ease: "easeInOut" }}
-                   >
-                     <Suspense
-                       fallback={
-                         <div className="p-8 animate-pulse space-y-4">
-                           <div className="h-8 w-1/3 rounded bg-fuchsia-950" />
-                           <div className="h-64 w-full rounded bg-fuchsia-950" />
-                         </div>
-                       }
-                     >
-                       {children}
-                     </Suspense>
-                   </motion.div>
-                 </AnimatePresence>
-               </NFTGate>
-              </AutoLoginGate>
-            </DashboardShell>
-            <TermsModalRenderer />
-          </TermsModalProvider>
-        </TokenPriceProvider>
-    </ProjectModalProvider>
+    <TokenPriceProvider>
+      <TermsModalProvider>
+        <DashboardShell
+          wallet={account?.address}
+          userName={userName ?? undefined}
+          isAdmin={isAdmin}
+          isSuperAdmin={isSuperAdmin}
+          sidebarDefaultOpen={pathname === '/applicants' ? false : undefined}
+        >
+          <AutoLoginGate serverSession={serverSession}>
+           <NFTGate>
+             <AnimatePresence mode="wait">
+               <motion.div
+                 key={pathname}
+                 initial={{ y: 20, opacity: 0 }}
+                 animate={{ y: 0, opacity: 1 }}
+                 exit={{ y: -20, opacity: 0 }}
+                 transition={{ duration: 0.3, ease: "easeInOut" }}
+               >
+                 <Suspense
+                   fallback={
+                     <div className="p-8 animate-pulse space-y-4">
+                       <div className="h-8 w-1/3 rounded bg-fuchsia-950" />
+                       <div className="h-64 w-full rounded bg-fuchsia-950" />
+                     </div>
+                   }
+                 >
+                   {children}
+                 </Suspense>
+               </motion.div>
+             </AnimatePresence>
+           </NFTGate>
+          </AutoLoginGate>
+        </DashboardShell>
+        <TermsModalRenderer />
+      </TermsModalProvider>
+    </TokenPriceProvider>
   );
 }

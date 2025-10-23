@@ -264,9 +264,9 @@ export function MultiStepForm({
   useEffect(() => {
     if (account?.address && !isAdminUser && !isPublic) {
       console.log('❌ Non-admin user attempting to access admin form, redirecting...');
-      window.location.href = '/admin/dashboard';
+      router.push('/admin/dashboard');
     }
-  }, [account?.address, isAdminUser, isPublic]);
+  }, [account?.address, isAdminUser, isPublic, router]);
 
   const totalSteps = 7;
   
@@ -481,7 +481,7 @@ export function MultiStepForm({
         // Usar navegación completa para preservar mejor la sesión
         if (isPublic) {
           // Para usuarios públicos, redirigir a "/" preservando la sesión
-          window.location.href = "/";
+          router.push("/");
         } else {
           // Para admins, usar navegación normal
           router.push("/admin/dashboard");
