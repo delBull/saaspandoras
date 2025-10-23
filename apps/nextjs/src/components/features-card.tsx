@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@saasfly/ui";
+import { cn } from '~/lib/utils'; 
 import { AnimatedList } from "@saasfly/ui/animated-list";
 
 interface Item {

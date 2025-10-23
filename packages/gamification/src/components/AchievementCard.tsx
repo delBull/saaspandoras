@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { Lock, CheckCircle, Star } from "lucide-react";
 import { Achievement, UserAchievement, AchievementRarity } from '../types';
-import { cn } from "@saasfly/ui";
+import { cn } from "../utils/cn";
 
 interface AchievementCardProps {
   achievement: Achievement;

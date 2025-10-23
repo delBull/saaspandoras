@@ -1,7 +1,7 @@
 import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { cn } from "@saasfly/ui";
+import { cn } from "~/lib/utils";
 
 import { siteConfig } from "~/config/site";
 import { useLockBody } from "~/hooks/use-lock-body";

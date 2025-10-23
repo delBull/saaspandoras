@@ -9,14 +9,14 @@ import {
   ChartBarIcon,
   CurrencyDollarIcon,
   FolderIcon,
-  UserGroupIcon,
+  //UserGroupIcon,
   ClockIcon,
   CheckCircleIcon,
   ExclamationCircleIcon,
 } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import Link from 'next/link';
-import { useProjectModal } from "@/contexts/ProjectModalContext";
+//import { useProjectModal } from "@/contexts/ProjectModalContext";
 import { useProfile } from "@/hooks/useProfile";
 import { useActiveAccount } from 'thirdweb/react';
 
@@ -35,7 +35,7 @@ export default function PandoriansDashboardPage() {
   const account = useActiveAccount();
   const toastShownRef = useRef(false);
 
-  const { open } = useProjectModal();
+  //const { open } = useProjectModal();
 
   // Use account from useActiveAccount hook instead of cookies
   const walletAddress = account?.address;
@@ -349,7 +349,7 @@ export default function PandoriansDashboardPage() {
                     <div className="text-green-200 text-xs">Retira ganancias disponibles</div>
                   </div>
                 </button>
-
+                {/*
                 <button onClick={open} className="w-full flex items-center gap-3 p-3 rounded-lg bg-purple-600 hover:bg-purple-700 transition-colors text-left">
                   <UserGroupIcon className="w-5 h-5 text-white" />
                   <div>
@@ -357,6 +357,7 @@ export default function PandoriansDashboardPage() {
                     <div className="text-purple-200 text-xs">Invierte en oportunidades nuevas</div>
                   </div>
                 </button>
+                */}
               </>
             ) : (
               <div className="text-center py-6">

@@ -4,7 +4,7 @@ import type { Bridge } from "thirdweb";
 import type { Token } from "@/types/token";
 import { formatUnits } from "viem";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@saasfly/ui/dialog";
-import { Button } from "@saasfly/ui/button";
+import { Button } from "@/components/ui/button";
 import { ArrowDownIcon, Loader2 } from "lucide-react";
 import { TokenImage } from '../TokenImage';
 import { BadgeChain } from '../BadgeChain';
