@@ -19,6 +19,7 @@
     "db:export-local": "node export-local-schema.mjs",
     "db:sync-production": "node sync-production.mjs",
     "db:full-sync": "node full-sync.mjs",
+    "db:sync-local-to-staging": "node sync-local-to-staging.mjs",
     "db:push:pg": "drizzle-kit push"
   },
   "dependencies": {

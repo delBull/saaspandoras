@@ -61,13 +61,14 @@ export function ProjectModalProvider({ children }: ProjectModalProviderProps) {
 
   return (
     <ProjectModalContext.Provider value={contextValue}>
-      {isProjectModalOpen ? (
+      {children}
+      {isProjectModalOpen && (
         <ProjectApplicationModal
           isOpen={true}
           onClose={closeProjectModal}
           isAdminMode={isAdminMode}
         />
-      ) : children}
+      )}
     </ProjectModalContext.Provider>
   );
 }

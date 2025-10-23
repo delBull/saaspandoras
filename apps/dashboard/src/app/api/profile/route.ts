@@ -73,11 +73,12 @@ export async function GET(request: Request) {
     await ensureUser(walletAddress);
 
     // Get user data directly from users table - optimized query
+    const tableName = process.env.NODE_ENV === 'production' ? 'User' : 'users';
     const users = await sql`
       SELECT "id", "name", "email", "image", "walletAddress",
               "connectionCount", "lastConnectionAt", "createdAt",
               "kycLevel", "kycCompleted", "kycData"
-      FROM "users"
+      FROM "${sql.unsafe(tableName)}"
       WHERE LOWER("walletAddress") = LOWER(${walletAddress})
     `;
     const user = users[0];
@@ -212,8 +213,9 @@ export async function POST(request: Request) {
     const { profileData } = body;
 
     // Build unified update query
+    const tableName = process.env.NODE_ENV === 'production' ? 'User' : 'users';
     await sql`
-      UPDATE "users"
+      UPDATE "${sql.unsafe(tableName)}"
       SET "name" = ${profileData.name ?? null},
           "email" = ${profileData.email ?? null},
           "image" = ${profileData.image ?? null},
