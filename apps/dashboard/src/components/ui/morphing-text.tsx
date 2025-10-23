@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { cn } from "@saasfly/ui";
+import { cn } from "@/lib/utils";
 
 interface MorphingTextProps {
   text: string;

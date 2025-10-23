@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { Trophy, Medal, Award, Crown } from "lucide-react";
 import { LeaderboardEntry } from '../types';
-import { cn } from "@saasfly/ui";
+import { cn } from "../utils/cn";
 
 interface LeaderboardProps {
   entries: LeaderboardEntry[];

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Search, Filter, Grid3X3, List, X } from "lucide-react";
-import { Button } from "@saasfly/ui/button";
+import { Button } from "@/components/ui/button";
 import { Input } from "@saasfly/ui/input";
 import {
   Select,

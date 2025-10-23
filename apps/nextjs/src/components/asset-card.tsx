@@ -1,6 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
-import { cn } from '@saasfly/ui';
+import { cn } from '~/lib/utils';
 
 interface AssetCardProps {
   title: string;

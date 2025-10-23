@@ -18,7 +18,7 @@ import {
   ChartBarIcon,
   FolderIcon,
 } from "@heroicons/react/24/outline";
-import { cn } from "@saasfly/ui";
+import { cn } from "@/lib/utils";
 import { useActiveAccount, useDisconnect, useActiveWallet } from "thirdweb/react";
 import { ethereum } from "thirdweb/chains";
 import { WalletBalance, NetworkSelector, ConnectWalletButton } from "@/components/wallet";

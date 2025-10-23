@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Mail, Phone, CheckCircle } from "lucide-react";
-import { Button } from "@saasfly/ui/button";
+import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/glass-card";
 
 interface EmailPhoneCaptureProps {

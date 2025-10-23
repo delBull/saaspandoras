@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Button } from '@saasfly/ui/button';
+import { Button } from '@/components/ui/button';
 import { useProjectModal } from '@/contexts/ProjectModalContext';
 
 interface ProjectApplicationButtonProps {

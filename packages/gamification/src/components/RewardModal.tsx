@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Gift, Star, Zap, Crown, X } from "lucide-react";
 import { Reward, RewardRarity } from '../types';
-import { cn } from "@saasfly/ui";
+import { cn } from "../utils/cn";
 
 interface RewardModalProps {
   reward: Reward | null;

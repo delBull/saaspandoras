@@ -2,7 +2,7 @@
 
 import { Drawer } from "vaul";
 
-import { cn } from "@saasfly/ui";
+import { cn } from "~/lib/utils";
 import { Dialog, DialogContent, DialogTitle } from "@saasfly/ui/dialog";
 
 import useMediaQuery from "~/hooks/use-media-query";

@@ -1,6 +1,6 @@
 // @ts-ignore
 // @ts-nocheck
-import * as React from "react";
+import * as React from "react"; 
 import type { ImageProps } from "next/image";
 import NextImage from "next/image";
 import { useMDXComponent } from "next-contentlayer2/hooks";

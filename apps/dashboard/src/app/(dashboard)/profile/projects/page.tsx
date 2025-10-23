@@ -383,10 +383,6 @@ export default function ProfileProjectsPage() {
             </div>
           )}
         </div>
-        <Button variant="outline" onClick={open}>
-          <PencilIcon className="w-4 h-4 mr-2" />
-          Aplicar Nuevo Proyecto
-        </Button>
       </div>
 
       {/* Summary Stats */}
