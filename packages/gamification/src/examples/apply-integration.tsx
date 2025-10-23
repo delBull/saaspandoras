@@ -70,7 +70,7 @@ function ApplyContentWithTracking() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
           <div className="text-center">
             <div className="text-2xl font-bold text-lime-400">50 pts</div>
-            <div className="text-zinc-400">Por aplicar proyecto</div>
+            <div className="text-zinc-400">Por desatar creación</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-blue-400">100 pts</div>

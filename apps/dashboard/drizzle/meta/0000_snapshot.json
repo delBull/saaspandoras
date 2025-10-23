@@ -749,7 +749,7 @@
           "type": "varchar(100)",
           "primaryKey": false,
           "notNull": false,
-          "default": "'Learn More'"
+          "default": "'Dime más'"
         },
         "created_at": {
           "name": "created_at",

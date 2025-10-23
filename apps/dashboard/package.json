@@ -13,7 +13,13 @@
     "update:token-hosts": "node generar-dominios.js",
     "db:generate": "turbo db:generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:migrate:production": "node migrate-production.mjs"
+    "db:migrate:production": "node migrate-production.mjs",
+    "db:create-users-table": "node create-users-table.mjs",
+    "db:fix-production": "node call-api.mjs",
+    "db:export-local": "node export-local-schema.mjs",
+    "db:sync-production": "node sync-production.mjs",
+    "db:full-sync": "node full-sync.mjs",
+    "db:push:pg": "drizzle-kit push"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -58,7 +64,10 @@
     "tailwindcss-animate": "^1.0.7",
     "thirdweb": "^5.106.0",
     "vaul": "0.9.0",
-    "viem": "^2.17.3"
+    "viem": "^2.17.3",
+    "pg": "^8.11.3",
+    "dotenv": "^16.5.0",
+    "postgres": "^3.4.7"
   },
   "devDependencies": {
     "@saasfly/eslint-config": "workspace:*",

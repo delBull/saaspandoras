@@ -108,7 +108,7 @@ export function Leaderboard({
               <div className="hidden md:flex items-center gap-6 text-sm">
                 <div className="text-center">
                   <div className="text-zinc-300">{entry.projectsApplied}</div>
-                  <div className="text-zinc-500">Proyectos</div>
+                  <div className="text-zinc-500">Creaciones</div>
                 </div>
                 <div className="text-center">
                   <div className="text-zinc-300">{entry.achievementsUnlocked}</div>

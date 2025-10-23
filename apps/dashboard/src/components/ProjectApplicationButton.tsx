@@ -19,7 +19,7 @@ export function ProjectApplicationButton({
   className = '',
   variant = 'default',
   size = 'default',
-  buttonText = 'Aplicar Proyecto',
+  buttonText = 'Desatar tu Creación',
   disabled = false,
   showCloseButton = false
 }: ProjectApplicationButtonProps) {

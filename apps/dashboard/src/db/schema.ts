@@ -46,7 +46,7 @@ export const administrators = pgTable("administrators", {
 });
 
 // Tabla users existente en la base de datos
-export const users = pgTable("users", {
+export const users = pgTable("User", {
   id: varchar("id", { length: 255 }).primaryKey(), // Restaurado a varchar para coincidir con estructura existente
   name: varchar("name", { length: 255 }),
   email: varchar("email", { length: 255 }).unique(),
@@ -143,7 +143,7 @@ export const projects = pgTable("projects", {
 
   // Campos para featured projects
   featured: boolean("featured").default(false).notNull(),
-  featuredButtonText: varchar("featured_button_text", { length: 100 }).default("Learn More"),
+  featuredButtonText: varchar("featured_button_text", { length: 100 }).default("Dime más"),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

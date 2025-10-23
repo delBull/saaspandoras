@@ -36,7 +36,7 @@ export function PanelProjects({ pendingProjects, isCollapsed, onToggleCollapse }
         {!isCollapsed && (
           <div className="mt-2">
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-300">
-              {pendingProjects.length} proyectos
+              {pendingProjects.length} creaciones
             </span>
           </div>
         )}

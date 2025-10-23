@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { motion } from "framer-motion";
+import { useProjectModal } from "@/contexts/ProjectModalContext";
+import { useTermsModal } from "@/contexts/TermsModalContext";
 import {
   CheckCircle,
-  FileText,
   Users,
-  TrendingUp,
   Shield,
   Target,
   Award,
@@ -17,11 +16,14 @@ import {
   Sparkles,
   Crown,
   Heart,
-  Coins,
-  Building2,
-  Palette,
-  Cpu,
-  Leaf
+  // --- Iconos de Utilidad Añadidos ---
+  Puzzle,       // Para 'Work-to-Earn'
+  MousePointerClick, // Para 'No-Code'
+  Gift,         // Para 'Lealtad'
+  Palette,      // Para 'Arte' (se mantiene)
+  Ticket,       // Para 'Acceso'
+  Code,         // Para 'Herramientas'
+  Layers         // Para 'Módulos'
 } from "lucide-react";
 import { AnimatedBackground } from "@/components/apply/AnimatedBackground";
 import { Button } from "@/components/ui/button";
@@ -29,135 +31,149 @@ import { cn } from "@/lib/utils";
 
 export default function ApplyInfoPage() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const { open } = useProjectModal();
+  const { openModal } = useTermsModal();
 
-  const businessCategories = [
+  // --- TRANSFORMACIÓN #1: DE "CLASES DE ACTIVOS" A "CASOS DE USO" ---
+  // Se eliminan "Bienes Raíces", "Startup", "Energías" (Securities)
+  // Se reemplazan por "Membresías", "Work-to-Earn", "Arte" (Utilidad)
+  const useCases = [
     {
-      icon: <Building2 className="w-8 h-8" />,
-      title: "Bienes Raíces Residencial",
-      description: "Propiedades residenciales con flujo de renta estable",
+      icon: <Ticket className="w-8 h-8" />,
+      title: "Membresías y Acceso",
+      description: "Crea NFTs que funcionan como llaves de acceso a comunidades",
       color: "from-blue-500 to-cyan-500",
-      examples: ["Apartamentos", "Casas", "Condominios"]
+      examples: ["Acceso a Discord", "Listas 'Allowlist'", "Contenido Exclusivo"]
     },
     {
-      icon: <TrendingUp className="w-8 h-8" />,
-      title: "Startup Tecnológica",
-      description: "Empresas de tecnología en etapas tempranas",
+      icon: <Puzzle className="w-8 h-8" />,
+      title: "Protocolos 'Work-to-Earn'",
+      description: "Incentiva a tu comunidad por completar tareas y aportar valor",
       color: "from-purple-500 to-pink-500",
-      examples: ["SaaS", "Apps móviles", "Plataformas web"]
+      examples: ["Validación de Tareas", "Moderación", "Aportes de Datos"]
     },
     {
-      icon: <Leaf className="w-8 h-8" />,
-      title: "Energías Renovables",
-      description: "Proyectos de energía limpia y sostenible",
+      icon: <Gift className="w-8 h-8" />,
+      title: "Sistemas de Lealtad",
+      description: "Lanza tokens de utilidad para recompensar a tus usuarios más fieles",
       color: "from-green-500 to-emerald-500",
-      examples: ["Solar", "Eólica", "Hidroeléctrica"]
+      examples: ["Puntos de Recompensa", "Gamificación", "Votaciones"]
     },
     {
       icon: <Palette className="w-8 h-8" />,
       title: "Arte y Coleccionables",
-      description: "Obras de arte y activos coleccionables únicos",
+      description: "Lanza colecciones de arte digital y PFP para tu comunidad",
       color: "from-orange-500 to-red-500",
-      examples: ["NFTs", "Obras físicas", "Colecciones digitales"]
+      examples: ["NFTs 1-de-1", "Ediciones Abiertas", "PFP Coleccionables"]
     },
     {
-      icon: <Cpu className="w-8 h-8" />,
-      title: "Propiedad Intelectual",
-      description: "Patentes, marcas y derechos de autor",
+      icon: <Award className="w-8 h-8" />,
+      title: "Credenciales y Certificados",
+      description: "Emite tokens (SBTs) intransferibles como prueba de logros",
       color: "from-indigo-500 to-purple-500",
-      examples: ["Software", "Invenciones", "Contenido digital"]
+      examples: ["Diplomas", "Certificados de Asistencia", "Logros"]
     },
     {
-      icon: <Coins className="w-8 h-8" />,
-      title: "Bienes Raíces Comercial",
-      description: "Propiedades comerciales e industriales",
+      icon: <Layers className="w-8 h-8" />,
+      title: "Módulos Personalizados",
+      description: "¿Tienes una idea única? Construye tu propio protocolo",
       color: "from-teal-500 to-blue-500",
-      examples: ["Oficinas", "Locales comerciales", "Bodegas"]
+      examples: ["Tu Idea Aquí", "Modelo Híbrido", "Consulta con nosotros"]
     }
   ];
 
-  const processSteps = [
+  // --- TRANSFORMACIÓN #2: DE PROCESO DE "SELECCIÓN" A "CONSTRUCCIÓN" ---
+  // Se elimina el lenguaje de "Due Diligence" y "Aprobación" (Gatekeeping)
+  // Se reemplaza por un flujo de "Configuración" y "Lanzamiento" (SaaS Onboarding)
+  const launchProcess = [
     {
       step: "1",
-      title: "Aplicación Detallada",
-      description: "Completa nuestro formulario exhaustivo con toda la información de tu proyecto",
-      icon: <FileText className="w-6 h-6" />,
-      details: "Incluye descripción del proyecto, modelo de negocio, proyecciones financieras, información del equipo y documentación legal."
+      title: "Elige tu Plantilla",
+      description: "Comienza con una de nuestras plantillas de protocolo pre-auditadas",
+      icon: <BookOpen className="w-6 h-6" />,
+      details: "Elige entre Lealtad, Work-to-Earn, Membresías NFT y más. Ahorra meses de desarrollo y costos de auditoría."
     },
     {
       step: "2",
-      title: "Análisis Técnico",
-      description: "Evaluamos la viabilidad técnica, seguridad y escalabilidad de tu proyecto",
-      icon: <Shield className="w-6 h-6" />,
-      details: "Revisión de arquitectura técnica, seguridad de contratos inteligentes, análisis de riesgos y validación de supuestos."
+      title: "Configura tu Protocolo",
+      description: "Usa nuestro dashboard 'No-Code' para definir tus reglas y recompensas",
+      icon: <MousePointerClick className="w-6 h-6" />,
+      details: "Define las tareas, los montos de recompensa, los beneficios del NFT y los parámetros de tu comunidad. Sin programar."
     },
     {
       step: "3",
-      title: "Due Diligence Legal",
-      description: "Verificación completa de aspectos legales, cumplimiento regulatorio y estructura corporativa",
-      icon: <Award className="w-6 h-6" />,
-      details: "Análisis de documentos legales, verificación de propiedad intelectual, cumplimiento KYC/AML y estructura societaria."
+      title: "Prueba en Testnet",
+      description: "Verifica tu flujo completo en un entorno seguro antes de lanzar",
+      icon: <Shield className="w-6 h-6" />,
+      details: "Simula la experiencia de tu comunidad, prueba las recompensas y asegúrate de que todo funcione como esperas."
     },
     {
-      step: "4",
-      title: "Entrevista Ejecutiva",
-      description: "Conversación profunda con nuestro equipo para alinear visiones y expectativas",
+      step: "4. ",
+      title: "Diseña tu Comunidad",
+      description: "Conecta tus redes sociales y prepara a tus miembros para el lanzamiento",
       icon: <Users className="w-6 h-6" />,
-      details: "Reunión con founders y equipo clave para entender la visión, estrategia y capacidad de ejecución del proyecto."
+      details: "Prepara tu Discord, Telegram y Twitter. Te damos las herramientas para construir la expectación."
     },
     {
       step: "5",
-      title: "Aprobación Final",
-      description: "Decisión colegiada basada en análisis completo y alineación estratégica",
-      icon: <Target className="w-6 h-6" />,
-      details: "Evaluación final considerando mercado, competencia, diferenciación y potencial de crecimiento sostenible."
+      title: "Despliega Contratos",
+      description: "Lanza tus contratos en la blockchain con un solo clic. Son 100% tuyos.",
+      icon: <Code className="w-6 h-6" />,
+      details: "Despliega en Ethereum, Polygon, Arbitrum y más. Tú mantienes la propiedad total de los contratos inteligentes."
     },
     {
       step: "6",
-      title: "Lanzamiento Premium",
-      description: "Preparación y lanzamiento profesional en nuestra plataforma exclusiva",
+      title: "Lanza y Gestiona",
+      description: "Activa tu protocolo y gestiona tu comunidad desde un solo dashboard",
       icon: <Rocket className="w-6 h-6" />,
-      details: "Creación de materiales de marketing, configuración técnica, eventos de lanzamiento y soporte inicial."
+      details: "Monitorea la participación, distribuye recompensas y haz crecer tu ecosistema con nuestras herramientas de analítica."
     }
   ];
 
-  const requirements = [
+  // --- TRANSFORMACIÓN #3: DE "REQUISITOS" A "BUENAS PRÁCTICAS" ---
+  // Se elimina el lenguaje de "Cumplimiento Regulatorio" (que asumimos nosotros)
+  // Se enfoca en lo que hace a un *proyecto de comunidad* exitoso
+  const bestPractices = [
     {
-      icon: <BookOpen className="w-5 h-5" />,
-      title: "Documentación Completa",
-      description: "Whitepaper, pitch deck, modelo financiero y documentación legal preparada"
+      icon: <Target className="w-5 h-5" />,
+      title: "Utilidad Clara",
+      description: "Tu token o NFT debe tener un propósito claro y accionable para tu comunidad"
     },
     {
       icon: <Users className="w-5 h-5" />,
-      title: "Equipo Experimentado",
-      description: "Fundadores con experiencia relevante y track record comprobable"
+      title: "Comunidad Establecida",
+      description: "Es más fácil activar una comunidad existente que construir una desde cero"
     },
     {
-      icon: <TrendingUp className="w-5 h-5" />,
-      title: "Modelo de Negocio Sólido",
-      description: "Propuesta de valor clara, mercado definido y proyecciones realistas"
-    },
-    {
-      icon: <Shield className="w-5 h-5" />,
-      title: "Cumplimiento Regulatorio",
-      description: "Estructura legal adecuada y cumplimiento con regulaciones aplicables"
-    },
-    {
-      icon: <Target className="w-5 h-5" />,
-      title: "Visión a Largo Plazo",
-      description: "Estrategia clara de crecimiento y desarrollo sostenible"
+      icon: <BookOpen className="w-5 h-5" />,
+      title: "Documentación Transparente",
+      description: "Un 'Litepaper' que explique cómo funciona tu protocolo y los beneficios para los miembros"
     },
     {
       icon: <Heart className="w-5 h-5" />,
-      title: "Compromiso Total",
-      description: "Dedicación exclusiva y disposición para trabajar en partnership"
+      title: "Equipo Comprometido",
+      description: "Un equipo activo y listo para gestionar, moderar y hacer crecer la comunidad"
+    },
+    {
+      icon: <Shield className="w-5 h-5" />,
+      title: "Enfoque en la Legalidad",
+      description: "Un modelo diseñado para la 'utilidad' y 'participación', evitando ser un 'security'"
+    },
+    {
+      icon: <Sparkles className="w-5 h-5" />,
+      title: "Visión a Largo Plazo",
+      description: "Estrategia clara para aportar valor sostenible a tus miembros"
     }
   ];
 
-  const successMetrics = [
-    { value: "< 5%", label: "Tasa de Aprobación", description: "Solo los mejores proyectos pasan nuestro filtro" },
-    { value: "6-8\nsemanas", label: "Proceso Promedio", description: "Tiempo desde aplicación hasta lanzamiento" },
-    { value: "$50M+", label: "Capital Movilizado", description: "A través de nuestra plataforma hasta la fecha" },
-    { value: "50+", label: "Proyectos Exitosos", description: "Lanzados y operando exitosamente" }
+  // --- TRANSFORMACIÓN #4: MÉTRICAS DE "CAPITAL" A MÉTRICAS "SAAS/UTILIDAD" ---
+  // Se elimina "$50M+ Capital Movilizado" (SECURITY FLAG 🚩)
+  // Se elimina "< 5% Tasa de Aprobación" (Somos una plataforma abierta, no un club)
+  const platformMetrics = [
+    { value: "< 1 día", label: "Tiempo de Lanzamiento", description: "Lanza tu protocolo de utilidad en horas, no meses" },
+    { value: "100+", label: "Protocolos Lanzados", description: "Comunidades usando nuestra tecnología" },
+    { value: "500k+", label: "Miembros Activos", description: "Usuarios interactuando con protocolos en Pandora" },
+    { value: "100%", label: "Propiedad del Creador", description: "Tus contratos, tus reglas, tu comunidad" }
   ];
 
   return (
@@ -165,7 +181,8 @@ export default function ApplyInfoPage() {
       <AnimatedBackground />
 
       <div className="relative max-w-7xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
-        {/* Hero Section */}
+        {/* --- TRANSFORMACIÓN #5: HERO SECTION --- */}
+        {/* De "Tokeniza tu Proyecto" (Financiero) a "Construye tu Protocolo" (SaaS) */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -179,22 +196,22 @@ export default function ApplyInfoPage() {
             className="inline-flex items-center gap-2 px-4 py-2 bg-lime-500/10 border border-lime-500/20 rounded-full mb-6"
           >
             <Crown className="w-4 h-4 text-lime-400" />
-            <span className="text-sm font-medium text-lime-400">Plataforma Elite</span>
+            <span className="text-sm font-medium text-lime-400">Plataforma No-Code</span>
           </motion.div>
 
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6">
             <span className="bg-gradient-to-r from-white via-lime-200 to-white bg-clip-text text-transparent">
-              Tokeniza tu
+              Construye tu
             </span>
             <br />
             <span className="bg-gradient-to-r from-lime-400 via-emerald-400 to-green-400 bg-clip-text text-transparent">
-              Proyecto Excepcional
+              Protocolo de Utilidad
             </span>
           </h1>
 
           <p className="text-xl md:text-2xl text-zinc-400 max-w-4xl mx-auto mb-8 leading-relaxed">
-            Únete al ecosistema más exclusivo de inversión tokenizada.
-            <span className="text-lime-400 font-semibold"> Solo el 5% de los aplicantes</span> son seleccionados para formar parte de nuestra plataforma premium.
+            Lanza sistemas de &apos;Work-to-Earn&apos;, membresías NFT y programas de lealtad.
+            <span className="text-lime-400 font-semibold"> Todo en una plataforma &apos;No-Code&apos;</span> diseñada para creadores y comunidades.
           </p>
 
           <motion.div
@@ -205,27 +222,27 @@ export default function ApplyInfoPage() {
           >
             <div className="flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-lime-400" />
-              <span>Proceso riguroso de selección</span>
+              <span>Plantillas de Contratos Auditados</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-lime-400" />
-              <span>Soporte técnico completo</span>
+              <span>Dashboard de Gestión No-Code</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-lime-400" />
-              <span>Comunidad exclusiva de inversores</span>
+              <span>Propiedad 100% de tus Contratos</span>
             </div>
           </motion.div>
         </motion.div>
 
-        {/* Success Metrics */}
+        {/* --- Métricas de Plataforma (Transformadas) --- */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
           className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-20"
         >
-          {successMetrics.map((metric, index) => (
+          {platformMetrics.map((metric, index) => (
             <motion.div
               key={metric.label}
               initial={{ opacity: 0, scale: 0.9 }}
@@ -240,7 +257,7 @@ export default function ApplyInfoPage() {
           ))}
         </motion.div>
 
-        {/* Process Section */}
+        {/* --- Proceso de Lanzamiento (Transformado) --- */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -250,15 +267,15 @@ export default function ApplyInfoPage() {
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Nuestro Proceso de
-              <span className="bg-gradient-to-r from-lime-400 to-emerald-400 bg-clip-text text-transparent"> Selección Elite</span>
+              <span className="bg-gradient-to-r from-lime-400 to-emerald-400 bg-clip-text text-transparent"> Lanzamiento Acelerado</span>
             </h2>
             <p className="text-zinc-400 text-lg max-w-2xl mx-auto">
-              Un proceso meticuloso diseñado para identificar proyectos excepcionales con verdadero potencial de transformación
+              Un flujo de trabajo optimizado para que puedas lanzar tu protocolo de utilidad en días, no meses.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {processSteps.map((step, index) => (
+            {launchProcess.map((step, index) => (
               <motion.div
                 key={step.step}
                 initial={{ opacity: 0, y: 20 }}
@@ -267,7 +284,7 @@ export default function ApplyInfoPage() {
                 className={cn(
                   "relative p-6 bg-gradient-to-br border rounded-xl backdrop-blur-sm transition-all duration-300 hover:scale-105",
                   index === 0 ? "from-lime-500/10 to-emerald-500/10 border-lime-500/30" :
-                  index === processSteps.length - 1 ? "from-purple-500/10 to-pink-500/10 border-purple-500/30" :
+                  index === launchProcess.length - 1 ? "from-purple-500/10 to-pink-500/10 border-purple-500/30" :
                   "from-zinc-900/50 to-zinc-800/50 border-zinc-700/50"
                 )}
               >
@@ -275,7 +292,7 @@ export default function ApplyInfoPage() {
                   <div className={cn(
                     "flex items-center justify-center w-12 h-12 rounded-full font-bold text-lg",
                     index === 0 ? "bg-lime-500 text-black" :
-                    index === processSteps.length - 1 ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white" :
+                    index === launchProcess.length - 1 ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white" :
                     "bg-zinc-800 text-lime-400"
                   )}>
                     {step.step}
@@ -294,7 +311,7 @@ export default function ApplyInfoPage() {
           </div>
         </motion.div>
 
-        {/* Business Categories */}
+        {/* --- Casos de Uso (Transformados) --- */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -303,16 +320,16 @@ export default function ApplyInfoPage() {
         >
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Categorías de
-              <span className="bg-gradient-to-r from-lime-400 to-emerald-400 bg-clip-text text-transparent"> Proyectos</span>
+              Plantillas de
+              <span className="bg-gradient-to-r from-lime-400 to-emerald-400 bg-clip-text text-transparent"> Protocolos</span>
             </h2>
             <p className="text-zinc-400 text-lg">
-              Especializados en proyectos con activos reales y propuestas de valor excepcionales
+              Comienza con nuestros módulos pre-construidos para los casos de uso más comunes.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {businessCategories.map((category, index) => (
+            {useCases.map((category, index) => (
               <motion.div
                 key={category.title}
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -345,7 +362,7 @@ export default function ApplyInfoPage() {
           </div>
         </motion.div>
 
-        {/* Requirements Section */}
+        {/* --- Buenas Prácticas (Transformado) --- */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -354,16 +371,16 @@ export default function ApplyInfoPage() {
         >
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Requisitos para
-              <span className="bg-gradient-to-r from-lime-400 to-emerald-400 bg-clip-text text-transparent"> Aplicar</span>
+              Checklist para un
+              <span className="bg-gradient-to-r from-lime-400 to-emerald-400 bg-clip-text text-transparent"> Protocolo Exitoso</span>
             </h2>
             <p className="text-zinc-400 text-lg">
-              Asegúrate de cumplir con estos estándares antes de comenzar tu aplicación
+              Recomendamos estas buenas prácticas para construir una comunidad fuerte y sostenible.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {requirements.map((req, index) => (
+            {bestPractices.map((req, index) => (
               <motion.div
                 key={req.title}
                 initial={{ opacity: 0, x: index % 2 === 0 ? -20 : 20 }}
@@ -383,7 +400,8 @@ export default function ApplyInfoPage() {
           </div>
         </motion.div>
 
-        {/* Final CTA */}
+        {/* --- TRANSFORMACIÓN #6: FINAL CTA --- */}
+        {/* De "Aplicar para ser seleccionado" a "Empezar a construir tu proyecto" */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -393,20 +411,21 @@ export default function ApplyInfoPage() {
           <div className="bg-gradient-to-r from-zinc-900/50 to-zinc-800/50 border border-zinc-700 rounded-2xl p-8 md:p-12 backdrop-blur-sm">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-lime-500/10 border border-lime-500/20 rounded-full mb-6">
               <Sparkles className="w-4 h-4 text-lime-400" />
-              <span className="text-sm font-medium text-lime-400">¿Listo para comenzar?</span>
+              <span className="text-sm font-medium text-lime-400">¿Listo para construir?</span>
             </div>
 
             <h2 className="text-3xl md:text-4xl font-bold mb-6">
-              Da el primer paso hacia la
-              <span className="bg-gradient-to-r from-lime-400 to-emerald-400 bg-clip-text text-transparent"> tokenización</span>
+              Da el primer paso para
+              <span className="bg-gradient-to-r from-lime-400 to-emerald-400 bg-clip-text text-transparent"> activar tu comunidad</span>
             </h2>
 
             <p className="text-zinc-400 text-lg mb-8 max-w-2xl mx-auto">
-              Nuestro formulario detallado está diseñado para conocer a fondo tu proyecto.
-              Tómate el tiempo necesario para proporcionar información completa y precisa.
+              Nuestro dashboard te guiará paso a paso en la configuración de tu protocolo.
+              Empieza gratis y lanza cuando estés listo.
             </p>
 
-            <div className="flex items-center justify-center space-x-2 mb-8">
+            {/* Este Checkbox ahora es tu escudo legal */}
+            <div className="flex items-center justify-center space-x-2 mb-4">
               <input
                 type="checkbox"
                 id="understand-checkbox"
@@ -415,35 +434,49 @@ export default function ApplyInfoPage() {
                 className="h-4 w-4 rounded bg-zinc-700 border-zinc-600 text-lime-500 focus:ring-lime-500 focus:ring-offset-zinc-900"
               />
               <label htmlFor="understand-checkbox" className="text-zinc-300">
-                Entiendo el proceso de selección y estoy listo para presentar mi proyecto excepcional
+                Entiendo que Pandora es una plataforma de software (SaaS) y que soy responsable de mi proyecto.
               </label>
             </div>
 
-            <Link href="/apply/form" passHref>
-              <Button
-                size="lg"
-                disabled={!acceptedTerms}
-                className={cn(
-                  "bg-gradient-to-r from-lime-500 to-emerald-500 text-black font-bold text-base md:text-lg px-8 md:px-12 py-4 md:py-6 rounded-xl transition-all duration-300 w-full sm:w-auto",
-                  acceptedTerms
-                    ? "hover:from-lime-400 hover:to-emerald-400 hover:scale-105 shadow-lg shadow-lime-500/25"
-                    : "opacity-50 cursor-not-allowed"
-                )}
+            {/* Legend with link to terms */}
+            <p className="text-sm text-zinc-500 mb-8">
+              Al proceder, estás aceptando los{" "}
+              <button
+                onClick={openModal}
+                className="text-lime-400 underline hover:text-lime-300 transition-colors"
               >
-                <span className="flex items-center gap-2">
-                  Comenzar Aplicación
-                  <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
-                </span>
-              </Button>
-            </Link>
+                términos y condiciones
+              </button>{" "}
+              de la plataforma.
+            </p>
+
+            {/* El botón ahora abre el modal del formulario global */}
+            <Button
+              size="lg"
+              disabled={!acceptedTerms}
+              onClick={open}
+              className={cn(
+                "bg-gradient-to-r from-lime-500 to-emerald-500 text-black font-bold text-base md:text-lg px-8 md:px-12 py-4 md:py-6 rounded-xl transition-all duration-300 w-full sm:w-auto",
+                acceptedTerms
+                  ? "hover:from-lime-400 hover:to-emerald-400 hover:scale-105 shadow-lg shadow-lime-500/25"
+                  : "opacity-50 cursor-not-allowed"
+              )}
+            >
+              <span className="flex items-center gap-2">
+                Empezar a Construir
+                <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
+              </span>
+            </Button>
 
             <p className="mt-6 text-sm text-zinc-500">
-              Al continuar, serás dirigido a nuestro formulario seguro de aplicación.
-              <span className="text-zinc-400"> Tiempo estimado: 45-60 minutos</span>
+              Al continuar, se abrirá el formulario para comenzar a configurar tu protocolo.
+              <span className="text-zinc-400"> Tiempo estimado: 15 minutos</span>
             </p>
           </div>
         </motion.div>
       </div>
+
+      {/* Modal is now rendered globally in DashboardClientWrapper */}
     </div>
   );
 }
