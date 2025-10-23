@@ -45,8 +45,8 @@ export const administrators = pgTable("administrators", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Tabla User existente en la base de datos - corregido nombre a mayúscula
-export const users = pgTable("User", {
+// Tabla users existente en la base de datos
+export const users = pgTable("users", {
   id: varchar("id", { length: 255 }).primaryKey(), // Restaurado a varchar para coincidir con estructura existente
   name: varchar("name", { length: 255 }),
   email: varchar("email", { length: 255 }).unique(),
