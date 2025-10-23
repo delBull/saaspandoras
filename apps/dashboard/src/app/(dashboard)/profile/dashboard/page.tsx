@@ -40,6 +40,9 @@ export default function PandoriansDashboardPage() {
   // Use account from useActiveAccount hook instead of cookies
   const walletAddress = account?.address;
 
+  // Use account from useActiveAccount hook instead of cookies
+  const walletAddress = account?.address;
+
   useEffect(() => {
     // Show beta notification toast only once when account is connected
     if (walletAddress && !toastShownRef.current) {
