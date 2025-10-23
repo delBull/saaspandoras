@@ -90,8 +90,8 @@ export const TOKENIZATION_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'project_enthusiast',
-    name: 'Entusiasta de Proyectos',
-    description: 'Aplica a 5 proyectos',
+    name: 'Entusiasta de Creaciones',
+    description: 'Aplica a 5 creaciones',
     icon: '📈',
     category: AchievementCategory.PROJECTS,
     rarity: AchievementRarity.UNCOMMON,
@@ -107,8 +107,8 @@ export const TOKENIZATION_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'project_champion',
-    name: 'Campeón de Proyectos',
-    description: 'Aplica a 10 proyectos',
+    name: 'Campeón de Creaciones',
+    description: 'Aplica a 10 creaciones',
     icon: '🏆',
     category: AchievementCategory.PROJECTS,
     rarity: AchievementRarity.RARE,
@@ -144,7 +144,7 @@ export const TOKENIZATION_ACHIEVEMENTS: Achievement[] = [
   {
     id: 'investor',
     name: 'Inversor Activo',
-    description: 'Invierte en 5 proyectos diferentes',
+    description: 'Invierte en 5 creaciones diferentes',
     icon: '🎯',
     category: AchievementCategory.INVESTMENTS,
     rarity: AchievementRarity.UNCOMMON,

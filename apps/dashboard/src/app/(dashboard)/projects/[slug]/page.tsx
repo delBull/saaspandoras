@@ -152,7 +152,7 @@ async function getProjectData(slug: string): Promise<ProjectData | null> {
       cover_photo_url: '/images/sem.jpeg',
       logo_url: '/images/sem.jpeg',
       featured: true,
-      featured_button_text: 'Learn More',
+      featured_button_text: 'Dime más',
       status: 'approved',
       applicant_name: 'John Smith',
       applicant_email: 'john@ecogreen.energy',

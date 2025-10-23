@@ -17,7 +17,6 @@ import {
   CheckCircleIcon,
   EyeIcon,
 } from '@heroicons/react/24/outline';
-import { useProjectModal } from "@/contexts/ProjectModalContext";
 import type { UserData, Project } from '@/types/admin';
 import { useActiveAccount } from 'thirdweb/react';
 
@@ -27,7 +26,7 @@ export default function ProfileProjectsPage() {
   const [loading, setLoading] = useState(true);
   const account = useActiveAccount();
 
-  const { open } = useProjectModal();
+
 
   // Use account from useActiveAccount hook instead of cookies
   const walletAddress = account?.address;
@@ -321,7 +320,7 @@ export default function ProfileProjectsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Acceso Denegado</CardTitle>
-            <CardDescription>Necesitas estar conectado para ver tus proyectos.</CardDescription>
+            <CardDescription>Necesitas estar conectado para ver tus creaciones.</CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -368,8 +367,8 @@ export default function ProfileProjectsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Mis Proyectos</h1>
-          <p className="text-gray-400">Gestiona y monitorea el rendimiento de tus inversiones</p>
+          <h1 className="text-2xl font-bold text-white">Mis Creaciones</h1>
+          <p className="text-gray-400">Gestiona y monitorea tu desemepño</p>
           {/* Debug info in development */}
           {process.env.NODE_ENV === 'development' && (
             <div className="mt-2 p-2 bg-yellow-900/20 border border-yellow-500/20 rounded text-xs text-yellow-200">
@@ -394,8 +393,8 @@ export default function ProfileProjectsPage() {
                 <div>
                   <p className="text-sm font-medium text-gray-400">
                     {walletAddress?.toLowerCase() === '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9'
-                      ? 'Proyectos Gestionados'
-                      : 'Mis Proyectos'
+                      ? 'Creaciones Gestionados'
+                      : 'Mis Creaciones'
                     }
                   </p>
                   <p className="text-2xl font-bold text-white">{userProjects.length}</p>
@@ -457,7 +456,7 @@ export default function ProfileProjectsPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-400">Proyectos Activos</p>
+                      <p className="text-sm font-medium text-gray-400">Creaciones Activas</p>
                       <p className="text-2xl font-bold text-lime-500">
                         {userProjects.filter(p => p.status === 'live' || p.status === 'approved').length}
                       </p>
@@ -671,14 +670,16 @@ export default function ProfileProjectsPage() {
           <Card>
             <CardContent className="p-12 text-center">
               <FolderIcon className="w-16 h-16 text-gray-500 mx-auto mb-4" />
-              <h3 className="text-xl font-medium text-white mb-2">Sin Proyectos Activos</h3>
+              <h3 className="text-xl font-medium text-white mb-2">Sin Creaciones Activas</h3>
               <p className="text-gray-400 mb-6">
-                Aún no has aplicado a ningún proyecto. Comienza tu jornada de inversión aplicando a oportunidades interesantes.
+                Aún no has aplicado a ningúna creación. Comienza tu jornada aplicando a oportunidades interesantes.
               </p>
-                <Button className="bg-lime-500 hover:bg-lime-600 text-zinc-900" onClick={open}>
-                  <PencilIcon className="w-4 h-4 mr-2" />
-                  Aplicar a Mi Primer Proyecto
-                </Button>
+                <Link href="/apply">
+                  <Button className="bg-lime-500 hover:bg-lime-600 text-zinc-900">
+                    <PencilIcon className="w-4 h-4 mr-2" />
+                    Aplica a tu primera Creación
+                  </Button>
+                </Link>
             </CardContent>
           </Card>
         )}

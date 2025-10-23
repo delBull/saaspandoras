@@ -91,7 +91,7 @@ import {
 
 | Actividad | Puntos | Categoría |
 |-----------|--------|-----------|
-| Aplicar proyecto | 50 | PROJECT_APPLICATION |
+| Desatar tu Creación | 50 | PROJECT_APPLICATION |
 | Proyecto aprobado | 100 | PROJECT_APPROVAL |
 | Hacer inversión | 25 | INVESTMENT |
 | Login diario | 10 | DAILY_LOGIN |

@@ -40,10 +40,10 @@ export function PandorasPoolRows({ ethAmount, usdcAmount, isLoading }: PandorasP
       <div className="px-4 py-12 text-center text-gray-400">
         <div className="flex flex-col items-center">
           <Image src={NO_FUNDS_ICON} alt="Sin inversión" width={56} height={56} className="mb-3 opacity-70" style={{ width: 'auto', height: 'auto' }} />
-          <div className="mb-2 font-semibold text-lg text-gray-300">Aún no tienes inversiones en Pandora&apos;s Pool</div>
-          <div className="text-sm mb-4 text-gray-400">Invierte con ETH o USDC para ver tus posiciones aquí.</div>
+          <div className="mb-2 font-semibold text-lg text-gray-300">Aún no tienes gobernanza en la caja de Pandora&apos;s</div>
+          <div className="text-sm mb-4 text-gray-400">Obtén tu posición aquí.</div>
           <a href="https://minter.pandoras.finance" target="_blank" rel="noopener noreferrer" className="bg-lime-700 text-white px-4 py-2 rounded hover:bg-lime-600 text-sm transition text-center">
-            Ir a invertir
+            LLévame ahí
           </a>
         </div>
       </div>
