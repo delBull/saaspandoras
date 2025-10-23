@@ -331,8 +331,8 @@ export function Sidebar({
     const projectsItem = (isAdmin || (userProfile?.role === 'applicant' && userProfile?.projectCount > 0)) ? [{
       href: "/profile/projects",
       icon: <FolderIcon className="w-5 h-5 text-gray-400" />,
-      label: "Proyectos",
-      description: userProfile?.projectCount ? `${userProfile.projectCount} proyectos` : 'Gestionar proyectos',
+      label: "Tus Creaciones",
+      description: userProfile?.projectCount ? `${userProfile.projectCount} creaciones` : 'Gestionar creaciones',
       onClick: () => {
         setProfileDropdown(false);
         if (isMobile) setMobileOpen(false);
@@ -351,7 +351,7 @@ export function Sidebar({
         disabled: false,
       },
       {
-        label: "Proyectos",
+        label: "Creaciones",
         href: "/applicants",
         icon: (
           <PackageCheckIcon className="h-5 w-5 shrink-0 text-gray-400" />
@@ -369,7 +369,7 @@ export function Sidebar({
         disabled: true,
       },
       {
-        label: "Pools",
+        label: "Recompensas",
         href: "#",
         icon: (
           <BanknotesIcon className="h-5 w-5 shrink-0 text-gray-400" />
@@ -723,7 +723,7 @@ export function Sidebar({
           </div>
 
           <div className="mb-4 flex flex-col gap-2">
-            {/* Show "Aplicar Proyecto" button only when CONNECTED */}
+            {/* Show "Desatar tu Creación" button only when CONNECTED */}
             {isClient && account && (
               <div
                 className={cn(
@@ -746,7 +746,7 @@ export function Sidebar({
                         className="z-50 rounded-md bg-zinc-900 ml-20 px-3 py-1.5 text-xs text-white shadow-md border border-zinc-700"
                         sideOffset={3}
                       >
-                        Aplicar Proyecto
+                        Desatar tu Creación
                       </Tooltip.Content>
                     </Tooltip.Portal>
                   </Tooltip.Root>
@@ -764,7 +764,7 @@ export function Sidebar({
                       }}
                       className="whitespace-nowrap text-xs italic"
                     >
-                      {open ? "Aplicar Proyecto" : "🔗"}
+                      {open ? "Desatar tu Creación" : "🔗"}
                     </motion.span>
                   </Link>
                 )}
@@ -1110,7 +1110,7 @@ export function Sidebar({
                 </div>
 
                 <div className="mb-4 flex flex-col gap-2">
-                  {/* Show "Aplicar Proyecto" button only when CONNECTED - MOBILE */}
+                  {/* Show "Desatar tu Creación" button only when CONNECTED - MOBILE */}
                   {isClient && account && (
                     <div className="border-t border-gray-800 pt-2">
                       <Link
@@ -1120,7 +1120,7 @@ export function Sidebar({
                       >
                         <ShieldCheckIcon className="h-4 w-4 shrink-0" />
                         <span className="ml-3 whitespace-nowrap text-xs italic">
-                          Aplicar Proyecto
+                          Desatar tu Creación
                         </span>
                       </Link>
                     </div>

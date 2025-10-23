@@ -40,7 +40,7 @@ function TotalBalance({ total }: { total: number }) {
       <h1 className="text-5xl md:text-6xl font-bold text-white tracking-tighter">
         ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
       </h1>
-      <p className="text-xs font-mono font-semibold text-red-400 mt-2">Total Investments</p>
+      <p className="text-xs font-mono font-semibold text-red-400 mt-2">Total recompensado</p>
     </div>
   );
 }
@@ -97,7 +97,7 @@ async function getFeaturedProjects(featuredProjectIds: Set<number>): Promise<Fea
       id: String(project.id ?? `featured-${index}`),
       title: String(project.title ?? 'Proyecto sin título'),
       subtitle: String(project.description ?? 'Descripción no disponible'),
-      actionText: 'Learn More',
+      actionText: 'Dime más',
       imageUrl: String(project.coverPhotoUrl ?? '/images/default-project.jpg'),
       projectSlug: String(project.slug ?? `project-${String(project.id)}`),
     }));
@@ -281,7 +281,7 @@ function BannersSection() {
 }
 
 function SecondaryTabs({ activeTab, setActiveTab }: { activeTab: string, setActiveTab: (tab: string) => void }) {
-  const tabs = ["Access", "Tokens"];
+  const tabs = ["Accesos", "Fracciones"];
   return ( <div className="flex items-center gap-4"> {tabs.map(tab => ( <button key={tab} onClick={() => setActiveTab(tab)} className={`pb-2 text-sm font-bold transition-colors ${activeTab === tab ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}> {tab} </button> ))} </div> );
 }
 
@@ -324,7 +324,7 @@ export default function DashboardPage() {
       <BannersSection />
       <div className="mt-8 flex flex-col gap-8">
         <div className="flex flex-col gap-2">
-          <h3 className="text-base font-bold text-gray-400 px-4">Shares</h3>
+          <h3 className="text-base font-bold text-gray-400 px-4">Gobernanza</h3>
           <div className="flex flex-col gap-1 p-2 rounded-lg bg-zinc-900">
             <PandorasPoolRows ethAmount={ethAmount} usdcAmount={usdcAmount} isLoading={isLoadingPool} />
           </div>
@@ -334,8 +334,8 @@ export default function DashboardPage() {
             <SecondaryTabs activeTab={secondaryTab} setActiveTab={setSecondaryTab} />
           </div>
           <div className="p-2">
-            {secondaryTab === "Access" && ( <div className="p-8 text-center text-gray-500 rounded-lg bg-zinc-900"> <LockClosedIcon className="w-10 h-10 mx-auto mb-2" /> <p className="font-bold">Llaves de Acceso</p> <p className="text-sm">Tus NFTs de acceso se listarán aquí.</p> </div> )}
-            {secondaryTab === "Tokens" && ( <div className="p-8 text-center text-gray-500 rounded-lg bg-zinc-900"> <Squares2X2Icon className="w-10 h-10 mx-auto mb-2" /> <p className="font-bold">Tokens</p> <p className="text-sm">Tus tokens de utilidad se mostrarán aquí.</p> </div> )}
+            {secondaryTab === "Accesos" && ( <div className="p-8 text-center text-gray-500 rounded-lg bg-zinc-900"> <LockClosedIcon className="w-10 h-10 mx-auto mb-2" /> <p className="font-bold">Llaves de Acceso</p> <p className="text-sm">Tus NFTs de acceso se listarán aquí.</p> </div> )}
+            {secondaryTab === "Fracciones" && ( <div className="p-8 text-center text-gray-500 rounded-lg bg-zinc-900"> <Squares2X2Icon className="w-10 h-10 mx-auto mb-2" /> <p className="font-bold">Fracciones</p> <p className="text-sm">Tus fracciones de aportación.</p> </div> )}
           </div>
         </div>
       </div>

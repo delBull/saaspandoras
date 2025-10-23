@@ -136,7 +136,7 @@ export function GamifiedApplicantsPage({ userId }: { userId: string }) {
 
         {/* Contenido existente de aplicantes */}
         <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
-          <h2 className="text-xl font-bold text-white mb-4">Proyectos Disponibles</h2>
+          <h2 className="text-xl font-bold text-white mb-4">Creaciones Disponibles</h2>
           <p className="text-zinc-400">Contenido de aplicantes existente...</p>
         </div>
 

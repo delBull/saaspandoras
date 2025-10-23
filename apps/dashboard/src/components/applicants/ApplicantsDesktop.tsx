@@ -82,9 +82,9 @@ export function ApplicantsDesktop({
         <div className="top-0 z-10 flex flex-col gap-4 px-6 lg:px-0 py-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-white">Proyectos</h1>
+              <h1 className="text-3xl font-bold text-white">Creaciones</h1>
               <p className="text-gray-400 text-base">
-                {`${filteredCount} de ${totalProjects} proyectos aprobados`}
+                {`${filteredCount} de ${totalProjects} creaciones aprobadas`}
               </p>
             </div>
           </div>

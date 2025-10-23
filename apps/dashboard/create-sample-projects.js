@@ -19,7 +19,7 @@ async function createSampleProjects() {
         website: 'https://ecogreen.energy',
         coverPhotoUrl: '/images/sem.jpeg',
         featured: false,
-        featuredButtonText: 'Learn More',
+        featuredButtonText: 'Dime más',
         status: 'approved',
         applicantName: 'John Smith',
         applicantEmail: 'john@ecogreen.energy',

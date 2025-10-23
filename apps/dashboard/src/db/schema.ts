@@ -143,7 +143,7 @@ export const projects = pgTable("projects", {
 
   // Campos para featured projects
   featured: boolean("featured").default(false).notNull(),
-  featuredButtonText: varchar("featured_button_text", { length: 100 }).default("Learn More"),
+  featuredButtonText: varchar("featured_button_text", { length: 100 }).default("Dime más"),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

@@ -89,7 +89,7 @@ export function ApplicantsFilters({
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input
-              placeholder="Buscar proyectos..."
+              placeholder="Buscar creaciones..."
               value={filters.search}
               onChange={(e) => updateFilter('search', e.target.value)}
               className="pl-10 bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-xs text-gray-900 dark:text-white placeholder-gray-400"
@@ -216,7 +216,7 @@ export function ApplicantsFilters({
       {/* Results Counter */}
       <div className="flex items-center justify-between text-xs text-gray-400">
         <span>
-          Mostrando {filteredCount} de {totalProjects} proyectos
+          Mostrando {filteredCount} de {totalProjects} creaciones
         </span>
         {hasActiveFilters && (
           <Button

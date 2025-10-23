@@ -27,7 +27,7 @@ export function MobileModal({ isOpen, onClose, pendingProjects }: MobileModalPro
       <div className="absolute bottom-0 left-0 right-0 bg-zinc-900 min-h-[90vh] overflow-hidden border-t border-zinc-800">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-zinc-800">
-          <h3 className="text-xl font-bold text-white">Proyectos en Revisión</h3>
+          <h3 className="text-xl font-bold text-white">Creaciones en Revisión</h3>
           <button
             onClick={onClose}
             className="p-2 hover:bg-zinc-800 rounded-full transition-colors"
