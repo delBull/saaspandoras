@@ -27,7 +27,7 @@ const TextGenerateEffectImpl = ({
         delay: stagger(0.1),
       },
     );
-  }, [scope.current, words]);
+  }, [animate, words]);
 
   const renderWords = () => {
     return (
