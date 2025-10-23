@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { cn } from "@saasfly/ui";
+import { cn } from '~/lib/utils';
 import { useToast } from "@saasfly/ui/use-toast";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import type { Locale } from "~/config/i18n-config";

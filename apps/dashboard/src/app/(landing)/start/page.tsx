@@ -24,8 +24,8 @@ import { AnimatedGradientText } from "@/components/ui/animated-gradient-text";
 import { StaggerText } from "@/components/ui/stagger-text";
 import { MorphingText } from "@/components/ui/morphing-text";
 import { GlassCard } from "@/components/ui/glass-card";
-import { Button } from "@saasfly/ui/button";
-import { cn } from "@saasfly/ui";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default function StartPage() {
   const [email, setEmail] = useState("");

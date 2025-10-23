@@ -1,7 +1,7 @@
 'use client';
 
 import { Input } from "@saasfly/ui/input";
-import { Button } from "@saasfly/ui/button";
+import { Button } from "@/components/ui/button";
 import { TokenImage } from "../TokenImage";
 import type { Token } from "@/types/token";
 

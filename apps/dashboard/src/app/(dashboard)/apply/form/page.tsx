@@ -3,7 +3,7 @@
 import { Suspense, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeftIcon, Shield, Clock, CheckCircle } from "lucide-react";
-import { Button } from "@saasfly/ui/button";
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { AnimatedBackground } from "@/components/apply/AnimatedBackground";
 import { ApplicationSuccessNotification } from "@/components/apply/ApplicationSuccessNotification";

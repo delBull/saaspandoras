@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from "@saasfly/ui/button";
+import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@saasfly/ui/dropdown-menu";
 import { Input } from "@saasfly/ui/input";
 import { TokenImage } from "../TokenImage";

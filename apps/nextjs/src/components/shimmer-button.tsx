@@ -1,6 +1,5 @@
 import React, { type CSSProperties } from "react";
-
-import { cn } from "@saasfly/ui";
+import { cn } from '~/lib/utils';
 
 interface ShimmerButtonProps {
   shimmerColor?: string;
@@ -9,7 +8,7 @@ interface ShimmerButtonProps {
   shimmerDuration?: string;
   background?: string;
   className?: string;
-  children?: React.ReactNode;
+  children?: React.ReactNode; 
 }
 
 const ShimmerButton = ({

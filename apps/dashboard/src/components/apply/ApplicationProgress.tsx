@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { CheckCircle, ArrowRight, ArrowLeft } from "lucide-react";
-import { cn } from "@saasfly/ui";
+import { cn } from "@/lib/utils";
 
 interface Step {
   id: string;

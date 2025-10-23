@@ -1,7 +1,7 @@
 'use client';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@saasfly/ui/dialog";
-import { Button } from "@saasfly/ui/button";
+import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle } from "lucide-react";
 
 export function ResultModal({ isOpen, onOpenChange, variant, message, txHash }: { isOpen: boolean; onOpenChange: (isOpen: boolean) => void; variant: 'success' | 'error'; message: string | null; txHash: `0x${string}` | null; }) {

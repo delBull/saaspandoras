@@ -2,6 +2,9 @@
   "name": "@saasfly/ui",
   "private": true,
   "version": "0.1.0",
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
   "typesVersions": {
     "*": {
       "*": [
@@ -10,6 +13,7 @@
     }
   },
   "scripts": {
+    "build": "tsc",
     "clean": "git clean -xdf .turbo node_modules",
     "format": "prettier --check '**/*.{ts,tsx}' ",
     "lint": "eslint ."

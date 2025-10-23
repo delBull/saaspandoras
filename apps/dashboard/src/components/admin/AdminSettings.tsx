@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Input } from "@saasfly/ui/input";
-import { Button } from "@saasfly/ui/button";
+import { Button } from "@/components/ui/button";
 import { Trash2, PlusCircle, Loader2, Pencil } from "lucide-react";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 

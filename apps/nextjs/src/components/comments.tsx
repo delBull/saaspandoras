@@ -1,4 +1,4 @@
-import { cn } from "@saasfly/ui";
+import { cn } from '~/lib/utils';
 import Marquee from "@saasfly/ui/marquee";
 import Image from "next/image";
 
