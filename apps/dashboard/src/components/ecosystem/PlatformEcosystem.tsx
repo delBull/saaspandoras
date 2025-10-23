@@ -51,7 +51,7 @@ export function PlatformEcosystem() {
     },
     {
       id: "projects",
-      title: "Proyectos",
+      title: "Creaciones",
       description: "Activos tokenizados",
       icon: <Building2 className="w-6 h-6" />,
       color: "from-purple-500 to-pink-500",

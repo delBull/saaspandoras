@@ -4,19 +4,23 @@ import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  TrendingUp,
-  Users,
-  Shield,
-  ArrowRight,
-  Rocket,
-  Crown,
-  Heart,
-  Building2,
-  CheckCircle,
-  Phone,
-  Mail,
-  ExternalLink,
-  Play
+  // --- Iconos ELIMINADOS (Securities) ---
+  // TrendingUp, Building2, Heart, Crown, Coins,
+  
+  // --- Iconos MANTENIDOS/AÑADIDOS (Utilidad/SaaS) ---
+  Users,          // Para Comunidad
+  Shield,         // Para Seguridad
+  ArrowRight,     // Para CTAs
+  Rocket,         // Para Lanzamiento
+  ExternalLink,   // Para Enlaces
+  Play,           // Para Demos
+  CheckCircle,    // Para Checkmarks
+  Phone,          // Para Contacto
+  Mail,           // Para Contacto
+  Puzzle,         // Para Work-to-Earn
+  Ticket,         // Para Membresías NFT
+  Code,           // Para Contratos
+  Palette,        // Para Arte (Utilidad)
 } from "lucide-react";
 import { ModernBackground } from "@/components/ui/modern-background";
 import { TypewriterText } from "@/components/ui/typewriter-text";
@@ -32,69 +36,73 @@ export default function StartPage() {
   const [phone, setPhone] = useState("");
   const [isSubscribed, setIsSubscribed] = useState(false);
 
+  // --- TRANSFORMACIÓN #1: DE "BARRERAS DE INVERSIÓN" A "BARRERAS DEL CREADOR" ---
   const barriers = [
     {
       id: 1,
-      title: "La Caja Negra de las Comisiones",
-      problem: "¿Sabes realmente cuánto pagas? Las finanzas tradicionales ocultan costos en estructuras complejas.",
-      solution: "Transparencia Radical. Usamos blockchain para que cada movimiento de dinero sea visible y auditable por todos, siempre.",
-      icon: <Shield className="w-8 h-8" />,
+      title: "La Prisión de la Plataforma (Web2)",
+      problem: "¿Tu comunidad vive en Patreon, Discord o Facebook? Ellos ponen las reglas, se llevan el 30% y no eres dueño de tu audiencia.",
+      solution: "Soberanía del Creador. Lanza tus propios protocolos. Define tus reglas, sin intermediarios y sin comisiones abusivas.",
+      icon: <Users className="w-8 h-8" />,
       color: "from-red-500 to-orange-500"
     },
     {
       id: 2,
-      title: "El Club Exclusivo de la Inversión",
-      problem: "Las mejores oportunidades (edificios premium, startups prometedoras) exigen sumas enormes, dejando fuera a la mayoría.",
-      solution: "Acceso Democrático. Convertimos estos grandes activos en 'piezas' digitales (tokens). Ahora puedes ser dueño de una fracción con montos accesibles.",
-      icon: <Users className="w-8 h-8" />,
+      title: "El Virus de la Apatía",
+      problem: "Tu comunidad es pasiva. Los 'Likes' y 'Follows' no pagan las cuentas y no construyen valor real. El engagement es nulo.",
+      solution: "Protocolos de Incentivos. Activa a tus usuarios. Recompénsalos por aportar valor real: validar, moderar, crear o promocionar.",
+      icon: <Puzzle className="w-8 h-8" />,
       color: "from-blue-500 to-purple-500"
     },
     {
       id: 3,
-      title: "El Mito de la Liquidez",
-      problem: "Vender tu parte de un edificio o una empresa puede tomar meses o años. Tu dinero queda atrapado.",
-      solution: "Liquidez Real 24/7. Creamos mercados digitales (DEXs) donde puedes gestionar tu inversión con la agilidad del mundo moderno.",
-      icon: <TrendingUp className="w-8 h-8" />,
+      title: "La Barrera Técnica y Legal",
+      problem: "Lanzar un token es caro (cientos de miles en auditorías), complejo (meses de desarrollo) y legalmente aterrador.",
+      solution: "Plataforma No-Code. Lanza tu protocolo de utilidad en minutos desde plantillas pre-auditadas y legalmente seguras.",
+      icon: <Shield className="w-8 h-8" />,
       color: "from-green-500 to-teal-500"
     }
   ];
 
+  // --- TRANSFORMACIÓN #2: MANIFIESTO ENFOCADO EN COMUNIDAD Y UTILIDAD ---
   const manifestoPoints = [
-    "Creemos que poseer una fracción de un rascacielos debe ser tan fácil como comprar una acción.",
-    "La propiedad fraccionada no es un lujo, es tu derecho a participar en el crecimiento real.",
-    "La transparencia no se negocia. Es la base inmutable de la confianza.",
+    "Creemos que 'participar' en una comunidad debe ser recompensado, no solo 'consumir' contenido.",
+    "La propiedad digital no es especulación, es un derecho de participación y gobernanza.",
+    "La transparencia no se negocia. Es la base inmutable de la confianza comunitaria.",
     "Construimos con nuestra comunidad, no para ella. Su voz define nuestro futuro."
   ];
 
+  // --- TRANSFORMACIÓN #3: TESTIMONIALES DE "INVERSORES" A "CREADORES" ---
   const testimonials = [
     {
-      name: "María",
-      type: "Jubilada Inteligente",
-      before: "Fondo tradicional, 2% anual, comisiones confusas.",
-      after: "Recibe el 8% anual real de la renta de oficinas premium, directo a su cuenta.",
-      icon: <Heart className="w-6 h-6" />
+      name: "Laura",
+      type: "Artista Digital y Creadora",
+      before: "Vendía 'prints' en Patreon. 10% de comisión y cero control sobre mi comunidad.",
+      after: "Lanzó un NFT de membresía. Ahora su comunidad vota sobre su próxima obra y recibe recompensas por su lealtad.",
+      icon: <Palette className="w-6 h-6" />
     },
     {
-      name: "Carlos",
-      type: "Profesional Ambicioso",
-      before: "Las grandes inversiones inmobiliarias eran inalcanzables.",
-      after: "Es dueño de fracciones de 3 edificios corporativos y diversifica como los grandes.",
-      icon: <Crown className="w-6 h-6" />
+      name: "DevCore",
+      type: "Proyecto Open-Source",
+      before: "Dependían de donaciones esporádicas. Pocos contribuidores activos.",
+      after: "Implementaron un protocolo 'Work-to-Earn' para recompensar a los devs por cada 'bug' resuelto y validado.",
+      icon: <Code className="w-6 h-6" />
     }
   ];
 
+  // --- TRANSFORMACIÓN #4: FAQS DE "RIESGO DE INVERSIÓN" A "RIESGO DE SOFTWARE" ---
   const faqs = [
     {
-      question: "¿Es esto seguro? ¿No es 'cripto' muy volátil?",
-      answer: "Separamos la tecnología de la especulación. Tu inversión está respaldada por activos reales y tangibles (edificios, empresas), no por la volatilidad de las criptomonedas. Usamos blockchain solo por su seguridad y transparencia."
+      question: "¿Necesito saber programar? ¿Esto es muy técnico?",
+      answer: "No. Pandora es una plataforma 'No-Code'. Si sabes usar Shopify o Webflow, sabes usar Pandora. Elige una plantilla de protocolo (lealtad, work-to-earn), configura tus reglas y lanza."
     },
     {
-      question: "¿Qué pasa con mi inversión si Pandora's desaparece?",
-      answer: "Tu inversión nunca está en nuestras manos. Cada activo se estructura legalmente para que tu propiedad sea independiente de nosotros. Los contratos inteligentes aseguran que los rendimientos fluyan directamente a ti."
+      question: "¿Qué pasa si mi proyecto es visto como un 'security' (valor)?",
+      answer: "Es la pregunta correcta. Nuestra plataforma está diseñada *exclusivamente* para crear 'utilidad' (acceso, trabajo, lealtad). Te guiamos en el 'onboarding' con un checklist legal para asegurar que tu modelo se centre en la participación, no en la inversión pasiva."
     },
     {
-      question: "¿Todo esto es legal en [Tu País/Región]?",
-      answer: "Absolutamente. Trabajamos con las principales firmas legales para estructurar cada tokenización cumpliendo (y a menudo superando) la normativa vigente. La transparencia blockchain lo hace más auditable que muchos instrumentos tradicionales."
+      question: "¿Qué pasa si Pandora desaparece? ¿Pierdo mi comunidad?",
+      answer: "No. Tus smart contracts son 100% tuyos. Una vez desplegados en la blockchain (ej. Polygon, Ethereum), son soberanos y seguirán funcionando para siempre, con o sin nosotros. Esa es la belleza de la descentralización."
     }
   ];
 
@@ -110,7 +118,8 @@ export default function StartPage() {
       <ModernBackground />
 
       <div className="relative max-w-7xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
-        {/* Hero Section - EL DESPERTAR FINANCIERO */}
+        {/* --- TRANSFORMACIÓN #5: HERO SECTION --- */}
+        {/* De "Inversión" a "Construcción de Comunidades" */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -124,19 +133,19 @@ export default function StartPage() {
             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-full mb-6"
           >
             <Rocket className="w-4 h-4 text-blue-400" />
-            <span className="text-sm font-medium text-blue-400">La Revolución Financiera</span>
+            <span className="text-sm font-medium text-blue-400">La Evolución del Creador</span>
           </motion.div>
 
           <div className="mb-8">
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight mb-6">
             <StaggerText
-              text="Activos Reales."
+              text="Comunidades Reales."
               className="block"
               delay={0.5}
               staggerDelay={0.1}
             />
             <StaggerText
-              text="Inversión Digital."
+              text="Protocolos Digitales."
               className="block"
               delay={1}
               staggerDelay={0.1}
@@ -145,7 +154,7 @@ export default function StartPage() {
 
             <div className="text-2xl md:text-3xl mb-6">
               <TypewriterText
-                text="Invierte en Proyectos Inmobiliarios. Startups Disruptivas. Activos Exclusivos. Tu Futuro."
+                text="Lanza Programas de Lealtad. Membresías NFT. Protocolos Work-to-Earn. Tu Comunidad."
                 delay={1.5}
                 speed={80}
                 className="text-zinc-300"
@@ -153,7 +162,7 @@ export default function StartPage() {
             </div>
 
             <MorphingText
-              text="Tu portafolio, ahora tangible."
+              text="Tu comunidad, ahora activada."
               className="text-xl md:text-2xl text-zinc-400"
             />
           </div>
@@ -164,7 +173,7 @@ export default function StartPage() {
             transition={{ delay: 0.4 }}
             className="text-xl md:text-2xl text-zinc-400 max-w-4xl mx-auto mb-8 leading-relaxed"
           >
-            ¿Sigues invirtiendo como en el siglo XX? El mundo cambió. Los Activos del Mundo Real (RWA) – bienes raíces, empresas, arte – ya no son solo para los grandes fondos. Son la evolución del capital, y ahora están a tu alcance.
+            ¿Sigues construyendo en plataformas Web2 que te cobran 30% y son dueñas de tu audiencia? El mundo cambió. Los protocolos de utilidad te permiten crear incentivos reales, activar a tus usuarios y ser 100% soberano.
           </motion.p>
 
           <motion.div
@@ -178,14 +187,14 @@ export default function StartPage() {
               className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white font-bold text-base md:text-lg px-8 md:px-12 py-4 md:py-6 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg shadow-blue-500/25 w-full sm:w-auto max-w-xs md:max-w-none"
             >
               <span className="flex items-center gap-2">
-                ¿Listo para Evolucionar?
+                [ Empezar a Construir Gratis ]
                 <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
               </span>
             </Button>
           </motion.div>
         </motion.div>
 
-        {/* EL DIAGNÓSTICO - Las 3 Barreras */}
+        {/* --- EL DIAGNÓSTICO (Barreras del Creador) --- */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -201,7 +210,7 @@ export default function StartPage() {
               />
             </h2>
             <p className="text-xl text-zinc-400">
-              de las Finanzas Tradicionales
+              de las Plataformas Web2
             </p>
           </div>
 
@@ -245,7 +254,7 @@ export default function StartPage() {
           </div>
         </motion.div>
 
-        {/* EL MANIFIESTO PANDORA */}
+        {/* --- EL MANIFIESTO PANDORA (Enfoque Creador) --- */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -287,13 +296,13 @@ export default function StartPage() {
             className="text-center mt-8"
           >
             <Link href="#manifesto" className="text-blue-400 hover:text-blue-300 transition-colors">
-              Lee nuestro Manifiesto completo y únete a la causa
+              Lee nuestro Manifiesto del Creador y únete a la causa
               <ExternalLink className="inline w-4 h-4 ml-1" />
             </Link>
           </motion.div>
         </motion.div>
 
-        {/* EL LABORATORIO PANDORA - Simuladores Interactivos */}
+        {/* --- TRANSFORMACIÓN #6: LABORATORIO DE "UTILIDAD" (NO RWA) --- */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -303,18 +312,18 @@ export default function StartPage() {
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-5xl font-bold mb-6">
               <AnimatedGradientText
-                text="Toca la Revolución Financiera"
+                text="Toca la Revolución Comunitaria"
                 gradientFrom="from-green-400"
                 gradientTo="to-blue-400"
               />
             </h2>
             <p className="text-xl text-zinc-400">
-              (Sin Riesgo)
+              (Sin Riesgo. Sin Código.)
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Simulador 1: Tokenización */}
+            {/* Simulador 1: Membresía NFT */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -323,45 +332,45 @@ export default function StartPage() {
               <GlassCard className="text-center">
                 <div className="mb-6">
                   <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Building2 className="w-8 h-8 text-white" />
+                    <Ticket className="w-8 h-8 text-white" />
                   </div>
                   <h3 className="text-xl font-bold text-white mb-2">
-                    &ldquo;Tokeniza tu Mundo&rdquo;
+                    &ldquo;Crea tu Membresía&rdquo;
                   </h3>
                   <p className="text-zinc-400 text-sm">
-                    Elige un activo → Ingresa un valor → Mira cómo se convierte en miles de &apos;piezas&apos; digitales
+                    Elige un beneficio → Sube una imagen → Lanza tu llave de acceso digital
                   </p>
                 </div>
 
                 <div className="space-y-4 mb-6">
                   <div className="flex gap-2">
                     <button className="flex-1 p-2 bg-zinc-800 rounded-lg text-sm text-zinc-300 hover:bg-zinc-700 transition-colors">
-                      Casa ($500K)
+                      Acceso a Discord
                     </button>
                     <button className="flex-1 p-2 bg-zinc-800 rounded-lg text-sm text-zinc-300 hover:bg-zinc-700 transition-colors">
-                      Edificio ($2M)
+                      Airdrop Futuro
                     </button>
                   </div>
 
                   <div className="p-3 bg-zinc-800/50 rounded-lg">
-                    <p className="text-xs text-zinc-400 mb-1">Valor del activo</p>
-                    <p className="text-lg font-bold text-green-400">$500,000</p>
+                    <p className="text-xs text-zinc-400 mb-1">Beneficio Clave</p>
+                    <p className="text-lg font-bold text-green-400">Acceso a Discord Privado</p>
                   </div>
 
                   <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                     <p className="text-xs text-zinc-400 mb-1">Se convierte en</p>
-                    <p className="text-lg font-bold text-blue-400">500,000 tokens</p>
-                    <p className="text-xs text-zinc-500">de $1 cada uno</p>
+                    <p className="text-lg font-bold text-blue-400">1,000 Membresías NFT</p>
+                    <p className="text-xs text-zinc-500">Listas para tu comunidad</p>
                   </div>
                 </div>
 
                 <p className="text-sm text-zinc-400 italic">
-                  &ldquo;Así de simple es convertir valor real en oportunidades digitales.&rdquo;
+                  &ldquo;Así de simple es crear propiedad digital y utilidad real.&rdquo;
                 </p>
               </GlassCard>
             </motion.div>
 
-            {/* Simulador 2: Transparencia Blockchain */}
+            {/* Simulador 2: Protocolo Work-to-Earn */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -370,38 +379,39 @@ export default function StartPage() {
               <GlassCard className="text-center">
                 <div className="mb-6">
                   <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Shield className="w-8 h-8 text-white" />
+                    <Puzzle className="w-8 h-8 text-white" />
                   </div>
                   <h3 className="text-xl font-bold text-white mb-2">
-                    &ldquo;Sigue el Dinero (De Verdad)&rdquo;
+                    &ldquo;Activa tu Comunidad (Work-to-Earn)&rdquo;
                   </h3>
                   <p className="text-zinc-400 text-sm">
-                    Cada movimiento registrado, público e inalterable. Sin trucos.
+                    Define una tarea → Asigna una recompensa → Observa cómo tu comunidad construye.
                   </p>
                 </div>
 
                 <div className="space-y-4 mb-6">
                   <button className="w-full p-3 bg-zinc-800 rounded-lg text-sm text-zinc-300 hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2">
                     <Play className="w-4 h-4" />
-                    Ver Transacción en Blockchain
+                    Simular Tarea de Validación
                   </button>
 
                   <div className="p-3 bg-zinc-800/50 rounded-lg text-left text-xs">
-                    <p className="text-zinc-400 mb-1">Transacción reciente:</p>
-                    <p className="text-green-400 font-mono">0x742d35Cc6...98f</p>
-                    <p className="text-zinc-500 mt-1">✓ Verificada por 15 nodos</p>
+                    <p className="text-zinc-400 mb-1">Flujo del Protocolo:</p>
+                    <p className="text-white">1. Usuario completa la Tarea: &apos;Validar Reseña&apos;</p>
+                    <p className="text-white">2. Protocolo verifica la Tarea</p>
+                    <p className="text-green-400 font-mono">3. Recompensa Liberada: 10 $TOKEN_UTILIDAD</p>
                   </div>
                 </div>
 
                 <p className="text-sm text-zinc-400 italic">
-                  &ldquo;Cada movimiento registrado, público e inalterable. Sin trucos.&rdquo;
+                  &ldquo;Recompensa el &apos;trabajo&apos;, no la especulación. Así se construye valor real.&rdquo;
                 </p>
               </GlassCard>
             </motion.div>
           </div>
         </motion.div>
 
-        {/* HISTORIAS REALES */}
+        {/* --- HISTORIAS DE CREADORES (Transformado) --- */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -411,13 +421,13 @@ export default function StartPage() {
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-5xl font-bold mb-6">
               <AnimatedGradientText
-                text="De Inversor Excluido"
+                text="De Creador Dependiente"
                 gradientFrom="from-orange-400"
                 gradientTo="to-red-400"
               />
             </h2>
             <p className="text-xl text-zinc-400">
-              a Dueño Inteligente
+              a Creador Soberano
             </p>
           </div>
 
@@ -457,7 +467,7 @@ export default function StartPage() {
           </div>
         </motion.div>
 
-        {/* LA CAJA FUERTE ABIERTA */}
+        {/* --- TRANSFORMACIÓN #7: DE "CAJA FUERTE" A "CAJA DE HERRAMIENTAS" --- */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -473,26 +483,26 @@ export default function StartPage() {
               />
             </h2>
             <p className="text-xl text-zinc-400">
-              No es un Eslogan, Es una Promesa Verificable
+              No es un Eslogan, Es una Promesa de Software
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             {[
               {
-                title: "Los Activos Reales",
-                description: "Accede a la documentación legal, fotos y valuaciones de cada proyecto listado.",
-                link: "Enlace a Documentos Ejemplo"
+                title: "Contratos Auditados",
+                description: "Nuestras plantillas de 'Work-to-Earn' y 'Membresía' están auditadas por firmas líderes. Lanza con seguridad.",
+                link: "Ver Auditorías"
               },
               {
-                title: "El Flujo del Dinero",
-                description: "Entiende exactamente cómo ganamos y cómo ganas tú. Cero comisiones ocultas.",
-                link: "Enlace a Modelo de Comisiones"
+                title: "Precios Claros (SaaS)",
+                description: "Entiende exactamente cuánto pagas por usar nuestra plataforma. Sin comisiones ocultas sobre tu comunidad.",
+                link: "Ver Modelo de Precios"
               },
               {
-                title: "Los Riesgos",
-                description: "Hablamos abiertamente de los riesgos de cada inversión. La honestidad es la base de la confianza.",
-                link: "Enlace a Política de Riesgos"
+                title: "Guías de Cumplimiento",
+                description: "Te guiamos para que tu protocolo se mantenga en el lado de la 'utilidad' y evites riesgos regulatorios.",
+                link: "Leer Guías de Utilidad"
               }
             ].map((item, index) => (
               <motion.div
@@ -522,13 +532,13 @@ export default function StartPage() {
               href="#whitepaper"
               className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 transition-colors text-lg font-medium"
             >
-              Descarga nuestro White Paper y Tokenomics para una inmersión profunda
+              Lee nuestro Litepaper (Técnico) para una inmersión profunda
               <ExternalLink className="w-5 h-5" />
             </Link>
           </motion.div>
         </motion.div>
 
-        {/* PREGUNTAS INCÓMODAS - FAQ */}
+        {/* --- FAQS (Transformado) --- */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -567,7 +577,7 @@ export default function StartPage() {
           </div>
         </motion.div>
 
-        {/* Suscripción para campañas */}
+        {/* --- TRANSFORMACIÓN #8: SUSCRIPCIÓN (LENGUAJE) --- */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -583,7 +593,7 @@ export default function StartPage() {
                 Mantente al Tanto
               </h3>
               <p className="text-zinc-400">
-                Recibe actualizaciones exclusivas sobre nuevos proyectos y oportunidades de inversión
+                Recibe actualizaciones de la plataforma, nuevos módulos &apos;No-Code&apos; y casos de uso para Creadores
               </p>
             </div>
 
@@ -633,13 +643,13 @@ export default function StartPage() {
               >
                 <CheckCircle className="w-8 h-8 text-green-400 mx-auto mb-2" />
                 <p className="text-green-400 font-medium">¡Gracias por suscribirte!</p>
-                <p className="text-zinc-400 text-sm">Te mantendremos informado sobre las mejores oportunidades.</p>
+                <p className="text-zinc-400 text-sm">Te mantendremos informado sobre las mejores herramientas para creadores.</p>
               </motion.div>
             )}
           </GlassCard>
         </motion.div>
 
-        {/* CTA Final */}
+        {/* --- TRANSFORMACIÓN #9: CTA FINAL (WEB2 VS WEB3) --- */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -649,32 +659,32 @@ export default function StartPage() {
           <div className="bg-gradient-to-r from-zinc-900/50 to-zinc-800/50 border border-zinc-700 rounded-2xl p-8 md:p-12 backdrop-blur-sm">
             <h2 className="text-3xl md:text-5xl font-bold mb-6">
               <AnimatedGradientText
-                text="El Futuro Financiero Ya Llegó."
+                text="El Futuro del Creador Ya Llegó."
                 gradientFrom="from-lime-400"
                 gradientTo="to-green-400"
               />
             </h2>
 
             <p className="text-xl text-zinc-400 mb-8 max-w-3xl mx-auto">
-              Elige construir tu futuro financiero sobre bases sólidas y transparentes.
+              Elige construir tu comunidad sobre bases soberanas y transparentes.
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 max-w-4xl mx-auto">
               <GlassCard className="text-left">
-                <h3 className="font-bold text-lg text-red-400 mb-3">Opción A: El Museo Financiero</h3>
+                <h3 className="font-bold text-lg text-red-400 mb-3">Opción A: El Jardín Cerrado (Web2)</h3>
                 <ul className="space-y-2 text-zinc-400 text-sm">
-                  <li>• Retornos mediocres</li>
-                  <li>• Comisiones ocultas</li>
-                  <li>• Acceso limitado</li>
+                  <li>• Comisiones del 30-50%</li>
+                  <li>• Audiencia &apos;alquilada&apos;</li>
+                  <li>• Usuarios pasivos (apatía)</li>
                 </ul>
               </GlassCard>
 
               <GlassCard className="text-left">
-                <h3 className="font-bold text-lg text-green-400 mb-3">Opción B: La Evolución Pandora</h3>
+                <h3 className="font-bold text-lg text-green-400 mb-3">Opción B: La Comunidad Soberana (Pandora&apos;s)</h3>
                 <ul className="space-y-2 text-zinc-400 text-sm">
-                  <li>• Rendimientos de activos reales</li>
-                  <li>• Transparencia total y verificable</li>
-                  <li>• Acceso global y democrático</li>
+                  <li>• Protocolos de Incentivos (Work-to-Earn)</li>
+                  <li>• Transparencia total y propiedad real</li>
+                  <li>• Comunidad activada y soberana</li>
                 </ul>
               </GlassCard>
             </div>
@@ -684,7 +694,7 @@ export default function StartPage() {
               className="bg-gradient-to-r from-lime-500 to-green-500 hover:from-lime-400 hover:to-green-400 text-black font-bold text-base md:text-xl px-8 md:px-16 py-4 md:py-8 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg shadow-lime-500/25 w-full sm:w-auto"
             >
               <span className="flex items-center gap-2">
-                Unirme a la Evolución Pandora
+                Unirme a la Evolución del Creador
                 <ArrowRight className="w-4 h-4 md:w-6 md:h-6" />
               </span>
             </Button>

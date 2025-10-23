@@ -685,7 +685,7 @@ export default function AdminDashboardPage() {
                 {filteredProjects.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-4 py-6 text-center text-gray-500">
-                      No hay proyectos registrados{statusFilter !== 'all' ? ` con estado "${statusFilter}"` : ''}.
+                      No hay creaciones registrados{statusFilter !== 'all' ? ` con estado "${statusFilter}"` : ''}.
                     </td>
                   </tr>
                 )}

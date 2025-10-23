@@ -50,9 +50,9 @@ export function ApplicantsMobile({
       {/* Header */}
       <div className="top-0 z-20 flex justify-between items-center px-4 py-6 gap-6 bg-zinc-950/80 backdrop-blur-sm ml-16">
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold text-white truncate">Proyectos</h1>
+          <h1 className="text-2xl font-bold text-white truncate">Creaciones</h1>
           <p className="text-gray-400 text-sm truncate">
-            {`${_filteredCount} de ${_totalProjects} proyectos aprobados`}
+            {`${_filteredCount} de ${_totalProjects} creaciones aprobadas`}
           </p>
         </div>
         {/*
@@ -71,7 +71,7 @@ export function ApplicantsMobile({
           onClick={() => setShowMobileModal(true)}
           className="w-full flex items-center justify-center px-3 py-3 bg-yellow-500/20 text-yellow-300 rounded-lg text-sm font-medium hover:bg-yellow-500/30 transition-colors"
         >
-          Ver {pendingProjects.length > 0 ? `${pendingProjects.length} Proyectos en Revisión` : 'Proyectos de Revisión'}
+          Ver {pendingProjects.length > 0 ? `${pendingProjects.length} Creaciones en Revisión` : 'Creaciones de Revisión'}
         </button>
       </div>
 

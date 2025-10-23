@@ -14,11 +14,11 @@ export function ApplicantsListView({ projects, variant = 'approved' }: Applicant
   if (projects.length === 0) {
     return (
       <div className="text-center py-12">
-        <div className="text-gray-400 text-lg mb-2">No hay proyectos</div>
+        <div className="text-gray-400 text-lg mb-2">No hay creaciones</div>
         <div className="text-gray-500 text-sm">
           {variant === 'approved'
-            ? 'No se encontraron proyectos aprobados con los filtros aplicados'
-            : 'No hay proyectos pendientes de revisión'
+            ? 'No se encontraron creaciones aprobadas con los filtros aplicados'
+            : 'No hay creaciones pendientes de revisión'
           }
         </div>
       </div>

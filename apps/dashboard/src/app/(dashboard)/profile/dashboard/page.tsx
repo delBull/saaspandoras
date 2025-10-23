@@ -255,7 +255,7 @@ export default function PandoriansDashboardPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-400">Proyectos Activos</p>
+                  <p className="text-sm font-medium text-gray-400">Creaciones Activas</p>
                   <p className="text-2xl font-bold text-white">
                     {dashboardData.activeProjects}
                   </p>
@@ -336,8 +336,8 @@ export default function PandoriansDashboardPage() {
                   <button className="w-full flex items-center gap-3 p-3 rounded-lg bg-blue-600 hover:bg-blue-700 transition-colors text-left">
                     <FolderIcon className="w-5 h-5 text-white" />
                     <div>
-                      <div className="text-white text-sm font-medium">Ver Mis Proyectos ({dashboardData.activeProjects})</div>
-                      <div className="text-blue-200 text-xs">Gestiona tus inversiones activas</div>
+                      <div className="text-white text-sm font-medium">Ver Mis Creaciones ({dashboardData.activeProjects})</div>
+                      <div className="text-blue-200 text-xs">Gestiona tus impulsos activos</div>
                     </div>
                   </button>
                 </Link>
@@ -364,14 +364,14 @@ export default function PandoriansDashboardPage() {
                 <ExclamationCircleIcon className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
                 <p className="text-gray-400 text-sm mb-4">
                   {profile.role === 'applicant'
-                    ? 'Aún no tienes inversiones activas'
-                    : 'No tienes inversiones activas'
+                    ? 'Aún no tienes Tokens de Gobernanza'
+                    : 'No tienes gobernanza en este momento'
                   }
                 </p>
                 {profile.role === 'applicant' ? (
                   <Link href="/profile/projects">
                     <button className="px-4 py-2 bg-lime-500 hover:bg-lime-600 text-zinc-900 rounded-lg text-sm font-medium transition-colors">
-                      Ver Mis Proyectos Aplicados
+                      Ver Mis Creaciones Aplicadas
                     </button>
                   </Link>
                 ) : (
@@ -389,9 +389,9 @@ export default function PandoriansDashboardPage() {
        {profile.role === 'applicant' && projects.length > 0 && (
          <Card>
            <CardHeader>
-             <CardTitle>Estado de Proyectos</CardTitle>
+             <CardTitle>Estado de Creaciones</CardTitle>
              <CardDescription>
-               Resumen de todos tus proyectos por estado
+               Resumen de todas tus creaciones por estado
              </CardDescription>
            </CardHeader>
            <CardContent>
@@ -436,10 +436,10 @@ export default function PandoriansDashboardPage() {
            <CardHeader>
              <CardTitle className="flex items-center gap-2">
                <FolderIcon className="w-5 h-5" />
-               Todos Mis Proyectos
+               Todas Mis Creaciones
              </CardTitle>
              <CardDescription>
-               Vista completa de todos tus proyectos por estado
+               Vista completa de todas tus creaciones por estado
              </CardDescription>
            </CardHeader>
            <CardContent>

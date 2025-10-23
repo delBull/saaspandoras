@@ -177,7 +177,7 @@ export default function ProfilePage() {
                   </div>
                   <div className="flex items-center gap-2 text-xs text-gray-400">
                     <BoltIcon className="w-3 h-3 text-yellow-400" />
-                    <span>Permite inversiones seguras en proyectos DeFi</span>
+                    <span>Permite impulsar creaciones DeFi</span>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-gray-400">
                     <ArrowTopRightOnSquareIcon className="w-3 h-3 text-purple-400" />
@@ -193,8 +193,8 @@ export default function ProfilePage() {
                   <div>
                     <p className="font-medium mb-1 text-gray-300 text-sm">💡 ¿Qué puedes hacer con tu wallet?</p>
                     <ul className="space-y-0.5 text-xs text-gray-400 ml-1">
-                      <li>• Invertir en proyectos verificados</li>
-                      <li>• Recibir pagos de inversiones</li>
+                      <li>• Únete a comunidades verificadas</li>
+                      <li>• Recibir recompensas por tu desempeño</li>
                       <li>• Transferir fondos de forma segura</li>
                       <li>• Interactuar con contratos inteligentes</li>
                     </ul>
