@@ -17,7 +17,6 @@ import {
   CheckCircleIcon,
   EyeIcon,
 } from '@heroicons/react/24/outline';
-import { useProjectModal } from "@/contexts/ProjectModalContext";
 import type { UserData, Project } from '@/types/admin';
 import { useActiveAccount } from 'thirdweb/react';
 
@@ -27,7 +26,7 @@ export default function ProfileProjectsPage() {
   const [loading, setLoading] = useState(true);
   const account = useActiveAccount();
 
-  const { open } = useProjectModal();
+
 
   // Use account from useActiveAccount hook instead of cookies
   const walletAddress = account?.address;
@@ -675,10 +674,12 @@ export default function ProfileProjectsPage() {
               <p className="text-gray-400 mb-6">
                 Aún no has aplicado a ningúna creación. Comienza tu jornada aplicando a oportunidades interesantes.
               </p>
-                <Button className="bg-lime-500 hover:bg-lime-600 text-zinc-900" onClick={open}>
-                  <PencilIcon className="w-4 h-4 mr-2" />
-                  Aplicar a Mi Primera Creación
-                </Button>
+                <Link href="/apply">
+                  <Button className="bg-lime-500 hover:bg-lime-600 text-zinc-900">
+                    <PencilIcon className="w-4 h-4 mr-2" />
+                    Aplica a tu primera Creación
+                  </Button>
+                </Link>
             </CardContent>
           </Card>
         )}

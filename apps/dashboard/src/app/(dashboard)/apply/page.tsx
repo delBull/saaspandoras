@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { motion } from "framer-motion";
+import { useProjectModal } from "@/contexts/ProjectModalContext";
 import {
   CheckCircle,
   Users,
@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 
 export default function ApplyInfoPage() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const { open } = useProjectModal();
 
   // --- TRANSFORMACIÓN #1: DE "CLASES DE ACTIVOS" A "CASOS DE USO" ---
   // Se eliminan "Bienes Raíces", "Startup", "Energías" (Securities)
@@ -435,27 +436,26 @@ export default function ApplyInfoPage() {
               </label>
             </div>
 
-            {/* El Link ahora va al Dashboard de registro (el .../start que hicimos antes) */}
-            <Link href="/start" passHref>
-              <Button
-                size="lg"
-                disabled={!acceptedTerms}
-                className={cn(
-                  "bg-gradient-to-r from-lime-500 to-emerald-500 text-black font-bold text-base md:text-lg px-8 md:px-12 py-4 md:py-6 rounded-xl transition-all duration-300 w-full sm:w-auto",
-                  acceptedTerms
-                    ? "hover:from-lime-400 hover:to-emerald-400 hover:scale-105 shadow-lg shadow-lime-500/25"
-                    : "opacity-50 cursor-not-allowed"
-                )}
-              >
-                <span className="flex items-center gap-2">
-                  Empezar a Construir
-                  <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
-                </span>
-              </Button>
-            </Link>
+            {/* El botón ahora abre el modal del formulario global */}
+            <Button
+              size="lg"
+              disabled={!acceptedTerms}
+              onClick={open}
+              className={cn(
+                "bg-gradient-to-r from-lime-500 to-emerald-500 text-black font-bold text-base md:text-lg px-8 md:px-12 py-4 md:py-6 rounded-xl transition-all duration-300 w-full sm:w-auto",
+                acceptedTerms
+                  ? "hover:from-lime-400 hover:to-emerald-400 hover:scale-105 shadow-lg shadow-lime-500/25"
+                  : "opacity-50 cursor-not-allowed"
+              )}
+            >
+              <span className="flex items-center gap-2">
+                Empezar a Construir
+                <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
+              </span>
+            </Button>
 
             <p className="mt-6 text-sm text-zinc-500">
-              Al continuar, serás dirigido a nuestro dashboard para configurar tu protocolo.
+              Al continuar, se abrirá el formulario para comenzar a configurar tu protocolo.
               <span className="text-zinc-400"> Tiempo estimado: 15 minutos</span>
             </p>
           </div>
