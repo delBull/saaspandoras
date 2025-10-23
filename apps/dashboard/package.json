@@ -11,8 +11,9 @@
     "format": "prettier --write '**/*.{js,cjs,mjs,ts,tsx,md,json}'",
     "start": "next start",
     "update:token-hosts": "node generar-dominios.js",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:generate": "turbo db:generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:migrate:production": "node migrate-production.mjs"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
