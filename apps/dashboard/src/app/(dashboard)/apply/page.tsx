@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useProjectModal } from "@/contexts/ProjectModalContext";
+import { useTermsModal } from "@/contexts/TermsModalContext";
 import {
   CheckCircle,
   Users,
@@ -31,6 +32,7 @@ import { cn } from "@/lib/utils";
 export default function ApplyInfoPage() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const { open } = useProjectModal();
+  const { openModal } = useTermsModal();
 
   // --- TRANSFORMACIÓN #1: DE "CLASES DE ACTIVOS" A "CASOS DE USO" ---
   // Se eliminan "Bienes Raíces", "Startup", "Energías" (Securities)
@@ -423,7 +425,7 @@ export default function ApplyInfoPage() {
             </p>
 
             {/* Este Checkbox ahora es tu escudo legal */}
-            <div className="flex items-center justify-center space-x-2 mb-8">
+            <div className="flex items-center justify-center space-x-2 mb-4">
               <input
                 type="checkbox"
                 id="understand-checkbox"
@@ -435,6 +437,18 @@ export default function ApplyInfoPage() {
                 Entiendo que Pandora es una plataforma de software (SaaS) y que soy responsable de mi proyecto.
               </label>
             </div>
+
+            {/* Legend with link to terms */}
+            <p className="text-sm text-zinc-500 mb-8">
+              Al proceder, estás aceptando los{" "}
+              <button
+                onClick={openModal}
+                className="text-lime-400 underline hover:text-lime-300 transition-colors"
+              >
+                términos y condiciones
+              </button>{" "}
+              de la plataforma.
+            </p>
 
             {/* El botón ahora abre el modal del formulario global */}
             <Button
@@ -461,6 +475,8 @@ export default function ApplyInfoPage() {
           </div>
         </motion.div>
       </div>
+
+      {/* Modal is now rendered globally in DashboardClientWrapper */}
     </div>
   );
 }
