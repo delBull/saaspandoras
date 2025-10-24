@@ -70,7 +70,7 @@ export async function PUT(request: Request) {
 
     console.log('📝 Updating user profile:', { walletAddress, email, name, image });
 
-    // Actualizar información del usuario existente
+    // Actualizar información del usuario existente (using 'users' table consistently)
     await db.execute(sql`
       UPDATE "users"
       SET "name" = ${name ?? null},
