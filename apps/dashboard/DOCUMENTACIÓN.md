@@ -83,7 +83,7 @@ Este es un componente de "cliente" (`'use client'`) que envuelve las páginas pr
 
 La página `/swap` contiene dos componentes principales para el intercambio de tokens, ofreciendo diferentes experiencias al usuario.
 
-### 4.1. `Exchange.tsx` (Widget de Uniswap)
+### 4.1. `Exchange.tsx` (Widget de Uniswap) (Deprecated)
 
 *   **Propósito:** Ofrecer una experiencia de swap simple y directa, delegando la lógica a un componente externo de confianza.
 *   **Implementación:** Utiliza el `@uniswap/widgets`.
