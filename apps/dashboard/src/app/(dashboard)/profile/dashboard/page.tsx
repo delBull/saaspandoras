@@ -35,11 +35,6 @@ export default function PandoriansDashboardPage() {
   const account = useActiveAccount();
   const toastShownRef = useRef(false);
 
-  //const { open } = useProjectModal();
-
-  // Use account from useActiveAccount hook instead of cookies
-  const walletAddress = account?.address;
-
   // Use account from useActiveAccount hook instead of cookies
   const walletAddress = account?.address;
 
