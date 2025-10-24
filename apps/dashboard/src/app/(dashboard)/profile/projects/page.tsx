@@ -411,7 +411,7 @@ export default function ProfileProjectsPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-400">Total Invertido</p>
+                      <p className="text-sm font-medium text-gray-400">Resumen de Licencias</p>
                       <p className="text-2xl font-bold text-white">
                         ${(userProjects.reduce((total, p) => total + (calculateProjectMetrics(p).raisedAmount), 0)).toLocaleString()}
                       </p>
@@ -425,7 +425,7 @@ export default function ProfileProjectsPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-400">Valorización</p>
+                      <p className="text-sm font-medium text-gray-400">???</p>
                       <p className="text-2xl font-bold text-blue-500">
                         ${(userProjects.reduce((total, p) => total + calculateProjectMetrics(p).currentValue, 0)).toLocaleString()}
                       </p>
@@ -439,7 +439,7 @@ export default function ProfileProjectsPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-400">Retornos Pagados</p>
+                      <p className="text-sm font-medium text-gray-400">Recompensas</p>
                       <p className="text-xl font-bold text-green-500">
                         ${(userProjects.reduce((total, p) => total + calculateProjectMetrics(p).returnsPaid, 0)).toLocaleString()}
                       </p>
@@ -500,7 +500,7 @@ export default function ProfileProjectsPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-400">Total Invertido</p>
+                      <p className="text-sm font-medium text-gray-400">Resumen de Licencias</p>
                       <p className="text-2xl font-bold text-white">$0</p>
                     </div>
                     <CurrencyDollarIcon className="h-8 w-8 text-green-500" />
@@ -511,7 +511,7 @@ export default function ProfileProjectsPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-400">Valorización</p>
+                      <p className="text-sm font-medium text-gray-400">????</p>
                       <p className="text-2xl font-bold text-blue-500">$0</p>
                     </div>
                     <ChartBarIcon className="h-8 w-8 text-blue-500" />
@@ -522,7 +522,7 @@ export default function ProfileProjectsPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-400">Retornos Pagados</p>
+                      <p className="text-sm font-medium text-gray-400">Recompensas</p>
                       <p className="text-xl font-bold text-green-500">$0</p>
                     </div>
                     <CheckCircleIcon className="h-8 w-8 text-green-500" />
@@ -568,7 +568,7 @@ export default function ProfileProjectsPage() {
                       <Link href={`/projects/${(project as any).slug || project.id}`}>
                         <Button size="sm" variant="outline">
                           <EyeIcon className="w-4 h-4 mr-2" />
-                          Ver Proyecto
+                          Ver Artefacto
                         </Button>
                       </Link>
                     </div>

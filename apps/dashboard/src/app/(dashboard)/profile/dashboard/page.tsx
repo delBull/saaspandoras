@@ -168,22 +168,22 @@ export default function PandoriansDashboardPage() {
   const recentActivity = [
     {
       type: 'investment',
-      title: 'Inversión recibida',
-      description: 'Tu proyecto recibió $5,000 adicionales',
+      title: 'Licencia de Gobernanza Adquirida',
+      description: 'Tu creación recibió $5,000 por la licencia de gobernanza',
       time: 'Hace 2 horas',
       amount: 5000,
     },
     {
       type: 'return',
-      title: 'Retorno pagado',
-      description: 'Se distribuyeron retornos mensuales',
+      title: 'Trabajo pagado',
+      description: 'Se distribuyó aportación por trabajo',
       time: 'Hace 1 día',
       amount: 125,
     },
     {
       type: 'project',
-      title: 'Proyecto aprobado',
-      description: 'Un nuevo proyecto fue aprobado',
+      title: 'Creación aprobada',
+      description: 'Un nuevo artefacto fue aprobado',
       time: 'Hace 3 días',
     }
   ];
@@ -194,12 +194,12 @@ export default function PandoriansDashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">
-            {profile.role === 'applicant' ? 'Dashboard de Applicant' : 'Dashboard Pandorian'}
+            {profile.role === 'applicant' ? 'Dashboard de Creador' : 'Dashboard Pandorian'}
           </h1>
           <p className="text-gray-400">
             {profile.role === 'applicant'
-              ? `Tienes ${dashboardData.activeProjects} proyecto(s) activo(s) • Resumen de inversiones`
-              : 'Resumen de tus inversiones y métricas'
+              ? `Tienes ${dashboardData.activeProjects} creación(s) activo(s)`
+              : 'Resumen de tu desempeño y métricas'
             }
           </p>
         </div>
@@ -223,7 +223,7 @@ export default function PandoriansDashboardPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-400">Total Invertido</p>
+                <p className="text-sm font-medium text-gray-400">Licencias Adquiridas</p>
                 <p className="text-2xl font-bold text-white">
                   ${dashboardData.totalInvested.toLocaleString()}
                 </p>
@@ -237,7 +237,7 @@ export default function PandoriansDashboardPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-400">Total Retornos</p>
+                <p className="text-sm font-medium text-gray-400">Suma de recompesas</p>
                 <p className="text-2xl font-bold text-green-500">
                   +${dashboardData.totalReturns.toLocaleString()}
                 </p>
@@ -268,7 +268,7 @@ export default function PandoriansDashboardPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-400">APY Promedio</p>
+                <p className="text-sm font-medium text-gray-400">Resumen Promedio</p>
                 <p className="text-2xl font-bold text-lime-500">
                   {dashboardData.averageAPY}%
                 </p>
@@ -288,7 +288,7 @@ export default function PandoriansDashboardPage() {
               Actividad Reciente
             </CardTitle>
             <CardDescription>
-              Tus últimas transacciones y actualizaciones
+              Tus últimos movimientos y actualizaciones
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -324,7 +324,7 @@ export default function PandoriansDashboardPage() {
           <CardHeader>
             <CardTitle>Acciones Rápidas</CardTitle>
             <CardDescription>
-              Gestiona tus inversiones
+              Gestiona tus licencias y recompensas
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -335,7 +335,7 @@ export default function PandoriansDashboardPage() {
                     <FolderIcon className="w-5 h-5 text-white" />
                     <div>
                       <div className="text-white text-sm font-medium">Ver Mis Creaciones ({dashboardData.activeProjects})</div>
-                      <div className="text-blue-200 text-xs">Gestiona tus impulsos activos</div>
+                      <div className="text-blue-200 text-xs">Gestiona tus licencias activas</div>
                     </div>
                   </button>
                 </Link>
@@ -343,8 +343,8 @@ export default function PandoriansDashboardPage() {
                 <button className="w-full flex items-center gap-3 p-3 rounded-lg bg-green-600 hover:bg-green-700 transition-colors text-left">
                   <CurrencyDollarIcon className="w-5 h-5 text-white" />
                   <div>
-                    <div className="text-white text-sm font-medium">Reclamar Retornos</div>
-                    <div className="text-green-200 text-xs">Retira ganancias disponibles</div>
+                    <div className="text-white text-sm font-medium">Reclamar Pagos Laborales</div>
+                    <div className="text-green-200 text-xs">Retira recompensas disponibles</div>
                   </div>
                 </button>
                 {/*
@@ -374,7 +374,7 @@ export default function PandoriansDashboardPage() {
                   </Link>
                 ) : (
                   <button className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors">
-                    Reclamar Retornos
+                    Reclamar Recompensas
                   </button>
                 )}
               </div>
@@ -495,8 +495,8 @@ export default function PandoriansDashboardPage() {
           <ChartBarIcon className="w-12 h-12 text-gray-500 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-white mb-2">Funciones Avanzadas Próximamente</h3>
           <p className="text-gray-400 text-sm">
-            Próximamente: Gráficos detallados, reinversión automática, alertas personalizadas,
-            y mucho más para optimizar tus inversiones.
+            Próximamente: Gráficos detallados, actualización de licecias automática, alertas personalizadas,
+            y mucho más para optimizar tus recompensas.
           </p>
         </CardContent>
       </Card>
