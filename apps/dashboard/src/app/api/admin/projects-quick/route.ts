@@ -74,17 +74,30 @@ export async function POST(request: Request) {
 
     const data = body as Partial<AdminProjectData>;
 
+    // Filter out any unwanted fields that might cause issues
+    const cleanData = Object.entries(data).reduce((acc, [key, value]) => {
+      // Filter out problematic fields
+      if (['id', 'createdAt', 'updatedAt', 'created_at', 'updated_at'].includes(key)) {
+        return acc;
+      }
+      // Type assertion needed for unknown -> specific type mapping in reduce
+      acc[key as keyof AdminProjectData] = value as any;
+      return acc;
+    }, {} as Partial<AdminProjectData>);
+
+    console.log('📨 Admin Quick API: Raw request data keys:', Object.keys(body));
+    console.log('🧹 Admin Quick API: Cleaned data keys:', Object.keys(cleanData));
+    console.log('👑 Admin Quick API: Creating project for admin:', session?.address?.substring(0, 10) + '...');
+
     // Minimal required fields
-    if (!data.title || !data.description) {
+    if (!cleanData.title || !cleanData.description) {
       return NextResponse.json({
         message: "Título y descripción requeridos"
       }, { status: 400 });
     }
 
-    console.log('🚀 Admin Quick API: Creating project for admin:', session?.address?.substring(0, 10) + '...');
-
     // Generate slug
-    let slug = slugify(data.title, { lower: true, strict: true });
+    let slug = slugify(cleanData.title, { lower: true, strict: true });
     const existingProject = await db.query.projects.findFirst({
       where: (projects, { eq }) => eq(projects.slug, slug),
     });
@@ -95,58 +108,58 @@ export async function POST(request: Request) {
     // Prepare data for insertion - convert to strings as needed
     // For admin, trust input and assign defaults for enum fields
     const preparedData = {
-      title: data.title,
-      description: data.description,
+      title: cleanData.title,
+      description: cleanData.description,
       slug: slug,
-      tagline: data.tagline ?? null,
-      businessCategory: (data.businessCategory as "other" | "residential_real_estate" | "commercial_real_estate" | "tech_startup" | "renewable_energy" | "art_collectibles" | "intellectual_property") ?? "other",
-      logoUrl: data.logoUrl ?? null,
-      coverPhotoUrl: data.coverPhotoUrl ?? null,
-      videoPitch: data.videoPitch ?? null,
-      website: data.website ?? null,
-      whitepaperUrl: data.whitepaperUrl ?? null,
-      twitterUrl: data.twitterUrl ?? null,
-      discordUrl: data.discordUrl ?? null,
-      telegramUrl: data.telegramUrl ?? null,
-      linkedinUrl: data.linkedinUrl ?? null,
+      tagline: cleanData.tagline ?? null,
+      businessCategory: (cleanData.businessCategory as "other" | "residential_real_estate" | "commercial_real_estate" | "tech_startup" | "renewable_energy" | "art_collectibles" | "intellectual_property") ?? "other",
+      logoUrl: cleanData.logoUrl ?? null,
+      coverPhotoUrl: cleanData.coverPhotoUrl ?? null,
+      videoPitch: cleanData.videoPitch ?? null,
+      website: cleanData.website ?? null,
+      whitepaperUrl: cleanData.whitepaperUrl ?? null,
+      twitterUrl: cleanData.twitterUrl ?? null,
+      discordUrl: cleanData.discordUrl ?? null,
+      telegramUrl: cleanData.telegramUrl ?? null,
+      linkedinUrl: cleanData.linkedinUrl ?? null,
 
       // Convert to strings for decimals
-      targetAmount: data.targetAmount?.toString() ?? "1",
-      totalValuationUsd: data.totalValuationUsd?.toString() ?? null,
-      tokenPriceUsd: data.tokenPriceUsd?.toString() ?? null,
+      targetAmount: cleanData.targetAmount?.toString() ?? "1",
+      totalValuationUsd: cleanData.totalValuationUsd?.toString() ?? null,
+      tokenPriceUsd: cleanData.tokenPriceUsd?.toString() ?? null,
 
       // Numbers stay as numbers
-      totalTokens: typeof data.totalTokens === 'string' ? parseInt(data.totalTokens) : data.totalTokens ?? null,
-      tokensOffered: typeof data.tokensOffered === 'string' ? parseInt(data.tokensOffered) : data.tokensOffered ?? null,
+      totalTokens: typeof cleanData.totalTokens === 'string' ? parseInt(cleanData.totalTokens) : cleanData.totalTokens ?? null,
+      tokensOffered: typeof cleanData.tokensOffered === 'string' ? parseInt(cleanData.tokensOffered) : cleanData.tokensOffered ?? null,
 
-      tokenType: (data.tokenType as "erc20" | "erc721" | "erc1155") ?? "erc20",
-      estimatedApy: data.estimatedApy?.toString() ?? null,
-      yieldSource: (data.yieldSource as "other" | "rental_income" | "capital_appreciation" | "dividends" | "royalties") ?? "other",
-      lockupPeriod: data.lockupPeriod ?? null,
-      fundUsage: data.fundUsage ?? null,
+      tokenType: (cleanData.tokenType as "erc20" | "erc721" | "erc1155") ?? "erc20",
+      estimatedApy: cleanData.estimatedApy?.toString() ?? null,
+      yieldSource: (cleanData.yieldSource as "other" | "rental_income" | "capital_appreciation" | "dividends" | "royalties") ?? "other",
+      lockupPeriod: cleanData.lockupPeriod ?? null,
+      fundUsage: cleanData.fundUsage ?? null,
 
       // Keep as objects/arrays for JSONB
-      teamMembers: Array.isArray(data.teamMembers) ? data.teamMembers : [],
-      advisors: Array.isArray(data.advisors) ? data.advisors : [],
-      tokenDistribution: typeof data.tokenDistribution === 'object' ? data.tokenDistribution : {},
+      teamMembers: Array.isArray(cleanData.teamMembers) ? cleanData.teamMembers : [],
+      advisors: Array.isArray(cleanData.advisors) ? cleanData.advisors : [],
+      tokenDistribution: typeof cleanData.tokenDistribution === 'object' ? cleanData.tokenDistribution : {},
 
-      contractAddress: data.contractAddress ?? null,
-      treasuryAddress: data.treasuryAddress ?? null,
-      legalStatus: data.legalStatus ?? null,
-      valuationDocumentUrl: data.valuationDocumentUrl ?? null,
-      fiduciaryEntity: data.fiduciaryEntity ?? null,
-      dueDiligenceReportUrl: data.dueDiligenceReportUrl ?? null,
+      contractAddress: cleanData.contractAddress ?? null,
+      treasuryAddress: cleanData.treasuryAddress ?? null,
+      legalStatus: cleanData.legalStatus ?? null,
+      valuationDocumentUrl: cleanData.valuationDocumentUrl ?? null,
+      fiduciaryEntity: cleanData.fiduciaryEntity ?? null,
+      dueDiligenceReportUrl: cleanData.dueDiligenceReportUrl ?? null,
 
-      isMintable: Boolean(data.isMintable ?? false),
-      isMutable: Boolean(data.isMutable ?? false),
-      updateAuthorityAddress: data.updateAuthorityAddress ?? (session?.address ?? session?.userId) ?? null,
+      isMintable: Boolean(cleanData.isMintable ?? false),
+      isMutable: Boolean(cleanData.isMutable ?? false),
+      updateAuthorityAddress: cleanData.updateAuthorityAddress ?? (session?.address ?? session?.userId) ?? null,
 
-      applicantName: data.applicantName ?? 'Admin Created',
-      applicantPosition: data.applicantPosition ?? null,
-      applicantEmail: data.applicantEmail ?? null,
-      applicantPhone: data.applicantPhone ?? null,
-      applicantWalletAddress: (session?.address ?? session?.userId)?.toLowerCase() ?? 'unknown' as string,
-      verificationAgreement: Boolean(data.verificationAgreement ?? true),
+      applicantName: cleanData.applicantName ?? 'Admin Created',
+      applicantPosition: cleanData.applicantPosition ?? null,
+      applicantEmail: cleanData.applicantEmail ?? null,
+      applicantPhone: cleanData.applicantPhone ?? null,
+      applicantWalletAddress: (session?.address ?? session?.userId)?.toLowerCase() ?? 'unknown',
+      verificationAgreement: Boolean(cleanData.verificationAgreement ?? true),
 
       // Admin creates draft projects by default (for review)
       featured: false,
