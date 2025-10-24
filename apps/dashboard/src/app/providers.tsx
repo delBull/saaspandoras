@@ -45,7 +45,7 @@ export function Providers({
         <AutoConnect
           client={client}
           wallets={wallets}
-          timeout={15000}
+          timeout={3000}  // Mucho menos agresivo para evitar spamming
           onConnect={(wallet) => {
             if (process.env.NODE_ENV === 'development') {
               console.log("🔗 AutoConnect: Wallet conectada automáticamente", wallet.id);
@@ -53,7 +53,7 @@ export function Providers({
           }}
           onTimeout={() => {
             if (process.env.NODE_ENV === 'development') {
-              console.log("⏰ AutoConnect: Timeout alcanzado");
+              console.log("⏰ AutoConnect: Timeout alcanzado, sin modal forzoso");
             }
           }}
         />
