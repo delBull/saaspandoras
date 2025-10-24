@@ -52,7 +52,7 @@ export function TermsModal({ isOpen, onClose }: TermsModalProps) {
                 Cerrar
               </button>
             </div>
-            <div className="px-32 py-6 text-zinc-300 leading-relaxed whitespace-pre-line text-sm md:text-base">
+            <div className="px-10 md:px-32 py-6 text-zinc-300 leading-relaxed whitespace-pre-line text-sm md:text-base">
               {`TÉRMINOS Y CONDICIONES DE LA PLATAFORMA PANDORA'S FINANCE
 Última actualización: 23 de octubre de 2025
 
