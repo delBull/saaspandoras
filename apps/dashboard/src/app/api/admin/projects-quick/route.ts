@@ -166,12 +166,19 @@ export async function POST(request: Request) {
       status: "draft" as const,
     };
 
-    console.log('📝 Admin Quick API: Prepared data:', preparedData);
+    console.log('📝 Admin Quick API: Prepared data keys:', Object.keys(preparedData));
 
-    // Insert without heavy schema validation - type assertion for admin interface
+    // IMPORTANT: Final cleanup - ensure no database-managed fields are included
+    const insertData = Object.entries(preparedData)
+      .filter(([key]) => !['id', 'created_at', 'updated_at', 'createdAt', 'updatedAt'].includes(key))
+      .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
+
+    console.log('🔒 Admin Quick API: Final insert data keys:', Object.keys(insertData));
+
+    // Insert without heavy schema validation - only safe fields
     const [newProject] = await db
       .insert(projectsSchema)
-      .values(preparedData)
+      .values(insertData as any)
       .returning();
 
     console.log('✅ Admin Quick API: Project created successfully:', newProject?.id ?? 'unknown');
