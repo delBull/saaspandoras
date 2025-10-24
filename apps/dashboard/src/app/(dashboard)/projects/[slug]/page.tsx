@@ -260,7 +260,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                   </div>
 
                   <button className="w-full bg-lime-400 hover:bg-lime-500 text-black font-bold py-3 px-6 rounded-lg transition-colors mb-4">
-                    INVEST ON THIS
+                    GET THE NFT
                   </button>
 
                   <div className="flex justify-center gap-3 mb-4">
@@ -523,7 +523,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                 </div>
 
                 <button className="w-full bg-lime-400 hover:bg-lime-500 text-black font-bold py-3 px-6 rounded-lg transition-colors mb-4">
-                  INVEST ON THIS
+                  GET THE NFT
                 </button>
 
                 <div className="flex justify-center gap-3 mb-4">
