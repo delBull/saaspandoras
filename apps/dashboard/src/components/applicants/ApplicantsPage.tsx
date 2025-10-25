@@ -61,10 +61,13 @@ export default function ApplicantsPage() {
     loading,
     pendingProjects,
     approvedProjects,
+    approvedOnlyProjects,
     isPendingPanelCollapsed,
     showMobilePendingModal,
+    showMobileApprovedModal,
     setIsPendingPanelCollapsed,
     setShowMobilePendingModal,
+    setShowMobileApprovedModal,
   }: ApplicantsData = useApplicantsDataBasic();
 
   const {
@@ -117,7 +120,8 @@ export default function ApplicantsPage() {
     <>
       <ApplicantsDesktop
         pendingProjects={pendingProjects}
-        approvedProjects={filteredApprovedProjects}
+          // FILTER: Only live projects in main area
+          approvedProjects={filteredApprovedProjects.filter(p => p.status === 'live')}
         isPendingPanelCollapsed={isPendingPanelCollapsed}
         onTogglePanelCollapse={() => setIsPendingPanelCollapsed(!isPendingPanelCollapsed)}
         onApplyClick={handleApplyClick}
@@ -132,13 +136,19 @@ export default function ApplicantsPage() {
         hasActiveFilters={hasActiveFilters}
         totalProjects={totalProjects}
         filteredCount={filteredCount}
+        // PANEL: Solo approved projects para el panel lateral
+        approvedOnlyProjects={approvedOnlyProjects}
       />
 
       <ApplicantsMobile
         pendingProjects={pendingProjects}
-        approvedProjects={filteredApprovedProjects}
+        // MOBILE: Also show only live projects in main area
+        approvedProjects={filteredApprovedProjects.filter(p => p.status === 'live')}
+        approvedOnlyProjects={approvedOnlyProjects}
         showMobileModal={showMobilePendingModal}
         setShowMobileModal={setShowMobilePendingModal}
+        showMobileApprovedModal={showMobileApprovedModal}
+        setShowMobileApprovedModal={setShowMobileApprovedModal}
         onApplyClick={handleApplyClick}
         // Filtros activados para móvil
         viewMode={viewMode}

@@ -4,7 +4,7 @@ import { ApplicantsFilters } from "./ApplicantsFilters";
 import type { Project } from "../../hooks/applicants/useApplicantsDataBasic";
 
 type ViewMode = 'grid' | 'list';
-type GridColumns = 3 | 4 | 6;
+type GridColumns = 3 | 4;
 
 interface FilterOptions {
   search: string;
@@ -18,6 +18,7 @@ interface FilterOptions {
 interface ApplicantsDesktopProps {
   pendingProjects: Project[];
   approvedProjects: Project[];
+  approvedOnlyProjects: Project[];
   isPendingPanelCollapsed: boolean;
   onTogglePanelCollapse: () => void;
   onApplyClick: () => void;
@@ -37,6 +38,7 @@ interface ApplicantsDesktopProps {
 export function ApplicantsDesktop({
     pendingProjects,
     approvedProjects,
+    approvedOnlyProjects,
     isPendingPanelCollapsed,
     onTogglePanelCollapse,
     viewMode = 'grid',
@@ -70,6 +72,7 @@ export function ApplicantsDesktop({
       {/* Panel Derecho - Movido arriba para que tenga z-index más alto */}
       <PanelProjects
         pendingProjects={pendingProjects}
+        approvedOnlyProjects={approvedOnlyProjects}
         isCollapsed={isPendingPanelCollapsed}
         onToggleCollapse={onTogglePanelCollapse}
       />
@@ -84,7 +87,7 @@ export function ApplicantsDesktop({
             <div>
               <h1 className="text-3xl font-bold text-white">Creaciones</h1>
               <p className="text-gray-400 text-base">
-                {`${filteredCount} de ${totalProjects} creaciones aprobadas`}
+                {`${approvedProjects.filter(p => p.status === 'live').length} de ${approvedProjects.length} creaciones desatadas`}
               </p>
             </div>
           </div>
@@ -102,6 +105,8 @@ export function ApplicantsDesktop({
             hasActiveFilters={hasActiveFilters}
             totalProjects={totalProjects}
             filteredCount={filteredCount}
+            // NEW: Para cálculos dinámicos de contadores
+            approvedProjects={approvedProjects}
           />
         </div>
 

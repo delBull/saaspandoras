@@ -456,7 +456,7 @@ export default function ProfileProjectsPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-400">Creaciones Activas</p>
+                      <p className="text-sm font-medium text-gray-400">Creaciones desatadas</p>
                       <p className="text-2xl font-bold text-lime-500">
                         {userProjects.filter(p => p.status === 'live' || p.status === 'approved').length}
                       </p>
@@ -535,7 +535,7 @@ export default function ProfileProjectsPage() {
       )}
 
       {/* Projects List */}
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-7xl mx-auto">
         {userProjects.length > 0 ? (
           userProjects.map((project) => {
             const metrics = calculateProjectMetrics(project);
@@ -670,7 +670,7 @@ export default function ProfileProjectsPage() {
           <Card>
             <CardContent className="p-12 text-center">
               <FolderIcon className="w-16 h-16 text-gray-500 mx-auto mb-4" />
-              <h3 className="text-xl font-medium text-white mb-2">Sin Creaciones Activas</h3>
+              <h3 className="text-xl font-medium text-white mb-2">Sin Creaciones Desatadas</h3>
               <p className="text-gray-400 mb-6">
                 Aún no has aplicado a ningúna creación. Comienza tu jornada aplicando a oportunidades interesantes.
               </p>
