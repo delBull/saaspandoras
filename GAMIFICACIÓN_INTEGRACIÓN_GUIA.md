@@ -230,35 +230,150 @@ export function Providers({
 }
 ```
 
-### Paso 3: 🎨 Agregar HUD a Layout Dashboard
+### Paso 3: 🎨 Agregar Enlace Sidebar y Navegación
 
-**Archivo:** `apps/dashboard/src/app/(dashboard)/layout.tsx`
+**Archivo:** `apps/dashboard/src/components/sidebar.tsx` - Agregado enlace "Mis Logros" justo después del Dashboard
 
 ```tsx
-import { Sidebar } from "@/components/sidebar";
-import { NFTGate } from "@/components/nft-gate";
-// 🎮 IMPORTAR HUD
-import { GamificationHUD } from "@pandoras/gamification";
+const baseItems = [
+  // ... Perfil, Dashboard primero
+  {
+    href: "/profile/achievements",
+    icon: <TrophyIcon className="w-5 h-5 text-gray-400" />, // Cambiar a Trophy de lucide-react
+    label: "Mis Logros",
+    description: "Achievements y gamificación",
+    onClick: () => {
+      setProfileDropdown(false);
+      if (isMobile) setMobileOpen(false);
+    }
+  }
+  // ... luego Tus Creaciones
+];
+```
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex min-h-screen bg-zinc-950">
-      <Sidebar />
+### Paso 4: 🎮 Página de Achievements Completa (CON DATOS DE PRUEBA)
 
-      <main className="flex-1 p-6">
-        {/* 🎮 HUD FLOTANTE EN DASHBOARD */}
-        <GamificationHUD position="top-right" showLevel={true} showPoints={true} />
+**Archivo:** `apps/dashboard/src/app/(dashboard)/profile/achievements/page.tsx`
 
-        <NFTGate>
-          {children}
-        </NFTGate>
-      </main>
-    </div>
-  );
+**STATUS:** ✅ **COMPLETADA - Funcional con datos de prueba**
+
+**Características implementadas:**
+- ✅ Diseño premium idéntico a `/apply`
+- ✅ Sistema completo de 16 logros categorizados
+- ✅ 5 niveles de rareza (Común → Legendario)
+- ✅ Progress bars para achievements pendientes
+- ✅ Estadísticas en tiempo real
+- ✅ Filtros por categorías
+- ✅ Animaciones y efectos visuales
+- ✅ Toast informativo de datos de prueba
+
+**⚠️ IMPORTANTE PARA FUTURAS FASES:**
+
+**Esta página actualmente usa datos estáticos de prueba. Necesita transformarse completamente a datos dinámicos reales en las siguientes fases.**
+
+#### 🔄 **SISTEMA QUE DEBE SER DINÁMICO:**
+
+##### 1. **Datos de Achievements:**
+```typescript
+// DE ESTO (estático):
+const achievementCategories = [/* hardcodeado */]
+
+// A ESTO (dinámico):
+// - Cargar desde API/API gamification
+// - Fetch user-specific achievements
+// - Actualizar estados en tiempo real
+// - Sincronización con servidor
+```
+
+##### 2. **Estados de Achievements (CRÍTICO):**
+```typescript
+// DE ESTO (hardcodeado):
+unlocked: true/false         // → LOGRADO/BLOQUEADO
+progress: 12, required: 25   // → PROGRESO REAL DEL USUARIO
+
+// A ESTO (dinámico):
+unlocked: // Basado en historial de eventos del usuario
+progress: // Contador real de acciones completadas
+required: // Meta definida por el sistema
+unlockedAt: // Timestamp real de desbloqueo
+```
+
+##### 3. **Puntos/Tokens (CRÍTICO):**
+```typescript
+points: 150  // → TOTALACUMULADO DEL USUARIO
+// Basado en: eventos completados, rareza, tiempo, etc.
+```
+
+##### 4. **Estadísticas de Usuario:**
+```typescript
+stats = {
+  total: allAchievements.length,      // ✅ OK (estático total)
+  unlocked: allAchievements.filter(/* un estado dinámico */),  // → DINÁMICO
+  totalPoints: allAchievements.filter(/* diferente para cada user */) // → DINÁMICO
+}
+// Lógica real: consultar DB del usuario
+```
+
+##### 5. **Sistema de Rarezas y Categorías:**
+```typescript
+rarity: 'rare'      // → DEFINIR ALGORITMO basdo en:
+                   // - Eventos completados
+                   // - Tokens ganados
+                   // - Tiempo en plataforma
+                   // - Acciones sociales
+category: 'exploration' // → Basado en tipos de eventos del user
+```
+
+##### 6. **Conexión con Eventos Reales:**
+```typescript
+// Achievements deben trigger desde eventos reales:
+// - LOGIN → 'Primer Login'
+// - PROJECT_APPLICATION → 'Aplicante Proactivo'
+// - INVESTMENT → 'Primer Paso'
+// - EXPLORATION → 'Explorador Intrépido'
+// etc...
+```
+
+##### 7. **Toast Informativo:**
+```typescript
+// MANTENER hasta que sistema sea completamente dinámico:
+// "Esta sección muestra datos de prueba. Estamos trabajando..."
+// REMOVER una vez conectado con sistema real
+```
+
+#### 📋 **CHECKLIST PARA IMPLEMENTACIÓN DINÁMICA** (Fases 3-4)
+
+- [ ] Crear Hook `useUserAchievements(userId)` para datos dinámicos
+- [ ] Implementar lógica de estados: `getAchievementStatus(userId, achievementId)`
+- [ ] Sistema de cálculo de progreso: `calculateProgress(requirements, userActions)`
+- [ ] Algoritmo de rarezas: `calculateRarity(userStats, achievementType)`
+- [ ] Sincronización en tiempo real con WebSockets
+- [ ] Cache inteligente para performance
+- [ ] Fallbacks para usuarios sin datos
+- [ ] Testing con usuarios reales y datos históricos
+
+---
+
+### Paso 5: 🔄 Conectar Sistema de Eventos (Futura Fase)
+
+**Necesario para hacer los achievements dinámicos reales:**
+
+```typescript
+// Ejemplo de lógica futura
+function getUserAchievement(userId: string, achievementId: string) {
+  // Consultar eventos del usuario en DB
+  const userEvents = await getUserEvents(userId);
+
+  // Calcular progreso basado en eventos reales
+  const progress = calculateProgress(userEvents, achievementId);
+
+  // Determinar si está unlocked
+  const unlocked = progress >= achievement.required;
+
+  // Calcular tokens basados en rareza y eventos
+  const tokens = calculateTokens(achievement.rarity, progress);
+
+  return { unlocked, progress, tokens, unlockedAt: /* calcular desde eventos */ };
 }
 ```
 
@@ -650,15 +765,15 @@ psql $DATABASE_URL < apps/dashboard/gamification-migration.sql
 
 ### 🎯 Fase 1: Setup Básico (2-3 horas)
 
-1. ✅ [**COMPLETADO**] Instalar dependencias
+1. ✅ [**COMPLETADO**] Instalar dependencias (bun pm ls - ya estaba @pandoras/gamification@workspace)
 2. ✅ [**COMPLETADO**] Agregar GamificationProvider a `providers.tsx`
-3. ✅ [**COMPLETADO**] Agregar GamificationHUD al layout
-4. ⏳ Crear endpoint básico `/api/gamification/track-event`
-5. ⏳ Conectar evento de login diario
+3. ✅ [**COMPLETADO**] Agregar GamificationHUD al dashboard-client-wrapper con useGamificationContext
+4. ✅ [**COMPLETADO**] Crear endpoint básico `/api/gamification/track-event`
+5. ✅ [**COMPLETADO**] Conectar evento de login diario implementado en useThirdwebUserSync.ts
 
 ### 🎯 Fase 2: UI Integration (3-4 horas)
 
-6. ⏳ Agregar componentes al perfil (`/profile`)
+6. ✅ [**COMPLETADO**] Agregar AchievementCard a página perfil y crear página dedicada /profile/achievements
 7. ⏳ Crear página leaderboard (`/leaderboard`)
 8. ⏳ Integrar dashboard de gamificación (`/profile/dashboard`)
 9. ⏳ Agregar modales de recompensas

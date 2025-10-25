@@ -239,7 +239,14 @@ export function MultiStepForm({
         } else {
           // Check if wallet exists in administrators table
           try {
-            const response = await fetch('/api/admin/verify');
+            const response = await fetch('/api/admin/verify', {
+              headers: {
+                'Content-Type': 'application/json',
+                'x-thirdweb-address': walletAddress,
+                'x-wallet-address': walletAddress,
+                'x-user-address': walletAddress
+              }
+            });
             if (response.ok) {
               const data = await response.json() as { isAdmin?: boolean; isSuperAdmin?: boolean };
               setIsAdminUser(Boolean(data.isAdmin ?? data.isSuperAdmin ?? false));
