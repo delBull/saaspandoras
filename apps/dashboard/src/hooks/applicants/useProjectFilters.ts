@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import type { Project } from "./useApplicantsDataBasic";
 
 export type ViewMode = 'grid' | 'list';
-export type GridColumns = 3 | 4 | 6;
+export type GridColumns = 3 | 4;
 
 export interface FilterOptions {
   search: string;

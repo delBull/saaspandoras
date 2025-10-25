@@ -253,7 +253,7 @@ export default function PandoriansDashboardPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-400">Creaciones Activas</p>
+                  <p className="text-sm font-medium text-gray-400">Creaciones Desatadas</p>
                   <p className="text-2xl font-bold text-white">
                     {dashboardData.activeProjects}
                   </p>
