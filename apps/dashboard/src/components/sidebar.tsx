@@ -14,6 +14,7 @@ import {
   ArrowLeftOnRectangleIcon,
   UserIcon,
   ChevronDoubleRightIcon,
+  TrophyIcon,
   ChartPieIcon,
   ChartBarIcon,
   FolderIcon,
@@ -320,6 +321,16 @@ export function Sidebar({
         icon: <ChartBarIcon className="w-5 h-5 text-gray-400" />,
         label: "Dashboard",
         description: "Métricas e inversiones",
+        onClick: () => {
+          setProfileDropdown(false);
+          if (isMobile) setMobileOpen(false);
+        }
+      },
+      {
+        href: "/profile/achievements",
+        icon: <TrophyIcon className="w-5 h-5 text-gray-400" />,
+        label: "Mis Logros",
+        description: "Achievements y gamificación",
         onClick: () => {
           setProfileDropdown(false);
           if (isMobile) setMobileOpen(false);
