@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useActiveAccount } from 'thirdweb/react';
+// 🎮 IMPORTAR EVENT SYSTEM
+import { EventType, gamificationEngine } from '@pandoras/gamification';
 
 export function useThirdwebUserSync() {
   const account = useActiveAccount();
@@ -24,6 +26,11 @@ export function useThirdwebUserSync() {
       .then((res) => {
         if (res.ok) {
           console.log('✅ Wallet sincronizada correctamente');
+          // 🎮 TRIGGER EVENTO DE LOGIN DIARIO
+          gamificationEngine.trackEvent(account.address.toLowerCase(), EventType.DAILY_LOGIN, {
+            walletAddress: account.address,
+            timestamp: new Date().toISOString()
+          }).catch(err => console.warn('⚠️ Error al trackear login en gamificación:', err));
           setHasSynced(true);
         } else {
           console.warn('⚠️ Error al sincronizar wallet:', res.status);

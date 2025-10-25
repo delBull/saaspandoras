@@ -11,6 +11,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from 'next/navigation';
 import { usePersistedAccount } from "@/hooks/usePersistedAccount";
 import { AutoLoginGate } from "@/components/AutoLoginGate";
+// 🎮 TODO: IMPORTAR HUD cuando esté funcional en páginas específicas
+// import { GamificationHUD } from "@pandoras/gamification";
+// import { useGamificationContext } from "@pandoras/gamification";
 
 async function fetchUserName(address: string): Promise<string | null> {
   if (address.toLowerCase() === "0xdd2fd4581271e230360230f9337d5c0430bf44c0") {
@@ -41,6 +44,7 @@ export function DashboardClientWrapper({
   const pathname = usePathname();
   const { account } = usePersistedAccount();
   const [userName, setUserName] = useState<string | null>(null);
+
 
   useEffect(() => {
     if (account?.address) {
@@ -93,6 +97,7 @@ export function DashboardClientWrapper({
            </NFTGate>
           </AutoLoginGate>
         </DashboardShell>
+
         <TermsModalRenderer />
       </TermsModalProvider>
     </TokenPriceProvider>

@@ -9,6 +9,8 @@ import { useProfile } from '@/hooks/useProfile';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useActiveAccount } from 'thirdweb/react';
+// 🎮 IMPORTAR COMPONENTES DE GAMIFICACIÓN
+import { AchievementCard, useGamificationContext } from '@pandoras/gamification';
 
 // Force dynamic rendering - this page uses cookies and should not be prerendered
 export const dynamic = 'force-dynamic';
@@ -17,6 +19,8 @@ export default function ProfilePage() {
   const { profile, isLoading, isError } = useProfile();
   const account = useActiveAccount();
   const [copied, setCopied] = useState(false);
+  // 🎮 CONTEXTO DE GAMIFICACIÓN
+  const gamification = useGamificationContext();
 
   // Function to format wallet address with ellipsis
   const formatWalletAddress = (address: string) => {
@@ -450,6 +454,70 @@ export default function ProfilePage() {
           </Card>
         </div>
       </div>
+
+      {/* 🎮 SECCIÓN DE GAMIFICACIÓN - Siempre visible para motivar engagement */}
+      {walletAddress && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
+                <span className="text-lg">🏆</span>
+              </div>
+              <div>
+                <CardTitle>Mis Logros</CardTitle>
+                <CardDescription>
+                  Tus achievements desbloqueados en la plataforma Pandora&apos;s
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {gamification?.achievements && gamification.achievements.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {gamification.achievements.slice(0, 6).map((achievement: any) => (
+                    <AchievementCard
+                      key={achievement.id}
+                      achievement={achievement}
+                      showProgress={true}
+                    />
+                  ))}
+                </div>
+
+                {gamification.achievements.length > 6 && (
+                  <div className="mt-6 text-center">
+                    <Link href="/profile/achievements">
+                      <Button variant="outline" className="text-sm">
+                        Ver todos mis logros ({gamification.achievements.length})
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-gradient-to-br from-yellow-400/20 to-orange-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span className="text-2xl">🎯</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-300 mb-2">¡Comienza a ganar tokens!</h3>
+                  <p className="text-gray-400 mb-6 max-w-md mx-auto">
+                    Completa acciones en la plataforma para desbloquear achievements y ganar recompensas.
+                    Cada login diario, proyecto aplicado, o inversión te acerca a tu próximo logro.
+                  </p>
+                  <div className="flex gap-3 justify-center">
+                    <Link href="/profile/achievements">
+                      <Button variant="outline" size="sm">
+                        Ver Todos los Logros
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

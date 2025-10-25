@@ -650,15 +650,15 @@ psql $DATABASE_URL < apps/dashboard/gamification-migration.sql
 
 ### 🎯 Fase 1: Setup Básico (2-3 horas)
 
-1. ✅ [**COMPLETADO**] Instalar dependencias
+1. ✅ [**COMPLETADO**] Instalar dependencias (bun pm ls - ya estaba @pandoras/gamification@workspace)
 2. ✅ [**COMPLETADO**] Agregar GamificationProvider a `providers.tsx`
-3. ✅ [**COMPLETADO**] Agregar GamificationHUD al layout
-4. ⏳ Crear endpoint básico `/api/gamification/track-event`
-5. ⏳ Conectar evento de login diario
+3. ✅ [**COMPLETADO**] Agregar GamificationHUD al dashboard-client-wrapper con useGamificationContext
+4. ✅ [**COMPLETADO**] Crear endpoint básico `/api/gamification/track-event`
+5. ✅ [**COMPLETADO**] Conectar evento de login diario implementado en useThirdwebUserSync.ts
 
 ### 🎯 Fase 2: UI Integration (3-4 horas)
 
-6. ⏳ Agregar componentes al perfil (`/profile`)
+6. ✅ [**COMPLETADO**] Agregar AchievementCard a página perfil con sección gamificación completa
 7. ⏳ Crear página leaderboard (`/leaderboard`)
 8. ⏳ Integrar dashboard de gamificación (`/profile/dashboard`)
 9. ⏳ Agregar modales de recompensas
