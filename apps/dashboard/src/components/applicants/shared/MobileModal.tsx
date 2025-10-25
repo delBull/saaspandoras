@@ -6,9 +6,15 @@ interface MobileModalProps {
   isOpen: boolean;
   onClose: () => void;
   pendingProjects: Project[];
+  approvedProjects?: Project[];
+  title?: string;
 }
 
-export function MobileModal({ isOpen, onClose, pendingProjects }: MobileModalProps) {
+export function MobileModal({ isOpen, onClose, pendingProjects, approvedProjects, title }: MobileModalProps) {
+  // Si hay approvedProjects, usamos esos, si no, usamos pending
+  const displayProjects = approvedProjects ?? pendingProjects;
+  const displayTitle = title ?? 'Creaciones en Revisión';
+  const displayVariant: 'pending' | 'approved' = approvedProjects ? 'approved' : 'pending';
   return (
     <div className={`fixed inset-0 z-50 lg:hidden transform transition-transform duration-500 ${
       isOpen ? 'translate-y-0' : 'translate-y-full'
@@ -27,7 +33,7 @@ export function MobileModal({ isOpen, onClose, pendingProjects }: MobileModalPro
       <div className="absolute bottom-0 left-0 right-0 bg-zinc-900 min-h-[90vh] overflow-hidden border-t border-zinc-800">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-zinc-800">
-          <h3 className="text-xl font-bold text-white">Creaciones en Revisión</h3>
+          <h3 className="text-xl font-bold text-white">{displayTitle}</h3>
           <button
             onClick={onClose}
             className="p-2 hover:bg-zinc-800 rounded-full transition-colors"
@@ -37,8 +43,8 @@ export function MobileModal({ isOpen, onClose, pendingProjects }: MobileModalPro
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto max-h-[calc(90vh-81px)] p-6 pt-2">
-          <ProjectGrid projects={pendingProjects} variant="pending" />
+        <div className="overflow-y-auto max-h-[calc(90vh-81px)] px-6 lg:px-0 py-8">
+          <ProjectGrid projects={displayProjects} variant={displayVariant} />
         </div>
       </div>
     </div>
