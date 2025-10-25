@@ -65,14 +65,14 @@ interface FeaturedProjectCardData {
   projectSlug: string;
 }
 
-// Función para obtener proyectos featured desde la API usando el hook global
-async function getFeaturedProjects(featuredProjectIds: Set<number>): Promise<FeaturedProjectCardData[]> {
-  console.log('🔍 Getting featured projects from API...', Array.from(featuredProjectIds));
+// Función para obtener proyectos featured directamente desde la API
+async function getFeaturedProjects(): Promise<FeaturedProjectCardData[]> {
+  console.log('🔍 Getting featured projects directly from API...');
 
   try {
-    // Usar la API projects-basic que ya está funcionando
+    // Usar la nueva API /api/projects/featured que obtiene directamente desde DB
     const baseUrl = typeof window !== 'undefined' ? '' : 'http://localhost:3000';
-    const response = await fetch(`${baseUrl}/api/projects-basic`, {
+    const response = await fetch(`${baseUrl}/api/projects/featured`, {
       cache: 'no-store', // Asegurar datos frescos
     });
 
@@ -81,19 +81,10 @@ async function getFeaturedProjects(featuredProjectIds: Set<number>): Promise<Fea
     }
 
     const projects = await response.json() as Record<string, unknown>[];
-
-    // Filtrar solo proyectos que estén marcados como featured usando el hook global
-    const featuredProjects = projects.filter((project: Record<string, unknown>) => {
-      const projectId = Number(project.id);
-      const isFeatured = featuredProjectIds.has(projectId);
-      console.log(`🔍 Project "${String(project.title)}" (ID: ${projectId}) featured status:`, isFeatured);
-      return isFeatured;
-    });
-
-    console.log(`✅ Found ${featuredProjects.length} featured projects out of ${projects.length} total projects`);
+    console.log(`✅ Got ${projects.length} featured projects directly from featured API`);
 
     // Convertir proyectos featured a formato FeaturedProjectCardData
-    return featuredProjects.map((project: Record<string, unknown>, index: number) => ({
+    return projects.map((project: Record<string, unknown>, index: number) => ({
       id: String(project.id ?? `featured-${index}`),
       title: String(project.title ?? 'Proyecto sin título'),
       subtitle: String(project.description ?? 'Descripción no disponible'),
@@ -152,7 +143,7 @@ function BannersSection() {
   useEffect(() => {
     const fetchFeaturedProjects = async () => {
       try {
-        const projects = await getFeaturedProjects(featuredProjectIds);
+        const projects = await getFeaturedProjects();
         setFeaturedProjects(projects);
       } catch (error) {
         console.error('Error in fetchFeaturedProjects:', error);
@@ -162,7 +153,17 @@ function BannersSection() {
     };
 
     void fetchFeaturedProjects();
-  }, [featuredProjectIds]); // Depend on featuredProjectIds to re-fetch when featured status changes
+  }, []); // No dependencies needed, fetch once on mount
+
+  // Recargar cuando cambien los featured projects del hook
+  useEffect(() => {
+    if (featuredProjectIds.size > 0) {
+      void getFeaturedProjects().then(projects => setFeaturedProjects(projects));
+    } else {
+      // Si no hay featured projects, vaciar
+      setFeaturedProjects([]);
+    }
+  }, [featuredProjectIds]);
 
   const handleClose = (idToClose: string) => {
     setFeaturedProjects(prevProjects => prevProjects.filter(p => p.id !== idToClose));

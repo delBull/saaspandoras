@@ -731,7 +731,7 @@ export default function AdminDashboardPage() {
                                 console.log('🔧 Admin: Toggling featured status for project:', projectId, 'from:', currentFeaturedStatus, 'to:', newFeaturedStatus);
 
                                 // Use global featured hook
-                                toggleFeatured(projectId);
+                                void toggleFeatured(projectId);
 
                                 // Update local state immediately for visual feedback
                                 setProjects(prevProjects =>
