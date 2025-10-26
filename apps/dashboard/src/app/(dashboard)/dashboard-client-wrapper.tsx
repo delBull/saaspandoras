@@ -11,6 +11,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from 'next/navigation';
 import { usePersistedAccount } from "@/hooks/usePersistedAccount";
 import { AutoLoginGate } from "@/components/AutoLoginGate";
+import { RewardModal } from "@/components/RewardModal";
+import type { Reward } from "@/components/RewardModal";
+// Reward modal manager inside dashboard wrapper
 // 🎮 TODO: IMPORTAR HUD cuando esté funcional en páginas específicas
 // import { GamificationHUD } from "@pandoras/gamification";
 // import { useGamificationContext } from "@pandoras/gamification";
@@ -99,7 +102,50 @@ export function DashboardClientWrapper({
         </DashboardShell>
 
         <TermsModalRenderer />
+
+        {/* 🎮 Reward Modal - Mock implementation */}
+        <RewardModalManager />
       </TermsModalProvider>
     </TokenPriceProvider>
+  );
+}
+
+// Component to manage reward modals globally across the dashboard
+function RewardModalManager() {
+  const [showRewardModal, setShowRewardModal] = useState(false);
+  const [currentReward, setCurrentReward] = useState<Reward | null>(null);
+
+  useEffect(() => {
+    // Mock reward trigger - in production this would come from gamification events
+    const timer = setTimeout(() => {
+      const mockReward: Reward = {
+        type: 'achievement',
+        title: 'Primer Login Exitoso',
+        description: 'Has conectado exitosamente tu wallet a Pandoras',
+        tokens: 10,
+        icon: '🔗',
+        rarity: 'common'
+      };
+
+      setCurrentReward(mockReward);
+      setShowRewardModal(true);
+    }, 5000); // Show after 5 seconds for demo
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleCloseRewardModal = () => {
+    setShowRewardModal(false);
+    setCurrentReward(null);
+  };
+
+  return (
+    <div id="gamification-reward-modal">
+      <RewardModal
+        isOpen={showRewardModal}
+        onClose={handleCloseRewardModal}
+        reward={currentReward}
+      />
+    </div>
   );
 }
