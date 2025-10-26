@@ -13,12 +13,15 @@ import {
   ClockIcon,
   CheckCircleIcon,
   ExclamationCircleIcon,
+  TrophyIcon,
 } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import Link from 'next/link';
 //import { useProjectModal } from "@/contexts/ProjectModalContext";
 import { useProfile } from "@/hooks/useProfile";
 import { useActiveAccount } from 'thirdweb/react';
+// 🎮 IMPORTAR COMPONENTES DE GAMIFICACIÓN
+// (Disponibles cuando se conecte el sistema real)
 
 // Define a type for your project data to avoid using 'any'
 interface Project {
@@ -34,6 +37,7 @@ export default function PandoriansDashboardPage() {
   const { profile, projects, isLoading, isError } = useProfile();
   const account = useActiveAccount();
   const toastShownRef = useRef(false);
+  // 🎮 HOOK DE GAMIFICACIÓN (Disponible cuando se conecte el sistema real)
 
   // Use account from useActiveAccount hook instead of cookies
   const walletAddress = account?.address;
@@ -488,6 +492,98 @@ export default function PandoriansDashboardPage() {
            </CardContent>
          </Card>
        )}
+
+      {/* 🎮 SECCIÓN DE GAMIFICACIÓN */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Estadísticas de Gamificación */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrophyIcon className="w-5 h-5 text-yellow-400" />
+              Tu Desarrollo Gamificado
+            </CardTitle>
+            <CardDescription>
+              Tokens ganados y logros obtenidos
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
+                <div className="text-2xl font-bold text-yellow-400 mb-1">150</div>
+                <div className="text-sm text-gray-400">Tokens Ganados</div>
+              </div>
+              <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
+                <div className="text-2xl font-bold text-blue-400 mb-1">3</div>
+                <div className="text-sm text-gray-400">Logros Obtenidos</div>
+              </div>
+              <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
+                <div className="text-2xl font-bold text-purple-400 mb-1">#42</div>
+                <div className="text-sm text-gray-400">Posición Global</div>
+              </div>
+              <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
+                <div className="text-2xl font-bold text-green-400 mb-1">Nivel 2</div>
+                <div className="text-sm text-gray-400">Tu Nivel Actual</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Logros Recientes */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrophyIcon className="w-5 h-5 text-yellow-400" />
+              Logros Recientes
+            </CardTitle>
+            <CardDescription>
+              Tus últimos achievements desbloqueados
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {/* Mock achievements - estos serán reales cuando se conecte */}
+              <div className="flex items-center gap-4 p-3 bg-yellow-900/20 border border-yellow-500/30 rounded-lg">
+                <div className="text-2xl">🔗</div>
+                <div className="flex-1">
+                  <div className="text-white text-sm font-medium">Primer Login</div>
+                  <div className="text-gray-400 text-xs">Has conectado tu wallet exitosamente</div>
+                  <div className="text-yellow-400 text-xs font-medium">+10 tokens</div>
+                </div>
+                <div className="text-yellow-400 text-xs">Desbloqueado</div>
+              </div>
+
+              <div className="flex items-center gap-4 p-3 bg-yellow-900/20 border border-yellow-500/30 rounded-lg">
+                <div className="text-2xl">🔍</div>
+                <div className="flex-1">
+                  <div className="text-white text-sm font-medium">Explorador Intrépido</div>
+                  <div className="text-gray-400 text-xs">Has visto 5 creaciones diferentes</div>
+                  <div className="text-yellow-400 text-xs font-medium">+25 tokens</div>
+                </div>
+                <div className="text-yellow-400 text-xs">Desbloqueado</div>
+              </div>
+
+              <div className="flex items-center gap-4 p-3 bg-gray-900/20 border border-gray-500/30 rounded-lg">
+                <div className="text-2xl">📝</div>
+                <div className="flex-1">
+                  <div className="text-white text-sm font-medium">Primer Borrador</div>
+                  <div className="text-gray-400 text-xs">Crea tu primera creación</div>
+                  <div className="text-gray-400 text-xs">Progreso: 0/1</div>
+                </div>
+                <div className="text-gray-400 text-xs">Bloqueado</div>
+              </div>
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-zinc-700">
+              <Link href="/profile/achievements">
+                <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-black rounded-lg hover:from-yellow-300 hover:to-orange-400 transition-colors text-sm font-medium">
+                  <TrophyIcon className="w-4 h-4" />
+                  Ver Todos Mis Logros
+                </button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Coming Soon Notice */}
       <Card className="border-dashed border-gray-600">

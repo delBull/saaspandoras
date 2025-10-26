@@ -774,8 +774,8 @@ psql $DATABASE_URL < apps/dashboard/gamification-migration.sql
 ### 🎯 Fase 2: UI Integration (3-4 horas)
 
 6. ✅ [**COMPLETADO**] Agregar AchievementCard a página perfil y crear página dedicada /profile/achievements
-7. ⏳ Crear página leaderboard (`/leaderboard`)
-8. ⏳ Integrar dashboard de gamificación (`/profile/dashboard`)
+7. ✅ [**COMPLETADA**] Crear página /leaderboard - Con diseño premium, podium y filtros
+8. ✅ [**COMPLETADA**] Integrar secciones gamificación en `/profile/dashboard` - Estadísticas y logros recientes añadidos
 9. ⏳ Agregar modales de recompensas
 
 ### 🎯 Fase 3: Event System (4-5 horas)
