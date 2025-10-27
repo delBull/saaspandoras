@@ -9,6 +9,8 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
+// 🎮 IMPORTAR EVENTOS DE GAMIFICACIÓN
+import { gamificationEngine, EventType } from "@pandoras/gamification";
 import { ProjectSection1 } from "./sections/ProjectSection1";
 import { ProjectSection2 } from "./sections/ProjectSection2";
 import { ProjectSection3 } from "./sections/ProjectSection3";
@@ -740,6 +742,30 @@ export function MultiStepForm({
       // La respuesta se usa solo para log, así que 'unknown' es seguro.
       const responseData: unknown = await response.json();
       console.log('✅ Success response:', responseData);
+
+      // 🎮 TRIGGER EVENTO DE APLICACIÓN DE PROYECTO
+      const userWallet = account?.address?.toLowerCase();
+      if (userWallet) {
+        try {
+          console.log('🎮 Triggering project application event for user:', userWallet);
+          await gamificationEngine.trackEvent(
+            userWallet,
+            EventType.PROJECT_APPLICATION_SUBMITTED,
+            {
+              projectTitle: safeData.title,
+              projectId: (responseData as { id?: string | number })?.id?.toString() ?? 'unknown',
+              businessCategory: safeData.businessCategory,
+              targetAmount: safeData.targetAmount,
+              isPublicApplication: isPublic,
+              submissionType: isPublic ? 'public' : 'admin_draft'
+            }
+          );
+          console.log('✅ Gamification event PROJECT_APPLICATION_SUBMITTED tracked successfully');
+        } catch (gamificationError) {
+          console.warn('⚠️ Gamification event tracking failed:', gamificationError);
+          // No bloquear el flujo si falla la gamificación
+        }
+      }
 
       // Mostrar modal de éxito en lugar de toast inmediato
       setShowSuccessModal(true);
