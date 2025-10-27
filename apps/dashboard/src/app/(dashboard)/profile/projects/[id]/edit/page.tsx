@@ -134,9 +134,9 @@ export default function EditProjectPage() {
           <div className="bg-zinc-900/50 rounded-xl p-6 border border-zinc-800">
             <MultiStepForm
               project={projectData}
-              isEdit
+              isEdit={!!projectData}
               isPublic={true}
-              apiEndpoint="/api/projects"
+              apiEndpoint={projectData ? `/api/admin/projects/${projectId}` : "/api/admin/projects"}
             />
           </div>
         </div>
