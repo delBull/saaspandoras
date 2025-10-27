@@ -633,9 +633,11 @@ Un **sistema completo de gamificación Web3-native** que incluye:
 
 ---
 
-## 2️. ADMIN PANEL - CREACIÓN DE CURSOS
+## 2️. ADMIN PANEL - GESTIÓN GAMIFICACIÓN COMPLETA
 
-### 🛠️ **API Admin para Crear Cursos - LISTA:**
+### 📚 **ADMIN PANEL PARA CURSOS**
+
+### 🛠️ **API Admin para Crear Cursos - IMPLEMENTADA:**
 
 ```typescript
 // POST /api/education/courses (Solo Admin - IMPLEMENTADA)
@@ -662,51 +664,128 @@ const createCourseRequest = {
     ]
   }
 };
-
-const response = {
-  success: true,
-  course: { id: "new-course-id" },
-  message: "Curso creado exitosamente"
-};
 ```
 
-### 🎯 **Cómo Implementar UI Admin (Próxima Iteración):**
+### 🎯 **UI Admin Panel para Cursos (Próxima Implementación):**
 
 ```typescript
 // apps/dashboard/src/app/admin/education/page.tsx
 function AdminCoursesPage() {
   const [courses, setCourses] = useState([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
-  const createCourse = (courseData) => {
-    fetch('/api/education/courses', {
+  const createCourse = async (courseData) => {
+    const response = await fetch('/api/education/courses', {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(courseData)
+    });
+    const data = await response.json();
+
+    if (response.ok) {
+      setCourses(prev => [...prev, data.course]);
+      toast.success('Curso creado exitosamente');
+    }
+  };
+
+  const updateCoursePoints = async (courseId, newPoints) => {
+    await fetch('/api/admin/gamification/course/update', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ courseId, points: newPoints })
     });
   };
 
   return (
-    <div className="p-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Administrar Cursos</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <table className="w-full">
-            <thead>
-              <tr>
-                <th>Título</th>
-                <th>Categoría</th>
-                <th>Puntos</th>
-                <th>Inscritos</th>
-              </tr>
-            </thead>
-          </table>
-        </CardContent>
-      </Card>
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Administrar Educación</h1>
+        <Button onClick={() => setShowCreateModal(true)}>
+          ➕ Crear Nuevo Curso
+        </Button>
+      </div>
+
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Título</TableHead>
+            <TableHead>Dificultad</TableHead>
+            <TableHead>Puntos</TableHead>
+            <TableHead>Inscritos</TableHead>
+            <TableHead>Acciones</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {courses.map(course => (
+            <TableRow key={course.id}>
+              <TableCell>{course.title}</TableCell>
+              <TableCell>{course.difficulty}</TableCell>
+              <TableCell>
+                <Input
+                  type="number"
+                  defaultValue={course.points}
+                  onBlur={(e) => updateCoursePoints(course.id, e.target.value)}
+                  className="w-20"
+                />
+              </TableCell>
+              <TableCell>{course.enrolled_students}</TableCell>
+              <TableCell>
+                <Button variant="outline" size="sm">Editar</Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }
 ```
+
+### 🏆 **ADMIN PANEL PARA LOGROS & GAMIFICATION**
+
+### 🛠️ **APIs Admin para Gestionar Gamificación:**
+
+```typescript
+// POST /api/admin/gamification/achievements (Crear logro)
+const createAchievementRequest = {
+  name: "Maestro Constructor",
+  description: "Has completado 10 proyectos exitosos",
+  points: 500,
+  rarity: "epic",
+  category: "creation",
+  requirements: {
+    type: "projects_completed",
+    threshold: 10
+  },
+  icon: "🏗️"
+};
+
+// GET /api/admin/gamification/stats (Estadísticas globales)
+{
+  "totalUsers": 1247,
+  "activeUsers": 823,
+  "totalPointsAwarded": 156732,
+  "topAchievements": [
+    { "name": "Proyecto Aprobado", "unlockedCount": 456 },
+    { "name": "Primer Login", "unlockedCount": 1247 }
+  ],
+  "pointsDistribution": {
+    "dailyLogin": 12470,
+    "projects": 56892,
+    "referrals": 34560,
+    "education": 23400
+  }
+}
+
+// PATCH /api/admin/gamification/points/global (Ajuste global de puntos)
+const updateGlobalPoints = {
+  eventType: "PROJECT_APPLICATION_SUBMITTED",
+  pointsAddition: 25, // +25 puntos extra a todos los eventos
+  reason: "Campaña especial de engagement"
+};
+```
+
+### 🎯 **UI Admin Panel para
 
 ### 📊 **Próximo: Para Tener Sistema Completo**
 
