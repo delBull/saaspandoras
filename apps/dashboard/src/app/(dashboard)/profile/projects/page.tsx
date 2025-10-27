@@ -542,35 +542,37 @@ export default function ProfileProjectsPage() {
             return (
               <Card key={project.id} className="hover:bg-zinc-800/50 transition-colors">
                 <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-xl text-white mb-2">{project.title}</CardTitle>
-                      <div className="flex items-center gap-4 text-sm text-gray-400">
-                        <span>Estado: {
-                          project.status === 'live' ? '🏃‍♂️ Activo' :
-                          project.status === 'approved' ? '✅ Aprobado' :
-                          project.status === 'pending' ? '⏳ En Revisión' :
-                          project.status === 'rejected' ? '❌ Rechazado' :
-                          project.status === 'completed' ? '🏁 Completado' :
-                          project.status
-                        }</span>
-                        <span>Meta ${(metrics.targetAmount).toLocaleString()} USD</span>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-xl text-white mb-2">{project.title}</CardTitle>
+                        <div className="flex items-center gap-4 text-sm text-gray-400 flex-wrap">
+                          <span>Estado: {
+                            project.status === 'live' ? '🏃‍♂️ Activo' :
+                            project.status === 'approved' ? '✅ Aprobado' :
+                            project.status === 'pending' ? '⏳ En Revisión' :
+                            project.status === 'rejected' ? '❌ Rechazado' :
+                            project.status === 'completed' ? '🏁 Completado' :
+                            project.status
+                          }</span>
+                          <span>Meta ${(metrics.targetAmount).toLocaleString()} USD</span>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-2 w-full sm:w-auto">
-                      <Link href={`/profile/projects/${project.id}/edit`} className="w-full sm:w-auto">
-                        <Button size="sm" variant="outline" className="w-full sm:w-auto">
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Link href={`/profile/projects/${project.id}/edit`} className="flex-1 min-w-0">
+                        <Button size="sm" variant="outline" className="w-full text-xs">
                           <PencilIcon className="w-4 h-4 mr-2" />
-                          <span className="hidden xs:inline sm:inline">Editar</span>
-                          <span className="xs:hidden sm:hidden">✏️ Editar</span>
+                          <span className="hidden sm:inline">Editar</span>
+                          <span className="sm:hidden">Editar</span>
                         </Button>
                       </Link>
-                      <Link href={`/projects/${(project as any).slug || project.id}`} className="w-full sm:w-auto">
-                        <Button size="sm" variant="outline" className="w-full sm:w-auto text-xs sm:text-sm">
+                      <Link href={`/projects/${(project as any).slug || project.id}`} className="flex-1 min-w-0">
+                        <Button size="sm" variant="outline" className="w-full text-xs">
                           <EyeIcon className="w-4 h-4 mr-2" />
-                          <span className="hidden xs:inline sm:inline">Ver Artefacto</span>
-                          <span className="xs:hidden sm:hidden">👁️ Ver</span>
+                          <span className="hidden sm:inline">Ver Artefacto</span>
+                          <span className="sm:hidden">👁️ Ver</span>
                         </Button>
                       </Link>
                     </div>
