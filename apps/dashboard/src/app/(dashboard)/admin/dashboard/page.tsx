@@ -10,6 +10,8 @@ import { useProjectActions } from "@/hooks/useProjectActions";
 import { useFeaturedProjects } from "@/hooks/useFeaturedProjects";
 import type { ProjectStatus, Project, AdminData, UserData } from "@/types/admin";
 import { ProjectApplicationButton } from "@/components/ProjectApplicationButton";
+import { ProjectTableView } from "@/components/ProjectTableView";
+import { ProjectCardsView } from "@/components/ProjectCardsView";
 
 // NOTE: Using 'draft' and 'incomplete' in UI but DB ENUM needs migration to include these values
 
@@ -41,6 +43,15 @@ export default function AdminDashboardPage() {
   const [actionsDropdownPosition, setActionsDropdownPosition] = useState<{top: number, left: number} | null>(null); // Posición del dropdown
   const [actionsLoading, setActionsLoading] = useState<Record<string, boolean>>({}); // Track loading states for actions
   const [authError, setAuthError] = useState<string | null>(null); // Para mostrar errores de autenticación
+
+  // New state for improved UX
+  const [searchQuery, setSearchQuery] = useState(''); // Search/filter by title
+  const [sortBy, setSortBy] = useState<'date' | 'amount' | 'status' | 'title'>('date'); // Sorting options
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc'); // Sort direction
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table'); // View toggle
+  // Pagination variables (for future use)
+  const [_itemsPerPage] = useState(15); // Pagination limit
+  const [_setCurrentPage] = useState<number>();
 
   // State for wallet address
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
@@ -556,11 +567,60 @@ export default function AdminDashboardPage() {
     }));
   }, [projects]);
 
-  // Filter projects based on selected filter
+  // Filter and sort projects based on all filters
   const filteredProjects = useMemo(() => {
-    if (statusFilter === 'all') return enhancedProjects;
-    return enhancedProjects.filter(project => project.status === statusFilter);
-  }, [enhancedProjects, statusFilter]);
+    let filtered = enhancedProjects;
+
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(project => project.status === statusFilter);
+    }
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(project =>
+        project.title.toLowerCase().includes(query) ||
+        (project.applicantName?.toLowerCase().includes(query) ?? false) ||
+        (project.businessCategory?.toLowerCase().includes(query) ?? false)
+      );
+    }
+
+    // Apply sorting
+    const sorted = [...filtered].sort((a, b) => {
+      let aValue: string | number = a.title;
+      let bValue: string | number = b.title;
+
+      switch (sortBy) {
+        case 'amount':
+          aValue = Number(a.targetAmount ?? 0);
+          bValue = Number(b.targetAmount ?? 0);
+          break;
+        case 'status':
+          aValue = a.status;
+          bValue = b.status;
+          break;
+        case 'date':
+          // For now, sort by ID (assuming higher ID = newer)
+          aValue = Number(a.id);
+          bValue = Number(b.id);
+          break;
+        case 'title':
+        default:
+          aValue = a.title.toLowerCase();
+          bValue = b.title.toLowerCase();
+          break;
+      }
+
+      if (sortOrder === 'asc') {
+        return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+      } else {
+        return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
+      }
+    });
+
+    return sorted;
+  }, [enhancedProjects, statusFilter, searchQuery, sortBy, sortOrder]);
 
   // Get status counts for filter badges
   const statusCounts = useMemo(() => {
@@ -575,7 +635,19 @@ export default function AdminDashboardPage() {
     enhancedProjects.forEach(project => {
       if (project.status in counts) {
         counts[project.status]++;
+      } else {
+        console.warn('🔧 Status counts: Unknown status:', project.status, 'for project:', project.id);
       }
+    });
+
+    console.log('🔧 Status counts breakdown:', {
+      total: enhancedProjects.length,
+      pending: counts.pending,
+      approved: counts.approved,
+      live: counts.live,
+      completed: counts.completed,
+      rejected: counts.rejected,
+      detailed: enhancedProjects.map(p => ({ id: p.id, status: p.status }))
     });
 
     return counts;
@@ -634,343 +706,208 @@ export default function AdminDashboardPage() {
       <AdminTabs swaps={mockSwaps} users={users} showSettings={true} showUsers={true}>
         {/* Tab de proyectos */}
         <div key="projects-tab" className="space-y-6">
-          {/* Filtros de estado */}
-          <div className="flex flex-wrap gap-1.5 sm:gap-2">
-            <button
-              onClick={() => setStatusFilter('all')}
-              className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors ${
-                statusFilter === 'all'
-                  ? 'bg-lime-500 text-black'
-                  : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600'
-              }`}
-            >
-              Todos ({projects.length})
-            </button>
-            {Object.entries(statusCounts).map(([status, count]) => (
-              count > 0 && (
+          {/* Barra de herramientas mejorada */}
+          <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
+            <div className="flex flex-col xl:flex-row gap-4">
+              {/* Búsqueda */}
+              <div className="flex-1 min-w-0">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="🔍 Buscar proyecto por título..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full px-4 py-2 pl-10 bg-zinc-900 border border-zinc-600 rounded-lg text-white placeholder-gray-400 focus:border-lime-500 focus:outline-none transition-colors"
+                  />
+                  <svg className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+              </div>
+
+              {/* Controles */}
+              <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+                {/* Vista */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-400">Vista:</span>
+                  <button
+                    onClick={() => setViewMode('table')}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      viewMode === 'table'
+                        ? 'bg-lime-500 text-black'
+                        : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600'
+                    }`}
+                  >
+                    📊 Tabla
+                  </button>
+                  <button
+                    onClick={() => setViewMode('cards')}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      viewMode === 'cards'
+                        ? 'bg-lime-500 text-black'
+                        : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600'
+                    }`}
+                  >
+                    🃏 Cards
+                  </button>
+                </div>
+
+                {/* Ordenamiento */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-400">Orden:</span>
+                  <select
+                    value={`${sortBy}-${sortOrder}`}
+                    onChange={(e) => {
+                      const [by, order] = e.target.value.split('-');
+                      setSortBy(by as 'date' | 'amount' | 'status' | 'title');
+                      setSortOrder(order as 'asc' | 'desc');
+                    }}
+                    className="px-3 py-2 bg-zinc-900 border border-zinc-600 rounded-lg text-white focus:border-lime-500 focus:outline-none transition-colors text-sm"
+                  >
+                    <option value="date-desc">📅 Fecha ↓</option>
+                    <option value="date-asc">📅 Fecha ↑</option>
+                    <option value="title-asc">📝 Título A-Z</option>
+                    <option value="title-desc">📝 Título Z-A</option>
+                    <option value="amount-desc">💰 Monto ↓</option>
+                    <option value="amount-asc">💰 Monto ↑</option>
+                    <option value="status-desc">📊 Estado ↓</option>
+                    <option value="status-asc">📊 Estado ↑</option>
+                  </select>
+                </div>
+
+                {/* Refrescar */}
                 <button
-                  key={status}
-                  onClick={() => setStatusFilter(status as ProjectStatus)}
-                  className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors ${
-                    statusFilter === status
-                      ? 'bg-lime-500 text-black'
-                      : `${
-                          status === 'pending' ? 'text-yellow-300' :
-                          status === 'approved' ? 'text-blue-300' :
-                          status === 'live' ? 'text-green-300' :
-                          status === 'completed' ? 'text-emerald-300' :
-                          'text-red-300'
-                        } bg-zinc-700 hover:bg-zinc-600`
+                  onClick={refreshData}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                >
+                  🔄 Actualizar
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Filtros de estado mejorados */}
+          <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
+              <div>
+                <h3 className="text-sm font-medium text-gray-200 mb-2 sm:mb-0">Filtrar por Estado</h3>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setStatusFilter('all')}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                    statusFilter === 'all'
+                      ? 'bg-lime-500 text-black shadow-lg'
+                      : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600 hover:text-white'
                   }`}
                 >
-                  {status} ({count})
+                  Todos ({projects.length})
                 </button>
-              )
-            ))}
-          </div>
-
-          <div className="overflow-x-auto rounded-lg border border-zinc-700">
-            <table className="min-w-full divide-y divide-zinc-700 text-sm">
-              <thead className="bg-zinc-800">
-                <tr>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-300">Título</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-300">Monto (USD)</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-300">Estado</th>
-                  <th className="px-4 py-3 text-center font-semibold text-gray-300">Featured</th>
-                  <th className="px-4 py-3 text-center font-semibold text-gray-300">Detalles</th>
-                  <th className="px-4 py-3 text-right font-semibold text-gray-300">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-700 bg-zinc-900">
-                {filteredProjects.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="px-4 py-6 text-center text-gray-500">
-                      No hay creaciones registrados{statusFilter !== 'all' ? ` con estado "${statusFilter}"` : ''}.
-                    </td>
-                  </tr>
-                )}
-                {filteredProjects.map((p) => (
-                  <React.Fragment key={p.id}>
-                    <tr className="hover:bg-zinc-800">
-                      <td className="px-4 py-3 text-gray-200">{p.title}</td>
-                      <td className="px-4 py-3 text-gray-200">
-                        ${Number(p.targetAmount).toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="relative">
-                          <button
-                            onClick={() => setStatusDropdown(statusDropdown === p.id ? null : p.id)}
-                            className={`px-2 py-1 rounded text-xs font-semibold cursor-pointer transition-all ${
-                              p.status === "pending" ? "bg-yellow-600 hover:bg-yellow-700" :
-                              p.status === "approved" ? "bg-blue-600 hover:bg-blue-700" :
-                              p.status === "live" ? "bg-green-600 hover:bg-green-700" :
-                              p.status === "completed" ? "bg-emerald-600 hover:bg-emerald-700" :
-                              "bg-red-600 hover:bg-red-700"
-                            } text-white flex items-center gap-1`}
-                          >
-                            <span>{p.status}</span>
-                            <svg className="w-3 h-3 transition-transform" style={{transform: statusDropdown === p.id ? 'rotate(180deg)' : 'rotate(0deg)'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
-
-                      {/* Featured Column */}
-                      <td className="px-4 py-3 text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          {isFeatured(Number(p.id)) && (
-                            <div className="w-2 h-2 bg-lime-400 rounded-full animate-pulse"></div>
-                          )}
-                          <button
-                            onClick={() => {
-                              try {
-                                const projectId = Number(p.id);
-                                const currentFeaturedStatus = isFeatured(projectId);
-                                const newFeaturedStatus = !currentFeaturedStatus;
-                                console.log('🔧 Admin: Toggling featured status for project:', projectId, 'from:', currentFeaturedStatus, 'to:', newFeaturedStatus);
-
-                                // Use global featured hook
-                                void toggleFeatured(projectId);
-
-                                // Update local state immediately for visual feedback
-                                setProjects(prevProjects =>
-                                  prevProjects.map(proj =>
-                                    proj.id === p.id ? { ...proj, featured: newFeaturedStatus } : proj
-                                  )
-                                );
-
-                                console.log('🔧 Admin: Featured status updated globally for project:', projectId);
-                              } catch (error) {
-                                console.error('🔧 Admin: Error updating featured status:', error);
-                              }
-                            }}
-                            className={`px-3 py-1.5 rounded text-xs font-medium transition-all duration-200 ${
-                              isFeatured(Number(p.id))
-                                ? 'bg-lime-500 hover:bg-lime-600 text-black shadow-lg ring-2 ring-lime-400/30'
-                                : 'bg-zinc-700 hover:bg-zinc-600 text-gray-300 hover:text-white border border-zinc-600 hover:border-zinc-500'
-                            }`}
-                          >
-                            {isFeatured(Number(p.id)) ? '✓ Featured' : '☆ Feature'}
-                          </button>
-                        </div>
-                      </td>
-                  {/* Columna de Detalles/Due Diligence */}
-                  <td className="px-4 py-3 text-center">
+                {Object.entries(statusCounts).map(([status, count]) => (
+                  count > 0 && (
                     <button
-                      onClick={() => setExpandedProject(expandedProject === p.id ? null : p.id)}
-                      className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition-colors"
+                      key={status}
+                      onClick={() => setStatusFilter(status as ProjectStatus)}
+                      className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                        statusFilter === status
+                          ? 'bg-lime-500 text-black shadow-lg'
+                          : `${
+                              status === 'pending' ? 'text-yellow-300 bg-yellow-500/10 border border-yellow-500/20 hover:bg-yellow-500/20' :
+                              status === 'approved' ? 'text-blue-300 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20' :
+                              status === 'live' ? 'text-green-300 bg-green-500/10 border border-green-500/20 hover:bg-green-500/20' :
+                              status === 'completed' ? 'text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20' :
+                              'text-red-300 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20'
+                            } bg-zinc-700 hover:bg-zinc-600`
+                      }`}
                     >
-                      {expandedProject === p.id ? 'Ocultar' : 'Ver'}
+                      {status.charAt(0).toUpperCase() + status.slice(1)} ({count})
                     </button>
-                  </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="relative">
-                          <button
-                            onClick={(e) => {
-                              const rect = e.currentTarget.getBoundingClientRect();
-                              if (actionsDropdown === p.id) {
-                                setActionsDropdown(null);
-                                setActionsDropdownPosition(null);
-                              } else {
-                                setActionsDropdown(p.id);
-                                setActionsDropdownPosition({
-                                  top: rect.bottom + window.scrollY,
-                                  left: rect.left + window.scrollX - 60
-                                });
-                              }
-                            }}
-                            className="px-2 py-1 bg-zinc-700 hover:bg-zinc-600 text-gray-300 hover:text-white rounded text-xs font-medium flex items-center gap-1 transition-colors"
-                          >
-                            <span>Acciones</span>
-                            <svg
-                              className="w-3 h-3 transition-transform"
-                              style={{transform: actionsDropdown === p.id ? 'rotate(180deg)' : 'rotate(0deg)'}}
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-
-                    {/* Fila expandida con detalles de due diligence */}
-                    {expandedProject === p.id && (
-                      <tr className="bg-zinc-800/50">
-                        <td colSpan={6} className="px-6 py-4">
-                          <div className="space-y-4">
-                            <h4 className="font-semibold text-lime-400 text-sm flex items-center gap-2">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                              </svg>
-                              Información de Due Diligence
-                            </h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                              {/* Documentos */}
-                              <div className="space-y-2">
-                                <h5 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Documentos Legales</h5>
-                                <div className="space-y-1">
-                                  {p.valuationDocumentUrl ? (
-                                    <a
-                                      href={p.valuationDocumentUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="block px-2 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-xs text-lime-300 hover:text-lime-200"
-                                    >
-                                      📄 Valuación Profesional
-                                    </a>
-                                  ) : (
-                                    <span className="block px-2 py-1 bg-zinc-800 text-gray-500 rounded text-xs">Valuación: Sin completar</span>
-                                  )}
-
-                                  {p.dueDiligenceReportUrl ? (
-                                    <a
-                                      href={p.dueDiligenceReportUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="block px-2 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-xs text-cyan-300 hover:text-cyan-200"
-                                    >
-                                      📋 Reporte Due Diligence
-                                    </a>
-                                  ) : (
-                                    <span className="block px-2 py-1 bg-zinc-800 text-gray-500 rounded text-xs">Due Diligence: Sin completar</span>
-                                  )}
-                                </div>
-                              </div>
-
-                              {/* Información de contacto */}
-                              <div className="space-y-2">
-                                <h5 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Representante</h5>
-                                <div className="space-y-1">
-                                  <div className="text-xs">
-                                    <span className="text-gray-400">Nombre: </span>
-                                    <span className="text-white">{p.applicantName ?? "Sin completar"}</span>
-                                  </div>
-                                  <div className="text-xs">
-                                    <span className="text-gray-400">Email: </span>
-                                    {p.applicantEmail ? (
-                                      <a href={`mailto:${p.applicantEmail}`} className="text-lime-400 hover:underline">
-                                        {p.applicantEmail}
-                                      </a>
-                                    ) : (
-                                      <span className="text-gray-500">Sin completar</span>
-                                    )}
-                                  </div>
-                                  <div className="text-xs">
-                                    <span className="text-gray-400">Teléfono: </span>
-                                    <span className="text-white">{p.applicantPhone ?? "Sin completar"}</span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Enlaces y redes sociales */}
-                              <div className="space-y-2">
-                                <h5 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Enlaces Públicos</h5>
-                                <div className="space-y-1">
-                                  {p.website && (
-                                    <a
-                                      href={p.website}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="block px-2 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-xs text-emerald-300 hover:text-emerald-200"
-                                    >
-                                      🌐 Sitio Web
-                                    </a>
-                                  )}
-                                  {p.whitepaperUrl && (
-                                    <a
-                                      href={p.whitepaperUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="block px-2 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-xs text-lime-300 hover:text-lime-200"
-                                    >
-                                      📄 White Paper
-                                    </a>
-                                  )}
-                                  {p.twitterUrl && (
-                                    <a
-                                      href={p.twitterUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="block px-2 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-xs text-blue-300 hover:text-blue-200"
-                                    >
-                                      𝕏 Twitter
-                                    </a>
-                                  )}
-                                  {p.discordUrl && (
-                                    <a
-                                      href={p.discordUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="block px-2 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-xs text-indigo-300 hover:text-indigo-200"
-                                    >
-                                      💬 Discord
-                                    </a>
-                                  )}
-                                  {p.telegramUrl && (
-                                    <a
-                                      href={p.telegramUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="block px-2 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-xs text-blue-400 hover:text-blue-300"
-                                    >
-                                      ✈️ Telegram
-                                    </a>
-                                  )}
-                                  {p.linkedinUrl && (
-                                    <a
-                                      href={p.linkedinUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="block px-2 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-xs text-blue-600 hover:text-blue-500"
-                                    >
-                                      💼 LinkedIn
-                                    </a>
-                                  )}
-                                  {!p.website && !p.whitepaperUrl && !p.twitterUrl && !p.discordUrl && !p.telegramUrl && !p.linkedinUrl && (
-                                    <span className="block px-2 py-1 bg-zinc-800 text-gray-500 rounded text-xs">
-                                      Sin enlaces registrados
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Información adicional */}
-                            <div className="border-t border-zinc-700 pt-4">
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                                <div>
-                                  <span className="text-gray-400">Categoría de negocio: </span>
-                                  <span className="text-white">{p.businessCategory ?? "Sin especificar"}</span>
-                                </div>
-                                <div>
-                                  <span className="text-gray-400">Estatus legal: </span>
-                                  <span className="text-white">{p.legalStatus ?? "Sin completar"}</span>
-                                </div>
-                                <div>
-                                  <span className="text-gray-400">Entidad fiduciaria: </span>
-                                  <span className="text-white">{p.fiduciaryEntity ?? "Sin completar"}</span>
-                                </div>
-                                <div>
-                                  <span className="text-gray-400">Propiedad: </span>
-                                  <span className="text-white font-mono text-xs">
-                                    {p.applicantWalletAddress ? `${p.applicantWalletAddress.substring(0, 6)}...${p.applicantWalletAddress.substring(38)}` : "Sin asignar"}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
+                  )
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </div>
           </div>
+
+          {/* Estadísticas rápida */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-400">Total Proyectos</p>
+                  <p className="text-2xl font-bold text-white">{projects.length}</p>
+                </div>
+                <div className="w-8 h-8 bg-lime-500 rounded-full flex items-center justify-center">
+                  📊
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-400">Monto Total Meta</p>
+                  <p className="text-2xl font-bold text-lime-400">
+                    ${(projects.reduce((total, p) => total + Number(p.targetAmount || 0), 0)).toLocaleString()}
+                  </p>
+                </div>
+                <div className="w-8 h-8 bg-lime-500 rounded-full flex items-center justify-center">
+                  💰
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-400">Aprobados</p>
+                  <p className="text-2xl font-bold text-green-400">
+                    {projects.filter(p => p.status === 'approved' || p.status === 'live' || p.status === 'completed').length}
+                  </p>
+                </div>
+                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                  ✅
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-400">En Revisión</p>
+                  <p className="text-2xl font-bold text-yellow-400">
+                    {projects.filter(p => p.status === 'pending').length}
+                  </p>
+                </div>
+                <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
+                  ⏳
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Vista usando componentes modularizados */}
+          {viewMode === 'cards' ? (
+            <ProjectCardsView
+              projects={filteredProjects}
+              expandedProject={expandedProject}
+              setExpandedProject={setExpandedProject}
+              setStatusDropdown={setStatusDropdown}
+              statusDropdown={statusDropdown}
+            />
+          ) : (
+            <ProjectTableView
+              projects={filteredProjects}
+              expandedProject={expandedProject}
+              setExpandedProject={setExpandedProject}
+              actionsDropdown={actionsDropdown}
+              setActionsDropdown={setActionsDropdown}
+              setActionsDropdownPosition={setActionsDropdownPosition}
+              isFeatured={isFeatured}
+              toggleFeatured={toggleFeatured}
+              setStatusDropdown={setStatusDropdown}
+              statusDropdown={statusDropdown}
+            />
+          )}
         </div>
 
         {/* Tab de configuración */}
