@@ -350,6 +350,47 @@ export const userRewards = pgTable("user_rewards", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Sistema de Referidos basado en Wallet Addresses
+export const referralSourceEnum = pgEnum("referral_source", [
+  "direct", // Referido directo
+  "link",   // Usando enlace personalizado
+  "code",   // Usando código manual
+  "social"  // De redes sociales/QRs
+]);
+
+export const referralStatusEnum = pgEnum("referral_status", [
+  "pending",    // Aguardando acciones del referido
+  "completed",  // Referido completó onboarding/recompensas
+  "expired"     // Caducado o inválido
+]);
+
+export const userReferrals = pgTable("user_referrals", {
+  id: serial("id").primaryKey(),
+  referrerWalletAddress: varchar("referrer_wallet_address", { length: 42 }).notNull(),
+  referredWalletAddress: varchar("referred_wallet_address", { length: 42 }).notNull(),
+  referralSource: referralSourceEnum("referral_source").default("direct"),
+
+  // Estado del referido
+  status: referralStatusEnum("status").default("pending"),
+  referrerPointsAwarded: boolean("referrer_points_awarded").default(false),
+  referredPointsAwarded: boolean("referred_points_awarded").default(false),
+
+  // Progreso del referido
+  referredCompletedOnboarding: boolean("referred_completed_onboarding").default(false),
+  referredFirstProject: boolean("referred_first_project").default(false),
+
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+  referrerBonusDate: timestamp("referrer_bonus_date"),
+  referredBonusDate: timestamp("referred_bonus_date"),
+}, (table) => ({
+  uniqueReferral: uniqueIndex("unique_user_referral").on(
+    table.referrerWalletAddress,
+    table.referredWalletAddress
+  ),
+}));
+
 // Export types
 export type Project = typeof projects.$inferSelect;
 export type User = typeof users.$inferSelect;
@@ -360,3 +401,4 @@ export type Achievement = typeof achievements.$inferSelect;
 export type UserAchievement = typeof userAchievements.$inferSelect;
 export type Reward = typeof rewards.$inferSelect;
 export type UserReward = typeof userRewards.$inferSelect;
+export type UserReferral = typeof userReferrals.$inferSelect;
