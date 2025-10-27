@@ -11,6 +11,7 @@ import Image from 'next/image';
 import { useActiveAccount } from 'thirdweb/react';
 // 🎮 IMPORTAR COMPONENTES DE GAMIFICACIÓN
 import { AchievementCard, useGamificationContext } from '@pandoras/gamification';
+import { ReferralShareCard } from '@/components/ReferralShareCard';
 
 // Force dynamic rendering - this page uses cookies and should not be prerendered
 export const dynamic = 'force-dynamic';
@@ -517,6 +518,11 @@ export default function ProfilePage() {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {/* 🎁 SECCIÓN DE REFERIDOS - Agregada después de gamificación */}
+      {walletAddress && (
+        <ReferralShareCard />
       )}
     </div>
   );
