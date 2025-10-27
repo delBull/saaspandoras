@@ -20,11 +20,17 @@ import { useToast } from "@saasfly/ui/use-toast";
 import { Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { InformationCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
+// 🎮 IMPORTAR REFERRAL MODAL
+import { ReferralModal } from "./ReferralModal";
 
 export function NFTGate({ children }: { children: React.ReactNode }) {
   const account = useActiveAccount();
-  const { mutate: sendTransaction, isPending: isMinting } = useSendTransaction();
+  const { mutate: sendTransaction } = useSendTransaction();
   const { toast } = useToast();
+
+  // 🎮 ESTADO PARA REFERRAL MODAL
+  const [showReferralModal, setShowReferralModal] = useState(false);
+  const [hasCheckedReferral, setHasCheckedReferral] = useState(false);
 
   // Connect modal con social login (gratuito) + MetaMask (para admins)
   const { connect } = useConnectModal();
@@ -56,6 +62,31 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
     params: account ? [account.address] : [ "0x0000000000000000000000000000000000000000" ],
     queryOptions: { enabled: !!account },
   });
+
+  // 🎮 Hook para manejar referral modal después de obtener key
+  useEffect(() => {
+    if (!hasCheckedReferral && (gateStatus === "has_key" || gateStatus === "alreadyOwned")) {
+      // Verificar si hay parámetro ?ref= en la URL
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const refFromUrl = urlParams.get('ref');
+
+        if (refFromUrl) {
+          // Usuario llegó con referral link, mostrar modal
+          setTimeout(() => {
+            setShowReferralModal(true);
+            setHasCheckedReferral(true);
+          }, 1000); // Esperar un momento después de acceder
+        } else {
+          // Usuario nuevo sin referral, también mostrar modal por si quiere ingresar manualmente
+          setTimeout(() => {
+            setShowReferralModal(true);
+            setHasCheckedReferral(true);
+          }, 1500);
+        }
+      }
+    }
+  }, [gateStatus, hasCheckedReferral]);
 
   // Función para manejar el minteo manual
   const handleMint = () => {
@@ -93,9 +124,10 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
         console.error("Fallo al mintear Pandora's Key", error);
 
         // Mejor manejo de errores basado en el mensaje específico
-        if (error.message.includes("Max per wallet reached") ||
-            error.message.includes("exceeds max per wallet") ||
-            error.message.includes("already minted")) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage.includes("Max per wallet reached") ||
+            errorMessage.includes("exceeds max per wallet") ||
+            errorMessage.includes("already minted")) {
           // Si ya tiene la llave, refrescamos la verificación
           toast({
             title: "Ya tienes tu llave",
@@ -253,15 +285,29 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
     }} />;
   }
 
+  // 🎮 INTEGRAR REFERRAL MODAL DESPUÉS DE OBTENER KEY
   if (hasKey === true || gateStatus === "alreadyOwned" || gateStatus === "has_key") {
-    return <>{children}</>;
+    return (
+      <>
+        {children}
+        {/* 🎮 REFERRAL MODAL PARA NUEVOS USUARIOS */}
+        <ReferralModal
+          isOpen={showReferralModal}
+          onClose={() => setShowReferralModal(false)}
+          onReferralComplete={() => {
+            // Después de procesar referido, continuar normalmente
+            console.log('Referral processing complete, access granted');
+          }}
+        />
+      </>
+    );
   }
   
   if (gateStatus !== "idle" && gateStatus !== "success" && gateStatus !== "has_key") {
     return (
       <MintingProgressModal
         step={gateStatus}
-        isMinting={isMinting}
+        isMinting={hasStartedProcessing.current}
         alreadyOwned={false}
         onClose={() => {
           setGateStatus("idle");
