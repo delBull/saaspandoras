@@ -225,53 +225,59 @@ export function MultiStepForm({
   const [showDraftModal, setShowDraftModal] = useState(false);
 
   // FIX: Proper admin wallet verification instead of relying on isPublic prop
-  const [isAdminUser, setIsAdminUser] = useState(false);
+  const [isAdminUser, setIsAdminUser] = useState(true); // DEFAULT to TRUE for admin pages to avoid redirect race condition
 
   useEffect(() => {
     const checkAdminStatus = async () => {
-      if (account?.address) {
-        const walletAddress = account.address.toLowerCase();
-        const superAdminWallet = SUPER_ADMIN_WALLET.toLowerCase();
+      if (!account?.address) {
+        setIsAdminUser(false);
+        return;
+      }
 
-        // Check if it's super admin first
-        if (walletAddress === superAdminWallet) {
-          setIsAdminUser(true);
-        } else {
-          // Check if wallet exists in administrators table
-          try {
-            const response = await fetch('/api/admin/verify', {
-              headers: {
-                'Content-Type': 'application/json',
-                'x-thirdweb-address': walletAddress,
-                'x-wallet-address': walletAddress,
-                'x-user-address': walletAddress
-              }
-            });
-            if (response.ok) {
-              const data = await response.json() as { isAdmin?: boolean; isSuperAdmin?: boolean };
-              setIsAdminUser(Boolean(data.isAdmin ?? data.isSuperAdmin ?? false));
-            } else {
-              console.error('Admin verification failed:', response.status, response.statusText);
-              setIsAdminUser(false);
-            }
-          } catch (error) {
-            console.error('Error checking admin status:', error);
-            setIsAdminUser(false);
+      const walletAddress = account.address.toLowerCase();
+      const superAdminWallet = SUPER_ADMIN_WALLET.toLowerCase();
+
+      // Check if it's super admin first (sync)
+      if (walletAddress === superAdminWallet) {
+        setIsAdminUser(true);
+        return;
+      }
+
+      // Check if wallet exists in administrators table (async)
+      try {
+        const response = await fetch('/api/admin/verify', {
+          headers: {
+            'Content-Type': 'application/json',
+            'x-thirdweb-address': walletAddress,
+            'x-wallet-address': walletAddress,
+            'x-user-address': walletAddress
           }
+        });
+        if (response.ok) {
+          const data = await response.json() as { isAdmin?: boolean; isSuperAdmin?: boolean };
+          setIsAdminUser(Boolean(data.isAdmin ?? data.isSuperAdmin ?? false));
+        } else {
+          console.error('Admin verification failed:', response.status, response.statusText);
+          setIsAdminUser(false);
         }
-      } else {
+      } catch (error) {
+        console.error('Error checking admin status:', error);
         setIsAdminUser(false);
       }
     };
 
-    void checkAdminStatus();
-  }, [account?.address]);
+    // Only check if not public (public users skip admin verification)
+    if (!isPublic) {
+      void checkAdminStatus();
+    }
+  }, [account?.address, isPublic]);
 
-  // Redirect non-admin users
+  // Redirect non-admin users - add delay to allow verification to complete
   useEffect(() => {
-    if (account?.address && !isAdminUser && !isPublic) {
+    if (account?.address && isPublic !== null && !isAdminUser && !isPublic) {
       console.log('❌ Non-admin user attempting to access admin form, redirecting...');
-      router.push('/admin/dashboard');
+      // Small delay to allow state updates
+      setTimeout(() => router.push('/admin/dashboard'), 50);
     }
   }, [account?.address, isAdminUser, isPublic, router]);
 

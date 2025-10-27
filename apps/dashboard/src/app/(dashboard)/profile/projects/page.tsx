@@ -558,17 +558,19 @@ export default function ProfileProjectsPage() {
                       </div>
                     </div>
 
-                    <div className="flex gap-2">
-                      <Link href={`/admin/projects/${project.id}/edit`}>
-                        <Button size="sm" variant="outline">
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-2 w-full sm:w-auto">
+                      <Link href={`/profile/projects/${project.id}/edit`} className="w-full sm:w-auto">
+                        <Button size="sm" variant="outline" className="w-full sm:w-auto">
                           <PencilIcon className="w-4 h-4 mr-2" />
-                          Editar
+                          <span className="hidden xs:inline sm:inline">Editar</span>
+                          <span className="xs:hidden sm:hidden">✏️ Editar</span>
                         </Button>
                       </Link>
-                      <Link href={`/projects/${(project as any).slug || project.id}`}>
-                        <Button size="sm" variant="outline">
+                      <Link href={`/projects/${(project as any).slug || project.id}`} className="w-full sm:w-auto">
+                        <Button size="sm" variant="outline" className="w-full sm:w-auto text-xs sm:text-sm">
                           <EyeIcon className="w-4 h-4 mr-2" />
-                          Ver Artefacto
+                          <span className="hidden xs:inline sm:inline">Ver Artefacto</span>
+                          <span className="xs:hidden sm:hidden">👁️ Ver</span>
                         </Button>
                       </Link>
                     </div>
