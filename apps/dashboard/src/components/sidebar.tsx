@@ -18,6 +18,7 @@ import {
   ChartPieIcon,
   ChartBarIcon,
   FolderIcon,
+  BookOpenIcon,
 } from "@heroicons/react/24/outline";
 import { cn } from "@/lib/utils";
 import { useActiveAccount, useDisconnect, useActiveWallet } from "thirdweb/react";
@@ -331,6 +332,16 @@ export function Sidebar({
         icon: <TrophyIcon className="w-5 h-5 text-gray-400" />,
         label: "Mis Logros",
         description: "Achievements y gamificación",
+        onClick: () => {
+          setProfileDropdown(false);
+          if (isMobile) setMobileOpen(false);
+        }
+      },
+      {
+        href: "/education",
+        icon: <BookOpenIcon className="w-5 h-5 text-cyan-400" />,
+        label: "Aprende y Gana",
+        description: "Cursos Web3 con rewards (+puntos)",
         onClick: () => {
           setProfileDropdown(false);
           if (isMobile) setMobileOpen(false);
