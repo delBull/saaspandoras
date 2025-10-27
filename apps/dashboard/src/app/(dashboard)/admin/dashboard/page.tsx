@@ -36,7 +36,7 @@ export default function AdminDashboardPage() {
   const [admins, setAdmins] = useState<AdminData[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [statusFilter, setStatusFilter] = useState<ProjectStatus | 'all'>('all');
+  // statusFilter is now declared later in the component
   const [expandedProject, setExpandedProject] = useState<string | null>(null); // Para controlar el dropdown de detalles
   const [statusDropdown, setStatusDropdown] = useState<string | null>(null); // Para controlar el dropdown de estado
   const [actionsDropdown, setActionsDropdown] = useState<string | null>(null); // Para controlar el dropdown de acciones
@@ -55,6 +55,9 @@ export default function AdminDashboardPage() {
 
   // State for wallet address
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
+
+  // Status filter type - simplified to avoid redundant union
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   // Function to refresh all data
   const refreshData = async () => {
@@ -624,17 +627,18 @@ export default function AdminDashboardPage() {
 
   // Get status counts for filter badges
   const statusCounts = useMemo(() => {
-    const counts: Record<ProjectStatus, number> = {
+    const counts: Record<string, number> = {
       pending: 0,
       approved: 0,
       live: 0,
       completed: 0,
       rejected: 0,
+      draft: 0, // Add draft status to counts
     };
 
     enhancedProjects.forEach(project => {
-      if (project.status in counts) {
-        counts[project.status]++;
+      if (project.status && project.status in counts) {
+        counts[project.status] = (counts[project.status] ?? 0) + 1;
       } else {
         console.warn('🔧 Status counts: Unknown status:', project.status, 'for project:', project.id);
       }
@@ -774,14 +778,6 @@ export default function AdminDashboardPage() {
                     <option value="status-asc">📊 Estado ↑</option>
                   </select>
                 </div>
-
-                {/* Refrescar */}
-                <button
-                  onClick={refreshData}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-                >
-                  🔄 Actualizar
-                </button>
               </div>
             </div>
           </div>
@@ -807,7 +803,7 @@ export default function AdminDashboardPage() {
                   count > 0 && (
                     <button
                       key={status}
-                      onClick={() => setStatusFilter(status as ProjectStatus)}
+                      onClick={() => setStatusFilter(status)}
                       className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
                         statusFilter === status
                           ? 'bg-lime-500 text-black shadow-lg'
@@ -816,11 +812,12 @@ export default function AdminDashboardPage() {
                               status === 'approved' ? 'text-blue-300 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20' :
                               status === 'live' ? 'text-green-300 bg-green-500/10 border border-green-500/20 hover:bg-green-500/20' :
                               status === 'completed' ? 'text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20' :
+                              status === 'draft' ? 'text-purple-300 bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20' :
                               'text-red-300 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20'
                             } bg-zinc-700 hover:bg-zinc-600`
                       }`}
                     >
-                      {status.charAt(0).toUpperCase() + status.slice(1)} ({count})
+                      {status?.charAt(0)?.toUpperCase() + status?.slice(1) || status} ({count})
                     </button>
                   )
                 ))}
@@ -829,7 +826,7 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Estadísticas rápida */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
             <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
               <div className="flex items-center justify-between">
                 <div>
@@ -855,7 +852,8 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
             </div>
-
+            {/* Count total por estado oculto */}
+            {/* 
             <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
               <div className="flex items-center justify-between">
                 <div>
@@ -883,8 +881,9 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
             </div>
+            */}
           </div>
-
+          
           {/* Vista usando componentes modularizados */}
           {viewMode === 'cards' ? (
             <ProjectCardsView
