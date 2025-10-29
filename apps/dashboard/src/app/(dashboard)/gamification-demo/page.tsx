@@ -2,6 +2,9 @@
 
 "use client";
 
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Button } from '@saasfly/ui/button';
 import {
   AchievementCard,
   GamificationDashboard,
@@ -9,18 +12,12 @@ import {
   RewardModal,
   TOKENIZATION_ACHIEVEMENTS,
   TOKENIZATION_REWARDS,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  EventType,
   type Achievement,
   type Reward,
   type UserAchievement,
   type UserGamificationProfile,
   type LeaderboardEntry,
 } from '@pandoras/gamification';
-import { useState, useEffect } from 'react';
-import { Button } from '@saasfly/ui/button';
-import { motion } from 'framer-motion';
-import { getUserGamificationProfile, trackGamificationEvent, getGamificationLeaderboard, getAvailableGamificationRewards } from '@/lib/gamification/service';
 
 interface GamificationData {
   profile: UserGamificationProfile | null;
@@ -28,6 +25,40 @@ interface GamificationData {
   rewards: Reward[];
   leaderboard: LeaderboardEntry[];
   isLoading: boolean;
+}
+
+async function loadGamificationDataForClient() {
+  try {
+    const { getUserGamificationProfile, getAvailableGamificationRewards, getGamificationLeaderboard } = await import('@/lib/gamification/service');
+
+    const [profile, rewards, leaderboard] = await Promise.all([
+      getUserGamificationProfile('demo-user-123'),
+      getAvailableGamificationRewards('demo-user-123'),
+      getGamificationLeaderboard('points', 10)
+    ]);
+
+    return {
+      profile,
+      rewards,
+      leaderboard,
+    };
+  } catch (error) {
+    console.error('Error loading gamification data:', error);
+    return {
+      profile: null,
+      rewards: [],
+      leaderboard: [],
+    };
+  }
+}
+
+async function handleTrackEventForClient(eventType: string) {
+  try {
+    const { trackGamificationEvent } = await import('@/lib/gamification/service');
+    await trackGamificationEvent('demo-user-123', eventType);
+  } catch (error) {
+    console.error('Error tracking event:', error);
+  }
 }
 
 export default function GamificationDemoPage() {
@@ -50,18 +81,13 @@ export default function GamificationDemoPage() {
     setGamificationData(prev => ({ ...prev, isLoading: true }));
 
     try {
-      const [profile, rewards, leaderboard] = await Promise.all([
-        getUserGamificationProfile('demo-user-123'),
-        getAvailableGamificationRewards('demo-user-123'),
-        getGamificationLeaderboard('points', 10)
-      ]);
+      const result = await loadGamificationDataForClient();
 
       setGamificationData({
-        profile,
-        // achievements - will be implemented later
+        profile: result.profile,
         achievements: [],
-        rewards,
-        leaderboard,
+        rewards: result.rewards,
+        leaderboard: result.leaderboard,
         isLoading: false
       });
     } catch (error) {
@@ -72,8 +98,7 @@ export default function GamificationDemoPage() {
 
   const handleTrackEvent = async (eventType: string) => {
     try {
-      await trackGamificationEvent('demo-user-123', eventType);
-      // Reload data after tracking event
+      await handleTrackEventForClient(eventType);
       await loadGamificationData();
     } catch (error) {
       console.error('Error tracking event:', error);
@@ -105,7 +130,6 @@ export default function GamificationDemoPage() {
 
         {/* Demo Content */}
         <div className="space-y-8">
-          {/* Dashboard de Gamificación */}
           <GamificationDashboard
             profile={gamificationData.profile}
             achievements={gamificationData.achievements}
@@ -114,7 +138,6 @@ export default function GamificationDemoPage() {
             isLoading={gamificationData.isLoading}
           />
 
-          {/* Logros Disponibles */}
           <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
             <h2 className="text-2xl font-bold text-white mb-6">🏆 Logros Disponibles</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -135,7 +158,6 @@ export default function GamificationDemoPage() {
             </div>
           </div>
 
-          {/* Recompensas Disponibles */}
           <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
             <h2 className="text-2xl font-bold text-white mb-6">🎁 Recompensas Disponibles</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -167,7 +189,6 @@ export default function GamificationDemoPage() {
             </div>
           </div>
 
-          {/* Tabla de Líderes */}
           <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
             <h2 className="text-2xl font-bold text-white mb-6">🏅 Tabla de Líderes</h2>
             <LeaderboardComponent
@@ -178,7 +199,6 @@ export default function GamificationDemoPage() {
             />
           </div>
 
-          {/* Controles de Demo */}
           <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
             <h2 className="text-2xl font-bold text-white mb-6">🎮 Controles de Demo</h2>
             <div className="flex flex-wrap gap-4">
@@ -209,7 +229,6 @@ export default function GamificationDemoPage() {
             </div>
           </div>
 
-          {/* Modal de Recompensa */}
           <RewardModal
             reward={selectedReward}
             isOpen={showRewardModal}
