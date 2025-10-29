@@ -574,7 +574,7 @@ export default function AchievementsPage() {
                     </div>
 
                     {/* Unlock Date for Completed Achievements */}
-                    {achievement.unlocked && false && achievement.unlockedAt && (
+                    {achievement.unlocked && false && (
                       <div className="text-center pt-2 border-t border-zinc-700/50">
                         <div className="text-xs text-gray-500">
                           {/* Fecha de desbloqueo no disponible en este template */}
