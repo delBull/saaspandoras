@@ -114,29 +114,80 @@ export function DashboardClientWrapper({
 function RewardModalManager() {
   const [showRewardModal, setShowRewardModal] = useState(false);
   const [currentReward, setCurrentReward] = useState<Reward | null>(null);
+  const { account } = usePersistedAccount();
 
   useEffect(() => {
-    // Mock reward trigger - in production this would come from gamification events
-    const timer = setTimeout(() => {
-      const mockReward: Reward = {
-        type: 'achievement',
-        title: 'Primer Login Exitoso',
-        description: 'Has conectado exitosamente tu wallet a Pandoras',
-        tokens: 10,
-        icon: '🔗',
-        rarity: 'common'
-      };
+    // 🎮 REAL GAMIFICATION LOGIC - Check for first login reward
+    if (account?.address) {
+      const firstLoginKey = `pandoras_first_login_reward_${account.address}`;
+      const alreadyGotFirstLoginReward = localStorage.getItem(firstLoginKey);
 
-      setCurrentReward(mockReward);
-      setShowRewardModal(true);
-    }, 5000); // Show after 5 seconds for demo
+      // Only show reward modal if user hasn't received first login reward yet
+      if (!alreadyGotFirstLoginReward) {
+        console.log('🎯 Showing first login reward modal for:', account.address);
 
-    return () => clearTimeout(timer);
-  }, []);
+        const firstLoginReward: Reward = {
+          type: 'achievement',
+          title: 'Primer Login Exitoso',
+          description: 'Has conectado exitosamente tu wallet a Pandoras',
+          tokens: 10,
+          icon: '🔗',
+          rarity: 'common'
+        };
 
-  const handleCloseRewardModal = () => {
+        // Show modal after a brief delay for better UX
+        setTimeout(() => {
+          setCurrentReward(firstLoginReward);
+          setShowRewardModal(true);
+        }, 1500);
+
+        // Mark as shown immediately (localStorage will be set when API response comes)
+        // This prevents showing the modal again on page refresh
+      } else {
+        console.log('ℹ️ User already received first login reward:', account.address);
+      }
+    }
+  }, [account?.address]); // Only re-run if wallet address changes
+
+  const handleCloseRewardModal = async () => {
     setShowRewardModal(false);
     setCurrentReward(null);
+
+    // Mark reward as shown in localStorage when user closes modal
+    if (account?.address) {
+      const firstLoginKey = `pandoras_first_login_reward_${account.address}`;
+      localStorage.setItem(firstLoginKey, 'true');
+      console.log('💾 First login reward marked as shown in localStorage');
+
+      // 🎯 CALL API TO REGISTER THE EVENT AND AWARD POINTS
+      try {
+        console.log('🎯 Activando evento de primer login para:', account.address);
+        const response = await fetch('/api/gamification/events', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Wallet-Address': account.address,
+          },
+          body: JSON.stringify({
+            walletAddress: account.address,
+            eventType: 'DAILY_LOGIN',
+            metadata: {
+              source: 'first_login_modal',
+              points: 10
+            }
+          })
+        });
+
+        if (response.ok) {
+          const result = await response.json() as { success: boolean; event?: unknown; pointsAwarded?: number };
+          console.log('✅ Evento DAILY_LOGIN registrado exitosamente:', result);
+        } else {
+          console.error('❌ Error al registrar evento DAILY_LOGIN:', await response.text());
+        }
+      } catch (error) {
+        console.error('❌ Error calling gamification API:', error);
+      }
+    }
   };
 
   return (

@@ -18,9 +18,19 @@ export function ReferralModal({ isOpen, onClose, onReferralComplete }: ReferralM
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
 
-  // Verificar si hay parámetro ?ref= en la URL
+  // Verificar si hay parámetro ?ref= en la URL y si el modal ya se mostró antes
   useEffect(() => {
-    if (typeof window !== 'undefined' && isOpen) {
+    if (typeof window !== 'undefined' && isOpen && account?.address) {
+      const hasSeenModalKey = `pandoras_referral_modal_seen_${account.address}`;
+      const hasSeenModal = localStorage.getItem(hasSeenModalKey);
+
+      if (hasSeenModal) {
+        // Usuario ya vio el modal, no mostrar de nuevo
+        onClose();
+        return;
+      }
+
+      // Verificar parámetro ?ref= en la URL
       const urlParams = new URLSearchParams(window.location.search);
       const refFromUrl = urlParams.get('ref');
 
@@ -29,7 +39,7 @@ export function ReferralModal({ isOpen, onClose, onReferralComplete }: ReferralM
         setReferrerWallet(refFromUrl);
       }
     }
-  }, [isOpen]);
+  }, [isOpen, account?.address, onClose]);
 
   const handleSubmit = async () => {
     if (!referrerWallet.trim()) {
@@ -77,6 +87,12 @@ export function ReferralModal({ isOpen, onClose, onReferralComplete }: ReferralM
       // Éxito
       onReferralComplete?.();
 
+      // Marcar que ya vio el modal
+      if (typeof window !== 'undefined') {
+        const hasSeenModalKey = `pandoras_referral_modal_seen_${account.address}`;
+        localStorage.setItem(hasSeenModalKey, 'true');
+      }
+
       // Cerrar modal después de un delay para mostrar confirmación
       setTimeout(() => {
         onClose();
@@ -91,6 +107,11 @@ export function ReferralModal({ isOpen, onClose, onReferralComplete }: ReferralM
 
   const handleSkip = () => {
     // Permitir continuar sin referido
+    if (typeof window !== 'undefined' && account?.address) {
+      const hasSeenModalKey = `pandoras_referral_modal_seen_${account.address}`;
+      localStorage.setItem(hasSeenModalKey, 'true');
+    }
+
     onReferralComplete?.();
     onClose();
   };
@@ -125,7 +146,7 @@ export function ReferralModal({ isOpen, onClose, onReferralComplete }: ReferralM
                   ¡Bono de Bienvenida!
                 </h3>
                 <p className="text-gray-400 text-sm leading-relaxed">
-                  Conecta tu wallet y obtén <span className="text-cyan-400 font-semibold">+50 puntos</span> automáticos.<br/>
+                  Conecta tu wallet y obtén <span className="text-cyan-400 font-semibold">+50 tokens</span> automáticos.<br/>
                   Si alguien te invitó, ingresa su wallet para recibir recompensas adicionales.
                 </p>
               </div>
@@ -165,7 +186,7 @@ export function ReferralModal({ isOpen, onClose, onReferralComplete }: ReferralM
                       disabled={!referrerWallet.trim()}
                       className="flex-1 bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50"
                     >
-                      {referrerWallet.trim() ? 'Aplicar y Ganar +50 pts' : 'Ganar +50 pts'}
+                      {referrerWallet.trim() ? 'Aplicar y Ganar +50 tokens' : 'Ganar +50 tokens'}
                     </Button>
 
                     <Button

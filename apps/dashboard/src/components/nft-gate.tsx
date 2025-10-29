@@ -63,22 +63,32 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
     queryOptions: { enabled: !!account },
   });
 
-  // 🎮 Hook para manejar referral modal después de obtener key
+  // 🎮 Hook para manejar referral modal después de obtener key (SOLO UNA VEZ)
   useEffect(() => {
     if (!hasCheckedReferral && (gateStatus === "has_key" || gateStatus === "alreadyOwned")) {
+      // Verificar localStorage si ya vio el modal
+      const hasSeenModalKey = `pandoras_referral_modal_seen_${account?.address}`;
+      const hasSeenModal = typeof window !== 'undefined' ? localStorage.getItem(hasSeenModalKey) : null;
+
+      if (hasSeenModal) {
+        console.log('ℹ️ Usuario ya vio el modal de referral, no se muestra de nuevo');
+        setHasCheckedReferral(true);
+        return;
+      }
+
       // Verificar si hay parámetro ?ref= en la URL
       if (typeof window !== 'undefined') {
         const urlParams = new URLSearchParams(window.location.search);
         const refFromUrl = urlParams.get('ref');
 
         if (refFromUrl) {
-          // Usuario llegó con referral link, mostrar modal
+          // Usuario llegó con referral link, mostrar modal (primera vez)
           setTimeout(() => {
             setShowReferralModal(true);
             setHasCheckedReferral(true);
-          }, 1000); // Esperar un momento después de acceder
-        } else {
-          // Usuario nuevo sin referral, también mostrar modal por si quiere ingresar manualmente
+          }, 1000);
+        } else if (!hasSeenModal) {
+          // Usuario nuevo sin referral, mostrar modal por si quiere ingresar manualmente (primera vez)
           setTimeout(() => {
             setShowReferralModal(true);
             setHasCheckedReferral(true);
@@ -86,7 +96,7 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
         }
       }
     }
-  }, [gateStatus, hasCheckedReferral]);
+  }, [gateStatus, hasCheckedReferral, account?.address]);
 
   // Función para manejar el minteo manual
   const handleMint = () => {
