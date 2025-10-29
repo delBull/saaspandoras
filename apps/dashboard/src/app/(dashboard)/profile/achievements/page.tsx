@@ -22,36 +22,41 @@ import {
   CheckCircle
 } from 'lucide-react';
 import Link from 'next/link';
-import { toast } from 'sonner';
+
 import { AnimatedBackground } from "@/components/apply/AnimatedBackground";
 
-// Enhanced achievements data with real gamification categories
-const achievementCategories = [
+import { useActiveAccount } from 'thirdweb/react';
+
+// Hook para connectar con data real de gamification
+import { useRealGamification } from '@/hooks/useRealGamification';
+
+// Removiendo tipo no usado
+
+// Achievement templates - solo para mostrar disponible achievements, sin data hardcodeada
+const achievementTemplates = [
   {
     icon: <Target className="w-6 h-6" />,
     title: "Comunidad Activa",
     achievements: [
       {
-        id: '1',
+        id: 'daily_login',
         name: 'Primer Login',
-        description: 'Has conectado tu wallet exitosamente',
+        description: 'Conecta tu wallet exitosamente',
         icon: '🔗',
         rarity: 'common',
         points: 10,
-        unlocked: true,
-        unlockedAt: '2025-01-15',
-        category: 'login'
+        category: 'login',
+        eventType: 'DAILY_LOGIN'
       },
       {
         id: '2',
         name: 'Explorador Intrépido',
-        description: 'Has visto 5 creaciones diferentes',
+        description: 'Ve 5 creaciones diferentes',
         icon: '🔍',
         rarity: 'common',
         points: 25,
-        unlocked: true,
-        unlockedAt: '2025-01-16',
-        category: 'exploration'
+        category: 'exploration',
+        eventType: 'VIEW_PROJECTS_5'
       },
       {
         id: '3',
@@ -294,6 +299,39 @@ export default function AchievementsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [filter] = useState<'all' | 'unlocked' | 'locked'>('all');
 
+  // 🎮 CONECTAR CON EL SYSTEMA REAL - Necesitamos obtener la wallet del usuario
+  const account = useActiveAccount();
+  const gamification = useRealGamification(account?.address ?? '');
+
+  // 🔄 COMBINAR TEMPLATES CON DATA REAL - TYPESCRIPT SAFE
+  const generateAchievementsFromData = () => {
+    // Asegurar que siempre tengamos un array (puede venir como null/undefined mientras carga)
+    const completedAchievements = Array.isArray(gamification?.achievements)
+      ? gamification.achievements
+      : [];
+
+    return achievementTemplates.map(category => ({
+      ...category,
+      achievements: category.achievements.map(achievement => {
+        /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
+        const completedAchievement = completedAchievements.find(
+          (ca: any) => ca.id === achievement.id || ca.eventType === achievement.eventType
+        );
+
+        return {
+          ...achievement,
+          unlocked: !!completedAchievement,
+          // unlockedAt: completedAchievement?.unlockedAt, // Propiedad no existe en UserAchievement type
+          categoryName: category.title,
+          currentProgress: completedAchievement?.progress ?? 0
+        };
+        /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
+      })
+    }));
+  };
+
+  const achievementCategories = generateAchievementsFromData();
+
   const allAchievements = achievementCategories.flatMap(cat =>
     cat.achievements.map(achievement => ({ ...achievement, categoryName: cat.title }))
   );
@@ -309,16 +347,18 @@ export default function AchievementsPage() {
   const stats = {
     total: allAchievements.length,
     unlocked: allAchievements.filter(a => a.unlocked).length,
-    totalPoints: allAchievements.filter(a => a.unlocked).reduce((sum, a) => sum + a.points, 0)
+    totalPoints: Math.max(
+      allAchievements.filter(a => a.unlocked).reduce((sum, a) => sum + a.points, 0),
+      gamification?.totalPoints || 0
+    )
   };
 
-  // Mostrar toast de datos de prueba al cargar la página
+  // Debug logging para development
   useEffect(() => {
-    toast.info("🎮 Esta sección muestra datos de prueba. Estamos trabajando para conectar con el sistema dinámico de achievements.", {
-      duration: 6000,
-      description: "Próximamente podrás ganar logros reales por tus acciones en la plataforma."
-    });
-  }, []);
+    if (gamification?.achievements) {
+      console.log('🎮 Achievements page loaded:', gamification.achievements.length, 'achievements');
+    }
+  }, [gamification?.achievements]);
 
   return (
     <div className="absolute inset-x-0 min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-black text-white">
@@ -534,14 +574,11 @@ export default function AchievementsPage() {
                     </div>
 
                     {/* Unlock Date for Completed Achievements */}
-                    {achievement.unlocked && achievement.unlockedAt && (
+                    {achievement.unlocked && false && achievement.unlockedAt && (
                       <div className="text-center pt-2 border-t border-zinc-700/50">
                         <div className="text-xs text-gray-500">
-                          Desbloqueado el {new Date(achievement.unlockedAt).toLocaleDateString('es-ES', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })}
+                          {/* Fecha de desbloqueo no disponible en este template */}
+                          Completado recientemente
                         </div>
                       </div>
                     )}
