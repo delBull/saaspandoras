@@ -148,7 +148,7 @@ export default function EducationPage() {
             Educación Web3
           </h1>
           <p className="text-gray-400 mt-1">
-            Aprende skills Web3 avanzados y gana puntos mientras lo haces
+            Aprende skills Web3 avanzados y gana tokens mientras lo haces
           </p>
         </div>
         <div className="text-right">
@@ -215,7 +215,7 @@ export default function EducationPage() {
                     </div>
                     <div className="flex items-center gap-1">
                       <TrophyIcon className="w-4 h-4 text-yellow-500" />
-                      <span className="text-cyan-400 font-semibold">+{course.points}</span>
+                        <span className="text-cyan-400 font-semibold">+{course.points} tokens</span>
                     </div>
                   </div>
 
@@ -275,7 +275,7 @@ export default function EducationPage() {
                       ) : (
                         <>
                           <PlayIcon className="w-4 h-4 mr-2" />
-                          Iniciar (+10 pts)
+                          Iniciar (+10 tokens)
                         </>
                       )}
                     </Button>

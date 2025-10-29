@@ -9,8 +9,9 @@ import { useProfile } from '@/hooks/useProfile';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useActiveAccount } from 'thirdweb/react';
-// 🎮 IMPORTAR COMPONENTES DE GAMIFICACIÓN
-import { AchievementCard, useGamificationContext } from '@pandoras/gamification';
+// 🎮 IMPORTAR COMPONENTES Y HOOKS REALES DE GAMIFICACIÓN
+import { AchievementCard } from '@pandoras/gamification';
+import { useRealGamification } from '@/hooks/useRealGamification';
 import { ReferralShareCard } from '@/components/ReferralShareCard';
 
 // Force dynamic rendering - this page uses cookies and should not be prerendered
@@ -20,8 +21,12 @@ export default function ProfilePage() {
   const { profile, isLoading, isError } = useProfile();
   const account = useActiveAccount();
   const [copied, setCopied] = useState(false);
-  // 🎮 CONTEXTO DE GAMIFICACIÓN
-  const gamification = useGamificationContext();
+
+  // Use account from useActiveAccount hook instead of cookies
+  const walletAddress = account?.address;
+
+  // 🎮 CONTEXTO DE GAMIFICACIÓN REAL
+  const gamification = useRealGamification(walletAddress);
 
   // Function to format wallet address with ellipsis
   const formatWalletAddress = (address: string) => {
@@ -41,9 +46,6 @@ export default function ProfilePage() {
       toast.error('Error al copiar');
     }
   };
-
-  // Use account from useActiveAccount hook instead of cookies
-  const walletAddress = account?.address;
 
   if (isLoading) {
     return (
@@ -101,6 +103,9 @@ export default function ProfilePage() {
       </div>
     );
   }
+
+  console.log('🎮 RENDER PAGE: gamification context', gamification);
+  console.log('🎮 RENDER PAGE: achievements length', gamification?.achievements?.length);
 
   return (
     <div className="p-6 space-y-6">
@@ -456,7 +461,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* 🎮 SECCIÓN DE GAMIFICACIÓN - Siempre visible para motivar engagement */}
+      {/* 🎮 SECCIÓN DE GAMIFICACIÓN - Solo logros no marcados como "no mostrar" */}
       {walletAddress && (
         <Card>
           <CardHeader>
@@ -467,33 +472,114 @@ export default function ProfilePage() {
               <div>
                 <CardTitle>Mis Logros</CardTitle>
                 <CardDescription>
-                  Tus achievements desbloqueados en la plataforma Pandora&apos;s
+                  Tus achievements desbloqueados en la plataforma Pandora&apso;s
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent>
+            {/* 🐛 DEBUG: Ver el estado actual del gamification context */}
+            <div style={{ display: 'none' }}>
+              DEBUG: achievements length: {gamification?.achievements?.length || 0}
+              DEBUG: gamification loaded: {gamification ? 'YES' : 'NO'}
+              DEBUG: achievements exists: {gamification?.achievements ? 'YES' : 'NO'}
+            </div>
+
             {gamification?.achievements && gamification.achievements.length > 0 ? (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {gamification.achievements.slice(0, 6).map((achievement: any) => (
-                    <AchievementCard
-                      key={achievement.id}
-                      achievement={achievement}
-                      showProgress={true}
-                    />
-                  ))}
-                </div>
+                {/* 🛠️ FILTRO: Oculta achievements marcados como "dont_show_again" */}
+                      {(() => {
+                        // 🔍 DEBUG: Ver todos los achievements disponibles
+                        if (typeof window !== 'undefined') {
+                          gamification.achievements.forEach((a: any) => {
+                            console.log('🔍 Achievement:', a.name, a.id, a.type);
+                          });
+                        }
 
-                {gamification.achievements.length > 6 && (
-                  <div className="mt-6 text-center">
-                    <Link href="/profile/achievements">
-                      <Button variant="outline" className="text-sm">
-                        Ver todos mis logros ({gamification.achievements.length})
-                      </Button>
-                    </Link>
-                  </div>
-                )}
+                  const getAchievementsToShow = (allAchievements: any[]) => {
+                    return allAchievements.filter((achievement) => {
+                      // Achievement de primer login - mostrar solo si no recibió reward antes
+                      const isFirstLoginAchiev = achievement.name?.toLowerCase().includes('login') ||
+                                                achievement.name?.toLowerCase().includes('primer') ||
+                                                achievement.description?.toLowerCase().includes('primer') ||
+                                                achievement.name?.toLowerCase().includes('bienvenida') ||
+                                                achievement.description?.toLowerCase().includes('login') ||
+                                                achievement.id?.toString().includes('first') ||
+                                                achievement.type === 'daily_login';
+
+                      if (isFirstLoginAchiev) {
+                        console.log('🎯 DETECTADO Achievement de primer login:', {
+                          name: achievement.name,
+                          description: achievement.description,
+                          id: achievement.id,
+                          type: achievement.type
+                        });
+
+                        const firstLoginKey = `pandoras_first_login_logro_shown_${walletAddress}`;
+                        const alreadyShownFirstLogin = typeof window !== 'undefined' ?
+                          localStorage.getItem(firstLoginKey) : null;
+
+                        if (!alreadyShownFirstLogin) {
+                          // Mostrar por primera vez y marcar como visto
+                          if (typeof window !== 'undefined') {
+                            localStorage.setItem(firstLoginKey, 'true');
+                            console.log('🎯 Mostrando achievement primer login primera vez');
+                          }
+                          return true;
+                        } else {
+                          // Ya mostrado antes, ocultar
+                          console.log('🔐 Ocultando achievement primer login (ya visto)');
+                          return false;
+                        }
+                      }
+                      // Otros achievements normales se muestran siempre
+                      return true;
+                    });
+                  };
+
+                  const achievementsToShow = getAchievementsToShow(gamification.achievements);
+
+                  return achievementsToShow.length > 0 ? (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {achievementsToShow.slice(0, 6).map((achievement: any) => (
+                          <AchievementCard
+                            key={achievement.id}
+                            achievement={achievement}
+                            showProgress={true}
+                          />
+                        ))}
+                      </div>
+
+                      {gamification.achievements.length > 6 && (
+                        <div className="mt-6 text-center">
+                          <Link href="/profile/achievements">
+                            <Button variant="outline" className="text-sm">
+                              Ver todos mis logros ({gamification.achievements.length})
+                            </Button>
+                          </Link>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="w-16 h-16 bg-gradient-to-br from-purple-400/20 to-pink-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span className="text-2xl">🎭</span>
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-300 mb-2">¡Logros Ocultos!</h3>
+                      <p className="text-gray-400 mb-6 max-w-md mx-auto">
+                        Algunos de tus logros están ocultos para no llenar demasiado la vista, pero sigue ganando!
+                      </p>
+                      <div className="flex gap-3 justify-center">
+                        <Link href="/profile/achievements">
+                          <Button variant="outline" size="sm">
+                            Ver Todos los Logros
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  );
+                })()}
               </>
             ) : (
               <>

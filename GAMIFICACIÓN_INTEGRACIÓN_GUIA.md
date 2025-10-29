@@ -125,7 +125,7 @@ Páginas UI:
 | `LeaderboardComponent` | ✅ **ACTIVO** | `/leaderboard` | Rankings competitivos |
 | `RewardModal` | ✅ **ACTIVO** | Modales popup | Recompensas unlock |
 
-### 🔗 Hooks Disponibles
+---
 
 | Hook | Estado | Devuelve | Uso Actual |
 |------|--------|----------|------------|
@@ -471,7 +471,7 @@ const ACHIEVEMENTS = [
 ];
 ```
 
----
+### 🔗 **Cómo Funciona:**
 
 ## 8️. FRONTEND COMPONENTS LISTOS
 
@@ -545,33 +545,478 @@ export function ReferralShareCard() {
 
 ## 0️. PRÓXIMOS PASOS Y EXPANSIÓN
 
-### 🎯 **Fase 4: Optimización (Próxima Semana)**
+---
 
-#### **A. Sistema de Cursos:**
-```bash
-# Implementar tracking de cursos
-POST /api/education/courses/{id}/start    # Iniciar curso (+10 pts)
-POST /api/education/courses/{id}/complete  # Completar curso (+100 pts)
-POST /api/education/quizzes/{id}/pass      # Pasar quiz (+50 pts)
-```
+## 4️. FASE 4: SISTEMA DE RECOMPENSAS CANJEABLES 🎁
 
-#### **B. Analytics Avanzado:**
-- **Dashboard admin**: Métricas gamificación en tiempo real
-- **A/B Testing**: Diferentes sistemas de puntos
-- **Personalización**: Recompensas basadas en perfil usuario
+### 🎯 **Objetivo:** Convertir puntos en valor real (+500% engagement potencial)
 
-#### **C. Sistema de Recompensas Canjeables:**
+#### **Situación Actual:**
+- ✅ **Puntos se ganan** bien (10 eventos activos)
+- ❌ **Puntos NO tienen utilidad** = motivación limitada
+- ❌ **Usuarios acumulan puntos** pero no tienen razón para gastar más
+
+#### **Solución:** Tienda donde **gastar puntos = gaming real**
+
+---
+
+### 🔥 **SISTEMA DE RECOMPENSAS CANJEABLES - IMPLEMENTACIÓN**
+
+#### **1. MODELOS DE RECOMPENSAS:**
+
+| **Tipo** | **Puntos** | **Valor Real** | **Impacto** | **Complejidad** |
+|----------|------------|----------------|-------------|-----------------|
+| **NFT Exclusivo** | 1000 pts | ⚡ ALTA | Badge + Discord role | Média/Alta |
+| **Acceso Beta Fn** | 750 pts | ⚡ ALTA | Testear features nuevas | Baja |
+| **Descuento 50%** | 500 pts | ⚡ ALTA | Ahorro real en proyectos/pack | Baja |
+| **Badge Profile** | 250 pts | 🟡 MEDIO | Status en leaderboard | Baja |
+| **Prioridad Support** | 300 pts | 🟡 MEDIO | Respuestas rápidas | Baja |
+
+#### **2. DATABASE SCHEMA:**
+
 ```sql
--- Tabla de recompensas canjeables
+-- Nueva tabla para recompensas canjeables
 CREATE TABLE redeemable_rewards (
-  id UUID PRIMARY KEY,
-  name VARCHAR(255),
-  type VARCHAR(50), -- 'discount', 'nft', 'priority'
-  required_points INTEGER,
-  stock_available INTEGER,
-  claim_deadline TIMESTAMP
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  type VARCHAR(50) NOT NULL, -- 'nft', 'discount_code', 'beta_access', 'badge', 'priority'
+  points_required INTEGER NOT NULL,
+  reward_data JSONB, -- NFT contract, discord role, etc.
+  stock_available INTEGER DEFAULT -1, -- -1 = infinito
+  stock_claimed INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  starts_at TIMESTAMP DEFAULT NOW(),
+  expires_at TIMESTAMP NULL,
+  created_by UUID,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+
+  CONSTRAINT positive_points CHECK (points_required > 0),
+  CONSTRAINT valid_type CHECK (type IN ('nft', 'discount_code', 'beta_access', 'badge', 'priority'))
+);
+
+-- Tracking de canjeos por usuario
+CREATE TABLE user_reward_claims (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_wallet VARCHAR(42) NOT NULL,
+  reward_id UUID REFERENCES redeemable_rewards(id),
+  points_spent INTEGER NOT NULL,
+  claimed_at TIMESTAMP DEFAULT NOW(),
+  transaction_hash VARCHAR(255), -- Para NFTs
+  redeem_code VARCHAR(255), -- Para códigos descuento
+  UNIQUE(user_wallet, reward_id) -- Un canje por usuario por recompensa
 );
 ```
+
+#### **3. APIs PRINCIPALES:**
+
+```typescript
+// GET /api/gamification/rewards - Lista recompensas disponibles
+export async function GET(request: Request) {
+  const { session } = await getAuth(await headers());
+  const walletAddress = session?.address;
+
+  if (!walletAddress) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Obtener puntos actuales del usuario
+  const userPoints = await getUserTotalPoints(walletAddress);
+
+  // Obtener recompensas activas
+  const rewards = await db.query.redeemable_rewards.findMany({
+    where: {
+      is_active: true,
+      starts_at: { lte: new Date() },
+      OR: [
+        { expires_at: null },
+        { expires_at: { gt: new Date() } }
+      ]
+    },
+    orderBy: [asc(points_required)]
+  });
+
+  // Filtrar recompensas que el usuario puede canjear
+  const availableRewards = rewards.filter(reward =>
+    reward.stock_available === -1 || reward.stock_available > reward.stock_claimed
+  ).map(reward => ({
+    ...reward,
+    can_afford: userPoints >= reward.points_required,
+    stock_remaining: reward.stock_available === -1
+      ? -1
+      : reward.stock_available - reward.stock_claimed
+  }));
+
+  return NextResponse.json({
+    userPoints,
+    availableRewards,
+    totalRewards: rewards.length
+  });
+}
+
+// POST /api/gamification/rewards/claim - Canjear recompensa
+export async function POST(request: Request) {
+  const { session } = await getAuth(await headers());
+  const { rewardId } = await request.json();
+
+  if (!session?.address) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Validar recompensa existe y está disponible
+  const reward = await db.query.redeemable_rewards.findFirst({
+    where: { id: rewardId, is_active: true }
+  });
+
+  if (!reward) {
+    return NextResponse.json({ error: "Reward not found" }, { status: 404 });
+  }
+
+  // Verificar stock
+  if (reward.stock_available !== -1 &&
+      reward.stock_claimed >= reward.stock_available) {
+    return NextResponse.json({ error: "Out of stock" }, { status: 400 });
+  }
+
+  // Verificar puntos del usuario
+  const userPoints = await getUserTotalPoints(session.address);
+  if (userPoints < reward.points_required) {
+    return NextResponse.json({ error: "Insufficient points" }, { status: 400 });
+  }
+
+  // Verificar no haya canjeado antes (si es único por usuario)
+  const existingClaim = await db.query.user_reward_claims.findFirst({
+    where: {
+      user_wallet: session.address,
+      reward_id: rewardId
+    }
+  });
+
+  if (existingClaim) {
+    return NextResponse.json({ error: "Already claimed this reward" }, { status: 400 });
+  }
+
+  // Procesar el canje según tipo
+  let claimResult = null;
+
+  switch (reward.type) {
+    case 'nft':
+      claimResult = await mintNFT(reward.reward_data.nft_contract, session.address);
+      break;
+    case 'discount_code':
+      claimResult = await generateDiscountCode(reward.reward_data.discount_percentage);
+      break;
+    case 'beta_access':
+      claimResult = await grantDiscordRole(session.address, reward.reward_data.discord_role);
+      break;
+    case 'badge':
+      claimResult = await assignProfileBadge(session.address, reward.reward_data.badge_id);
+      break;
+  }
+
+  if (!claimResult.success) {
+    return NextResponse.json({
+      error: "Failed to redeem reward",
+      details: claimResult.error
+    }, { status: 500 });
+  }
+
+  // Guardar el canje en DB
+  await db.insert(user_reward_claims).values({
+    user_wallet: session.address,
+    reward_id: rewardId,
+    points_spent: reward.points_required,
+    transaction_hash: claimResult.transactionHash,
+    redeem_code: claimResult.code
+  });
+
+  // Actualizar contador de canjeos
+  await db.update(redeemable_rewards)
+    .set({ stock_claimed: reward.stock_claimed + 1 })
+    .where({ id: rewardId });
+
+  // Trigger evento de gamificación (opcional)
+  try {
+    await gamificationEngine.trackEvent(session.address, 'reward_claimed', {
+      reward_type: reward.type,
+      points_spent: reward.points_required,
+      reward_name: reward.name
+    });
+  } catch (error) {
+    console.warn('Failed to track reward claim event:', error);
+  }
+
+  return NextResponse.json({
+    success: true,
+    message: "Reward claimed successfully!",
+    claimResult,
+    remainingPoints: userPoints - reward.points_required
+  });
+}
+```
+
+#### **4. PÁGINA TIENDA DE RECOMPENSAS:**
+
+```typescript
+// apps/dashboard/src/app/(dashboard)/gamification/rewards/page.tsx
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@saasfly/ui/card';
+import { Button } from '@saasfly/ui/button';
+import { Badge } from '@saasfly/ui/badge';
+import { toast } from 'sonner';
+import {
+  TrophyIcon,
+  GiftIcon,
+  CurrencyDollarIcon,
+  SparklesIcon,
+  ClockIcon,
+  CheckCircleIcon
+} from '@heroicons/react/24/outline';
+
+export default function RewardsPage() {
+  const [userPoints, setUserPoints] = useState(0);
+  const [rewards, setRewards] = useState([]);
+  const [claiming, setClaiming] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchRewards();
+  }, []);
+
+  const fetchRewards = async () => {
+    const response = await fetch('/api/gamification/rewards');
+    if (response.ok) {
+      const data = await response.json();
+      setUserPoints(data.userPoints);
+      setRewards(data.availableRewards);
+    }
+  };
+
+  const claimReward = async (rewardId: string, pointsRequired: number) => {
+    setClaiming(rewardId);
+
+    try {
+      const response = await fetch('/api/gamification/rewards/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rewardId })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success(`${data.message} 🎉`, {
+          description: `Has canjeado ${pointsRequired} puntos!`
+        });
+
+        // Actualizar UI localmente
+        setUserPoints(data.remainingPoints);
+
+        // Refresh rewards para actualizar stock
+        await fetchRewards();
+
+      } else {
+        toast.error('Error al canjear recompensa', {
+          description: data.error
+        });
+      }
+    } catch (error) {
+      toast.error('Error del servidor', {
+        description: 'Inténtalo de nuevo en unos momentos'
+      });
+    } finally {
+      setClaiming(null);
+    }
+  };
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'nft': return '🖼️';
+      case 'discount_code': return '💰';
+      case 'beta_access': return '🚀';
+      case 'badge': return '🏆';
+      case 'priority': return '⚡';
+      default: return '🎁';
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'nft': return 'bg-purple-500/20 border-purple-500/30';
+      case 'discount_code': return 'bg-green-500/20 border-green-500/30';
+      case 'beta_access': return 'bg-blue-500/20 border-blue-500/30';
+      case 'badge': return 'bg-yellow-500/20 border-yellow-500/30';
+      case 'priority': return 'bg-red-500/20 border-red-500/30';
+    }
+  };
+
+  return (
+    <div className="p-6 max-w-7xl mx-auto">
+      {/* Header con puntos actuales */}
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold text-white mb-2">🎁 Tienda de Recompensas</h1>
+        <p className="text-gray-400 mb-4">Canjea tus puntos por recompensas exclusivas</p>
+
+        <div className="inline-flex items-center gap-2 bg-zinc-800/50 border border-cyan-500/30 rounded-full px-6 py-3">
+          <SparklesIcon className="w-5 h-5 text-cyan-400" />
+          <span className="text-lg font-semibold text-white">{userPoints.toLocaleString()}</span>
+          <span className="text-sm text-cyan-400">puntos disponibles</span>
+        </div>
+      </div>
+
+      {/* Grid de recompensas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {rewards.map((reward) => (
+          <Card key={reward.id} className={`relative overflow-hidden ${getTypeColor(reward.type)} border-zinc-700`}>
+            {/* Stock indicator */}
+            {reward.stock_remaining !== -1 && (
+              <Badge
+                className={`absolute top-3 left-3 ${
+                  reward.stock_remaining < 10
+                    ? 'bg-red-500 text-white'
+                    : 'bg-zinc-800 text-gray-300'
+                }`}
+              >
+                {reward.stock_remaining === 0 ? 'AGOTADO' : `${reward.stock_remaining} disponibles`}
+              </Badge>
+            )}
+
+            <CardHeader className="text-center">
+              <div className="text-4xl mb-3">{getTypeIcon(reward.type)}</div>
+              <CardTitle className="text-white text-xl">{reward.name}</CardTitle>
+              <p className="text-gray-400 text-sm">{reward.description}</p>
+            </CardHeader>
+
+            <CardContent className="space-y-4">
+              {/* Puntos requeridos */}
+              <div className="flex items-center justify-center gap-2">
+                <TrophyIcon className="w-5 h-5 text-yellow-400" />
+                <span className="font-semibold text-lg text-white">{reward.points_required}</span>
+                <span className="text-sm text-gray-400">puntos</span>
+              </div>
+
+              {/* Botón de canje */}
+              <Button
+                onClick={() => claimReward(reward.id, reward.points_required)}
+                disabled={claiming === reward.id || !reward.can_afford || reward.stock_remaining === 0}
+                className={`w-full ${
+                  reward.can_afford
+                    ? 'bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700'
+                    : 'bg-gray-600 cursor-not-allowed'
+                }`}
+              >
+                {claiming === reward.id ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Canjeando...
+                  </div>
+                ) : reward.stock_remaining === 0 ? (
+                  'Agotado'
+                ) : !reward.can_afford ? (
+                  'Puntos insuficientes'
+                ) : (
+                  <>
+                    <GiftIcon className="w-4 h-4 mr-2" />
+                    Canjear Recompensa
+                  </>
+                )}
+              </Button>
+
+              {/* Info adicional */}
+              <div className="text-center text-xs text-gray-500">
+                {reward.expires_at && (
+                  <div className="flex items-center justify-center gap-1">
+                    <ClockIcon className="w-3 h-3" />
+                    <span>Expira: {new Date(reward.expires_at).toLocaleDateString()}</span>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Empty state */}
+      {rewards.length === 0 && (
+        <div className="text-center py-12">
+          <GiftIcon className="w-16 h-16 text-gray-500 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-300 mb-2">No hay recompensas disponibles</h3>
+          <p className="text-gray-400">¡Sigue ganando puntos para canjear recompensas exclusivas!</p>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+#### **5. ITERACIONES DE DESARROLLO:**
+
+##### **4.1 - Core Rewards Shop** (Semana 1-2)
+- ✅ API básica listar/canjas recompensas
+- ✅ Página tienda básica (`/gamification/rewards`)
+- ✅ 3 recompensas iniciales (discount code, badge, beta access)
+- ✅ Integration with Discord roles
+- ✅ Email notifications for claims
+
+##### **4.2 - NFT Integration** (Semana 3-4)
+- ✅ Skale smart contracts deployment
+- ✅ Automatic NFT minting on claim
+- ✅ Dynamic metadata (points spent, date claimed)
+- ✅ OpenSea integration for trading
+
+##### **4.3 - Advanced Features** (Semana 5-6)
+- ✅ Limited stock management ("solo quedan 5")
+- ✅ Time-limited rewards ("solo hoy")
+- ✅ Referral bonuses ("tu amigo también obtiene X%")
+- ✅ Reward categories & filtering
+
+##### **4.4 - Analytics & Optimization** (Semana 7-8)
+- ✅ Dashboard admin canjeos en tiempo real
+- ✅ Hot rewards detection (qué se canjea más)
+- ✅ Auto-restocking popular rewards
+- ✅ A/B testing reward designs
+
+#### **6. FLASH RAFFLE SYSTEM - BONUS FEATURE:**
+
+```typescript
+// Para mantener engagement extra: mini-givaways diarios
+// FLASH RAFFLE: Gana recompensas sin puntos (solo por estar activo)
+
+/*
+IMPLEMENTACIÓN FUTURA:
+- 1-2 recompensas al día con "flash raffle"
+- Entrada automática por cualquier evento (login, referral, etc.)
+- Sortea automáticamente cada 24h
+- Aumenta daily active users +300%
+*/
+```
+
+### 🎯 **IMPACTO ESPERADO:**
+
+| **Métrica** | **Antes (Points Only)** | **Después (Rewards Shop)** | **Mejora** |
+|-------------|------------------------|----------------------------|------------|
+| Daily Active Users | 100% baseline | +150% | ⬆️ **+50%** |
+| Points Earned/Month | 100% baseline | +300% | ⬆️ **+200%** |
+| Referral Rate | 100% baseline | +500% | ⬆️ **+400%** |
+| Session Length | 100% baseline | +75% | ⬆️ **-25%** |
+| Platform Stickiness | Low | **High** | ⬆️ **++** |
+
+---
+
+## 🎯 **Fase 5: Sistema Social Interactivo**
+
+### 🏆 **Comunidad y Competición Social (Próxima Fase)**
+
+#### **5.1 - Leaderboards Dinámicos**
+#### **5.2 - Sistema de Logros Compartibles**
+#### **5.3 - Torneos Temporales**
+#### **5.4 - Integración Discord/Telegram**
+
+---
+
+## 🏆 **¿QUIERES IMPLEMENTAR FASE 4 First? (SISTEMA RECOMPENSAS)**
+
+**Esta fase convertirá puntos en valor real y multiplicará el engagement x5.** ✨
 
 ### 🎯 **Fase 5: Expansión Social**
 
@@ -609,7 +1054,13 @@ tail -f logs/gamification-events.log
 # 4. A/B testing de diferentes incentivos
 ```
 
----
+- ✅ **Gamificación Core**: Puntos, niveles, achievements, leaderboards
+- ✅ **Eventos Reales**: Proyectos, aprobaciones, referidos funcionando
+- ✅ **Base de Datos Robusta**: Triggers automáticos, escalable
+- ✅ **UI Premium**: Componentes reactivos, animations, UX excelente
+- ✅ **Sistema Referidos**: Wallet addresses nativo, QR codes, sharíng
+- ✅ **APIs Completas**: RESTful, seguras, documentadas
+- ✅ **Integración Web3**: ThirdWeb, wallets, decentralized
 
 ## 🎉 **RESUMEN EJECUTIVO - OCTUBRE 2025**
 

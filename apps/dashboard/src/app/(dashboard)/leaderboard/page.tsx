@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@saasfly/ui/card';
 import { Button } from '@saasfly/ui/button';
@@ -17,74 +17,29 @@ import {
 import Link from 'next/link';
 import { AnimatedBackground } from "@/components/apply/AnimatedBackground";
 
-// Fake leaderboard data - mock for now
-const mockLeaderboardData = [
-  {
-    rank: 1,
-    userId: '0x123456789',
-    name: 'Alex Master',
-    avatar: '/images/avatars/master.png',
-    totalPoints: 12500,
-    achievementsUnlocked: 15,
-    level: 8,
-    recentActivity: '3hrs ago',
-    badge: 'Gold',
-    streak: 12,
-    trending: 'up'
-  },
-  {
-    rank: 2,
-    userId: '0x987654321',
-    name: 'Sarah Elite',
-    avatar: '/images/avatars/elite.png',
-    totalPoints: 11200,
-    achievementsUnlocked: 13,
-    level: 7,
-    recentActivity: '1hr ago',
-    badge: 'Silver',
-    streak: 8,
-    trending: 'up'
-  },
-  {
-    rank: 3,
-    userId: '0x456789123',
-    name: 'Mike Prodigy',
-    avatar: '/images/avatars/prodigy.png',
-    totalPoints: 10800,
-    achievementsUnlocked: 12,
-    level: 7,
-    recentActivity: '2hrs ago',
-    badge: 'Bronze',
-    streak: 5,
-    trending: 'down'
-  },
-  {
-    rank: 4,
-    userId: '0x789123456',
-    name: 'Emma Pioneer',
-    avatar: '/images/avatars/pioneer.png',
-    totalPoints: 9500,
-    achievementsUnlocked: 11,
-    level: 6,
-    recentActivity: '30min ago',
-    badge: 'Rising',
-    streak: 3,
-    trending: 'up'
-  },
-  {
-    rank: 5,
-    userId: '0x321654987',
-    name: 'João Innovation',
-    avatar: '/images/avatars/innovation.png',
-    totalPoints: 8900,
-    achievementsUnlocked: 10,
-    level: 6,
-    recentActivity: '1hr ago',
-    badge: 'Rising',
-    streak: 1,
-    trending: 'stable'
-  }
-];
+// Interface for database response
+interface DbLeaderboardUser {
+  user_id: string;
+  display_name?: string;
+  total_points: number;
+  current_level: number;
+}
+
+// Interface for leaderboard display data
+interface LeaderboardUser {
+  rank: number;
+  userId: string;
+  name: string;
+  displayName: string;
+  totalPoints: number;
+  achievementsUnlocked: number;
+  level: number;
+  currentLevel: number;
+  recentActivity: string;
+  badge: string;
+  streak: number;
+  trending: string;
+}
 
 const getRankIcon = (rank: number) => {
   switch (rank) {
@@ -117,20 +72,66 @@ export const dynamic = 'force-dynamic';
 
 export default function LeaderboardPage() {
   const [sortBy, setSortBy] = useState<'points' | 'achievements' | 'level'>('points');
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardUser[]>([]);
+
+  useEffect(() => {
+    const loadLeaderboard = async () => {
+      try {
+        const response = await fetch('/api/gamification/leaderboard/points');
+        if (response.ok) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const result = await response.json() as { leaderboard: any[] };
+          const data = result.leaderboard ?? [];
+          console.log('🔍 DEBUG - Raw API response:', result);
+          console.log('🔍 DEBUG - Leaderboard data array:', data);
+          console.log('🔍 DEBUG - First user data:', data[0]);
+
+          const transformedData = data.map((user: DbLeaderboardUser, index: number): LeaderboardUser => ({
+            rank: index + 1,
+            userId: user.user_id ?? `user_${index}`,
+            displayName: user.display_name ?? (user.user_id ? `${user.user_id.slice(0, 6)}...${user.user_id.slice(-4)}` : 'Usuario'),
+            name: user.display_name ?? (user.user_id ? `${user.user_id.slice(0, 6)}...${user.user_id.slice(-4)}` : 'Usuario'),
+            totalPoints: user.total_points ?? 0,
+            currentLevel: user.current_level ?? 1,
+            achievementsUnlocked: 0,
+            level: user.current_level ?? 1,
+            badge: 'Rising',
+            streak: 0,
+            recentActivity: 'Hoy',
+            trending: 'stable'
+          }));
+
+          setLeaderboardData(transformedData);
+          console.log('✅ Loaded leaderboard data:', data.length, 'users');
+        } else {
+          console.log('ℹ️ No leaderboard data found (empty leaderboard)');
+          setLeaderboardData([]);
+        }
+      } catch (error) {
+        console.error('❌ Error loading leaderboard:', error);
+        setLeaderboardData([]);
+      }
+    };
+
+    void loadLeaderboard();
+  }, []);
 
   const sortedData = useMemo(() => {
-    return [...mockLeaderboardData].sort((a, b) => {
+    return [...leaderboardData].sort((a, b) => {
       if (sortBy === 'points') return b.totalPoints - a.totalPoints;
-      if (sortBy === 'achievements') return b.achievementsUnlocked - a.achievementsUnlocked;
-      if (sortBy === 'level') return b.level - a.level;
+      if (sortBy === 'achievements') return 0;
+      if (sortBy === 'level') return b.currentLevel - a.currentLevel;
       return 0;
-    }).map((user, index) => ({
-      ...user,
-      rank: index + 1
-    }));
-  }, [sortBy]);
+    });
+  }, [sortBy, leaderboardData]);
 
   const topThree = sortedData.slice(0, 3);
+
+  const sortOptions = [
+    { key: 'points' as const, label: 'Por Tokens', icon: Zap },
+    { key: 'achievements' as const, label: 'Por Logros', icon: Award },
+    { key: 'level' as const, label: 'Por Nivel', icon: Target }
+  ];
 
   return (
     <div className="absolute inset-x-0 min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-black text-white">
@@ -188,7 +189,7 @@ export default function LeaderboardPage() {
           transition={{ delay: 0.4 }}
           className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12"
         >
-          {/* First Place */}
+          {/* Second Place */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -199,19 +200,21 @@ export default function LeaderboardPage() {
               <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-yellow-400 to-orange-500"></div>
               <CardContent className="p-6 text-center">
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-yellow-500/20 border border-yellow-500/30 rounded-full text-sm font-medium text-yellow-400 mb-4">
-                  🥇 2do Lugar
+                  🥈 2do Lugar
                 </div>
 
                 <div className="w-20 h-20 mx-auto mb-4 border-4 border-yellow-500 shadow-lg bg-gray-700 rounded-full flex items-center justify-center font-bold text-xl text-white">
-                  {topThree[1]?.name?.charAt(0).toUpperCase()}
+                  {topThree[1]?.name.charAt(0).toUpperCase() ?? '?'}
                 </div>
 
-                <h3 className="text-xl font-bold text-white mb-2">{topThree[1]?.name}</h3>
+                <h3 className="text-xl font-bold text-white mb-2">{topThree[1]?.name ?? 'Usuario'}</h3>
                 <div className="flex items-center justify-center gap-1 mb-4">
                   <Zap className="w-4 h-4 text-yellow-400" />
-                  <span className="text-yellow-400 font-semibold">{topThree[1]?.totalPoints.toLocaleString()} tokens</span>
+                  <span className="text-yellow-400 font-semibold">{(topThree[1]?.totalPoints ?? 0).toLocaleString()} tokens</span>
                 </div>
-                <div className="text-sm text-gray-400">Nivel {topThree[1]?.level} • {topThree[1]?.achievementsUnlocked} logros</div>
+                <div className="text-sm text-gray-400">
+                  Nivel {topThree[1]?.level ?? 1} • {topThree[1]?.achievementsUnlocked ?? 0} logros
+                </div>
               </CardContent>
             </Card>
           </motion.div>
@@ -232,15 +235,17 @@ export default function LeaderboardPage() {
                 </div>
 
                 <div className="w-24 h-24 mx-auto mb-4 border-4 border-yellow-400 shadow-lg bg-gray-700 rounded-full flex items-center justify-center font-bold text-2xl text-white">
-                  {topThree[0]?.name?.charAt(0).toUpperCase()}
+                  {topThree[0]?.name.charAt(0).toUpperCase() ?? '?'}
                 </div>
 
-                <h3 className="text-2xl font-bold text-white mb-2">{topThree[0]?.name}</h3>
+                <h3 className="text-2xl font-bold text-white mb-2">{topThree[0]?.name ?? 'Usuario'}</h3>
                 <div className="flex items-center justify-center gap-1 mb-4">
                   <Zap className="w-5 h-5 text-yellow-400" />
-                  <span className="text-yellow-400 font-bold text-lg">{topThree[0]?.totalPoints.toLocaleString()} tokens</span>
+                  <span className="text-yellow-400 font-bold text-lg">{(topThree[0]?.totalPoints ?? 0).toLocaleString()} tokens</span>
                 </div>
-                <div className="text-sm text-gray-400">Nivel {topThree[0]?.level} • {topThree[0]?.achievementsUnlocked} logros</div>
+                <div className="text-sm text-gray-400">
+                  Nivel {topThree[0]?.level ?? 1} • {topThree[0]?.achievementsUnlocked ?? 0} logros
+                </div>
               </CardContent>
             </Card>
           </motion.div>
@@ -260,15 +265,17 @@ export default function LeaderboardPage() {
                 </div>
 
                 <div className="w-20 h-20 mx-auto mb-4 border-4 border-amber-500 shadow-lg bg-gray-700 rounded-full flex items-center justify-center font-bold text-xl text-white">
-                  {topThree[2]?.name?.charAt(0).toUpperCase()}
+                  {topThree[2]?.name.charAt(0).toUpperCase() ?? '?'}
                 </div>
 
-                <h3 className="text-xl font-bold text-white mb-2">{topThree[2]?.name}</h3>
+                <h3 className="text-xl font-bold text-white mb-2">{topThree[2]?.name ?? 'Usuario'}</h3>
                 <div className="flex items-center justify-center gap-1 mb-4">
                   <Zap className="w-4 h-4 text-amber-400" />
-                  <span className="text-amber-400 font-semibold">{topThree[2]?.totalPoints.toLocaleString()} tokens</span>
+                  <span className="text-amber-400 font-semibold">{(topThree[2]?.totalPoints ?? 0).toLocaleString()} tokens</span>
                 </div>
-                <div className="text-sm text-gray-400">Nivel {topThree[2]?.level} • {topThree[2]?.achievementsUnlocked} logros</div>
+                <div className="text-sm text-gray-400">
+                  Nivel {topThree[2]?.level ?? 1} • {topThree[2]?.achievementsUnlocked ?? 0} logros
+                </div>
               </CardContent>
             </Card>
           </motion.div>
@@ -281,11 +288,7 @@ export default function LeaderboardPage() {
           transition={{ delay: 0.9 }}
           className="flex flex-wrap justify-center gap-3 mb-8"
         >
-          {[
-            { key: 'points' as const, label: 'Por Tokens', icon: Zap },
-            { key: 'achievements' as const, label: 'Por Logros', icon: Award },
-            { key: 'level' as const, label: 'Por Nivel', icon: Target }
-          ].map((sort) => {
+          {sortOptions.map((sort) => {
             const IconComponent = sort.icon;
             return (
               <Button
@@ -314,12 +317,39 @@ export default function LeaderboardPage() {
                 Ranking Completo
               </CardTitle>
               <CardDescription className="text-zinc-400">
-                Los mejores usuarios de la plataforma ordenados por {sortBy === 'points' ? 'tokens' : sortBy === 'achievements' ? 'logros' : 'nivel'}
+                Los mejores usuarios de la plataforma ordenados por {
+                  sortBy === 'points' ?
+                    'tokens' :
+                    sortBy === 'achievements' ?
+                      'logros' :
+                      'nivel'
+                }
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {sortedData.map((user, index) => (
+                {sortedData.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 bg-gradient-to-br from-gray-700/50 to-gray-600/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Trophy className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-300 mb-2">Leaderboard Vacío</h3>
+                    <p className="text-gray-400 mb-6 max-w-md mx-auto">
+                      Aún no hay usuarios con actividades de gamificación.
+                      ¡Conecta una wallet y participa para ser el primero en el ranking!
+                    </p>
+                    <div className="text-sm text-gray-500">
+                      Los usuarios aparecerán aquí cuando acumulan tokens por acciones como:
+                    </div>
+                    <div className="text-xs text-gray-600 mt-2 space-y-1">
+                      • Primer login (+10 tokens)
+                      • Enviar aplicaciones (+50 tokens)
+                      • Proyectos aprobados (+100 tokens)
+                      • Referencias exitosas (+200 tokens)
+                    </div>
+                  </div>
+                ) : (
+                  sortedData.map((user, index) => (
                   <motion.div
                     key={user.userId}
                     initial={{ opacity: 0, x: index < 3 ? 0 : -20 }}
@@ -341,14 +371,14 @@ export default function LeaderboardPage() {
                     {/* Avatar */}
                     <div className="flex-shrink-0">
                       <div className="w-12 h-12 rounded-full border-2 border-gray-600 bg-gray-700 flex items-center justify-center font-bold text-white">
-                        {user.name.charAt(0).toUpperCase()}
+                        {user.displayName.charAt(0).toUpperCase()}
                       </div>
                     </div>
 
                     {/* User Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-white text-lg truncate">{user.name}</h3>
+                        <h3 className="font-semibold text-white text-lg truncate">{user.displayName}</h3>
                         <span className={`px-2 py-1 rounded-full text-xs ${getBadgeColor(user.badge)}`}>
                           {user.badge}
                         </span>
@@ -365,12 +395,13 @@ export default function LeaderboardPage() {
                     <div className="flex-shrink-0 text-right">
                       <div className="flex items-center gap-1 text-yellow-400 font-bold text-lg">
                         <Zap className="w-5 h-5" />
-                        {user.totalPoints.toLocaleString()}
+                        {(user.totalPoints ?? 0).toLocaleString()}
                       </div>
                       <div className="text-xs text-gray-400">tokens</div>
                     </div>
                   </motion.div>
-                ))}
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
@@ -385,7 +416,7 @@ export default function LeaderboardPage() {
         >
           <div className="bg-gradient-to-r from-zinc-900/50 to-zinc-800/50 border border-zinc-700 rounded-2xl p-8 md:p-12 backdrop-blur-sm">
           <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">
             ¿Quieres ser el
             <span className="bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent"> próximo Ma&icirc;tre</span>?
           </h2>

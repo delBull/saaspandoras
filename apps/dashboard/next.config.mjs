@@ -35,6 +35,21 @@ const nextConfig = {
   transpilePackages: [
     "@pandoras/gamification",
   ],
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Exclude Node.js modules from client-side bundle
+      config.externals = config.externals || [];
+      config.externals.push({
+        'tls': 'tls',
+        'fs': 'fs',
+        'perf_hooks': 'perf_hooks',
+        'postgres': 'postgres',
+        'drizzle-orm': 'drizzle-orm'
+      });
+    }
+
+    return config;
+  },
 };
 
 export default nextConfig;
