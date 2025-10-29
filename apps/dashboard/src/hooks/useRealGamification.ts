@@ -52,29 +52,22 @@ export function useRealGamification(userId?: string): RealTimeGamificationData {
         fetch('/api/gamification/leaderboard/points')
       ]);
 
-      // Parse responses and handle potential errors
-      const profileData = profileResponse.ok ? await profileResponse.json() : null;
-      const achievementsData = achievementsResponse.ok ? await achievementsResponse.json() : [];
-      const rewardsData = rewardsResponse.ok ? await rewardsResponse.json() : [];
-      const leaderboardData = leaderboardResponse.ok ? await leaderboardResponse.json() : [];
+      // Parse responses and handle potential errors with proper typing
+      const profileData = profileResponse.ok ? await profileResponse.json() as UserGamificationProfile | null : null;
+      const achievementsData = achievementsResponse.ok ? await achievementsResponse.json() as UserAchievement[] : [];
+      const rewardsData = rewardsResponse.ok ? await rewardsResponse.json() as Reward[] : [];
+      const leaderboardData = leaderboardResponse.ok ? await leaderboardResponse.json() as LeaderboardEntry[] : [];
 
-
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       setProfile(profileData);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       setAchievements(achievementsData);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       setRewards(rewardsData);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       setLeaderboard(leaderboardData);
 
       // Extract stats from profile safely
       if (profileData) {
-        /* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access */
-        setTotalPoints(profileData.totalPoints || 0);
-        setCurrentLevel(profileData.currentLevel || 1);
-        setLevelProgress(profileData.levelProgress || 0);
-        /* eslint-enable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access */
+        setTotalPoints((profileData as { totalPoints?: number }).totalPoints ?? 0);
+        setCurrentLevel((profileData as { currentLevel?: number }).currentLevel ?? 1);
+        setLevelProgress((profileData as { levelProgress?: number }).levelProgress ?? 0);
       }
 
       console.log('🎮 Real gamification data loaded for user:', userId, {
