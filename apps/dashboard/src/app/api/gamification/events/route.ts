@@ -4,11 +4,13 @@ import { trackGamificationEvent } from '@/lib/gamification/service';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { userId, eventType, metadata } = body;
+    // Support both walletAddress (from frontend) and userId (legacy)
+    const userId = body.walletAddress || body.userId;
+    const { eventType, metadata } = body;
 
     if (!userId || !eventType) {
       return NextResponse.json(
-        { error: 'userId and eventType are required' },
+        { error: 'userId/walletAddress and eventType are required' },
         { status: 400 }
       );
     }
