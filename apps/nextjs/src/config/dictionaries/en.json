@@ -25,13 +25,13 @@
   },
   "marketing": {
     "introducing": "Introducing Pandora's",
-    "title": "Invest in exclusive properties easily and securely ",
-    "sub_title": "Getting digital shares with exclusive opportunities has never been easier",
+    "title": "Interactive Communities. Incentive Systems.",
+    "sub_title": "Build loyalty protocols, create participation systems, design NFT memberships that matter",
     "get_started": "How?",
-    "hero_supertitle": "THE FUTURE OF INVESTMENT, THE NEW ERA",
-    "hero_title": "INCLUSIVE INVESTMENT IN REAL ASSETS",
-    "hero_subtitle": "Tokenize your participation, receive real returns and join a new era without intermediaries.",
-    "hero_cta1": "Get started now",
+    "hero_supertitle": "THE AWAKENING OF UTILITY",
+    "hero_title": "Build on web3",
+    "hero_subtitle": "Tokens are not speculation... they are the natural evolution of communities.",
+    "hero_cta1": "Start Building",
     "hero_cta2": "How it works",
     "hero_cta3": "Why Pandora's?",
     "view_on_github": "View on GitHub",
@@ -42,7 +42,7 @@
     "devops_features": "Effortless Project Launch",
     "price_features": "Cost-effective in production environments",
     "main_nav_business": "Apply",
-    "main_nav_assets": "Assets",
+    "main_nav_assets": "Creations",
     "main_nav_invest": "Stake",
     "main_nav_products": "Products",
     "main_nav_blog": "Blog",
@@ -75,83 +75,92 @@
       "nextauth_desc": ""
     },
     "investment_steps": {
-      "title": "Investing is as easy as →",
+      "title": "Building on web3 is as simple as →",
       "steps": [
         {
-          "title": "Getting your free share",
-          "content": "Get instant access with a free passkey that unlocks the platform for you.",
-          "caption": "Register and get your free digital share that allows you to invest in exclusive properties."
+          "title": "Create Your Community",
+          "content": "Awaken instantly with a magical digital key that grants you sovereign access to Pandora.",
+          "caption": "Sign up and claim your sovereign digital identity that allows you to create unforgettable communities."
         },
         {
-          "title": "Invest at a special price",
-          "content": "Invest at preferential prices during legal and regulated presales.",
-          "caption": "Use your share to invest at a special price during our presale."
+          "title": "Design Your Protocols",
+          "content": "Create participatory incentive systems and smart contracts that blossom with your imagination.",
+          "caption": "Use your identity to design utility protocols that transform spectators into active creators."
         },
         {
-          "title": "Earn and Grow",
-          "content": "Earn from day one with rent, capital gains, and the possibility of co-ownership.",
-          "caption": "With your investment, you will access exclusive benefits."
+          "title": "Experiment in Pandora's Laboratory",
+          "content": "Test your imagination: create memberships with sovereign NFTs and design Work-to-Earn protocols that awaken communities.",
+          "caption": "Experiment for free and watch how your community comes to collective life from the first moment."
         }
       ]
     },
     "dashboard": {
-      "config_panel": "Panel de configuración y flujo de la plataforma",
-      "investments_panel": "Inversiones activas y rendimientos en tiempo real"
+      "config_panel": "Configuration panel and platform flow",
+      "investments_panel": "Active investments and real-time returns"
     },
     "sponsor": {
-      "title": "Ready to transform the way you invest?",
-      "donate": "Diversify across different assets",
-      "subtitle": "Become part of Pandora's today and access a new era of real digital assets"
+      "title": "Choose your evolution: Web2 vs Web3?",
+      "donate": "Build with Pandora",
+      "subtitle": "It's not a question... it's an inevitable evolution."
+    },
+    "hero_typewriter": {
+      "title": "Build on web3",
+      "subtitle": "Your community comes alive.",
+      "typewriter_words": [
+        { "text": "Build Loyalty Protocols.", "cursorColor": "#A3E635", "contentColor": "#A3E635" },
+        { "text": "Participatory Incentive Systems.", "cursorColor": "#7b1b74", "contentColor": "#7b1b74" },
+        { "text": "Design Real NFT Memberships.", "cursorColor": "#A3E635", "contentColor": "#A3E635" }
+      ]
     },
     "video": {
-      "first_text": "Obtain digital shares representing a portion ",
-      "second_text1": "of the property's value, to participate in exclusive real world asset ",
-      "time_text": "investments",
-      "second_text2": "",
+      "first_text": "Forge unique membership crystals and design ritual incentives that transform ",
+      "second_text1": "passive spectators into active creators. Participate in the community forging process through ",
+      "time_text": "creative sorcery",
+      "second_text2": "Try our experimental community construction laboratories",
       "academic_backing": {
         "title": "Data and academic support",
-        "subtitle": "Tokenizable assets are projected to reach 6 trillion USD in 2030 thanks to the digital transformation of real markets."
+        "subtitle": "Incentivized communities are projected to generate 12 trillion USD in creative value for 2030 through active participation systems."
       }
     },
     "transform_token": {
-      "title": "Enjoy Exclusive Benefits",
-      "desc": "Accumulate more shares and access unique privileges, earn rental income and enjoy the possibility of converting your investment into full ownership.",
+      "title": "The Open Toolbox",
+      "desc": "Radical transparency: our tools are your creation arsenal. You have sovereign control over your protocols.",
       "more_details": "More Details",
       "close": "Close",
-      "part1_title": "Unlock Exclusive Privileges",
-      "part1_content": "Imagine each share you acquire not only represents your investment but also opens doors to a world of exclusive privileges. Over time, as you accumulate more shares, you'll gain access to special events, personalized support, and privileged information about our premium developments. This benefit positions you to be part of a select community, where your investment provides unique experiences reserved only for our most committed members.",
-      "part2_title": "Earn Rental Income and Full Ownership Opportunities",
-      "part2_content": "In addition to privileges, your shares allow you to earn rental income, as the property generates income during the rental period. When you reach a certain number of shares, you'll have the opportunity to convert your investment into full ownership, transforming your participation into a tangible, high-value asset. This approach provides you with immediate and long-term benefits, driven by the success and appreciation of the project."
+      "part1_title": "Audited Contracts",
+      "part1_content": "Discover our audited smart contracts. You are the sovereign owner of your protocols. No intermediary controls your creation.",
+      "part2_title": "SaaS Model Without Hidden Fees",
+      "part2_content": "You build once, you maintain forever. Our smart contracts execute your logic on the eternal blockchain."
     },
     "people_comment": {
       "title": "What People Are Saying",
       "desc": "Don’t just take our word for it. Here’s what real users are saying about Pandoras."
     },
     "what_is_pandoras": {
-      "title": "What is Pandora's Finance?",
-      "description": "Pandora's transforms real assets (real estate and startups) into accessible digital opportunities. Without intermediaries, backed by a legal trust, blockchain technology, and a vision of the financial future.",
-      "feature_1": "Legal and regulated",
-      "feature_2": "Global and inclusive access",
-      "feature_3": "Tokenized real assets"
+      "title": "The Pandora Manifesto",
+      "description": "We believe that work must be rewarded, not just investment. Digital property is not a 'ticker'... it is a right to participation. Transparency is not a 'feature'... it is the foundation of trust. We are the natural evolution of creator communities.",
+      "feature_1": "Work actively rewarded",
+      "feature_2": "Participation and real property",
+      "feature_3": "Transparency as foundation"
     },
     "problem_we_solve": {
       "title": "The Problem We Solve",
-      "problem_1": "High amounts and intermediaries that make investment more expensive.",
-      "problem_2": "Limited liquidity: properties take time to sell.",
-      "problem_3": "Lack of transparency and traceability in traditional processes.",
-      "solution": "Solution with Pandora's: accessible, liquid, and secure investments."
+      "problem_1": "Communities with limited participation and artificial engagement.",
+      "problem_2": "Technical barriers that prevent launching incentive systems.",
+      "problem_3": "Centralized platforms that turn creators into mercenaries for others' businesses.",
+      "solution": "Pandora's solution: sovereign communities, no-code accessible tools, real digital ownership."
     },
     "benefits_market": {
-      "main_title": "Powerful Advantages",
-      "main_description": "We are facing an industry that is changing the way we see the digital world.",
-      "ventajas_title0": "",
-      "ventajas_description0": "",
-      "ventajas_title1": "Built Trust",
-      "ventajas_description1": "",
-      "ventajas_title2": "Data and academic support",
-      "ventajas_description2": "“Tokenizable assets are projected to reach $26 trillion USD in 2030 thanks to the digital transformation of real markets.” (Source: G2 Learn)",
-      "ventajas_title3": "An unstoppable trend",
-      "ventajas_description3": "The global real estate tokenization market could exceed $3 trillion USD by 2030, representing up to 15% of global real estate assets. Pandora's allows you to be part of this movement from today"
+      "main_title": "The Seven Seals of the Digital Box",
+      "main_description": "We discover the artifacts that keep your community's participation dormant. It's time to unleash their true potential!",
+      "ventajas_title0": "Seal 1: The Artifact of Silence",
+      "ventajas_description0": "Passive communities, dormant engagement, members who don't awaken. The awakening: Incentive Protocols (Work-to-Earn). Reward your community for the work that AWAKENS their creative essence.",
+      "ventajas_title1": "Seal 2: The Artifact of Complexity",
+      "ventajas_description1": "Labyrinths of development, costs that devour resources, fear of smart contracts. The awakening: No-Code Platform. Unleash your utility protocol in minutes, not months of confusion.",
+      "ventajas_title2": "Seal 3: The Artifact of Third-Party Control",
+      "ventajas_description2": "Your community lives in third-party platforms (Discord/Patreon/Facebook). You are not the guardian, others control the rules and devour the 30%. The awakening: Community Crystals (NFTs). Grant your members real and sovereign property.",
+      "ventajas_title3": "The Awakening: Your Creation Palette Web3",
+      "ventajas_description3": "You don't need to be a 'blockchain mage' to have a Web3 community. We empower you with the necessary crystals to forge systems of incentives that flourish. Make your community COME ALIVE!"
     },
     "skeleton_one": {
       "items": [
