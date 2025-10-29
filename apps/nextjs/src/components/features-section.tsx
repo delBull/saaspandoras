@@ -4,12 +4,7 @@ import { cn } from "~/lib/utils";
 import createGlobe from "cobe";
 import { useEffect, useRef } from "react";
 import { IconBrandYoutubeFilled, IconShieldCheck, IconGavel, IconEye, IconFileCheck } from "@tabler/icons-react";
-import { Shadows_Into_Light } from "next/font/google";
-
-const shadowsIntoLight = Shadows_Into_Light({
-  subsets: ["latin"],
-  weight: "400",
-});
+import Image from "next/image";
 
 interface SkeletonOneItem {
   title: string;
@@ -18,13 +13,6 @@ interface SkeletonOneItem {
 
 interface SkeletonTwoItem {
   title: string;
-}
-
-interface Feature {
-  title: string;
-  description: string;
-  skeleton: React.ReactNode;
-  className: string;
 }
 
 interface BenefitsMarketDict {
@@ -66,7 +54,7 @@ export function FeaturesSectionDemo({
       description: ventajas_description0,
       skeleton: skeleton_one ? <SkeletonOne {...skeleton_one} /> : null,
       className:
-        "col-span-1 lg:col-span-4 border-b lg:border-r dark:border-neutral-800",
+        "col-span-1 lg:col-span-4 border-b lg:border-r dark:border-neutral-800 min-h-[300px] lg:min-h-[400px]",
     },
     {
       title: ventajas_title1,
@@ -91,7 +79,7 @@ export function FeaturesSectionDemo({
   return (
     <div className="relative z-20 py-10 lg:py-40 max-w-7xl mx-auto">
       <div className="px-8">
-        <h4 className={cn(shadowsIntoLight.className, "text-4xl sm:text-5xl text-neutral-800 dark:text-neutral-200 max-w-5xl mx-auto text-center")}>
+        <h4 className="text-4xl sm:text-5xl text-neutral-800 dark:text-neutral-200 max-w-5xl mx-auto text-center">
           {main_title}
         </h4>
 
@@ -152,26 +140,83 @@ const FeatureDescription = ({ children }: { children?: React.ReactNode }) => {
 
 export const SkeletonOne = ({ items = [] }: { items?: SkeletonOneItem[] }) => {
   return (
-    <div className="relative w-full h-full flex items-center justify-center">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
+    <div className="relative w-full h-full flex justify-start items-start pt-4 overflow-hidden">
+      {/* Background animated elements */}
+      <div className="absolute inset-0">
+        <div className="absolute top-1/4 left-1/6 w-1 h-1 bg-purple-500 rounded-full animate-pulse"></div>
+        <div className="absolute top-3/4 right-1/4 w-0.5 h-0.5 bg-pink-400 rounded-full animate-pulse delay-300"></div>
+        <div className="absolute bottom-1/3 left-1/3 w-0.5 h-0.5 bg-blue-400 rounded-full animate-pulse delay-700"></div>
+        <div className="absolute top-2/3 right-1/6 w-1 h-1 bg-cyan-400 rounded-full animate-pulse delay-1000"></div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 lg:gap-6 px-2 pt-2 pb-6 md:pt-4 md:pb-4">
         {items.map((item, idx) => (
           <div
-            key={"items-first" + idx}
-            className="group relative w-32 h-32 md:w-48 md:h-48 rounded-full flex items-center justify-center text-center p-4 overflow-hidden"
-            style={{
-              background: "linear-gradient(to bottom right, rgba(123, 27, 116, 0.8), rgba(180, 80, 170, 0.2))",
-              backdropFilter: "blur(10px)",
-              WebkitBackdropFilter: "blur(10px)",
-              border: "2px solid rgba(255,255,255,0.3)",
-            }}
+            key={"skeleton-item-" + idx}
+            className="group relative w-full aspect-square max-w-[120px] sm:max-w-[140px] md:max-w-[160px] lg:max-w-[180px] xl:max-w-[200px] mx-auto flex-shrink-0"
+          >
+            {/* Main orb */}
+            <div
+              className="relative w-full h-full rounded-full flex items-center justify-center text-center p-2 md:p-3 transition-all duration-500 ease-out
+                         hover:scale-110 hover:rotate-12 group-hover:shadow-2xl group-hover:shadow-purple-500/25"
+              style={{
+                background: "linear-gradient(135deg, rgba(139, 92, 246, 0.9), rgba(219, 39, 119, 0.6), rgba(59, 130, 246, 0.4))",
+                backdropFilter: "blur(20px)",
+                WebkitBackdropFilter: "blur(20px)",
+                border: "1px solid rgba(255,255,255,0.2)",
+                boxShadow: "inset 0 0 30px rgba(139, 92, 246, 0.3)",
+              }}
             >
-            <div className="absolute inset-0 w-full h-full bg-gradient-to-b from-black/10 to-transparent -translate-y-full group-hover:translate-y-0 transition-transform duration-700 ease-out blur-lg"></div>
-            <p className="relative z-10 text-neutral-200 text-xs font-mono">
-              {item.title}
-            </p>
+              {/* Animated rings */}
+              <div className="absolute inset-0 rounded-full border border-purple-400/40 group-hover:border-purple-300/60 transition-colors duration-300"></div>
+              <div className="absolute inset-1 rounded-full border border-pink-400/30 group-hover:border-pink-300/50 transition-colors duration-300 delay-100"></div>
+              <div className="absolute inset-2 rounded-full border border-blue-400/20 group-hover:border-blue-300/40 transition-colors duration-300 delay-200"></div>
+
+              {/* Ripple effect on hover */}
+              <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className="absolute inset-0 rounded-full border-2 border-purple-300/60 animate-ping"></div>
+                <div className="absolute inset-1 rounded-full border border-pink-300/40 animate-ping delay-75"></div>
+              </div>
+
+              {/* Hover shine effect */}
+              <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500
+                              bg-gradient-to-r from-transparent via-white/10 to-transparent rotate-45 transform -skew-x-12
+                              animate-pulse"></div>
+
+              {/* Floating particles */}
+              <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-300 rounded-full opacity-70 group-hover:opacity-100 group-hover:animate-bounce"></div>
+              <div className="absolute -bottom-1 -left-1 w-1.5 h-1.5 bg-cyan-300 rounded-full opacity-50 group-hover:opacity-80 group-hover:animate-bounce delay-300"></div>
+              <div className="absolute top-1/3 -left-2 w-1 h-1 bg-pink-300 rounded-full opacity-60 group-hover:opacity-90 group-hover:animate-bounce delay-700"></div>
+
+              {/* Content */}
+              <p className="relative z-10 text-white/90 group-hover:text-white font-mono text-[10px] md:text-xs lg:text-sm
+                           font-semibold leading-tight drop-shadow-lg transition-colors duration-300">
+                {item.title}
+              </p>
+
+              {/* Glow effect */}
+              <div className="absolute inset-0 rounded-full bg-purple-500/20 group-hover:bg-purple-400/30
+                              blur-xl scale-150 opacity-0 group-hover:opacity-100 transition-all duration-500 -z-10"></div>
+            </div>
           </div>
         ))}
       </div>
+
+      {/* Connecting lines animation */}
+      <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-30">
+        <defs>
+          <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="rgba(139, 92, 246, 0.3)" />
+            <stop offset="100%" stopColor="rgba(219, 39, 119, 0.3)" />
+          </linearGradient>
+        </defs>
+        {/* Horizontal connections */}
+        <line x1="25%" y1="50%" x2="75%" y2="50%" stroke="url(#lineGradient)" strokeWidth="1"
+              className="hidden lg:block animate-pulse" style={{animationDuration: '4s'}} />
+        {/* Vertical connections */}
+        <line x1="50%" y1="25%" x2="50%" y2="75%" stroke="url(#lineGradient)" strokeWidth="1"
+              className="hidden lg:block animate-pulse delay-1000" style={{animationDuration: '4s'}} />
+      </svg>
     </div>
   );
 };
@@ -187,7 +232,7 @@ export const SkeletonThree = () => {
         <div className="flex flex-1 w-full h-full flex-col space-y-2  relative">
           {/* TODO */}
           <IconBrandYoutubeFilled className="h-20 w-20 absolute z-10 inset-0 text-red-500 m-auto " />
-          <img
+          <Image
             src="/images/min-area.jpg"
             alt="header"
             width={800}

@@ -30,7 +30,7 @@
     "sub_title": "获得具有独家机会的数字股票从未如此简单",
     "get_started": "如何操作？",
     "hero_supertitle": "投资的未来，新时代",
-    "hero_title": "对有形资产的包容性投资",
+    "hero_title": "在 web3 上构建",
     "hero_subtitle": "将您的参与代币化，获得实际回报，并加入一个没有中介的新时代。",
     "hero_cta1": "立即开始",
     "hero_cta2": "运作方式",
@@ -43,7 +43,7 @@
     "devops_features": "轻松启动项目",
     "price_features": "在生产环境中具有成本效益",
     "main_nav_business": "申请",
-    "main_nav_assets": "资产",
+    "main_nav_assets": "创作",
     "main_nav_invest": "质押",
     "main_nav_products": "产品",
     "main_nav_blog": "博客",
@@ -76,22 +76,22 @@
       "nextauth_desc": ""
     },
     "investment_steps": {
-      "title": "投资就像 → 一样简单",
+      "title": "在 web3 上构建和 → 一样简单！",
       "steps": [
         {
-          "title": "获取您的免费股票",
-          "content": "使用免费的通行密钥即时访问，为您解锁平台。",
-          "caption": "注册并获取您的免费数字股票，让您可以投资独家房产。"
+          "title": "创建您的社区",
+          "content": "用赋予Pandora主权访问的神奇数字钥匙立即唤醒。",
+          "caption": "注册并申请可创建令人难忘社区的主权数字ID。"
         },
         {
-          "title": "以特价投资",
-          "content": "在合法且受监管的预售期间以优惠价格投资。",
-          "caption": "在我们的预售期间使用您的股票以特价投资。"
+          "title": "设计您的协议",
+          "content": "创建参与式激励系统和智能合约，它们以您的想象力绽放。",
+          "caption": "使用您的ID设计实用程序协议，将观众转变为活跃的创作者。"
         },
         {
-          "title": "赚钱和成长",
-          "content": "从第一天起就通过租金、资本收益和共同所有权的可能性赚钱。",
-          "caption": "通过您的投资，您将获得独家优惠。"
+          "title": "在Pandora实验室中实验",
+          "content": "测试您的想象力：创建主权NFT的会员资格，并设计Work-to-Earn协议来唤醒社区。",
+          "caption": "免费实验并观察从第一刻起您的社区如何走向集体生活。"
         }
       ]
     },
@@ -100,9 +100,18 @@
       "investments_panel": "活跃投资和实时回报"
     },
     "sponsor": {
-      "title": "准备好改变您的投资方式了吗？",
-      "donate": "分散投资于不同资产",
-      "subtitle": "立即成为 Pandora's 的一员，进入数字实物资产的新时代"
+      "title": "选择你的进化：Web2 vs Web3？",
+      "donate": "与 Pandora 一起构建",
+      "subtitle": "这不是一个问题...这是一个必然的进化。"
+    },
+    "hero_typewriter": {
+      "title": "在 web3 上构建",
+      "subtitle": "你的社区焕发活力。",
+      "typewriter_words": [
+        { "text": "构建忠诚度协议。", "cursorColor": "#A3E635", "contentColor": "#A3E635" },
+        { "text": "参与式激励系统。", "cursorColor": "#7b1b74", "contentColor": "#7b1b74" },
+        { "text": "设计真正的NFT会员资格。", "cursorColor": "#A3E635", "contentColor": "#A3E635" }
+      ]
     },
     "video": {
       "first_text": "获取代表房产价值一部分的数字股票，",
@@ -206,12 +215,12 @@
           "answer": "资金存放在信托/托管中，操作在具有多重签名验证的智能合约上进行；法律结构在每个报价中都有详细说明。"
         },
         {
-          "question": "我可以期待什么回报？有什么风险？",
-          "answer": "回报取决于项目（租金、增值、出售）。风险包括建筑、市场、监管和流动性。没有保证。"
+          "question": "如果 Pandora 破产或消失会怎么样？",
+          "answer": "您的审计智能合约部署在主权区块链上（您拥有像传统银行账户一样，但是不朽的）。一旦部署，它们会永远自动执行。您保持完全控制。如果我们消失，您的系统将继续完美运行。"
         },
         {
-          "question": "我什么时候以及如何获得回报或退出？",
-          "answer": "付款遵循项目的时间表（例如，每季度或在交割时）。允许通过二级市场或转让提前退出，但须遵守条件和可能的罚款。"
+          "question": "谁来监管这个？如果我的社区做错事怎么办？",
+          "answer": "您来监管。您是您的协议的主权所有者。没有中央平台会审查或删除您的社区。这种自由是强大的，但伴随着责任：我们教育您的社区有关适用的税务和法律规定。您保持完全的社会控制。"
         }
       ]
     }

@@ -26,13 +26,13 @@
   },
   "marketing": {
     "introducing": "Presentamos Pandora's",
-    "title": "Invierte en propiedades exclusivas de forma sencilla y segura ",
-    "sub_title": "Adquirir participaciones digitales con oportunidades exclusivas nunca fue tan fácil",
-    "get_started": "¿Cómo?",
-    "hero_supertitle": "EL FUTURO DE LA INVERSIÓN, LA NUEVA ERA",
-    "hero_title": "INVERSIÓN INCLUSIVA EN ACTIVOS TANGIBLES",
-    "hero_subtitle": "Tokeniza tu participación, recibe rendimientos reales y únete a una nueva era sin intermediarios.",
-    "hero_cta1": "Empieza ahora",
+    "title": "Comunidades Interactivas. Sistemas de Incentivos.",
+    "sub_title": "Construye protocolos de lealtad, crea sistemas de participación, diseña membrecías NFT que importan",
+    "get_started": "¿Cómo empezar?",
+    "hero_supertitle": "EL DESPERTAR DE LA UTILIDAD",
+    "hero_title": "Construye en web3",
+    "hero_subtitle": "Los tokens no son una especulación... son la evolución natural de las comunidades.",
+    "hero_cta1": "Empezar a Construir",
     "hero_cta2": "Cómo funciona",
     "hero_cta3": "¿Por qué Pandora’s?",
     "view_on_github": "Ver en GitHub",
@@ -43,7 +43,7 @@
     "devops_features": "Lanzamiento de proyectos sin complicaciones",
     "price_features": "Económico en entornos de producción",
     "main_nav_business": "Aplicar",
-    "main_nav_assets": "Activos",
+    "main_nav_assets": "Creaciones",
     "main_nav_invest": "Stake",
     "main_nav_products": "Productos",
     "main_nav_blog": "Blog",
@@ -76,22 +76,22 @@
       "nextauth_desc": ""
     },
     "investment_steps": {
-      "title": "Invertir es tan fácil como →",
+      "title": "Construir en web3 es tan sencillo como →",
       "steps": [
         {
-          "title": "Obtener tu participación gratuita",
-          "content": "Accede instantáneamente con una llave de acceso gratuita que te desbloquea la plataforma.",
-          "caption": "Regístrate y adquiere tu participación digital gratuita que te permite invertir en propiedades exclusivas."
+          "title": "Crea tu Comunidad",
+          "content": "Despierta instantáneamente con una llave digital mágica que te concede acceso soberano a Pandora.",
+          "caption": "Regístrate y reclama tu identidad digital soberana que te permite crear comunidades inolvidables."
         },
         {
-          "title": "Invierte a un precio especial",
-          "content": "Invierte a precios preferenciales durante preventas legales y reguladas.",
-          "caption": "Utiliza tu participación para invertir a un precio especial durante cualquier etapa de venta."
+          "title": "Diseña tus Protocolos",
+          "content": "Crea sistemas de incentivación participativos y contratos inteligentes que florezcan con tu imaginación.",
+          "caption": "Utiliza tu identidad para diseñar protocolos de utilidad que transformen espectadores en creadores activos."
         },
         {
-          "title": "Gana y Crece",
-          "content": "Gana desde el día uno con renta, plusvalía y posibilidad de co-propiedad.",
-          "caption": "Con tu inversión, accederás a beneficios exclusivos."
+          "title": "Experimenta en el Laboratorio Pandora",
+          "content": "Prueba tu imaginación: crea membresías con NFTs soberanas y diseña protocolos Work-to-Earn que despierten comunidades.",
+          "caption": "Experimenta gratis y observa cómo tu comunidad cobra vida colectiva desde el primer momento."
         }
       ]
     },
@@ -100,89 +100,133 @@
       "investments_panel": "Inversiones activas y rendimientos en tiempo real"
     },
     "sponsor": {
-      "title": "¿Listo para transformar tu forma de invertir?",
-      "donate": "Diversifica en diferentes activos",
-      "subtitle": "Sé parte de Pandora’s hoy y accede a una nueva era de activos digitales reales"
+      "title": "¿Elige tu evolución: Web2 vs Web3?",
+      "donate": "Construye con Pandora",
+      "subtitle": "No es una pregunta... es una evolución inevitable."
+    },
+    "hero_typewriter": {
+      "title": "Construye en web3",
+      "subtitle": "Tu comunidad cobra vida.",
+      "typewriter_words": [
+        { "text": "Construye Protocolos de Lealtad.", "cursorColor": "#A3E635", "contentColor": "#A3E635" },
+        { "text": "Sistema de Incentivos Participativos.", "cursorColor": "#7b1b74", "contentColor": "#7b1b74" },
+        { "text": "Diseña Membresías NFT Verdaderas.", "cursorColor": "#A3E635", "contentColor": "#A3E635" }
+      ]
+    },
+    "final_cta": {
+      "title": "El Creador Web2 vs El Creador Web3",
+      "subtitle": "No es una pregunta... es una evolución inevitable. ¿Qué lado eliges?",
+      "web2_column": {
+        "title": "Creador Web2 (La Tradición)",
+        "consequence_1": "Comisiones del 30-50% por plataformas intermediarias",
+        "consequence_2": "Audiencias alquiladas que plataformas pueden quitar en cualquier momento",
+        "consequence_3": "Censura por moderación de terceros (no eres dueño de tu voz)",
+        "consequence_4": "Usuarios pasivos/atónicos que nunca se convierten en verdaderos defensores",
+        "consequence_5": "Sistema financiero centralizado que toma poder, no que lo da"
+      },
+      "web3_column": {
+        "title": "Creador Web3 (Pandora's)",
+        "consequence_1": "Propiedad completa y soberana de tu comunidad y contenido",
+        "consequence_2": "Incentivos económicos perfectos que alientan participación activa",
+        "consequence_3": "Transparencia radical y confianza sin necesidad de intermediarios",
+        "consequence_4": "Miembros que se convierten en embajadores, defensores, creadores",
+        "consequence_5": "Sistema que escala infinito y jamás duerme o se aquieta"
+      },
+      "final_question": "¿Quieres crear comunidades que florezcan eternamente... o famélicas temporales?",
+      "ultimate_cta": "Unirme a la Evolución del Creador",
+      "cta_subtext": "No estás comprando revolucion... estás convirtiéndote en ella."
     },
     "video": {
-      "first_text": "Obtén participaciones digitales que representan una parte ",
-      "second_text1": "del valor de la propiedad y participa en exclusivos activos del mundo real mediante ",
-      "time_text": "inversiones",
-      "second_text2": "",
+      "first_text": "Forge cristales de membresía únicos y diseña rituales de incentivos que transforman ",
+      "second_text1": "espectadores en creadores activos. Participa en la forja de comunitarios mediante ",
+      "time_text": "sorcellería creativa",
+      "second_text2": "Prueba nuestros laboratorios experimentales de construcción comunitaria",
       "academic_backing": {
         "title": "Datos y respaldo académico",
         "subtitle": "Se proyecta que los activos tokenizables alcanzarán 6 trillones USD en 2030 gracias a la transformación digital de los mercados reales."
       }
     },
     "transform_token": {
-      "title": "Disfruta de Beneficios Exclusivos",
-      "desc": "Acumula más participaciones y accede a privilegios únicos, obtén ingresos por rentas y disfruta de la posibilidad de convertir tu inversión en propiedad completa.",
+      "title": "La Caja de Herramientas Abierta",
+      "desc": "Transparencia radical: nuestras herramientas son tu arsenal de creación. Tienes el control soberano de tus protocolos.",
       "more_details": "Más Detalles",
       "close": "Cerrar",
-      "part1_title": "Desbloquea Privilegios Exclusivos",
-      "part1_content": "Imagina que cada acción que adquieres no solo representa tu inversión, sino que también te abre las puertas a un mundo de privilegios exclusivos. Con el tiempo, a medida que acumulas más acciones, tendrás acceso a eventos especiales, soporte personalizado e información privilegiada sobre nuestros desarrollos premium. Este beneficio te posiciona dentro de una comunidad selecta, donde tu inversión te proporciona experiencias únicas reservadas solo para nuestros miembros más comprometidos.",
-      "part2_title": "Gana Ingresos por Alquiler y Oportunidades de Propiedad Total",
-      "part2_content": "Además de los privilegios, tus acciones te permiten generar ingresos por alquiler, ya que la propiedad genera ingresos durante el período de arrendamiento. Cuando alcances una cierta cantidad de acciones, tendrás la oportunidad de convertir tu inversión en propiedad total, transformando tu participación en un activo tangible y de alto valor. Este enfoque te brinda beneficios tanto inmediatos como a largo plazo, impulsados por el éxito y la apreciación del proyecto."
+      "part1_title": "Contratos Auditados",
+      "part1_content": "Descubre nuestros smart contracts auditados. Tú eres el propietario soberano de tus protocolos. Ningún intermediario controla tu creación.",
+      "part2_title": "Modelo SaaS Sin Fees Ocultos",
+      "part2_content": "Construyes una vez, mantienes para siempre. Nuestros contratos inteligentes ejecutan tu lógica en la blockchain eterna."
     },
     "people_comment": {
-      "title": "Lo que dicen las personas",
-      "desc": "No solo confíes en nuestra palabra. Esto es lo que dicen usuarios reales sobre Pandoras."
+      "title": "Casos de Estudio: Creadores Reales",
+      "desc": "No solo escuches nuestras promesas. Mira cómo creadores reales despertaron sus comunidades con magia Pandora.",
+      "case_1": {
+        "name": "Laura (Artista Digital)",
+        "before": "Vendía 'prints' en una tienda, cero conexión con sus compradores.",
+        "after": "Creó un 'NFT de Membresía'. Ahora su comunidad vota sobre su próxima obra y recibe 'airdrops' de bocetos.",
+        "cta": "Incentivos por participación"
+      },
+      "case_2": {
+        "name": "DevCore (Proyecto Open-Source)",
+        "before": "Pocos contribuidores, dependían de donaciones esporádicas.",
+        "after": "Implementaron 'Work-to-Earn'. Ahora recompensan desarrolladores con tokens por 'bugs' corregidos.",
+        "cta": "Rituales de colaboración"
+      }
     },
     "what_is_pandoras": {
-      "title": "¿Qué es Pandora’s Finance?",
-      "description": "Pandora’s transforma activos reales (propiedades inmobiliarias y startups) en oportunidades digitales accesibles. Sin intermediarios, respaldado por fideicomiso legal, tecnología blockchain y una visión de futuro financiero.",
-      "feature_1": "Legal y regulado",
-      "feature_2": "Acceso global e inclusivo",
-      "feature_3": "Activos reales tokenizados"
+      "title": "El Manifiesto Pandora",
+      "description": "Creemos que el 'trabajo' debe ser recompensado, no solo la 'inversión'. La propiedad digital no es un 'ticker'... es un derecho de participación. La transparencia no es una 'feature'... es la base de la confianza. Somos la evolución natural de las comunidades creadoras.",
+      "feature_1": "Trabajo recompensado activamente",
+      "feature_2": "Participación y propiedad real",
+      "feature_3": "Transparencia como fundamento"
     },
     "problem_we_solve": {
       "title": "El Problema Que Resolvemos",
-      "problem_1": "Altos montos e intermediarios que encarecen la inversión.",
-      "problem_2": "Liquidez limitada: propiedades tardan en venderse.",
-      "problem_3": "Falta de transparencia y trazabilidad en procesos tradicionales.",
-      "solution": "Solución con Pandora’s: inversiones accesibles, líquidas y seguras."
+      "problem_1": "Comunidades con participación limitada y engagement artificial.",
+      "problem_2": "Barreras técnicas que impiden lanzar sistemas de incentivos.",
+      "problem_3": "Plataformas centralizadas que convierten creadores en mercenarios de otras empresas.",
+      "solution": "Solución con Pandora: comunidades soberanas, herramientas no-code accesibles, propiedad digital real."
     },
     "benefits_market": {
-      "main_title": "Ventajas Poderosas",
-      "main_description": "Estamos ante una industria que está cambiando la forma en que vemos el mundo digital.",
-      "ventajas_title0": "",
-      "ventajas_description0": "",
-      "ventajas_title1": "Confianza construida",
-      "ventajas_description1": "",
-      "ventajas_title2": "Datos y respaldo académico",
-      "ventajas_description2": "“Se proyecta que los activos tokenizables alcanzarán $26 trillones USD en 2030 gracias a la transformación digital de los mercados reales.” (Fuente: G2 Learn)",
-      "ventajas_title3": "Una tendencia imparable",
-      "ventajas_description3": "El mercado global de tokenización de bienes raíces podría superar los $3 billones USD para 2030, representando hasta el 15 % de los activos inmobiliarios globales. Pandora’s permite ser parte de este movimiento desde hoy"
+      "main_title": "Los Siete Sellos de la Caja Digital",
+      "main_description": "Descubrimos los artefactos que mantienen dormida la participación de tu comunidad. ¡Es hora de desatar su verdadero potencial!",
+      "ventajas_title0": "Sello 1: El Artefacto del Silencio",
+      "ventajas_description0": "Comunidades pasivas, 'engagement' dormido, miembros que no despiertan. El despertar: Protocolos de Incentivos (Work-to-Earn). Recompensa a tu comunidad por el trabajo que DESPIERTA su esencia creativa.",
+      "ventajas_title1": "Sello 2: El Artefacto de la Complejidad",
+      "ventajas_description1": "Laberintos de desarrollo, costos que devoran recursos, miedo a los 'smart contracts'. El despertar: Plataforma No-Code. Desata tu protocolo de utilidad en minutos, no en meses de confusión.",
+      "ventajas_title2": "Sello 3: El Artefacto del Control Ajeno",
+      "ventajas_description2": "Tu comunidad vive en plataformas ajenas (Discord/Patreon/Facebook). No eres el guardián, otros controlan las reglas y devoran el 30%. El despertar: Cristales de Comunidad (NFTs). Otorga a tus miembros propiedad real y soberana.",
+      "ventajas_title3": "El Despertar: Tu Paleta de Creación Web3",
+      "ventajas_description3": "No necesitas ser un 'mago blockchain' para tener una comunidad web3. Te dotamos de los cristales necesarios para forjar sistemas de incentivos que florezcan. ¡Haz que tu comunidad COBRE VIDA!"
     },
     "skeleton_one": {
       "items": [
         {
-          "title": "Inversiones accesibles desde montos bajos."
+          "title": "Comunidades sin engagement real."
         },
         {
-          "title": "Alta liquidez en un mercado digital global."
+          "title": "Miembros que reclaman sin aportar."
         },
         {
-          "title": "Transparencia de fondos con blockchain."
+          "title": "Ausencia de incentivos creativos."
         },
         {
-          "title": "Diversificación en bienes raíces y emprendimiento."
+          "title": "Contenido generado por obligaciones, no pasión."
         }
       ]
     },
     "skeleton_two": {
       "items": [
         {
-          "title": "Legalidad formal"
+          "title": "Desarrollo que toma meses enteros"
         },
         {
-          "title": "Tecnología sólida (blockchain)"
+          "title": "Costos de auditoría de 6 cifras"
         },
         {
-          "title": "Activos reales tokenizados"
+          "title": "Miedo a los 'smart contracts' técnicos"
         },
         {
-          "title": "Transparencia total en transacciones"
+          "title": "Complejidad que detiene la innovación"
         }
       ]
     },
@@ -191,27 +235,27 @@
       "subtitle": "Se proyecta que los activos tokenizables alcanzarán 6 trillones USD en 2030 gracias a la transformación digital de los mercados reales."
     },
     "faq": {
-      "title": "Preguntas Frecuentes",
+      "title": "Preguntas Incómodas: Las Dudas Reales de los Creadores",
       "faqs": [
         {
-          "question": "¿Qué es Pandora’s Finance y cómo funciona?",
-          "answer": "Plataforma para invertir en fracciones de propiedades y startups: te registras, obtienes un derecho de acceso y participas en rondas de inversión respaldadas legalmente."
+          "question": "¿Necesito saber programar para usar Pandora?",
+          "answer": "No. Esta es una plataforma no-code. Si sabes usar Shopify, sabes usar Pandora. Nuestras herramientas visuales convierten complejidad técnica en interfaces intuitivas. Tú te enfocas en crear contenido increíble; nosotros manejamos la blockchain."
         },
         {
-          "question": "¿Cómo invierto y cuánto necesito?",
-          "answer": "Regístrate, reclama tu acceso y elige proyecto. El mínimo varía por oferta; puedes pagar en fiat o stablecoins según cada proyecto."
+          "question": "¿Qué pasa si mi proyecto es visto como una 'security' o token especulativo?",
+          "answer": "Es la pregunta correcta. Nuestra plataforma está diseñada específicamente para evitar eso. Te guiamos para enfocar tus tokens en 'utilidad real' (acceso a contenido, governance, participación activa). Te damos el checklist completo para mantenerte en el lado correcto: ninguna promesa de rentabilidad financiera, solo recompensas por participación genuina."
         },
         {
-          "question": "¿Cómo protegen mi dinero?",
-          "answer": "Fondos custodiados en fideicomiso/escrow, operaciones en smart contracts y validación multisig; la estructura legal aparece en cada oferta."
+          "question": "¿Qué pasa si Pandora quiebra o desaparece?",
+          "answer": "Tus smart contracts auditados están desplegados en una blockchain soberana (tú tienes como existe la cuenta bancaria tradicional, pero inmortal). Una vez desplegados, ejecutan automáticamente para siempre. Tú mantienes el control total. Si desaparecemos, tus sistemas siguen funcionando perfectamente."
         },
         {
-          "question": "¿Qué rendimientos puedo esperar y cuáles son los riesgos?",
-          "answer": "Rendimientos: dependen del proyecto (renta, plusvalía, venta). Riesgos: construcción, mercado, regulatorios y liquidez. No hay garantías."
+          "question": "¿Web3 es sólo especulación? ¿Cómo sé que mi sistema de incentivos funcionará?",
+          "answer": "Web3 amplifica lo que hagas. Si tienes buena participación, Web3 la hace explosiva. Si tienes mala participación, Web3 la expone brutalmente. Nuestros datos muestran que sistemas bien diseñados aumentan participación 300-500%. No garantizamos éxito, pero te damos las herramientas probadas para lograrlo."
         },
         {
-          "question": "¿Cuándo y cómo recibo mi retorno o puedo salir?",
-          "answer": "Pagos según calendario del proyecto (p. ej. trimestral o al cierre). Salidas anticipadas pueden permitirse vía mercado secundario o transferencias, sujetas a condiciones y posibles penalizaciones."
+          "question": "¿Quién regula esto? ¿Y si mi comunidad hace algo malo?",
+          "answer": "Tú regulas. Eres el propietario soberano de tu protocolo. No hay plataforma central que censure o elimine a tu comunidad. Esa libertad es poderosa, pero trae responsabilidad: educamos a tu comunidad sobre regulaciones fiscales y legales aplicables. Tú mantienes el control total social."
         }
       ]
     }
