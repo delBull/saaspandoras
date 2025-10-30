@@ -409,7 +409,9 @@ private static getEventPoints(eventType: string): number {
     'investment_made': 25,
     'daily_login': 10,
     'user_registered': 20,
-    'referral_made': 200
+    'referral_made': 200,
+    'COURSE_STARTED': 10,
+    'COURSE_COMPLETED': 100
   };
 
   return pointsMap[normalizedEventType] ?? 0;
@@ -563,13 +565,26 @@ private static async updateUserProfilePoints(userId: string, pointsToAdd: number
         console.log(`🎉 Unlocked "Primer Login" achievement for user ${userId}`);
       }
 
+      // 🎯 NUEVOS: MAPPINGS FALTANTES PARA CURSOS
+      if (eventType === 'COURSE_STARTED') {
+        await this.unlockAchievement(userId, 'curso_iniciado');
+        console.log(`🎉 Unlocked "Curso Iniciado" achievement for user ${userId}`);
+      }
+
+      if (eventType === 'COURSE_COMPLETED') {
+        await this.unlockAchievement(userId, 'curso_completado');
+        console.log(`🎉 Unlocked "Curso Completado" achievement for user ${userId}`);
+      }
+
       // Check for other achievements based on total points
       if (totalPoints >= 25) {
         await this.unlockAchievement(userId, 'explorador_intrépido');
+        console.log(`🎉 Unlocked "Explorador Intrépido" achievement for user ${userId}`);
       }
 
       if (totalPoints >= 100) {
         await this.unlockAchievement(userId, 'primer_aplicante');
+        console.log(`🎉 Unlocked "Primer Aplicante" achievement for user ${userId}`);
       }
 
       console.log(`✅ Achievement check complete for user ${userId}`);

@@ -12,11 +12,9 @@ import {
   Medal,
   Shield,
   Award,
-  Users,
   ArrowLeft,
   Zap,
   Sparkles,
-  Rocket,
   Code,
   Puzzle,
   CheckCircle
@@ -24,266 +22,47 @@ import {
 import Link from 'next/link';
 
 import { AnimatedBackground } from "@/components/apply/AnimatedBackground";
-
 import { useActiveAccount } from 'thirdweb/react';
-
-// Hook para connectar con data real de gamification
 import { useRealGamification } from '@/hooks/useRealGamification';
 
-// Removiendo tipo no usado
-
-// Achievement templates - solo para mostrar disponible achievements, sin data hardcodeada
-const achievementTemplates = [
-  {
-    icon: <Target className="w-6 h-6" />,
-    title: "Comunidad Activa",
-    achievements: [
-      {
-        id: 'daily_login',
-        name: 'Primer Login',
-        description: 'Conecta tu wallet exitosamente',
-        icon: '🔗',
-        rarity: 'common',
-        points: 10,
-        category: 'login',
-        eventType: 'DAILY_LOGIN'
-      },
-      {
-        id: '2',
-        name: 'Explorador Intrépido',
-        description: 'Ve 5 creaciones diferentes',
-        icon: '🔍',
-        rarity: 'common',
-        points: 25,
-        category: 'exploration',
-        eventType: 'VIEW_PROJECTS_5'
-      },
-      {
-        id: '3',
-        name: 'Curioso Universal',
-        description: 'Has explorado 25 creaciones únicas',
-        icon: '🌍',
-        rarity: 'rare',
-        points: 150,
-        unlocked: false,
-        progress: 12,
-        required: 25,
-        category: 'exploration'
-      },
-      {
-        id: '4',
-        name: 'Maestro Explorador',
-        description: 'Has visto 100 creaciones diferentes',
-        icon: '🗺️',
-        rarity: 'legendary',
-        points: 1000,
-        unlocked: false,
-        progress: 12,
-        required: 100,
-        category: 'exploration'
-      }
-    ]
-  },
-  {
-    icon: <Code className="w-6 h-6" />,
-    title: "Creador Activo",
-    achievements: [
-      {
-        id: '5',
-        name: 'Primer Borrador',
-        description: 'Has creado tu primera creación',
-        icon: '📝',
-        rarity: 'common',
-        points: 50,
-        unlocked: false,
-        progress: 0,
-        required: 1,
-        category: 'creation'
-      },
-      {
-        id: '6',
-        name: 'Aplicante Proactivo',
-        description: 'Has enviado tu primera aplicación completa',
-        icon: '📤',
-        rarity: 'uncommon',
-        points: 100,
-        unlocked: false,
-        progress: 0,
-        required: 1,
-        category: 'creation'
-      },
-      {
-        id: '7',
-        name: 'Veterano de Proyectos',
-        description: 'Has tenido 5 aplicaciones aprobadas',
-        icon: '🎖️',
-        rarity: 'epic',
-        points: 500,
-        unlocked: false,
-        progress: 0,
-        required: 5,
-        category: 'creation'
-      },
-      {
-        id: '8',
-        name: 'Maestro Constructor',
-        description: 'Has completado 20 proyectos exitosos',
-        icon: '🏗️',
-        rarity: 'legendary',
-        points: 2000,
-        unlocked: false,
-        progress: 0,
-        required: 20,
-        category: 'creation'
-      }
-    ]
-  },
-  {
-    icon: <Award className="w-6 h-6" />,
-    title: "Inversor Legendario",
-    achievements: [
-      {
-        id: '9',
-        name: 'Primer Paso',
-        description: 'Has invertido en tu primera creación',
-        icon: '💰',
-        rarity: 'uncommon',
-        points: 75,
-        unlocked: false,
-        progress: 0,
-        required: 1,
-        category: 'investment'
-      },
-      {
-        id: '10',
-        name: 'Visionario Temprano',
-        description: 'Has invertido en 10 creaciones distintas',
-        icon: '👁️',
-        rarity: 'rare',
-        points: 300,
-        unlocked: false,
-        progress: 0,
-        required: 10,
-        category: 'investment'
-      },
-      {
-        id: '11',
-        name: 'Ballena Magnífica',
-        description: 'Has invertido más de 100 ETH total',
-        icon: '🐋',
-        rarity: 'legendary',
-        points: 5000,
-        unlocked: false,
-        progress: 0,
-        required: 100,
-        category: 'investment'
-      }
-    ]
-  },
-  {
-    icon: <Users className="w-6 h-6" />,
-    title: "Líder de Comunidad",
-    achievements: [
-      {
-        id: '12',
-        name: 'Embajador Novato',
-        description: 'Has referido a tu primer amigo',
-        icon: '👥',
-        rarity: 'common',
-        points: 50,
-        unlocked: false,
-        progress: 0,
-        required: 1,
-        category: 'referral'
-      },
-      {
-        id: '13',
-        name: 'Influencer Emergente',
-        description: 'Has referido a 25 miembros',
-        icon: '📢',
-        rarity: 'epic',
-        points: 750,
-        unlocked: false,
-        progress: 3,
-        required: 25,
-        category: 'referral'
-      },
-      {
-        id: '14',
-        name: 'Emperador de la Comunidad',
-        description: 'Has construido una red de 100+ miembros',
-        icon: '👑',
-        rarity: 'legendary',
-        points: 10000,
-        unlocked: false,
-        progress: 3,
-        required: 100,
-        category: 'referral'
-      }
-    ]
-  },
-  {
-    icon: <Puzzle className="w-6 h-6" />,
-    title: "Experto Especializado",
-    achievements: [
-      {
-        id: '15',
-        name: 'Escritor Técnico',
-        description: 'Has contribuido con documentación detallada',
-        icon: '📚',
-        rarity: 'rare',
-        points: 200,
-        unlocked: false,
-        progress: 0,
-        required: 1,
-        category: 'expertise'
-      },
-      {
-        id: '16',
-        name: 'Validador Experto',
-        description: 'Has realizado 100+ validaciones de proyectos',
-        icon: '✅',
-        rarity: 'epic',
-        points: 600,
-        unlocked: false,
-        progress: 0,
-        required: 100,
-        category: 'expertise'
-      }
-    ]
-  }
-];
+// Categories from real achievements in BD
+const categoryIcons = {
+  'Comunidad Activa': <Target className="w-6 h-6" />,
+  'Creador Activo': <Code className="w-6 h-6" />,
+  'Inversor Legendario': <Award className="w-6 h-6" />,
+  'Experto Especializado': <Puzzle className="w-6 h-6" />
+};
 
 const rarityConfig = {
-  common: {
+  first_steps: {
     color: 'from-gray-400 to-gray-600',
     bgColor: 'bg-gray-500/10 border-gray-500/30',
     textColor: 'text-gray-400',
     icon: CheckCircle,
-    name: 'Común'
+    name: 'Principiante'
   },
-  uncommon: {
+  investor: {
     color: 'from-green-400 to-emerald-500',
     bgColor: 'bg-green-500/10 border-green-500/30',
     textColor: 'text-green-400',
     icon: Star,
-    name: 'Poco Común'
+    name: 'Inversor'
   },
-  rare: {
+  community_builder: {
     color: 'from-blue-400 to-blue-600',
     bgColor: 'bg-blue-500/10 border-blue-500/30',
     textColor: 'text-blue-400',
     icon: Sparkles,
-    name: 'Raro'
+    name: 'Comunidad'
   },
-  epic: {
+  early_adopter: {
     color: 'from-purple-400 to-purple-600',
     bgColor: 'bg-purple-500/10 border-purple-500/30',
     textColor: 'text-purple-400',
     icon: Shield,
-    name: 'Épico'
+    name: 'Temprano'
   },
-  legendary: {
+  high_roller: {
     color: 'from-yellow-400 to-orange-500',
     bgColor: 'bg-yellow-500/10 border-yellow-500/30',
     textColor: 'text-yellow-400',
@@ -292,73 +71,106 @@ const rarityConfig = {
   }
 };
 
-// Force dynamic rendering - this page uses cookies and should not be prerendered
+// Force dynamic rendering
 export const dynamic = 'force-dynamic';
 
 export default function AchievementsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [filter] = useState<'all' | 'unlocked' | 'locked'>('all');
+  const [allAvailableAchievements, setAllAvailableAchievements] = useState<any[]>([]);
+  const [loadingAchievements, setLoadingAchievements] = useState(true);
 
-  // 🎮 CONECTAR CON EL SYSTEMA REAL - Necesitamos obtener la wallet del usuario
   const account = useActiveAccount();
   const gamification = useRealGamification(account?.address ?? '');
 
-  // 🔄 COMBINAR TEMPLATES CON DATA REAL - TYPESCRIPT SAFE
-  const generateAchievementsFromData = () => {
-    // Asegurar que siempre tengamos un array (puede venir como null/undefined mientras carga)
-    const completedAchievements = Array.isArray(gamification?.achievements)
-      ? gamification.achievements
-      : [];
+  // Load all available achievements from simple API
+  useEffect(() => {
+    const loadAllAchievements = async () => {
+      try {
+        console.log('🚀 Fetching user achievements from API...');
+        // Use full API that includes user achievement status
+        const achievementsResponse = await fetch(`/api/gamification/user/achievements/full/${account?.address ?? ''}`);
+        console.log('📡 API Response Status:', achievementsResponse.status);
 
-    return achievementTemplates.map(category => ({
-      ...category,
-      achievements: category.achievements.map(achievement => {
-        /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
-        const completedAchievement = completedAchievements.find(
-          (ca: any) => ca.id === achievement.id || ca.eventType === achievement.eventType
-        );
+        const achievementsData = await achievementsResponse.json();
+        console.log('📦 API Response Data:', achievementsData);
 
-        return {
-          ...achievement,
-          unlocked: !!completedAchievement,
-          // unlockedAt: completedAchievement?.unlockedAt, // Propiedad no existe en UserAchievement type
-          categoryName: category.title,
-          currentProgress: completedAchievement?.progress ?? 0
-        };
-        /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
-      })
+        if (achievementsResponse.ok && achievementsData.achievements && Array.isArray(achievementsData.achievements)) {
+          console.log('✅ Setting achievements with user status:', achievementsData.achievements.length, 'items');
+          console.log('📊 Completion stats:', {
+            total: achievementsData.achievements.length,
+            completed: achievementsData.achievements.filter((a: any) => a.isUnlocked).length,
+            pending: achievementsData.achievements.filter((a: any) => !a.isUnlocked).length
+          });
+          setAllAvailableAchievements(achievementsData.achievements);
+        } else {
+          console.log('❌ API Response not valid, using fallback');
+          console.log('achievementsResponse.ok:', achievementsResponse.ok);
+          console.log('achievementsData.achievements exists:', !!achievementsData.achievements);
+          console.log('isArray:', Array.isArray(achievementsData.achievements));
+          setAllAvailableAchievements([]);
+        }
+      } catch (error) {
+        console.error('Failed to load achievements:', error);
+        setAllAvailableAchievements([]);
+      } finally {
+        setLoadingAchievements(false);
+      }
+    };
+
+    if (account?.address) {
+      void loadAllAchievements();
+    }
+  }, [account?.address]);
+
+  // Group achievements by real categories from BD
+  const generateAchievementsByCategory = () => {
+    // Group achievements by type for category organization
+    const categoryGroups: Record<string, any[]> = {};
+
+    allAvailableAchievements.forEach(achievement => {
+      // Map achievement types to category names (could enhance API to include category field)
+      let categoryName = 'Comunidad Activa'; // default
+      if (achievement.type === 'investor') categoryName = 'Inversor Legendario';
+      else if (achievement.type === 'community_builder') categoryName = 'Comunidad Activa';
+      else if (achievement.type === 'early_adopter') categoryName = 'Experto Especializado';
+      else if (achievement.type === 'high_roller') categoryName = 'Creador Activo';
+
+      if (!categoryGroups[categoryName]) {
+        categoryGroups[categoryName] = [];
+      }
+      categoryGroups[categoryName]!.push({
+        ...achievement,
+        category: categoryName,
+        categoryName: categoryName,
+        icon: achievement.icon || '🏆', // fallback
+        points: achievement.pointsReward,
+        pointsReward: achievement.pointsReward,
+        unlocked: achievement.isUnlocked,
+        isUnlocked: achievement.isUnlocked
+      });
+    });
+
+    // Convert to array format expected by component
+    return Object.entries(categoryGroups).map(([name, achievements]) => ({
+      name,
+      achievements
     }));
   };
 
-  const achievementCategories = generateAchievementsFromData();
+  const achievementCategories = generateAchievementsByCategory();
 
   const allAchievements = achievementCategories.flatMap(cat =>
-    cat.achievements.map(achievement => ({ ...achievement, categoryName: cat.title }))
+    cat.achievements.map(achievement => ({ ...achievement, categoryName: cat.name }))
   );
 
   const filteredAchievements = selectedCategory
-    ? allAchievements.filter(a => a.category === selectedCategory.split('-')[1])
+    ? allAchievements.filter(a => a.category === selectedCategory)
     : allAchievements.filter(a =>
         filter === 'all' ||
-        (filter === 'unlocked' && a.unlocked) ||
-        (filter === 'locked' && !a.unlocked)
+        (filter === 'unlocked' && a.isUnlocked) ||
+        (filter === 'locked' && !a.isUnlocked)
       );
-
-  const stats = {
-    total: allAchievements.length,
-    unlocked: allAchievements.filter(a => a.unlocked).length,
-    totalPoints: Math.max(
-      allAchievements.filter(a => a.unlocked).reduce((sum, a) => sum + a.points, 0),
-      gamification?.totalPoints || 0
-    )
-  };
-
-  // Debug logging para development
-  useEffect(() => {
-    if (gamification?.achievements) {
-      console.log('🎮 Achievements page loaded:', gamification.achievements.length, 'achievements');
-    }
-  }, [gamification?.achievements]);
 
   return (
     <div className="absolute inset-x-0 min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-black text-white">
@@ -409,7 +221,7 @@ export default function AchievementsPage() {
           </div>
         </motion.div>
 
-        {/* Stats Cards */}
+        {/* Stats Cards - DATOS REALES */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -418,27 +230,35 @@ export default function AchievementsPage() {
         >
           <div className="text-center p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl backdrop-blur-sm">
             <Medal className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
-            <div className="text-3xl font-bold text-yellow-400 mb-1">{stats.unlocked}</div>
+            <div className="text-3xl font-bold text-yellow-400 mb-1">
+              {gamification?.achievements?.filter((a: any) => a.isCompleted).length || 0}
+            </div>
             <div className="text-sm text-zinc-400">Logros Obtenidos</div>
           </div>
           <div className="text-center p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl backdrop-blur-sm">
             <Target className="w-8 h-8 text-red-400 mx-auto mb-2" />
-            <div className="text-3xl font-bold text-red-400 mb-1">{stats.total - stats.unlocked}</div>
+            <div className="text-3xl font-bold text-red-400 mb-1">
+              {Math.max(0, allAchievements.length - (gamification?.achievements?.filter((a: any) => a.isCompleted).length || 0))}
+            </div>
             <div className="text-sm text-zinc-400">Pendientes</div>
           </div>
           <div className="text-center p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl backdrop-blur-sm">
             <Zap className="w-8 h-8 text-blue-400 mx-auto mb-2" />
-            <div className="text-3xl font-bold text-blue-400 mb-1">{stats.totalPoints.toLocaleString()}</div>
+            <div className="text-3xl font-bold text-blue-400 mb-1">
+              {(gamification?.totalPoints || 0).toLocaleString()}
+            </div>
             <div className="text-sm text-zinc-400">Tokens Ganados</div>
           </div>
           <div className="text-center p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl backdrop-blur-sm">
             <Crown className="w-8 h-8 text-purple-400 mx-auto mb-2" />
-            <div className="text-3xl font-bold text-purple-400 mb-1">{Math.round((stats.unlocked / stats.total) * 100)}%</div>
-            <div className="text-sm text-zinc-400">Progreso Total</div>
+            <div className="text-3xl font-bold text-purple-400 mb-1">
+              {gamification?.currentLevel || 1}
+            </div>
+            <div className="text-sm text-zinc-400">Tu Nivel Actual</div>
           </div>
         </motion.div>
 
-        {/* Category Navigation */}
+        {/* Category Navigation - REALES categorías de BD */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -454,15 +274,15 @@ export default function AchievementsPage() {
             <span className="text-xs">Todos</span>
           </Button>
 
-          {achievementCategories.map((cat, index) => (
+          {Object.entries(categoryIcons).map(([categoryName, icon]) => (
             <Button
-              key={cat.title}
-              variant={selectedCategory === `cat-${index}` ? "default" : "outline"}
-              onClick={() => setSelectedCategory(`cat-${index}`)}
+              key={categoryName}
+              variant={selectedCategory === categoryName ? "default" : "outline"}
+              onClick={() => setSelectedCategory(categoryName)}
               className="h-20 flex flex-col items-center gap-2 relative"
             >
-              {cat.icon}
-              <span className="text-xs text-center">{cat.title}</span>
+              {icon}
+              <span className="text-xs text-center">{categoryName}</span>
             </Button>
           ))}
         </motion.div>
@@ -475,7 +295,8 @@ export default function AchievementsPage() {
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12"
         >
           {filteredAchievements.map((achievement, index) => {
-            const rarity = rarityConfig[achievement.rarity as keyof typeof rarityConfig];
+            const rarity = rarityConfig[achievement.type as keyof typeof rarityConfig];
+            if (!rarity) return null;
             const RarityIconComponent = rarity.icon;
 
             return (
@@ -487,13 +308,13 @@ export default function AchievementsPage() {
                 className="group"
               >
                 <Card className={`relative overflow-hidden transition-all duration-300 hover:scale-105 border-2 ${
-                  achievement.unlocked
+                  achievement.isUnlocked
                     ? 'border-yellow-500 bg-gradient-to-br from-yellow-900/20 to-orange-900/20 shadow-lg shadow-yellow-500/10'
                     : `${rarity.bgColor} opacity-80 hover:opacity-100`
                 } backdrop-blur-sm`}>
                   {/* Rarity Badge */}
                   <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${
-                    achievement.unlocked
+                    achievement.isUnlocked
                       ? 'bg-yellow-500 text-black shadow-lg'
                       : `bg-gradient-to-r ${rarity.color} text-white`
                   }`}>
@@ -502,14 +323,14 @@ export default function AchievementsPage() {
                   </div>
 
                   {/* Glow Effect for Completed */}
-                  {achievement.unlocked && (
+                  {achievement.isUnlocked && (
                     <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/5 to-orange-500/5 pointer-events-none" />
                   )}
 
                   <CardHeader className="text-center pt-8">
                     <div className="text-5xl mb-4 relative">
                       <div className={`absolute inset-0 ${
-                        achievement.unlocked
+                        achievement.isUnlocked
                           ? 'bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full blur-xl opacity-30'
                           : ''
                       }`}></div>
@@ -525,27 +346,27 @@ export default function AchievementsPage() {
 
                     {/* Category Badge */}
                     <div className="inline-flex items-center gap-1 px-3 py-1 mt-3 bg-zinc-800/50 border border-zinc-700 rounded-full text-xs">
-                      <span className="text-zinc-400 capitalize">{achievement.categoryName}</span>
+                      <span className="text-zinc-400 capitalize">{achievement.category}</span>
                     </div>
                   </CardHeader>
 
                   <CardContent className="space-y-4">
                     {/* Progress Bar for Incomplete Achievements */}
-                    {!achievement.unlocked && achievement.progress !== undefined && (
+                    {!achievement.isUnlocked && achievement.progress !== undefined && (
                       <div className="space-y-3">
                         <div className="flex justify-between items-center text-sm">
                           <span className="text-gray-400">Progreso</span>
-                          <span className="text-white font-medium">{achievement.progress}/{achievement.required}</span>
+                          <span className="text-white font-medium">{achievement.progress ?? 0}/{achievement.required ?? 0}</span>
                         </div>
                         <div className="w-full bg-zinc-700 rounded-full h-3 overflow-hidden">
                           <div
                             className="bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 h-full transition-all duration-1000 ease-out rounded-full"
-                            style={{ width: `${Math.min((achievement.progress / achievement.required) * 100, 100)}%` }}
+                            style={{ width: `${Math.min((achievement.progress ?? 0) / (achievement.required ?? 1) * 100, 100)}%` }}
                           />
                         </div>
                         <div className="text-center text-xs text-gray-500">
-                          {achievement.required - achievement.progress > 0
-                            ? `Quedan ${achievement.required - achievement.progress} para completar`
+                          {(achievement.required ?? 0) - (achievement.progress ?? 0) > 0
+                            ? `Quedan ${(achievement.required ?? 0) - (achievement.progress ?? 0)} para completar`
                             : '¡Ya casi lo tienes!'
                           }
                         </div>
@@ -557,31 +378,21 @@ export default function AchievementsPage() {
                       <div className="flex items-center gap-2">
                         <Zap className="w-5 h-5 text-yellow-400" />
                         <span className={`font-bold ${
-                          achievement.unlocked ? 'text-yellow-400' : 'text-gray-500'
+                          achievement.isUnlocked ? 'text-yellow-400' : 'text-gray-500'
                         }`}>
-                          +{achievement.points} tokens
+                          +{achievement.pointsReward} tokens
                         </span>
                       </div>
 
                       {/* Status Badge */}
                       <div className={`px-4 py-2 rounded-full text-sm font-medium ${
-                        achievement.unlocked
+                        achievement.isUnlocked
                           ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-black shadow-lg'
                           : 'bg-zinc-700/50 text-gray-400'
                       }`}>
-                        {achievement.unlocked ? '🏆 Completado' : '⏳ Pendiente'}
+                        {achievement.isUnlocked ? '🏆 Completado' : '⏳ Pendiente'}
                       </div>
                     </div>
-
-                    {/* Unlock Date for Completed Achievements */}
-                    {achievement.unlocked && false && (
-                      <div className="text-center pt-2 border-t border-zinc-700/50">
-                        <div className="text-xs text-gray-500">
-                          {/* Fecha de desbloqueo no disponible en este template */}
-                          Completado recientemente
-                        </div>
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
               </motion.div>
@@ -603,52 +414,6 @@ export default function AchievementsPage() {
             </p>
           </motion.div>
         )}
-
-        {/* Final CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.4 }}
-          className="text-center"
-        >
-          <div className="bg-gradient-to-r from-zinc-900/50 to-zinc-800/50 border border-zinc-700 rounded-2xl p-8 md:p-12 backdrop-blur-sm">
-            <Crown className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">
-              ¿Listo para alcanzar la
-              <span className="bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent"> cima de los Maestros</span>?
-            </h2>
-
-            <p className="text-zinc-400 text-lg mb-8 max-w-2xl mx-auto">
-              Cada acción en Pandora&apos;s te acerca a logros legendarios y recompensas exclusivas.
-              Tu viaje hacia la maestría digital acaba de comenzar.
-            </p>
-
-            <div className="flex gap-4 justify-center flex-wrap">
-              <Button
-                className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-bold px-8 py-3 rounded-xl hover:from-yellow-300 hover:to-orange-400 transition-all duration-300 hover:scale-105"
-              >
-                <Link href="/applicants" className="flex items-center gap-2">
-                  Explorar Creaciones
-                  <Sparkles className="w-4 h-4" />
-                </Link>
-              </Button>
-
-              <Button
-                variant="outline"
-                className="bg-zinc-800/50 border-zinc-600 text-zinc-300 hover:bg-zinc-700/50 px-8 py-3 rounded-xl"
-              >
-                <Link href="/apply" className="flex items-center gap-2">
-                  Desatar tu propia Creación
-                  <Rocket className="w-4 h-4" />
-                </Link>
-              </Button>
-            </div>
-
-            <p className="mt-6 text-sm text-zinc-500">
-              💡 <strong>Próximo desafío:</strong> Crea tu primer artefacto o comunidad y gana +50 tokens
-            </p>
-          </div>
-        </motion.div>
       </div>
     </div>
   );
