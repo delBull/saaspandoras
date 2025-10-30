@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { eq, desc } from 'drizzle-orm';
 import type {
   UserGamificationProfile,
   UserAchievement,
   Reward,
-  LeaderboardEntry
+  LeaderboardEntry,
 } from '@pandoras/gamification';
 import {
   gamificationProfiles,
@@ -16,18 +16,19 @@ import {
   type GamificationProfile as DrizzleGamificationProfile,
   type UserAchievement as DrizzleUserAchievement,
   type Achievement as DrizzleAchievement,
-  type Reward as DrizzleReward
+  type Reward as DrizzleReward,
 } from '@/db/schema';
 
 export async function GET(
-  request: Request,
-  { params }: { params: { walletAddress: string } }
+  request: NextRequest,
+  context: { params: Promise<{ walletAddress: string }> },
 ) {
   try {
+    const params = await context.params;
     const walletAddressRaw = params.walletAddress;
 
     console.log(`🔍 API: Request received for wallet ${walletAddressRaw}`);
-    console.log(`🔍 API: Params object:`, params);
+    console.log(`🔍 API: Params object:`, context.params);
 
     if (!walletAddressRaw) {
       console.error(`❌ API: No wallet address provided in params`);

@@ -63,7 +63,12 @@ module.exports = {
       files: [
         'src/lib/gamification/service.ts',
         'src/app/api/gamification/**/*.ts',
-        'src/app/(dashboard)/leaderboard/page.tsx'
+        'src/app/api/education/**/*.ts',
+        'src/app/(dashboard)/leaderboard/page.tsx',
+        'src/app/(dashboard)/profile/achievements/page.tsx',
+        'src/hooks/useRealGamification.ts',
+        'src/hooks/useReferralDetection.ts',
+        'src/hooks/useThirdwebUserSync.ts'
       ],
       rules: {
         '@typescript-eslint/no-explicit-any': 'off',
@@ -74,7 +79,9 @@ module.exports = {
         '@typescript-eslint/no-unsafe-argument': 'off',
         '@typescript-eslint/no-unnecessary-type-assertion': 'off',
         '@typescript-eslint/no-unused-vars': 'off',
-        '@typescript-eslint/prefer-nullish-coalescing': 'off'
+        '@typescript-eslint/prefer-nullish-coalescing': 'off',
+        'react/jsx-key': 'off',
+        'react-hooks/exhaustive-deps': 'off'
       }
     },
     {

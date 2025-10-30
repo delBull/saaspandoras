@@ -87,9 +87,8 @@ export async function POST(
     try {
       await gamificationEngine.trackEvent(
         walletAddress,
-        EventType.PROJECT_APPLICATION_SUBMITTED, // Reutilizando evento existente
+        EventType.COURSE_COMPLETED, // ✅ Evento específico para completación de cursos
         {
-          eventSubtype: 'course_completed',
           courseId: courseId,
           courseName: courseId.replace(/-/g, ' '),
           completedAt: new Date().toISOString(),
