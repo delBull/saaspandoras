@@ -19,7 +19,7 @@ import { AnimatedBackground } from "@/components/apply/AnimatedBackground";
 
 // Interface for API response direct from service
 interface LeaderboardApiResponse {
-  leaderboard: Array<{
+  leaderboard: {
     id: string;
     userId: string;
     walletAddress: string;
@@ -28,7 +28,7 @@ interface LeaderboardApiResponse {
     currentLevel: number;
     rank: number;
     // other fields...
-  }>;
+  }[];
   success: boolean;
   message: string;
 }
@@ -87,7 +87,6 @@ export default function LeaderboardPage() {
       try {
         const response = await fetch('/api/gamification/leaderboard/points');
         if (response.ok) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const result = await response.json() as { leaderboard: any[] };
           const data = result.leaderboard ?? [];
           console.log('🔍 DEBUG - Raw API response:', result);
