@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { eq, desc } from 'drizzle-orm';
 import type {
   UserGamificationProfile,
   UserAchievement,
   Reward,
-  LeaderboardEntry
+  LeaderboardEntry,
 } from '@pandoras/gamification';
 import {
   gamificationProfiles,
@@ -16,12 +16,12 @@ import {
   type GamificationProfile as DrizzleGamificationProfile,
   type UserAchievement as DrizzleUserAchievement,
   type Achievement as DrizzleAchievement,
-  type Reward as DrizzleReward
+  type Reward as DrizzleReward,
 } from '@/db/schema';
 
 export async function GET(
-  request: Request,
-  { params }: { params: { walletAddress: string } }
+  request: NextRequest,
+  { params }: { params: { walletAddress: string } },
 ) {
   try {
     const walletAddressRaw = params.walletAddress;
