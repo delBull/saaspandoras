@@ -13,6 +13,8 @@ import { usePersistedAccount } from "@/hooks/usePersistedAccount";
 import { AutoLoginGate } from "@/components/AutoLoginGate";
 import { RewardModal } from "@/components/RewardModal";
 import type { Reward } from "@/components/RewardModal";
+// 🎁 AGREGAR DETECCIÓN AUTOMÁTICA DE REFERIDOS
+import { useReferralDetection } from "@/hooks/useReferralDetection";
 // Reward modal manager inside dashboard wrapper
 // 🎮 TODO: IMPORTAR HUD cuando esté funcional en páginas específicas
 // import { GamificationHUD } from "@pandoras/gamification";
@@ -48,6 +50,8 @@ export function DashboardClientWrapper({
   const { account } = usePersistedAccount();
   const [userName, setUserName] = useState<string | null>(null);
 
+  // 🎁 ACTIVAR DETECCIÓN AUTOMÁTICA DE REFERIDOS
+  useReferralDetection();
 
   useEffect(() => {
     if (account?.address) {

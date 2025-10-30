@@ -32,52 +32,65 @@ export function useRealGamification(userId?: string): RealTimeGamificationData {
   const [currentLevel, setCurrentLevel] = useState(1);
   const [levelProgress, setLevelProgress] = useState(0);
 
-  // Function to refresh all data by calling APIs
+  // Function to refresh all data synchronously
   const refreshData = useCallback(async () => {
     if (!userId) return;
 
-    setIsLoading(true);
     try {
-      // Headers for API authentication
-      const authHeaders = {
-        'X-Wallet-Address': userId,
-        'Content-Type': 'application/json',
-      };
+      console.log('🎮 Fetching real gamification data for user:', userId);
+      setIsLoading(true);
 
-      // Load all data in parallel via API calls (client-safe)
-      const [profileResponse, achievementsResponse, rewardsResponse, leaderboardResponse] = await Promise.all([
-        fetch(`/api/gamification/profile/${userId}`),
-        fetch('/api/gamification/user/achievements', { headers: authHeaders }),
-        fetch(`/api/gamification/rewards/${userId}`),
-        fetch('/api/gamification/leaderboard/points')
-      ]);
+      // Fetch data from new client-safe API
+      const response = await fetch(`/api/gamification/user/data/${userId}`);
 
-      // Parse responses and handle potential errors with proper typing
-      const profileData = profileResponse.ok ? await profileResponse.json() as UserGamificationProfile | null : null;
-      const achievementsData = achievementsResponse.ok ? await achievementsResponse.json() as UserAchievement[] : [];
-      const rewardsData = rewardsResponse.ok ? await rewardsResponse.json() as Reward[] : [];
-      const leaderboardData = leaderboardResponse.ok ? await leaderboardResponse.json() as LeaderboardEntry[] : [];
-
-      setProfile(profileData);
-      setAchievements(achievementsData);
-      setRewards(rewardsData);
-      setLeaderboard(leaderboardData);
-
-      // Extract stats from profile safely
-      if (profileData) {
-        setTotalPoints((profileData as { totalPoints?: number }).totalPoints ?? 0);
-        setCurrentLevel((profileData as { currentLevel?: number }).currentLevel ?? 1);
-        setLevelProgress((profileData as { levelProgress?: number }).levelProgress ?? 0);
+      if (!response.ok) {
+        console.warn('⚠️ Gamification API failed, using fallback');
+        // Fallback to empty data if API fails
+        setProfile(null);
+        setAchievements([]);
+        setRewards([]);
+        setLeaderboard([]);
+        setTotalPoints(0);
+        setCurrentLevel(1);
+        setLevelProgress(0);
+        return;
       }
 
-      console.log('🎮 Real gamification data loaded for user:', userId, {
-        profile: !!profileData,
-        achievements: Array.isArray(achievementsData) ? achievementsData.length : 0,
-        rewards: Array.isArray(rewardsData) ? rewardsData.length : 0,
-        leaderboard: Array.isArray(leaderboardData) ? leaderboardData.length : 0
+      const data = await response.json() as {
+        profile: UserGamificationProfile | null;
+        achievements: UserAchievement[];
+        rewards: Reward[];
+        leaderboard: LeaderboardEntry[];
+        totalPoints: number;
+        currentLevel: number;
+        levelProgress: number;
+      };
+
+      // Update state with real data
+      setProfile(data.profile);
+      setAchievements(data.achievements);
+      setRewards(data.rewards);
+      setLeaderboard(data.leaderboard);
+      setTotalPoints(data.totalPoints);
+      setCurrentLevel(data.currentLevel);
+      setLevelProgress(data.levelProgress);
+
+      console.log('✅ Real gamification data loaded:', {
+        profile: !!data.profile,
+        achievements: data.achievements.length,
+        points: data.totalPoints
       });
+
     } catch (error) {
-      console.error('❌ Error loading real gamification data:', error);
+      console.error('❌ Error fetching gamification data:', error);
+      // Fallback to empty data on error
+      setProfile(null);
+      setAchievements([]);
+      setRewards([]);
+      setLeaderboard([]);
+      setTotalPoints(0);
+      setCurrentLevel(1);
+      setLevelProgress(0);
     } finally {
       setIsLoading(false);
     }
@@ -107,12 +120,12 @@ export function useRealGamification(userId?: string): RealTimeGamificationData {
       }
 
       // Refresh data after event tracking attempt
-      await refreshData();
+      void refreshData();
       console.log('🎯 Event tracking attempted and data refreshed:', eventType);
     } catch (error) {
       console.error('❌ Error tracking gamification event:', error);
       // Still refresh data even if tracking failed
-      await refreshData();
+      void refreshData();
     }
   }, [userId, refreshData]);
 

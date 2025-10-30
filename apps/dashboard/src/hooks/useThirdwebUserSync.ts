@@ -56,6 +56,10 @@ export function useThirdwebUserSync() {
                 // Marcar que ya recibió el reward de primer login inmediatamente
                 localStorage.setItem(firstLoginKey, 'true');
                 console.log('💾 Primer login marcado en localStorage');
+
+                // 🚀 ACHIEVEMENT SERÁ DESBLOQUEADO AUTOMÁTICAMENTE POR LA API
+                // No necesitamos hacer nada extra aquí - la API events ya desbloquea achievements
+                console.log('🎉 Achievement "Primer Login" será desbloqueado automáticamente por la API');
               } else {
                 console.warn('❌ Failed to register first login event:', await response.text());
               }
