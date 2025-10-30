@@ -21,10 +21,11 @@ import {
 
 export async function GET(
   request: NextRequest,
-  context: { params: { walletAddress: string } },
+  context: { params: Promise<{ walletAddress: string }> },
 ) {
   try {
-    const walletAddressRaw = context.params.walletAddress;
+    const params = await context.params;
+    const walletAddressRaw = params.walletAddress;
 
     console.log(`🔍 API: Request received for wallet ${walletAddressRaw}`);
     console.log(`🔍 API: Params object:`, context.params);

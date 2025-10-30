@@ -35,9 +35,8 @@ export async function POST(
     try {
       await gamificationEngine.trackEvent(
         walletAddress,
-        EventType.PROJECT_APPLICATION_SUBMITTED, // Reutilizando evento existente
+        EventType.COURSE_STARTED, // ✅ Evento específico para cursos
         {
-          eventSubtype: 'course_started',
           courseId: courseId,
           courseName: courseId.replace(/-/g, ' '),
           startedAt: new Date().toISOString(),

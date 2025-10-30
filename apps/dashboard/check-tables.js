@@ -62,6 +62,55 @@ async function checkTables() {
     if (gamificationProfile.rows[0].count > 0) {
       console.log(`   Puntos: ${gamificationProfile.rows[0].total_points}, Nivel: ${gamificationProfile.rows[0].current_level}`);
     }
+
+    // Check achievements in database
+    const allAchievements = await client.query(`
+      SELECT COUNT(*) as count FROM achievements
+    `);
+
+    console.log(`\n🏅 Total achievements in DB:`, allAchievements.rows[0].count);
+
+    if (allAchievements.rows[0].count > 0) {
+      const achievementList = await client.query(`
+        SELECT id, name, "points_reward" FROM achievements ORDER BY id
+      `);
+      console.log(`🏅 Achievement list:`);
+      achievementList.rows.forEach((ach, index) => {
+        console.log(`   ${index + 1}. ID:${ach.id} "${ach.name}" (${ach.points_reward} pts)`);
+      });
+    }
+
+    // Check user achievements for this user
+    if (userExistsUpper.rows[0].count > 0 || userExistsLower.rows[0].count > 0) {
+      const userAchievements = await client.query(`
+        SELECT COUNT(*) as count, COUNT(*) FILTER (WHERE is_unlocked = true) as unlocked_count
+        FROM user_achievements ua
+        WHERE ua.user_id = (
+          SELECT id FROM users WHERE "walletAddress" = $1
+        )
+      `, [walletToUse]);
+
+      console.log(`\n🎖️ User achievements (${walletToUse}):`);
+      console.log(`   Total user achievements: ${userAchievements.rows[0].count}`);
+      console.log(`   Unlocked achievements: ${userAchievements.rows[0].unlocked_count}`);
+
+      if (userAchievements.rows[0].count > 0) {
+        const userAchievementsDetail = await client.query(`
+          SELECT ua.achievement_id, ua.is_unlocked, a.name
+          FROM user_achievements ua
+          JOIN achievements a ON ua.achievement_id = a.id
+          WHERE ua.user_id = (
+            SELECT id FROM users WHERE "walletAddress" = $1
+          )
+          ORDER BY ua.achievement_id
+        `, [walletToUse]);
+
+        console.log(`🎖️ User achievement details:`);
+        userAchievementsDetail.rows.forEach((ua, index) => {
+          console.log(`   ${index + 1}. "${ua.name}" - ${ua.is_unlocked ? 'UNLOCKED' : 'LOCKED'}`);
+        });
+      }
+    }
     
     client.end();
   } catch (err) {
