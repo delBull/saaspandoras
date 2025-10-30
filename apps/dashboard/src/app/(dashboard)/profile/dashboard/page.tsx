@@ -20,8 +20,7 @@ import Link from 'next/link';
 //import { useProjectModal } from "@/contexts/ProjectModalContext";
 import { useProfile } from "@/hooks/useProfile";
 import { useActiveAccount } from 'thirdweb/react';
-// 🎮 IMPORTAR COMPONENTES DE GAMIFICACIÓN
-// (Disponibles cuando se conecte el sistema real)
+import { useRealGamification } from "@/hooks/useRealGamification";
 
 // Define a type for your project data to avoid using 'any'
 interface Project {
@@ -37,10 +36,31 @@ export default function PandoriansDashboardPage() {
   const { profile, projects, isLoading, isError } = useProfile();
   const account = useActiveAccount();
   const toastShownRef = useRef(false);
-  // 🎮 HOOK DE GAMIFICACIÓN (Disponible cuando se conecte el sistema real)
 
   // Use account from useActiveAccount hook instead of cookies
   const walletAddress = account?.address;
+
+  // 🎮 HOOK DE GAMIFICACIÓN - DATA REAL
+  const {
+    profile: _gamificationProfile,
+    achievements,
+    rewards: _rewards,
+    leaderboard,
+    totalPoints,
+    currentLevel,
+    levelProgress: _levelProgress,
+    isLoading: _gamificationLoading
+  } = useRealGamification(walletAddress);
+
+  // Debug: Log data received
+  console.log('🎮 Dashboard - Real Gamification Data:', {
+    walletAddress,
+    totalPoints,
+    currentLevel,
+    achievementsCount: achievements.length,
+    achievementsSample: achievements.slice(0, 2),
+    leaderboardLength: leaderboard.length
+  });
 
   useEffect(() => {
     // Show beta notification toast only once when account is connected
@@ -493,7 +513,7 @@ export default function PandoriansDashboardPage() {
          </Card>
        )}
 
-      {/* 🎮 SECCIÓN DE GAMIFICACIÓN */}
+      {/* 🎮 SECCIÓN DE GAMIFICACIÓN - DATA REAL */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Estadísticas de Gamificación */}
         <Card>
@@ -509,19 +529,27 @@ export default function PandoriansDashboardPage() {
           <CardContent>
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
-                <div className="text-2xl font-bold text-yellow-400 mb-1">150</div>
+                <div className="text-2xl font-bold text-yellow-400 mb-1">
+                  {totalPoints.toLocaleString()}
+                </div>
                 <div className="text-sm text-gray-400">Tokens Ganados</div>
               </div>
               <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
-                <div className="text-2xl font-bold text-blue-400 mb-1">3</div>
+                <div className="text-2xl font-bold text-blue-400 mb-1">
+                  {achievements.filter(a => a.isCompleted).length}
+                </div>
                 <div className="text-sm text-gray-400">Logros Obtenidos</div>
               </div>
               <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
-                <div className="text-2xl font-bold text-purple-400 mb-1">#42</div>
+                <div className="text-2xl font-bold text-purple-400 mb-1">
+                  #{leaderboard.findIndex(entry => entry.walletAddress === walletAddress) + 1 || 'N/A'}
+                </div>
                 <div className="text-sm text-gray-400">Posición Global</div>
               </div>
               <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
-                <div className="text-2xl font-bold text-green-400 mb-1">Nivel 2</div>
+                <div className="text-2xl font-bold text-green-400 mb-1">
+                  Nivel {currentLevel}
+                </div>
                 <div className="text-sm text-gray-400">Tu Nivel Actual</div>
               </div>
             </div>
@@ -541,43 +569,37 @@ export default function PandoriansDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {/* Mock achievements - estos serán reales cuando se conecte */}
-              <div className="flex items-center gap-4 p-3 bg-yellow-900/20 border border-yellow-500/30 rounded-lg">
-                <div className="text-2xl">🔗</div>
-                <div className="flex-1">
-                  <div className="text-white text-sm font-medium">Primer Login</div>
-                  <div className="text-gray-400 text-xs">Has conectado tu wallet exitosamente</div>
-                  <div className="text-yellow-400 text-xs font-medium">+10 tokens</div>
+              {achievements.filter((a: any) => a.isCompleted).slice(0, 3).map((achievement: any) => (
+                <div key={achievement.id} className="flex items-center gap-4 p-3 bg-yellow-900/20 border border-yellow-500/30 rounded-lg">
+                  <div className="text-2xl">{achievement.icon}</div>
+                  <div className="flex-1">
+                    <div className="text-white text-sm font-medium">{achievement.name}</div>
+                    <div className="text-gray-400 text-xs">{achievement.description}</div>
+                    <div className="text-yellow-400 text-xs font-medium">+{achievement.points} tokens</div>
+                  </div>
+                  <div className="text-yellow-400 text-xs">Desbloqueado</div>
                 </div>
-                <div className="text-yellow-400 text-xs">Desbloqueado</div>
-              </div>
+              ))}
 
-              <div className="flex items-center gap-4 p-3 bg-yellow-900/20 border border-yellow-500/30 rounded-lg">
-                <div className="text-2xl">🔍</div>
-                <div className="flex-1">
-                  <div className="text-white text-sm font-medium">Explorador Intrépido</div>
-                  <div className="text-gray-400 text-xs">Has visto 5 creaciones diferentes</div>
-                  <div className="text-yellow-400 text-xs font-medium">+25 tokens</div>
+              {/* Show pending achievements if not enough completed */}
+              {achievements.filter((a: any) => !a.isCompleted).slice(0, 3 - Math.min(achievements.filter((a: any) => a.isCompleted).length, 3)).map((achievement: any) => (
+                <div key={achievement.id} className="flex items-center gap-4 p-3 bg-gray-900/20 border border-gray-500/30 rounded-lg">
+                  <div className="text-2xl">{achievement.icon}</div>
+                  <div className="flex-1">
+                    <div className="text-white text-sm font-medium">{achievement.name}</div>
+                    <div className="text-gray-400 text-xs">{achievement.description}</div>
+                    <div className="text-gray-400 text-xs">Progreso: {achievement.progress}/100</div>
+                  </div>
+                  <div className="text-gray-400 text-xs">Bloqueado</div>
                 </div>
-                <div className="text-yellow-400 text-xs">Desbloqueado</div>
-              </div>
-
-              <div className="flex items-center gap-4 p-3 bg-gray-900/20 border border-gray-500/30 rounded-lg">
-                <div className="text-2xl">📝</div>
-                <div className="flex-1">
-                  <div className="text-white text-sm font-medium">Primer Borrador</div>
-                  <div className="text-gray-400 text-xs">Crea tu primera creación</div>
-                  <div className="text-gray-400 text-xs">Progreso: 0/1</div>
-                </div>
-                <div className="text-gray-400 text-xs">Bloqueado</div>
-              </div>
+              ))}
             </div>
 
             <div className="mt-4 pt-4 border-t border-zinc-700">
               <Link href="/profile/achievements">
                 <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-black rounded-lg hover:from-yellow-300 hover:to-orange-400 transition-colors text-sm font-medium">
                   <TrophyIcon className="w-4 h-4" />
-                  Ver Todos Mis Logros
+                  Ver Todos Mis Logros ({achievements.length})
                 </button>
               </Link>
             </div>
