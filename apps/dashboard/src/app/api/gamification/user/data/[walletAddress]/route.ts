@@ -21,13 +21,13 @@ import {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { walletAddress: string } },
+  context: { params: { walletAddress: string } },
 ) {
   try {
-    const walletAddressRaw = params.walletAddress;
+    const walletAddressRaw = context.params.walletAddress;
 
     console.log(`🔍 API: Request received for wallet ${walletAddressRaw}`);
-    console.log(`🔍 API: Params object:`, params);
+    console.log(`🔍 API: Params object:`, context.params);
 
     if (!walletAddressRaw) {
       console.error(`❌ API: No wallet address provided in params`);
