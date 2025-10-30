@@ -313,39 +313,39 @@
     "sign_out": "Cerrar sesión"
   },
   "terms": {
-    "title": "Términos y Condiciones",
-    "lastUpdate": "Última Actualización: Marzo 2025",
-    "tabTerms": "Términos y Condiciones",
+    "title": "Términos de Uso del Servicio",
+    "lastUpdate": "Última Actualización: Octubre 2025",
+    "tabTerms": "Términos de Uso",
     "tabPrivacy": "Política de Privacidad",
     "sections": {
       "welcome": {
         "title": "Bienvenido a Pandora's Finance",
-        "content": "Estos términos y condiciones regulan el acceso y uso de nuestra plataforma digital y DApp, disponible en https://dapp.pandoras.finance/, así como los servicios de tokenización, compra de participaciones inmobiliarias y derechos digitales."
+        "content": "Estos términos y condiciones ('Términos de Uso') regulan el acceso y uso de nuestra plataforma de software como servicio (SaaS) y DApp, disponible en https://dapp.pandoras.finance/ (la 'Plataforma'), así como los servicios de emisión de Artefactos Digitales y la adquisición de derechos y utilidades digitales."
       },
       "definitions": {
         "title": "Definiciones",
         "items": [
-          "Plataforma: DApp y servicios digitales de Pandoras.",
-          "Usuarios: Personas físicas o jurídicas que acceden y usan los servicios.",
-          "Derechos Inmobiliarios (NFTs): Activos digitales que otorgan acceso a la compra de participaciones inmobiliarias.",
-          "Participaciones Inmobiliarias: Fracciones digitales representativas de un activo inmobiliario.",
-          "Tokenización: Proceso de representar un activo real en blockchain mediante tokens digitales."
+          "Plataforma: DApp y servicios tecnológicos SaaS de Pandora's.",
+          "Usuarios: Personas físicas o jurídicas ('Creadores' o 'Comunidad') que acceden y usan los servicios.",
+          "Artefactos de Acceso (NFTs): Activos digitales únicos (NFTs) que otorgan al portador acceso a protocolos de utilidad, beneficios o 'Creaciones' específicas.",
+          "Derechos de Utilidad: Beneficios, accesos o funcionalidades digitales específicas vinculadas a un Artefacto de Acceso o a un protocolo dentro de la Plataforma.",
+          "Emisión de Artefactos: El proceso de crear y registrar un activo digital único (NFT) en la blockchain, que representa una utilidad específica definida por un 'Creador'."
         ]
       },
       "usage": {
         "title": "Uso de la Plataforma",
         "items": [
-          "La Plataforma permite adquirir Derechos Inmobiliarios (NFTs) de manera gratuita, lo que otorga acceso a la compra de Participaciones Inmobiliarias en proyectos seleccionados.",
+          "La Plataforma permite a los 'Creadores' diseñar y lanzar protocolos de utilidad, y a la 'Comunidad' obtener Artefactos de Acceso (NFTs) que otorgan Derechos de Utilidad en 'Creaciones' seleccionadas.",
           "Los usuarios deben tener una billetera digital compatible para interactuar con la Plataforma.",
-          "Pandoras no es un asesor financiero ni ofrece garantías sobre la rentabilidad de las inversiones realizadas en la Plataforma."
+          "Pandora's opera como una plataforma tecnológica (SaaS) y no es un asesor financiero, de inversiones, ni de ningún tipo. No ofrecemos garantías sobre el valor, la liquidez o los beneficios futuros de los Artefactos Digitales o Derechos de Utilidad."
         ]
       },
       "responsibility": {
         "title": "Responsabilidad y Exención de Garantías",
         "items": [
-          "Pandoras no se responsabiliza por pérdidas, riesgos o fluctuaciones de valor de los activos digitalizados en la Plataforma.",
+          "Pandora's no se responsabiliza por la volatilidad, pérdidas, riesgos o fluctuaciones de valor de los activos digitales (como criptomonedas o Artefactos) utilizados o adquiridos en la Plataforma.",
           "La Plataforma opera en blockchain, por lo que todas las transacciones son irreversibles y no pueden modificarse una vez confirmadas.",
-          "Los usuarios aceptan que la propiedad de un Derecho Inmobiliario (NFT) no equivale a la propiedad del bien físico.",
+          "Los usuarios aceptan y entienden que la posesión de un Artefacto de Acceso (NFT) otorga únicamente los derechos de utilidad o acceso especificados en su 'Creación' (protocolo), y no confiere propiedad sobre la empresa Pandora's, sus activos, ni ningún activo subyacente que no esté explícitamente definido en dicho protocolo.",
           "La Plataforma se reserva el derecho de modificar, actualizar o suspender cualquier servicio sin previo aviso."
         ]
       },
@@ -353,37 +353,37 @@
         "title": "Requisitos del Usuario",
         "items": [
           "Debe ser mayor de 18 años para usar la Plataforma.",
-          "Acepta cumplir con las regulaciones fiscales de su país de residencia.",
-          "Pandoras se reserva el derecho de rechazar el acceso a cualquier usuario si se detecta actividad sospechosa."
+          "Acepta cumplir con las regulaciones fiscales y legales de su país de residencia.",
+          "Pandora's se reserva el derecho de rechazar el acceso a cualquier usuario si se detecta actividad sospechosa o violaciones a estos Términos."
         ]
       },
       "payments": {
-        "title": "Pagos y Comisiones",
+        "title": "Pagos y Tarifas de Servicio",
         "items": [
-          "Los pagos se realizan exclusivamente en criptomonedas o mediante métodos aprobados.",
-          "Pandoras puede cobrar tarifas o comisiones por el uso de ciertos servicios.",
-          "No se ofrecen reembolsos una vez completada una compra de tokens o participaciones."
+          "Los pagos de tarifas de servicio en la Plataforma se realizan exclusivamente en criptomonedas o mediante métodos aprobados.",
+          "Pandora's, como proveedor SaaS, cobra tarifas (fees) por el uso de la plataforma, la emisión de Artefactos o la interacción con los protocolos. Estas tarifas se comunicarán claramente.",
+          "Debido a la naturaleza de la blockchain, todas las transacciones (incluyendo el pago de tarifas de servicio o la adquisición de Artefactos) son finales e irreversibles. No se ofrecen reembolsos."
         ]
       },
       "dataProtection": {
         "title": "Protección de Datos y Seguridad",
         "items": [
           "Los datos personales se tratan conforme a nuestra Política de Privacidad.",
-          "El usuario es responsable de la seguridad de su cuenta y credenciales.",
-          "Pandoras no se hace responsable por accesos no autorizados por negligencia del usuario."
+          "El usuario es responsable de la seguridad de su billetera digital y claves privadas.",
+          "Pandora's no se hace responsable por accesos no autorizados por negligencia del usuario en la custodia de sus credenciales."
         ]
       },
       "law": {
         "title": "Ley Aplicable y Jurisdicción",
         "items": [
-          "Estos Términos se rigen por las leyes de México.",
+          "Estos Términos de Uso se rigen por las leyes de México.",
           "Cualquier disputa se resolverá en tribunales competentes en Ciudad de México, México."
         ]
       }
     },
     "acceptance": {
-      "title": "Aceptación de los Términos y Condiciones",
-      "content": "Al hacer uso de la plataforma, usted reconoce haber leído y comprendido estos Términos y la Política de Privacidad, aceptando su cumplimiento sin reservas."
+      "title": "Aceptación de los Términos de Uso",
+      "content": "Al hacer uso de la plataforma, usted reconoce haber leído y comprendido estos Términos de Uso y la Política de Privacidad, aceptando su cumplimiento sin reservas."
     }
   },
   "privacy": {
@@ -394,8 +394,8 @@
       "collection": {
         "title": "Información que Recopilamos",
         "items": [
-          "Información personal: Nombre, correo electrónico, dirección de billetera digital.",
-          "Información de transacciones: Historial de compras y movimientos.",
+          "Información personal: Nombre, correo electrónico (si se proporciona voluntariamente), dirección de billetera digital.",
+          "Información de transacciones: Historial de interacciones en la plataforma, 'minteo' (creación) de Artefactos y movimientos en la blockchain asociados a su billetera.",
           "Datos técnicos: Dirección IP, tipo de navegador, datos de cookies."
         ]
       },
@@ -404,23 +404,23 @@
         "items": [
           "Procesar transacciones y administrar cuentas de usuario.",
           "Mejorar la seguridad y funcionalidad de la Plataforma.",
-          "Enviar comunicaciones sobre cambios y actualizaciones.",
-          "Cumplir con regulaciones legales y fiscales aplicables."
+          "Enviar comunicaciones sobre cambios y actualizaciones del servicio.",
+          "Cumplir con regulaciones legales y de KYC/AML si fuesen aplicables."
         ]
       },
       "protection": {
         "title": "Protección de la Información",
         "items": [
           "Implementamos medidas de seguridad técnicas y organizativas.",
-          "La información en blockchain es inmutable y transparente.",
-          "No vendemos información personal a terceros sin consentimiento."
+          "La información en blockchain es pública, inmutable y transparente.",
+          "No vendemos información personal a terceros sin consentimiento explícito."
         ]
       },
       "rights": {
-        "title": "Derechos del Usuario",
+        "title": "Derechos del Usuario (ARCO)",
         "items": [
-          "Acceder, modificar o eliminar su información personal.",
-          "Solicitar la cancelación de su cuenta.",
+          "Acceder, modificar o eliminar su información personal (en la medida que no esté en la blockchain).",
+          "Solicitar la cancelación de su cuenta (si aplica).",
           "Optar por no recibir comunicaciones promocionales."
         ]
       },
@@ -434,16 +434,16 @@
       },
       "transfers": {
         "title": "Transferencias Internacionales de Datos",
-        "content": "Debido a la naturaleza descentralizada de la tecnología blockchain, algunos datos pueden ser procesados fuera de México. Nos aseguramos de cumplir con regulaciones de protección de datos aplicables en todas las jurisdicciones."
+        "content": "Debido a la naturaleza descentralizada de la tecnología blockchain, algunos datos (como las transacciones públicas) pueden ser procesados y replicados globalmente. Nos aseguramos de cumplir con regulaciones de protección de datos aplicables."
       },
       "changes": {
         "title": "Cambios en la Política de Privacidad",
-        "content": "Podemos actualizar esta política en cualquier momento. Se notificará a los usuarios sobre cambios importantes mediante la Plataforma o correo electrónico."
+        "content": "Podemos actualizar esta política en cualquier momento. Se notificará a los usuarios sobre cambios importantes mediante la Plataforma o correo electrónico (si fue proporcionado)."
       },
       "contact": {
         "title": "Contacto",
         "content": "Para dudas o solicitudes sobre la privacidad de los datos, contáctenos en:",
-        "email": "correo@pandoras.inanceoundation"
+        "email": "legal@pandoras.finance"
       }
     }
   },
@@ -461,16 +461,16 @@
   },
   "footer": {
     "title": "Pandora's",
-    "slogan": "El futuro de la inversión en activos del mundo real.",
+    "slogan": "Conectando creadores y comunidades a través de la utilidad.",
     "copyright": "© 2025 Pandora's Finance.",
     "white_paper": "LIBRO BLANCO",
     "support": "SOPORTE",
     "terms_privacy": "TÉRMINOS | PRIVACIDAD"
   },
   "activos": {
-    "title": "Descubre oportunidades respaldadas y transparentes",
-    "subtitle": "En Pandoras, cada activo disponible ha pasado por un exhaustivo proceso de auditoría, tokenización y due diligence. Esto asegura que solo proyectos viables, auditados y con potencial de crecimiento real formen parte de nuestra plataforma.",
-    "clasification": "Clasificación de proyectos en proceso de tokenización",
+    "title": "Descubre Creaciones basadas en utilidad y transparencia",
+    "subtitle": "En Pandora, cada Creación disponible es construido por arquitectos de comunidades. Esto asegura que solo Creaciones basadas en utilidad real formen parte de nuestra plataforma.",
+    "clasification": "Clasificación de Artefactos y Protocolos de Utilidad",
     "assets": {
       "casa_bella": { "tag": "REAL ESTATE", "title": "Casa Bella", "description": "Una villa de lujo con vista al mar y acabados de alta gama." },
       "vista_horizonte": { "tag": "REAL ESTATE", "title": "Vista Horizonte", "description": "La mejor vista de la Bahía en un lugar maravilloso." },
@@ -480,86 +480,86 @@
       "ecommerce": { "tag": "STARTUP", "title": "E-commerce Sostenible", "description": "Moda sostenible con un gran potencial de crecimiento." }
     },
     "info_modal": {
-      "title": "Sobre Nuestro Marketplace",
-      "paragraph1": "Nuestro marketplace conecta a inversionistas con activos reales y digitales tokenizados, ofreciendo una nueva forma de participar en la economía global. Aquí no solo exploras oportunidades: accedes a proyectos inmobiliarios, startups y negocios respaldados por bienes tangibles y estructuras legales sólidas. Cada inversión está gestionada con transparencia blockchain, protegiendo tu capital y facilitando la liquidez a través de stablecoins y herramientas DeFi.",
-      "paragraph2": "Con Pandoras, invertir deja de ser exclusivo para grandes corporativos: ahora puedes diversificar tu portafolio, participar desde montos accesibles y recibir rendimientos generados por la economía real. Nuestra plataforma te guía de principio a fin: desde la selección y análisis de proyectos hasta la gestión de tus activos tokenizados, todo dentro de un ecosistema seguro, regulado y diseñado para crecer contigo."
+      "title": "Sobre nuestro Hub de Creaciones",
+      "paragraph1": "Nuestro Hub conecta a Creadores con miembros de la comunidad, ofreciendo una nueva forma de participar en la economía digital. Aquí no solo exploras Artefactos: accedes a protocolos de lealtad, membresías NFT y sistemas de 'Work-to-Earn' (Labor). Cada Creación se gestiona con transparencia blockchain, facilitando la participación y la recompensa por el trabajo.",
+      "paragraph2": "Con Pandora, la participación deja de ser pasiva: ahora puedes construir tu comunidad, activarla y generar Recompensas por la 'Labor' real. Nuestra plataforma te guía de principio a fin: desde el diseño de tu protocolo hasta la gestión de tus Creaciones y Artefactos, todo dentro de un ecosistema transparente, basado en utilidad y diseñado para crecer con tu comunidad."
     },
     "info_sections": {
         "section1": {
-          "title": "Toma el control de tu futuro financiero",
-          "content": "Selecciona un activo, revisa su información y comienza tu proceso de inversión en cuestión de minutos. Cada proyecto está acompañado de métricas claras y actualizadas para que tomes decisiones con confianza."
+          "title": "Toma el control de tu comunidad",
+          "content": "Selecciona uan categoría, revisa su 'Códice' (documentación) y comienza tu proceso de 'Forja' (creación) en minutos. Cada categoría viene con métricas claras para que tomes decisiones de diseño con confianza."
         },
         "section2": {
-          "title": "Transparencia y seguimiento continuo",
-          "content": "Realizamos auditorías periódicas y ofrecemos un sistema de monitoreo en tiempo real que garantiza la calidad de cada inversión. Así, tu portafolio crece respaldado por datos y seguridad comprobada."
+          "title": "Transparencia y participación continua",
+          "content": "Ofrecemos un sistema de monitoreo en tiempo real de la 'Labor' (trabajo) que garantiza la calidad de cada protocolo. Así, tu comunidad crece respaldada por datos y transparencia total."
         }
       },
       "tokenization_process": {
-        "title_part1": "De proyecto a oportunidad ",
-        "title_part2": "tokenizada",
-        "subtitle": "Transparencia, análisis y tecnología blockchain al servicio de tu inversión",
+        "title_part1": "De Idea a Artefacto",
+        "title_part2": "Manifiesto",
+        "subtitle": "Transparencia y utilidad al servicio de tu comunidad",
         "steps": [
           {
-            "title": "Evaluación inicial y selección",
-            "description": "Analizamos cada proyecto candidato (inmuebles, startups, empresas) con criterios de viabilidad financiera, impacto y proyección."
+            "title": "Selección de Plantilla",
+            "description": "Elige una plantilla base ('Accesos', 'Lealtad', 'Work-to-Earn') de nuestro 'Códice' (biblioteca de plantillas auditadas)."
           },
           {
-            "title": "Due Diligence y legalidad",
-            "description": "Verificamos documentos, cumplimiento regulatorio y estructura legal para garantizar que cada activo cumpla con las normas aplicables."
+            "title": "Configuración No-Code",
+            "description": "Define las reglas de tu protocolo: tareas, recompensas, beneficios y gobernanza. Sin escribir código."
           },
           {
-            "title": "Tokenización y respaldo en RWA",
-            "description": "Convertimos el activo en unidades digitales seguras mediante contratos inteligentes auditados, respaldados por bienes tangibles."
+            "title": "Diseño y Pruebas (Testnet)",
+            "description": "Personaliza tu Artefacto y pruébalo en un entorno seguro (Testnet) antes de 'Desatarlo' al mundo."
           },
           {
-            "title": "Publicación en la plataforma",
-            "description": "Una vez aprobado, el proyecto se integra al marketplace para que los inversores puedan participar de forma directa y segura."
+            "title": "Despliegue y Propiedad",
+            "description": "'Desata' (lanza) tu Artefacto en la blockchain. Tú eres el único dueño y responsable del contrato inteligente."
           },
           {
-            "title": "Monitoreo y rendimiento continuo",
-            "description": "Supervisamos la evolución de cada proyecto, asegurando transparencia, pagos programados y reportes actualizados."
+            "title": "Gestión y Crecimiento",
+            "description": "Usa tu dashboard para monitorear la participación, gestionar las recompensas y hacer crecer tu ecosistema."
           }
         ]
       }
   },
   "about": {
-    "title": "Sobre Pandora's Finance: Digitalizando el Valor del Mundo Real",
+    "title": "Sobre Pandora's Finance: Construyendo la Nueva Utilidad Digital",
     "the_big_why": {
       "title": "Nuestro Gran Porqué / The Big Why",
-      "p1": "En un mundo donde las mejores oportunidades de inversión a menudo están reservadas para unos pocos, miles de millones de dólares en valor permanecen atrapados en activos ilíquidos como bienes raíces y empresas emergentes. La complejidad, la burocracia y las altas barreras de entrada impiden que la mayoría de las personas puedan participar en su crecimiento.",
-      "p2": "Pandora's Finance nació de una pregunta fundamental: ¿Y si pudiéramos desbloquear ese valor? ¿Y si pudiéramos hacer que invertir en un edificio de apartamentos o en una startup prometedora fuera tan sencillo como comprar una acción?",
-      "p3": "Nuestro \"gran porqué\" es la democratización del acceso a la riqueza. Creemos en un futuro financiero donde cualquier persona, desde cualquier lugar, pueda invertir en activos tangibles y de alto crecimiento de forma segura, transparente y eficiente, todo a través del poder de la tecnología blockchain."
+      "p1": "En un mundo donde las comunidades digitales están fragmentadas y pasivas, miles de creadores luchan por activar a sus audiencias. La apatía, la centralización de las plataformas (Web2) y la falta de herramientas impiden que la mayoría pueda construir ecosistemas de valor real.",
+      "p2": "Pandora's Finance nació de una pregunta fundamental: ¿Y si pudiéramos desatar ese potencial? ¿Y si pudiéramos hacer que construir un protocolo de lealtad o un sistema de 'Work-to-Earn' ('Labor') fuera tan sencillo como crear un sitio web?",
+      "p3": "Nuestro \"gran porqué\" es la soberanía del creador y la activación de la comunidad. Creemos en un futuro digital donde cualquier 'Creador', desde cualquier lugar, pueda construir sus propios protocolos de utilidad de forma segura, transparente y eficiente, todo a través del poder de nuestra plataforma."
     },
     "our_mission": {
       "title": "Nuestra Misión",
-      "content": "Nuestra misión es construir y operar la infraestructura tecnológica, legal y financiera más robusta para la tokenización de Activos del Mundo Real (RWA). Conectamos a propietarios de activos de alta calidad con una comunidad global de inversionistas, generando liquidez para los primeros y oportunidades de rendimiento competitivo para los segundos. Lo hacemos a través de una plataforma que garantiza seguridad, cumplimiento normativo y una experiencia de usuario excepcional."
+      "content": "Nuestra misión es construir y operar la infraestructura tecnológica (SaaS) más robusta para crear Protocolos de Utilidad. Conectamos a 'Creadores' con sus 'Comunidades', generando herramientas de participación para los primeros y recompensas por 'Labor' (trabajo) para los segundos. Lo hacemos a través de una plataforma no-code que garantiza seguridad, transparencia y una experiencia de usuario excepcional."
     },
     "what_we_do": {
       "title": "¿Qué Hacemos?",
-      "intro": "Pandora's Finance es una plataforma de tokenización de extremo a extremo. Actualmente, nuestro enfoque principal es el sector de bienes raíces , pero estamos expandiendo nuestro modelo para incluir startups a mediano plazo.",
-      "services_title": "Nuestro servicio integral abarca:",
+      "intro": "Pandora's Finance es una plataforma SaaS 'no-code' de extremo a extremo. Nuestro enfoque principal son los Protocolos de Utilidad (Lealtad, Acceso, Work-to-Earn) para cualquier tipo de comunidad digital.",
+      "services_title": "Nuestra plataforma SaaS incluye:",
       "services": [
         {
-          "title": "Asesoría y Estructuración Legal",
-          "description": "Creamos el marco legal y fiduciario para convertir un activo físico en una serie de tokens digitales que representan su valor."
+          "title": "Plantillas de Contratos Auditados",
+          "description": "Proveemos plantillas de *smart contracts* pre-auditadas para que los 'Creadores' lancen sus protocolos con seguridad."
         },
         {
-          "title": "Desarrollo Tecnológico",
-          "description": "Programamos y auditamos los smart contracts que gobiernan la propiedad, la gestión y la transferencia de los tokens."
+          "title": "Constructor No-Code",
+          "description": "Un dashboard intuitivo que permite a cualquier 'Creador' configurar, diseñar y desplegar sus 'Artefactos' sin escribir una línea de código."
         },
         {
-          "title": "Servicios de Valor Agregado",
-          "description": "Ofrecemos servicios clave como incubación de proyectos, due diligence, marketing digital y gestión de comunidades para asegurar el éxito de cada tokenización."
+          "title": "Gestión de Protocolos y Comunidad",
+          "description": "Herramientas para monitorear la participación, gestionar las recompensas y consultar la documentación para asegurar el éxito de cada 'Creación'."
         }
       ]
     },
     "our_current_position": {
       "title": "Nuestra Posición Actual",
-      "intro": "No somos solo una idea; somos una realidad en crecimiento. A día de hoy, Pandora's Finance cuenta con:",
+      "intro": "No somos solo una idea; somos una plataforma en beta activa. A día de hoy, Pandora's Finance cuenta con:",
       "points": [
-        "Una plataforma de tokenización básica ya operativa.",
+        "Una plataforma SaaS funcional y operativa.",
         "Una estructura legal y de marca sólidamente establecida.",
-        "Clientes firmados que están listos para iniciar sus procesos de tokenización en nuestra plataforma."
+        "'Creadores' en lista de espera listos para lanzar sus 'Artefactos' en nuestra plataforma."
       ]
     },
     "the_team": {
@@ -568,25 +568,25 @@
       "areas": [
         {
           "title": "Liderazgo y Estrategia (CEO, COO)",
-          "description": "Visión de negocio y eficiencia operativa."
+          "description": "Visión de producto y eficiencia operativa."
         },
         {
           "title": "Tecnología y Producto (CTO, CPO, Desarrolladores)",
-          "description": "Expertos en blockchain, smart contracts y desarrollo de plataformas seguras y escalables."
+          "description": "Expertos en blockchain, *smart contracts* y desarrollo de plataformas SaaS seguras y escalables."
         },
         {
-          "title": "Finanzas y Legal (CFO, Representante Legal)",
-          "description": "Especialistas en gestión financiera, cumplimiento normativo y estructuración de criptoactivos."
+          "title": "Legal y Cumplimiento SaaS (Equipo Legal)",
+          "description": "Especialistas en cumplimiento de software (SaaS), protección de datos y la arquitectura legal de plataformas Web3."
         },
         {
-          "title": "Marketing y Ventas (CMO, Ejecutivos)",
-          "description": "Un equipo dedicado a construir nuestra marca, atraer nuevos proyectos y gestionar nuestra red de agentes (TXAgents)."
+          "title": "Comunidad y Crecimiento (CMO, Ejecutivos)",
+          "description": "Un equipo dedicado a construir nuestra marca, atraer nuevos 'Creadores' y gestionar nuestra red de colaboradores."
         }
       ]
     },
     "strategic_allies": {
       "title": "Nuestros Aliados Estratégicos",
-      "intro": "Entendemos que la confianza es la piedra angular de las finanzas. Por ello, hemos construido un ecosistema de alianzas con líderes en sus respectivos campos para garantizar la máxima seguridad y cumplimiento:",
+      "intro": "Entendemos que la confianza es la piedra angular de Web3. Por ello, hemos construido un ecosistema de alianzas con líderes en sus respectivos campos para garantizar la máxima seguridad tecnológica:",
       "categories": [
         {
           "name": "Tecnología Blockchain",
@@ -594,19 +594,19 @@
         },
         {
           "name": "Auditoría y Seguridad",
-          "partners": "Colaboramos con firmas como CertiK y PeckShield para auditorías de seguridad y smart contracts , y usamos bibliotecas de contratos seguros de OpenZeppelin."
+          "partners": "Colaboramos con firmas como CertiK y PeckShield para auditorías de seguridad de nuestra plataforma, y usamos bibliotecas de contratos seguros de OpenZeppelin."
         },
         {
-          "name": "Cumplimiento (KYC/AML)",
-          "partners": "Utilizamos servicios de verificación de identidad de líderes del mercado."
+          "name": "Seguridad de Datos",
+          "partners": "Utilizamos servicios de encriptación y protección de datos de usuarios líderes en el mercado."
         },
         {
-          "name": "Asesoría Legal y Financiera",
-          "partners": "Nos respaldan despachos con apoyo de firmas y auditorías."
+          "name": "Asesoría Legal y SaaS",
+          "partners": "Nos respaldan despachos expertos en derecho digital, SaaS y tecnología blockchain."
         },
         {
-          "name": "Alianzas Comerciales",
-          "partners": "Somos miembros de la Asociación Mexicana de Profesionales Inmobiliarios (AMPI) para mantenernos a la vanguardia del sector inmobiliario."
+          "name": "Alianzas Comunitarias y Gremiales",
+          "partners": "Somos miembros de asociaciones de software y gremios de creadores digitales para mantenernos a la vanguardia de las comunidades que servimos."
         }
       ]
     },
@@ -616,17 +616,17 @@
       "timeline": [
         {
           "year": "2025",
-          "description": "Lanzaremos nuestra DApp robustecida, completaremos las primeras tokenizaciones de nuestros clientes iniciales y comenzaremos a pagar las primeras utilidades a los inversionistas."
+          "description": "Lanzaremos nuestra DApp robustecida, completaremos los primeros lanzamientos de 'Artefactos' de nuestros 'Creadores' iniciales y comenzaremos a operar los primeros protocolos de 'Labor' (Work-to-Earn)."
         },
         {
           "year": "2026",
-          "description": "Nos expandiremos a nuevos mercados clave como Guadalajara y Monterrey y lanzaremos nuestro primer piloto de \"Pandoras Pro\" para la tokenización de una startup, convirtiéndola en una DAO."
+          "description": "Nos expandiremos a nuevas comunidades de creadores en Guadalajara y Monterrey y lanzaremos nuestro primer piloto de \"Pandoras Pro\" para protocolos de 'Gobernanza' complejos (DAO)."
         }
       ]
     },
     "cta": {
-      "title": "Únete a la Revolución de los Activos Digitales",
-      "content": "Ya seas el dueño de un activo que busca liquidez, un inversionista en busca de nuevas oportunidades o un socio potencial que comparte nuestra visión, queremos saber de ti."
+      "title": "Únete a la Revolución de la Utilidad Digital",
+      "content": "Ya seas un 'Creador' que busca activar a su comunidad, un 'Usuario' en busca de protocolos valiosos o un socio potencial que comparte nuestra visión, queremos saber de ti."
     }
   }
 }
