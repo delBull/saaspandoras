@@ -18,7 +18,7 @@ import {
   userAchievements,
   type GamificationProfile as DrizzleGamificationProfile
 } from '@/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, desc } from 'drizzle-orm';
 
 // Export the class before declaring it
 export class GamificationService {
@@ -156,21 +156,7 @@ export class GamificationService {
       const points = this.getEventPoints(eventType);
       console.log(`💰 Event ${eventType} grants ${points} points`);
 
-      // Use raw SQL to avoid enum/coercion issues
-      const eventResult = await db.execute(sql`
-        INSERT INTO gamification_events
-        (user_id, type, category, points, metadata, created_at)
-        VALUES (${userId}, 'daily_login', 'daily', ${points}, ${JSON.stringify(metadata ?? {})}, NOW())
-        RETURNING id
-      `);
-
-      console.log(`🔍 Debug: Event insert result:`, eventResult);
-
-      if (!eventResult || !(eventResult as any).rows?.[0]) {
-        throw new Error('Failed to insert event');
-      }
-
-      // Award points directly using raw SQL
+      // Award points directly using raw SQL (without events table dependency)
       let finalTotalPoints = 0;
       if (points > 0) {
         console.log(`🎯 Awarding ${points} points to user ${userId}`);
@@ -206,9 +192,9 @@ export class GamificationService {
 
       console.log(`✅ Event tracked: +${points} points awarded to user ${userId}`);
 
-      // Return basic event object
+      // Return basic event object (without ID dependency)
       return {
-        id: (eventResult as any).rows[0].id?.toString() ?? '1',
+        id: `event_${Date.now()}_${userId}`,
         userId,
         type: 'daily_login' as any,
         category: 'daily' as any,
@@ -264,6 +250,14 @@ export class GamificationService {
 
       if (!user || user.length === 0 || !user[0]) {
         console.log(`❌ No user found for wallet address ${userId}`);
+
+        // 🚀 CREATE PROFILE IF FIRST VISIT AND ENSURE BASIC ACHIEVEMENTS EXIST
+        try {
+          await this.getUserProfile(userId); // This will create profile if needed
+          await this.initializeBasicAchievements(); // Ensure achievements exist
+        } catch (error) {
+          console.warn('⚠️ Failed to create profile/achievements on first access:', error);
+        }
         return [];
       }
 
@@ -320,65 +314,49 @@ export class GamificationService {
   static async getLeaderboard(type: string, limit = 10): Promise<LeaderboardEntry[]> {
     console.log(`🏅 GamificationService: Getting leaderboard ${type}, limit ${limit}`);
     try {
-      // Query gamification_profiles with raw SQL to avoid schema conflicts
-      console.log(`🔍 DEBUG: Executing SQL query for leaderboard...`);
-      const leaderboardData = await db.execute(sql`
-        select
-          gp.user_id,
-          gp.wallet_address,
-          gp.total_points,
-          gp.current_level
-        from gamification_profiles gp
-        order by gp.total_points desc
-        limit ${limit}
-      `);
+      // Query gamification_profiles directly to ensure we get existing data
+      console.log(`🔍 DEBUG: Querying gamification_profiles for leaderboard...`);
+      const profiles = await db
+        .select()
+        .from(gamificationProfiles)
+        .orderBy(desc(gamificationProfiles.totalPoints))
+        .limit(limit);
 
-      console.log(`🔍 DEBUG: Raw leaderboardData result:`, leaderboardData);
-      console.log(`🔍 DEBUG: leaderboardData length:`, (leaderboardData as any)?.rows?.length || leaderboardData?.length || 'undefined');
+      console.log(`🔍 DEBUG: Found ${profiles.length} profiles`);
 
-      // Handle different result formats from db.execute
-      let resultArray = [];
-      if ((leaderboardData as any)?.rows) {
-        resultArray = (leaderboardData as any).rows;
-      } else if (Array.isArray(leaderboardData)) {
-        resultArray = leaderboardData;
-      } else {
-        console.error(`🔍 DEBUG: Unexpected leaderboardData format:`, typeof leaderboardData, leaderboardData);
-        return [];
-      }
-
-      console.log(`🔍 DEBUG: Processed resultArray:`, resultArray);
-      console.log(`🔍 DEBUG: Result array length:`, resultArray.length);
-
-      if (resultArray.length === 0) {
+      if (profiles.length === 0) {
         console.log(`ℹ️ No leaderboard data found - no gamification profiles in database`);
         return [];
       }
 
-      // Map to LeaderboardEntry format (simplified from raw SQL result)
-      const leaderboard: LeaderboardEntry[] = resultArray.map((item: any, index: number) => ({
-        id: item.user_id.toString(),
-        userId: item.user_id.toString(),
-        // Solo usamos campos básicos que el frontend puede manejar
-        points: item.total_points,
-        totalPoints: item.total_points, // Para compatibilidad
-        currentLevel: item.current_level || 1,
-        // Campos adicionales opcionales que el frontend puede manejar
-        walletAddress: item.wallet_address,
+      // Map to LeaderboardEntry format directly from schema
+      const leaderboard: LeaderboardEntry[] = profiles.map((item: any, index: number) => ({
+        id: item.userId.toString(),
+        userId: item.userId.toString(),
+        // Use schema field names directly - alias for compatibility
+        points: item.totalPoints || 0, // Duplicate for interface compatibility
+        totalPoints: item.totalPoints || 0,
+        currentLevel: item.currentLevel || 1,
+        // Map schema fields to expected interface
+        walletAddress: item.walletAddress,
         rank: index + 1,
-        // Campos requeridos por interface - usar valores por defecto
-        projectsApplied: 0,
-        projectsApproved: 0,
-        totalInvested: 0,
+        // Required interface fields with defaults
+        projectsApplied: item.projectsApplied || 0,
+        projectsApproved: item.projectsApproved || 0,
+        totalInvested: Number(item.totalInvested || 0),
         achievementsUnlocked: 0,
-        communityRank: 0,
-        lastActivity: new Date(),
-        levelProgress: 0,
-        currentStreak: 0,
-        reputationScore: 0
-      } as any));
+        communityRank: item.communityRank || 0,
+        lastActivity: new Date((item.lastActivityDate as string | number | Date) || (item.updatedAt as string | number | Date) || new Date()),
+        levelProgress: item.levelProgress || 0,
+        currentStreak: item.currentStreak || 0,
+        reputationScore: item.reputationScore || 0,
+        communityContributions: item.communityContributions || 0,
+        referralsCount: item.referralsCount || 0,
+        joinedAt: new Date(item.createdAt as string | number | Date || new Date())
+      }));
 
       console.log(`✅ Leaderboard data loaded: ${leaderboard.length} users from database`);
+      console.log(`🚀 Top user points:`, leaderboard[0]?.totalPoints || 'none');
       return leaderboard;
     } catch (error) {
       console.error(`❌ Error getting leaderboard:`, error);
@@ -399,6 +377,13 @@ export class GamificationService {
       console.error(`❌ Error getting rewards for user ${userId}:`, error);
       return [];
     }
+  }
+
+  /**
+   * Trigger achievement unlock manually (public API)
+   */
+  static async triggerAchievementUnlock(userId: string, eventType: string, totalPoints: number): Promise<void> {
+    await this.checkAndUnlockAchievements(userId, eventType, totalPoints);
   }
 
   /**

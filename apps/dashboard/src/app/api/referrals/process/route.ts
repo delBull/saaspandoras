@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { getAuth } from "@/lib/auth";
 import { db } from "~/db";
 import { userReferrals, users } from "@/db/schema";
-import { gamificationEngine, EventType } from "@pandoras/gamification";
+import { GamificationService } from "@/lib/gamification/service";
 import { eq, and } from "drizzle-orm";
 
 // API para procesar referidos desde enlaces ?ref=wallet
@@ -66,9 +66,9 @@ export async function POST(request: Request) {
 
     // Trigger evento inicial de referido (50 puntos al referido por unirse)
     try {
-      await gamificationEngine.trackEvent(
+      await GamificationService.trackEvent(
         currentUserWallet,
-        EventType.PROJECT_APPLICATION_SUBMITTED, // Reutilizando evento existente
+        'DAILY_LOGIN', // Reutilizando evento de login para demostrado
         {
           eventSubtype: 'referral_joined',
           referrerWallet: referrerWalletNormalized,

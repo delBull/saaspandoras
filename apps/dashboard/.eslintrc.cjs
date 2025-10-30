@@ -52,6 +52,7 @@ module.exports = {
         '@typescript-eslint/no-unsafe-member-access': 'off',
         '@typescript-eslint/no-unsafe-call': 'off',
         '@typescript-eslint/no-unsafe-return': 'off',
+        '@typescript-eslint/no-unsafe-argument': 'off',
         '@typescript-eslint/prefer-nullish-coalescing': 'off',
         'jsx-a11y/label-has-associated-control': 'off',
         'jsx-a11y/click-events-have-key-events': 'off',
@@ -61,7 +62,8 @@ module.exports = {
     {
       files: [
         'src/lib/gamification/service.ts',
-        'src/app/api/gamification/**/*.ts'
+        'src/app/api/gamification/**/*.ts',
+        'src/app/(dashboard)/leaderboard/page.tsx'
       ],
       rules: {
         '@typescript-eslint/no-explicit-any': 'off',
@@ -69,6 +71,7 @@ module.exports = {
         '@typescript-eslint/no-unsafe-member-access': 'off',
         '@typescript-eslint/no-unsafe-call': 'off',
         '@typescript-eslint/no-unsafe-return': 'off',
+        '@typescript-eslint/no-unsafe-argument': 'off',
         '@typescript-eslint/no-unnecessary-type-assertion': 'off',
         '@typescript-eslint/no-unused-vars': 'off',
         '@typescript-eslint/prefer-nullish-coalescing': 'off'

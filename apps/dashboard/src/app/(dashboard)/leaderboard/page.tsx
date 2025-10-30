@@ -17,12 +17,20 @@ import {
 import Link from 'next/link';
 import { AnimatedBackground } from "@/components/apply/AnimatedBackground";
 
-// Interface for database response
-interface DbLeaderboardUser {
-  user_id: string;
-  display_name?: string;
-  total_points: number;
-  current_level: number;
+// Interface for API response direct from service
+interface LeaderboardApiResponse {
+  leaderboard: Array<{
+    id: string;
+    userId: string;
+    walletAddress: string;
+    points: number;
+    totalPoints: number;
+    currentLevel: number;
+    rank: number;
+    // other fields...
+  }>;
+  success: boolean;
+  message: string;
 }
 
 // Interface for leaderboard display data
@@ -86,15 +94,15 @@ export default function LeaderboardPage() {
           console.log('🔍 DEBUG - Leaderboard data array:', data);
           console.log('🔍 DEBUG - First user data:', data[0]);
 
-          const transformedData = data.map((user: DbLeaderboardUser, index: number): LeaderboardUser => ({
+          const transformedData = data.map((user: any, index: number): LeaderboardUser => ({
             rank: index + 1,
-            userId: user.user_id ?? `user_${index}`,
-            displayName: user.display_name ?? (user.user_id ? `${user.user_id.slice(0, 6)}...${user.user_id.slice(-4)}` : 'Usuario'),
-            name: user.display_name ?? (user.user_id ? `${user.user_id.slice(0, 6)}...${user.user_id.slice(-4)}` : 'Usuario'),
-            totalPoints: user.total_points ?? 0,
-            currentLevel: user.current_level ?? 1,
+            userId: user.userId ?? user.user_id ?? `user_${index}`,
+            displayName: user.walletAddress ? `${user.walletAddress.slice(0, 6)}...${user.walletAddress.slice(-4)}` : 'Usuario',
+            name: user.walletAddress ? `${user.walletAddress.slice(0, 6)}...${user.walletAddress.slice(-4)}` : 'Usuario',
+            totalPoints: user.totalPoints ?? user.total_points ?? 0,
+            currentLevel: user.currentLevel ?? user.current_level ?? 1,
             achievementsUnlocked: 0,
-            level: user.current_level ?? 1,
+            level: user.currentLevel ?? user.current_level ?? 1,
             badge: 'Rising',
             streak: 0,
             recentActivity: 'Hoy',
