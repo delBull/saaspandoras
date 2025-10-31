@@ -15,6 +15,8 @@ import { RewardModal } from "@/components/RewardModal";
 import type { Reward } from "@/components/RewardModal";
 // 🎁 AGREGAR DETECCIÓN AUTOMÁTICA DE REFERIDOS
 import { useReferralDetection } from "@/hooks/useReferralDetection";
+// TopNavbar para el perfil superior
+import { TopNavbar } from "@/components/TopNavbar";
 // Reward modal manager inside dashboard wrapper
 // 🎮 TODO: IMPORTAR HUD cuando esté funcional en páginas específicas
 // import { GamificationHUD } from "@pandoras/gamification";
@@ -79,6 +81,16 @@ export function DashboardClientWrapper({
           isSuperAdmin={isSuperAdmin}
           sidebarDefaultOpen={pathname === '/applicants' ? false : undefined}
         >
+          {/* Top Navbar with Profile - Superior derecha */}
+          <div className="relative">
+            <TopNavbar
+              wallet={account?.address}
+              userName={userName ?? undefined}
+              isAdmin={isAdmin}
+              isSuperAdmin={isSuperAdmin}
+            />
+          </div>
+
           <AutoLoginGate serverSession={serverSession}>
            <NFTGate>
              <AnimatePresence mode="wait">
