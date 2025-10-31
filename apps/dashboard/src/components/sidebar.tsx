@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  HomeIcon,
   BanknotesIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -17,6 +16,7 @@ import {
   ChartPieIcon,
   ChartBarIcon,
   FolderIcon,
+  ViewfinderCircleIcon,
 } from "@heroicons/react/24/outline";
 import { cn } from "@/lib/utils";
 import { useActiveAccount, useDisconnect, useActiveWallet } from "thirdweb/react";
@@ -347,7 +347,7 @@ export function Sidebar({
       {
         label: "Hub",
         href: "/",
-        icon: <HomeIcon className="h-5 w-5 shrink-0 text-gray-400" />,
+        icon: <ViewfinderCircleIcon className="h-5 w-5 shrink-0 text-gray-400" />,
         disabled: false,
       },
       {
@@ -408,7 +408,7 @@ export function Sidebar({
       <motion.div
         transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }}
         animate={{ width: open ? "20rem" : "6rem" }}
-        className="relative hidden h-screen flex-col border-r border-gray-800 bg-zinc-900 px-2 pt-20 md:flex"
+        className="relative hidden h-screen flex-col border-r border-gray-800 bg-zinc-900 px-2 pt-20 md:flex lg:flex"
       >
         <Link href="/" className="z-50">
           <div className="absolute top-12 left-0 right-0 flex justify-center items-center h-8">
@@ -506,11 +506,11 @@ export function Sidebar({
                     e.preventDefault(); // Prevent default mousedown behavior
                     e.stopPropagation(); // Prevent mousedown propagation
                   }}
-                  className="flex-shrink-0 relative hover:bg-zinc-700/30 p-1 rounded transition-colors"
+                  className="hidden flex-shrink-0 relative hover:bg-zinc-700/30 p-1 rounded transition-colors"
                   title="Menú de perfil"
                 >
                         <Image
-                          src={userProfile?.image ?? '/images/avatars/rasta.png'}
+                          src={userProfile?.image ?? '/images/avatars/onlybox2.png'}
                           alt="Profile Avatar"
                           width={32}
                           height={32}
@@ -867,7 +867,7 @@ export function Sidebar({
       <button
         onClick={() => setMobileOpen(true)}
         className={cn(
-          "md:hidden fixed z-10 top-3 left-0 flex items-center justify-center h-16 w-5 bg-zinc-800 border-y border-r border-gray-700 rounded-r-lg shadow-lg text-gray-500 hover:text-white hover:bg-zinc-700 transition-all duration-200"
+          "hidden fixed z-10 top-3 left-0 items-center justify-center h-16 w-5 bg-zinc-800 border-y border-r border-gray-700 rounded-r-lg shadow-lg text-gray-500 hover:text-white hover:bg-zinc-700 transition-all duration-200"
         )}
       >
         <ChevronDoubleRightIcon className="h-4 w-4" />
@@ -933,11 +933,11 @@ export function Sidebar({
                           e.preventDefault(); // Prevent default mousedown behavior
                           e.stopPropagation(); // Prevent mousedown propagation
                         }}
-                        className="flex-shrink-0 relative hover:bg-zinc-700/30 p-1 rounded transition-colors"
+                        className="hidden flex-shrink-0 relative hover:bg-zinc-700/30 p-1 rounded transition-colors"
                         title="Menú de perfil"
                       >
                         <Image
-                          src={userProfile?.image ?? '/images/avatars/rasta.png'}
+                          src={userProfile?.image ?? '/images/avatars/onlybox2.png'}
                           alt="Profile Avatar"
                           width={32}
                           height={32}

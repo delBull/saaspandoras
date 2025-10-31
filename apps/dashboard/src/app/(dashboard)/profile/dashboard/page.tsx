@@ -14,6 +14,7 @@ import {
   CheckCircleIcon,
   ExclamationCircleIcon,
   TrophyIcon,
+  ArrowLeftIcon,
 } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -214,6 +215,13 @@ export default function PandoriansDashboardPage() {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Back Button - Mobile & Desktop */}
+      <div className="flex items-center gap-4 mb-4">
+        <Link href="/profile" className="text-gray-400 hover:text-white transition-colors">
+          <ArrowLeftIcon className="w-5 h-5" />
+        </Link>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

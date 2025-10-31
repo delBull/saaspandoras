@@ -13,10 +13,13 @@ import { usePersistedAccount } from "@/hooks/usePersistedAccount";
 import { AutoLoginGate } from "@/components/AutoLoginGate";
 import { RewardModal } from "@/components/RewardModal";
 import type { Reward } from "@/components/RewardModal";
+// Mobile Navigation Component
+import { MobileNavMenu } from "@/components/MobileNavMenu";
 // 🎁 AGREGAR DETECCIÓN AUTOMÁTICA DE REFERIDOS
 import { useReferralDetection } from "@/hooks/useReferralDetection";
 // TopNavbar para el perfil superior
 import { TopNavbar } from "@/components/TopNavbar";
+import { useProfile } from "@/hooks/useProfile";
 // Reward modal manager inside dashboard wrapper
 // 🎮 TODO: IMPORTAR HUD cuando esté funcional en páginas específicas
 // import { GamificationHUD } from "@pandoras/gamification";
@@ -55,6 +58,8 @@ export function DashboardClientWrapper({
   // 🎁 ACTIVAR DETECCIÓN AUTOMÁTICA DE REFERIDOS
   useReferralDetection();
 
+  const { profile } = useProfile();
+
   useEffect(() => {
     if (account?.address) {
       void fetchUserName(account.address).then(name => {
@@ -74,6 +79,8 @@ export function DashboardClientWrapper({
   return (
     <TokenPriceProvider>
       <TermsModalProvider>
+
+
         <DashboardShell
           wallet={account?.address}
           userName={userName ?? undefined}
@@ -82,7 +89,7 @@ export function DashboardClientWrapper({
           sidebarDefaultOpen={pathname === '/applicants' ? false : undefined}
         >
           {/* Top Navbar with Profile - Superior derecha */}
-          <div className="relative">
+          <div className="relative md:block hidden">
             <TopNavbar
               wallet={account?.address}
               userName={userName ?? undefined}
@@ -116,6 +123,9 @@ export function DashboardClientWrapper({
            </NFTGate>
           </AutoLoginGate>
         </DashboardShell>
+
+        {/* Mobile Navigation Menu - Creative 5-icon bottom bar */}
+        <MobileNavMenu profile={profile} />
 
         <TermsModalRenderer />
 
