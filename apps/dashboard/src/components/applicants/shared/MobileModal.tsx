@@ -16,8 +16,8 @@ export function MobileModal({ isOpen, onClose, pendingProjects, approvedProjects
   const displayTitle = title ?? 'Creaciones en Revisión';
   const displayVariant: 'pending' | 'approved' = approvedProjects ? 'approved' : 'pending';
   return (
-    <div className={`fixed inset-0 z-50 lg:hidden transform transition-transform duration-500 ${
-      isOpen ? 'translate-y-0' : 'translate-y-full'
+    <div className={`fixed inset-0 z-50 lg:hidden transition-all duration-300 ease-out ${
+      isOpen ? 'opacity-100 translate-y-0 visible' : 'opacity-0 translate-y-full invisible'
     }`}>
       {/* Backdrop */}
       <button

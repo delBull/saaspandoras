@@ -177,7 +177,7 @@ export function TopNavbar({
   };
 
   return (
-    <div className="absolute top-4 right-5 z-30">
+    <div className="absolute top-4 right-7 z-30">
       <div className="flex items-center gap-4">
         {/* Profile Button */}
         <button
