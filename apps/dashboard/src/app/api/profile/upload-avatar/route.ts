@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { join } from 'path';
 import * as fs from 'fs';
 import sharp from 'sharp';
+import { put } from '@vercel/blob';
 import { db } from '@/db';
 import { users } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -54,20 +55,13 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Ensure uploads directory exists
-    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'avatars');
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
-
     // Generate unique filename with wallet address
     const walletShort = walletAddress.toLowerCase().slice(0, 8);
     const timestamp = Date.now();
     const filename = `avatar_${walletShort}_${timestamp}.webp`;
-    const filepath = join(uploadsDir, filename);
 
     // Process image: resize to 128x128, maintain aspect ratio, compress
-    await sharp(buffer)
+    const processedBuffer = await sharp(buffer)
       .resize(128, 128, {
         fit: 'contain', // Maintain aspect ratio
         background: { r: 255, g: 255, b: 255, alpha: 0 }, // Transparent background
@@ -77,10 +71,31 @@ export async function POST(request: NextRequest) {
         quality: 85, // Balanced quality and file size
         effort: 6 // More effort = smaller file
       })
-      .toFile(filepath);
+      .toBuffer();
 
-    // Create public URL
-    const imageUrl = `/uploads/avatars/${filename}`;
+    // Store based on environment
+    let imageUrl: string;
+    let finalProcessedSize: number = processedBuffer.length;
+
+    if (process.env.NODE_ENV === 'development') {
+      // Development: Use local filesystem
+      const uploadsDir = join(process.cwd(), 'public', 'uploads', 'avatars');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      const filepath = join(uploadsDir, filename);
+      await sharp(processedBuffer).toFile(filepath);
+      imageUrl = `/uploads/avatars/${filename}`;
+      finalProcessedSize = fs.statSync(filepath).size;
+    } else {
+      // Production: Use Vercel Blob
+      const blob = await put(filename, processedBuffer, {
+        access: 'public',
+        contentType: 'image/webp',
+      });
+      imageUrl = blob.url;
+      finalProcessedSize = processedBuffer.length;
+    }
 
     // Update user profile in database
     const result = await db
@@ -102,18 +117,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get original file size and processed file size for comparison
-    const originalSize = buffer.length;
-    const processedSize = fs.statSync(filepath).size;
-
     return NextResponse.json({
       success: true,
       user: result[0],
       message: 'Avatar uploaded successfully',
       optimization: {
-        originalSize: `${(originalSize / 1024).toFixed(1)}KB`,
-        processedSize: `${(processedSize / 1024).toFixed(1)}KB`,
-        compressionRatio: `${((originalSize / processedSize) * 100).toFixed(1)}%`
+        originalSize: `${(buffer.length / 1024).toFixed(1)}KB`,
+        processedSize: `${(finalProcessedSize / 1024).toFixed(1)}KB`,
+        compressionRatio: `${((buffer.length / finalProcessedSize) * 100).toFixed(1)}%`
       }
     });
 

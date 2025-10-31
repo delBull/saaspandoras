@@ -84,7 +84,7 @@ export default function PandoriansDashboardPage() {
   // Handle loading and error states
   if (isLoading) {
     return (
-      <div className="p-6">
+      <div className="py-4 px-2 md:p-6">
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-zinc-700 rounded w-64"></div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -99,7 +99,7 @@ export default function PandoriansDashboardPage() {
 
   if (isError || !walletAddress) {
     return (
-      <div className="p-6">
+      <div className="py-4 px-2 md:p-6">
         <Card>
           <CardHeader>
             <CardTitle>Acceso Denegado</CardTitle>
@@ -112,7 +112,7 @@ export default function PandoriansDashboardPage() {
 
   if (!profile) {
     return (
-      <div className="p-6">
+      <div className="py-4 px-2 md:p-6">
         <Card>
           <CardContent className="p-6">
             <p>No se encontró información de perfil.</p>
@@ -214,7 +214,7 @@ export default function PandoriansDashboardPage() {
   ];
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="py-4 px-2 md:p-6 space-y-6">
       {/* Back Button - Mobile & Desktop */}
       <div className="flex items-center gap-4 mb-4">
         <Link href="/profile" className="text-gray-400 hover:text-white transition-colors">
