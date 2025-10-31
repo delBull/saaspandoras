@@ -302,7 +302,7 @@ export default function ProfileProjectsPage() {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="py-4 px-2 md:p-6">
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-zinc-700 rounded w-64"></div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -316,7 +316,7 @@ export default function ProfileProjectsPage() {
 
   if (!walletAddress) {
     return (
-      <div className="p-6">
+      <div className="py-4 px-2 md:p-6">
         <Card>
           <CardHeader>
             <CardTitle>Acceso Denegado</CardTitle>
@@ -363,7 +363,7 @@ export default function ProfileProjectsPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="py-4 px-2 md:p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

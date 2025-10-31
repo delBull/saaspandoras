@@ -144,77 +144,76 @@ export default function MobileProfilePage() {
   ];
 
   return (
-    <div className="p-6 max-w-lg mx-auto space-y-6">
-      {/* Header */}
-      <div className="text-center">
-        <div className="relative mb-4">
+    <div className="py-4 px-2 max-w-full space-y-6">
+      {/* Facebook-style Header - Profile title left-aligned */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-white">Perfil</h1>
+      </div>
+
+      {/* Facebook-style Profile Row - Avatar left, Wallet center-left, Edit right */}
+      <div className="flex items-center space-x-4">
+        <div className="relative">
           <div className="relative inline-block">
             <Image
               src={profile?.image ?? '/images/avatars/onlybox2.png'}
               alt="Profile Avatar"
-              width={80}
-              height={80}
-              className="w-20 h-20 rounded-full border-2 border-lime-400"
+              width={64}
+              height={64}
+              className="w-16 h-16 rounded-full border-2 border-lime-400"
             />
             <button
               onClick={() => setShowAvatarModal(true)}
-              className="absolute bottom-0 right-0 bg-lime-300 hover:bg-lime-400 rounded-full p-1.5 border-2 border-gray-300 shadow-md"
+              className="absolute -bottom-1 -right-1 bg-lime-400 hover:bg-lime-500 rounded-full p-1.5 border-2 border-gray-900 shadow-lg"
               aria-label="Editar avatar"
             >
               <PencilIcon className="w-3 h-3 text-gray-900" />
             </button>
           </div>
         </div>
-        <h1 className="text-2xl font-bold text-white mb-2">Perfil</h1>
-        <p className="text-gray-400 text-sm">
-          {account?.address ?
-            `${account.address.slice(0, 8)}...${account.address.slice(-6)}` :
-            'Conecta tu wallet'
-          }
-        </p>
+
+        <div className="flex-1">
+          <p className="text-white font-medium text-sm">
+            {account?.address ?
+              `${account.address.slice(0, 12)}...${account.address.slice(-8)}` :
+              'Conecta tu wallet'
+            }
+          </p>
+        </div>
       </div>
 
-      {/* Profile Links */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Acciones del Perfil</CardTitle>
-          <CardDescription>
-            Gestiona tu cuenta y accede a tus secciones favoritas
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {profileLinks.map((link) => (
+      {/* Section Title */}
+      <div className="py-2">
+        <h2 className="text-2xl font-bold text-white mb-1">Acciones del Perfil</h2>
+        <p className="text-gray-400 text-sm">Gestiona tu cuenta y accede a tus secciones favoritas</p>
+      </div>
+
+      {/* Profile Links Grid */}
+      <div className="grid grid-cols-2 gap-3">
+        {profileLinks.map((link) => (
+          <div key={link.href} className="bg-zinc-900/50 rounded-lg overflow-hidden border border-zinc-800/50">
             <Link
-              key={link.href}
               href={link.href === '/settings' ? '#' : link.href} // Placeholder
               onClick={link.href === '/settings' ? (e) => e.preventDefault() : undefined}
-              className="flex items-center gap-4 p-4 rounded-lg hover:bg-zinc-800/50 transition-colors"
+              className="flex flex-col items-center gap-2 p-4 hover:bg-zinc-800/30 transition-colors text-center"
             >
               <div className="flex-shrink-0">
                 {link.icon}
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-white text-sm font-medium">{link.label}</div>
-                <div className="text-gray-400 text-xs">{link.description}</div>
-              </div>
-              <div className="text-gray-500">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
+              <div className="text-white text-sm font-medium">{link.label}</div>
+              <div className="text-gray-400 text-xs">{link.description}</div>
             </Link>
-          ))}
-        </CardContent>
-      </Card>
+          </div>
+        ))}
+      </div>
 
       {/* Wallet Actions */}
       {account && (
-        <Card className="border-red-900/50">
+        <Card className="border-gray-900/50">
           <CardContent className="p-4">
             <Button
               onClick={() => wallet && disconnect(wallet)}
               variant="outline"
-              className="w-full border-red-600 hover:bg-red-900/20 text-red-400"
+              className="w-full border-gray-700 hover:bg-gray-900/20 text-gray-400"
             >
               <ArrowLeftOnRectangleIcon className="w-4 h-4 mr-2" />
               Desconectar Wallet
