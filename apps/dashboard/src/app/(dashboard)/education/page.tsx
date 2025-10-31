@@ -151,10 +151,6 @@ export default function EducationPage() {
             Aprende skills Web3 avanzados y gana tokens mientras lo haces
           </p>
         </div>
-        <div className="text-right">
-          <div className="text-sm text-gray-400">Cursos Disponibles</div>
-          <div className="text-2xl font-bold text-cyan-400">{courses.length}</div>
-        </div>
       </div>
 
       {/* Progress Banner */}

@@ -220,20 +220,23 @@ export default function PandoriansDashboardPage() {
           <h1 className="text-2xl font-bold text-white">
             {profile.role === 'applicant' ? 'Dashboard de Creador' : 'Dashboard Pandorian'}
           </h1>
-          <p className="text-gray-400">
-            {profile.role === 'applicant'
-              ? `Tienes ${dashboardData.activeProjects} creación(s) activo(s)`
-              : 'Resumen de tu desempeño y métricas'
-            }
-          </p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className={`w-3 h-3 rounded-full ${
-            profile.kycLevel === 'basic' ? 'bg-green-500' : 'bg-yellow-500'
-          }`}></div>
-          <span className="text-sm text-gray-400">
-            Nivel {profile.kycLevel === 'basic' ? 'Básico' : 'N/A'}
-          </span>
+          <div className="flex items-center space-x-4 mt-2">
+            <p className="text-gray-400 text-sm">
+              {profile.role === 'applicant'
+                ? `Tienes ${dashboardData.activeProjects} creación(s) activo(s)`
+                : 'Resumen de tu desempeño y métricas'
+              }
+            </p>
+            {/* Indicador KYC movido here */}
+            <div className="flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full ${
+                profile.kycLevel === 'basic' ? 'bg-green-500' : 'bg-yellow-500'
+              }`}></div>
+              <span className="text-sm text-gray-400">
+                Nivel {profile.kycLevel === 'basic' ? 'Básico' : 'N/A'}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 

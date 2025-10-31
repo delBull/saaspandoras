@@ -25,8 +25,9 @@ export function ReferralModal({ isOpen, onClose, onReferralComplete }: ReferralM
       const hasSeenModal = localStorage.getItem(hasSeenModalKey);
 
       if (hasSeenModal) {
-        // Usuario ya vio el modal, no mostrar de nuevo
-        onClose();
+        // Usuario ya vio el modal, cerrar inmediatamente
+        console.log('🎯 Modal ya visto anteriormente, cerrando automáticamente');
+        setTimeout(() => onClose(), 100);
         return;
       }
 
@@ -36,10 +37,16 @@ export function ReferralModal({ isOpen, onClose, onReferralComplete }: ReferralM
 
       if (refFromUrl) {
         // Si hay ?ref= en URL, autopopular el campo
+        console.log('🎯 Autopopulando referrer desde URL:', refFromUrl);
         setReferrerWallet(refFromUrl);
+      } else if (referrerWallet === '') {
+        // Auto-popular con Super Admin wallet si está vacío (bonus automático)
+        const superAdminWallet = '0x00c9f7EE6d1808C09B61E561Af6c787060BFE7C9';
+        console.log('🎯 Auto-populde Super Admin wallet para bonus automático');
+        setReferrerWallet(superAdminWallet);
       }
     }
-  }, [isOpen, account?.address, onClose]);
+  }, [isOpen, account?.address, onClose, referrerWallet]);
 
   const handleSubmit = async () => {
     if (!referrerWallet.trim()) {
@@ -72,6 +79,9 @@ export function ReferralModal({ isOpen, onClose, onReferralComplete }: ReferralM
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-thirdweb-address': account.address,
+          'x-wallet-address': account.address,
+          'x-user-address': account.address,
         },
         body: JSON.stringify({
           referrerWallet: referrerWallet.trim(),
@@ -143,11 +153,10 @@ export function ReferralModal({ isOpen, onClose, onReferralComplete }: ReferralM
                   <span className="text-2xl">🎁</span>
                 </div>
                 <h3 className="text-xl font-bold text-white mb-2">
-                  ¡Bono de Bienvenida!
+                  ¡Bono de Referido!
                 </h3>
                 <p className="text-gray-400 text-sm leading-relaxed">
-                  Conecta tu wallet y obtén <span className="text-cyan-400 font-semibold">+50 tokens</span> automáticos.<br/>
-                  Si alguien te invitó, ingresa su wallet para recibir recompensas adicionales.
+                  Si alguien te invitó, ingresa su wallet para recibir <span className="text-cyan-400 font-semibold">+50 tokens</span> de recompensa.<br/>
                 </p>
               </div>
 
