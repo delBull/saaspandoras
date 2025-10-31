@@ -335,8 +335,6 @@ export default function MobileProfilePage() {
         </div>
       )}
 
-      {/* Bottom Spacer for Mobile Navigation */}
-      <div className="md:hidden h-16" />
     </div>
   );
 }
