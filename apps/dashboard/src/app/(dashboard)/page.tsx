@@ -317,10 +317,10 @@ export default function DashboardPage() {
       <MobileHeader userName={null} walletAddress={account?.address} />
       <TotalBalance total={totalInvestmentValue} />
       <div className="grid grid-cols-4 my-6 md:hidden">
-        <ActionButton icon={<QrCodeIcon className="w-8 h-8 text-gray-300"/>} label="Receive" />
+        <ActionButton icon={<QrCodeIcon className="w-8 h-8 text-gray-300"/>} label="Depositar" disabled />
         <ActionButton href="/swap" icon={<ArrowPathIcon className="w-8 h-8 text-gray-300"/>} label="Swap" disabled />
-        <ActionButton href="/applicants" icon={<UserGroupIcon className="w-8 h-8 text-gray-300"/>} label="Applicants" />
-        <ActionButton icon={<BanknotesIcon className="w-8 h-8 text-gray-300"/>} label="Pool" disabled />
+        <ActionButton href="/applicants" icon={<UserGroupIcon className="w-8 h-8 text-gray-300"/>} label="Creaciones" />
+        <ActionButton icon={<BanknotesIcon className="w-8 h-8 text-gray-300"/>} label="Recompensas" disabled />
       </div>
       <BannersSection />
       <div className="mt-8 flex flex-col gap-8">
