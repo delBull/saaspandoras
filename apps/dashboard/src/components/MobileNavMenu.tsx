@@ -92,7 +92,7 @@ export function MobileNavMenu({ profile }: MobileNavMenuProps) {
           </div>
         )}
 
-        <nav className="relative flex items-center justify-center px-2 py-1 min-h-[60px] backdrop-blur-xl safe_area_inset_bottom">
+        <nav className="relative flex items-center justify-center px-2 py-1 h-16 backdrop-blur-xl safe_area_inset_bottom">
           {navItems.map((item) => (
             <motion.div
               key={item.label}
@@ -104,7 +104,7 @@ export function MobileNavMenu({ profile }: MobileNavMenuProps) {
                 onClick={item.disabled ? (e) => e.preventDefault() : undefined}
                 className={`
                   flex flex-col items-center justify-center p-2 rounded-lg transition-all duration-200
-                  min-h-[52px] w-full max-w-[80px] relative
+                  h-full w-full max-w-[80px] relative
                   ${item.disabled
                     ? 'opacity-40 cursor-not-allowed'
                     : pathname === item.href
@@ -131,8 +131,7 @@ export function MobileNavMenu({ profile }: MobileNavMenuProps) {
         </nav>
       </div>
 
-      {/* Spacer for mobile navigation */}
-      <div className="md:hidden h-16" />
+      {/* Spacer removed - now provided globally in DashboardClientWrapper */}
     </>
   );
 }
