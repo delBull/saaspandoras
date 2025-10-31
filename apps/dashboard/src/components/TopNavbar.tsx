@@ -307,7 +307,7 @@ export function TopNavbar({
                   onClick={() => setProfileDropdown(false)}
                   className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
                 >
-                  <BookOpenIcon className="w-5 h-5 text-cyan-400" />
+                  <BookOpenIcon className="w-5 h-5 text-lime-300" />
                   <div>
                     <div className="text-white text-sm">Aprende y Gana</div>
                     <div className="text-gray-400 text-xs">Cursos Web3 con rewards (+toknes)</div>
