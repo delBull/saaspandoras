@@ -177,6 +177,13 @@ export default function AchievementsPage() {
       <AnimatedBackground />
 
       <div className="relative max-w-7xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
+        {/* Back Button - Mobile & Desktop */}
+        <div className="flex items-center gap-4 mb-4">
+          <Link href="/profile" className="text-gray-400 hover:text-white transition-colors">
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+        </div>
+
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -184,14 +191,6 @@ export default function AchievementsPage() {
           transition={{ duration: 0.8 }}
           className="mb-12"
         >
-          <div className="flex items-center gap-4 mb-6">
-            <Link href="/profile">
-              <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Volver al perfil
-              </Button>
-            </Link>
-          </div>
 
           <div className="text-center">
             <motion.div

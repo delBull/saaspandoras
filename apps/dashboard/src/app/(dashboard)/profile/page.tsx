@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Button } from '@saasfly/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@saasfly/ui/card';
-import { ClipboardDocumentIcon, CheckIcon, WalletIcon, ShieldCheckIcon, ArrowTopRightOnSquareIcon, BoltIcon, KeyIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { ClipboardDocumentIcon, CheckIcon, WalletIcon, ShieldCheckIcon, ArrowTopRightOnSquareIcon, BoltIcon, KeyIcon, ExclamationTriangleIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import { useProfile } from '@/hooks/useProfile';
 import Link from 'next/link';
@@ -108,6 +108,13 @@ export default function ProfilePage() {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Back Button - Mobile & Desktop */}
+      <div className="flex items-center gap-4 mb-4">
+        <Link href="/" className="text-gray-400 hover:text-white transition-colors">
+          <ArrowLeftIcon className="w-5 h-5" />
+        </Link>
+      </div>
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Perfil de Usuario</h1>
@@ -122,7 +129,7 @@ export default function ProfilePage() {
             <CardTitle className="flex items-center gap-3">
               <div className="relative mb-5">
                 <Image
-                  src={profile?.image ?? '/images/avatars/rasta.png'}
+                  src={profile?.image ?? '/images/avatars/onlybox2.png'}
                   alt="Profile"
                   width={64}
                   height={64}

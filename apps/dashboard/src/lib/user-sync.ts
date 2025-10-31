@@ -79,7 +79,7 @@ export async function syncThirdwebUser(userData: {
           ${userData.walletAddress},
           ${userData.email ?? null},
           ${userData.name ?? null},
-          ${userData.image ?? '/images/avatars/rasta.png'},  -- Avatar por defecto
+          ${userData.image ?? '/images/avatars/onlybox2.png'},  -- Avatar por defecto
           ${isSystemAdmin},  -- Admins automáticamente tienen Pandora's Key
           1,
           NOW(),
