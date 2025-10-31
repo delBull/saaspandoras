@@ -25,13 +25,9 @@ import { useProfile } from "@/hooks/useProfile";
 // import { GamificationHUD } from "@pandoras/gamification";
 // import { useGamificationContext } from "@pandoras/gamification";
 
-async function fetchUserName(address: string): Promise<string | null> {
-  if (address.toLowerCase() === "0xdd2fd4581271e230360230f9337d5c0430bf44c0") {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return "vitalik.eth";
-  }
-  return null;
-}
+// Removed: fetchUserName was a mock function for Vitalik's address
+// that was unsafe (hardcoded dependencies) and inefficient (300ms delay)
+// The app now works without username fetching for better performance
 
 // Component that uses the terms modal context
 function TermsModalRenderer() {
@@ -62,24 +58,24 @@ export function DashboardClientWrapper({
 
   useEffect(() => {
     if (account?.address) {
-      void fetchUserName(account.address).then(name => {
-        setUserName(name);
-      });
+      // Username fetching removed - was unsafe mock function
 
       // Ensure wallet information is available in cookies for server-side requests
       if (typeof window !== 'undefined') {
         document.cookie = `wallet-address=${account.address}; path=/; max-age=86400; samesite=strict`;
         document.cookie = `thirdweb:wallet-address=${account.address}; path=/; max-age=86400; samesite=strict`;
       }
-    } else {
-      setUserName(null);
     }
+    // Username always null for simpler architecture
+    setUserName(null);
   }, [account?.address]);
 
   return (
     <TokenPriceProvider>
       <TermsModalProvider>
 
+        {/* Mobile Navigation Spacer - Pushes content up before mobile nav */}
+        <div className="md:hidden h-10" />
 
         <DashboardShell
           wallet={account?.address}
@@ -107,10 +103,11 @@ export function DashboardClientWrapper({
                  animate={{ y: 0, opacity: 1 }}
                  exit={{ y: -20, opacity: 0 }}
                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                 className="pb-10 md:pb-0" // Mobile bottom padding for navigation space
                >
                  <Suspense
                    fallback={
-                     <div className="p-8 animate-pulse space-y-4">
+                     <div className="p-8 animate-pulse space-y-4 pb-20 md:pb-0">
                        <div className="h-8 w-1/3 rounded bg-fuchsia-950" />
                        <div className="h-64 w-full rounded bg-fuchsia-950" />
                      </div>

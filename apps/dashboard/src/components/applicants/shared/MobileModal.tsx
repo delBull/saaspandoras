@@ -29,21 +29,22 @@ export function MobileModal({ isOpen, onClose, pendingProjects, approvedProjects
         aria-label="Cerrar modal"
       />
 
-      {/* Modal Panel */}
-      <div className="absolute bottom-0 left-0 right-0 bg-zinc-900 min-h-[90vh] overflow-hidden border-t border-zinc-800">
+      {/* Modal Panel - Positioned with top margin to clear mobile header */}
+      <div className="absolute top-20 left-2 right-2 bottom-2 bg-zinc-900 rounded-lg overflow-hidden border border-zinc-800 shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-zinc-800">
-          <h3 className="text-xl font-bold text-white">{displayTitle}</h3>
+        <div className="flex items-center justify-between p-4 border-b border-zinc-800 bg-zinc-900/95">
+          <h3 className="text-lg font-bold text-white">{displayTitle}</h3>
           <button
             onClick={onClose}
             className="p-2 hover:bg-zinc-800 rounded-full transition-colors"
+            aria-label="Cerrar"
           >
-            <X className="w-6 h-6 text-gray-400" />
+            <X className="w-5 h-5 text-gray-400 hover:text-white" />
           </button>
         </div>
 
-        {/* Content */}
-        <div className="overflow-y-auto max-h-[calc(90vh-81px)] px-6 lg:px-0 py-8">
+        {/* Content with proper scrolling */}
+        <div className="overflow-y-auto h-[calc(100%-60px)] p-2">
           <ProjectGrid projects={displayProjects} variant={displayVariant} />
         </div>
       </div>
