@@ -7,6 +7,11 @@ module.exports = {
   ],
   ignorePatterns: [
     'scripts/**',
+    // Exclude root-level scripts from React/TypeScript linting
+    '../export-*.js',
+    '../import-*.js',
+    '../grant-*.js',
+    '../fix-*.js',
   ],
   overrides: [
     {
