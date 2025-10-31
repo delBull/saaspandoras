@@ -48,7 +48,7 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="p-6">
+      <div className="py-4 px-2 md:px-6">
         <div className="animate-pulse">
           <div className="h-8 bg-zinc-700 rounded mb-4 w-64"></div>
           <div className="space-y-4">
@@ -63,7 +63,7 @@ export default function ProfilePage() {
   // Only deny access if there's an error AND we're not loading AND no profile data
   if (isError && !profile && !walletAddress) {
     return (
-      <div className="p-6">
+      <div className="py-4 px-2 md:px-6">
         <Card>
           <CardHeader>
             <CardTitle>Acceso Denegado</CardTitle>
@@ -77,7 +77,7 @@ export default function ProfilePage() {
   // Show loading state briefly while profile loads
   if (isLoading && !profile) {
     return (
-      <div className="p-6">
+      <div className="py-4 px-2 md:px-6">
         <div className="animate-pulse">
           <div className="h-8 bg-zinc-700 rounded mb-4 w-64"></div>
           <div className="space-y-4">
@@ -92,7 +92,7 @@ export default function ProfilePage() {
   // Only deny access if there's a REAL error (not loading state)
   if (isError) {
     return (
-      <div className="p-6">
+      <div className="py-4 px-2 md:px-6">
         <Card>
           <CardHeader>
             <CardTitle>Error Loading Profile</CardTitle>
@@ -107,7 +107,7 @@ export default function ProfilePage() {
   console.log('🎮 RENDER PAGE: achievements length', gamification?.achievements?.length);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="py-4 px-2 md:p-6 space-y-6">
       {/* Back Button - Mobile & Desktop */}
       <div className="flex items-center gap-4 mb-4">
         <Link href="/" className="text-gray-400 hover:text-white transition-colors">
