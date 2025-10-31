@@ -14,11 +14,9 @@ import {
   ArrowLeftOnRectangleIcon,
   UserIcon,
   ChevronDoubleRightIcon,
-  TrophyIcon,
   ChartPieIcon,
   ChartBarIcon,
   FolderIcon,
-  BookOpenIcon,
 } from "@heroicons/react/24/outline";
 import { cn } from "@/lib/utils";
 import { useActiveAccount, useDisconnect, useActiveWallet } from "thirdweb/react";
@@ -322,26 +320,6 @@ export function Sidebar({
         icon: <ChartBarIcon className="w-5 h-5 text-gray-400" />,
         label: "Dashboard",
         description: "Métricas e inversiones",
-        onClick: () => {
-          setProfileDropdown(false);
-          if (isMobile) setMobileOpen(false);
-        }
-      },
-      {
-        href: "/profile/achievements",
-        icon: <TrophyIcon className="w-5 h-5 text-gray-400" />,
-        label: "Mis Logros",
-        description: "Achievements y gamificación",
-        onClick: () => {
-          setProfileDropdown(false);
-          if (isMobile) setMobileOpen(false);
-        }
-      },
-      {
-        href: "/education",
-        icon: <BookOpenIcon className="w-5 h-5 text-cyan-400" />,
-        label: "Aprende y Gana",
-        description: "Cursos Web3 con rewards (+puntos)",
         onClick: () => {
           setProfileDropdown(false);
           if (isMobile) setMobileOpen(false);
@@ -920,20 +898,6 @@ export function Sidebar({
                 <XMarkIcon className="h-6 w-6" />
               </button>
 
-              {/* ADMIN ELEMENT - MOBILE ONLY - Positioned absolute at top */}
-              {isClient && isAdmin && (
-                <div className="md:hidden absolute top-5 left-4 z-50 bg-red-900/90 backdrop-blur-xl border border-red-600 rounded-lg px-3 py-2">
-                  <Link
-                    href="/admin"
-                    onClick={() => setMobileOpen(false)}
-                    className="relative flex items-center text-red-300 hover:text-white transition-colors gap-2"
-                  >
-                    <ShieldCheckIcon className="h-4 w-4 shrink-0" />
-                    <span className="text-xs font-bold">Admin</span>
-                  </Link>
-                </div>
-              )}
-
               <div className="mt-6 mx-2">
                 {isClient && !account ? (
                   <div className="w-full rounded-lg border border-gray-700 bg-gray-800/50 p-2 flex flex-col items-center gap-2">
@@ -1179,7 +1143,20 @@ export function Sidebar({
                       </button>
                     </div>
                   )}
-
+                  {isClient && isAdmin && (
+                    <div className="border-t border-gray-800 pt-2">
+                      <Link
+                        href="/admin"
+                        onClick={() => setMobileOpen(false)}
+                        className="relative flex items-center rounded-lg py-2 px-4 text-red-500 transition-all duration-200 hover:bg-red-900/50 hover:text-white"
+                      >
+                        <ShieldCheckIcon className="h-5 w-5 shrink-0" />
+                        <span className="ml-3 whitespace-nowrap font-bold">
+                          Admin
+                        </span>
+                      </Link>
+                    </div>
+                  )}
                 </div>
               </nav>
             </motion.div>

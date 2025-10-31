@@ -10,6 +10,7 @@ import type {
 import {
   gamificationProfiles,
   userAchievements,
+  userPoints,
   achievements,
   rewards,
   users,
@@ -79,6 +80,9 @@ export async function GET(
       .where(eq(gamificationProfiles.userId, userId))
       .limit(1);
 
+    // ===== INICIALIZACIÓN AUTOMÁTICA PARA USUARIOS EXISTENTES =====
+    // Si el usuario existe en users pero NO tiene perfil de gamificación,
+    // creamos perfil básico con "Primer Login" (+10 pts) automáticamente
     let profile: UserGamificationProfile | null = null;
 
     if (profileResult && profileResult.length > 0 && profileResult[0]) {
@@ -105,6 +109,97 @@ export async function GET(
         createdAt: new Date(dbProfile.createdAt),
         updatedAt: new Date(dbProfile.updatedAt)
       };
+    } else {
+      // 🔥 USUARIO EXISTENTE SIN PERfil GAMIFICACIÓN - INICIALIZACIÓN AUTOMÁTICA
+      console.log(`🎯 Usuario encontrado sin perfil gamificación. Inicializando automáticamente...`);
+
+      try {
+        // 1. Crear perfil básico con 10 puntos (Primer Login)
+        const initialProfile = {
+          userId: userId.toString(),
+          walletAddress: walletAddress,
+          totalPoints: 10, // Primer Login bonus
+          currentLevel: 1,
+          levelProgress: 10,
+          pointsToNextLevel: 90,
+          projectsApplied: 0,
+          projectsApproved: 0,
+          totalInvested: "0.00",
+          communityContributions: 0,
+          currentStreak: 0,
+          longestStreak: 0,
+          totalActiveDays: 1, // Hoy cuenta como día activo
+          referralsCount: 0,
+          communityRank: 0,
+          reputationScore: 0,
+          lastActivityDate: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+
+        const newProfileResult = await db.insert(gamificationProfiles).values(initialProfile).returning();
+        if (newProfileResult[0]) {
+          profile = {
+            id: newProfileResult[0].id.toString(),
+            userId: userId.toString(),
+            walletAddress: walletAddress,
+            totalPoints: 10,
+            currentLevel: 1,
+            pointsToNextLevel: 90,
+            levelProgress: 10,
+            projectsApplied: 0,
+            projectsApproved: 0,
+            totalInvested: 0,
+            communityContributions: 0,
+            currentStreak: 0,
+            longestStreak: 0,
+            lastActivityDate: new Date(),
+            totalActiveDays: 1,
+            referralsCount: 0,
+            communityRank: 0,
+            reputationScore: 0,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+          console.log(`✅ Perfil gamificación creado con 10 puntos iniciales`);
+
+          // 2. Registrar puntos iniciales con razón específica
+          await db.insert(userPoints).values({
+            userId: userId,
+            points: 10,
+            reason: 'Primer Login: Conexión inicial al sistema',
+            category: 'daily_login',
+            metadata: JSON.stringify({ type: 'first_login' }),
+            createdAt: new Date()
+          });
+
+          // 3. Otorgar achievement "Primer Login" automáticamente
+          // Buscar el achievement por nombre
+          const firstLoginAchievement = await db
+            .select({ id: achievements.id })
+            .from(achievements)
+            .where(eq(achievements.name, 'Primer Login'))
+            .limit(1);
+
+          if (firstLoginAchievement[0]) {
+            await db.insert(userAchievements).values({
+              userId: userId,
+              achievementId: firstLoginAchievement[0].id,
+              progress: 100,
+              isUnlocked: true,
+              unlockedAt: new Date(),
+              updatedAt: new Date()
+            });
+
+            console.log(`🎉 Achievement "Primer Login" otorgado automáticamente`);
+          }
+
+          console.log(`🎯 Inicialización completada: usuario ${walletAddress} ahora tiene 10 pts iniciales y achievement "Primer Login"`);
+        }
+      } catch (initError) {
+        console.error(`❌ Error en inicialización automática para ${walletAddress}:`, initError);
+        // No lanzamos error - el usuario podrá seguir usando el sistema sin gamificación por ahora
+      }
     }
 
     // 3. Get user achievements
