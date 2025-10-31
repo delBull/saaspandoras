@@ -200,7 +200,7 @@ export function TopNavbar({
           title="Perfil"
         >
           <Image
-            src={userProfile?.image ?? '/images/avatars/rasta.png'}
+            src={userProfile?.image ?? '/images/avatars/onlybox2.png'}
             alt="Profile Avatar"
             width={32}
             height={32}
@@ -257,7 +257,7 @@ export function TopNavbar({
                 </button>
 
                 {/* Network & Balance Section - SECOND PRIORITY */}
-                <div className="p-2 rounded">
+                <div className="p-2 rounded hidden">
                   <div className="text-white text-sm mb-1">Red & Balance</div>
                   <div className="space-y-1">
                     <NetworkSelector
