@@ -5,10 +5,11 @@ import { eq, desc } from "drizzle-orm";
 
 export async function GET(
   request: Request,
-  { params }: { params: { wallet: string } }
+  { params }: { params: Promise<{ wallet: string }> }
 ) {
   try {
-    const walletAddress = params.wallet.toLowerCase();
+    const { wallet } = await params;
+    const walletAddress = wallet.toLowerCase();
 
     // Find user by wallet
     const user = await db
