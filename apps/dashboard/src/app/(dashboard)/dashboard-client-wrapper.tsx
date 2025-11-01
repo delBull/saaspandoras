@@ -79,9 +79,6 @@ export function DashboardClientWrapper({
           isSuperAdmin={isSuperAdmin}
           sidebarDefaultOpen={pathname === '/applicants' ? false : undefined}
         >
-          {/* Mobile Bottom Padding - Compensates for fixed nav height */}
-          <div className="md:hidden pb-20" />
-
           {/* Top Navbar with Profile - Superior derecha */}
           <div className="relative md:block hidden">
             <TopNavbar

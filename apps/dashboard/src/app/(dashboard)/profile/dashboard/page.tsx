@@ -3,6 +3,7 @@
 // Force dynamic rendering - this page uses cookies and should not be prerendered
 export const dynamic = 'force-dynamic';
 
+import { useRouter } from 'next/navigation';
 import React, { useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@saasfly/ui/card';
 import {
@@ -34,6 +35,7 @@ interface Project {
 }
 
 export default function PandoriansDashboardPage() {
+  const router = useRouter();
   const { profile, projects, isLoading, isError } = useProfile();
   const account = useActiveAccount();
   const toastShownRef = useRef(false);
@@ -214,12 +216,16 @@ export default function PandoriansDashboardPage() {
   ];
 
   return (
-    <div className="py-4 px-2 md:p-6 space-y-6">
+    <div className="py-4 px-2 md:p-6 space-y-6 pb-20 md:pb-6">
       {/* Back Button - Mobile & Desktop */}
       <div className="flex items-center gap-4 mb-4">
-        <Link href="/profile" className="text-gray-400 hover:text-white transition-colors">
+        <button
+          onClick={() => router.back()}
+          className="text-gray-400 hover:text-white transition-colors"
+          aria-label="Volver atrás"
+        >
           <ArrowLeftIcon className="w-5 h-5" />
-        </Link>
+        </button>
       </div>
 
       {/* Header */}

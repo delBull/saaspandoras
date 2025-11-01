@@ -84,7 +84,7 @@ export function MobileNavMenu({ profile }: MobileNavMenuProps) {
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50">
         {/* Background matching dashboard gradient */}
         <div className="absolute inset-0 bg-gradient-to-br from-purple-950/20 to-black border-t border-zinc-700/50" />
-        <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-950/30 to-purple-950/40" />
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-950/20 to-purple-950/40" />
 
         {/* Global selected indicator line at icon level */}
         {navItems.find(item => pathname === item.href && !item.disabled) && (
