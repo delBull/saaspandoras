@@ -9,8 +9,16 @@ import { eq, and } from "drizzle-orm";
 // API para procesar referidos desde enlaces ?ref=wallet
 export async function POST(request: Request) {
   try {
-    const { session } = await getAuth(await headers());
-    const walletAddress = session?.address ?? session?.userId;
+    // Get wallet address from headers (set by client)
+    let walletAddress = request.headers.get('x-wallet-address') ??
+                       request.headers.get('x-thirdweb-address') ??
+                       request.headers.get('x-user-address');
+
+    // Also check session as fallback
+    if (!walletAddress) {
+      const { session } = await getAuth(request.headers);
+      walletAddress = session?.address ?? session?.userId;
+    }
 
     if (!walletAddress) {
       return NextResponse.json({ message: "No autorizado" }, { status: 401 });

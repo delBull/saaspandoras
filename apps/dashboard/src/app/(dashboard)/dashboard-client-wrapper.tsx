@@ -58,8 +58,6 @@ export function DashboardClientWrapper({
 
   useEffect(() => {
     if (account?.address) {
-      // Username fetching removed - was unsafe mock function
-
       // Ensure wallet information is available in cookies for server-side requests
       if (typeof window !== 'undefined') {
         document.cookie = `wallet-address=${account.address}; path=/; max-age=86400; samesite=strict`;
@@ -74,9 +72,6 @@ export function DashboardClientWrapper({
     <TokenPriceProvider>
       <TermsModalProvider>
 
-        {/* Mobile Navigation Spacer - Pushes content up before mobile nav */}
-        <div className="md:hidden h-10" />
-
         <DashboardShell
           wallet={account?.address}
           userName={userName ?? undefined}
@@ -84,6 +79,9 @@ export function DashboardClientWrapper({
           isSuperAdmin={isSuperAdmin}
           sidebarDefaultOpen={pathname === '/applicants' ? false : undefined}
         >
+          {/* Mobile Bottom Padding - Compensates for fixed nav height */}
+          <div className="md:hidden pb-20" />
+
           {/* Top Navbar with Profile - Superior derecha */}
           <div className="relative md:block hidden">
             <TopNavbar
@@ -103,11 +101,11 @@ export function DashboardClientWrapper({
                  animate={{ y: 0, opacity: 1 }}
                  exit={{ y: -20, opacity: 0 }}
                  transition={{ duration: 0.3, ease: "easeInOut" }}
-                 className="pb-10 md:pb-0" // Mobile bottom padding for navigation space
+                 className="pb-4 md:pb-0"
                >
                  <Suspense
                    fallback={
-                     <div className="p-8 animate-pulse space-y-4 pb-20 md:pb-0">
+                     <div className="p-8 animate-pulse space-y-4">
                        <div className="h-8 w-1/3 rounded bg-fuchsia-950" />
                        <div className="h-64 w-full rounded bg-fuchsia-950" />
                      </div>
@@ -121,7 +119,7 @@ export function DashboardClientWrapper({
           </AutoLoginGate>
         </DashboardShell>
 
-        {/* Mobile Navigation Menu - Creative 5-icon bottom bar */}
+        {/* Mobile Navigation Menu - Fijo al bottom con altura exacta */}
         <MobileNavMenu profile={profile} />
 
         <TermsModalRenderer />
@@ -142,33 +140,36 @@ function RewardModalManager() {
   useEffect(() => {
     // 🎮 REAL GAMIFICATION LOGIC - Check for first login reward
     if (account?.address) {
-      const firstLoginKey = `pandoras_first_login_reward_${account.address}`;
-      const alreadyGotFirstLoginReward = localStorage.getItem(firstLoginKey);
+          // Check if this specific modal was already shown (prevent double modal bug)
+          const modalShownKey = `pandoras_welcome_modal_shown_${account.address}`;
+          const modalAlreadyShown = localStorage.getItem(modalShownKey);
 
-      // Only show reward modal if user hasn't received first login reward yet
-      if (!alreadyGotFirstLoginReward) {
-        console.log('🎯 Showing first login reward modal for:', account.address);
+          // Show welcome modal only once per user, with anti-double-modal protection
+          if (!modalAlreadyShown) {
+            console.log('🎉 Showing welcome modal for first-time user:', account.address);
 
-        const firstLoginReward: Reward = {
-          type: 'achievement',
-          title: 'Primer Login Exitoso',
-          description: 'Has conectado exitosamente tu wallet a Pandoras',
-          tokens: 10,
-          icon: '🔗',
-          rarity: 'common'
-        };
+            const welcomeReward: Reward = {
+              type: 'achievement',
+              title: '¡Bienvenido a Pandoras!',
+              description: 'Has conectado exitosamente tu wallet y recibido 10 puntos de gamificación',
+              tokens: 10,
+              icon: '🎉',
+              rarity: 'common'
+            };
 
-        // Show modal after a brief delay for better UX
-        setTimeout(() => {
-          setCurrentReward(firstLoginReward);
-          setShowRewardModal(true);
-        }, 1500);
+            // Anti-double-modal: Mark as shown BEFORE showing modal
+            localStorage.setItem(modalShownKey, 'true');
+            console.log('🔒 Modal marked as shown in localStorage immediately');
 
-        // Mark as shown immediately (localStorage will be set when API response comes)
-        // This prevents showing the modal again on page refresh
-      } else {
-        console.log('ℹ️ User already received first login reward:', account.address);
-      }
+            // Show modal with slight delay for better UX
+            setTimeout(() => {
+              setCurrentReward(welcomeReward);
+              setShowRewardModal(true);
+            }, 2000); // Increased delay for better UX
+
+          } else {
+            console.log('ℹ️ Welcome modal already shown for user:', account.address);
+          }
     }
   }, [account?.address]); // Only re-run if wallet address changes
 

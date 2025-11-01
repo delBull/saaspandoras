@@ -29,8 +29,8 @@ export function MobileModal({ isOpen, onClose, pendingProjects, approvedProjects
         aria-label="Cerrar modal"
       />
 
-      {/* Modal Panel - Positioned with top margin to clear mobile header */}
-      <div className="absolute top-20 left-2 right-2 bottom-2 bg-zinc-900 rounded-lg overflow-hidden border border-zinc-800 shadow-2xl">
+      {/* Modal Panel - Consistent margins like "Creaciones en Revisión" */}
+      <div className="absolute inset-x-0 top-20 bottom-2 bg-zinc-900 rounded-lg overflow-hidden border border-zinc-800 shadow-2xl mx-4 md:mx-2">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-zinc-800 bg-zinc-900/95">
           <h3 className="text-lg font-bold text-white">{displayTitle}</h3>
