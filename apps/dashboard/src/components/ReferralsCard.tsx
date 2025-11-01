@@ -62,23 +62,18 @@ export function ReferralsCard() {
           }
         }
 
-        // Fetch users who were referred by current user (simulated for now)
-        // In production, this would be from your backend
-        const mockReferrals: Referral[] = [
-          // This would come from your backend API
-          // {
-          //   id: '1',
-          //   referrerWalletAddress: account.address,
-          //   referredWalletAddress: '0x1234567890123456789012345678901234567890',
-          //   referralSource: 'link',
-          //   status: 'completed',
-          //   completedAt: '2024-11-01T10:00:00Z',
-          //   referredCompletedOnboarding: true,
-          //   referredFirstProject: true,
-          // }
-        ];
-
-        setReferrals(mockReferrals);
+        // Fetch users who were referred by current user
+        const referrerWallet = account.address.toLowerCase();
+        const referrerResponse = await fetch(`/api/referrals/my-referrals?wallet=${referrerWallet}`);
+        if (referrerResponse.ok) {
+          const referrerData = await referrerResponse.json();
+          const actualReferrals: Referral[] = (referrerData.referrals as Referral[]) || [];
+          setReferrals(actualReferrals);
+          console.log(`✅ Loaded ${actualReferrals.length} referrals for user ${referrerWallet.slice(0, 6)}...`);
+        } else {
+          console.warn(`⚠️ Could not load referrals for user ${referrerWallet.slice(0, 6)}...`);
+          setReferrals([]);
+        }
       } catch (error) {
         console.error('Error fetching referrals:', error);
       } finally {

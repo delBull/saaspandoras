@@ -3,6 +3,7 @@
 // Force dynamic rendering - this page uses cookies and should not be prerendered
 export const dynamic = 'force-dynamic';
 
+import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@saasfly/ui/card';
@@ -21,6 +22,7 @@ import type { UserData, Project } from '@/types/admin';
 import { useActiveAccount } from 'thirdweb/react';
 
 export default function ProfileProjectsPage() {
+  const router = useRouter();
   const [userProfile, setUserProfile] = useState<UserData | null>(null);
   const [userProjects, setUserProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -363,7 +365,18 @@ export default function ProfileProjectsPage() {
   };
 
   return (
-    <div className="py-4 px-2 md:p-6 space-y-6">
+    <div className="py-4 px-2 md:p-6 space-y-6 pb-20 md:pb-6">
+      {/* Back Button - Mobile & Desktop */}
+      <div className="flex items-center gap-4 mb-4">
+        <button
+          onClick={() => router.back()}
+          className="text-gray-400 hover:text-white transition-colors"
+          aria-label="Volver atrás"
+        >
+          <span className="text-lg">←</span>
+        </button>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

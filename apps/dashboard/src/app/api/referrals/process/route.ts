@@ -76,7 +76,7 @@ export async function POST(request: Request) {
     try {
       await GamificationService.trackEvent(
         currentUserWallet,
-        'DAILY_LOGIN', // Reutilizando evento de login para demostrado
+        'DAILY_LOGIN', // Reutilizando evento de login para el referido
         {
           eventSubtype: 'referral_joined',
           referrerWallet: referrerWalletNormalized,
@@ -87,6 +87,24 @@ export async function POST(request: Request) {
       console.log(`✅ Referral joined event tracked for new user: ${currentUserWallet.slice(0, 6)}...`);
     } catch (gamificationError) {
       console.warn('⚠️ Failed to track referral joined event:', gamificationError);
+    }
+
+    // 📈 Trigger evento para el REFERER (200 puntos por atraer referido)
+    try {
+      await GamificationService.trackEvent(
+        referrerWalletNormalized,
+        'referral_made', // Usar evento configurado en getEventPoints
+        {
+          eventSubtype: 'referrer_reward',
+          referredWallet: currentUserWallet,
+          source,
+          referralBonus: 200, // 200 puntos para quien refirió
+          referredBy: referrerWalletNormalized
+        }
+      );
+      console.log(`🎉 Referral reward event tracked for referrer: ${referrerWalletNormalized.slice(0, 6)}... (+200 points)`);
+    } catch (gamificationError) {
+      console.warn('⚠️ Failed to track referral reward for referrer:', gamificationError);
     }
 
     return NextResponse.json({

@@ -51,7 +51,7 @@ export function ApplicantsMobile({
    filteredCount: _filteredCount,
  }: ApplicantsMobileProps) {
   return (
-    <div className="lg:hidden min-h-screen text-white">
+    <div className="lg:hidden min-h-screen text-white pb-20 md:pb-6">
       {/* Header */}
       <div className="top-0 z-20 flex justify-between items-center px-2 py-6 gap-6 bg-zinc-950/80 backdrop-blur-sm">
         <div className="flex-1 min-w-0">
