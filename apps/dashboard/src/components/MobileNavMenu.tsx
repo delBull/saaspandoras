@@ -9,6 +9,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { PackageCheckIcon, PanelTopIcon } from "lucide-react"
 import { usePathname } from "next/navigation";
+import { usePersistedAccount } from "@/hooks/usePersistedAccount";
 
 interface NavItem {
   label: string;
@@ -28,6 +29,14 @@ interface MobileNavMenuProps {
 
 export function MobileNavMenu({ profile }: MobileNavMenuProps) {
   const pathname = usePathname();
+
+  // Don't render menu if no account connected
+  const account = usePersistedAccount().account;
+  const hasWalletAddress = !!account?.address;
+
+  if (!hasWalletAddress) {
+    return null; // Don't show nav when not connected
+  }
 
   // Debug KYC data
   console.log('🔍 MobileNavMenu - Profile KYC data:', {
@@ -74,8 +83,8 @@ export function MobileNavMenu({ profile }: MobileNavMenuProps) {
       {/* Mobile Navigation - Fixed Bottom Bar with Dashboard Background */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50">
         {/* Background matching dashboard gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-950 to-black border-t border-zinc-700/50" />
-        <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-950/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-950/20 to-black border-t border-zinc-700/50" />
+        <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-950/30 to-purple-950/40" />
 
         {/* Global selected indicator line at icon level */}
         {navItems.find(item => pathname === item.href && !item.disabled) && (

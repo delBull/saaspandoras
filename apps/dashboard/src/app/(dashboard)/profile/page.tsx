@@ -12,6 +12,7 @@ import { useActiveAccount } from 'thirdweb/react';
 // 🎮 IMPORTAR COMPONENTES Y HOOKS REALES DE GAMIFICACIÓN
 import { useRealGamification } from '@/hooks/useRealGamification';
 import { ReferralShareCard } from '@/components/ReferralShareCard';
+import { ReferralsCard } from '../../../components/ReferralsCard';
 
 // Force dynamic rendering - this page uses cookies and should not be prerendered
 export const dynamic = 'force-dynamic';
@@ -124,7 +125,7 @@ export default function ProfilePage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Avatar y Info Básica */}
-        <Card className="lg:col-span-1">
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
               <div className="relative mb-5">
@@ -221,8 +222,8 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
-        {/* Información Detallada */}
-        <div className="lg:col-span-2 space-y-6">
+        {/* Información Detallada - Primera sección */}
+        <div className="lg:col-span-1 space-y-6">
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -395,8 +396,8 @@ export default function ProfilePage() {
 
                 <div className="space-y-3">
                   {/* In-App Wallet Recovery */}
-                  <div className="flex items-center justify-between p-3 bg-zinc-700/30 rounded border border-zinc-600/50">
-                    <div className="flex items-center gap-3">
+                  <div className="p-3 bg-zinc-700/30 rounded border border-zinc-600/50">
+                    <div className="flex items-center gap-3 mb-2">
                       <WalletIcon className="w-4 h-4 text-lime-400" />
                       <div>
                         <span className="text-sm font-medium text-gray-300">Wallet integrada</span>
@@ -406,7 +407,7 @@ export default function ProfilePage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="text-xs bg-transparent border-zinc-600 hover:bg-zinc-700 text-gray-400"
+                      className="w-full text-xs bg-transparent border-zinc-600 hover:bg-zinc-700 text-gray-400"
                       onClick={() => {
                         toast.info('Funcionalidad de recovery kit próximamente disponible desde thirdweb');
                       }}
@@ -417,8 +418,8 @@ export default function ProfilePage() {
                   </div>
 
                   {/* External Wallet Message */}
-                  <div className="flex items-center justify-between p-3 bg-zinc-700/30 rounded border border-zinc-600/50">
-                    <div className="flex items-center gap-3">
+                  <div className="p-3 bg-zinc-700/30 rounded border border-zinc-600/50">
+                    <div className="flex items-center gap-3 mb-2">
                       <ArrowTopRightOnSquareIcon className="w-4 h-4 text-purple-400" />
                       <div>
                         <span className="text-sm font-medium text-gray-300">Wallet externa</span>
@@ -428,7 +429,7 @@ export default function ProfilePage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="text-xs bg-transparent border-zinc-600 hover:bg-zinc-700 text-gray-400"
+                      className="w-full text-xs bg-transparent border-zinc-600 hover:bg-zinc-700 text-gray-400"
                       disabled={true}
                     >
                       En tu app
@@ -465,12 +466,24 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
         </div>
-      </div>
 
-      {/* 🎁 SECCIÓN DE REFERIDOS - Agregada después de gamificación */}
-      {walletAddress && (
-        <ReferralShareCard />
-      )}
+        {/* Compartir & Ganar + Referidos */}
+        <div className="space-y-6">
+          {walletAddress ? (
+            <>
+              <ReferralShareCard />
+              <ReferralsCard />
+            </>
+          ) : (
+            <Card className="bg-zinc-900 border-zinc-800">
+              <CardContent className="text-center py-8">
+                <div className="text-cyan-400 text-lg mb-2">🔗 Compartir & Ganar</div>
+                <p className="text-sm text-gray-400">Conecta tu wallet para compartir y gestionar referidos</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
