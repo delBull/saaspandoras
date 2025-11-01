@@ -565,6 +565,12 @@ private static async updateUserProfilePoints(userId: string, pointsToAdd: number
         console.log(`🎉 Unlocked "Primer Login" achievement for user ${userId}`);
       }
 
+      // 🎯 REFERIDOS: Achievement por primer referido exitoso
+      if (eventType === 'referral_made') {
+        await this.unlockAchievement(userId, 'promotor_de_comunidad');
+        console.log(`🎉 Unlocked "Promotor de Comunidad" achievement for referrer ${userId}`);
+      }
+
       // 🎯 NUEVOS: MAPPINGS FALTANTES PARA CURSOS
       if (eventType === 'COURSE_STARTED') {
         await this.unlockAchievement(userId, 'curso_iniciado');
@@ -599,6 +605,7 @@ private static async updateUserProfilePoints(userId: string, pointsToAdd: number
    */
   private static async initializeBasicAchievements(): Promise<void> {
     try {
+      // 🙋‍♂️ DASHBOARD SPECIFIC ACHIEVEMENTS (equivalents to package achievements)
       const basicAchievements = [
         {
           name: "Primer Login",
@@ -641,20 +648,93 @@ private static async updateUserProfilePoints(userId: string, pointsToAdd: number
           is_active: true,
           is_secret: false,
           created_at: new Date()
+        },
+        {
+          name: "Promotor de Comunidad",
+          description: "Obtén tu primer referido exitoso",
+          icon: "🎯",
+          type: "social" as any,
+          required_points: 0,
+          required_level: 1,
+          required_events: JSON.stringify(["referral_made"]),
+          points_reward: 500,
+          badge_url: "/badges/referrer.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
+        },
+        {
+          name: "Maestro Recrutador",
+          description: "Ayuda a 5 personas a unirse",
+          icon: "🎉",
+          type: "social" as any,
+          required_points: 0,
+          required_level: 1,
+          required_events: JSON.stringify([]),
+          points_reward: 1000,
+          badge_url: "/badges/recruiter.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
         }
       ];
 
-      // Only insert if not exists (by name)
-      for (const achievement of basicAchievements) {
-        const exists = await db
-          .select()
-          .from(achievements)
-          .where(eq(achievements.name, achievement.name))
-          .limit(1);
+      // First import and convert TOKENIZATION_ACHIEVEMENTS from package
+      // (Dynamic import to avoid build issues if package is not available)
+      try {
+        const { TOKENIZATION_ACHIEVEMENTS } = await import('@pandoras/gamification');
+        console.log(`📦 Loading ${TOKENIZATION_ACHIEVEMENTS.length} achievements from package...`);
 
-        if (exists.length === 0) {
-          await db.insert(achievements).values(achievement);
-          console.log(`🏆 Created achievement: ${achievement.name}`);
+        // Convert package achievements to dashboard format
+        const packageAchievements = TOKENIZATION_ACHIEVEMENTS.map(pkgAchievement => ({
+          name: pkgAchievement.name,
+          description: pkgAchievement.description,
+          icon: pkgAchievement.icon,
+          type: pkgAchievement.category as any,
+          required_points: pkgAchievement.points,
+          required_level: 1,
+          required_events: JSON.stringify(pkgAchievement.requirements),
+          points_reward: pkgAchievement.points,
+          badge_url: `/${pkgAchievement.category}-badges/${pkgAchievement.id}`,
+          is_active: pkgAchievement.isActive,
+          is_secret: pkgAchievement.isSecret,
+          created_at: new Date()
+        }));
+
+        // Merge with dashboard achievements
+        const allAchievements = [...basicAchievements, ...packageAchievements];
+        console.log(`🏆 Total achievements to initialize: ${allAchievements.length}`);
+
+        // Only insert if not exists (by name)
+        for (const achievement of allAchievements) {
+          const exists = await db
+            .select()
+            .from(achievements)
+            .where(eq(achievements.name, achievement.name))
+            .limit(1);
+
+          if (exists.length === 0) {
+            await db.insert(achievements).values(achievement);
+            console.log(`🏆 Created achievement: ${achievement.name}`);
+          }
+        }
+
+        console.log(`✅ Achievements initialization complete: ${allAchievements.length} total`);
+      } catch (importError) {
+        console.warn('⚠️ Could not import TOKENIZATION_ACHIEVEMENTS from package, using only basic achievements:', importError);
+
+        // Fallback to basic achievements only
+        for (const achievement of basicAchievements) {
+          const exists = await db
+            .select()
+            .from(achievements)
+            .where(eq(achievements.name, achievement.name))
+            .limit(1);
+
+          if (exists.length === 0) {
+            await db.insert(achievements).values(achievement);
+            console.log(`🏆 Created achievement: ${achievement.name}`);
+          }
         }
       }
     } catch (error) {

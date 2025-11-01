@@ -207,7 +207,14 @@ export function ReferralsCard() {
                   disabled={isSubmitting || !newReferrer.trim()}
                   className="bg-orange-500 hover:bg-orange-600 text-white w-full"
                 >
-                  {isSubmitting ? '...' : 'Agregar'}
+                  {isSubmitting ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Agregando...</span>
+                    </div>
+                  ) : (
+                    'Agregar'
+                  )}
                 </Button>
               </div>
               <p className="text-xs text-gray-400">
