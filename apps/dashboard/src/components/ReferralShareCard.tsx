@@ -9,10 +9,10 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 
 // Icons (usando componente simple por ahora)
-const CopyIcon = () => <span>📋</span>;
-const QRIcon = () => <span>📱</span>;
-const TwitterIcon = () => <span>🐦</span>;
-const TelegramIcon = () => <span>📱</span>;
+const CopyIcon = () => <span className="mr-1">📋</span>;
+const QRIcon = () => <span className="mr-1">📱</span>;
+const TwitterIcon = () => <span className="mr-1">🐦</span>;
+const TelegramIcon = () => <span className="mr-1">📱</span>;
 
 export function ReferralShareCard() {
   const account = useActiveAccount();
@@ -86,19 +86,13 @@ export function ReferralShareCard() {
     >
       <Card className="bg-zinc-900 border-zinc-800">
         <CardHeader>
-          <div className="flex items-start justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2 text-cyan-400">
-                🎁 Compartir & Ganar
-              </CardTitle>
-              <CardDescription>
-                Invita amigos y gana <span className="text-cyan-400 font-semibold">+200 puntos</span> por cada uno que se una
-              </CardDescription>
-            </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold text-cyan-400">0</div>
-              <div className="text-xs text-gray-400">Referidos</div>
-            </div>
+          <div>
+            <CardTitle className="flex items-center gap-2 text-cyan-400">
+              🎁 Compartir & Ganar
+            </CardTitle>
+            <CardDescription>
+              Invita amigos y gana <span className="text-cyan-400 font-semibold">+200 puntos</span> por cada uno que se una
+            </CardDescription>
           </div>
         </CardHeader>
 
@@ -154,46 +148,35 @@ export function ReferralShareCard() {
             <div className="text-sm font-medium text-gray-300">
               Compartir en redes sociales:
             </div>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <Button
                 size="sm"
                 onClick={handleShareTwitter}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-blue-600 hover:bg-blue-700 p-2"
+                title="Twitter"
               >
-                <TwitterIcon /> Twitter
+                <TwitterIcon />
               </Button>
               <Button
                 size="sm"
                 onClick={handleShareTelegram}
-                className="bg-blue-500 hover:bg-blue-600"
+                className="bg-blue-500 hover:bg-blue-600 p-2"
+                title="Telegram"
               >
-                <TelegramIcon /> Telegram
+                <TelegramIcon />
               </Button>
               <Button
                 size="sm"
                 onClick={handleShareWhatsApp}
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-green-600 hover:bg-green-700 p-2"
+                title="WhatsApp"
               >
-                WhatsApp
+                <span className="mr-1">💬</span>
               </Button>
             </div>
           </div>
 
-          {/* Estadísticas */}
-          <div className="grid grid-cols-3 gap-3 pt-4 border-t border-zinc-800">
-            <div className="text-center">
-              <div className="text-lg font-bold text-cyan-400">0</div>
-              <div className="text-xs text-gray-400">Referidos</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-bold text-cyan-400">0</div>
-              <div className="text-xs text-gray-400">Completados</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-bold text-cyan-400">0</div>
-              <div className="text-xs text-gray-400">Puntos Ganados</div>
-            </div>
-          </div>
+
 
           {/* Info adicional */}
           <div className="text-xs text-gray-500 bg-zinc-800/50 p-3 rounded-lg">

@@ -144,7 +144,7 @@ export default function MobileProfilePage() {
   ];
 
   return (
-    <div className="py-4 px-2 max-w-full space-y-6">
+    <div className="py-4 px-2 max-w-full space-y-6 pb-20 md:pb-6">
       {/* Facebook-style Header - Profile title left-aligned */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-white">Perfil</h1>

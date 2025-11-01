@@ -3,6 +3,7 @@
 // Force dynamic rendering - this page uses cookies and should not be prerendered
 export const dynamic = 'force-dynamic';
 
+import { useRouter } from 'next/navigation';
 import React, { useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@saasfly/ui/card';
 import {
@@ -23,7 +24,10 @@ import { useProfile } from "@/hooks/useProfile";
 import { useActiveAccount } from 'thirdweb/react';
 import { useRealGamification } from "@/hooks/useRealGamification";
 
-// Define a type for your project data to avoid using 'any'
+import { ActivityHistoryCard } from '@/components/ActivityHistoryCard';
+
+
+
 interface Project {
   id: string | number;
   title: string;
@@ -34,12 +38,15 @@ interface Project {
 }
 
 export default function PandoriansDashboardPage() {
+  const router = useRouter();
   const { profile, projects, isLoading, isError } = useProfile();
   const account = useActiveAccount();
   const toastShownRef = useRef(false);
 
   // Use account from useActiveAccount hook instead of cookies
   const walletAddress = account?.address;
+
+  // Activity handled by ActivityHistoryCard component
 
   // 🎮 HOOK DE GAMIFICACIÓN - DATA REAL
   const {
@@ -214,12 +221,16 @@ export default function PandoriansDashboardPage() {
   ];
 
   return (
-    <div className="py-4 px-2 md:p-6 space-y-6">
+    <div className="py-4 px-2 md:p-6 space-y-6 pb-20 md:pb-6">
       {/* Back Button - Mobile & Desktop */}
       <div className="flex items-center gap-4 mb-4">
-        <Link href="/profile" className="text-gray-400 hover:text-white transition-colors">
+        <button
+          onClick={() => router.back()}
+          className="text-gray-400 hover:text-white transition-colors"
+          aria-label="Volver atrás"
+        >
           <ArrowLeftIcon className="w-5 h-5" />
-        </Link>
+        </button>
       </div>
 
       {/* Header */}
@@ -618,17 +629,8 @@ export default function PandoriansDashboardPage() {
         </Card>
       </div>
 
-      {/* Coming Soon Notice */}
-      <Card className="border-dashed border-gray-600">
-        <CardContent className="p-6 text-center">
-          <ChartBarIcon className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-white mb-2">Funciones Avanzadas Próximamente</h3>
-          <p className="text-gray-400 text-sm">
-            Próximamente: Gráficos detallados, actualización de licecias automática, alertas personalizadas,
-            y mucho más para optimizar tus recompensas.
-          </p>
-        </CardContent>
-      </Card>
+      {/* Activity History Section - Usando componente modularizado */}
+      <ActivityHistoryCard walletAddress={walletAddress} />
     </div>
   );
 }

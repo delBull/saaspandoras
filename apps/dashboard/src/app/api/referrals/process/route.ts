@@ -9,8 +9,16 @@ import { eq, and } from "drizzle-orm";
 // API para procesar referidos desde enlaces ?ref=wallet
 export async function POST(request: Request) {
   try {
-    const { session } = await getAuth(await headers());
-    const walletAddress = session?.address ?? session?.userId;
+    // Get wallet address from headers (set by client)
+    let walletAddress = request.headers.get('x-wallet-address') ??
+                       request.headers.get('x-thirdweb-address') ??
+                       request.headers.get('x-user-address');
+
+    // Also check session as fallback
+    if (!walletAddress) {
+      const { session } = await getAuth(request.headers);
+      walletAddress = session?.address ?? session?.userId;
+    }
 
     if (!walletAddress) {
       return NextResponse.json({ message: "No autorizado" }, { status: 401 });
@@ -68,7 +76,7 @@ export async function POST(request: Request) {
     try {
       await GamificationService.trackEvent(
         currentUserWallet,
-        'DAILY_LOGIN', // Reutilizando evento de login para demostrado
+        'DAILY_LOGIN', // Reutilizando evento de login para el referido
         {
           eventSubtype: 'referral_joined',
           referrerWallet: referrerWalletNormalized,
@@ -79,6 +87,24 @@ export async function POST(request: Request) {
       console.log(`✅ Referral joined event tracked for new user: ${currentUserWallet.slice(0, 6)}...`);
     } catch (gamificationError) {
       console.warn('⚠️ Failed to track referral joined event:', gamificationError);
+    }
+
+    // 📈 Trigger evento para el REFERER (200 puntos por atraer referido)
+    try {
+      await GamificationService.trackEvent(
+        referrerWalletNormalized,
+        'referral_made', // Usar evento configurado en getEventPoints
+        {
+          eventSubtype: 'referrer_reward',
+          referredWallet: currentUserWallet,
+          source,
+          referralBonus: 200, // 200 puntos para quien refirió
+          referredBy: referrerWalletNormalized
+        }
+      );
+      console.log(`🎉 Referral reward event tracked for referrer: ${referrerWalletNormalized.slice(0, 6)}... (+200 points)`);
+    } catch (gamificationError) {
+      console.warn('⚠️ Failed to track referral reward for referrer:', gamificationError);
     }
 
     return NextResponse.json({
