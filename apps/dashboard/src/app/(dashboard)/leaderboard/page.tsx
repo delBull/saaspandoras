@@ -144,7 +144,7 @@ export default function LeaderboardPage() {
     <div className="absolute inset-x-0 min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-black text-white">
       <AnimatedBackground />
 
-      <div className="relative max-w-7xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
+      <div className="relative max-w-7xl mx-auto px-4 py-16 sm:px-6 lg:px-8 pb-20 md:pb-6">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}

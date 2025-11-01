@@ -79,7 +79,7 @@ export default function WalletPage() {
   const account = useActiveAccount();
 
   return (
-    <div className="py-4 px-2 md:p-6 max-w-4xl mx-auto space-y-6">
+    <div className="py-4 px-2 md:p-6 max-w-4xl mx-auto space-y-6 pb-20 md:pb-6">
       {/* Header */}
       <div className="text-center mb-8">
         <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">

@@ -122,26 +122,30 @@ export function FeaturedProjectCard({
         }}
       />
       <div className="absolute inset-0 p-[1px] rounded-xl bg-gradient-to-r from-white/10 to-white/5" style={{ zIndex: 3 }}>
-        <div className={cn(contentContainerClasses)}>
-          <div className="flex-1 min-h-0">
+        <div className={cn(contentContainerClasses, "pb-10 md:pb-4")}>
+          <div className="flex-1 flex flex-col justify-end min-h-0">
             <h3 className="text-lg font-semibold text-white mb-2 leading-tight">{title}</h3>
-            <p className="text-sm text-gray-300/90 mb-4 leading-relaxed line-clamp-3 overflow-hidden">
-              {subtitle.length > 120 ? `${subtitle.substring(0, 120)}...` : subtitle}
+            <p className="text-sm text-gray-300/90 mb-2 md:mb-6 leading-relaxed line-clamp-3 overflow-hidden">
+              {/* Mobile: límite muy reducido (60 chars), Desktop: mayor límite (200 chars) */}
+              {subtitle.length > (typeof window !== 'undefined' && window.innerWidth < 768 ? 60 : 200)
+                ? `${subtitle.substring(0, typeof window !== 'undefined' && window.innerWidth < 768 ? 60 : 200)}...`
+                : subtitle}
             </p>
           </div>
-          <div className="flex-shrink-0 mt-auto">
+          <div className="flex-shrink-0">
             <Link href={`/projects/${projectSlug}`}>
               <button
                 className={
                   cn(
-                    "relative z-10 text-sm font-medium w-full sm:w-auto",
-                    "px-4 py-2.5 rounded-lg min-w-[120px]",
+                    "relative z-10 text-xs md:text-sm font-semibold w-full",
+                    "px-2 md:px-4 py-1.5 md:py-2.5 rounded-lg",
                     "bg-gradient-to-r from-lime-400 to-emerald-400",
-                    "text-black font-semibold",
+                    "text-black",
                     "hover:opacity-90 hover:scale-105",
                     "transform transition-all duration-200",
                     "shadow-lg backdrop-blur-sm",
-                    "flex items-center justify-center"
+                    "flex items-center justify-center",
+                    "min-h-[28px] md:min-h-[40px]"
                   ) as unknown as string
                 }
               >

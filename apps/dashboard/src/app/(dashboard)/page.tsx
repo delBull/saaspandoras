@@ -313,7 +313,7 @@ export default function DashboardPage() {
   console.log('DashboardPage render - account:', account?.address?.substring(0, 8));
 
   return (
-    <>
+    <div className="pb-20 md:pb-6">
       <MobileHeader userName={null} walletAddress={account?.address} />
       <TotalBalance total={totalInvestmentValue} />
       <div className="grid grid-cols-4 my-6 md:hidden">
@@ -340,6 +340,6 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

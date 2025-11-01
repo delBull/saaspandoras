@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { DashboardShell } from "@/components/shell";
 import { NFTGate } from "@/components/nft-gate";
 
@@ -58,8 +58,6 @@ export function DashboardClientWrapper({
 
   useEffect(() => {
     if (account?.address) {
-      // Username fetching removed - was unsafe mock function
-
       // Ensure wallet information is available in cookies for server-side requests
       if (typeof window !== 'undefined') {
         document.cookie = `wallet-address=${account.address}; path=/; max-age=86400; samesite=strict`;
@@ -73,9 +71,6 @@ export function DashboardClientWrapper({
   return (
     <TokenPriceProvider>
       <TermsModalProvider>
-
-        {/* Mobile Navigation Spacer - Pushes content up before mobile nav */}
-        <div className="md:hidden h-10" />
 
         <DashboardShell
           wallet={account?.address}
@@ -103,7 +98,7 @@ export function DashboardClientWrapper({
                  animate={{ y: 0, opacity: 1 }}
                  exit={{ y: -20, opacity: 0 }}
                  transition={{ duration: 0.3, ease: "easeInOut" }}
-                 className="pb-10 md:pb-0" // Mobile bottom padding for navigation space
+                 className="pb-4 md:pb-0"
                >
                  <Suspense
                    fallback={
@@ -121,7 +116,7 @@ export function DashboardClientWrapper({
           </AutoLoginGate>
         </DashboardShell>
 
-        {/* Mobile Navigation Menu - Creative 5-icon bottom bar */}
+        {/* Mobile Navigation Menu - Fijo al bottom con altura exacta */}
         <MobileNavMenu profile={profile} />
 
         <TermsModalRenderer />
@@ -133,44 +128,107 @@ export function DashboardClientWrapper({
   );
 }
 
+// Interface for referrals data
+interface ReferralData {
+  status: string;
+  referredWalletAddress: string;
+}
+
 // Component to manage reward modals globally across the dashboard
 function RewardModalManager() {
   const [showRewardModal, setShowRewardModal] = useState(false);
   const [currentReward, setCurrentReward] = useState<Reward | null>(null);
   const { account } = usePersistedAccount();
 
+  const checkForReferralRewards = React.useCallback(async () => {
+    if (!account?.address) return;
+
+    try {
+      // Check if user has any successful referrals that haven't been rewarded with modal yet
+      const referrerWallet = account.address.toLowerCase();
+      const referrerResponse = await fetch(`/api/referrals/my-referrals?wallet=${referrerWallet}`);
+
+      if (referrerResponse.ok) {
+        const referrerData = (await referrerResponse.json()) as { referrals: ReferralData[] };
+        const referrals = referrerData.referrals ?? [];
+
+        // Find referrals that completed but modal not shown yet
+        const completedReferrals = referrals.filter((r: ReferralData) =>
+          r.status === 'completed' &&
+          localStorage.getItem(`referrer_reward_modal_shown_${account.address}_${r.referredWalletAddress}`) !== 'true'
+        );
+
+        if (completedReferrals.length > 0) {
+          console.log('🎯 Found completed referrals to reward:', completedReferrals.length);
+
+          // Show modal for first unrewarded referral
+          const firstReferral = completedReferrals[0]!;
+
+          const referrerReward: Reward = {
+            type: 'bonus',
+            title: '🎉 ¡Primer referido exitoso!',
+            description: `Felicitaciones! Has conseguido tu primer referido exitoso y ganado 200 tokens extra`,
+            tokens: 200,
+            icon: '🐋',
+            rarity: 'epic'
+          };
+
+          // Mark as shown to prevent double rewards
+          localStorage.setItem(`referrer_reward_modal_shown_${account.address}_${firstReferral.referredWalletAddress}`, 'true');
+
+          // Show modal after welcome modal closes (if any)
+          setTimeout(() => {
+            setCurrentReward(referrerReward);
+            setShowRewardModal(true);
+          }, 1000);
+
+        } else {
+          console.log('ℹ️ No unrewarded completed referrals found for modal');
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ Error checking referral rewards:', error);
+    }
+  }, [account?.address, setCurrentReward, setShowRewardModal]);
+
   useEffect(() => {
     // 🎮 REAL GAMIFICATION LOGIC - Check for first login reward
     if (account?.address) {
-      const firstLoginKey = `pandoras_first_login_reward_${account.address}`;
-      const alreadyGotFirstLoginReward = localStorage.getItem(firstLoginKey);
+          // Check if this specific modal was already shown (prevent double modal bug)
+          const modalShownKey = `pandoras_welcome_modal_shown_${account.address}`;
+          const modalAlreadyShown = localStorage.getItem(modalShownKey);
 
-      // Only show reward modal if user hasn't received first login reward yet
-      if (!alreadyGotFirstLoginReward) {
-        console.log('🎯 Showing first login reward modal for:', account.address);
+          // Show welcome modal only once per user, with anti-double-modal protection
+          if (!modalAlreadyShown) {
+            console.log('🎉 Showing welcome modal for first-time user:', account.address);
 
-        const firstLoginReward: Reward = {
-          type: 'achievement',
-          title: 'Primer Login Exitoso',
-          description: 'Has conectado exitosamente tu wallet a Pandoras',
-          tokens: 10,
-          icon: '🔗',
-          rarity: 'common'
-        };
+            const welcomeReward: Reward = {
+              type: 'achievement',
+              title: '¡Bienvenido a Pandoras!',
+              description: 'Has conectado exitosamente tu wallet y recibido 10 puntos de gamificación',
+              tokens: 10,
+              icon: '🎉',
+              rarity: 'common'
+            };
 
-        // Show modal after a brief delay for better UX
-        setTimeout(() => {
-          setCurrentReward(firstLoginReward);
-          setShowRewardModal(true);
-        }, 1500);
+            // Anti-double-modal: Mark as shown BEFORE showing modal
+            localStorage.setItem(modalShownKey, 'true');
+            console.log('🔒 Modal marked as shown in localStorage immediately');
 
-        // Mark as shown immediately (localStorage will be set when API response comes)
-        // This prevents showing the modal again on page refresh
-      } else {
-        console.log('ℹ️ User already received first login reward:', account.address);
-      }
+            // Show modal with slight delay for better UX
+            setTimeout(() => {
+              setCurrentReward(welcomeReward);
+              setShowRewardModal(true);
+            }, 2000); // Increased delay for better UX
+
+          } else {
+            // 🎉 CHECK FOR REFERRAL REWARDS - Show modal when user has successful referrals
+            void checkForReferralRewards();
+          }
     }
-  }, [account?.address]); // Only re-run if wallet address changes
+  }, [account?.address, checkForReferralRewards]);
+
+
 
   const handleCloseRewardModal = async () => {
     setShowRewardModal(false);
