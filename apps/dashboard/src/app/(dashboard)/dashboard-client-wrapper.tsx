@@ -102,7 +102,7 @@ export function DashboardClientWrapper({
                >
                  <Suspense
                    fallback={
-                     <div className="p-8 animate-pulse space-y-4">
+                     <div className="p-8 animate-pulse space-y-4 pb-20 md:pb-0">
                        <div className="h-8 w-1/3 rounded bg-fuchsia-950" />
                        <div className="h-64 w-full rounded bg-fuchsia-950" />
                      </div>
