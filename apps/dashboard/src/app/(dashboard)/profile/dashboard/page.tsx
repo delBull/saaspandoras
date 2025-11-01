@@ -24,7 +24,10 @@ import { useProfile } from "@/hooks/useProfile";
 import { useActiveAccount } from 'thirdweb/react';
 import { useRealGamification } from "@/hooks/useRealGamification";
 
-// Define a type for your project data to avoid using 'any'
+import { ActivityHistoryCard } from '@/components/ActivityHistoryCard';
+
+
+
 interface Project {
   id: string | number;
   title: string;
@@ -42,6 +45,8 @@ export default function PandoriansDashboardPage() {
 
   // Use account from useActiveAccount hook instead of cookies
   const walletAddress = account?.address;
+
+  // Activity handled by ActivityHistoryCard component
 
   // 🎮 HOOK DE GAMIFICACIÓN - DATA REAL
   const {
@@ -624,17 +629,8 @@ export default function PandoriansDashboardPage() {
         </Card>
       </div>
 
-      {/* Coming Soon Notice */}
-      <Card className="border-dashed border-gray-600">
-        <CardContent className="p-6 text-center">
-          <ChartBarIcon className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-white mb-2">Funciones Avanzadas Próximamente</h3>
-          <p className="text-gray-400 text-sm">
-            Próximamente: Gráficos detallados, actualización de licecias automática, alertas personalizadas,
-            y mucho más para optimizar tus recompensas.
-          </p>
-        </CardContent>
-      </Card>
+      {/* Activity History Section - Usando componente modularizado */}
+      <ActivityHistoryCard walletAddress={walletAddress} />
     </div>
   );
 }
