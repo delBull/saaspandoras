@@ -4,6 +4,7 @@ import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useReadContract } from "thirdweb/react";
 import { usePersistedAccount } from "@/hooks/usePersistedAccount";
 import { useFeaturedProjects } from "@/hooks/useFeaturedProjects";
+import { useProfile } from "@/hooks/useProfile";
 import Link from "next/link";
 import { config } from "@/config";
 import { FeaturedProjectCard } from "@/components/FeaturedProjectCard";
@@ -19,12 +20,23 @@ import useEmblaCarousel from 'embla-carousel-react';
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 // --- Sub-componentes ---
-function MobileHeader({ userName, walletAddress }: { userName: string | null; walletAddress?: string }) {
+interface Profile {
+  image?: string | null;
+  name?: string | null;
+}
+
+function MobileHeader({ userName, walletAddress, profile }: { userName: string | null; walletAddress?: string; profile?: Profile }) {
   return (
     <div className="flex md:hidden items-center justify-between w-full mt-5 ml-5">
       <div className="flex items-center gap-2">
-        <div className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center">
-           <Image src="/images/logo_green.png" width={20} height={20} alt="User" />
+        <div className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden">
+           <Image
+             src={profile?.image ?? '/images/avatars/onlybox2.png'}
+             width={24}
+             height={24}
+             alt="User Avatar"
+             className="w-full h-full object-cover"
+           />
         </div>
         <span className="font-mono text-sm font-semibold text-white">
           {userName ?? (walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : "Not Connected")}
@@ -289,6 +301,7 @@ function SecondaryTabs({ activeTab, setActiveTab }: { activeTab: string, setActi
 export default function DashboardPage() {
   const [secondaryTab, setSecondaryTab] = useState("Access");
   const { account } = usePersistedAccount();
+  const { profile } = useProfile();
 
   // Memoize contract to prevent recreation on every render
   const contract = useMemo(() =>
@@ -314,7 +327,7 @@ export default function DashboardPage() {
 
   return (
     <div className="pb-20 md:pb-6">
-      <MobileHeader userName={null} walletAddress={account?.address} />
+      <MobileHeader userName={null} walletAddress={account?.address} profile={profile} />
       <TotalBalance total={totalInvestmentValue} />
       <div className="grid grid-cols-4 my-6 md:hidden">
         <ActionButton icon={<QrCodeIcon className="w-8 h-8 text-gray-300"/>} label="Depositar" disabled />

@@ -67,14 +67,14 @@ export function ApplicantsMobile({
         <div className="flex gap-4">
           <button
             onClick={() => setShowMobileModal(true)}
-            className="flex-1 flex items-center justify-center px-3 py-3 bg-yellow-500/20 text-yellow-300 rounded-lg text-sm font-medium hover:bg-yellow-500/30 transition-colors"
+            className="flex-1 flex items-center justify-center px-3 py-3 bg-yellow-500/20 text-yellow-300 rounded-lg text-xs font-medium hover:bg-yellow-500/30 transition-colors"
           >
             Ver {pendingProjects.length > 0 ? `${pendingProjects.length} Creaciones en Revisión` : 'Creaciones de Revisión'}
           </button>
 
           <button
             onClick={() => setShowMobileApprovedModal(true)}
-            className="flex-1 flex items-center justify-center px-3 py-3 bg-green-500/20 text-green-300 rounded-lg text-sm font-medium hover:bg-green-500/30 transition-colors"
+            className="flex-1 flex items-center justify-center px-3 py-3 bg-green-500/20 text-green-300 rounded-lg text-xs font-medium hover:bg-green-500/30 transition-colors"
           >
             Ver {approvedOnlyProjects.length > 0
               ? `${approvedOnlyProjects.length} Creaciones Aprobadas`
