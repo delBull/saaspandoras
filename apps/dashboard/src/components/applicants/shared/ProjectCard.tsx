@@ -32,7 +32,7 @@ export function ProjectCard({ project, variant = 'approved', gridColumns = 3 }: 
         return `${baseClasses} border-gray-200 dark:border-zinc-700 max-w-[280px]`;
       case 3:
       default:
-        return `${baseClasses} border-gray-200 dark:border-zinc-700 max-w-[320px]`;
+        return `${baseClasses} border-gray-200 dark:border-zinc-700 max-w-full]`;
     }
   };
 
