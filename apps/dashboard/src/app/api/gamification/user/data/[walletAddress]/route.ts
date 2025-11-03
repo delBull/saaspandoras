@@ -70,7 +70,21 @@ export async function GET(
       });
     }
 
-    const userId = userResult[0].id;
+    const userId = userResult[0]?.id;
+    if (!userId) {
+      console.log(`❌ API: User ID is null for wallet ${walletAddress}`);
+      return NextResponse.json({
+        profile: null,
+        achievements: [],
+        rewards: [],
+        leaderboard: [],
+        totalPoints: 0,
+        currentLevel: 1,
+        levelProgress: 0,
+        success: true,
+        message: 'User ID not found'
+      });
+    }
     console.log(`🔍 API: Found user with ID ${userId} for wallet ${walletAddress}`);
 
     // 2. Get gamification profile
