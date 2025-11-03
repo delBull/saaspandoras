@@ -1,12 +1,15 @@
+'use client';
+
 import { notFound } from "next/navigation";
+import { useState, useEffect } from "react";
 import {
   ChartPieIcon,
   GlobeAltIcon,
   UsersIcon,
   ChatBubbleLeftIcon,
 } from "@heroicons/react/24/outline";
-import { db } from "~/db";
-import { sql } from "drizzle-orm";
+import { ProjectNavigation } from "./components/ProjectNavigation";
+import { ProjectContent } from "./components/ProjectContent";
 
 // Type for project data
 interface ProjectData {
@@ -63,113 +66,7 @@ interface ProjectData {
   created_at?: string | Date | null;
 }
 
-// --- Fetch de datos ---
-async function getProjectData(slug: string): Promise<ProjectData | null> {
-  try {
-    console.log('🔍 ProjectPage: Fetching project with slug:', slug);
-    console.log('🔍 ProjectPage: Database connection status:', db ? 'Connected' : 'Disconnected');
 
-    // Use the working pattern but with all fields needed
-    console.log('🔍 ProjectPage: Executing query for slug:', slug);
-    console.log('🔍 ProjectPage: Query type of slug:', typeof slug);
-
-    // Use a working query with essential fields first
-    console.log('🔍 ProjectPage: Using simplified query for debugging');
-    const projectResult = await db.execute(sql`
-      SELECT
-        "id",
-        "title",
-        "slug",
-        "description",
-        "status",
-        "video_pitch",
-        "cover_photo_url",
-        "logo_url",
-        "tagline",
-        "business_category",
-        "target_amount",
-        "raised_amount",
-        "website",
-        "twitter_url",
-        "discord_url",
-        "telegram_url",
-        "linkedin_url",
-        "whitepaper_url",
-        "total_valuation_usd",
-        "token_type",
-        "total_tokens",
-        "tokens_offered",
-        "token_price_usd",
-        "estimated_apy",
-        "team_members",
-        "advisors",
-        "applicant_name",
-        "applicant_email",
-        "created_at"
-      FROM "projects"
-      WHERE "slug" = ${slug}
-      LIMIT 1
-    `);
-
-    console.log('🔍 ProjectPage: Query result length:', projectResult.length);
-    console.log('🔍 ProjectPage: Query result:', projectResult);
-
-    if (projectResult.length > 0) {
-      const project = projectResult[0] as unknown as ProjectData;
-      console.log('✅ ProjectPage: Project found in database');
-      console.log('✅ ProjectPage: Project slug from DB:', project.slug);
-
-      // Override featured status with virtual localStorage value
-      if (typeof window !== 'undefined') {
-        const virtualFeatured = localStorage.getItem(`featured_${project.id}`) === 'true';
-        if (virtualFeatured !== project.featured) {
-          console.log('🔄 ProjectPage: Overriding featured status with virtual value:', virtualFeatured);
-          project.featured = virtualFeatured;
-        }
-      }
-
-      return project;
-    }
-
-    console.log('⚠️ ProjectPage: Project not found for slug:', slug);
-    return null;
-  } catch (error) {
-    console.error('❌ ProjectPage: Error fetching project:', error);
-
-    // Return fallback data even if query fails
-    return {
-      id: 1,
-      title: 'EcoGreen Energy',
-      slug: slug,
-      description: 'Revolutionary renewable energy project using blockchain technology to democratize green power generation and distribution.',
-      tagline: 'Power the future with sustainable energy',
-      business_category: 'renewable_energy',
-      target_amount: '250000',
-      total_tokens: 1000000,
-      tokens_offered: 500000,
-      token_price_usd: '0.0005',
-      website: 'https://ecogreen.energy',
-      cover_photo_url: '/images/sem.jpeg',
-      logo_url: '/images/sem.jpeg',
-      featured: true,
-      featured_button_text: 'Dime más',
-      status: 'approved',
-      applicant_name: 'John Smith',
-      applicant_email: 'john@ecogreen.energy',
-      raised_amount: '0',
-      returns_paid: '0',
-      total_valuation_usd: '1000000',
-      token_type: 'erc20',
-      estimated_apy: '12%',
-      is_mintable: false,
-      is_mutable: false,
-      team_members: '[]',
-      advisors: '[]',
-      token_distribution: '{}',
-      socials: '{}'
-    };
-  }
-}
 
 // Helper para parsear JSON de forma segura
 function safeJsonParse<T>(jsonString: string | null | undefined, defaultValue: T): T {
@@ -181,10 +78,41 @@ function safeJsonParse<T>(jsonString: string | null | undefined, defaultValue: T
   }
 }
 
-export default async function ProjectPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+export default function ProjectPage({ params }: { params: Promise<{ slug: string }> }) {
+  const [activeTab, setActiveTab] = useState('campaign');
+  const [project, setProject] = useState<ProjectData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const project = await getProjectData(slug);
+  // Load project data on mount
+  useEffect(() => {
+    const loadProject = async () => {
+      try {
+        const resolvedParams = await params;
+        const response = await fetch(`/api/projects/${resolvedParams.slug}`);
+        if (response.ok) {
+          const projectData = await response.json() as ProjectData;
+          setProject(projectData);
+        } else {
+          notFound();
+        }
+      } catch (error) {
+        console.error('Error loading project:', error);
+        notFound();
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    void loadProject();
+  }, [params]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-white">Loading...</div>
+      </div>
+    );
+  }
 
   if (!project) {
     notFound();
@@ -214,9 +142,9 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
   const raisedPercentage = (raisedAmount / targetAmount) * 100;
 
   return (
-    <div className="min-h-screen bg-zinc-950">
+    <div className="min-h-screen pb-20 md:pb-6">
       {/* Navigation Header - Responsive */}
-      <nav className="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-sm top-0 z-50">
+      <nav className="border-b border-zinc-800 backdrop-blur-sm top-0 z-50">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
           <div className="flex justify-between items-center h-14 md:h-16">
             <div className="flex items-center gap-4 md:gap-8">
@@ -460,42 +388,14 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
               </div>
             )}
 
-            {/* Tabs Navigation - Responsive */}
-            <div className="border-b border-zinc-800 mb-8">
-              <nav className="flex space-x-2 md:space-x-8 overflow-x-auto">
-                <button className="py-4 px-2 md:px-1 border-b-2 border-lime-400 text-lime-400 font-medium text-sm md:text-base whitespace-nowrap">
-                  Campaign
-                </button>
-                <button className="py-4 px-2 md:px-1 text-gray-400 hover:text-white transition-colors text-sm md:text-base whitespace-nowrap">
-                  FAQ
-                </button>
-                <button className="py-4 px-2 md:px-1 text-gray-400 hover:text-white transition-colors text-sm md:text-base whitespace-nowrap">
-                  Updates <span className="ml-1 text-xs bg-zinc-800 text-gray-400 px-1.5 py-0.5 rounded-full">2</span>
-                </button>
-                <button className="py-4 px-2 md:px-1 text-gray-400 hover:text-white transition-colors text-sm md:text-base whitespace-nowrap">
-                  Comments <span className="ml-1 text-xs bg-zinc-800 text-gray-400 px-1.5 py-0.5 rounded-full">370</span>
-                </button>
-                <button className="py-4 px-2 md:px-1 text-gray-400 hover:text-white transition-colors text-sm md:text-base whitespace-nowrap">
-                  Community
-                </button>
-              </nav>
-            </div>
+            {/* Project Navigation Component */}
+            <ProjectNavigation
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+            />
 
-            {/* Project Story Section */}
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold text-white mb-6">About this project</h2>
-              <p className="text-gray-300 leading-relaxed text-lg mb-6">
-                {project.description}
-              </p>
-
-              {/* Project Learn More Section */}
-              <div className="bg-zinc-900 rounded-xl p-8 mb-6">
-                <h3 className="text-xl font-bold text-white mb-4">Learn about accountability on Pandoras</h3>
-                <p className="text-gray-300 mb-4">
-                    Questions about this project? <a href="#faq" className="text-lime-400 hover:underline">Check out the FAQ</a>
-                </p>
-              </div>
-            </div>
+            {/* Dynamic Project Content */}
+            <ProjectContent activeTab={activeTab} />
           </div>
 
 
@@ -691,21 +591,26 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
         </div>
 
         {/* Recommended Projects Section */}
-        <div className="border-t border-zinc-800 pt-16">
-          <h2 className="text-2xl font-bold text-white mb-8">WE ALSO RECOMMEND</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden hover:border-zinc-700 transition-colors">
-                <div className="aspect-video bg-zinc-800 flex items-center justify-center">
-                  <span className="text-gray-400">IMG</span>
-                </div>
-                <div className="p-4">
-                  <h3 className="font-bold text-white mb-2">Project Title</h3>
-                  <p className="text-gray-400 text-sm mb-3">Insert short project description here.</p>
-                  <div className="text-gray-400 text-sm">By Company Name</div>
-                </div>
+        <div className="relative">
+          {/* Left Column - Recommended Projects */}
+          <div className="lg:mr-80 xl:mr-80 2xl:mr-80">
+            <div className="border-t border-zinc-800 pt-16 mt-10">
+              <h2 className="text-2xl font-bold text-white mb-8">WE ALSO RECOMMEND</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden hover:border-zinc-700 transition-colors">
+                    <div className="aspect-video bg-zinc-800 flex items-center justify-center">
+                      <span className="text-gray-400">IMG</span>
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-bold text-white mb-2">Project Title</h3>
+                      <p className="text-gray-400 text-sm mb-3">Insert short project description here.</p>
+                      <div className="text-gray-400 text-sm">By Company Name</div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
         </div>
       </div>

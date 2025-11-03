@@ -385,16 +385,28 @@ export default function LeaderboardPage() {
                     {/* User Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-white text-lg truncate">{user.displayName}</h3>
-                        <span className={`px-2 py-1 rounded-full text-xs ${getBadgeColor(user.badge)}`}>
+                        <h3 className="font-semibold text-white text-sm md:text-lg truncate">{user.displayName}</h3>
+                        <span className={`px-1.5 py-0.5 md:px-2 md:py-1 rounded-full text-xs ${getBadgeColor(user.badge)}`}>
                           {user.badge}
                         </span>
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-gray-400">
+                      {/* Desktop: Mostrar toda la info en una línea */}
+                      <div className="hidden md:flex items-center gap-4 text-sm text-gray-400">
                         <span>Nivel {user.level}</span>
                         <span>{user.achievementsUnlocked} logros</span>
                         <span>Streak: {user.streak} días</span>
                         <span>Activo {user.recentActivity}</span>
+                      </div>
+                      {/* Mobile: Info compacta en dos líneas */}
+                      <div className="md:hidden space-y-1">
+                        <div className="flex items-center gap-3 text-xs text-gray-400">
+                          <span>Nv. {user.level}</span>
+                          <span>{user.achievementsUnlocked} logros</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-gray-400">
+                          <span>🔥 {user.streak}d</span>
+                          <span>{user.recentActivity}</span>
+                        </div>
                       </div>
                     </div>
 
