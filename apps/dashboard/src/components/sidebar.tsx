@@ -483,7 +483,7 @@ export function Sidebar({
                 </motion.span>
               </div>
             </div>
-          ) : (
+          ) : open ? (
             // --- ESTADO CONECTADO - TODO DENTRO DEL RECUADRO CON COLOR ---
             <div className="w-full rounded-lg border border-gray-700 bg-gray-800/50 p-2 relative">
               <div className="flex items-center space-x-2">
@@ -651,7 +651,7 @@ export function Sidebar({
                 </div>
               )}
             </div>
-          )}
+          ) : null}
         </div>
 
         <nav className="mt-4 flex flex-1 flex-col justify-between">
