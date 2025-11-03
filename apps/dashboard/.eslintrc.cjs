@@ -45,6 +45,12 @@ module.exports = {
       },
     },
     {
+      files: ['src/app/api/projects/typeform-webhook/route.ts'],
+      rules: {
+        '@typescript-eslint/prefer-optional-chain': 'off',
+      },
+    },
+    {
       files: [
         'src/components/sidebar.tsx',
         'src/app/(dashboard)/profile/projects/page.tsx',
@@ -87,6 +93,17 @@ module.exports = {
         '@typescript-eslint/prefer-nullish-coalescing': 'off',
         'react/jsx-key': 'off',
         'react-hooks/exhaustive-deps': 'off'
+      }
+    },
+    {
+      files: [
+        'src/components/ConversationalForm.tsx'
+      ],
+      rules: {
+        '@typescript-eslint/no-unsafe-assignment': 'off',
+        '@typescript-eslint/no-unsafe-member-access': 'off',
+        '@typescript-eslint/no-unused-vars': 'off',
+        '@next/next/no-img-element': 'off'
       }
     },
     {

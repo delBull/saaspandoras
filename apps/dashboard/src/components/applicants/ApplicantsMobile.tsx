@@ -60,6 +60,13 @@ export function ApplicantsMobile({
             {`${approvedProjects.filter(p => p.status === 'live').length} de ${approvedProjects.length} creaciones desatadas`}
           </p>
         </div>
+        {/* Enlace a /apply en la parte superior derecha */}
+        <a
+          href="/apply"
+          className="text-sm italic text-gray-400 hover:text-lime-300 transition-colors whitespace-nowrap"
+        >
+          Desatar Creación
+        </a>
       </div>
 
       {/* Mobile Buttons */}

@@ -2165,6 +2165,16 @@ Cuando quieras **agregar cursos con contenido real**, tienes preparados:
 - ⏳ **TAREA 3.2:** Achievement Categories Correctas
 - ⏳ **TAREA 3.3:** Achievement Points Balancing
 
+### 🌍 **FASE 5: GLOBALIZACIÓN DEL SISTEMA (ARQUITECTURA CRÍTICA) 🆕**
+- 🆕 **TAREA 5.1:** Crear `constants.ts` centralizado con puntos, niveles, configuración
+- 🆕 **TAREA 5.2:** Implementar `GamificationManager` con patrón observer/pub-sub
+- 🆕 **TAREA 5.3:** Sistema de cache inteligente con TTL y stale-while-revalidate
+- 🆕 **TAREA 5.4:** Hook global `useGlobalGamification` para todas las páginas
+- 🆕 **TAREA 5.5:** Sistema de invalidación automática de cache
+- 🆕 **TAREA 5.6:** WebSocket para real-time updates en leaderboard
+- 🆕 **TAREA 5.7:** Utilidades compartidas `gamificationUtils` para cálculos consistentes
+- 🆕 **TAREA 5.8:** Migrar todas las páginas al sistema globalizado
+
 ### ✅ **FASE 4: VALIDATION & TESTING COMPLETO ⏳**
 - ⏳ **TAREA 4.1:** Testing Full Events Cycle (6 eventos principales)
 - ⏳ **TAREA 4.2:** UI Data Real Validation

@@ -14,6 +14,23 @@ import { useRealGamification } from '@/hooks/useRealGamification';
 import { ReferralShareCard } from '@/components/ReferralShareCard';
 import { ReferralsCard } from '../../../components/ReferralsCard';
 
+// Extended UserAchievement type with achievement details (for type assertion)
+interface ExtendedUserAchievement {
+  id: string;
+  userId: string;
+  achievementId: string;
+  progress: number;
+  isCompleted: boolean;
+  completedAt?: Date;
+  name: string;
+  description: string;
+  icon: string;
+  category: string;
+  points: number;
+  unlockedAt?: Date;
+  metadata?: Record<string, any>;
+}
+
 // Force dynamic rendering - this page uses cookies and should not be prerendered
 export const dynamic = 'force-dynamic';
 
@@ -471,8 +488,95 @@ export default function ProfilePage() {
           </Card>
         </div>
 
-        {/* Compartir & Ganar + Referidos */}
+        {/* Gamificación y Logros */}
         <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BoltIcon className="w-5 h-5 text-yellow-400" />
+                Tu Desarrollo Gamificado
+              </CardTitle>
+              <CardDescription>
+                Tu progreso en el sistema de recompensas de Pandora&apos;s
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Estadísticas Principales */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center p-4 bg-gradient-to-br from-yellow-500/10 to-orange-500/10 rounded-lg border border-yellow-500/20">
+                  <div className="text-2xl font-bold text-yellow-400">{gamification.totalPoints}</div>
+                  <div className="text-xs text-gray-400">Puntos Totales</div>
+                </div>
+                <div className="text-center p-4 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-lg border border-blue-500/20">
+                  <div className="text-2xl font-bold text-blue-400">Nivel {gamification.currentLevel}</div>
+                  <div className="text-xs text-gray-400">Tu Nivel</div>
+                </div>
+                <div className="text-center p-4 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-lg border border-green-500/20">
+                  <div className="text-2xl font-bold text-green-400">{gamification.achievements.length}</div>
+                  <div className="text-xs text-gray-400">Logros</div>
+                </div>
+                <div className="text-center p-4 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-lg border border-purple-500/20">
+                  <div className="text-2xl font-bold text-purple-400">{gamification.levelProgress}%</div>
+                  <div className="text-xs text-gray-400">Progreso</div>
+                </div>
+              </div>
+
+              {/* Barra de Progreso de Nivel */}
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-gray-400">Progreso al siguiente nivel</span>
+                  <span className="text-gray-400">{gamification.levelProgress}%</span>
+                </div>
+                <div className="w-full bg-zinc-700 rounded-full h-2">
+                  <div
+                    className="bg-gradient-to-r from-lime-400 to-emerald-400 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${gamification.levelProgress}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Logros Recientes */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-300 mb-3">Logros Recientes</h4>
+                {gamification.achievements.length > 0 ? (
+                  <div className="space-y-2">
+                    {gamification.achievements.slice(0, 3).map((achievement) => (
+                      <div key={achievement.id} className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg border border-zinc-700/50">
+                        <div className="text-2xl">{(achievement as ExtendedUserAchievement).icon}</div>
+                        <div className="flex-1">
+                          <div className="font-medium text-white">{(achievement as ExtendedUserAchievement).name}</div>
+                          <div className="text-xs text-gray-400">{(achievement as ExtendedUserAchievement).description}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-bold text-lime-400">+{(achievement as ExtendedUserAchievement).points} pts</div>
+                          {achievement.completedAt && (
+                            <div className="text-xs text-gray-500">
+                              {new Date(achievement.completedAt).toLocaleDateString('es-ES')}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {gamification.achievements.length > 3 && (
+                      <Link href="/profile/achievements">
+                        <Button variant="outline" size="sm" className="w-full">
+                          Ver todos los logros ({gamification.achievements.length})
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-400">
+                    <BoltIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>Aún no tienes logros</p>
+                    <p className="text-sm">¡Conecta tu wallet y comienza a ganar puntos!</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Compartir & Ganar + Referidos */}
           {walletAddress ? (
             <>
               <ReferralShareCard />
