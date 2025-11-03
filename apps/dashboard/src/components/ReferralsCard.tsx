@@ -225,17 +225,43 @@ export function ReferralsCard() {
 
           {/* Referrer Badge - Show if has referrer */}
           {userReferral && (
-            <div className="flex items-center gap-3 p-3 bg-green-900/20 border border-green-700/30 rounded-lg">
-              <CheckCircleIcon className="w-5 h-5 text-green-400" />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-green-400 truncate">
-                  Referido por: {formatWallet(userReferral.referrerWalletAddress)}
-                </p>
-                <p className="text-xs text-gray-400">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="p-4 bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-500/40 rounded-lg"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <CheckCircleIcon className="w-6 h-6 text-green-400" />
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold text-green-400">
+                    ¡Referido Registrado!
+                  </h4>
+                  <p className="text-xs text-green-300">
+                    Wallet que te refirió: <span className="font-mono font-medium">{formatWallet(userReferral.referrerWalletAddress)}</span>
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                  userReferral.status === 'completed'
+                    ? 'bg-green-900/50 text-green-300'
+                    : 'bg-yellow-900/50 text-yellow-300'
+                }`}>
                   Status: {userReferral.status === 'completed' ? 'Completado' : 'Pendiente'}
+                </span>
+                <span className="text-xs text-gray-400">
+                  {userReferral.referralSource === 'link' ? 'Vía enlace' :
+                   userReferral.referralSource === 'manual_input' ? 'Manual' :
+                   userReferral.referralSource === 'direct' ? 'Directo' : 'Otro'}
+                </span>
+              </div>
+              <div className="mt-2 p-2 bg-green-900/20 rounded border border-green-700/30">
+                <p className="text-xs text-green-200">
+                  ✅ Este referido ya está establecido y no puede modificarse.
+                  {userReferral.status === 'completed' ? ' ¡Ya recibiste tus puntos de referido!' : ' Completa acciones para recibir puntos.'}
                 </p>
               </div>
-            </div>
+            </motion.div>
           )}
 
           {/* Recent Referrals */}
