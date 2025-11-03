@@ -102,10 +102,7 @@ const projectSchema = z.object({
   applicantWalletAddress: z.string().optional(),
 
   // Verificación Final
-  verificationAgreement: z.union([z.boolean(), z.string()]).transform((val) => {
-    if (typeof val === 'string') return val === 'true';
-    return val;
-  }).refine(val => val === true, "Debes aceptar la declaración del creador"),
+  verificationAgreement: z.boolean(),
 });
 
 // Tipos
@@ -115,7 +112,7 @@ interface FormQuestion {
   id: keyof ProjectFormData;
   label: string;
   placeholder?: string;
-  component: 'text-input' | 'textarea-input' | 'select-input' | 'number-input' | 'url-input' | 'file-input';
+  component: 'text-input' | 'textarea-input' | 'select-input' | 'number-input' | 'url-input' | 'file-input' | 'checkbox-input';
   options?: { value: string; label: string }[];
   required?: boolean;
   maxLength?: number;
@@ -168,24 +165,28 @@ const formQuestions: FormQuestion[] = [
       { value: 'other', label: 'Otro' },
     ],
     required: true,
+    info: 'Selecciona la categoría principal de tu proyecto para mejor visibilidad en la plataforma. Esta clasificación ayuda a los inversionistas a encontrar proyectos de su interés.',
   },
   {
     id: 'logoUrl',
     label: 'Hazla visual. Sube el Artefacto visual que represente tu Creación (tu logo).',
     placeholder: 'Haz click para seleccionar tu logo',
     component: 'file-input',
+    info: 'Logo en PNG/SVG (recomendado 512x512px). Debe ser tu logo oficial y de alta calidad.',
   },
   {
     id: 'coverPhotoUrl',
     label: '¿Tienes una imagen de portada que capture el espíritu de tu Creación?',
     placeholder: 'Haz click para seleccionar tu imagen de portada',
     component: 'file-input',
+    info: 'Imagen principal (JPG/PNG, máx. 1920x1080px). Será el fondo hero de tu página de proyecto.',
   },
   {
     id: 'videoPitch',
     label: '¿Tienes un video (YouTube/Vimeo) que muestre el alma de tu Creación?',
     placeholder: 'https://...',
     component: 'url-input',
+    info: 'Enlace a tu video pitch en YouTube o Vimeo (máx. 3 minutos). Muy recomendado para captar atención.',
   },
 
   // SECCIÓN 2: Conecta a tu Comunidad
@@ -406,10 +407,7 @@ const formQuestions: FormQuestion[] = [
   {
     id: 'verificationAgreement',
     label: 'Declaración del Creador: Declaro que toda la información es veraz y entiendo que la comunidad de Pandora\'s confiará en estos datos para participar en esta Creación.',
-    component: 'select-input',
-    options: [
-      { value: 'true', label: 'Acepto y declaro' },
-    ],
+    component: 'checkbox-input',
     required: true,
   },
 ];
@@ -559,6 +557,49 @@ function UrlInput({ name, placeholder }: { name: string; placeholder?: string })
   );
 }
 
+function CheckboxInput({ name }: { name: string }) {
+  const { register, formState: { errors }, watch } = useFormContext();
+
+  // Watch the current value
+  const currentValue = watch(name);
+
+  return (
+    <div className="space-y-2">
+      <label className="flex items-start gap-3 cursor-pointer">
+        <input
+          {...register(name)}
+          type="checkbox"
+          className="mt-1 w-5 h-5 text-lime-400 bg-zinc-800 border-zinc-600 rounded focus:ring-lime-400 focus:ring-2"
+        />
+        <span className="text-white text-lg leading-relaxed">
+          Acepto la declaración del creador y confirmo que toda la información proporcionada es veraz
+        </span>
+      </label>
+
+      {errors[name] && (
+        <motion.p
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-red-400 text-sm"
+        >
+          {errors[name]?.message as string}
+        </motion.p>
+      )}
+
+      {currentValue && (
+        <div className="mt-3 p-3 bg-lime-500/10 border border-lime-500/20 rounded-lg">
+          <p className="text-sm text-lime-300 flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            Declaración aceptada
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function FileInput({ name, accept = "image/*", placeholder }: { name: string; accept?: string; placeholder?: string }) {
   const { formState: { errors }, setValue, watch } = useFormContext();
   const [isUploading, setIsUploading] = useState(false);
@@ -673,16 +714,38 @@ function FileInput({ name, accept = "image/*", placeholder }: { name: string; ac
       {/* Mostrar preview si hay un archivo subido */}
       {currentValue && uploadStatus === 'success' && (
         <div className="mt-3 p-4 bg-zinc-800/30 rounded-lg border border-zinc-700">
-          <p className="text-xs text-zinc-400 mb-3 text-center">Vista Previa:</p>
           <div className="flex justify-center">
-            <Image
-              src={currentValue}
-              alt="Preview"
-              width={240}
-              height={160}
-              className="max-w-full h-auto max-h-40 object-contain rounded border border-zinc-600"
-              unoptimized
-            />
+            {name === 'logoUrl' ? (
+              // Logo: cuadrado, más pequeño, object-cover para ver completo
+              <Image
+                src={currentValue}
+                alt="Preview del logo"
+                width={120}
+                height={120}
+                className="w-24 h-24 object-cover rounded-lg border border-zinc-600"
+                unoptimized
+              />
+            ) : name === 'coverPhotoUrl' ? (
+              // Cover photo: usar w-full para ocupar todo el ancho disponible
+              <Image
+                src={currentValue}
+                alt="Preview de portada"
+                width={400}
+                height={200}
+                className="w-full h-auto max-h-24 object-cover rounded-lg border border-zinc-600"
+                unoptimized
+              />
+            ) : (
+              // Default fallback
+              <Image
+                src={currentValue}
+                alt="Preview"
+                width={240}
+                height={160}
+                className="max-w-full h-auto max-h-40 object-contain rounded border border-zinc-600"
+                unoptimized
+              />
+            )}
           </div>
         </div>
       )}
@@ -892,6 +955,8 @@ export default function ConversationalForm() {
         return <UrlInput {...baseProps} />;
       case 'file-input':
         return <FileInput {...baseProps} accept="image/png,image/jpeg,image/svg+xml" />;
+      case 'checkbox-input':
+        return <CheckboxInput name={question.id} />;
       default:
         return <TextInput {...baseProps} />;
     }
@@ -917,7 +982,7 @@ export default function ConversationalForm() {
         <FormProvider {...methods}>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
             {/* Contenedor de preguntas con animación */}
-            <div className="relative h-64 overflow-hidden">
+            <div className="relative h-[330px] overflow-hidden">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentStep}

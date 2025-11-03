@@ -1,12 +1,9 @@
 "use client";
 import { Suspense } from "react";
-import { useParams } from "next/navigation";
-import TypeformApplication from "@/components/TypeformApplication";
+import ConversationalForm from "@/components/ConversationalForm";
 import { Loader2 } from "lucide-react";
 
 export default function UtilityFormPage() {
-  const params = useParams();
-  const projectId = params?.id as string;
 
   return (
     <Suspense
@@ -20,11 +17,7 @@ export default function UtilityFormPage() {
         </div>
       }
     >
-      <TypeformApplication
-        isPublic={false}
-        projectId={projectId}
-        isEdit={!!projectId}
-      />
+      <ConversationalForm />
     </Suspense>
   );
 }
