@@ -85,25 +85,27 @@ export default function LeaderboardPage() {
   useEffect(() => {
     const loadLeaderboard = async () => {
       try {
-        const response = await fetch('/api/gamification/leaderboard/points');
+        // Use the main gamification API to get leaderboard data
+        // We'll use a dummy wallet address since we just need the leaderboard
+        const response = await fetch('/api/gamification/user/data/0x0000000000000000000000000000000000000000');
         if (response.ok) {
-          const result = await response.json() as { leaderboard: any[] };
+          const result = await response.json();
           const data = result.leaderboard ?? [];
           console.log('🔍 DEBUG - Raw API response:', result);
           console.log('🔍 DEBUG - Leaderboard data array:', data);
           console.log('🔍 DEBUG - First user data:', data[0]);
 
           const transformedData = data.map((user: any, index: number): LeaderboardUser => ({
-            rank: index + 1,
+            rank: user.rank ?? index + 1,
             userId: user.userId ?? user.user_id ?? `user_${index}`,
             displayName: user.walletAddress ? `${user.walletAddress.slice(0, 6)}...${user.walletAddress.slice(-4)}` : 'Usuario',
             name: user.walletAddress ? `${user.walletAddress.slice(0, 6)}...${user.walletAddress.slice(-4)}` : 'Usuario',
-            totalPoints: user.totalPoints ?? user.total_points ?? 0,
-            currentLevel: user.currentLevel ?? user.current_level ?? 1,
-            achievementsUnlocked: 0,
-            level: user.currentLevel ?? user.current_level ?? 1,
+            totalPoints: user.points ?? user.totalPoints ?? user.total_points ?? 0,
+            currentLevel: user.currentLevel ?? user.level ?? 1,
+            achievementsUnlocked: user.achievementsUnlocked ?? 0,
+            level: user.currentLevel ?? user.level ?? 1,
             badge: 'Rising',
-            streak: 0,
+            streak: user.currentStreak ?? 0,
             recentActivity: 'Hoy',
             trending: 'stable'
           }));

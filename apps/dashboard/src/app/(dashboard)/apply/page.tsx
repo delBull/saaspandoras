@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { useProjectModal } from "@/contexts/ProjectModalContext";
 import { useTermsModal } from "@/contexts/TermsModalContext";
 import {
@@ -31,6 +32,7 @@ import { cn } from "@/lib/utils";
 
 export default function ApplyInfoPage() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const router = useRouter();
   const { open } = useProjectModal();
   const { openModal } = useTermsModal();
 
@@ -434,7 +436,7 @@ export default function ApplyInfoPage() {
                 className="h-4 w-4 rounded bg-zinc-700 border-zinc-600 text-lime-500 focus:ring-lime-500 focus:ring-offset-zinc-900"
               />
               <label htmlFor="understand-checkbox" className="text-zinc-300">
-                Entiendo que Pandora es una plataforma de software (SaaS) y que soy responsable de mi proyecto.
+                Entiendo que Pandora&apos;s es una plataforma de software (SaaS) y que soy responsable de mi proyecto.
               </label>
             </div>
 
@@ -450,23 +452,43 @@ export default function ApplyInfoPage() {
               de la plataforma.
             </p>
 
-            {/* El botón ahora abre el modal del formulario global */}
-            <Button
-              size="lg"
-              disabled={!acceptedTerms}
-              onClick={open}
-              className={cn(
-                "bg-gradient-to-r from-lime-500 to-emerald-500 text-black font-bold text-base md:text-lg px-8 md:px-12 py-4 md:py-6 rounded-xl transition-all duration-300 w-full sm:w-auto",
-                acceptedTerms
-                  ? "hover:from-lime-400 hover:to-emerald-400 hover:scale-105 shadow-lg shadow-lime-500/25"
-                  : "opacity-50 cursor-not-allowed"
-              )}
-            >
-              <span className="flex items-center gap-2">
-                Empezar a Construir
-                <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
-              </span>
-            </Button>
+            {/* Botones para formularios - Original y Nuevo (Beta) */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button
+                size="lg"
+                disabled={!acceptedTerms}
+                onClick={open}
+                className={cn(
+                  "bg-gradient-to-r from-lime-500 to-emerald-500 text-black font-bold text-base md:text-lg px-8 md:px-12 py-4 md:py-6 rounded-xl transition-all duration-300",
+                  acceptedTerms
+                    ? "hover:from-lime-400 hover:to-emerald-400 hover:scale-105 shadow-lg shadow-lime-500/25"
+                    : "opacity-50 cursor-not-allowed"
+                )}
+              >
+                <span className="flex items-center gap-2">
+                  Empezar a Construir
+                  <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
+                </span>
+              </Button>
+
+              <Button
+                size="lg"
+                disabled={!acceptedTerms}
+                onClick={() => router.push('/apply/utility')}
+                variant="outline"
+                className={cn(
+                  "border-2 border-purple-500/50 bg-purple-500/10 text-purple-300 font-bold text-base md:text-lg px-8 md:px-12 py-4 md:py-6 rounded-xl transition-all duration-300 hover:bg-purple-500/20 hover:border-purple-400",
+                  acceptedTerms
+                    ? "hover:scale-105 shadow-lg shadow-purple-500/25"
+                    : "opacity-50 cursor-not-allowed"
+                )}
+              >
+                <span className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 md:w-5 md:h-5" />
+                  Planea tu Creación (Beta)
+                </span>
+              </Button>
+            </div>
 
             <p className="mt-6 text-sm text-zinc-500">
               Al continuar, se abrirá el formulario para comenzar a configurar tu protocolo.

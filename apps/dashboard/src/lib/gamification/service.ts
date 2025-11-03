@@ -16,6 +16,7 @@ import {
   rewards,
   users,
   userAchievements,
+  projects,
   type GamificationProfile as DrizzleGamificationProfile
 } from '@/db/schema';
 import { eq, sql, desc } from 'drizzle-orm';
@@ -387,6 +388,68 @@ export class GamificationService {
   }
 
   /**
+   * Approve project and award points to creator (admin action)
+   */
+  static async approveProject(projectId: number, adminWalletAddress: string): Promise<{ success: boolean; message: string; pointsAwarded?: number }> {
+    console.log(`✅ GamificationService: Approving project ${projectId} by admin ${adminWalletAddress}`);
+
+    try {
+      // Get project details to find the creator
+      const project = await db
+        .select()
+        .from(projects)
+        .where(eq(projects.id, projectId))
+        .limit(1);
+
+      if (!project || project.length === 0 || !project[0]) {
+        return { success: false, message: 'Proyecto no encontrado' };
+      }
+
+      const projectData = project[0];
+      const creatorWallet = projectData.applicantWalletAddress;
+
+      if (!creatorWallet) {
+        return { success: false, message: 'Proyecto no tiene wallet del creador' };
+      }
+
+      // Update project status to approved
+      await db
+        .update(projects)
+        .set({
+          status: 'approved'
+        })
+        .where(eq(projects.id, projectId));
+
+      // Award points to creator for project approval
+      await this.trackEvent(
+        creatorWallet,
+        'project_application_approved',
+        {
+          projectId: projectId.toString(),
+          projectTitle: projectData.title,
+          approvedBy: adminWalletAddress,
+          approvalDate: new Date().toISOString()
+        }
+      );
+
+      console.log(`✅ Project ${projectId} approved, 100 points awarded to creator ${creatorWallet}`);
+
+      return {
+        success: true,
+        message: `Proyecto aprobado exitosamente. Se otorgaron 100 tokens al creador.`,
+        pointsAwarded: 100
+      };
+
+    } catch (error) {
+      console.error(`❌ Error approving project ${projectId}:`, error);
+      return {
+        success: false,
+        message: 'Error interno al aprobar el proyecto'
+      };
+    }
+  }
+
+  /**
    * Get singleton instances for external use
    */
   static getEngine(): GamificationEngine {
@@ -565,6 +628,18 @@ private static async updateUserProfilePoints(userId: string, pointsToAdd: number
         console.log(`🎉 Unlocked "Primer Login" achievement for user ${userId}`);
       }
 
+      // 🎯 PROJECT APPLICATION: Achievement por primera aplicación enviada
+      if (eventType === 'project_application_submitted') {
+        await this.unlockAchievement(userId, 'primer_aplicante');
+        console.log(`🎉 Unlocked "Primer Aplicante" achievement for user ${userId}`);
+      }
+
+      // 🎯 PROJECT APPROVAL: Achievement por proyecto aprobado por admin
+      if (eventType === 'project_application_approved') {
+        await this.unlockAchievement(userId, 'proyecto_aprobado');
+        console.log(`🎉 Unlocked "Proyecto Aprobado" achievement for user ${userId}`);
+      }
+
       // 🎯 REFERIDOS: Achievement por primer referido exitoso
       if (eventType === 'referral_made') {
         await this.unlockAchievement(userId, 'promotor_de_comunidad');
@@ -659,6 +734,20 @@ private static async updateUserProfilePoints(userId: string, pointsToAdd: number
           required_events: JSON.stringify(["referral_made"]),
           points_reward: 500,
           badge_url: "/badges/referrer.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
+        },
+        {
+          name: "Proyecto Aprobado",
+          description: "Tu proyecto fue aprobado por el equipo de Pandora's",
+          icon: "✅",
+          type: "creator" as any,
+          required_points: 0,
+          required_level: 1,
+          required_events: JSON.stringify(["project_application_approved"]),
+          points_reward: 100,
+          badge_url: "/badges/project-approved.png",
           is_active: true,
           is_secret: false,
           created_at: new Date()

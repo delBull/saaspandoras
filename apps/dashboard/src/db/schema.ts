@@ -194,7 +194,8 @@ export const achievementTypeEnum = pgEnum("achievement_type", [
   "community_builder",
   "tokenization_expert",
   "early_adopter",
-  "high_roller"
+  "high_roller",
+  "creator"
 ]);
 
 export const rewardTypeEnum = pgEnum("reward_type", [
