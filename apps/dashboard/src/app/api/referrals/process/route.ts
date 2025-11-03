@@ -25,7 +25,11 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { referrerWallet, source = 'link' } = body;
+    const { referrerWallet, source = 'direct' } = body;
+
+    // Validate and normalize source
+    const validSources = ['direct', 'link', 'code', 'social'];
+    const normalizedSource = validSources.includes(source) ? source : 'direct';
 
     if (!referrerWallet || typeof referrerWallet !== 'string') {
       return NextResponse.json({ message: "Wallet del referrer requerida" }, { status: 400 });
@@ -68,7 +72,7 @@ export async function POST(request: Request) {
     await db.insert(userReferrals).values({
       referrerWalletAddress: referrerWalletNormalized,
       referredWalletAddress: currentUserWallet,
-      referralSource: source,
+      referralSource: normalizedSource,
       status: 'pending'
     });
 
