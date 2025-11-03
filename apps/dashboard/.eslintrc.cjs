@@ -45,6 +45,12 @@ module.exports = {
       },
     },
     {
+      files: ['src/app/api/projects/typeform-webhook/route.ts'],
+      rules: {
+        '@typescript-eslint/prefer-optional-chain': 'off',
+      },
+    },
+    {
       files: [
         'src/components/sidebar.tsx',
         'src/app/(dashboard)/profile/projects/page.tsx',

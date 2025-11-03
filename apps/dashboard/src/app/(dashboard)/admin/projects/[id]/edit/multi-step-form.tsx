@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod"; // FIX 1: Reactivado
 import { z } from "zod";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import { SUPER_ADMIN_WALLET } from "@/lib/constants";
+import { SUPER_ADMIN_WALLET } from "@/lib/constants"; 
 // 🎮 IMPORTAR EVENTOS DE GAMIFICACIÓN
 import { gamificationEngine, EventType } from "@pandoras/gamification";
 import { ProjectSection1 } from "./sections/ProjectSection1";
