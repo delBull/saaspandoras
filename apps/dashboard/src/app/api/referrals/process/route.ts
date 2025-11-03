@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { getAuth } from "@/lib/auth";
-import { db } from "~/db";
+import { db } from "@/db";
 import { userReferrals, users } from "@/db/schema";
 import { GamificationService } from "@/lib/gamification/service";
 import { eq, and } from "drizzle-orm";
