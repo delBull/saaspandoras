@@ -85,13 +85,13 @@ export default function AchievementsPage() {
   const account = useActiveAccount();
   const gamification = useRealGamification(account?.address ?? '');
 
-  // Load all available achievements from simple API
+  // Load all available achievements from main gamification API
   useEffect(() => {
     const loadAllAchievements = async () => {
       try {
-        console.log('🚀 Fetching user achievements from API...');
-        // Use full API that includes user achievement status
-        const achievementsResponse = await fetch(`/api/gamification/user/achievements/full/${account?.address ?? ''}`);
+        console.log('🚀 Fetching user achievements from main API...');
+        // Use the main gamification API that includes user achievement status
+        const achievementsResponse = await fetch(`/api/gamification/user/data/${account?.address ?? ''}`);
         console.log('📡 API Response Status:', achievementsResponse.status);
 
         const achievementsData = await achievementsResponse.json();
@@ -101,8 +101,8 @@ export default function AchievementsPage() {
           console.log('✅ Setting achievements with user status:', achievementsData.achievements.length, 'items');
           console.log('📊 Completion stats:', {
             total: achievementsData.achievements.length,
-            completed: achievementsData.achievements.filter((a: any) => a.isUnlocked).length,
-            pending: achievementsData.achievements.filter((a: any) => !a.isUnlocked).length
+            completed: achievementsData.achievements.filter((a: any) => a.isCompleted).length,
+            pending: achievementsData.achievements.filter((a: any) => !a.isCompleted).length
           });
           setAllAvailableAchievements(achievementsData.achievements);
         } else {
