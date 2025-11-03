@@ -6,6 +6,10 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { z } from 'zod';
+import Image from 'next/image';
+import { useActiveAccount } from 'thirdweb/react';
+// 🎮 IMPORTAR EVENTOS DE GAMIFICACIÓN
+import { gamificationEngine, EventType } from "@pandoras/gamification";
 
 // Schema de validación completo basado en DB schema - Versión Utility
 const projectSchema = z.object({
@@ -37,8 +41,8 @@ const projectSchema = z.object({
 
   // Campos opcionales - Identidad
   tagline: z.string().max(140, "El eslogan es demasiado largo").optional(),
-  logoUrl: z.string().url("URL de logo inválida").optional().or(z.literal("")),
-  coverPhotoUrl: z.string().url("URL de portada inválida").optional().or(z.literal("")),
+  logoUrl: z.string().optional().or(z.literal("")),
+  coverPhotoUrl: z.string().optional().or(z.literal("")),
   videoPitch: z.string().url("URL de video inválida").max(512).optional().or(z.literal("")),
 
   // Comunidad y Conexiones
@@ -50,13 +54,14 @@ const projectSchema = z.object({
   linkedinUrl: z.string().url("URL inválida").max(512).optional().or(z.literal("")),
 
   // Recursos y Artefactos
-  targetAmount: z.number().min(1, "El monto objetivo debe ser mayor a 1").optional(),
+  targetAmount: z.union([z.number().min(1), z.string()]).optional(),
+  totalValuationUsd: z.number().min(0).optional(),
   tokenType: z.enum(['erc20', 'erc721', 'erc1155']).optional(),
   totalTokens: z.number().min(1, "Debe haber al menos 1 token").optional(),
   tokensOffered: z.number().min(1, "Debe ofrecer al menos 1 token").optional(),
   tokenPriceUsd: z.number().min(0.01, "El precio debe ser mayor a 0.01 USD").optional(),
   estimatedApy: z.string().max(50).optional(),
-  yieldSource: z.enum(['rental_income', 'capital_appreciation', 'dividends', 'royalties', 'other']).optional(),
+  yieldSource: z.enum(['protocol_revenue', 'staking_rewards', 'liquidity_mining', 'governance_rewards', 'utility_fees', 'revenue_sharing', 'other']).optional(),
   fundUsage: z.string().optional(),
   lockupPeriod: z.string().max(100).optional(),
 
@@ -94,9 +99,13 @@ const projectSchema = z.object({
   applicantPosition: z.string().max(256).optional(),
   applicantEmail: z.string().email("Email inválido").max(256),
   applicantPhone: z.string().max(50).optional(),
+  applicantWalletAddress: z.string().optional(),
 
   // Verificación Final
-  verificationAgreement: z.boolean().refine(val => val === true, "Debes aceptar la declaración del creador"),
+  verificationAgreement: z.union([z.boolean(), z.string()]).transform((val) => {
+    if (typeof val === 'string') return val === 'true';
+    return val;
+  }).refine(val => val === true, "Debes aceptar la declaración del creador"),
 });
 
 // Tipos
@@ -106,10 +115,12 @@ interface FormQuestion {
   id: keyof ProjectFormData;
   label: string;
   placeholder?: string;
-  component: 'text-input' | 'textarea-input' | 'select-input' | 'number-input' | 'url-input';
+  component: 'text-input' | 'textarea-input' | 'select-input' | 'number-input' | 'url-input' | 'file-input';
   options?: { value: string; label: string }[];
   required?: boolean;
   maxLength?: number;
+  info?: string;
+  relatedField?: string;
 }
 
 // Array de preguntas del formulario conversacional - Versión Utility Completa
@@ -122,13 +133,6 @@ const formQuestions: FormQuestion[] = [
     component: 'text-input',
     required: true,
     maxLength: 256,
-  },
-  {
-    id: 'tagline',
-    label: '¡Gran nombre! ¿Cuál es la frase que captura la esencia de tu Creación en menos de 140 caracteres?',
-    placeholder: 'Ej: Tokenizando el futuro',
-    component: 'text-input',
-    maxLength: 140,
   },
   {
     id: 'description',
@@ -168,14 +172,14 @@ const formQuestions: FormQuestion[] = [
   {
     id: 'logoUrl',
     label: 'Hazla visual. Sube el Artefacto visual que represente tu Creación (tu logo).',
-    placeholder: 'https://...',
-    component: 'url-input',
+    placeholder: 'Haz click para seleccionar tu logo',
+    component: 'file-input',
   },
   {
     id: 'coverPhotoUrl',
     label: '¿Tienes una imagen de portada que capture el espíritu de tu Creación?',
-    placeholder: 'https://...',
-    component: 'url-input',
+    placeholder: 'Haz click para seleccionar tu imagen de portada',
+    component: 'file-input',
   },
   {
     id: 'videoPitch',
@@ -227,7 +231,17 @@ const formQuestions: FormQuestion[] = [
     id: 'targetAmount',
     label: 'Para que esta Creación cobre vida, ¿cuántos Recursos (en USD) necesita recaudar de la comunidad en esta ronda?',
     placeholder: 'Ej: 100000',
-    component: 'number-input',
+    component: 'select-input',
+    options: [
+      { value: 'not_sure', label: 'Aún no estoy seguro(a)' },
+      { value: '50000', label: '$50,000' },
+      { value: '100000', label: '$100,000' },
+      { value: '250000', label: '$250,000' },
+      { value: '500000', label: '$500,000' },
+      { value: '1000000', label: '$1,000,000' },
+      { value: 'custom', label: 'Otro monto (especificar)' },
+    ],
+    info: 'Esta estimación es crucial para determinar la viabilidad del proyecto. Un monto realista atrae inversores confiados, mientras que uno inflado puede generar desconfianza.',
   },
   {
     id: 'tokenType',
@@ -238,18 +252,22 @@ const formQuestions: FormQuestion[] = [
       { value: 'erc721', label: 'No Fungible (ERC-721/NFT)' },
       { value: 'erc1155', label: 'Semi-Fungible (ERC-1155)' },
     ],
+    info: 'ERC-20: Tokens intercambiables ideales para gobernanza y recompensas. ERC-721: NFTs únicos perfectos para membresías exclusivas. ERC-1155: Combinación de ambos para mayor flexibilidad.',
   },
   {
     id: 'totalTokens',
     label: 'Definamos los Artefactos. ¿Cuántos tokens existirán en total (Supply Total)?',
     placeholder: 'Ej: 10000000',
     component: 'number-input',
+    info: 'El supply total determina cuántos tokens existirán. Considera factores como: tamaño del mercado objetivo, estrategia de distribución, crecimiento proyectado y liquidez. Un supply muy grande puede diluir el valor, uno muy pequeño puede limitar la adopción.',
   },
   {
     id: 'tokensOffered',
     label: '¿Cuántos Artefactos ofrecerás a la comunidad en esta ronda?',
     placeholder: 'Ej: 1000000',
     component: 'number-input',
+    info: 'Esta cantidad no puede exceder el Supply Total definido anteriormente. Considera tu estrategia de distribución: tokens para venta pública, equipo, advisors, tesorería, etc.',
+    relatedField: 'totalTokens',
   },
   {
     id: 'tokenPriceUsd',
@@ -263,16 +281,19 @@ const formQuestions: FormQuestion[] = [
     placeholder: 'Ej: 15%',
     component: 'text-input',
     maxLength: 50,
+    info: 'El APY (Annual Percentage Yield) representa el rendimiento anual estimado que los holders recibirán. Se calcula basado en las recompensas de utilidad generadas por el protocolo. Sé conservador en tus estimaciones.',
   },
   {
     id: 'yieldSource',
     label: '¿De dónde provendrán estas recompensas de utilidad?',
     component: 'select-input',
     options: [
-      { value: 'rental_income', label: 'Rentas/Ingresos por alquiler' },
-      { value: 'capital_appreciation', label: 'Valorización del capital' },
-      { value: 'dividends', label: 'Dividendos' },
-      { value: 'royalties', label: 'Regalías' },
+      { value: 'protocol_revenue', label: 'Ingresos del Protocolo (tarifas, comisiones)' },
+      { value: 'staking_rewards', label: 'Recompensas de Staking' },
+      { value: 'liquidity_mining', label: 'Liquidity Mining' },
+      { value: 'governance_rewards', label: 'Recompensas de Gobernanza' },
+      { value: 'utility_fees', label: 'Tarifas de Utilidad' },
+      { value: 'revenue_sharing', label: 'Participación en Ingresos' },
       { value: 'other', label: 'Otros' },
     ],
   },
@@ -281,6 +302,7 @@ const formQuestions: FormQuestion[] = [
     label: '¿Cómo se utilizarán los Recursos recaudados? Sé transparente.',
     placeholder: 'Ej: 40% desarrollo, 30% marketing, 20% operaciones, 10% tesorería...',
     component: 'textarea-input',
+    info: 'La transparencia en el uso de fondos es fundamental en proyectos de utilidad. La comunidad confía en que los recursos se utilicen para crear valor real y sostenible.',
   },
   {
     id: 'lockupPeriod',
@@ -288,41 +310,43 @@ const formQuestions: FormQuestion[] = [
     placeholder: 'Ej: 12 meses',
     component: 'text-input',
     maxLength: 100,
+    info: 'Los periodos de bloqueo generan confianza en la comunidad al demostrar compromiso a largo plazo. Equipos con tokens bloqueados muestran mayor alineación con el éxito del proyecto.',
   },
 
   // SECCIÓN 4: El Equipo y la Gobernanza
   {
     id: 'applicantName',
-    label: '¿Cuál es tu nombre completo?',
+    label: '¿Cómo te llamas? Necesitamos tu nombre completo para el registro.',
     placeholder: 'Ej: Juan Pérez',
     component: 'text-input',
     required: true,
   },
   {
     id: 'applicantPosition',
-    label: '¿Cuál es tu cargo en el proyecto?',
+    label: '¿Cuál es tu rol en este proyecto de utilidad?',
     placeholder: 'Ej: Fundador y CEO',
     component: 'text-input',
   },
   {
     id: 'applicantEmail',
-    label: '¿Cuál es tu email de contacto?',
+    label: '¿Cuál es tu email? Lo usaremos para mantenerte al tanto del progreso.',
     placeholder: 'tu@email.com',
     component: 'text-input',
     required: true,
   },
   {
     id: 'applicantPhone',
-    label: '¿Cuál es tu número de teléfono? (opcional)',
+    label: '¿Tienes un número de teléfono para contacto urgente? (opcional)',
     placeholder: '+1 234 567 8900',
     component: 'text-input',
     maxLength: 50,
   },
   {
     id: 'treasuryAddress',
-    label: '¿Cuál es la dirección de la Tesorería donde se recibirán los Recursos de la comunidad?',
-    placeholder: '0x... (Recomendamos una Gnosis Safe)',
+    label: '¿Dónde quieres que se distribuyan los fondos recaudados de la comunidad?',
+    placeholder: '0x...',
     component: 'text-input',
+    info: 'Esta será la dirección principal donde se enviarán los fondos. Para mayor seguridad en proyectos de utilidad, considera usar una wallet multi-firma como Gnosis Safe.',
   },
 
   // SECCIÓN 5: Confianza y Transparencia
@@ -391,7 +415,7 @@ const formQuestions: FormQuestion[] = [
 ];
 
 // Componentes de Input Personalizados
-function TextInput({ name, placeholder, maxLength }: { name: string; placeholder?: string; maxLength?: number }) {
+function TextInput({ name, placeholder, maxLength, info }: { name: string; placeholder?: string; maxLength?: number; info?: string }) {
   const { register, formState: { errors } } = useFormContext();
 
   return (
@@ -402,6 +426,11 @@ function TextInput({ name, placeholder, maxLength }: { name: string; placeholder
         maxLength={maxLength}
         className="w-full bg-transparent border-b-2 border-zinc-600 focus:border-lime-400 outline-none py-3 text-white placeholder-zinc-500 text-lg transition-colors"
       />
+      {info && (
+        <p className="text-sm text-zinc-400 mt-2 leading-relaxed">
+          💡 {info}
+        </p>
+      )}
       {errors[name] && (
         <motion.p
           initial={{ opacity: 0, y: -10 }}
@@ -468,13 +497,27 @@ function SelectInput({ name, options }: { name: string; options?: { value: strin
   );
 }
 
-function NumberInput({ name, placeholder }: { name: string; placeholder?: string }) {
-  const { register, formState: { errors } } = useFormContext();
+function NumberInput({ name, placeholder, maxValue, relatedField }: { name: string; placeholder?: string; maxValue?: number; relatedField?: string }) {
+  const { register, formState: { errors }, watch } = useFormContext();
+
+  // Watch the related field for validation
+  const relatedValue = relatedField ? watch(relatedField) : undefined;
 
   return (
     <div className="space-y-2">
       <input
-        {...register(name, { valueAsNumber: true })}
+        {...register(name, {
+          valueAsNumber: true,
+          validate: (value) => {
+            if (maxValue !== undefined && value > maxValue) {
+              return `No puede exceder ${maxValue}`;
+            }
+            if (relatedField && relatedValue && value > relatedValue) {
+              return `No puede exceder el valor del campo relacionado (${relatedValue})`;
+            }
+            return true;
+          }
+        })}
         type="number"
         placeholder={placeholder}
         className="w-full bg-transparent border-b-2 border-zinc-600 focus:border-lime-400 outline-none py-3 text-white placeholder-zinc-500 text-lg transition-colors"
@@ -516,6 +559,161 @@ function UrlInput({ name, placeholder }: { name: string; placeholder?: string })
   );
 }
 
+function FileInput({ name, accept = "image/*", placeholder }: { name: string; accept?: string; placeholder?: string }) {
+  const { formState: { errors }, setValue, watch } = useFormContext();
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<'idle' | 'success' | 'error'>('idle');
+
+  // Observar el valor actual del campo para mostrar feedback
+  const currentValue = watch(name);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    console.log('📁 File selected:', file.name, 'Size:', file.size, 'Type:', file.type);
+
+    setIsUploading(true);
+    setUploadStatus('idle');
+
+    // Validar tamaño
+    if (file.size > 5 * 1024 * 1024) {
+      console.error('❌ File too large:', file.size);
+      setUploadStatus('error');
+      setIsUploading(false);
+      alert("El archivo debe ser menor a 5MB");
+      return;
+    }
+
+    // Validar tipo
+    if (!file.type.startsWith('image/')) {
+      console.error('❌ Invalid file type:', file.type);
+      setUploadStatus('error');
+      setIsUploading(false);
+      alert("Solo se permiten archivos de imagen (PNG, JPG, SVG)");
+      return;
+    }
+
+    console.log('✅ File validation passed, reading file...');
+
+    const reader = new FileReader();
+    reader.onloadstart = () => {
+      console.log('📖 FileReader started');
+    };
+
+    reader.onloadend = () => {
+      console.log('✅ FileReader completed, setting value...');
+      const result = reader.result as string;
+      setValue(name, result);
+      setUploadStatus('success');
+      setIsUploading(false);
+      console.log('✅ File uploaded successfully');
+    };
+
+    reader.onerror = () => {
+      console.error('❌ FileReader error');
+      setUploadStatus('error');
+      setIsUploading(false);
+      alert("Error al leer el archivo");
+    };
+
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="relative">
+        <input
+          type="file"
+          accept={accept}
+          onChange={handleFileChange}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          disabled={isUploading}
+        />
+        <div className={`w-full px-4 py-3 bg-zinc-800/50 border-2 border-dashed rounded-lg text-center transition-colors cursor-pointer ${
+          uploadStatus === 'success'
+            ? 'border-green-400 bg-green-500/5 text-green-400'
+            : uploadStatus === 'error'
+            ? 'border-red-400 bg-red-500/5 text-red-400'
+            : isUploading
+            ? 'border-yellow-400 bg-yellow-500/5 text-yellow-400'
+            : 'border-zinc-600 text-zinc-400 hover:border-lime-400 hover:bg-lime-500/5'
+        }`}>
+          {isUploading ? (
+            <>
+              <div className="animate-spin w-5 h-5 mx-auto mb-1 border-2 border-current border-t-transparent rounded-full"></div>
+              <p className="text-sm">Subiendo archivo...</p>
+            </>
+          ) : uploadStatus === 'success' ? (
+            <>
+              <svg className="w-5 h-5 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <p className="text-sm">Archivo subido correctamente</p>
+            </>
+          ) : uploadStatus === 'error' ? (
+            <>
+              <svg className="w-5 h-5 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              <p className="text-sm">Error al subir archivo</p>
+            </>
+          ) : (
+            <>
+              <svg className="w-5 h-5 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              <p className="text-sm">{placeholder ?? "Click para seleccionar archivo"}</p>
+              <p className="text-xs mt-1">PNG/JPG hasta 5MB</p>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Mostrar preview si hay un archivo subido */}
+      {currentValue && uploadStatus === 'success' && (
+        <div className="mt-3 p-4 bg-zinc-800/30 rounded-lg border border-zinc-700">
+          <p className="text-xs text-zinc-400 mb-3 text-center">Vista Previa:</p>
+          <div className="flex justify-center">
+            <Image
+              src={currentValue}
+              alt="Preview"
+              width={240}
+              height={160}
+              className="max-w-full h-auto max-h-40 object-contain rounded border border-zinc-600"
+              unoptimized
+            />
+          </div>
+        </div>
+      )}
+
+      {errors[name] && (
+        <motion.p
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-red-400 text-sm"
+        >
+          {errors[name]?.message as string}
+        </motion.p>
+      )}
+    </div>
+  );
+}
+
+// Función para personalizar las preguntas con el nombre del proyecto
+function getPersonalizedLabel(originalLabel: string, projectTitle: string): string {
+  if (!projectTitle || projectTitle === 'tu Creación') {
+    return originalLabel;
+  }
+
+  // Reemplazar referencias genéricas con el nombre específico del proyecto
+  return originalLabel
+    .replace(/tu Creación/g, projectTitle)
+    .replace(/esta Creación/g, projectTitle)
+    .replace(/la Creación/g, projectTitle)
+    .replace(/Creación/g, projectTitle);
+}
+
 // Barra de Progreso
 function ProgressBar({ currentStep, totalSteps }: { currentStep: number; totalSteps: number }) {
   const progress = ((currentStep + 1) / totalSteps) * 100;
@@ -536,13 +734,18 @@ function ProgressBar({ currentStep, totalSteps }: { currentStep: number; totalSt
 export default function ConversationalForm() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const account = useActiveAccount();
 
   const methods = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema),
     mode: 'onChange',
   });
 
-  const { trigger, handleSubmit } = methods;
+  const { trigger, handleSubmit, watch } = methods;
+
+  // Observar cambios en el título para personalización dinámica
+  const projectTitle = watch('title') || 'tu Creación';
+
   const currentQuestion = formQuestions[currentStep];
 
   // Navegación
@@ -573,16 +776,100 @@ export default function ConversationalForm() {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [nextStep]);
 
+  // Auto-focus en el input del paso actual
+  useEffect(() => {
+    if (currentQuestion) {
+      // Pequeño delay para asegurar que el DOM esté listo después de la animación
+      const timer = setTimeout(() => {
+        const inputElement = document.querySelector(`[name="${currentQuestion.id}"]`);
+        if (inputElement && 'focus' in inputElement) {
+          (inputElement as HTMLElement).focus();
+          // Para inputs de texto, posicionar el cursor al final
+          if (inputElement.tagName === 'INPUT' || inputElement.tagName === 'TEXTAREA') {
+            const input = inputElement as HTMLInputElement | HTMLTextAreaElement;
+            input.setSelectionRange(input.value.length, input.value.length);
+          }
+        }
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [currentStep, currentQuestion]);
+
   // Submit handler
-  const onSubmit = (data: ProjectFormData) => {
+  const onSubmit = async (data: ProjectFormData) => {
     setIsSubmitting(true);
+    console.log('📝 Formulario completado:', data);
+
     try {
-      console.log('📝 Formulario completado:', data);
-      // Aquí irá la lógica de envío a la API
-      alert('¡Formulario enviado exitosamente! 🎉');
+      // Preparar datos para envío
+      const tokenDist = data.tokenDistribution ?? {};
+      const finalDistribution = {
+        publicSale: (tokenDist as { publicSale?: number })?.publicSale ?? 0,
+        team: (tokenDist as { team?: number })?.team ?? 0,
+        treasury: (tokenDist as { treasury?: number })?.treasury ?? 0,
+        marketing: (tokenDist as { marketing?: number })?.marketing ?? 0,
+      };
+
+      const submitData = {
+        ...data,
+        estimatedApy: data.estimatedApy ? String(data.estimatedApy) : undefined,
+        teamMembers: JSON.stringify(data.teamMembers ?? []),
+        advisors: JSON.stringify(data.advisors ?? []),
+        tokenDistribution: JSON.stringify(finalDistribution),
+        status: "draft", // Los proyectos enviados desde el formulario conversacional empiezan como draft
+        featured: false
+      };
+
+      console.log('📤 Enviando datos a API:', submitData);
+
+      // Enviar a API
+      const response = await fetch('/api/projects/utility-application', {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(submitData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Error desconocido' })) as { message?: string };
+        throw new Error(errorData.message ?? `Error del servidor (${response.status})`);
+      }
+
+      const responseData: unknown = await response.json();
+      console.log('✅ Proyecto creado exitosamente:', responseData);
+
+      // 🎮 TRIGGER EVENTO DE APLICACIÓN DE PROYECTO
+      const userWallet = account?.address?.toLowerCase();
+      if (userWallet) {
+        try {
+          console.log('🎮 Triggering project application event for user:', userWallet);
+          // Usar el servicio de gamificación del dashboard que maneja la DB real
+          const { trackGamificationEvent } = await import('@/lib/gamification/service');
+          await trackGamificationEvent(
+            userWallet,
+            'project_application_submitted',
+            {
+              projectTitle: data.title,
+              projectId: (responseData as { id?: string | number })?.id?.toString() ?? 'unknown',
+              businessCategory: data.businessCategory,
+              targetAmount: data.targetAmount,
+              isPublicApplication: true,
+              submissionType: 'utility_form_draft'
+            }
+          );
+          console.log('✅ Gamification event PROJECT_APPLICATION_SUBMITTED tracked successfully');
+        } catch (gamificationError) {
+          console.warn('⚠️ Gamification event tracking failed:', gamificationError);
+          // No bloquear el flujo si falla la gamificación
+        }
+      }
+
+      alert('¡Aplicación enviada exitosamente! 🎉\n\nTu proyecto ha sido guardado como borrador y recibirás 50 tokens por tu primera aplicación.');
+
     } catch (error) {
       console.error('❌ Error al enviar:', error);
-      alert('Error al enviar el formulario. Inténtalo de nuevo.');
+      const message = error instanceof Error ? error.message : 'Error desconocido al enviar el formulario';
+      alert(`Error al enviar el formulario: ${message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -594,15 +881,17 @@ export default function ConversationalForm() {
 
     switch (question.component) {
       case 'text-input':
-        return <TextInput {...baseProps} maxLength={question.maxLength} />;
+        return <TextInput {...baseProps} maxLength={question.maxLength} info={question.info} />;
       case 'textarea-input':
         return <TextareaInput {...baseProps} />;
       case 'select-input':
         return <SelectInput {...baseProps} options={question.options} />;
       case 'number-input':
-        return <NumberInput {...baseProps} />;
+        return <NumberInput {...baseProps} relatedField={question.relatedField} />;
       case 'url-input':
         return <UrlInput {...baseProps} />;
+      case 'file-input':
+        return <FileInput {...baseProps} accept="image/png,image/jpeg,image/svg+xml" />;
       default:
         return <TextInput {...baseProps} />;
     }
@@ -641,7 +930,7 @@ export default function ConversationalForm() {
                   {currentQuestion && (
                     <div className="space-y-6">
                       <label className="block text-2xl md:text-3xl font-bold text-white leading-tight">
-                        {currentQuestion.label}
+                        {getPersonalizedLabel(currentQuestion.label, projectTitle)}
                       </label>
 
                       {renderInputComponent(currentQuestion)}

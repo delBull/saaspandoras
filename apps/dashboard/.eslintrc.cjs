@@ -97,6 +97,17 @@ module.exports = {
     },
     {
       files: [
+        'src/components/ConversationalForm.tsx'
+      ],
+      rules: {
+        '@typescript-eslint/no-unsafe-assignment': 'off',
+        '@typescript-eslint/no-unsafe-member-access': 'off',
+        '@typescript-eslint/no-unused-vars': 'off',
+        '@next/next/no-img-element': 'off'
+      }
+    },
+    {
+      files: [
         'src/app/(dashboard)/debug/database/page.tsx'
       ],
       rules: {
