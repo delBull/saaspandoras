@@ -37,14 +37,14 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
             Creaciones
           </button>
           <button onClick={() => setActiveTab('users')} className={`pb-2 font-semibold ${activeTab === 'users' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-gray-400'} flex items-center gap-2`}>
-            📊 Red de Usuarios
+            Usuarios
           </button>
           <button onClick={() => setActiveTab('swaps')} className={`pb-2 font-semibold ${activeTab === 'swaps' ? 'text-lime-400 border-b-2 border-lime-400' : 'text-gray-400'}`}>
             Swaps
           </button>
           {showSettings && (
             <button onClick={() => setActiveTab('settings')} className={`pb-2 font-semibold ${activeTab === 'settings' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-400'}`}>
-              Configuración
+              Config
             </button>
           )}
         </nav>

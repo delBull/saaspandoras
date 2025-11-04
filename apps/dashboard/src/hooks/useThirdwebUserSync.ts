@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useActiveAccount } from 'thirdweb/react';
+// 🎮 EVENT SYSTEM - Ahora usa API, no engine directo
 
 export function useThirdwebUserSync() {
   const account = useActiveAccount();
@@ -10,6 +11,10 @@ export function useThirdwebUserSync() {
 
   useEffect(() => {
     if (account?.address && !hasSynced) {
+      // Verificar si es primera conexión de este usuario
+      const firstLoginKey = `pandoras_first_login_reward_${account.address}`;
+      const alreadyGotFirstLoginReward = localStorage.getItem(firstLoginKey);
+
       // Sincroniza wallet básica
       fetch('/api/user-sync/connect', {
         method: 'POST',
@@ -24,6 +29,45 @@ export function useThirdwebUserSync() {
       .then((res) => {
         if (res.ok) {
           console.log('✅ Wallet sincronizada correctamente');
+
+          // 🎮 TRIGGER EVENTO DE PRIMER LOGIN (SOLO PRIMERA VEZ)
+          if (!alreadyGotFirstLoginReward) {
+            console.log('🎯 Activando evento de primer login para:', account.address);
+            // Usar API en lugar de engine directo para evitar errores de dashboard service
+            fetch('/api/gamification/events', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Wallet-Address': account.address,
+              },
+              body: JSON.stringify({
+                walletAddress: account.address.toLowerCase(),
+                eventType: 'DAILY_LOGIN',
+                metadata: {
+                  walletAddress: account.address,
+                  timestamp: new Date().toISOString(),
+                  firstLoginReward: true,
+                  description: 'Primer login del usuario - reward único'
+                }
+              })
+            }).then(async (response) => {
+              if (response.ok) {
+                console.log('✅ Evento de primer login registrado exitosamente');
+                // Marcar que ya recibió el reward de primer login inmediatamente
+                localStorage.setItem(firstLoginKey, 'true');
+                console.log('💾 Primer login marcado en localStorage');
+
+                // 🚀 ACHIEVEMENT SERÁ DESBLOQUEADO AUTOMÁTICAMENTE POR LA API
+                // No necesitamos hacer nada extra aquí - la API events ya desbloquea achievements
+                console.log('🎉 Achievement "Primer Login" será desbloqueado automáticamente por la API');
+              } else {
+                console.warn('❌ Failed to register first login event:', await response.text());
+              }
+            }).catch(err => console.warn('⚠️ Error al dar primer login reward:', err));
+          } else {
+            console.log('ℹ️ Usuario ya recibió reward de primer login anteriormente:', account.address);
+          }
+
           setHasSynced(true);
         } else {
           console.warn('⚠️ Error al sincronizar wallet:', res.status);

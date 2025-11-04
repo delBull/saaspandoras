@@ -3,6 +3,7 @@
 // Force dynamic rendering - this page uses cookies and should not be prerendered
 export const dynamic = 'force-dynamic';
 
+import { useRouter } from 'next/navigation';
 import React, { useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@saasfly/ui/card';
 import {
@@ -13,12 +14,28 @@ import {
   ClockIcon,
   CheckCircleIcon,
   ExclamationCircleIcon,
+  TrophyIcon,
+  ArrowLeftIcon,
 } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import Link from 'next/link';
 //import { useProjectModal } from "@/contexts/ProjectModalContext";
 import { useProfile } from "@/hooks/useProfile";
 import { useActiveAccount } from 'thirdweb/react';
+import { useRealGamification } from "@/hooks/useRealGamification";
+
+import { ActivityHistoryCard } from '@/components/ActivityHistoryCard';
+
+
+
+interface Project {
+  id: string | number;
+  title: string;
+  slug?: string;
+  status: 'live' | 'approved' | 'pending' | 'completed' | 'rejected' | 'draft';
+  raisedAmount?: string | number;
+  raised_amount?: string | number; // To support both property names
+}
 
 // Define a type for your project data to avoid using 'any'
 interface Project {
@@ -31,17 +48,37 @@ interface Project {
 }
 
 export default function PandoriansDashboardPage() {
+  const router = useRouter();
   const { profile, projects, isLoading, isError } = useProfile();
   const account = useActiveAccount();
   const toastShownRef = useRef(false);
 
-  //const { open } = useProjectModal();
-
   // Use account from useActiveAccount hook instead of cookies
   const walletAddress = account?.address;
 
-  // Use account from useActiveAccount hook instead of cookies
-  const walletAddress = account?.address;
+  // Activity handled by ActivityHistoryCard component
+
+  // 🎮 HOOK DE GAMIFICACIÓN - DATA REAL
+  const {
+    profile: _gamificationProfile,
+    achievements,
+    rewards: _rewards,
+    leaderboard,
+    totalPoints,
+    currentLevel,
+    levelProgress: _levelProgress,
+    isLoading: _gamificationLoading
+  } = useRealGamification(walletAddress);
+
+  // Debug: Log data received
+  console.log('🎮 Dashboard - Real Gamification Data:', {
+    walletAddress,
+    totalPoints,
+    currentLevel,
+    achievementsCount: achievements.length,
+    achievementsSample: achievements.slice(0, 2),
+    leaderboardLength: leaderboard.length
+  });
 
   useEffect(() => {
     // Show beta notification toast only once when account is connected
@@ -64,7 +101,7 @@ export default function PandoriansDashboardPage() {
   // Handle loading and error states
   if (isLoading) {
     return (
-      <div className="p-6">
+      <div className="py-4 px-2 md:p-6">
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-zinc-700 rounded w-64"></div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -79,7 +116,7 @@ export default function PandoriansDashboardPage() {
 
   if (isError || !walletAddress) {
     return (
-      <div className="p-6">
+      <div className="py-4 px-2 md:p-6">
         <Card>
           <CardHeader>
             <CardTitle>Acceso Denegado</CardTitle>
@@ -92,7 +129,7 @@ export default function PandoriansDashboardPage() {
 
   if (!profile) {
     return (
-      <div className="p-6">
+      <div className="py-4 px-2 md:p-6">
         <Card>
           <CardContent className="p-6">
             <p>No se encontró información de perfil.</p>
@@ -173,48 +210,62 @@ export default function PandoriansDashboardPage() {
   const recentActivity = [
     {
       type: 'investment',
-      title: 'Inversión recibida',
-      description: 'Tu proyecto recibió $5,000 adicionales',
+      title: 'Licencia de Gobernanza Adquirida',
+      description: 'Tu creación recibió $5,000 por la licencia de gobernanza',
       time: 'Hace 2 horas',
       amount: 5000,
     },
     {
       type: 'return',
-      title: 'Retorno pagado',
-      description: 'Se distribuyeron retornos mensuales',
+      title: 'Trabajo pagado',
+      description: 'Se distribuyó aportación por trabajo',
       time: 'Hace 1 día',
       amount: 125,
     },
     {
       type: 'project',
-      title: 'Proyecto aprobado',
-      description: 'Un nuevo proyecto fue aprobado',
+      title: 'Creación aprobada',
+      description: 'Un nuevo artefacto fue aprobado',
       time: 'Hace 3 días',
     }
   ];
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="py-4 px-2 md:p-6 space-y-6 pb-20 md:pb-6">
+      {/* Back Button - Mobile & Desktop */}
+      <div className="flex items-center gap-4 mb-4">
+        <button
+          onClick={() => router.back()}
+          className="text-gray-400 hover:text-white transition-colors"
+          aria-label="Volver atrás"
+        >
+          <ArrowLeftIcon className="w-5 h-5" />
+        </button>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">
-            {profile.role === 'applicant' ? 'Dashboard de Applicant' : 'Dashboard Pandorian'}
+            {profile.role === 'applicant' ? 'Dashboard de Creador' : 'Dashboard Pandorian'}
           </h1>
-          <p className="text-gray-400">
-            {profile.role === 'applicant'
-              ? `Tienes ${dashboardData.activeProjects} proyecto(s) activo(s) • Resumen de inversiones`
-              : 'Resumen de tus inversiones y métricas'
-            }
-          </p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className={`w-3 h-3 rounded-full ${
-            profile.kycLevel === 'basic' ? 'bg-green-500' : 'bg-yellow-500'
-          }`}></div>
-          <span className="text-sm text-gray-400">
-            Nivel {profile.kycLevel === 'basic' ? 'Básico' : 'N/A'}
-          </span>
+          <div className="flex items-center space-x-4 mt-2">
+            <p className="text-gray-400 text-sm">
+              {profile.role === 'applicant'
+                ? `Tienes ${dashboardData.activeProjects} creación(s) activo(s)`
+                : 'Resumen de tu desempeño y métricas'
+              }
+            </p>
+            {/* Indicador KYC movido here */}
+            <div className="flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full ${
+                profile.kycLevel === 'basic' ? 'bg-green-500' : 'bg-yellow-500'
+              }`}></div>
+              <span className="text-sm text-gray-400">
+                Nivel {profile.kycLevel === 'basic' ? 'Básico' : 'N/A'}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -228,7 +279,7 @@ export default function PandoriansDashboardPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-400">Total Invertido</p>
+                <p className="text-sm font-medium text-gray-400">Licencias Adquiridas</p>
                 <p className="text-2xl font-bold text-white">
                   ${dashboardData.totalInvested.toLocaleString()}
                 </p>
@@ -242,7 +293,7 @@ export default function PandoriansDashboardPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-400">Total Retornos</p>
+                <p className="text-sm font-medium text-gray-400">Suma de recompesas</p>
                 <p className="text-2xl font-bold text-green-500">
                   +${dashboardData.totalReturns.toLocaleString()}
                 </p>
@@ -258,7 +309,7 @@ export default function PandoriansDashboardPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-400">Creaciones Activas</p>
+                  <p className="text-sm font-medium text-gray-400">Creaciones Desatadas</p>
                   <p className="text-2xl font-bold text-white">
                     {dashboardData.activeProjects}
                   </p>
@@ -273,7 +324,7 @@ export default function PandoriansDashboardPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-400">APY Promedio</p>
+                <p className="text-sm font-medium text-gray-400">Resumen Promedio</p>
                 <p className="text-2xl font-bold text-lime-500">
                   {dashboardData.averageAPY}%
                 </p>
@@ -293,7 +344,7 @@ export default function PandoriansDashboardPage() {
               Actividad Reciente
             </CardTitle>
             <CardDescription>
-              Tus últimas transacciones y actualizaciones
+              Tus últimos movimientos y actualizaciones
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -329,7 +380,7 @@ export default function PandoriansDashboardPage() {
           <CardHeader>
             <CardTitle>Acciones Rápidas</CardTitle>
             <CardDescription>
-              Gestiona tus inversiones
+              Gestiona tus licencias y recompensas
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -340,7 +391,7 @@ export default function PandoriansDashboardPage() {
                     <FolderIcon className="w-5 h-5 text-white" />
                     <div>
                       <div className="text-white text-sm font-medium">Ver Mis Creaciones ({dashboardData.activeProjects})</div>
-                      <div className="text-blue-200 text-xs">Gestiona tus impulsos activos</div>
+                      <div className="text-blue-200 text-xs">Gestiona tus licencias activas</div>
                     </div>
                   </button>
                 </Link>
@@ -348,8 +399,8 @@ export default function PandoriansDashboardPage() {
                 <button className="w-full flex items-center gap-3 p-3 rounded-lg bg-green-600 hover:bg-green-700 transition-colors text-left">
                   <CurrencyDollarIcon className="w-5 h-5 text-white" />
                   <div>
-                    <div className="text-white text-sm font-medium">Reclamar Retornos</div>
-                    <div className="text-green-200 text-xs">Retira ganancias disponibles</div>
+                    <div className="text-white text-sm font-medium">Reclamar Pagos Laborales</div>
+                    <div className="text-green-200 text-xs">Retira recompensas disponibles</div>
                   </div>
                 </button>
                 {/*
@@ -379,7 +430,7 @@ export default function PandoriansDashboardPage() {
                   </Link>
                 ) : (
                   <button className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors">
-                    Reclamar Retornos
+                    Reclamar Recompensas
                   </button>
                 )}
               </div>
@@ -494,17 +545,102 @@ export default function PandoriansDashboardPage() {
          </Card>
        )}
 
-      {/* Coming Soon Notice */}
-      <Card className="border-dashed border-gray-600">
-        <CardContent className="p-6 text-center">
-          <ChartBarIcon className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-white mb-2">Funciones Avanzadas Próximamente</h3>
-          <p className="text-gray-400 text-sm">
-            Próximamente: Gráficos detallados, reinversión automática, alertas personalizadas,
-            y mucho más para optimizar tus inversiones.
-          </p>
-        </CardContent>
-      </Card>
+      {/* 🎮 SECCIÓN DE GAMIFICACIÓN - DATA REAL */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Estadísticas de Gamificación */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrophyIcon className="w-5 h-5 text-yellow-400" />
+              Tu Desarrollo Gamificado
+            </CardTitle>
+            <CardDescription>
+              Tokens ganados y logros obtenidos
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
+                <div className="text-2xl font-bold text-yellow-400 mb-1">
+                  {totalPoints.toLocaleString()}
+                </div>
+                <div className="text-sm text-gray-400">Tokens Ganados</div>
+              </div>
+              <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
+                <div className="text-2xl font-bold text-blue-400 mb-1">
+                  {achievements.filter(a => a.isCompleted).length}
+                </div>
+                <div className="text-sm text-gray-400">Logros Obtenidos</div>
+              </div>
+              <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
+                <div className="text-2xl font-bold text-purple-400 mb-1">
+                  #{leaderboard.findIndex(entry => entry.walletAddress === walletAddress) + 1 || 'N/A'}
+                </div>
+                <div className="text-sm text-gray-400">Posición Global</div>
+              </div>
+              <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
+                <div className="text-2xl font-bold text-green-400 mb-1">
+                  Nivel {currentLevel}
+                </div>
+                <div className="text-sm text-gray-400">Tu Nivel Actual</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Logros Recientes */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrophyIcon className="w-5 h-5 text-yellow-400" />
+              Logros Recientes
+            </CardTitle>
+            <CardDescription>
+              Tus últimos achievements desbloqueados
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {achievements.filter((a: any) => a.isCompleted).slice(0, 3).map((achievement: any) => (
+                <div key={achievement.id} className="flex items-center gap-4 p-3 bg-yellow-900/20 border border-yellow-500/30 rounded-lg">
+                  <div className="text-2xl">{achievement.icon}</div>
+                  <div className="flex-1">
+                    <div className="text-white text-sm font-medium">{achievement.name}</div>
+                    <div className="text-gray-400 text-xs">{achievement.description}</div>
+                    <div className="text-yellow-400 text-xs font-medium">+{achievement.points} tokens</div>
+                  </div>
+                  <div className="text-yellow-400 text-xs">Desbloqueado</div>
+                </div>
+              ))}
+
+              {/* Show pending achievements if not enough completed */}
+              {achievements.filter((a: any) => !a.isCompleted).slice(0, 3 - Math.min(achievements.filter((a: any) => a.isCompleted).length, 3)).map((achievement: any) => (
+                <div key={achievement.id} className="flex items-center gap-4 p-3 bg-gray-900/20 border border-gray-500/30 rounded-lg">
+                  <div className="text-2xl">{achievement.icon}</div>
+                  <div className="flex-1">
+                    <div className="text-white text-sm font-medium">{achievement.name}</div>
+                    <div className="text-gray-400 text-xs">{achievement.description}</div>
+                    <div className="text-gray-400 text-xs">Progreso: {achievement.progress}/100</div>
+                  </div>
+                  <div className="text-gray-400 text-xs">Bloqueado</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-zinc-700">
+              <Link href="/profile/achievements">
+                <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-black rounded-lg hover:from-yellow-300 hover:to-orange-400 transition-colors text-sm font-medium">
+                  <TrophyIcon className="w-4 h-4" />
+                  Ver Todos Mis Logros ({achievements.length})
+                </button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Activity History Section - Usando componente modularizado */}
+      <ActivityHistoryCard walletAddress={walletAddress} />
     </div>
   );
 }

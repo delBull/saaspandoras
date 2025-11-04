@@ -8,9 +8,6 @@ import { ProjectModalProvider } from "@/contexts/ProjectModalContext";
 // Force dynamic rendering - this layout uses cookies and should not be prerendered
 export const dynamic = 'force-dynamic';
 
-// Force dynamic rendering - this layout uses cookies and should not be prerendered
-export const dynamic = 'force-dynamic';
-
 export default async function DashboardLayout({
   children,
 }: {

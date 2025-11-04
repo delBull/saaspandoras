@@ -13,7 +13,7 @@ import {
 } from "@saasfly/ui/select";
 
 export type ViewMode = 'grid' | 'list';
-export type GridColumns = 3 | 4 | 6;
+export type GridColumns = 3 | 4;
 
 export interface FilterOptions {
   search: string;
@@ -36,6 +36,8 @@ interface ApplicantsFiltersProps {
   hasActiveFilters: boolean;
   totalProjects: number;
   filteredCount: number;
+  // NEW: Para cálculos dinámicos de contadores
+  approvedProjects?: { status: string }[];
 }
 
 const categories = [
@@ -77,8 +79,9 @@ export function ApplicantsFilters({
   updateFilter,
   clearFilters,
   hasActiveFilters,
-  totalProjects,
-  filteredCount,
+  totalProjects: _totalProjects,
+  filteredCount: _filteredCount,
+  approvedProjects,
 }: ApplicantsFiltersProps) {
   return (
     <div className="space-y-4">
@@ -137,7 +140,7 @@ export function ApplicantsFilters({
           {/* Grid Columns (only for grid view) */}
           {viewMode === 'grid' && (
             <div className="flex items-center bg-gray-100 dark:bg-zinc-800 rounded-lg p-1">
-              {[3, 4, 6].map((cols) => (
+              {[3, 4].map((cols) => (
                 <Button
                   key={cols}
                   variant={gridColumns === cols ? 'default' : 'ghost'}
@@ -216,7 +219,7 @@ export function ApplicantsFilters({
       {/* Results Counter */}
       <div className="flex items-center justify-between text-xs text-gray-400">
         <span>
-          Mostrando {filteredCount} de {totalProjects} creaciones
+          Mostrando {approvedProjects ? approvedProjects.filter(p => p.status === 'live').length : 0} de {approvedProjects ? approvedProjects.length : 0} creaciones
         </span>
         {hasActiveFilters && (
           <Button

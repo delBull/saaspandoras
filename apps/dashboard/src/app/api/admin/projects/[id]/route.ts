@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 //
 import { db } from "~/db";
-// 
+// 🎮 IMPORTAR EVENTOS DE GAMIFICACIÓN
+import { gamificationEngine, EventType } from "@pandoras/gamification";
 
 
 
@@ -74,13 +75,17 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       return NextResponse.json({ message: "Estado inválido" }, { status: 400 });
     }
 
-    // Verificar que el proyecto existe
+    // Verificar que el proyecto existe y obtener información completa
     console.log('🔄 PATCH: Checking if project exists...');
     const existingProject = await db.query.projects.findFirst({
       where: eq(projectsSchema.id, projectId),
       columns: {
         id: true,
         status: true,
+        title: true,
+        businessCategory: true,
+        targetAmount: true,
+        applicantWalletAddress: true,
       }
     });
 
@@ -97,6 +102,42 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       .update(projectsSchema)
       .set({ status: statusString as "pending" | "approved" | "live" | "completed" | "rejected" | "incomplete" })
       .where(eq(projectsSchema.id, projectId));
+
+    // 🎮 TRIGGER EVENTO DE APROBACIÓN DE PROYECTO si el status cambió a "approved"
+    if (existingProject.status !== "approved" && statusString === "approved") {
+      const adminWallet = (session?.address ?? session?.userId)?.toLowerCase();
+      const applicantWallet = existingProject.applicantWalletAddress?.toLowerCase();
+
+      console.log('✅ Project approved! Triggering gamification events...');
+      console.log('🎮 Admin wallet:', adminWallet?.substring(0, 6) + '...');
+      console.log('🎮 Applicant wallet:', applicantWallet?.substring(0, 6) + '...');
+
+      // Evento de aprobación para el applicant usando el evento existente
+      if (applicantWallet) {
+        try {
+          await gamificationEngine.trackEvent(
+            applicantWallet,
+            EventType.PROJECT_APPLICATION_SUBMITTED, // Reutilizamos el evento existente con metadata específica
+            {
+              projectId: projectId.toString(),
+              projectTitle: existingProject.title ?? 'Proyecto Aprobado',
+              businessCategory: existingProject.businessCategory ?? 'other',
+              targetAmount: existingProject.targetAmount?.toString() ?? '0',
+              approvedBy: adminWallet,
+              approvalType: 'admin_approval',
+              eventSubtype: 'project_approved'
+            }
+          );
+          console.log('✅ PROJECT APPROVAL event tracked for applicant (100 points earned!)');
+        } catch (gamificationError) {
+          console.warn('⚠️ Failed to track PROJECT APPROVAL for applicant:', gamificationError);
+          // No bloquear el flujo si falla la gamificación
+        }
+      }
+
+      // Nota: Para el admin podríamos agregar puntos por revisión, pero por ahora nos enfocamos en el applicant
+      // En futuras fases podemos crear eventos específicos para admins
+    }
 
     console.log('🔄 PATCH: Update successful for project:', projectId);
     return NextResponse.json({ message: "Status actualizado exitosamente" }, { status: 200 });

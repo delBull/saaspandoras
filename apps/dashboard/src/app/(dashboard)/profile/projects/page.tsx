@@ -3,6 +3,7 @@
 // Force dynamic rendering - this page uses cookies and should not be prerendered
 export const dynamic = 'force-dynamic';
 
+import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@saasfly/ui/card';
@@ -21,6 +22,7 @@ import type { UserData, Project } from '@/types/admin';
 import { useActiveAccount } from 'thirdweb/react';
 
 export default function ProfileProjectsPage() {
+  const router = useRouter();
   const [userProfile, setUserProfile] = useState<UserData | null>(null);
   const [userProjects, setUserProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -302,7 +304,7 @@ export default function ProfileProjectsPage() {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="py-4 px-2 md:p-6">
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-zinc-700 rounded w-64"></div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -316,7 +318,7 @@ export default function ProfileProjectsPage() {
 
   if (!walletAddress) {
     return (
-      <div className="p-6">
+      <div className="py-4 px-2 md:p-6">
         <Card>
           <CardHeader>
             <CardTitle>Acceso Denegado</CardTitle>
@@ -363,7 +365,18 @@ export default function ProfileProjectsPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="py-4 px-2 md:p-6 space-y-6 pb-20 md:pb-6">
+      {/* Back Button - Mobile & Desktop */}
+      <div className="flex items-center gap-4 mb-4">
+        <button
+          onClick={() => router.back()}
+          className="text-gray-400 hover:text-white transition-colors"
+          aria-label="Volver atrás"
+        >
+          <span className="text-lg">←</span>
+        </button>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -411,7 +424,7 @@ export default function ProfileProjectsPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-400">Total Invertido</p>
+                      <p className="text-sm font-medium text-gray-400">Resumen de Licencias</p>
                       <p className="text-2xl font-bold text-white">
                         ${(userProjects.reduce((total, p) => total + (calculateProjectMetrics(p).raisedAmount), 0)).toLocaleString()}
                       </p>
@@ -425,7 +438,7 @@ export default function ProfileProjectsPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-400">Valorización</p>
+                      <p className="text-sm font-medium text-gray-400">???</p>
                       <p className="text-2xl font-bold text-blue-500">
                         ${(userProjects.reduce((total, p) => total + calculateProjectMetrics(p).currentValue, 0)).toLocaleString()}
                       </p>
@@ -439,7 +452,7 @@ export default function ProfileProjectsPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-400">Retornos Pagados</p>
+                      <p className="text-sm font-medium text-gray-400">Recompensas</p>
                       <p className="text-xl font-bold text-green-500">
                         ${(userProjects.reduce((total, p) => total + calculateProjectMetrics(p).returnsPaid, 0)).toLocaleString()}
                       </p>
@@ -456,7 +469,7 @@ export default function ProfileProjectsPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-400">Creaciones Activas</p>
+                      <p className="text-sm font-medium text-gray-400">Creaciones desatadas</p>
                       <p className="text-2xl font-bold text-lime-500">
                         {userProjects.filter(p => p.status === 'live' || p.status === 'approved').length}
                       </p>
@@ -500,7 +513,7 @@ export default function ProfileProjectsPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-400">Total Invertido</p>
+                      <p className="text-sm font-medium text-gray-400">Resumen de Licencias</p>
                       <p className="text-2xl font-bold text-white">$0</p>
                     </div>
                     <CurrencyDollarIcon className="h-8 w-8 text-green-500" />
@@ -511,7 +524,7 @@ export default function ProfileProjectsPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-400">Valorización</p>
+                      <p className="text-sm font-medium text-gray-400">????</p>
                       <p className="text-2xl font-bold text-blue-500">$0</p>
                     </div>
                     <ChartBarIcon className="h-8 w-8 text-blue-500" />
@@ -522,7 +535,7 @@ export default function ProfileProjectsPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-400">Retornos Pagados</p>
+                      <p className="text-sm font-medium text-gray-400">Recompensas</p>
                       <p className="text-xl font-bold text-green-500">$0</p>
                     </div>
                     <CheckCircleIcon className="h-8 w-8 text-green-500" />
@@ -535,40 +548,44 @@ export default function ProfileProjectsPage() {
       )}
 
       {/* Projects List */}
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-7xl mx-auto">
         {userProjects.length > 0 ? (
           userProjects.map((project) => {
             const metrics = calculateProjectMetrics(project);
             return (
               <Card key={project.id} className="hover:bg-zinc-800/50 transition-colors">
                 <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-xl text-white mb-2">{project.title}</CardTitle>
-                      <div className="flex items-center gap-4 text-sm text-gray-400">
-                        <span>Estado: {
-                          project.status === 'live' ? '🏃‍♂️ Activo' :
-                          project.status === 'approved' ? '✅ Aprobado' :
-                          project.status === 'pending' ? '⏳ En Revisión' :
-                          project.status === 'rejected' ? '❌ Rechazado' :
-                          project.status === 'completed' ? '🏁 Completado' :
-                          project.status
-                        }</span>
-                        <span>Meta ${(metrics.targetAmount).toLocaleString()} USD</span>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-xl text-white mb-2">{project.title}</CardTitle>
+                        <div className="flex items-center gap-4 text-sm text-gray-400 flex-wrap">
+                          <span>Estado: {
+                            project.status === 'live' ? '🏃‍♂️ Activo' :
+                            project.status === 'approved' ? '✅ Aprobado' :
+                            project.status === 'pending' ? '⏳ En Revisión' :
+                            project.status === 'rejected' ? '❌ Rechazado' :
+                            project.status === 'completed' ? '🏁 Completado' :
+                            project.status
+                          }</span>
+                          <span>Meta ${(metrics.targetAmount).toLocaleString()} USD</span>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="flex gap-2">
-                      <Link href={`/admin/projects/${project.id}/edit`}>
-                        <Button size="sm" variant="outline">
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Link href={`/profile/projects/${project.id}/edit`} className="flex-1 min-w-0">
+                        <Button size="sm" variant="outline" className="w-full text-xs">
                           <PencilIcon className="w-4 h-4 mr-2" />
-                          Editar
+                          <span className="hidden sm:inline">Editar</span>
+                          <span className="sm:hidden">Editar</span>
                         </Button>
                       </Link>
-                      <Link href={`/projects/${(project as any).slug || project.id}`}>
-                        <Button size="sm" variant="outline">
+                      <Link href={`/projects/${(project as any).slug || project.id}`} className="flex-1 min-w-0">
+                        <Button size="sm" variant="outline" className="w-full text-xs">
                           <EyeIcon className="w-4 h-4 mr-2" />
-                          Ver Proyecto
+                          <span className="hidden sm:inline">Ver Artefacto</span>
+                          <span className="sm:hidden">👁️ Ver</span>
                         </Button>
                       </Link>
                     </div>
@@ -670,7 +687,7 @@ export default function ProfileProjectsPage() {
           <Card>
             <CardContent className="p-12 text-center">
               <FolderIcon className="w-16 h-16 text-gray-500 mx-auto mb-4" />
-              <h3 className="text-xl font-medium text-white mb-2">Sin Creaciones Activas</h3>
+              <h3 className="text-xl font-medium text-white mb-2">Sin Creaciones Desatadas</h3>
               <p className="text-gray-400 mb-6">
                 Aún no has aplicado a ningúna creación. Comienza tu jornada aplicando a oportunidades interesantes.
               </p>

@@ -19,6 +19,7 @@
     "db:export-local": "node export-local-schema.mjs",
     "db:sync-production": "node sync-production.mjs",
     "db:full-sync": "node full-sync.mjs",
+    "db:sync-local-to-staging": "node sync-local-to-staging.mjs",
     "db:push:pg": "drizzle-kit push"
   },
   "dependencies": {
@@ -37,10 +38,11 @@
     "@trpc/server": "10.44.1",
     "@types/formidable": "^3.4.5",
     "@types/jsonwebtoken": "^9.0.10",
-    "@uniswap/widgets": "^2.59.0",
+    "@vercel/blob": "^2.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "3.3.1",
+    "dotenv": "^16.5.0",
     "embla-carousel-react": "^8.6.0",
     "ethers": "5.7.2",
     "formidable": "^3.5.4",
@@ -51,10 +53,13 @@
     "net": "^1.0.2",
     "next": "15.5.4",
     "next-themes": "0.2.1",
+    "pg": "^8.11.3",
+    "postgres": "^3.4.7",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-redux": "^9.2.0",
     "recharts": "2.11.0",
+    "sharp": "^0.34.4",
     "slugify": "^1.6.6",
     "sonner": "^2.0.7",
     "source-map": "^0.7.6",
@@ -64,10 +69,7 @@
     "tailwindcss-animate": "^1.0.7",
     "thirdweb": "^5.106.0",
     "vaul": "0.9.0",
-    "viem": "^2.17.3",
-    "pg": "^8.11.3",
-    "dotenv": "^16.5.0",
-    "postgres": "^3.4.7"
+    "viem": "^2.17.3"
   },
   "devDependencies": {
     "@saasfly/eslint-config": "workspace:*",

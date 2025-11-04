@@ -24,6 +24,12 @@ const getWalletAddress = (admin: Admin): string => {
   return admin.walletAddress ?? admin.wallet_address ?? 'N/A';
 };
 
+// Helper function to truncate wallet addresses for mobile
+const truncateWallet = (address: string, length = 6) => {
+  if (address.length <= 2 * length + 2) return address;
+  return `${address.slice(0, length)}...${address.slice(-length)}`;
+};
+
 export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
   // Get wallet address from localStorage (same as dashboard page)
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
@@ -227,28 +233,30 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
         <ul className="mt-2 space-y-2">
           {admins.map((admin) => (
             <li key={admin.id} className="p-3 bg-zinc-800/50 rounded-md border border-zinc-700">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-4">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3">
-                    <div>
-                      <div className="font-semibold text-white">{admin.alias ?? 'Sin alias'}</div>
-                      <div className="font-mono text-xs text-gray-400 truncate max-w-xs">{getWalletAddress(admin)}</div>
+                  <div className="flex items-center gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold text-white truncate">{admin.alias ?? 'Sin alias'}</div>
+                      <div className="font-mono text-xs text-gray-400 truncate">
+                        {truncateWallet(getWalletAddress(admin), 6)}
+                      </div>
                     </div>
                     {editingAliasId === admin.id ? (
-                      <div className="flex items-center gap-2 ml-auto">
+                      <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                         <Input
                           type="text"
                           value={editingAliasValue}
                           onChange={(e) => setEditingAliasValue(e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && handleUpdateAlias()}
-                          className="w-32 h-8 text-sm bg-zinc-700 border-zinc-600"
+                          className="w-24 sm:w-32 h-8 text-xs sm:text-sm bg-zinc-700 border-zinc-600"
                           placeholder="Alias..."
                           maxLength={100}
                         />
-                        <Button size="sm" variant="outline" onClick={handleUpdateAlias} className="h-8 px-2">
+                        <Button size="sm" variant="outline" onClick={handleUpdateAlias} className="h-8 px-1 sm:px-2">
                           ✓
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={handleCancelEditAlias} className="h-8 px-2 text-gray-400">
+                        <Button size="sm" variant="ghost" onClick={handleCancelEditAlias} className="h-8 px-1 sm:px-2 text-gray-400">
                           ✕
                         </Button>
                       </div>
@@ -257,7 +265,7 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
                         size="sm"
                         variant="ghost"
                         onClick={() => handleStartEditAlias(admin)}
-                        className="h-8 w-8 p-0 text-gray-400 hover:text-white"
+                        className="h-8 w-8 p-0 text-gray-400 hover:text-white flex-shrink-0"
                         title="Editar alias"
                       >
                         <Pencil className="h-3 w-3" />
@@ -267,8 +275,9 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
                 </div>
                 {/* Verificación de seguridad en la UI: no mostrar el botón de borrar para el Super Admin */}
                 {getWalletAddress(admin).toLowerCase() !== SUPER_ADMIN_WALLET && (
-                  <Button variant="destructive" size="sm" onClick={() => handleDeleteAdmin(admin.id)} className="ml-2">
-                    <Trash2 className="w-4 h-4" />
+                  <Button variant="destructive" size="sm" onClick={() => handleDeleteAdmin(admin.id)} className="flex-shrink-0 px-2 sm:px-3 text-xs sm:text-sm">
+                    <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-0" />
+                    <span className="hidden sm:inline">Borrar</span>
                   </Button>
                 )}
               </div>

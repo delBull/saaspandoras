@@ -1,5 +1,3 @@
-"use server";
-
 import type {
   UserGamificationProfile,
   UserAchievement,
@@ -7,22 +5,24 @@ import type {
   LeaderboardEntry,
   UserPoints,
   GamificationEvent,
-  EventType,
   PointsCategory
 } from '@pandoras/gamification';
 import { GamificationEngine } from '@pandoras/gamification';
 import { db } from '@/db';
 import {
   gamificationProfiles,
-  gamificationEvents,
   userPoints,
   achievements,
   rewards,
+  users,
+  userAchievements,
+  projects,
   type GamificationProfile as DrizzleGamificationProfile
 } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql, desc } from 'drizzle-orm';
 
-class GamificationService {
+// Export the class before declaring it
+export class GamificationService {
   private static engine: GamificationEngine;
   // private static dbService: DatabaseService; // Commented out - using direct DB access instead
 
@@ -36,16 +36,27 @@ class GamificationService {
   /**
    * Get user gamification profile using real database
    */
-  static async getUserProfile(userId: string): Promise<UserGamificationProfile | null> {
-    console.log(`🔍 GamificationService: Getting profile for user ${userId}`);
+  static async getUserProfile(walletAddress: string): Promise<UserGamificationProfile | null> {
+    console.log(`🔍 GamificationService: Getting profile for wallet ${walletAddress}`);
     try {
-      // For demo purposes, use the userId as string to match User table structure
-      const userIdString = userId;
+      // First, find the user_id from users table using wallet_address
+      const user = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.walletAddress, walletAddress))
+        .limit(1);
+
+      if (!user || user.length === 0 || !user[0]) {
+        console.log(`❌ No user found for wallet address ${walletAddress}`);
+        return null;
+      }
+
+      const userId = user[0].id;
 
       const dbProfile = await db
         .select()
         .from(gamificationProfiles)
-        .where(eq(gamificationProfiles.userId, userIdString))
+        .where(eq(gamificationProfiles.userId, userId))
         .limit(1);
 
       if (dbProfile.length > 0 && dbProfile[0]) {
@@ -55,11 +66,11 @@ class GamificationService {
       }
 
       // Create new profile if doesn't exist
-      console.log(`🆕 Creating new profile for user ${userId}`);
-      const newProfile = await this.createUserProfileInDb(userId);
+      console.log(`🆕 Creating new profile for wallet ${walletAddress} (user_id: ${userId})`);
+      const newProfile = await this.createUserProfileInDb(walletAddress);
       return newProfile;
     } catch (error) {
-      console.error(`❌ Error getting profile for user ${userId}:`, error);
+      console.error(`❌ Error getting profile for wallet ${walletAddress}:`, error);
       return null;
     }
   }
@@ -144,45 +155,54 @@ class GamificationService {
     try {
       // Get points for this event type
       const points = this.getEventPoints(eventType);
+      console.log(`💰 Event ${eventType} grants ${points} points`);
 
-      // Create event in database
-      const eventData = {
-        userId: userId,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
-        type: eventType as any, // Cast to match Drizzle enum
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
-        category: this.getEventCategory(eventType) as any, // Cast to match Drizzle enum
+      // Award points directly using raw SQL (without events table dependency)
+      let finalTotalPoints = 0;
+      if (points > 0) {
+        console.log(`🎯 Awarding ${points} points to user ${userId}`);
+
+        // Get current points first to calculate final total
+        const currentProfile = await db.execute(sql`
+          SELECT total_points FROM gamification_profiles WHERE user_id = ${userId}
+        `);
+        const currentPoints = (currentProfile as any).rows?.[0]?.total_points ?? 0;
+        finalTotalPoints = currentPoints + points;
+
+        await db.execute(sql`
+          UPDATE gamification_profiles
+          SET
+            total_points = total_points + ${points},
+            current_level = GREATEST(1, FLOOR((total_points + ${points}) / 100) + 1),
+            level_progress = ((total_points + ${points}) % 100),
+            points_to_next_level = 100 - ((total_points + ${points}) % 100),
+            updated_at = NOW()
+          WHERE user_id = ${userId}
+        `);
+
+        // Insert points record
+        await db.execute(sql`
+          INSERT INTO user_points
+          (user_id, points, reason, category, metadata, created_at)
+          VALUES (${userId}, ${points}, ${`Event: ${eventType}`}, 'daily_login', ${JSON.stringify(metadata ?? {})}, NOW())
+        `);
+      }
+
+      // 🚀 CHECK AND UNLOCK ACHIEVEMENTS AUTOMATICALLY
+      await this.checkAndUnlockAchievements(userId, eventType, finalTotalPoints);
+
+      console.log(`✅ Event tracked: +${points} points awarded to user ${userId}`);
+
+      // Return basic event object (without ID dependency)
+      return {
+        id: `event_${Date.now()}_${userId}`,
+        userId,
+        type: 'daily_login' as any,
+        category: 'daily' as any,
         points,
-        metadata,
+        metadata: metadata as any,
         createdAt: new Date()
       };
-
-      const insertedEvent = await db.insert(gamificationEvents).values(eventData).returning();
-
-      if (!insertedEvent[0]) {
-        throw new Error('Failed to create event');
-      }
-
-      // Award points if event has points
-      if (points > 0) {
-        await this.awardPointsToDb(userId, points, `Event: ${eventType}`, this.getPointsCategory(eventType), metadata);
-      }
-
-      // Map to gamification event format
-      const event: GamificationEvent = {
-        id: insertedEvent[0].id.toString(),
-        userId: insertedEvent[0].userId.toString(), // Convert number to string for frontend
-        type: insertedEvent[0].type as EventType,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
-        category: insertedEvent[0].category as any,
-        points: insertedEvent[0].points,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        metadata: insertedEvent[0].metadata as Record<string, any>,
-        createdAt: insertedEvent[0].createdAt
-      };
-
-      console.log(`✅ Event tracked: +${event.points} points`);
-      return event;
     } catch (error) {
       console.error(`❌ Error tracking event for user ${userId}:`, error);
       throw error;
@@ -222,9 +242,67 @@ class GamificationService {
   static async getUserAchievements(userId: string): Promise<UserAchievement[]> {
     console.log(`🏆 GamificationService: Getting achievements for user ${userId}`);
     try {
-      // For now, return empty array - will be implemented with database
-      await new Promise(resolve => setTimeout(resolve, 0)); // Dummy await
-      return [];
+      // First, find the user_id from users table using wallet_address
+      const user = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.walletAddress, userId))
+        .limit(1);
+
+      if (!user || user.length === 0 || !user[0]) {
+        console.log(`❌ No user found for wallet address ${userId}`);
+
+        // 🚀 CREATE PROFILE IF FIRST VISIT AND ENSURE BASIC ACHIEVEMENTS EXIST
+        try {
+          await this.getUserProfile(userId); // This will create profile if needed
+          await this.initializeBasicAchievements(); // Ensure achievements exist
+        } catch (error) {
+          console.warn('⚠️ Failed to create profile/achievements on first access:', error);
+        }
+        return [];
+      }
+
+      const userIdInt = user[0].id;
+
+      // Get user achievements with achievement details
+      const userAchievementsData = await db
+        .select({
+          userAchievementId: userAchievements.id,
+          achievementId: userAchievements.achievementId,
+          progress: userAchievements.progress,
+          isUnlocked: userAchievements.isUnlocked,
+          unlockedAt: userAchievements.unlockedAt,
+          name: achievements.name,
+          description: achievements.description,
+          icon: achievements.icon,
+          rarity: achievements.type,
+          points: achievements.pointsReward,
+          category: achievements.type
+        })
+        .from(userAchievements)
+        .innerJoin(achievements, eq(userAchievements.achievementId, achievements.id))
+        .where(eq(userAchievements.userId, userIdInt));
+
+      // Map to UserAchievement format
+      const achievementsList: UserAchievement[] = userAchievementsData.map((item: any) => ({
+        id: item.achievementId.toString(),
+        name: item.name,
+        description: item.description,
+        icon: item.icon,
+        rarity: item.rarity as any,
+        points: item.points,
+        category: item.category as any,
+        // User achievement data - mapping to expected interface
+        userId: userId,
+        achievementId: item.achievementId.toString(),
+        progress: item.progress || 0,
+        isCompleted: item.isUnlocked || false,
+        isUnlocked: item.isUnlocked || false, // Mantener compatibilidad
+        unlockedAt: item.unlockedAt || null
+      } as any));
+
+      console.log(`✅ User achievements loaded: ${achievementsList.length} achievements`);
+      return achievementsList;
     } catch (error) {
       console.error(`❌ Error getting achievements for user ${userId}:`, error);
       return [];
@@ -237,9 +315,50 @@ class GamificationService {
   static async getLeaderboard(type: string, limit = 10): Promise<LeaderboardEntry[]> {
     console.log(`🏅 GamificationService: Getting leaderboard ${type}, limit ${limit}`);
     try {
-      // For now, return empty array - will be implemented with database
-      await new Promise(resolve => setTimeout(resolve, 0)); // Dummy await
-      return [];
+      // Query gamification_profiles directly to ensure we get existing data
+      console.log(`🔍 DEBUG: Querying gamification_profiles for leaderboard...`);
+      const profiles = await db
+        .select()
+        .from(gamificationProfiles)
+        .orderBy(desc(gamificationProfiles.totalPoints))
+        .limit(limit);
+
+      console.log(`🔍 DEBUG: Found ${profiles.length} profiles`);
+
+      if (profiles.length === 0) {
+        console.log(`ℹ️ No leaderboard data found - no gamification profiles in database`);
+        return [];
+      }
+
+      // Map to LeaderboardEntry format directly from schema
+      const leaderboard: LeaderboardEntry[] = profiles.map((item: any, index: number) => ({
+        id: item.userId.toString(),
+        userId: item.userId.toString(),
+        // Use schema field names directly - alias for compatibility
+        points: item.totalPoints || 0, // Duplicate for interface compatibility
+        totalPoints: item.totalPoints || 0,
+        currentLevel: item.currentLevel || 1,
+        // Map schema fields to expected interface
+        walletAddress: item.walletAddress,
+        rank: index + 1,
+        // Required interface fields with defaults
+        projectsApplied: item.projectsApplied || 0,
+        projectsApproved: item.projectsApproved || 0,
+        totalInvested: Number(item.totalInvested || 0),
+        achievementsUnlocked: 0,
+        communityRank: item.communityRank || 0,
+        lastActivity: new Date((item.lastActivityDate as string | number | Date) || (item.updatedAt as string | number | Date) || new Date()),
+        levelProgress: item.levelProgress || 0,
+        currentStreak: item.currentStreak || 0,
+        reputationScore: item.reputationScore || 0,
+        communityContributions: item.communityContributions || 0,
+        referralsCount: item.referralsCount || 0,
+        joinedAt: new Date(item.createdAt as string | number | Date || new Date())
+      }));
+
+      console.log(`✅ Leaderboard data loaded: ${leaderboard.length} users from database`);
+      console.log(`🚀 Top user points:`, leaderboard[0]?.totalPoints || 'none');
+      return leaderboard;
     } catch (error) {
       console.error(`❌ Error getting leaderboard:`, error);
       return [];
@@ -262,6 +381,75 @@ class GamificationService {
   }
 
   /**
+   * Trigger achievement unlock manually (public API)
+   */
+  static async triggerAchievementUnlock(userId: string, eventType: string, totalPoints: number): Promise<void> {
+    await this.checkAndUnlockAchievements(userId, eventType, totalPoints);
+  }
+
+  /**
+   * Approve project and award points to creator (admin action)
+   */
+  static async approveProject(projectId: number, adminWalletAddress: string): Promise<{ success: boolean; message: string; pointsAwarded?: number }> {
+    console.log(`✅ GamificationService: Approving project ${projectId} by admin ${adminWalletAddress}`);
+
+    try {
+      // Get project details to find the creator
+      const project = await db
+        .select()
+        .from(projects)
+        .where(eq(projects.id, projectId))
+        .limit(1);
+
+      if (!project || project.length === 0 || !project[0]) {
+        return { success: false, message: 'Proyecto no encontrado' };
+      }
+
+      const projectData = project[0];
+      const creatorWallet = projectData.applicantWalletAddress;
+
+      if (!creatorWallet) {
+        return { success: false, message: 'Proyecto no tiene wallet del creador' };
+      }
+
+      // Update project status to approved
+      await db
+        .update(projects)
+        .set({
+          status: 'approved'
+        })
+        .where(eq(projects.id, projectId));
+
+      // Award points to creator for project approval
+      await this.trackEvent(
+        creatorWallet,
+        'project_application_approved',
+        {
+          projectId: projectId.toString(),
+          projectTitle: projectData.title,
+          approvedBy: adminWalletAddress,
+          approvalDate: new Date().toISOString()
+        }
+      );
+
+      console.log(`✅ Project ${projectId} approved, 100 points awarded to creator ${creatorWallet}`);
+
+      return {
+        success: true,
+        message: `Proyecto aprobado exitosamente. Se otorgaron 100 tokens al creador.`,
+        pointsAwarded: 100
+      };
+
+    } catch (error) {
+      console.error(`❌ Error approving project ${projectId}:`, error);
+      return {
+        success: false,
+        message: 'Error interno al aprobar el proyecto'
+      };
+    }
+  }
+
+  /**
    * Get singleton instances for external use
    */
   static getEngine(): GamificationEngine {
@@ -275,22 +463,30 @@ class GamificationService {
  * Get event points based on event type
  */
 private static getEventPoints(eventType: string): number {
+  // Map frontend "DAILY_LOGIN" to database "daily_login"
+  const normalizedEventType = eventType === 'DAILY_LOGIN' ? 'daily_login' : eventType;
+
   const pointsMap: Record<string, number> = {
     'project_application_submitted': 50,
     'project_application_approved': 100,
     'investment_made': 25,
     'daily_login': 10,
     'user_registered': 20,
-    'referral_made': 200
+    'referral_made': 200,
+    'COURSE_STARTED': 10,
+    'COURSE_COMPLETED': 100
   };
 
-  return pointsMap[eventType] ?? 0;
+  return pointsMap[normalizedEventType] ?? 0;
 }
 
 /**
  * Get event category from event type
  */
 private static getEventCategory(eventType: string): string {
+  // Map frontend "DAILY_LOGIN" to database "daily_login"
+  const normalizedEventType = eventType === 'DAILY_LOGIN' ? 'daily_login' : eventType;
+
   const categoryMap: Record<string, string> = {
     'project_application_submitted': 'projects',
     'project_application_approved': 'projects',
@@ -299,13 +495,16 @@ private static getEventCategory(eventType: string): string {
     'daily_login': 'daily'
   };
 
-  return categoryMap[eventType] ?? 'special';
+  return categoryMap[normalizedEventType] ?? 'special';
 }
 
 /**
  * Get points category from event type
  */
 private static getPointsCategory(eventType: string): string {
+  // Map frontend "DAILY_LOGIN" to database "daily_login"
+  const normalizedEventType = eventType === 'DAILY_LOGIN' ? 'daily_login' : eventType;
+
   const categoryMap: Record<string, string> = {
     'project_application_submitted': 'project_application',
     'project_application_approved': 'project_application',
@@ -313,7 +512,7 @@ private static getPointsCategory(eventType: string): string {
     'daily_login': 'daily_login'
   };
 
-  return categoryMap[eventType] ?? 'special_event';
+  return categoryMap[normalizedEventType] ?? 'special_event';
 }
 
 /**
@@ -334,7 +533,6 @@ private static async awardPointsToDb(
       userId: userId,
       points,
       reason,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
       category: category as any,
       metadata,
       createdAt: new Date()
@@ -400,57 +598,363 @@ private static async updateUserProfilePoints(userId: string, pointsToAdd: number
   }
 }
 
-/**
- * Validate system health and log status
- */
-static async validateSystemHealth(): Promise<{
-  isHealthy: boolean;
-  databaseConnection: boolean;
-  gamificationEngine: boolean;
-  errors: string[];
-}> {
-  console.log(`🔍 Validating gamification system health...`);
-  const errors: string[] = [];
-  let databaseConnection = false;
-  let gamificationEngine = false;
+  /**
+   * Check and unlock achievements based on user progress and events
+   */
+  private static async checkAndUnlockAchievements(userId: string, eventType: string, totalPoints: number): Promise<void> {
+    try {
+      console.log(`🎯 Checking achievements for user ${userId}, event: ${eventType}, points: ${totalPoints}`);
 
-  try {
-    // Test database connection
-    await db.select().from(gamificationProfiles).limit(1);
-    databaseConnection = true;
-    console.log(`✅ Database connection: OK`);
-  } catch (error) {
-    errors.push(`Database connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    console.error(`❌ Database connection: FAILED`, error);
+      // First, find the user_id from users table using wallet_address
+      const user = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.walletAddress, userId))
+        .limit(1);
+
+      if (!user || user.length === 0 || !user[0]) {
+        return;
+      }
+
+      const userIdInt = user[0].id;
+
+      // Create basic achievements if they don't exist
+      await this.initializeBasicAchievements();
+
+      // Check for specific achievements based on event
+      if (eventType === 'DAILY_LOGIN') {
+        // Unlock "Primer Login" achievement
+        await this.unlockAchievement(userId, 'primer_login');
+        console.log(`🎉 Unlocked "Primer Login" achievement for user ${userId}`);
+      }
+
+      // 🎯 PROJECT APPLICATION: Achievement por primera aplicación enviada
+      if (eventType === 'project_application_submitted') {
+        await this.unlockAchievement(userId, 'primer_aplicante');
+        console.log(`🎉 Unlocked "Primer Aplicante" achievement for user ${userId}`);
+      }
+
+      // 🎯 PROJECT APPROVAL: Achievement por proyecto aprobado por admin
+      if (eventType === 'project_application_approved') {
+        await this.unlockAchievement(userId, 'proyecto_aprobado');
+        console.log(`🎉 Unlocked "Proyecto Aprobado" achievement for user ${userId}`);
+      }
+
+      // 🎯 REFERIDOS: Achievement por primer referido exitoso
+      if (eventType === 'referral_made') {
+        await this.unlockAchievement(userId, 'promotor_de_comunidad');
+        console.log(`🎉 Unlocked "Promotor de Comunidad" achievement for referrer ${userId}`);
+      }
+
+      // 🎯 NUEVOS: MAPPINGS FALTANTES PARA CURSOS
+      if (eventType === 'COURSE_STARTED') {
+        await this.unlockAchievement(userId, 'curso_iniciado');
+        console.log(`🎉 Unlocked "Curso Iniciado" achievement for user ${userId}`);
+      }
+
+      if (eventType === 'COURSE_COMPLETED') {
+        await this.unlockAchievement(userId, 'curso_completado');
+        console.log(`🎉 Unlocked "Curso Completado" achievement for user ${userId}`);
+      }
+
+      // Check for other achievements based on total points
+      if (totalPoints >= 25) {
+        await this.unlockAchievement(userId, 'explorador_intrépido');
+        console.log(`🎉 Unlocked "Explorador Intrépido" achievement for user ${userId}`);
+      }
+
+      if (totalPoints >= 100) {
+        await this.unlockAchievement(userId, 'primer_aplicante');
+        console.log(`🎉 Unlocked "Primer Aplicante" achievement for user ${userId}`);
+      }
+
+      console.log(`✅ Achievement check complete for user ${userId}`);
+    } catch (error) {
+      console.error(`❌ Error checking achievements for user ${userId}:`, error);
+      // Don't throw error here - achievements are bonus features
+    }
   }
 
-  try {
-    // Test gamification engine
-    const engine = GamificationEngine.getInstance();
-    gamificationEngine = !!engine;
-    console.log(`✅ Gamification engine: OK`);
-  } catch (error) {
-    errors.push(`Gamification engine failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    console.error(`❌ Gamification engine: FAILED`, error);
+  /**
+   * Initialize basic achievements in database
+   */
+  private static async initializeBasicAchievements(): Promise<void> {
+    try {
+      // 🙋‍♂️ DASHBOARD SPECIFIC ACHIEVEMENTS (equivalents to package achievements)
+      const basicAchievements = [
+        {
+          name: "Primer Login",
+          description: "Conecta tu wallet exitosamente",
+          icon: "🔗",
+          type: "community_builder" as any,
+          required_points: 10,
+          required_level: 1,
+          required_events: JSON.stringify(["DAILY_LOGIN"]),
+          points_reward: 0,
+          badge_url: "/badges/first-login.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
+        },
+        {
+          name: "Explorador Intrépido",
+          description: "Gana tus primeros 25 tokens",
+          icon: "🔍",
+          type: "explorer" as any,
+          required_points: 25,
+          required_level: 1,
+          required_events: JSON.stringify([]),
+          points_reward: 0,
+          badge_url: "/badges/explorer.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
+        },
+        {
+          name: "Primer Aplicante",
+          description: "Gana 100 tokens por actividades",
+          icon: "📝",
+          type: "creator" as any,
+          required_points: 100,
+          required_level: 1,
+          required_events: JSON.stringify([]),
+          points_reward: 0,
+          badge_url: "/badges/applicant.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
+        },
+        {
+          name: "Promotor de Comunidad",
+          description: "Obtén tu primer referido exitoso",
+          icon: "🎯",
+          type: "social" as any,
+          required_points: 0,
+          required_level: 1,
+          required_events: JSON.stringify(["referral_made"]),
+          points_reward: 500,
+          badge_url: "/badges/referrer.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
+        },
+        {
+          name: "Proyecto Aprobado",
+          description: "Tu proyecto fue aprobado por el equipo de Pandora's",
+          icon: "✅",
+          type: "creator" as any,
+          required_points: 0,
+          required_level: 1,
+          required_events: JSON.stringify(["project_application_approved"]),
+          points_reward: 100,
+          badge_url: "/badges/project-approved.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
+        },
+        {
+          name: "Maestro Recrutador",
+          description: "Ayuda a 5 personas a unirse",
+          icon: "🎉",
+          type: "social" as any,
+          required_points: 0,
+          required_level: 1,
+          required_events: JSON.stringify([]),
+          points_reward: 1000,
+          badge_url: "/badges/recruiter.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
+        }
+      ];
+
+      // First import and convert TOKENIZATION_ACHIEVEMENTS from package
+      // (Dynamic import to avoid build issues if package is not available)
+      try {
+        const { TOKENIZATION_ACHIEVEMENTS } = await import('@pandoras/gamification');
+        console.log(`📦 Loading ${TOKENIZATION_ACHIEVEMENTS.length} achievements from package...`);
+
+        // Convert package achievements to dashboard format
+        const packageAchievements = TOKENIZATION_ACHIEVEMENTS.map(pkgAchievement => ({
+          name: pkgAchievement.name,
+          description: pkgAchievement.description,
+          icon: pkgAchievement.icon,
+          type: pkgAchievement.category as any,
+          required_points: pkgAchievement.points,
+          required_level: 1,
+          required_events: JSON.stringify(pkgAchievement.requirements),
+          points_reward: pkgAchievement.points,
+          badge_url: `/${pkgAchievement.category}-badges/${pkgAchievement.id}`,
+          is_active: pkgAchievement.isActive,
+          is_secret: pkgAchievement.isSecret,
+          created_at: new Date()
+        }));
+
+        // Merge with dashboard achievements
+        const allAchievements = [...basicAchievements, ...packageAchievements];
+        console.log(`🏆 Total achievements to initialize: ${allAchievements.length}`);
+
+        // Only insert if not exists (by name)
+        for (const achievement of allAchievements) {
+          const exists = await db
+            .select()
+            .from(achievements)
+            .where(eq(achievements.name, achievement.name))
+            .limit(1);
+
+          if (exists.length === 0) {
+            await db.insert(achievements).values(achievement);
+            console.log(`🏆 Created achievement: ${achievement.name}`);
+          }
+        }
+
+        console.log(`✅ Achievements initialization complete: ${allAchievements.length} total`);
+      } catch (importError) {
+        console.warn('⚠️ Could not import TOKENIZATION_ACHIEVEMENTS from package, using only basic achievements:', importError);
+
+        // Fallback to basic achievements only
+        for (const achievement of basicAchievements) {
+          const exists = await db
+            .select()
+            .from(achievements)
+            .where(eq(achievements.name, achievement.name))
+            .limit(1);
+
+          if (exists.length === 0) {
+            await db.insert(achievements).values(achievement);
+            console.log(`🏆 Created achievement: ${achievement.name}`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error initializing basic achievements:', error);
+      // Don't throw - this is optional
+    }
   }
 
-  const isHealthy = databaseConnection && gamificationEngine && errors.length === 0;
+  /**
+   * Unlock achievement for user if not already unlocked
+   */
+  private static async unlockAchievement(userIdString: string, achievementName: string): Promise<void> {
+    try {
+      // Find achievement by name
+      const achievement = await db
+        .select()
+        .from(achievements)
+        .where(eq(achievements.name, achievementName))
+        .limit(1);
 
-  console.log(`🏥 System health check complete: ${isHealthy ? 'HEALTHY' : 'UNHEALTHY'}`);
-  if (errors.length > 0) {
-    console.log(`🚨 Errors found:`, errors);
+      if (!achievement || achievement.length === 0 || !achievement[0]) {
+        console.error(`Achievement "${achievementName}" not found`);
+        return;
+      }
+
+      const achievementId = achievement[0].id;
+
+      // Get user numeric ID from string
+      const user = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.walletAddress, userIdString))
+        .limit(1);
+
+      if (!user || user.length === 0 || !user[0]) {
+        console.error(`User not found for wallet ${userIdString}`);
+        return;
+      }
+
+      const userIdInt = user[0].id;
+
+      // Check if user already has this achievement unlocked using raw SQL
+      const existingResult = await db.execute(sql`
+        SELECT * FROM user_achievements
+        WHERE user_id = ${userIdInt} AND achievement_id = ${achievementId}
+        LIMIT 1
+      `);
+
+      const existingRows = (existingResult as any).rows || [];
+      if (existingRows.length > 0 && existingRows[0].is_unlocked) {
+        return; // Already unlocked
+      }
+
+      if (existingRows.length > 0) {
+        // Update existing using raw SQL
+        await db.execute(sql`
+          UPDATE user_achievements
+          SET
+            progress = 100,
+            is_unlocked = true,
+            unlocked_at = NOW(),
+            last_updated = NOW()
+          WHERE user_id = ${userIdInt} AND achievement_id = ${achievementId}
+        `);
+      } else {
+        // Insert new achievement for user
+        await db.execute(sql`
+          INSERT INTO user_achievements
+          (user_id, achievement_id, progress, is_unlocked, unlocked_at, last_updated)
+          VALUES (${userIdInt}, ${achievementId}, 100, true, NOW(), NOW())
+        `);
+      }
+
+      console.log(`🎉 Achievement unlocked: ${achievementName} for user ${userIdString}`);
+    } catch (error) {
+      console.error(`Error unlocking achievement ${achievementName}:`, error);
+      // Don't throw - achievements are bonus features
+    }
   }
 
-  return {
-    isHealthy,
-    databaseConnection,
-    gamificationEngine,
-    errors
-  };
+  /**
+   * Validate system health and log status
+   */
+  static async validateSystemHealth(): Promise<{
+    isHealthy: boolean;
+    databaseConnection: boolean;
+    gamificationEngine: boolean;
+    errors: string[];
+  }> {
+    console.log(`🔍 Validating gamification system health...`);
+    const errors: string[] = [];
+    let databaseConnection = false;
+    let gamificationEngine = false;
+
+    try {
+      // Test database connection
+      await db.select().from(gamificationProfiles).limit(1);
+      databaseConnection = true;
+      console.log(`✅ Database connection: OK`);
+    } catch (error) {
+      errors.push(`Database connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error(`❌ Database connection: FAILED`, error);
+    }
+
+    try {
+      // Test gamification engine
+      const engine = GamificationEngine.getInstance();
+      gamificationEngine = !!engine;
+      console.log(`✅ Gamification engine: OK`);
+    } catch (error) {
+      errors.push(`Gamification engine failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error(`❌ Gamification engine: FAILED`, error);
+    }
+
+    const isHealthy = databaseConnection && gamificationEngine && errors.length === 0;
+
+    console.log(`🏥 System health check complete: ${isHealthy ? 'HEALTHY' : 'UNHEALTHY'}`);
+    if (errors.length > 0) {
+      console.log(`🚨 Errors found:`, errors);
+    }
+
+    return {
+      isHealthy,
+      databaseConnection,
+      gamificationEngine,
+      errors
+    };
+  }
 }
-}
 
-// Export individual functions for API routes (using arrow functions to avoid 'this' issues)
+// Export individual functions for API routes AND frontend usage
 export const getUserGamificationProfile = async (userId: string) => GamificationService.getUserProfile(userId);
 export const trackGamificationEvent = async (userId: string, eventType: string, metadata?: Record<string, unknown>) =>
 GamificationService.trackEvent(userId, eventType, metadata);
@@ -459,6 +963,8 @@ GamificationService.awardPoints(userId, points, reason, category, metadata);
 export const getGamificationLeaderboard = async (type: string, limit?: number) => GamificationService.getLeaderboard(type, limit);
 export const getUserGamificationAchievements = async (userId: string) => GamificationService.getUserAchievements(userId);
 export const getAvailableGamificationRewards = async (userId: string) => GamificationService.getAvailableRewards(userId);
+
+
 
 /**
  * Initialize gamification data with sample achievements and rewards
@@ -473,7 +979,6 @@ export async function initializeGamificationData(): Promise<void> {
         name: "Primeros Pasos",
         description: "Completa tu primera aplicación de proyecto",
         icon: "🎯",
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
         type: "first_steps" as any,
         requiredPoints: 50,
         requiredLevel: 1,
@@ -488,7 +993,6 @@ export async function initializeGamificationData(): Promise<void> {
         name: "Inversionista Activo",
         description: "Realiza tu primera inversión",
         icon: "💎",
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
         type: "investor" as any,
         requiredPoints: 100,
         requiredLevel: 2,
@@ -503,7 +1007,6 @@ export async function initializeGamificationData(): Promise<void> {
         name: "Constructor de Comunidad",
         description: "Participa activamente en la comunidad",
         icon: "🌟",
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
         type: "community_builder" as any,
         requiredPoints: 200,
         requiredLevel: 3,
@@ -526,7 +1029,6 @@ export async function initializeGamificationData(): Promise<void> {
         name: "Descuento Token 10%",
         description: "10% de descuento en tu próxima inversión",
         icon: "💰",
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
         type: "token_discount" as any,
         requiredPoints: 100,
         requiredLevel: 2,
@@ -541,7 +1043,6 @@ export async function initializeGamificationData(): Promise<void> {
         name: "Acceso Prioritario",
         description: "Acceso anticipado a nuevos proyectos",
         icon: "⚡",
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
         type: "priority_access" as any,
         requiredPoints: 250,
         requiredLevel: 3,
@@ -555,8 +1056,7 @@ export async function initializeGamificationData(): Promise<void> {
       {
         name: "NFT Exclusivo",
         description: "NFT conmemorativo de Pandora's Finance",
-        icon: "🎨",
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+        icon: "�",
         type: "nft" as any,
         requiredPoints: 500,
         requiredLevel: 5,
