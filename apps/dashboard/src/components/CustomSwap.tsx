@@ -178,7 +178,7 @@ function useTokenList(chainId: number) {
         const bridgeTokens = await Bridge.tokens({ client });
         const mappedTokens = bridgeTokens.map((t) => ({
           name: t.name,
-          address: t.address as `0x${string}`,
+          address: t.address,
           symbol: t.symbol,
           decimals: t.decimals,
           chainId: t.chainId,

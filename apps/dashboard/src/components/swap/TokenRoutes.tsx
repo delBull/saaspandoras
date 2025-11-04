@@ -33,7 +33,7 @@ export function TokenRoutes({ fromChainId, toChainId, fromToken, toToken, onRout
         // Map Thirdweb tokens to our Token interface
         const mappedTokens = allTokens.map((t) => ({
           name: t.name,
-          address: t.address as `0x${string}`,
+          address: t.address,
           symbol: t.symbol,
           decimals: t.decimals,
           chainId: t.chainId,
