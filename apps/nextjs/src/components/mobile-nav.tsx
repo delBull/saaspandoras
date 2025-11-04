@@ -13,10 +13,15 @@ interface MobileNavProps {
   children?: React.ReactNode;
   menuItemClick?: () => void;
   url: string;
+  lang?: string;
 }
 
-export function MobileNav({ items, children, menuItemClick, url }: MobileNavProps) {
+export function MobileNav({ items, children, menuItemClick, url, lang }: MobileNavProps) {
   useLockBody();
+
+  // Use the lang prop directly, fallback to extracting from URL
+  const currentLang = lang ?? url.split('/')[1] ?? 'es';
+
   return (
     <div
       className={cn(
@@ -25,7 +30,7 @@ export function MobileNav({ items, children, menuItemClick, url }: MobileNavProp
       )}
     >
       <div className="relative z-20 grid gap-6 rounded-md bg-popover p-4 text-popover-foreground shadow-md">
-        <Link href="/" className="flex items-center space-x-2">
+        <Link href={`/${currentLang}`} className="flex items-center space-x-2">
           <Image
               src="/images/logo.png"
               alt="Pandora's Logo"
@@ -52,7 +57,7 @@ export function MobileNav({ items, children, menuItemClick, url }: MobileNavProp
             ) : (
               <Link
                 key={idx}
-                href={item.disabled ? "#" : item.href}
+                href={item.disabled ? "#" : `/${currentLang}${item.href}`}
                 className={cn(
                   "p-2 rounded-md hover:underline",
                   item.disabled && "opacity-50",

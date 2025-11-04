@@ -256,7 +256,7 @@ interface ShimmerDotHeroProps {
 
 export const ShimmerDotHero = ({ dict }: ShimmerDotHeroProps) => {
   return (
-    <section className="relative grid h-screen w-full place-content-center overflow-hidden px-4 md:px-8 xl:px-16">
+    <section className="relative grid h-screen w-full place-content-center overflow-hidden">
       <PerlinWall 
         shapeType="Circle"
         size={4}

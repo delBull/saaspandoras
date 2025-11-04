@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 
 export function AboutPandoras({ dict }: { dict: any }) {
   return (
-    <section className="container mx-auto py-16">
+    <section className="container-reduced mx-auto py-16">
       <div
         className="relative p-8 rounded-xl shadow-lg max-w-5xl mx-auto"
         style={{
@@ -34,7 +34,7 @@ export function AboutPandoras({ dict }: { dict: any }) {
         {/* First Row */}
         <div className="flex justify-end">
           <div className="flex flex-col md:flex-row items-right text-right md:items-start w-full md:w-2/4 gap-4">
-            <h2 className="text-5xl font-bold mb-4 font-mono">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 font-mono">
               {dict.problem_we_solve.title}
             </h2>
             <ul className="text-xl text-neutral-600 dark:text-neutral-300 inline-block text-right md:text-left">

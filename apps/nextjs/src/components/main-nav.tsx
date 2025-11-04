@@ -26,6 +26,19 @@ export function MainNav({ items, children, params: { lang } }: MainNavProps) {
   const handleMenuItemClick = () => {
     toggleMenu();
   };
+
+  // Calculate basePath for LocaleChange (same logic as NavBar)
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+  const getBasePath = () => {
+    if (!pathname) return "";
+    const segments = pathname.split('/');
+    if (segments[1] === lang) {
+      return segments.slice(2).join('/');
+    }
+    return segments.slice(1).join('/');
+  };
+  const basePath = getBasePath();
+
   return (
     <div className="flex gap-0 md:gap-10">
       <div className="flex items-center">
@@ -61,7 +74,7 @@ export function MainNav({ items, children, params: { lang } }: MainNavProps) {
         <span className="font-bold">Menu</span>
       </button>
       {showMobileMenu && items && (
-        <MobileNav url={`/${lang}`} items={items} menuItemClick={handleMenuItemClick}>
+        <MobileNav url={basePath} items={items} menuItemClick={handleMenuItemClick} lang={lang}>
           {children}
         </MobileNav>
       )}
