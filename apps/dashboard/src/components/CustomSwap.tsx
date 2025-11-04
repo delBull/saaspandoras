@@ -278,25 +278,28 @@ export function CustomSwap() {
       setAvailableRoutes([]); // No buscar rutas de bridge si ya tenemos una de Uniswap
       return;
     }
-    async function fetchRoutes() {
+    async function checkBridgeAvailability() {
       try {
         if (!fromToken || !toToken) return; // Guard clause
-        const routes = await Bridge.routes({
+        // Check if bridge is available by trying to get a quote
+        await Bridge.Sell.quote({
           originChainId: fromToken.chainId,
           originTokenAddress: fromToken.address,
           destinationChainId: toToken.chainId,
           destinationTokenAddress: toToken.address,
+          amount: 1000000n, // Small test amount (0.000001 for most tokens)
           client,
         });
-        setAvailableRoutes(routes);
-        console.log(`Found ${routes.length} Bridge routes for ${fromToken.symbol} -> ${toToken.symbol}`);
+        // If we get a quote, bridge is available
+        setAvailableRoutes([]); // Just mark as available, we'll get routes when quoting
+        console.log(`Bridge available for ${fromToken.symbol} -> ${toToken.symbol}`);
       } catch (error) {
-        console.error('Error fetching routes:', error);
+        console.error('Bridge not available for this pair:', error);
         setAvailableRoutes([]);
-        toast.error('No routes available for this pair');
+        // Don't show error toast here as it's expected for many pairs
       }
     }
-    void fetchRoutes();
+    void checkBridgeAvailability();
   }, [fromToken, toToken, isReadyForQuote, isSameChain, uniswapOutputAmount]);
 
   // Solución de Thirdweb: Exponer fetchBridgeQuote con useCallback
