@@ -6,12 +6,18 @@ interface MobileModalProps {
   isOpen: boolean;
   onClose: () => void;
   pendingProjects: Project[];
+  approvedProjects?: Project[];
+  title?: string;
 }
 
-export function MobileModal({ isOpen, onClose, pendingProjects }: MobileModalProps) {
+export function MobileModal({ isOpen, onClose, pendingProjects, approvedProjects, title }: MobileModalProps) {
+  // Si hay approvedProjects, usamos esos, si no, usamos pending
+  const displayProjects = approvedProjects ?? pendingProjects;
+  const displayTitle = title ?? 'Creaciones en Revisión';
+  const displayVariant: 'pending' | 'approved' = approvedProjects ? 'approved' : 'pending';
   return (
-    <div className={`fixed inset-0 z-50 lg:hidden transform transition-transform duration-500 ${
-      isOpen ? 'translate-y-0' : 'translate-y-full'
+    <div className={`fixed inset-0 z-50 lg:hidden transition-all duration-300 ease-out ${
+      isOpen ? 'opacity-100 translate-y-0 visible' : 'opacity-0 translate-y-full invisible'
     }`}>
       {/* Backdrop */}
       <button
@@ -23,22 +29,23 @@ export function MobileModal({ isOpen, onClose, pendingProjects }: MobileModalPro
         aria-label="Cerrar modal"
       />
 
-      {/* Modal Panel */}
-      <div className="absolute bottom-0 left-0 right-0 bg-zinc-900 min-h-[90vh] overflow-hidden border-t border-zinc-800">
+      {/* Modal Panel - Consistent margins like "Creaciones en Revisión" */}
+      <div className="absolute inset-x-0 top-20 bottom-20 md:bottom-6 bg-zinc-900 rounded-lg overflow-hidden border border-zinc-800 shadow-2xl mx-0 md:mx-2">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-zinc-800">
-          <h3 className="text-xl font-bold text-white">Creaciones en Revisión</h3>
+        <div className="flex items-center justify-between p-4 border-b border-zinc-800 bg-zinc-900/95">
+          <h3 className="text-lg font-bold text-white">{displayTitle}</h3>
           <button
             onClick={onClose}
             className="p-2 hover:bg-zinc-800 rounded-full transition-colors"
+            aria-label="Cerrar"
           >
-            <X className="w-6 h-6 text-gray-400" />
+            <X className="w-5 h-5 text-gray-400 hover:text-white" />
           </button>
         </div>
 
-        {/* Content */}
-        <div className="overflow-y-auto max-h-[calc(90vh-81px)] p-6 pt-2">
-          <ProjectGrid projects={pendingProjects} variant="pending" />
+        {/* Content with proper scrolling */}
+        <div className="overflow-y-auto h-[calc(100%-60px)] p-2">
+          <ProjectGrid projects={displayProjects} variant={displayVariant} />
         </div>
       </div>
     </div>

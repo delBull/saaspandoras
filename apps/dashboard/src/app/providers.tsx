@@ -3,14 +3,36 @@
 import "./globals.css";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
-import { ThirdwebProvider, AutoConnect } from "thirdweb/react";
+import { ThirdwebProvider, AutoConnect, useActiveAccount } from "thirdweb/react";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { client } from "@/lib/thirdweb-client";
 import { useThirdwebUserSync } from "@/hooks/useThirdwebUserSync";
+// 🎮 IMPORTAR GAMIFICATION PROVIDER
+import { GamificationProvider } from "@pandoras/gamification";
 
 function UserSyncWrapper() {
   useThirdwebUserSync();
   return null;
+}
+
+// 🎮 COMPONENTE PARA INTEGRAR GAMIFICACIÓN
+function GamificationWrapper({ children }: { children: React.ReactNode }) {
+  // Hook para obtener el userId del contexto de autenticación
+  const account = useActiveAccount();
+  const userId = account?.address;
+
+  // Solo mostrar gamificación si hay usuario logueado
+  if (!userId) return <>{children}</>;
+
+  return (
+    <GamificationProvider
+      userId={userId}
+      showHUD={true}
+      hudPosition="top-right"
+    >
+      {children}
+    </GamificationProvider>
+  );
 }
 
 export function Providers({
@@ -45,7 +67,7 @@ export function Providers({
         <AutoConnect
           client={client}
           wallets={wallets}
-          timeout={15000}
+          timeout={3000}  // Mucho menos agresivo para evitar spamming
           onConnect={(wallet) => {
             if (process.env.NODE_ENV === 'development') {
               console.log("🔗 AutoConnect: Wallet conectada automáticamente", wallet.id);
@@ -53,11 +75,14 @@ export function Providers({
           }}
           onTimeout={() => {
             if (process.env.NODE_ENV === 'development') {
-              console.log("⏰ AutoConnect: Timeout alcanzado");
+              console.log("⏰ AutoConnect: Timeout alcanzado, sin modal forzoso");
             }
           }}
         />
-        {children}
+        {/* 🎮 INTEGRAR GAMIFICATION WRAPPER */}
+        <GamificationWrapper>
+          {children}
+        </GamificationWrapper>
         <UserSyncWrapper />
         <Toaster
           theme="dark"

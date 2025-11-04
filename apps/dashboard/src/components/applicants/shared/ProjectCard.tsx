@@ -32,7 +32,7 @@ export function ProjectCard({ project, variant = 'approved', gridColumns = 3 }: 
         return `${baseClasses} border-gray-200 dark:border-zinc-700 max-w-[280px]`;
       case 3:
       default:
-        return `${baseClasses} border-gray-200 dark:border-zinc-700 max-w-[320px]`;
+        return `${baseClasses} border-gray-200 dark:border-zinc-700 max-w-full]`;
     }
   };
 
@@ -95,6 +95,20 @@ export function ProjectCard({ project, variant = 'approved', gridColumns = 3 }: 
             </span>
           </div>
         )}
+        {project.status === 'live' && (
+          <div className="absolute top-2 right-2">
+            <span className="px-2 py-1 text-xs font-medium bg-lime-500/90 text-black rounded-full">
+              Desatado
+            </span>
+          </div>
+        )}
+        {project.status === 'approved' && (
+          <div className="absolute top-2 right-2">
+            <span className="px-2 py-1 text-xs font-medium bg-green-500/90 text-black rounded-full">
+              Aprobado
+            </span>
+          </div>
+        )}
       </div>
 
       <div className={`flex flex-col flex-grow ${getPadding()}`}>
@@ -143,7 +157,7 @@ export function ProjectCard({ project, variant = 'approved', gridColumns = 3 }: 
           } ${variant === 'pending' ? 'text-lime-400' : 'text-emerald-400'}`}>
             <EyeIcon className={`${gridColumns === 6 ? 'w-3 h-3' : 'w-4 h-4'} flex-shrink-0`} />
             <span className={`truncate ${gridColumns === 6 ? 'hidden' : gridColumns === 4 ? 'hidden sm:inline' : 'inline'}`}>
-              {gridColumns === 6 ? 'Ver' : gridColumns === 4 ? 'Ver' : 'Ver Proyecto'}
+              {gridColumns === 6 || gridColumns === 4 ? 'Ver' : 'Ver Proyecto'}
             </span>
           </Link>
         </div>

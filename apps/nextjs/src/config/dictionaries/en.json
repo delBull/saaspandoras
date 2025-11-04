@@ -25,13 +25,13 @@
   },
   "marketing": {
     "introducing": "Introducing Pandora's",
-    "title": "Invest in exclusive properties easily and securely ",
-    "sub_title": "Getting digital shares with exclusive opportunities has never been easier",
+    "title": "Interactive Communities. Incentive Systems.",
+    "sub_title": "Build loyalty protocols, create participation systems, design NFT memberships that matter",
     "get_started": "How?",
-    "hero_supertitle": "THE FUTURE OF INVESTMENT, THE NEW ERA",
-    "hero_title": "INCLUSIVE INVESTMENT IN REAL ASSETS",
-    "hero_subtitle": "Tokenize your participation, receive real returns and join a new era without intermediaries.",
-    "hero_cta1": "Get started now",
+    "hero_supertitle": "THE AWAKENING OF UTILITY",
+    "hero_title": "Build on web3",
+    "hero_subtitle": "Tokens are not speculation... they are the natural evolution of communities.",
+    "hero_cta1": "Start Building",
     "hero_cta2": "How it works",
     "hero_cta3": "Why Pandora's?",
     "view_on_github": "View on GitHub",
@@ -42,7 +42,7 @@
     "devops_features": "Effortless Project Launch",
     "price_features": "Cost-effective in production environments",
     "main_nav_business": "Apply",
-    "main_nav_assets": "Assets",
+    "main_nav_assets": "Creations",
     "main_nav_invest": "Stake",
     "main_nav_products": "Products",
     "main_nav_blog": "Blog",
@@ -75,83 +75,92 @@
       "nextauth_desc": ""
     },
     "investment_steps": {
-      "title": "Investing is as easy as →",
+      "title": "Building on web3 is as simple as →",
       "steps": [
         {
-          "title": "Getting your free share",
-          "content": "Get instant access with a free passkey that unlocks the platform for you.",
-          "caption": "Register and get your free digital share that allows you to invest in exclusive properties."
+          "title": "Create Your Community",
+          "content": "Awaken instantly with a magical digital key that grants you sovereign access to Pandora.",
+          "caption": "Sign up and claim your sovereign digital identity that allows you to create unforgettable communities."
         },
         {
-          "title": "Invest at a special price",
-          "content": "Invest at preferential prices during legal and regulated presales.",
-          "caption": "Use your share to invest at a special price during our presale."
+          "title": "Design Your Protocols",
+          "content": "Create participatory incentive systems and smart contracts that blossom with your imagination.",
+          "caption": "Use your identity to design utility protocols that transform spectators into active creators."
         },
         {
-          "title": "Earn and Grow",
-          "content": "Earn from day one with rent, capital gains, and the possibility of co-ownership.",
-          "caption": "With your investment, you will access exclusive benefits."
+          "title": "Experiment in Pandora's Laboratory",
+          "content": "Test your imagination: create memberships with sovereign NFTs and design Work-to-Earn protocols that awaken communities.",
+          "caption": "Experiment for free and watch how your community comes to collective life from the first moment."
         }
       ]
     },
     "dashboard": {
-      "config_panel": "Panel de configuración y flujo de la plataforma",
-      "investments_panel": "Inversiones activas y rendimientos en tiempo real"
+      "config_panel": "Configuration panel and platform flow",
+      "investments_panel": "Active investments and real-time returns"
     },
     "sponsor": {
-      "title": "Ready to transform the way you invest?",
-      "donate": "Diversify across different assets",
-      "subtitle": "Become part of Pandora's today and access a new era of real digital assets"
+      "title": "Choose your evolution: Web2 vs Web3?",
+      "donate": "Build with Pandora",
+      "subtitle": "It's not a question... it's an inevitable evolution."
+    },
+    "hero_typewriter": {
+      "title": "Build on web3",
+      "subtitle": "Your community comes alive.",
+      "typewriter_words": [
+        { "text": "Build Loyalty Protocols.", "cursorColor": "#A3E635", "contentColor": "#A3E635" },
+        { "text": "Participatory Incentive Systems.", "cursorColor": "#7b1b74", "contentColor": "#7b1b74" },
+        { "text": "Design Real NFT Memberships.", "cursorColor": "#A3E635", "contentColor": "#A3E635" }
+      ]
     },
     "video": {
-      "first_text": "Obtain digital shares representing a portion ",
-      "second_text1": "of the property's value, to participate in exclusive real world asset ",
-      "time_text": "investments",
-      "second_text2": "",
+      "first_text": "Forge unique membership crystals and design ritual incentives that transform ",
+      "second_text1": "passive spectators into active creators. Participate in the community forging process through ",
+      "time_text": "creative sorcery",
+      "second_text2": "Try our experimental community construction laboratories",
       "academic_backing": {
         "title": "Data and academic support",
-        "subtitle": "Tokenizable assets are projected to reach 6 trillion USD in 2030 thanks to the digital transformation of real markets."
+        "subtitle": "Incentivized communities are projected to generate 12 trillion USD in creative value for 2030 through active participation systems."
       }
     },
     "transform_token": {
-      "title": "Enjoy Exclusive Benefits",
-      "desc": "Accumulate more shares and access unique privileges, earn rental income and enjoy the possibility of converting your investment into full ownership.",
+      "title": "The Open Toolbox",
+      "desc": "Radical transparency: our tools are your creation arsenal. You have sovereign control over your protocols.",
       "more_details": "More Details",
       "close": "Close",
-      "part1_title": "Unlock Exclusive Privileges",
-      "part1_content": "Imagine each share you acquire not only represents your investment but also opens doors to a world of exclusive privileges. Over time, as you accumulate more shares, you'll gain access to special events, personalized support, and privileged information about our premium developments. This benefit positions you to be part of a select community, where your investment provides unique experiences reserved only for our most committed members.",
-      "part2_title": "Earn Rental Income and Full Ownership Opportunities",
-      "part2_content": "In addition to privileges, your shares allow you to earn rental income, as the property generates income during the rental period. When you reach a certain number of shares, you'll have the opportunity to convert your investment into full ownership, transforming your participation into a tangible, high-value asset. This approach provides you with immediate and long-term benefits, driven by the success and appreciation of the project."
+      "part1_title": "Audited Contracts",
+      "part1_content": "Discover our audited smart contracts. You are the sovereign owner of your protocols. No intermediary controls your creation.",
+      "part2_title": "SaaS Model Without Hidden Fees",
+      "part2_content": "You build once, you maintain forever. Our smart contracts execute your logic on the eternal blockchain."
     },
     "people_comment": {
       "title": "What People Are Saying",
       "desc": "Don’t just take our word for it. Here’s what real users are saying about Pandoras."
     },
     "what_is_pandoras": {
-      "title": "What is Pandora's Finance?",
-      "description": "Pandora's transforms real assets (real estate and startups) into accessible digital opportunities. Without intermediaries, backed by a legal trust, blockchain technology, and a vision of the financial future.",
-      "feature_1": "Legal and regulated",
-      "feature_2": "Global and inclusive access",
-      "feature_3": "Tokenized real assets"
+      "title": "The Pandora Manifesto",
+      "description": "We believe that work must be rewarded, not just investment. Digital property is not a 'ticker'... it is a right to participation. Transparency is not a 'feature'... it is the foundation of trust. We are the natural evolution of creator communities.",
+      "feature_1": "Work actively rewarded",
+      "feature_2": "Participation and real property",
+      "feature_3": "Transparency as foundation"
     },
     "problem_we_solve": {
       "title": "The Problem We Solve",
-      "problem_1": "High amounts and intermediaries that make investment more expensive.",
-      "problem_2": "Limited liquidity: properties take time to sell.",
-      "problem_3": "Lack of transparency and traceability in traditional processes.",
-      "solution": "Solution with Pandora's: accessible, liquid, and secure investments."
+      "problem_1": "Communities with limited participation and artificial engagement.",
+      "problem_2": "Technical barriers that prevent launching incentive systems.",
+      "problem_3": "Centralized platforms that turn creators into mercenaries for others' businesses.",
+      "solution": "Pandora's solution: sovereign communities, no-code accessible tools, real digital ownership."
     },
     "benefits_market": {
-      "main_title": "Powerful Advantages",
-      "main_description": "We are facing an industry that is changing the way we see the digital world.",
-      "ventajas_title0": "",
-      "ventajas_description0": "",
-      "ventajas_title1": "Built Trust",
-      "ventajas_description1": "",
-      "ventajas_title2": "Data and academic support",
-      "ventajas_description2": "“Tokenizable assets are projected to reach $26 trillion USD in 2030 thanks to the digital transformation of real markets.” (Source: G2 Learn)",
-      "ventajas_title3": "An unstoppable trend",
-      "ventajas_description3": "The global real estate tokenization market could exceed $3 trillion USD by 2030, representing up to 15% of global real estate assets. Pandora's allows you to be part of this movement from today"
+      "main_title": "The Seven Seals of the Digital Box",
+      "main_description": "We discover the artifacts that keep your community's participation dormant. It's time to unleash their true potential!",
+      "ventajas_title0": "Seal 1: The Artifact of Silence",
+      "ventajas_description0": "Passive communities, dormant engagement, members who don't awaken. The awakening: Incentive Protocols (Work-to-Earn). Reward your community for the work that AWAKENS their creative essence.",
+      "ventajas_title1": "Seal 2: The Artifact of Complexity",
+      "ventajas_description1": "Labyrinths of development, costs that devour resources, fear of smart contracts. The awakening: No-Code Platform. Unleash your utility protocol in minutes, not months of confusion.",
+      "ventajas_title2": "Seal 3: The Artifact of Third-Party Control",
+      "ventajas_description2": "Your community lives in third-party platforms (Discord/Patreon/Facebook). You are not the guardian, others control the rules and devour the 30%. The awakening: Community Crystals (NFTs). Grant your members real and sovereign property.",
+      "ventajas_title3": "The Awakening: Your Creation Palette Web3",
+      "ventajas_description3": "You don't need to be a 'blockchain mage' to have a Web3 community. We empower you with the necessary crystals to forge systems of incentives that flourish. Make your community COME ALIVE!"
     },
     "skeleton_one": {
       "items": [
@@ -267,77 +276,77 @@
         "sign_out": "Sign Out"
       },
   "terms": {
-    "title": "Terms and Conditions",
-    "lastUpdate": "Last Updated: March 2025",
-    "tabTerms": "Terms & Conditions",
+    "title": "Terms of Use",
+    "lastUpdate": "Last Updated: October 2025",
+    "tabTerms": "Terms of Use",
     "tabPrivacy": "Privacy Policy",
     "sections": {
       "welcome": {
         "title": "Welcome to Pandora's Finance",
-        "content": "These terms and conditions govern the access and use of our digital platform and DApp, available at https://dapp.pandoras.finance/, as well as tokenization services, real estate participation purchases, and digital rights."
+        "content": "These terms and conditions ('Terms of Use') govern the access to and use of our software-as-a-service (SaaS) platform and DApp, available at https://dapp.pandoras.finance/ (the 'Platform'), as well as the services for issuing Digital Artifacts and acquiring digital rights and utilities."
       },
       "definitions": {
         "title": "Definitions",
         "items": [
-          "Platform: DApp and digital services by Pandoras.",
-          "Users: Natural or legal persons who access and use the services.",
-          "Real Estate Rights (NFTs): Digital assets that grant access to purchase real estate participations.",
-          "Real Estate Participations: Digital fractions representing a real estate asset.",
-          "Tokenization: Process of representing a real asset on blockchain through digital tokens."
+          "Platform: Pandora's SaaS technological services and DApp.",
+          "Users: Individuals or legal entities ('Creators' or 'Community') who access and use the services.",
+          "Access Artifacts (NFTs): Unique digital assets (NFTs) that grant the holder access to utility protocols, benefits, or specific 'Creations'.",
+          "Utility Rights: Specific digital benefits, access, or functionalities linked to an Access Artifact or a protocol within the Platform.",
+          "Artifact Issuance: The process of creating and registering a unique digital asset (NFT) on the blockchain, which represents a specific utility defined by a 'Creator'."
         ]
       },
       "usage": {
-        "title": "Platform Usage",
+        "title": "Platform Use",
         "items": [
-          "The Platform allows you to acquire Real Estate Rights (NFTs) for free, which grants access to purchase Real Estate Participations in selected projects.",
+          "The Platform allows 'Creators' to design and launch utility protocols, and the 'Community' to obtain Access Artifacts (NFTs) that grant Utility Rights in selected 'Creations'.",
           "Users must have a compatible digital wallet to interact with the Platform.",
-          "Pandoras is not a financial advisor and offers no guarantees on the profitability of investments made on the Platform."
+          "Pandora's operates as a technology platform (SaaS) and is not a financial, investment, or any other type of advisor. We do not offer guarantees on the value, liquidity, or future benefits of Digital Artifacts or Utility Rights."
         ]
       },
       "responsibility": {
-        "title": "Responsibility and Warranty Disclaimer",
+        "title": "Liability and Disclaimer of Warranties",
         "items": [
-          "Pandoras is not responsible for losses, risks, or value fluctuations of digitalized assets on the Platform.",
-          "The Platform operates on blockchain, therefore all transactions are irreversible and cannot be modified once confirmed.",
-          "Users accept that ownership of a Real Estate Right (NFT) does not equate to ownership of the physical property.",
+          "Pandora's is not responsible for the volatility, losses, risks, or value fluctuations of digital assets (like cryptocurrencies or Artifacts) used or acquired on the Platform.",
+          "The Platform operates on the blockchain, therefore all transactions are irreversible and cannot be modified once confirmed.",
+          "Users accept and understand that possessing an Access Artifact (NFT) only grants the utility rights or access specified in its 'Creation' (protocol), and does not confer ownership over the Pandora's company, its assets, or any underlying asset not explicitly defined in said protocol.",
           "The Platform reserves the right to modify, update, or suspend any service without prior notice."
         ]
       },
       "requirements": {
         "title": "User Requirements",
         "items": [
-          "Must be over 18 years old to use the Platform.",
-          "Agrees to comply with tax regulations in their country of residence.",
-          "Pandoras reserves the right to deny access to any user if suspicious activity is detected."
+          "You must be 18 years or older to use the Platform.",
+          "You agree to comply with the tax and legal regulations of your country of residence.",
+          "Pandora's reserves the right to refuse access to any user if suspicious activity or violations of these Terms are detected."
         ]
       },
       "payments": {
-        "title": "Payments and Fees",
+        "title": "Payments and Service Fees",
         "items": [
-          "Payments are made exclusively in cryptocurrencies or through approved methods.",
-          "Pandoras may charge fees for the use of certain services.",
-          "No refunds are offered once a token or participation purchase is completed."
+          "Service fee payments on the Platform are made exclusively in cryptocurrencies or via approved methods.",
+          "Pandora's, as a SaaS provider, charges fees for using the platform, issuing Artifacts, or interacting with protocols. These fees will be clearly communicated.",
+          "Due to the nature of the blockchain, all transactions (including service fee payments or Artifact acquisition) are final and irreversible. No refunds are offered."
         ]
       },
       "dataProtection": {
         "title": "Data Protection and Security",
         "items": [
-          "Personal data is processed according to our Privacy Policy.",
-          "The user is responsible for their account and credentials security.",
-          "Pandoras is not responsible for unauthorized access due to user negligence."
+          "Personal data is processed in accordance with our Privacy Policy.",
+          "The user is responsible for the security of their digital wallet and private keys.",
+          "Pandora's is not responsible for unauthorized access resulting from the user's negligence in safeguarding their credentials."
         ]
       },
       "law": {
         "title": "Applicable Law and Jurisdiction",
         "items": [
-          "These Terms are governed by Mexican law.",
-          "Any disputes will be resolved in competent courts in Mexico City, Mexico."
+          "These Terms of Use are governed by the laws of Mexico.",
+          "Any dispute will be resolved in the competent courts in Mexico City, Mexico."
         ]
       }
     },
     "acceptance": {
-      "title": "Terms and Conditions Acceptance",
-      "content": "By using the platform, you acknowledge having read and understood these Terms and Privacy Policy, accepting their compliance without reservations."
+      "title": "Acceptance of the Terms of Use",
+      "content": "By using the platform, you acknowledge that you have read and understood these Terms of Use and the Privacy Policy, agreeing to comply with them without reservation."
     }
   },
   "privacy": {
@@ -348,56 +357,56 @@
       "collection": {
         "title": "Information We Collect",
         "items": [
-          "Personal information: Name, email, digital wallet address.",
-          "Transaction information: Purchase history and movements.",
+          "Personal information: Name, email (if provided voluntarily), digital wallet address.",
+          "Transaction information: History of platform interactions, Artifact 'minting', and blockchain movements associated with your wallet.",
           "Technical data: IP address, browser type, cookie data."
         ]
       },
       "usage": {
         "title": "Use of Information",
         "items": [
-          "Process transactions and manage user accounts.",
-          "Improve Platform security and functionality.",
-          "Send communications about changes and updates.",
-          "Comply with applicable legal and tax regulations."
+          "To process transactions and manage user accounts.",
+          "To improve the security and functionality of the Platform.",
+          "To send communications about service changes and updates.",
+          "To comply with applicable legal and KYC/AML regulations, if required."
         ]
       },
       "protection": {
         "title": "Information Protection",
         "items": [
           "We implement technical and organizational security measures.",
-          "Information stored on blockchain is immutable and transparent.",
-          "We don't sell personal information to third parties without consent."
+          "Information on the blockchain is public, immutable, and transparent.",
+          "We do not sell personal information to third parties without explicit consent."
         ]
       },
       "rights": {
-        "title": "User Rights",
+        "title": "User Rights (Data Protection)",
         "items": [
-          "Access, modify or delete your stored personal information.",
-          "Request account cancellation.",
-          "Opt out of promotional communications."
+          "Access, modify, or delete your personal information (to the extent it is not on the blockchain).",
+          "Request the cancellation of your account (if applicable).",
+          "Opt-out of receiving promotional communications."
         ]
       },
       "cookies": {
         "title": "Cookies and Tracking Technologies",
         "items": [
-          "We use cookies to improve user experience.",
-          "Secure and persistent session authentication.",
-          "Behavior and navigation analysis."
+          "We use cookies to improve the user experience.",
+          "Secure authentication and persistent session.",
+          "Behavioral and navigation analysis."
         ]
       },
       "transfers": {
         "title": "International Data Transfers",
-        "content": "Due to the decentralized nature of blockchain technology, some data may be processed outside Mexico. We ensure compliance with applicable data protection regulations in all jurisdictions."
+        "content": "Due to the decentralized nature of blockchain technology, some data (like public transactions) may be processed and replicated globally. We ensure compliance with applicable data protection regulations."
       },
       "changes": {
-        "title": "Changes to Privacy Policy",
-        "content": "We may update this policy at any time. Users will be notified of significant changes through the Platform or email."
+        "title": "Changes to the Privacy Policy",
+        "content": "We may update this policy at any time. Users will be notified of significant changes via the Platform or email (if provided)."
       },
       "contact": {
         "title": "Contact",
-        "content": "For questions or requests about data privacy, please contact us at:",
-        "email": "support@pandoras.finance"
+        "content": "For questions or requests regarding data privacy, contact us at:",
+        "email": "legal@pandoras.finance"
       }
     }
   },
@@ -415,172 +424,172 @@
   },
   "footer": {
     "title": "Pandora's",
-    "slogan": "The future of real-world asset investment.",
+    "slogan": "Connecting creators and communities through utility.",
     "copyright": "© 2025 Pandora's Finance.",
     "white_paper": "WHITE PAPER",
     "support": "SUPPORT",
     "terms_privacy": "TERMS | PRIVACY"
   },
   "activos": {
-    "title": "Discover backed and transparent opportunities",
-    "subtitle": "At Pandoras, every available asset has undergone an exhaustive process of auditing, tokenization, and due diligence. This ensures that only viable, audited projects with real growth potential are part of our platform.",
-    "clasification": "Classification of projects in the process of tokenization",
+    "title": "Discover Creations based on utility and transparency",
+    "subtitle": "At Pandora, every available Creation is built by community architects. This ensures that only Creations based on real utility are part of our platform.",
+    "clasification": "Classification of Artifacts and Utility Protocols",
     "assets": {
-      "casa_bella": { "tag": "REAL ESTATE", "title": "Casa Bella", "description": "A luxury villa with sea views and high-end finishes." },
-      "vista_horizonte": { "tag": "REAL ESTATE", "title": "Vista Horizonte", "description": "The best view of the Bay in a wonderful place." },
-      "narai": { "tag": "REAL ESTATE", "title": "Narai", "description": "Condominiums with sea view, comfort and luxury." },
-      "startup_ia": { "tag": "STARTUP", "title": "AI Startup", "description": "Revolutionizing the market with artificial intelligence." },
-      "fintech": { "tag": "STARTUP", "title": "Innovative Fintech", "description": "Offering radically new payment solutions." },
-      "ecommerce": { "tag": "STARTUP", "title": "Sustainable E-commerce", "description": "Sustainable fashion with great growth potential." }
+      "casa_bella": { "tag": "REAL ESTATE", "title": "Casa Bella", "description": "Una villa de lujo con vista al mar y acabados de alta gama." },
+      "vista_horizonte": { "tag": "REAL ESTATE", "title": "Vista Horizonte", "description": "La mejor vista de la Bahía en un lugar maravilloso." },
+      "narai": { "tag": "REAL ESTATE", "title": "Narai", "description": "Condominios con vista al mar, comodidad y lujo." },
+      "startup_ia": { "tag": "STARTUP", "title": "Startup de IA", "description": "Revolucionando el mercado con inteligencia artificial." },
+      "fintech": { "tag": "STARTUP", "title": "Fintech Innovadora", "description": "Ofreciendo soluciones de pago radicalmente nuevas." },
+      "ecommerce": { "tag": "STARTUP", "title": "E-commerce Sostenible", "description": "Moda sostenible con un gran potencial de crecimiento." }
     },
     "info_modal": {
-      "title": "About Our Marketplace",
-      "paragraph1": "Our marketplace connects investors with real and tokenized digital assets, offering a new way to participate in the global economy. Here you don't just explore opportunities: you access real estate projects, startups, and businesses backed by tangible assets and solid legal structures. Every investment is managed with blockchain transparency, protecting your capital and facilitating liquidity through stablecoins and DeFi tools.",
-      "paragraph2": "With Pandoras, investing is no longer exclusive to large corporations: now you can diversify your portfolio, participate with accessible amounts, and receive returns generated by the real economy. Our platform guides you from start to finish: from project selection and analysis to the management of your tokenized assets, all within a secure, regulated ecosystem designed to grow with you."
+      "title": "About our Creations Hub",
+      "paragraph1": "Our Hub connects Creators with community members, offering a new way to participate in the digital economy. Here you don't just explore Artifacts: you access loyalty protocols, NFT memberships, and 'Work-to-Earn' (Labor) systems. Every Creation is managed with blockchain transparency, facilitating participation and rewards for work.",
+      "paragraph2": "With Pandora, participation is no longer passive: now you can build your community, activate it, and generate Rewards for real 'Labor'. Our platform guides you from start to finish: from designing your protocol to managing your Creations and Artifacts, all within a transparent, utility-based ecosystem designed to grow with your community."
     },
     "info_sections": {
         "section1": {
-          "title": "Take control of your financial future",
-          "content": "Select an asset, review its information, and start your investment process in minutes. Each project is accompanied by clear and updated metrics so you can make decisions with confidence."
+          "title": "Take control of your community",
+          "content": "Select a category, review its 'Codex' (documentation), and begin your 'Forge' (creation) process in minutes. Each category comes with clear metrics so you can make design decisions with confidence."
         },
         "section2": {
-          "title": "Transparency and continuous monitoring",
-          "content": "We conduct periodic audits and offer a real-time monitoring system that guarantees the quality of each investment. Thus, your portfolio grows backed by data and proven security."
+          "title": "Transparency and continuous participation",
+          "content": "We offer a real-time monitoring system for 'Labor' (work) that guarantees the quality of each protocol. This way, your community grows, backed by data and total transparency."
         }
       },
       "tokenization_process": {
-        "title_part1": "From project to tokenized ",
-        "title_part2": "opportunity",
-        "subtitle": "Transparency, analysis, and blockchain technology at the service of your investment",
+        "title_part1": "From Idea to Artifact",
+        "title_part2": "Manifest",
+        "subtitle": "Transparency and utility at the service of your community",
         "steps": [
           {
-            "title": "Initial evaluation and selection",
-            "description": "We analyze each candidate project (real estate, startups, companies) with financial viability, impact, and projection criteria."
+            "title": "Template Selection",
+            "description": "Choose a base template ('Access', 'Loyalty', 'Work-to-Earn') from our 'Codex' (audited template library)."
           },
           {
-            "title": "Due Diligence and legality",
-            "description": "We verify documents, regulatory compliance, and legal structure to ensure that each asset complies with applicable regulations."
+            "title": "No-Code Configuration",
+            "description": "Define your protocol's rules: tasks, rewards, benefits, and governance. Without writing code."
           },
           {
-            "title": "Tokenization and RWA backing",
-            "description": "We convert the asset into secure digital units through audited smart contracts, backed by tangible assets."
+            "title": "Design and Testing (Testnet)",
+            "description": "Customize your Artifact and test it in a safe environment (Testnet) before 'Unleashing' it to the world."
           },
           {
-            "title": "Platform publication",
-            "description": "Once approved, the project is integrated into the marketplace so that investors can participate directly and securely."
+            "title": "Deployment and Ownership",
+            "description": "'Unleash' (launch) your Artifact on the blockchain. You are the sole owner and person responsible for the smart contract."
           },
           {
-            "title": "Continuous monitoring and performance",
-            "description": "We monitor the evolution of each project, ensuring transparency, scheduled payments, and updated reports."
+            "title": "Management and Growth",
+            "description": "Use your dashboard to monitor participation, manage rewards, and grow your ecosystem."
           }
         ]
       }
   },
-    "about": {
-      "title": "About Pandora's Finance: Digitizing Real-World Value",
-      "the_big_why": {
-        "title": "Our Big Why",
-        "p1": "In a world where the best investment opportunities are often reserved for a few, billions of dollars in value remain trapped in illiquid assets like real estate and startups. Complexity, bureaucracy, and high barriers to entry prevent most people from participating in their growth.",
-        "p2": "Pandora's Finance was born from a fundamental question: What if we could unlock that value? What if we could make investing in an apartment building or a promising startup as simple as buying a stock?",
-        "p3": "Our 'big why' is the democratization of access to wealth. We believe in a financial future where anyone, from anywhere, can invest in tangible, high-growth assets safely, transparently, and efficiently, all through the power of blockchain technology."
-      },
-      "our_mission": {
-        "title": "Our Mission",
-        "content": "Our mission is to build and operate the most robust technological, legal, and financial infrastructure for the tokenization of Real-World Assets (RWA). We connect owners of high-quality assets with a global community of investors, generating liquidity for the former and competitive yield opportunities for the latter. We do this through a platform that ensures security, regulatory compliance, and an exceptional user experience."
-      },
-      "what_we_do": {
-        "title": "What We Do",
-        "intro": "Pandora's Finance is an end-to-end tokenization platform. Currently, our main focus is the real estate sector, but we are expanding our model to include startups in the medium term.",
-        "services_title": "Our comprehensive service covers:",
-        "services": [
-          {
-            "title": "Advisory and Legal Structuring",
-            "description": "We create the legal and fiduciary framework to convert a physical asset into a series of digital tokens representing its value."
-          },
-          {
-            "title": "Technological Development",
-            "description": "We program and audit the smart contracts that govern the ownership, management, and transfer of the tokens."
-          },
-          {
-            "title": "Value-Added Services",
-            "description": "We offer key services such as project incubation, due diligence, digital marketing, and community management to ensure the success of each tokenization."
-          }
-        ]
-      },
-      "our_current_position": {
-        "title": "Our Current Position",
-        "intro": "We are not just an idea; we are a growing reality. As of today, Pandora's Finance has:",
-        "points": [
-          "A basic tokenization platform already operational.",
-          "A solidly established legal and brand structure.",
-          "Signed clients who are ready to start their tokenization processes on our platform."
-        ]
-      },
-      "the_team": {
-        "title": "The Team Behind Pandora's",
-        "intro": "We have a management and operational team that covers all critical areas for success:",
-        "areas": [
-          {
-            "title": "Leadership and Strategy (CEO, COO)",
-            "description": "Business vision and operational efficiency."
-          },
-          {
-            "title": "Technology and Product (CTO, CPO, Developers)",
-            "description": "Experts in blockchain, smart contracts, and the development of secure and scalable platforms."
-          },
-          {
-            "title": "Finance and Legal (CFO, Legal Representative)",
-            "description": "Specialists in financial management, regulatory compliance, and crypto-asset structuring."
-          },
-          {
-            "title": "Marketing and Sales (CMO, Executives)",
-            "description": "A dedicated team to build our brand, attract new projects, and manage our network of agents (TXAgents)."
-          }
-        ]
-      },
-      "strategic_allies": {
-        "title": "Our Strategic Allies",
-        "intro": "We understand that trust is the cornerstone of finance. Therefore, we have built an ecosystem of alliances with leaders in their respective fields to ensure maximum security and compliance:",
-        "categories": [
-          {
-            "name": "Blockchain Technology",
-            "partners": "We integrate decentralized oracles like Chainlink and payment gateways like Transak for seamless operation."
-          },
-          {
-            "name": "Audit and Security",
-            "partners": "We collaborate with firms like CertiK and PeckShield for security and smart contract audits, and we use secure contract libraries from OpenZeppelin."
-          },
-          {
-            "name": "Compliance (KYC/AML)",
-            "partners": "We use identity verification services from market leaders."
-          },
-          {
-            "name": "Legal and Financial Advisory",
-            "partners": "We are backed by law firms to support us financially."
-          },
-          {
-            "name": "Commercial Alliances",
-            "partners": "We are members of the Mexican Association of Real Estate Professionals (AMPI) to stay at the forefront of the real estate sector."
-          }
-        ]
-      },
-      "roadmap": {
-        "title": "Future Vision - Our Roadmap",
-        "intro": "We are in a phase of accelerated growth with a clear plan for the coming months.",
-        "timeline": [
-          {
-            "year": "2025",
-            "description": "We will launch our enhanced DApp, complete the first tokenizations for our initial clients, and begin paying the first profits to investors."
-          },
-          {
-            "year": "2026",
-            "description": "We will expand to new key markets like Guadalajara and Monterrey and launch our first 'Pandoras Pro' pilot for the tokenization of a startup, turning it into a DAO."
-          }
-        ]
-      },
-      "cta": {
-        "title": "Join the Digital Asset Revolution",
-        "content": "Whether you are an asset owner seeking liquidity, an investor looking for new opportunities, or a potential partner who shares our vision, we want to hear from you."
-      }
+  "about": {
+    "title": "About Pandora's Finance: Building the New Digital Utility",
+    "the_big_why": {
+      "title": "Our Big Why",
+      "p1": "In a world where digital communities are fragmented and passive, thousands of creators struggle to activate their audiences. Apathy, the centralization of platforms (Web2), and the lack of tools prevent the majority from building real-value ecosystems.",
+      "p2": "Pandora's Finance was born from a fundamental question: What if we could unleash that potential? What if we could make building a loyalty protocol or a 'Work-to-Earn' ('Labor') system as simple as creating a website?",
+      "p3": "Our \"big why\" is creator sovereignty and community activation. We believe in a digital future where any 'Creator', from anywhere, can build their own utility protocols safely, transparently, and efficiently, all through the power of our platform."
+    },
+    "our_mission": {
+      "title": "Our Mission",
+      "content": "Our mission is to build and operate the most robust technological infrastructure (SaaS) to create Utility Protocols. We connect 'Creators' with their 'Communities', generating participation tools for the former and rewards for 'Labor' (work) for the latter. We do this through a no-code platform that guarantees security, transparency, and an exceptional user experience."
+    },
+    "what_we_do": {
+      "title": "What We Do",
+      "intro": "Pandora's Finance is an end-to-end 'no-code' SaaS platform. Our main focus is on Utility Protocols (Loyalty, Access, Work-to-Earn) for any type of digital community.",
+      "services_title": "Our SaaS platform includes:",
+      "services": [
+        {
+          "title": "Audited Contract Templates",
+          "description": "We provide pre-audited *smart contract* templates so that 'Creators' can launch their protocols securely."
+        },
+        {
+          "title": "No-Code Builder",
+          "description": "An intuitive dashboard that allows any 'Creator' to configure, design, and deploy their 'Artifacts' without writing a single line of code."
+        },
+        {
+          "title": "Protocol and Community Management",
+          "description": "Tools to monitor participation, manage rewards, and consult documentation to ensure the success of each 'Creation'."
+        }
+      ]
+    },
+    "our_current_position": {
+      "title": "Our Current Position",
+      "intro": "We are not just an idea; we are a platform in active beta. As of today, Pandora's Finance has:",
+      "points": [
+        "A functional and operational SaaS platform.",
+        "A solidly established legal and brand structure.",
+        "'Creators' on the waiting list ready to launch their 'Artifacts' on our platform."
+      ]
+    },
+    "the_team": {
+      "title": "The Team Behind Pandora's",
+      "intro": "We have a management and operational team that covers all critical areas for success:",
+      "areas": [
+        {
+          "title": "Leadership and Strategy (CEO, COO)",
+          "description": "Product vision and operational efficiency."
+        },
+        {
+          "title": "Technology and Product (CTO, CPO, Developers)",
+          "description": "Experts in blockchain, *smart contracts*, and the development of secure and scalable SaaS platforms."
+        },
+        {
+          "title": "SaaS Legal and Compliance (Legal Team)",
+          "description": "Specialists in software (SaaS) compliance, data protection, and the legal architecture of Web3 platforms."
+        },
+        {
+          "title": "Community and Growth (CMO, Executives)",
+          "description": "A dedicated team to build our brand, attract new 'Creators', and manage our network of collaborators."
+        }
+      ]
+    },
+    "strategic_allies": {
+      "title": "Our Strategic Allies",
+      "intro": "We understand that trust is the cornerstone of Web3. Therefore, we have built an ecosystem of alliances with leaders in their respective fields to ensure maximum technological security:",
+      "categories": [
+        {
+          "name": "Blockchain Technology",
+          "partners": "We integrate decentralized oracles like Chainlink and payment gateways like Transak for seamless operation."
+        },
+        {
+          "name": "Audit and Security",
+          "partners": "We collaborate with firms like CertiK and PeckShield for security audits of our platform, and we use secure contract libraries from OpenZeppelin."
+        },
+        {
+          "name": "Data Security",
+          "partners": "We use market-leading user data encryption and protection services."
+        },
+        {
+          "name": "SaaS and Legal Advisory",
+          "partners": "We are backed by firms expert in digital law, SaaS, and blockchain technology."
+        },
+        {
+          "name": "Community and Guild Alliances",
+          "partners": "We are members of software associations and digital creator guilds to stay at the forefront of the communities we serve."
+        }
+      ]
+    },
+    "roadmap": {
+      "title": "Future Vision - Our Roadmap",
+      "intro": "We are in a phase of accelerated growth with a clear plan for the coming months.",
+      "timeline": [
+        {
+          "year": "2025",
+          "description": "We will launch our robust DApp, complete the first 'Artifact' launches from our initial 'Creators', and begin operating the first 'Labor' (Work-to-Earn) protocols."
+        },
+        {
+          "year": "2026",
+          "description": "We will expand to new creator communities in Guadalajara and Monterrey and launch our first \"Pandoras Pro\" pilot for complex 'Governance' (DAO) protocols."
+        }
+      ]
+    },
+    "cta": {
+      "title": "Join the Digital Utility Revolution",
+      "content": "Whether you are a 'Creator' looking to activate your community, a 'User' in search of valuable protocols, or a potential partner who shares our vision, we want to hear from you."
     }
+  }
 }

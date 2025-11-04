@@ -59,6 +59,16 @@ const random = (min: number, max: number, step = 1) => {
   return min + rand * step;
 };
 
+interface UseTypewriterProps {
+  texts: TextItem[];
+  currentTextIndex: number;
+  setCurrentTextIndex: React.Dispatch<React.SetStateAction<number>>;
+  delay: number;
+  probability: number;
+  cursorHighlightName: string;
+  contentHighlightName: string;
+}
+
 const useTypewriter = ({
   texts,
   currentTextIndex,
@@ -67,7 +77,7 @@ const useTypewriter = ({
   probability,
   cursorHighlightName,
   contentHighlightName,
-}: any) => {
+}: UseTypewriterProps) => {
   const [isPaused, setIsPaused] = useState(true);
   const pRef = useRef<HTMLParagraphElement>(null);
   const indexRef = useRef(0);
@@ -94,7 +104,7 @@ const useTypewriter = ({
     }, delay * 1000);
   };
 
-  const update = (_: any, delta: number) => {
+  const update = (_: number, delta: number) => {
     if (!highlightsInitializedRef.current || isPaused) return;
     const node = nodeRef.current as Text | null;
     const cursorRange = cursorRangeRef.current;
@@ -132,7 +142,6 @@ const useTypewriter = ({
   useAnimationFrame(update);
 
   useEffect(() => {
-    // @ts-ignore - CSS.highlights is an experimental API
     if (!pRef.current || typeof window === "undefined" || !window.CSS?.highlights) {
       return;
     }
@@ -144,6 +153,7 @@ const useTypewriter = ({
 
     const p = pRef.current;
     const currentText = texts[currentTextIndex];
+    if (!currentText) return;
     p.innerHTML = `${currentText.text.replace(/\s+/g, " ").trim()}&nbsp;`;
 
     const treeWalker = document.createTreeWalker(p, NodeFilter.SHOW_TEXT);
@@ -161,14 +171,10 @@ const useTypewriter = ({
     cursorRangeRef.current = cursorRange;
     contentRangeRef.current = contentRange;
 
-    // @ts-ignore - Highlight is an experimental API
     const cursorHighlight = new window.Highlight(cursorRange);
-    // @ts-ignore
     const contentHighlight = new window.Highlight(contentRange);
 
-    // @ts-ignore
     window.CSS.highlights.set(cursorHighlightName, cursorHighlight);
-    // @ts-ignore
     window.CSS.highlights.set(contentHighlightName, contentHighlight);
 
     const startTimeout = window.setTimeout(() => {
@@ -178,9 +184,7 @@ const useTypewriter = ({
 
     return () => {
       window.clearTimeout(startTimeout);
-      // @ts-ignore
       window.CSS.highlights.delete(cursorHighlightName);
-      // @ts-ignore
       window.CSS.highlights.delete(contentHighlightName);
       highlightsInitializedRef.current = false;
     };
@@ -204,13 +208,9 @@ export default function DigitalTypewriter({
   probability = 0.1,
   delay = 1,
 }: DigitalTypewriterProps) {
-  
-  if (!texts || texts.length === 0) {
-    return null; 
-  }
 
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
-  
+
   const currentText = texts[currentTextIndex];
   const currentCursorColor = currentText?.cursorColor;
   const currentContentColor = currentText?.contentColor;
@@ -281,7 +281,7 @@ export default function DigitalTypewriter({
     return baseStyle
       .replace(/__CURSOR__/g, cursorHighlightName)
       .replace(/__CONTENT__/g, contentHighlightName);
-  }, [cursorHighlightName, contentHighlightName, font]);
+  }, [baseStyle, cursorHighlightName, contentHighlightName]);
 
   return (
     <>

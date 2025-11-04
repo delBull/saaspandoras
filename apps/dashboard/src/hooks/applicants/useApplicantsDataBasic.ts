@@ -21,10 +21,13 @@ export interface ApplicantsData {
   loading: boolean;
   pendingProjects: Project[];
   approvedProjects: Project[];
+  approvedOnlyProjects: Project[];
   isPendingPanelCollapsed: boolean;
   showMobilePendingModal: boolean;
+  showMobileApprovedModal: boolean;
   setIsPendingPanelCollapsed: (collapsed: boolean) => void;
   setShowMobilePendingModal: (show: boolean) => void;
+  setShowMobileApprovedModal: (show: boolean) => void;
   refetchProjects: () => Promise<void>;
 }
 
@@ -32,7 +35,9 @@ export function useApplicantsDataBasic(): ApplicantsData {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [isPendingPanelCollapsed, setIsPendingPanelCollapsed] = useState(false);
-  const [showMobilePendingModal, setShowMobilePendingModal] = useState(true);
+  // MOBILE: Sidebar cerrado por default
+  const [showMobilePendingModal, setShowMobilePendingModal] = useState(false);
+  const [showMobileApprovedModal, setShowMobileApprovedModal] = useState(false);
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -59,16 +64,20 @@ export function useApplicantsDataBasic(): ApplicantsData {
 
   const pendingProjects = projects.filter(p => p.status === 'pending');
   const approvedProjects = projects.filter(p => ['approved', 'live', 'completed'].includes(p.status));
+  const approvedOnlyProjects = projects.filter(p => p.status === 'approved');
 
   return {
     projects,
     loading,
     pendingProjects,
     approvedProjects,
+    approvedOnlyProjects,
     isPendingPanelCollapsed,
     showMobilePendingModal,
+    showMobileApprovedModal,
     setIsPendingPanelCollapsed,
     setShowMobilePendingModal,
+    setShowMobileApprovedModal,
     refetchProjects: fetchProjects,
   };
 }

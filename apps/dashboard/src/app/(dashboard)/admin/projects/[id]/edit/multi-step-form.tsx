@@ -8,7 +8,9 @@ import { zodResolver } from "@hookform/resolvers/zod"; // FIX 1: Reactivado
 import { z } from "zod";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import { SUPER_ADMIN_WALLET } from "@/lib/constants";
+import { SUPER_ADMIN_WALLET } from "@/lib/constants"; 
+// 🎮 IMPORTAR EVENTOS DE GAMIFICACIÓN
+import { gamificationEngine, EventType } from "@pandoras/gamification";
 import { ProjectSection1 } from "./sections/ProjectSection1";
 import { ProjectSection2 } from "./sections/ProjectSection2";
 import { ProjectSection3 } from "./sections/ProjectSection3";
@@ -225,48 +227,61 @@ export function MultiStepForm({
   const [showDraftModal, setShowDraftModal] = useState(false);
 
   // FIX: Proper admin wallet verification instead of relying on isPublic prop
-  const [isAdminUser, setIsAdminUser] = useState(false);
+  const [isAdminUser, setIsAdminUser] = useState(true); // DEFAULT to TRUE for admin pages to avoid redirect race condition
 
   useEffect(() => {
     const checkAdminStatus = async () => {
-      if (account?.address) {
-        const walletAddress = account.address.toLowerCase();
-        const superAdminWallet = SUPER_ADMIN_WALLET.toLowerCase();
+      if (!account?.address) {
+        setIsAdminUser(false);
+        return;
+      }
 
-        // Check if it's super admin first
-        if (walletAddress === superAdminWallet) {
-          setIsAdminUser(true);
-        } else {
-          // Check if wallet exists in administrators table
-          try {
-            const response = await fetch('/api/admin/verify');
-            if (response.ok) {
-              const data = await response.json() as { isAdmin?: boolean; isSuperAdmin?: boolean };
-              setIsAdminUser(Boolean(data.isAdmin ?? data.isSuperAdmin ?? false));
-            } else {
-              console.error('Admin verification failed:', response.status, response.statusText);
-              setIsAdminUser(false);
-            }
-          } catch (error) {
-            console.error('Error checking admin status:', error);
-            setIsAdminUser(false);
+      const walletAddress = account.address.toLowerCase();
+      const superAdminWallet = SUPER_ADMIN_WALLET.toLowerCase();
+
+      // Check if it's super admin first (sync)
+      if (walletAddress === superAdminWallet) {
+        setIsAdminUser(true);
+        return;
+      }
+
+      // Check if wallet exists in administrators table (async)
+      try {
+        const response = await fetch('/api/admin/verify', {
+          headers: {
+            'Content-Type': 'application/json',
+            'x-thirdweb-address': walletAddress,
+            'x-wallet-address': walletAddress,
+            'x-user-address': walletAddress
           }
+        });
+        if (response.ok) {
+          const data = await response.json() as { isAdmin?: boolean; isSuperAdmin?: boolean };
+          setIsAdminUser(Boolean(data.isAdmin ?? data.isSuperAdmin ?? false));
+        } else {
+          console.error('Admin verification failed:', response.status, response.statusText);
+          setIsAdminUser(false);
         }
-      } else {
+      } catch (error) {
+        console.error('Error checking admin status:', error);
         setIsAdminUser(false);
       }
     };
 
-    void checkAdminStatus();
-  }, [account?.address]);
-
-  // Redirect non-admin users
-  useEffect(() => {
-    if (account?.address && !isAdminUser && !isPublic) {
-      console.log('❌ Non-admin user attempting to access admin form, redirecting...');
-      window.location.href = '/admin/dashboard';
+    // Only check if not public (public users skip admin verification)
+    if (!isPublic) {
+      void checkAdminStatus();
     }
-  }, [account?.address, isAdminUser, isPublic]);
+  }, [account?.address, isPublic]);
+
+  // Redirect non-admin users - add delay to allow verification to complete
+  useEffect(() => {
+    if (account?.address && isPublic !== null && !isAdminUser && !isPublic) {
+      console.log('❌ Non-admin user attempting to access admin form, redirecting...');
+      // Small delay to allow state updates
+      setTimeout(() => router.push('/admin/dashboard'), 50);
+    }
+  }, [account?.address, isAdminUser, isPublic, router]);
 
   const totalSteps = 7;
   
@@ -481,7 +496,7 @@ export function MultiStepForm({
         // Usar navegación completa para preservar mejor la sesión
         if (isPublic) {
           // Para usuarios públicos, redirigir a "/" preservando la sesión
-          window.location.href = "/";
+          router.push("/");
         } else {
           // Para admins, usar navegación normal
           router.push("/admin/dashboard");
@@ -727,6 +742,30 @@ export function MultiStepForm({
       // La respuesta se usa solo para log, así que 'unknown' es seguro.
       const responseData: unknown = await response.json();
       console.log('✅ Success response:', responseData);
+
+      // 🎮 TRIGGER EVENTO DE APLICACIÓN DE PROYECTO
+      const userWallet = account?.address?.toLowerCase();
+      if (userWallet) {
+        try {
+          console.log('🎮 Triggering project application event for user:', userWallet);
+          await gamificationEngine.trackEvent(
+            userWallet,
+            EventType.PROJECT_APPLICATION_SUBMITTED,
+            {
+              projectTitle: safeData.title,
+              projectId: (responseData as { id?: string | number })?.id?.toString() ?? 'unknown',
+              businessCategory: safeData.businessCategory,
+              targetAmount: safeData.targetAmount,
+              isPublicApplication: isPublic,
+              submissionType: isPublic ? 'public' : 'admin_draft'
+            }
+          );
+          console.log('✅ Gamification event PROJECT_APPLICATION_SUBMITTED tracked successfully');
+        } catch (gamificationError) {
+          console.warn('⚠️ Gamification event tracking failed:', gamificationError);
+          // No bloquear el flujo si falla la gamificación
+        }
+      }
 
       // Mostrar modal de éxito en lugar de toast inmediato
       setShowSuccessModal(true);

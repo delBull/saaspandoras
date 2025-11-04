@@ -2,19 +2,18 @@
 
 import React, { useEffect, useRef, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Shadows_Into_Light } from "next/font/google";
 import { HeroTypewriter } from './HeroTypewriter';
-
-const shadowsIntoLight = Shadows_Into_Light({
-  subsets: ["latin"],
-  weight: "400",
-});
 
 const extractRGBColorFromString = (str: string) => {
     const rgbRegex = /(rgba|rgb)\(.*?\)/g;
     const match = str.match(rgbRegex);
     return match ? match[0] : "rgb(255,255,255)";
 };
+
+// Helper function to safely access permutation array
+function getPermutationValue(index: number): number {
+  return p[Math.abs(index) % 512] ?? 0;
+}
 
 // Perlin noise implementation
 function noise(x: number, y: number) {
@@ -24,8 +23,9 @@ function noise(x: number, y: number) {
     y -= Math.floor(y);
     const u = fade(x);
     const v = fade(y);
-    const A = p[X] + Y, B = p[X + 1] + Y;
-    return lerp(v, lerp(u, grad(p[A], x, y), grad(p[B], x - 1, y)), lerp(u, grad(p[A + 1], x, y - 1), grad(p[B + 1], x - 1, y - 1)));
+    const A = getPermutationValue(X) + Y;
+    const B = getPermutationValue(X + 1) + Y;
+    return lerp(v, lerp(u, grad(getPermutationValue(A), x, y), grad(getPermutationValue(B), x - 1, y)), lerp(u, grad(getPermutationValue(A + 1), x, y - 1), grad(getPermutationValue(B + 1), x - 1, y - 1)));
 }
 function fade(t: number) { return t * t * t * (t * (t * 6 - 15) + 10); }
 function lerp(t: number, a: number, b: number) { return a + t * (b - a); }
@@ -35,8 +35,16 @@ function grad(hash: number, x: number, y: number) {
     const v = h < 4 ? y : h === 12 || h === 14 ? x : 0;
     return ((h & 1) === 0 ? u : -u) + ((h & 2) === 0 ? v : -v);
 }
-const p = new Array(512);
-for (let i = 0; i < 256; i++) p[i] = p[i + 256] = Math.floor(Math.random() * 256);
+// Initialize permutation array for Perlin noise
+const p: number[] = [];
+for (let i = 0; i < 512; i++) {
+  p[i] = 0; // Initialize all values
+}
+for (let i = 0; i < 256; i++) {
+  const randomValue = Math.floor(Math.random() * 256);
+  p[i] = randomValue;
+  p[i + 256] = randomValue;
+}
 
 function generatePerlinNoise(width: number, height: number, cellSize: number) {
     const canvas = document.createElement("canvas");
@@ -118,7 +126,7 @@ function PerlinWall(props: PerlinWallProps) {
         if (!isClient || height === 0 || width === 0) return "";
         const cellSize = Math.max(25, size * 2);
         return createSeamlessPerlinNoise(width, height, cellSize);
-    }, [size, isClient, dimensions]);
+    }, [isClient, dimensions, size]);
 
     const animationDuration = useMemo(() => {
         const { height, width } = dimensions;
@@ -128,7 +136,7 @@ function PerlinWall(props: PerlinWallProps) {
             return Math.round(baseValue / Math.pow(animation.speed, Math.log(baseValue / (baseValue / 100)) / Math.log(maxSpeed)));
         }
         return 0;
-    }, [animation.speed, size, dimensions]);
+    }, [animation.speed, dimensions]);
 
     useEffect(() => {
         if (!isClient) return;
@@ -234,6 +242,15 @@ interface ShimmerDotHeroProps {
       hero_title: string;
       hero_subtitle: string;
     };
+    hero_typewriter?: {
+      title: string;
+      subtitle: string;
+      typewriter_words: {
+        text: string;
+        cursorColor: string;
+        contentColor: string;
+      }[];
+    };
   };
 }
 
@@ -250,7 +267,7 @@ export const ShimmerDotHero = ({ dict }: ShimmerDotHeroProps) => {
         radius={10}
       />
       <div className="relative z-10 flex flex-col items-left">
-        <HeroTypewriter />
+        <HeroTypewriter dict={dict} />
       </div>
     </section>
   );

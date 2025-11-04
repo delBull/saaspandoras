@@ -4,7 +4,7 @@ import { EyeIcon } from "lucide-react";
 import type { Project } from "../../../hooks/applicants/useApplicantsData";
 
 export type ViewMode = 'grid' | 'list';
-export type GridColumns = 3 | 4 | 6;
+export type GridColumns = 3 | 4;
 
 interface ProjectGridProps {
   projects: Project[];
@@ -39,21 +39,23 @@ export function ProjectGrid({
 
   // Grid view
   const getGridClasses = () => {
-    const baseClasses = 'gap-3 md:gap-4 lg:gap-6 place-items-center';
+    const baseClasses = 'gap-3 md:gap-4 lg:gap-6';
 
     if (variant === 'pending') {
       return `grid grid-cols-1 ${baseClasses}`;
     }
 
+    // Mobile adjustment: w-full cards, Desktop responsive grid
+    const mobileFullWidth = 'md:place-items-center';
+    const placeItems = variant === 'approved' ? mobileFullWidth : '';
+
     // Responsive grid based on selected columns with better breakpoints
     switch (gridColumns) {
-      case 6:
-        return `grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 ${baseClasses}`;
       case 4:
-        return `grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 ${baseClasses}`;
+        return `grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 ${baseClasses} ${placeItems}`;
       case 3:
       default:
-        return `grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 ${baseClasses}`;
+        return `grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 ${baseClasses} ${placeItems}`;
     }
   };
 
