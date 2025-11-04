@@ -6,9 +6,6 @@ import { userReferrals, users } from "@/db/schema";
 import { GamificationService } from "@/lib/gamification/service";
 import { eq, and } from "drizzle-orm";
 
-// Re-export the function from server-utils for backward compatibility
-export { updateReferralProgress } from "@/lib/server-utils";
-
 // API para procesar referidos desde enlaces ?ref=wallet
 export async function POST(request: Request) {
   try {

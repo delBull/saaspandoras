@@ -234,9 +234,9 @@ export async function POST(request: Request) {
     // 🎯 UPDATE REFERRAL PROGRESS: Si el usuario completó KYC básico, actualizar progreso de referidos
     if (profileData.kycCompleted && profileData.kycLevel === 'basic') {
       try {
-        // Importar dinámicamente para evitar problemas de dependencias circulares
-        const { updateReferralProgress } = await import('@/app/api/referrals/process/route');
-        await updateReferralProgress(walletAddress);
+        // Usar GamificationService para actualizar progreso de referidos
+        const { GamificationService } = await import('@/lib/gamification/service');
+        await GamificationService.checkReferralProgressForAchievements(walletAddress);
         console.log(`✅ Referral progress updated for KYC completion: ${walletAddress.slice(0, 6)}...`);
       } catch (referralError) {
         console.warn('⚠️ Failed to update referral progress for KYC completion:', referralError);
