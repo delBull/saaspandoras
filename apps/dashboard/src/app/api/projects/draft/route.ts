@@ -259,8 +259,8 @@ export async function POST(request: Request) {
 
       // 🎯 UPDATE REFERRAL PROGRESS: Actualizar progreso de referidos cuando aplican proyecto
       try {
-        const { updateReferralProgress } = await import('@/app/api/referrals/process/route');
-        await updateReferralProgress(applicantWalletAddress);
+        const { GamificationService } = await import('@/lib/gamification/service');
+        await GamificationService.checkReferralProgressForAchievements(applicantWalletAddress);
         console.log(`✅ Referral progress updated for project application: ${applicantWalletAddress.slice(0, 6)}...`);
       } catch (referralError) {
         console.warn('⚠️ Failed to update referral progress for project application:', referralError);
