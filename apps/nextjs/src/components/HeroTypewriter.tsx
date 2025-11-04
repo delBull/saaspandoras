@@ -260,7 +260,7 @@ export function HeroTypewriter({ dict }: HeroTypewriterProps) {
   ], [dict]);
 
   return (
-    <section className="relative grid h-screen w-full place-content-center overflow-hidden px-4 md:px-8 xl:px-16">
+    <section className="relative grid h-screen w-full place-content-center overflow-hidden ml-0">
       <PerlinWall 
         shapeType="Circle"
         size={4}
@@ -279,14 +279,14 @@ export function HeroTypewriter({ dict }: HeroTypewriterProps) {
               font={{
                 fontFamily: "inherit",
                 fontWeight: 500,
-                fontSize: "1em", // Use relative size that adapts to parent
-                lineHeight: "1em",
+                fontSize: "0.875em", // Use relative size that adapts to parent
+                lineHeight: "0.875em",
                 textAlign: "left",
               }}
               delay={1}
             />
           </div>
-          <p className='font-shadows mt-4'>{dict?.marketing?.hero_typewriter?.subtitle?? "Tu comunidad cobra vida."}</p>
+          <p className='font-shadows mt-0'>{dict?.marketing?.hero_typewriter?.subtitle?? "Tu comunidad cobra vida."}</p>
         </div>
       </div>
     </section>

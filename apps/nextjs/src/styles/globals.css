@@ -104,6 +104,9 @@
   .container {
     @apply max-sm:px-4;
   }
+  .container-reduced {
+    @apply max-sm:px-0;
+  }
 }
 
 select {

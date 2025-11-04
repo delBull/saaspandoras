@@ -148,7 +148,7 @@ export function NavBar({
             {rightElements}
             <div className="hidden md:block w-[1px] h-8 bg-accent" />
             <div className="hidden md:flex items-center">
-              <LocaleChange url={basePath} />
+              <LocaleChange url={basePath} /> 
             </div>
             <ConnectWalletButton />
             <Link

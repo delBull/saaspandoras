@@ -30,7 +30,7 @@ export default async function IndexPage(props: {
 
       <section id="about-pandoras" className="container md:mt-44 md:mb-20">
         <AboutPandoras dict={dict.marketing} />
-      </section>
+      </section> 
       
       <section id="investment-steps" className="container">
         <InvestmentSteps dict={dict.marketing.investment_steps} />

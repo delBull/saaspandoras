@@ -49,7 +49,7 @@ export function TokenRoutes({ fromChainId, toChainId, fromToken, toToken, onRout
     void fetchTokens();
   }, []);
 
-  // Fetch available routes using Bridge.routes
+  // Check bridge availability using Bridge.Sell.quote
   useEffect(() => {
     if (!fromToken || !toToken) {
       setAvailableRoutes([]);
@@ -57,22 +57,42 @@ export function TokenRoutes({ fromChainId, toChainId, fromToken, toToken, onRout
       return;
     }
 
-    async function fetchRoutes() {
+    async function checkBridgeAvailability() {
       setIsLoadingRoutes(true);
       try {
-        const routes = await Bridge.routes({
+        // Check if bridge is available by trying to get a quote
+        await Bridge.Sell.quote({
           originChainId: fromToken!.chainId,
           originTokenAddress: fromToken!.address,
           destinationChainId: toToken!.chainId,
           destinationTokenAddress: toToken!.address,
+          amount: 1000000n, // Small test amount (0.000001 for most tokens)
           client,
         });
-        
-        console.log(`Found ${routes.length} routes for ${fromToken!.symbol} -> ${toToken!.symbol}`);
-        setAvailableRoutes(routes);
-        onRoutesChange(routes);
+
+        // If we get a quote, bridge is available - create a mock route for UI
+        const mockRoute: Bridge.Route = {
+          originToken: {
+            chainId: fromToken!.chainId,
+            address: fromToken!.address,
+            symbol: fromToken!.symbol,
+            name: fromToken!.name,
+            decimals: fromToken!.decimals,
+          },
+          destinationToken: {
+            chainId: toToken!.chainId,
+            address: toToken!.address,
+            symbol: toToken!.symbol,
+            name: toToken!.name,
+            decimals: toToken!.decimals,
+          },
+        } as Bridge.Route;
+
+        console.log(`Bridge available for ${fromToken!.symbol} -> ${toToken!.symbol}`);
+        setAvailableRoutes([mockRoute]);
+        onRoutesChange([mockRoute]);
       } catch (error) {
-        console.error('Error fetching routes:', error);
+        console.error('Bridge not available for this pair:', error);
         toast.error('No routes available for this pair');
         setAvailableRoutes([]);
         onRoutesChange([]);
@@ -80,7 +100,7 @@ export function TokenRoutes({ fromChainId, toChainId, fromToken, toToken, onRout
         setIsLoadingRoutes(false);
       }
     }
-    void fetchRoutes();
+    void checkBridgeAvailability();
   }, [fromToken, toToken, onRoutesChange]);
 
   // Handle token selection from Bridge.tokens
