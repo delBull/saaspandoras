@@ -95,6 +95,38 @@ export default function EducationPage() {
     }
   };
 
+  const completeCourse = async (courseId: string) => {
+    try {
+      const response = await fetch(`/api/education/courses/${courseId}/complete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      const data = await response.json() as { message?: string } & Record<string, unknown>;
+
+      if (response.ok) {
+        // Update local state to reflect completed course
+        setCourses(prev => prev.map(course =>
+          course.id === courseId
+            ? { ...course, user_progress: 'completed', progress_percentage: 100 }
+            : course
+        ));
+
+        // Show success message with points earned
+        toast.success(`¡Curso completado! +100 tokens ganados`, {
+          description: "Felicidades por completar este curso de Web3"
+        });
+      } else {
+        console.error('Error completing course:', data.message);
+        alert(`Error: ${data.message}`);
+      }
+    } catch (error) {
+      console.error('Failed to complete course:', error);
+      alert('Error al completar el curso. Inténtalo de nuevo.');
+    }
+  };
+
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty.toLowerCase()) {
       case 'beginner': return 'bg-green-500/20 text-green-400 border-green-500/30';
@@ -243,7 +275,7 @@ export default function EducationPage() {
                 </div>
 
                 {/* Action Button */}
-                <div className="pt-4">
+                <div className="pt-4 space-y-2">
                   {course.user_progress === 'completed' ? (
                     <Button
                       disabled
@@ -252,11 +284,21 @@ export default function EducationPage() {
                       ✅ Completado
                     </Button>
                   ) : course.user_progress === 'in_progress' ? (
-                    <Link href={`/education/course/${course.id}`}>
-                      <Button className="w-full bg-cyan-600 hover:bg-cyan-700">
-                        Continuar Curso
+                    <div className="space-y-2">
+                      <Link href={`/education/course/${course.id}`}>
+                        <Button className="w-full bg-cyan-600 hover:bg-cyan-700">
+                          Continuar Curso
+                        </Button>
+                      </Link>
+                      <Button
+                        onClick={() => completeCourse(course.id)}
+                        className="w-full bg-green-600 hover:bg-green-700"
+                        size="sm"
+                      >
+                        <TrophyIcon className="w-4 h-4 mr-2" />
+                        Marcar Completado (+100 tokens)
                       </Button>
-                    </Link>
+                    </div>
                   ) : (
                     <Button
                       onClick={() => startCourse(course.id)}

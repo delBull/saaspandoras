@@ -255,12 +255,28 @@ export function ReferralsCard() {
                    userReferral.referralSource === 'direct' ? 'Directo' : 'Otro'}
                 </span>
               </div>
-              <div className="mt-2 p-2 bg-green-900/20 rounded border border-green-700/30">
-                <p className="text-xs text-green-200">
-                  ✅ Este referido ya está establecido y no puede modificarse.
-                  {userReferral.status === 'completed' ? ' ¡Ya recibiste tus puntos de referido!' : ' Completa acciones para recibir puntos.'}
-                </p>
-              </div>
+              {/* Only show pending explanation if status is pending */}
+              {userReferral.status === 'pending' && (
+                <div className="mt-2 p-2 bg-yellow-900/20 rounded border border-yellow-700/30">
+                  <p className="text-xs text-yellow-200">
+                    ⏳ <strong>Referido pendiente:</strong> Recibirás tus tokens adicionales cuando completes cualquiera de estas acciones:
+                  </p>
+                  <ul className="text-xs text-yellow-200 mt-1 ml-4 list-disc">
+                    <li>Completa tu verificación KYC básica</li>
+                    <li>Aplica tu primer proyecto</li>
+                    <li>Desbloquea cualquier logro</li>
+                  </ul>
+                </div>
+              )}
+
+              {/* Show completed message if status is completed */}
+              {userReferral.status === 'completed' && (
+                <div className="mt-2 p-2 bg-green-900/20 rounded border border-green-700/30">
+                  <p className="text-xs text-green-200">
+                    🎉 <strong>¡Referido completado!</strong> Tu y tu referrer reciben tokens adicionales por tu actividad.
+                  </p>
+                </div>
+              )}
             </motion.div>
           )}
 
