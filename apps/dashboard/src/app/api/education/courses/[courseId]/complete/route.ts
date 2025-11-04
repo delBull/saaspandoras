@@ -16,113 +16,41 @@ export async function POST(
       return NextResponse.json({ message: "No autorizado" }, { status: 401 });
     }
 
-    const { courseId } = await params;
+    const { courseId } = await params; // Desestructuramos los params
 
     if (!courseId) {
       return NextResponse.json({ message: "ID de curso requerido" }, { status: 400 });
     }
 
-    // Simular verificación del curso existe
+    // Simular verificación del curso existe y está iniciado
     const validCourses = ["defi-basics", "nft-strategies", "web3-security"];
     if (!validCourses.includes(courseId)) {
       return NextResponse.json({ message: "Curso no encontrado" }, { status: 404 });
     }
 
-    // Verificar si el usuario completó todos los modulos (simulado)
-    const body = await request.json() as {
-      completionData?: {
-        modulesCompleted: number;
-        totalModules: number;
-        quizPassed: boolean;
-        finalScore?: number;
-      };
-    };
-
-    const { completionData } = body;
-
-    // Validar completion data básica
-    if (!completionData) {
-      return NextResponse.json({
-        message: "Datos de completitud requeridos",
-        required: {
-          modulesCompleted: 0,
-          totalModules: 0,
-          quizPassed: true,
-          finalScore: 0
-        }
-      }, { status: 400 });
-    }
-
-    // Verificar que el usuario realmente completó el curso
-    if (!completionData.quizPassed) {
-      return NextResponse.json({
-        message: "Debes pasar el quiz para completar el curso",
-        status: "quiz_failed"
-      }, { status: 400 });
-    }
-
-    if (completionData.modulesCompleted < completionData.totalModules) {
-      return NextResponse.json({
-        message: `Completa todos los módulos (${completionData.modulesCompleted}/${completionData.totalModules})`,
-        status: "modules_incomplete"
-      }, { status: 400 });
-    }
-
-    // ✅ TODO: Verificar no haya completado este curso antes (anti-duplicado)
-
-    // Trigger evento principal: COMPLETACIÓN DE CURSO = +100 puntos
-    let pointsAwarded = 100; // Default points
-
-    // Personalizar puntos basado en dificultad del curso
-    const coursePoints = {
-      "defi-basics": 100,
-      "web3-security": 125,
-      "nft-strategies": 150
-    };
-
-    if (coursePoints[courseId as keyof typeof coursePoints]) {
-      pointsAwarded = coursePoints[courseId as keyof typeof coursePoints];
-    }
-
+    // Trigger evento de completar curso: +100 puntos
     try {
       await gamificationEngine.trackEvent(
         walletAddress,
-        EventType.COURSE_COMPLETED, // ✅ Evento específico para completación de cursos
+        EventType.COURSE_COMPLETED, // ✅ Evento específico para completar cursos
         {
           courseId: courseId,
           courseName: courseId.replace(/-/g, ' '),
           completedAt: new Date().toISOString(),
-          completionScore: completionData.finalScore,
-          modulesCompleted: completionData.modulesCompleted,
-          totalModules: completionData.totalModules,
-          quizPassed: completionData.quizPassed,
-          completionBonus: pointsAwarded
+          completionBonus: 100
         }
       );
-      console.log(`🏆 Course completed event tracked for ${walletAddress}: +${pointsAwarded} points`);
+      console.log(`✅ Course completed event tracked for ${walletAddress}: +100 points`);
     } catch (gamificationError) {
       console.warn('⚠️ Failed to track course completion event:', gamificationError);
-      // IMPORTANTE: No fallar por gamification ya que preferimos que pierda puntos que se bloquee completamente
+      // No fallamos por esto, solo loggeamos
     }
 
     return NextResponse.json({
       success: true,
       courseId: courseId,
-      message: "¡Curso completado exitosamente! 🎉",
-      pointsAwarded: pointsAwarded,
-      achievements: [
-        {
-          name: "Aprendiz Avanzado",
-          description: `Completaste el curso: ${courseId.replace(/-/g, ' ')}`,
-          points: pointsAwarded
-        }
-      ],
-      nextCourses: [
-        // Sugerir próximos cursos basados en dificultad
-        courseId === "defi-basics" ? "web3-security" : null,
-        courseId === "web3-security" ? "nft-strategies" : null
-      ].filter(Boolean),
-      completionData: completionData,
+      message: "Curso completado exitosamente",
+      pointsAwarded: 100,
       timestamp: new Date().toISOString()
     });
 

@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 //
 import { db } from "~/db";
-// 🎮 IMPORTAR EVENTOS DE GAMIFICACIÓN
-import { gamificationEngine, EventType } from "@pandoras/gamification";
 
 
 
@@ -112,12 +110,15 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       console.log('🎮 Admin wallet:', adminWallet?.substring(0, 6) + '...');
       console.log('🎮 Applicant wallet:', applicantWallet?.substring(0, 6) + '...');
 
-      // Evento de aprobación para el applicant usando el evento existente
+      // Evento de aprobación para el applicant usando el evento correcto
       if (applicantWallet) {
         try {
-          await gamificationEngine.trackEvent(
+          // Importar dinámicamente para evitar problemas de dependencias circulares
+          const { trackGamificationEvent } = await import('@/lib/gamification/service');
+
+          await trackGamificationEvent(
             applicantWallet,
-            EventType.PROJECT_APPLICATION_SUBMITTED, // Reutilizamos el evento existente con metadata específica
+            'project_application_approved', // Evento correcto para aprobación (100 puntos)
             {
               projectId: projectId.toString(),
               projectTitle: existingProject.title ?? 'Proyecto Aprobado',
@@ -125,7 +126,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
               targetAmount: existingProject.targetAmount?.toString() ?? '0',
               approvedBy: adminWallet,
               approvalType: 'admin_approval',
-              eventSubtype: 'project_approved'
+              approvalDate: new Date().toISOString()
             }
           );
           console.log('✅ PROJECT APPROVAL event tracked for applicant (100 points earned!)');

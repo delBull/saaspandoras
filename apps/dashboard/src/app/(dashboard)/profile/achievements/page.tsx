@@ -101,8 +101,8 @@ export default function AchievementsPage() {
           console.log('✅ Setting achievements with user status:', achievementsData.achievements.length, 'items');
           console.log('📊 Completion stats:', {
             total: achievementsData.achievements.length,
-            completed: achievementsData.achievements.filter((a: any) => a.isCompleted).length,
-            pending: achievementsData.achievements.filter((a: any) => !a.isCompleted).length
+            unlocked: achievementsData.achievements.filter((a: any) => a.isUnlocked).length,
+            locked: achievementsData.achievements.filter((a: any) => !a.isUnlocked).length
           });
           setAllAvailableAchievements(achievementsData.achievements);
         } else {
@@ -236,14 +236,14 @@ export default function AchievementsPage() {
           <div className="text-center p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl backdrop-blur-sm">
             <Medal className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
             <div className="text-3xl font-bold text-yellow-400 mb-1">
-              {allAvailableAchievements.filter((a: any) => a.isCompleted).length}
+              {allAvailableAchievements.filter((a: any) => a.isUnlocked).length}
             </div>
             <div className="text-sm text-zinc-400">Logros Obtenidos</div>
           </div>
           <div className="text-center p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl backdrop-blur-sm">
             <Target className="w-8 h-8 text-red-400 mx-auto mb-2" />
             <div className="text-3xl font-bold text-red-400 mb-1">
-              {Math.max(0, allAchievements.length - allAvailableAchievements.filter((a: any) => a.isCompleted).length)}
+              {Math.max(0, allAchievements.length - allAvailableAchievements.filter((a: any) => a.isUnlocked).length)}
             </div>
             <div className="text-sm text-zinc-400">Pendientes</div>
           </div>

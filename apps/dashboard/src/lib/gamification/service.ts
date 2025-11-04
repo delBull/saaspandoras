@@ -237,6 +237,51 @@ export class GamificationService {
   }
 
   /**
+   * Check and update referral progress for achievements
+   * This ensures referral bonuses are awarded even for existing unlocked achievements
+   */
+  static async checkReferralProgressForAchievements(userId: string): Promise<void> {
+    try {
+      // Get user numeric ID
+      const user = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.walletAddress, userId))
+        .limit(1);
+
+      if (!user || user.length === 0 || !user[0]) {
+        return;
+      }
+
+      const userIdInt = user[0].id;
+
+      // Check if user has any unlocked achievements (excluding "Primer Login")
+      const primerLoginAchievement = await db.query.achievements.findFirst({
+        where: eq(achievements.name, 'Primer Login'),
+        columns: { id: true }
+      });
+
+      const unlockedAchievements = await db.query.userAchievements.findMany({
+        where: eq(userAchievements.userId, userIdInt),
+        columns: { achievementId: true, isUnlocked: true }
+      });
+
+      const hasUnlockedAchievementsExcludingLogin = unlockedAchievements.some(
+        ua => ua.isUnlocked && (!primerLoginAchievement || ua.achievementId !== primerLoginAchievement.id)
+      );
+
+      if (hasUnlockedAchievementsExcludingLogin) {
+        // Import and call updateReferralProgress
+        const { updateReferralProgress } = await import('@/app/api/referrals/process/route');
+        await updateReferralProgress(userId);
+        console.log(`✅ Referral progress checked for existing achievements: ${userId.slice(0, 6)}...`);
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to check referral progress for achievements:', error);
+    }
+  }
+
+  /**
    * Get user achievements using database
    */
   static async getUserAchievements(userId: string): Promise<UserAchievement[]> {
@@ -300,6 +345,9 @@ export class GamificationService {
         isUnlocked: item.isUnlocked || false, // Mantener compatibilidad
         unlockedAt: item.unlockedAt || null
       } as any));
+
+      // Check referral progress for existing achievements
+      await this.checkReferralProgressForAchievements(userId);
 
       console.log(`✅ User achievements loaded: ${achievementsList.length} achievements`);
       return achievementsList;
@@ -473,6 +521,7 @@ private static getEventPoints(eventType: string): number {
     'daily_login': 10,
     'user_registered': 20,
     'referral_made': 200,
+    'referral_completed': 100, // Bonus adicional cuando referido completa onboarding + proyecto
     'COURSE_STARTED': 10,
     'COURSE_COMPLETED': 100
   };
@@ -765,6 +814,20 @@ private static async updateUserProfilePoints(userId: string, pointsToAdd: number
           is_active: true,
           is_secret: false,
           created_at: new Date()
+        },
+        {
+          name: "Referido Completado",
+          description: "Completa tu referido realizando acciones importantes",
+          icon: "🎯",
+          type: "social" as any,
+          required_points: 0,
+          required_level: 1,
+          required_events: JSON.stringify(["referral_completed"]),
+          points_reward: 100,
+          badge_url: "/badges/referral-completed.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
         }
       ];
 
@@ -898,6 +961,19 @@ private static async updateUserProfilePoints(userId: string, pointsToAdd: number
       }
 
       console.log(`🎉 Achievement unlocked: ${achievementName} for user ${userIdString}`);
+
+      // 🎯 UPDATE REFERRAL PROGRESS: Si el usuario desbloqueó un achievement, actualizar progreso de referidos
+      if (achievementName !== 'Primer Login') { // Excluir "Primer Login" ya que es automático
+        try {
+          // Importar dinámicamente para evitar problemas de dependencias circulares
+          const { updateReferralProgress } = await import('@/app/api/referrals/process/route');
+          await updateReferralProgress(userIdString);
+          console.log(`✅ Referral progress updated for achievement unlock: ${userIdString.slice(0, 6)}...`);
+        } catch (referralError) {
+          console.warn('⚠️ Failed to update referral progress for achievement unlock:', referralError);
+          // No bloquear el desbloqueo del achievement si falla la actualización de referidos
+        }
+      }
     } catch (error) {
       console.error(`Error unlocking achievement ${achievementName}:`, error);
       // Don't throw - achievements are bonus features

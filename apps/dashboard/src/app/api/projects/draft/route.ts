@@ -232,6 +232,42 @@ export async function POST(request: Request) {
       }
     }
 
+    // 🎯 GAMIFICATION: Otorgar puntos por aplicación de proyecto (+50 tokens)
+    if (applicantWalletAddress) {
+      try {
+        // Importar dinámicamente para evitar problemas de dependencias circulares
+        const { trackGamificationEvent } = await import('@/lib/gamification/service');
+
+        await trackGamificationEvent(
+          applicantWalletAddress,
+          'project_application_submitted',
+          {
+            projectId: newProject?.id?.toString() ?? 'unknown',
+            projectTitle: parsedData.data.title,
+            businessCategory: parsedData.data.businessCategory,
+            targetAmount: parsedData.data.targetAmount,
+            isPublicApplication: true,
+            submissionType: 'utility_form_draft'
+          }
+        );
+
+        console.log(`🎉 Gamification event tracked for ${applicantWalletAddress}: +50 points for project application`);
+      } catch (gamificationError) {
+        console.warn('⚠️ Failed to track project application gamification event:', gamificationError);
+        // No fallamos la creación del proyecto si falla la gamificación
+      }
+
+      // 🎯 UPDATE REFERRAL PROGRESS: Actualizar progreso de referidos cuando aplican proyecto
+      try {
+        const { updateReferralProgress } = await import('@/app/api/referrals/process/route');
+        await updateReferralProgress(applicantWalletAddress);
+        console.log(`✅ Referral progress updated for project application: ${applicantWalletAddress.slice(0, 6)}...`);
+      } catch (referralError) {
+        console.warn('⚠️ Failed to update referral progress for project application:', referralError);
+        // No bloquear la creación del proyecto si falla la actualización de referidos
+      }
+    }
+
     return NextResponse.json(newProject, { status: 201 });
   } catch (error) {
     console.error("Error al guardar el borrador del proyecto:", error);

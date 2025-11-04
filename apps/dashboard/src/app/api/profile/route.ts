@@ -231,6 +231,19 @@ export async function POST(request: Request) {
       WHERE LOWER("walletAddress") = LOWER(${walletAddress})
     `;
 
+    // 🎯 UPDATE REFERRAL PROGRESS: Si el usuario completó KYC básico, actualizar progreso de referidos
+    if (profileData.kycCompleted && profileData.kycLevel === 'basic') {
+      try {
+        // Importar dinámicamente para evitar problemas de dependencias circulares
+        const { updateReferralProgress } = await import('@/app/api/referrals/process/route');
+        await updateReferralProgress(walletAddress);
+        console.log(`✅ Referral progress updated for KYC completion: ${walletAddress.slice(0, 6)}...`);
+      } catch (referralError) {
+        console.warn('⚠️ Failed to update referral progress for KYC completion:', referralError);
+        // No bloquear la actualización del perfil si falla la actualización de referidos
+      }
+    }
+
     return NextResponse.json({
       message: "Perfil actualizado exitosamente",
       updated: profileData,
