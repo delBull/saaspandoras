@@ -91,7 +91,7 @@ export default function AchievementsPage() {
       try {
         console.log('🚀 Fetching user achievements from main API...');
         // Use the main gamification API that includes user achievement status
-        const achievementsResponse = await fetch(`/api/gamification/user/data/${account?.address ?? ''}`);
+        const achievementsResponse = await fetch(`/api/gamification/user/achievements/full/${account?.address ?? ''}`);
         console.log('📡 API Response Status:', achievementsResponse.status);
 
         const achievementsData = await achievementsResponse.json();
@@ -236,14 +236,14 @@ export default function AchievementsPage() {
           <div className="text-center p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl backdrop-blur-sm">
             <Medal className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
             <div className="text-3xl font-bold text-yellow-400 mb-1">
-              {gamification?.achievements?.filter((a: any) => a.isCompleted).length || 0}
+              {allAvailableAchievements.filter((a: any) => a.isCompleted).length}
             </div>
             <div className="text-sm text-zinc-400">Logros Obtenidos</div>
           </div>
           <div className="text-center p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl backdrop-blur-sm">
             <Target className="w-8 h-8 text-red-400 mx-auto mb-2" />
             <div className="text-3xl font-bold text-red-400 mb-1">
-              {Math.max(0, allAchievements.length - (gamification?.achievements?.filter((a: any) => a.isCompleted).length || 0))}
+              {Math.max(0, allAchievements.length - allAvailableAchievements.filter((a: any) => a.isCompleted).length)}
             </div>
             <div className="text-sm text-zinc-400">Pendientes</div>
           </div>
