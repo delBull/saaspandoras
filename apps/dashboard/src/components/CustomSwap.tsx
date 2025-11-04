@@ -636,8 +636,8 @@ export function CustomSwap() {
           originTokenAddress: fromToken.address,
           destinationChainId: toToken.chainId,
           destinationTokenAddress: toToken.address,
-          sender: account.address,
-          receiver: account.address,
+          sender: account.address as `0x${string}`,
+          receiver: account.address as `0x${string}`,
           amount: fromAmountBaseUnits,
           client,
         });
