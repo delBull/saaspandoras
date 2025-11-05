@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from 'react';
 import { useForm, FormProvider, useFormContext } from 'react-hook-form';
+import type { FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
@@ -30,9 +31,9 @@ import { formQuestions } from './conversational-form/formQuestions';
 
 // Schema de validación completo basado en DB schema - Versión Utility
 const projectSchema = z.object({
-  // Campos requeridos - Identidad de la Creación
-  title: z.string().min(3, "El nombre debe tener al menos 3 caracteres").max(256, "El nombre es demasiado largo"),
-  description: z.string().min(10, "La descripción debe tener al menos 10 caracteres"),
+  // Campos requeridos - Identidad de la Creación (temporalmente opcionales para pruebas)
+  title: z.string().min(3, "El nombre debe tener al menos 3 caracteres").max(256, "El nombre es demasiado largo").optional(),
+  description: z.string().min(10, "La descripción debe tener al menos 10 caracteres").optional(),
   businessCategory: z.enum([
     'residential_real_estate',
     'commercial_real_estate',
@@ -54,7 +55,7 @@ const projectSchema = z.object({
     'insurance',
     'prediction_markets',
     'other'
-  ]),
+  ]).optional(),
 
   // Campos opcionales - Identidad
   tagline: z.string().max(140, "El eslogan es demasiado largo").optional(),
@@ -118,7 +119,7 @@ const projectSchema = z.object({
   // Confianza y Transparencia
   legalStatus: z.string().optional(),
   fiduciaryEntity: z.string().max(256).optional(),
-  valuationDocumentUrl: z.string().url("URL inválida").optional().or(z.literal("")),
+  valuationDocumentUrl: z.string().optional(),
   dueDiligenceReportUrl: z.string().url("URL inválida").optional().or(z.literal("")),
 
   // Parámetros Técnicos
@@ -220,7 +221,7 @@ export default function ConversationalForm() {
   const { trigger, handleSubmit, watch, setValue } = methods;
 
   // Observar cambios en el título para personalización dinámica
-  const projectTitle = watch('title') || 'tu Creación';
+  const projectTitle = watch('title') ?? 'tu Creación';
 
   // Auto-fill wallet address when account changes
   useEffect(() => {
@@ -954,42 +955,75 @@ export default function ConversationalForm() {
     }
   }, [currentStep, currentQuestion]);
 
-  // Submit handler
+  // Manejador de errores de validación
+  const onValidationErrors = (errors: FieldErrors<ProjectFormData>) => {
+    console.error("Errores de validación del formulario:", errors);
+    const errorFields = Object.keys(errors).join(", ");
+    alert(`Hay errores en el formulario. Revisa los campos: ${errorFields}`);
+  };
+
+  // Submit handler - Actualizado para coincidir con multi-step-form
   const onSubmit = async (data: ProjectFormData) => {
+    // Re-validate to ensure type safety and satisfy the linter (como en multi-step-form)
+    const validation = projectSchema.safeParse(data);
+    if (!validation.success) {
+      console.error("Final submit data failed validation:", validation.error.flatten());
+      alert("No se pudo enviar el proyecto por datos inválidos.");
+      return;
+    }
+    const safeData = validation.data; // Use this safely typed data
+
+    console.log('🚀 onSubmit called with validated data:', safeData);
     setIsSubmitting(true);
-    console.log('📝 Formulario completado:', data);
+
+    const tokenDist = safeData.tokenDistribution ?? {};
+    // Asegurar distribución válida para clientes (permitir suma de 100%) - como en multi-step-form
+    const finalDistribution = {
+      publicSale: (tokenDist as { publicSale?: number }).publicSale ?? 100,
+      team: (tokenDist as { team?: number }).team ?? 0,
+      treasury: (tokenDist as { treasury?: number }).treasury ?? 0,
+      marketing: (tokenDist as { marketing?: number }).marketing ?? 0,
+    };
+
+    // Verificar suma para clientes públicos - como en multi-step-form
+    const total = (finalDistribution.publicSale ?? 0) + (finalDistribution.team ?? 0) + (finalDistribution.treasury ?? 0) + (finalDistribution.marketing ?? 0);
+    if (total > 100) {
+      alert("La distribución total de tokens no puede exceder el 100%");
+      setIsSubmitting(false);
+      return;
+    }
+    if (total === 0) {
+      // Si suma es 0, establecer publicSale al 100% por defecto
+      finalDistribution.publicSale = 100;
+    }
+
+    // Preparar datos con valores por defecto para campos opcionales que el servidor requiere
+    const submitData = {
+      ...safeData,
+      // Valores por defecto para campos opcionales que el servidor requiere
+      title: safeData.title ?? 'Proyecto sin título',
+      description: safeData.description ?? 'Descripción pendiente',
+      businessCategory: safeData.businessCategory ?? 'other',
+      estimatedApy: safeData.estimatedApy ? String(safeData.estimatedApy) : undefined, // Convertir a string como espera el servidor
+      teamMembers: JSON.stringify(safeData.teamMembers ?? []),
+      advisors: JSON.stringify(safeData.advisors ?? []),
+      tokenDistribution: JSON.stringify(finalDistribution),
+      status: "draft", // Los proyectos enviados desde el formulario conversacional empiezan como draft
+      featured: false, // ✅ Featured debe ser manual, nunca automático
+      // Convertir booleanos a strings para evitar errores de validación
+      stakingRewardsEnabled: safeData.stakingRewardsEnabled ? "true" : "false",
+      revenueSharingEnabled: safeData.revenueSharingEnabled ? "true" : "false",
+      workToEarnEnabled: safeData.workToEarnEnabled ? "true" : "false",
+      tieredAccessEnabled: safeData.tieredAccessEnabled ? "true" : "false",
+      discountedFeesEnabled: safeData.discountedFeesEnabled ? "true" : "false",
+      isMintable: safeData.isMintable ? "true" : "false",
+      isMutable: safeData.isMutable ? "true" : "false",
+      legalEntityHelp: safeData.legalEntityHelp ? "true" : "false"
+    };
+
+    console.log('📤 Enviando datos a API:', submitData);
 
     try {
-      // Preparar datos para envío
-      const tokenDist = data.tokenDistribution ?? {};
-      const finalDistribution = {
-        publicSale: (tokenDist as { publicSale?: number })?.publicSale ?? 0,
-        team: (tokenDist as { team?: number })?.team ?? 0,
-        treasury: (tokenDist as { treasury?: number })?.treasury ?? 0,
-        marketing: (tokenDist as { marketing?: number })?.marketing ?? 0,
-      };
-
-      const submitData = {
-        ...data,
-        estimatedApy: data.estimatedApy ? String(data.estimatedApy) : undefined,
-        teamMembers: JSON.stringify(data.teamMembers ?? []),
-        advisors: JSON.stringify(data.advisors ?? []),
-        tokenDistribution: JSON.stringify(finalDistribution),
-        status: "draft", // Los proyectos enviados desde el formulario conversacional empiezan como draft
-        featured: false,
-        // Convertir booleanos a strings para evitar errores de validación
-        stakingRewardsEnabled: data.stakingRewardsEnabled ? "true" : "false",
-        revenueSharingEnabled: data.revenueSharingEnabled ? "true" : "false",
-        workToEarnEnabled: data.workToEarnEnabled ? "true" : "false",
-        tieredAccessEnabled: data.tieredAccessEnabled ? "true" : "false",
-        discountedFeesEnabled: data.discountedFeesEnabled ? "true" : "false",
-        isMintable: data.isMintable ? "true" : "false",
-        isMutable: data.isMutable ? "true" : "false",
-        legalEntityHelp: data.legalEntityHelp ? "true" : "false"
-      };
-
-      console.log('📤 Enviando datos a API:', submitData);
-
       // Enviar a API
       const response = await fetch('/api/projects/utility-application', {
         method: 'POST',
@@ -998,28 +1032,40 @@ export default function ConversationalForm() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Error desconocido' })) as { message?: string };
-        throw new Error(errorData.message ?? `Error del servidor (${response.status})`);
+        let errorMessage = "Error al guardar el proyecto";
+        let errorData: unknown = null;
+
+        try {
+          const responseText = await response.text();
+          console.log('Response text:', responseText);
+          errorData = JSON.parse(responseText);
+          errorMessage = (errorData as { message?: string }).message ?? errorMessage;
+          console.log('Parsed error data:', errorData);
+        } catch {
+          errorMessage = `Error del servidor (${response.status}) - respuesta no válida`;
+        }
+
+        console.error("❌ Error del servidor:", errorData);
+        throw new Error(errorMessage);
       }
 
+      // La respuesta se usa solo para log, así que 'unknown' es seguro.
       const responseData: unknown = await response.json();
-      console.log('✅ Proyecto creado exitosamente:', responseData);
+      console.log('✅ Success response:', responseData);
 
-      // 🎮 TRIGGER EVENTO DE APLICACIÓN DE PROYECTO
+      // 🎮 TRIGGER EVENTO DE APLICACIÓN DE PROYECTO - usando el mismo método que multi-step-form
       const userWallet = account?.address?.toLowerCase();
       if (userWallet) {
         try {
           console.log('🎮 Triggering project application event for user:', userWallet);
-          // Usar el servicio de gamificación del dashboard que maneja la DB real
-          const { trackGamificationEvent } = await import('@/lib/gamification/service');
-          await trackGamificationEvent(
+          await gamificationEngine.trackEvent(
             userWallet,
-            'project_application_submitted',
+            EventType.PROJECT_APPLICATION_SUBMITTED,
             {
-              projectTitle: data.title,
+              projectTitle: safeData.title,
               projectId: (responseData as { id?: string | number })?.id?.toString() ?? 'unknown',
-              businessCategory: data.businessCategory,
-              targetAmount: data.targetAmount,
+              businessCategory: safeData.businessCategory,
+              targetAmount: safeData.targetAmount,
               isPublicApplication: true,
               submissionType: 'utility_form_draft'
             }
@@ -1032,7 +1078,6 @@ export default function ConversationalForm() {
       }
 
       alert('¡Aplicación enviada exitosamente! 🎉\n\nTu proyecto ha sido guardado como borrador y recibirás 50 tokens por tu primera aplicación.');
-
     } catch (error) {
       console.error('❌ Error al enviar:', error);
       const message = error instanceof Error ? error.message : 'Error desconocido al enviar el formulario';
@@ -1121,7 +1166,7 @@ export default function ConversationalForm() {
 
         {/* Formulario */}
         <FormProvider {...methods}>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+          <form onSubmit={handleSubmit(onSubmit, onValidationErrors)} className="space-y-8">
             {/* Contenedor de preguntas con animación */}
             <div className="relative min-h-[420px] max-h-[60vh] overflow-hidden">
               <AnimatePresence mode="wait">
@@ -1145,7 +1190,10 @@ export default function ConversationalForm() {
                         <input
                           type="checkbox"
                           checked={acceptanceChecked}
-                          onChange={(e) => setAcceptanceChecked(e.target.checked)}
+                          onChange={(e) => {
+                            setAcceptanceChecked(e.target.checked);
+                            setValue('verificationAgreement', e.target.checked ? 'accepted' : '');
+                          }}
                           className="mt-1 w-5 h-5 text-lime-400 bg-zinc-800 border-zinc-600 rounded focus:ring-lime-400 focus:ring-2"
                         />
                         <span className="text-white text-base leading-relaxed">

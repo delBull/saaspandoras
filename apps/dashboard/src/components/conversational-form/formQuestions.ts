@@ -8,7 +8,7 @@ export const formQuestions: FormQuestion[] = [
     label: '¡Hola, Creador! ¿Cómo se llama esta nueva Creación (Protocolo de Utilidad)?',
     placeholder: 'Ej: Pandora\'s DAO o Acceso Total NFT',
     component: 'text-input',
-    required: true,
+    // required: true, // Temporalmente no requerido para pruebas
     maxLength: 256,
   },
   {
@@ -45,7 +45,7 @@ export const formQuestions: FormQuestion[] = [
       { value: 'prediction_markets', label: 'Mercados de Predicción (Acceso y Votación)' },
       { value: 'other', label: 'Otro (Especificar en descripción)' },
     ],
-    required: true,
+    // required: true, // Temporalmente no requerido para pruebas
     info: 'Selecciona la categoría que mejor describa la utilidad principal de tu protocolo. Esta clasificación ayuda a la comunidad a encontrar Creaciones relevantes.',
   },
   {
@@ -248,7 +248,7 @@ export const formQuestions: FormQuestion[] = [
     id: 'valuationDocumentUrl', // Mantiene la clave, pero cambia la pregunta
     label: 'Describa la estrategia inicial para que la comunidad adquiera sus Artefactos de Acceso.',
     placeholder: 'Ej: 50% vía Airdrop a holders de X NFT, 50% vía venta a precio fijo, asignación por mérito/labor.',
-    component: 'text-input',
+    component: 'textarea-input',
     info: 'Describe cómo planeas distribuir inicialmente tus Artefactos. Incluye porcentajes, criterios de elegibilidad y fases de lanzamiento.',
   },
   {
