@@ -42,12 +42,25 @@ interface ApplicantsFiltersProps {
 
 const categories = [
   { value: 'all', label: 'Todas las categorías' },
-  { value: 'residential_real_estate', label: 'Bienes Raíces Residencial' },
-  { value: 'commercial_real_estate', label: 'Bienes Raíces Comercial' },
-  { value: 'tech_startup', label: 'Startup Tecnológica' },
+  { value: 'residential_real_estate', label: 'Bienes Raíces Residenciales' },
+  { value: 'commercial_real_estate', label: 'Bienes Raíces Comerciales' },
+  { value: 'tech_startup', label: 'Tech Startup' },
   { value: 'renewable_energy', label: 'Energías Renovables' },
   { value: 'art_collectibles', label: 'Arte y Coleccionables' },
   { value: 'intellectual_property', label: 'Propiedad Intelectual' },
+  { value: 'defi', label: 'DeFi (Finanzas Descentralizadas)' },
+  { value: 'gaming', label: 'Gaming y NFTs de Juegos' },
+  { value: 'metaverse', label: 'Metaverso y Real Estate Virtual' },
+  { value: 'music_audio', label: 'Música y NFTs de Audio' },
+  { value: 'sports_fan_tokens', label: 'Deportes y Fan Tokens' },
+  { value: 'education', label: 'Educación y Aprendizaje' },
+  { value: 'healthcare', label: 'Salud y Biotecnología' },
+  { value: 'supply_chain', label: 'Cadena de Suministro' },
+  { value: 'infrastructure', label: 'Infraestructura y DAO Tools' },
+  { value: 'social_networks', label: 'Redes Sociales Web3' },
+  { value: 'carbon_credits', label: 'Créditos de Carbono' },
+  { value: 'insurance', label: 'Seguros Paramétricos' },
+  { value: 'prediction_markets', label: 'Mercados de Predicción' },
   { value: 'other', label: 'Otro' },
 ];
 

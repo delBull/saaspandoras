@@ -75,6 +75,7 @@ export function AvatarEditor({ variant = 'desktop', onClose }: AvatarEditorProps
           'x-wallet-address': account.address,
           'x-thirdweb-address': account.address,
           'x-user-address': account.address,
+          // Don't set Content-Type for FormData - browser sets it automatically
         },
         body: formData,
       });
