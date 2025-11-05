@@ -20,6 +20,13 @@ export const formQuestions: FormQuestion[] = [
     info: 'Un eslogan memorable que capture la esencia de tu protocolo de utilidad. Debe enfocarse en el beneficio, no en la inversión.',
   },
   {
+    id: 'description',
+    label: 'Describe tu Creación: ¿Qué problema resuelve y cómo beneficia a tu comunidad?',
+    placeholder: 'Ej: Mi protocolo conecta creadores con su audiencia a través de tokens de utilidad que dan acceso exclusivo a contenido premium, eventos y recompensas por participación activa.',
+    component: 'textarea-input',
+    info: 'Describe claramente qué hace tu protocolo, qué problema resuelve y cómo beneficia a los holders de tus Artefactos. Esta descripción aparecerá en tu página de proyecto.',
+  },
+  {
     id: 'businessCategory',
     label: 'Para ayudar a la Comunidad a descubrirla, ¿en qué categoría clasificarías tu Creación?',
     component: 'select-input',

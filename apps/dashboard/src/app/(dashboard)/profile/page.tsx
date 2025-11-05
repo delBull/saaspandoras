@@ -469,7 +469,7 @@ export default function ProfilePage() {
                   new Date(profile.lastConnectionAt).toLocaleString('es-ES') :
                   'N/A'
                 }</p>
-                <p className="mt-2">Proyecto aplicado: {profile?.projectCount ?? 0}</p>
+                <p className="mt-2">Creaciones Aplicadas: {profile?.projectCount ?? 0}</p>
                 <p>Tiene Pandora&apos;s Key: {profile?.hasPandorasKey ? '✅' : '❌'}</p>
               </div>
             </CardContent>
