@@ -7,12 +7,12 @@ import { ClipboardDocumentIcon, CheckIcon, WalletIcon, ShieldCheckIcon, ArrowTop
 import { toast } from 'sonner';
 import { useProfile } from '@/hooks/useProfile';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useActiveAccount } from 'thirdweb/react';
 // 🎮 IMPORTAR COMPONENTES Y HOOKS REALES DE GAMIFICACIÓN
 import { useRealGamification } from '@/hooks/useRealGamification';
 import { ReferralShareCard } from '@/components/ReferralShareCard';
 import { ReferralsCard } from '../../../components/ReferralsCard';
+import { AvatarEditor } from '@/components/AvatarEditor';
 
 // Extended UserAchievement type with achievement details (for type assertion)
 interface ExtendedUserAchievement {
@@ -150,23 +150,11 @@ export default function ProfilePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
               <div className="relative mb-5">
-                <Image
-                  src={profile?.image ?? '/images/avatars/onlybox2.png'}
-                  alt="Profile"
-                  width={64}
-                  height={64}
-                  className="w-16 h-16 rounded-full border-2 border-lime-400"
-                />
-                <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-zinc-900 ${
-                  (profile?.kycCompleted && profile?.kycLevel === 'basic') ? 'bg-green-500' : 'bg-yellow-500'
-                }`}></div>
+                <AvatarEditor variant="desktop" />
               </div>
               <div>
                 <div className="text-lg font-semibold text-white">
                   {profile?.name ?? 'Usuario'}
-                </div>
-                <div className="text-sm text-gray-400">
-                  Nivel {(profile?.kycCompleted && profile?.kycLevel === 'basic') ? 'Básico' : 'N/A'}
                 </div>
               </div>
             </CardTitle>
