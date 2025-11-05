@@ -13,14 +13,14 @@ export function ProjectNavigation({ className = '', activeTab = 'campaign', onTa
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const mainTabs = [
-    { id: 'campaign', label: 'Campaign' },
-    { id: 'faq', label: 'FAQ' },
-    { id: 'updates', label: 'Updates', count: 2 },
+    { id: 'campaign', label: 'Campaña' },
+    { id: 'faq', label: 'Preguntas Frecuentes' },
+    { id: 'updates', label: 'Actualizaciones', count: 2 },
   ];
 
   const dropdownTabs = [
-    { id: 'comments', label: 'Comments', count: 370 },
-    { id: 'community', label: 'Community' },
+    { id: 'comments', label: 'Comentarios', count: 370 },
+    { id: 'community', label: 'Comunidad' },
   ];
 
   const handleTabClick = (tabId: string) => {
