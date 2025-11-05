@@ -9,10 +9,13 @@ import { Button } from '@/components/ui/button';
 import { z } from 'zod';
 import Image from 'next/image';
 import { useActiveAccount } from 'thirdweb/react';
+import { useRouter } from 'next/navigation';
 // 🎮 IMPORTAR EVENTOS DE GAMIFICACIÓN
 import { gamificationEngine, EventType } from "@pandoras/gamification";
 // 📖 MODAL DE INFORMACIÓN
 import { InfoModal } from './InfoModal';
+// 🔄 MODAL DE RESULTADO (Loading/Success/Error)
+import { ResultModal } from './ResultModal';
 // 📜 MODAL DE TÉRMINOS Y CONDICIONES
 import { useTermsModal } from '@/contexts/TermsModalContext';
 // 🧩 COMPONENTES DE INPUT MODULARES
@@ -207,6 +210,22 @@ export default function ConversationalForm() {
     icon?: string;
   }>({
     isOpen: false,
+    title: '',
+    description: '',
+    content: null,
+  });
+
+  // Modal de resultado (loading/success/error)
+  const [resultModal, setResultModal] = useState<{
+    isOpen: boolean;
+    type: 'loading' | 'success' | 'error';
+    title: string;
+    description: string;
+    content: React.ReactNode;
+    icon?: string;
+  }>({
+    isOpen: false,
+    type: 'loading',
     title: '',
     description: '',
     content: null,
@@ -968,12 +987,28 @@ export default function ConversationalForm() {
     const validation = projectSchema.safeParse(data);
     if (!validation.success) {
       console.error("Final submit data failed validation:", validation.error.flatten());
-      alert("No se pudo enviar el proyecto por datos inválidos.");
+      setResultModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Error de Validación',
+        description: 'Los datos del formulario no son válidos. Revisa la información e intenta nuevamente.',
+        content: null,
+      });
       return;
     }
     const safeData = validation.data; // Use this safely typed data
 
     console.log('🚀 onSubmit called with validated data:', safeData);
+
+    // Mostrar modal de loading
+    setResultModal({
+      isOpen: true,
+      type: 'loading',
+      title: 'Enviando Aplicación',
+      description: 'Estamos procesando tu solicitud. Esto puede tomar unos momentos...',
+      content: null,
+    });
+
     setIsSubmitting(true);
 
     const tokenDist = safeData.tokenDistribution ?? {};
@@ -988,7 +1023,13 @@ export default function ConversationalForm() {
     // Verificar suma para clientes públicos - como en multi-step-form
     const total = (finalDistribution.publicSale ?? 0) + (finalDistribution.team ?? 0) + (finalDistribution.treasury ?? 0) + (finalDistribution.marketing ?? 0);
     if (total > 100) {
-      alert("La distribución total de tokens no puede exceder el 100%");
+      setResultModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Error en Distribución de Tokens',
+        description: 'La distribución total de tokens no puede exceder el 100%. Revisa los porcentajes.',
+        content: null,
+      });
       setIsSubmitting(false);
       return;
     }
@@ -1077,11 +1118,26 @@ export default function ConversationalForm() {
         }
       }
 
-      alert('¡Aplicación enviada exitosamente! 🎉\n\nTu proyecto ha sido guardado como borrador y recibirás 50 tokens por tu primera aplicación.');
+      // Mostrar modal de éxito
+      setResultModal({
+        isOpen: true,
+        type: 'success',
+        title: '¡Aplicación Enviada Exitosamente! 🎉',
+        description: 'Tu proyecto ha sido guardado como borrador y recibirás 50 tokens por tu primera aplicación.',
+        content: null,
+      });
     } catch (error) {
       console.error('❌ Error al enviar:', error);
       const message = error instanceof Error ? error.message : 'Error desconocido al enviar el formulario';
-      alert(`Error al enviar el formulario: ${message}`);
+
+      // Mostrar modal de error
+      setResultModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Error al Enviar Aplicación',
+        description: message,
+        content: null,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -1288,6 +1344,16 @@ export default function ConversationalForm() {
           description={infoModal.description}
           content={infoModal.content}
           icon={infoModal.icon}
+        />
+
+        {/* Modal de Resultado (Loading/Success/Error) */}
+        <ResultModal
+          isOpen={resultModal.isOpen}
+          type={resultModal.type}
+          title={resultModal.title}
+          description={resultModal.description}
+          content={resultModal.content}
+          icon={resultModal.icon}
         />
       </div>
     </div>

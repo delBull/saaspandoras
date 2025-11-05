@@ -691,12 +691,14 @@ export default function ProfileProjectsPage() {
               <p className="text-gray-400 mb-6">
                 Aún no has aplicado a ningúna creación. Comienza tu jornada aplicando a oportunidades interesantes.
               </p>
+              {/*
                 <Link href="/apply">
                   <Button className="bg-lime-500 hover:bg-lime-600 text-zinc-900">
                     <PencilIcon className="w-4 h-4 mr-2" />
                     Aplica a tu primera Creación
                   </Button>
                 </Link>
+              */}
             </CardContent>
           </Card>
         )}
