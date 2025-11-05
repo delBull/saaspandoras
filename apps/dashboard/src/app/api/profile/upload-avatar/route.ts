@@ -89,12 +89,26 @@ export async function POST(request: NextRequest) {
       finalProcessedSize = fs.statSync(filepath).size;
     } else {
       // Production: Use Vercel Blob
-      const blob = await put(filename, processedBuffer, {
-        access: 'public',
-        contentType: 'image/webp',
-      });
-      imageUrl = blob.url;
-      finalProcessedSize = processedBuffer.length;
+      try {
+        const blob = await put(filename, processedBuffer, {
+          access: 'public',
+          contentType: 'image/webp',
+        });
+        imageUrl = blob.url;
+        finalProcessedSize = processedBuffer.length;
+      } catch (blobError) {
+        console.error('Vercel Blob upload error:', blobError);
+        // Fallback to local storage if blob fails
+        const uploadsDir = join(process.cwd(), 'public', 'uploads', 'avatars');
+        if (!fs.existsSync(uploadsDir)) {
+          fs.mkdirSync(uploadsDir, { recursive: true });
+        }
+        const filepath = join(uploadsDir, filename);
+        await sharp(processedBuffer).toFile(filepath);
+        imageUrl = `/uploads/avatars/${filename}`;
+        finalProcessedSize = fs.statSync(filepath).size;
+        console.log('Fallback to local storage due to blob error');
+      }
     }
 
     // Update user profile in database
