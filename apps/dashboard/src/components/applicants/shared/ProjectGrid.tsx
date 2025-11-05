@@ -26,7 +26,7 @@ export function ProjectGrid({
         <p className="text-gray-600 dark:text-gray-400 text-sm">
           {variant === 'pending'
             ? "No hay creaciones en revisión"
-            : "No hay creaciones para mostrar"}
+            : "En esta sección se muestran las creaciones 'desatadas' listas para compartir. Por el momento, todas las creaciones están en proceso de revisión y preparación."}
         </p>
       </div>
     );

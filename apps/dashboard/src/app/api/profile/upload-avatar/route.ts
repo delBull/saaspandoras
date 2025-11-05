@@ -3,7 +3,6 @@ import { NextResponse } from 'next/server';
 import { join } from 'path';
 import * as fs from 'fs';
 import sharp from 'sharp';
-import { put } from '@vercel/blob';
 import { db } from '@/db';
 import { users } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -13,10 +12,14 @@ const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('Avatar upload request received');
+
     // Verify wallet address from headers
     const walletAddress = request.headers.get('x-wallet-address') ??
                          request.headers.get('x-thirdweb-address') ??
                          request.headers.get('x-user-address');
+
+    console.log('Wallet address:', walletAddress ? 'present' : 'missing');
 
     if (!walletAddress) {
       return NextResponse.json(
@@ -27,6 +30,8 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const file = formData.get('avatar') as File;
+
+    console.log('File received:', file ? `size: ${file.size}, type: ${file.type}` : 'no file');
 
     if (!file) {
       return NextResponse.json(
@@ -73,43 +78,17 @@ export async function POST(request: NextRequest) {
       })
       .toBuffer();
 
-    // Store based on environment
-    let imageUrl: string;
-    let finalProcessedSize: number = processedBuffer.length;
-
-    if (process.env.NODE_ENV === 'development') {
-      // Development: Use local filesystem
-      const uploadsDir = join(process.cwd(), 'public', 'uploads', 'avatars');
-      if (!fs.existsSync(uploadsDir)) {
-        fs.mkdirSync(uploadsDir, { recursive: true });
-      }
-      const filepath = join(uploadsDir, filename);
-      await sharp(processedBuffer).toFile(filepath);
-      imageUrl = `/uploads/avatars/${filename}`;
-      finalProcessedSize = fs.statSync(filepath).size;
-    } else {
-      // Production: Use Vercel Blob
-      try {
-        const blob = await put(filename, processedBuffer, {
-          access: 'public',
-          contentType: 'image/webp',
-        });
-        imageUrl = blob.url;
-        finalProcessedSize = processedBuffer.length;
-      } catch (blobError) {
-        console.error('Vercel Blob upload error:', blobError);
-        // Fallback to local storage if blob fails
-        const uploadsDir = join(process.cwd(), 'public', 'uploads', 'avatars');
-        if (!fs.existsSync(uploadsDir)) {
-          fs.mkdirSync(uploadsDir, { recursive: true });
-        }
-        const filepath = join(uploadsDir, filename);
-        await sharp(processedBuffer).toFile(filepath);
-        imageUrl = `/uploads/avatars/${filename}`;
-        finalProcessedSize = fs.statSync(filepath).size;
-        console.log('Fallback to local storage due to blob error');
-      }
+    // Store image - Use local storage for now (works in both dev and prod)
+    console.log('Using local storage for avatar upload');
+    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'avatars');
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
     }
+    const filepath = join(uploadsDir, filename);
+    await sharp(processedBuffer).toFile(filepath);
+    const imageUrl = `/uploads/avatars/${filename}`;
+    const finalProcessedSize = fs.statSync(filepath).size;
+    console.log('Local storage upload successful:', imageUrl);
 
     // Update user profile in database
     const result = await db
