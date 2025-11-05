@@ -1,7 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { join } from 'path';
-import * as fs from 'fs';
+import { put } from '@vercel/blob';
 import sharp from 'sharp';
 import { db } from '@/db';
 import { users } from '@/db/schema';
@@ -78,17 +77,18 @@ export async function POST(request: NextRequest) {
       })
       .toBuffer();
 
-    // Store image - Use local storage for now (works in both dev and prod)
-    console.log('Using local storage for avatar upload');
-    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'avatars');
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
-    const filepath = join(uploadsDir, filename);
-    await sharp(processedBuffer).toFile(filepath);
-    const imageUrl = `/uploads/avatars/${filename}`;
-    const finalProcessedSize = fs.statSync(filepath).size;
-    console.log('Local storage upload successful:', imageUrl);
+    // Store image using Vercel Blob Storage
+    console.log('Using Vercel Blob Storage for avatar upload');
+
+    // Upload to Vercel Blob
+    const blob = await put(filename, processedBuffer, {
+      access: 'public',
+      contentType: 'image/webp'
+    });
+
+    const imageUrl = blob.url;
+    const finalProcessedSize = processedBuffer.length;
+    console.log('Blob storage upload successful:', imageUrl);
 
     // Update user profile in database
     const result = await db
