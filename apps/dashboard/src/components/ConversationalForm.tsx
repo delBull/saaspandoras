@@ -10,6 +10,8 @@ import Image from 'next/image';
 import { useActiveAccount } from 'thirdweb/react';
 // 🎮 IMPORTAR EVENTOS DE GAMIFICACIÓN
 import { gamificationEngine, EventType } from "@pandoras/gamification";
+// 📖 MODAL DE INFORMACIÓN
+import { InfoModal } from './InfoModal';
 
 // Schema de validación completo basado en DB schema - Versión Utility
 const projectSchema = z.object({
@@ -62,6 +64,21 @@ const projectSchema = z.object({
   tokenPriceUsd: z.number().min(0.01, "El precio debe ser mayor a 0.01 USD").optional(),
   estimatedApy: z.string().max(50).optional(),
   yieldSource: z.enum(['protocol_revenue', 'staking_rewards', 'liquidity_mining', 'governance_rewards', 'utility_fees', 'revenue_sharing', 'other']).optional(),
+
+  // Estructura de Recompensa Recurrente
+  stakingRewardsEnabled: z.boolean().optional(),
+  stakingRewardsDetails: z.string().optional(),
+  revenueSharingEnabled: z.boolean().optional(),
+  revenueSharingDetails: z.string().optional(),
+  workToEarnEnabled: z.boolean().optional(),
+  workToEarnDetails: z.string().optional(),
+  tieredAccessEnabled: z.boolean().optional(),
+  tieredAccessDetails: z.string().optional(),
+  discountedFeesEnabled: z.boolean().optional(),
+  discountedFeesDetails: z.string().optional(),
+
+  recurringRewards: z.string().optional(),
+
   fundUsage: z.string().optional(),
   lockupPeriod: z.string().max(100).optional(),
 
@@ -101,8 +118,12 @@ const projectSchema = z.object({
   applicantPhone: z.string().max(50).optional(),
   applicantWalletAddress: z.string().optional(),
 
+  // Campos adicionales
+  integrationDetails: z.string().optional(),
+  legalEntityHelp: z.boolean().optional(),
+
   // Verificación Final
-  verificationAgreement: z.boolean(),
+  verificationAgreement: z.string().optional(),
 });
 
 // Tipos
@@ -112,7 +133,7 @@ interface FormQuestion {
   id: keyof ProjectFormData;
   label: string;
   placeholder?: string;
-  component: 'text-input' | 'textarea-input' | 'select-input' | 'number-input' | 'url-input' | 'file-input' | 'checkbox-input';
+  component: 'text-input' | 'textarea-input' | 'select-input' | 'number-input' | 'url-input' | 'file-input' | 'checkbox-input' | 'recurring-rewards-input';
   options?: { value: string; label: string }[];
   required?: boolean;
   maxLength?: number;
@@ -120,56 +141,57 @@ interface FormQuestion {
   relatedField?: string;
 }
 
-// Array de preguntas del formulario conversacional - Versión Utility Completa
+// Array de preguntas del formulario conversacional - Versión Utility Final
 const formQuestions: FormQuestion[] = [
-  // SECCIÓN 1: La Identidad de tu Creación
+  // SECCIÓN 1: La Identidad de tu Creación (6 preguntas)
   {
     id: 'title',
-    label: '¡Hola, Creador! Estamos emocionados por ver tu idea. ¿Cómo se llama esta nueva Creación?',
-    placeholder: 'Ej: Pandora\'s Finance',
+    label: '¡Hola, Creador! ¿Cómo se llama esta nueva Creación (Protocolo de Utilidad)?',
+    placeholder: 'Ej: Pandora\'s DAO o Acceso Total NFT',
     component: 'text-input',
     required: true,
     maxLength: 256,
   },
   {
-    id: 'description',
-    label: 'Cuéntanos la historia. ¿Qué problema resuelve tu Creación y cómo beneficiará a la Comunidad de Pandora\'s?',
-    placeholder: 'Describe tu visión, el problema que resuelves y cómo lo haces...',
-    component: 'textarea-input',
-    required: true,
+    id: 'tagline',
+    label: '¿Cuál es el eslogan o frase que resume el Valor o la Utilidad de tu Creación?',
+    placeholder: 'Ej: Acceso ilimitado a nuestra comunidad por tu Labor.',
+    component: 'text-input',
+    maxLength: 140,
+    info: 'Un eslogan memorable que capture la esencia de tu protocolo de utilidad. Debe enfocarse en el beneficio, no en la inversión.',
   },
   {
     id: 'businessCategory',
     label: 'Para ayudar a la Comunidad a descubrirla, ¿en qué categoría clasificarías tu Creación?',
     component: 'select-input',
     options: [
-      { value: 'residential_real_estate', label: 'Bienes Raíces Residenciales' },
-      { value: 'commercial_real_estate', label: 'Bienes Raíces Comerciales' },
-      { value: 'tech_startup', label: 'Tech Startup' },
-      { value: 'renewable_energy', label: 'Energías Renovables' },
-      { value: 'art_collectibles', label: 'Arte y Coleccionables' },
-      { value: 'intellectual_property', label: 'Propiedad Intelectual' },
-      { value: 'defi', label: 'DeFi (Finanzas Descentralizadas)' },
-      { value: 'gaming', label: 'Gaming y NFTs de Juegos' },
-      { value: 'metaverse', label: 'Metaverso y Real Estate Virtual' },
-      { value: 'music_audio', label: 'Música y NFTs de Audio' },
-      { value: 'sports_fan_tokens', label: 'Deportes y Fan Tokens' },
-      { value: 'education', label: 'Educación y Aprendizaje' },
-      { value: 'healthcare', label: 'Salud y Biotecnología' },
-      { value: 'supply_chain', label: 'Cadena de Suministro' },
-      { value: 'infrastructure', label: 'Infraestructura y DAO Tools' },
-      { value: 'social_networks', label: 'Redes Sociales Web3' },
-      { value: 'carbon_credits', label: 'Créditos de Carbono' },
-      { value: 'insurance', label: 'Seguros Paramétricos' },
-      { value: 'prediction_markets', label: 'Mercados de Predicción' },
-      { value: 'other', label: 'Otro' },
+      { value: 'residential_real_estate', label: 'Bienes Raíces (Utilidad Inmobiliaria)' },
+      { value: 'commercial_real_estate', label: 'Bienes Raíces (Acceso y Gobernanza)' },
+      { value: 'tech_startup', label: 'Tech Startup (Membresía y Acceso)' },
+      { value: 'renewable_energy', label: 'Energías Renovables (Recompensas y Gobernanza)' },
+      { value: 'art_collectibles', label: 'Arte y Coleccionables (Acceso a Drops)' },
+      { value: 'intellectual_property', label: 'Propiedad Intelectual (Derechos de Uso)' },
+      { value: 'defi', label: 'DeFi (Protocolos de Staking/Yield)' },
+      { value: 'gaming', label: 'Gaming y NFTs de Juegos (Utilidad In-Game)' },
+      { value: 'metaverse', label: 'Metaverso y Real Estate Virtual (Acceso a Territorios)' },
+      { value: 'music_audio', label: 'Música y NFTs de Audio (Derechos de Escucha/Drops)' },
+      { value: 'sports_fan_tokens', label: 'Deportes y Fan Tokens (Votación y Beneficios)' },
+      { value: 'education', label: 'Educación y Aprendizaje (Cursos y Certificados)' },
+      { value: 'healthcare', label: 'Salud y Biotecnología (Acceso a Datos/Servicios)' },
+      { value: 'supply_chain', label: 'Cadena de Suministro (Transparencia y Trazabilidad)' },
+      { value: 'infrastructure', label: 'Infraestructura y DAO Tools (Utilidad de Herramientas)' },
+      { value: 'social_networks', label: 'Redes Sociales Web3 (Membresía y Recompensas)' },
+      { value: 'carbon_credits', label: 'Créditos de Carbono (Utilidad Ecológica)' },
+      { value: 'insurance', label: 'Seguros Paramétricos (Acceso a Pólizas)' },
+      { value: 'prediction_markets', label: 'Mercados de Predicción (Acceso y Votación)' },
+      { value: 'other', label: 'Otro (Especificar en descripción)' },
     ],
     required: true,
-    info: 'Selecciona la categoría principal de tu proyecto para mejor visibilidad en la plataforma. Esta clasificación ayuda a los inversionistas a encontrar proyectos de su interés.',
+    info: 'Selecciona la categoría que mejor describa la utilidad principal de tu protocolo. Esta clasificación ayuda a la comunidad a encontrar Creaciones relevantes.',
   },
   {
     id: 'logoUrl',
-    label: 'Hazla visual. Sube el Artefacto visual que represente tu Creación (tu logo).',
+    label: 'Artefacto visual: Sube el logo que represente tu Creación.',
     placeholder: 'Haz click para seleccionar tu logo',
     component: 'file-input',
     info: 'Logo en PNG/SVG (recomendado 512x512px). Debe ser tu logo oficial y de alta calidad.',
@@ -179,55 +201,88 @@ const formQuestions: FormQuestion[] = [
     label: '¿Tienes una imagen de portada que capture el espíritu de tu Creación?',
     placeholder: 'Haz click para seleccionar tu imagen de portada',
     component: 'file-input',
-    info: 'Imagen principal (JPG/PNG, máx. 1920x1080px). Será el fondo hero de tu página de proyecto.',
+    info: 'Imagen principal (JPG/PNG, máx. 1920x1080px). Será el fondo "hero" de tu página de protocolo.',
   },
   {
     id: 'videoPitch',
-    label: '¿Tienes un video (YouTube/Vimeo) que muestre el alma de tu Creación?',
+    label: '¿Tienes un video (YouTube/Vimeo) que muestre el alma y la utilidad de tu Creación?',
     placeholder: 'https://...',
     component: 'url-input',
-    info: 'Enlace a tu video pitch en YouTube o Vimeo (máx. 3 minutos). Muy recomendado para captar atención.',
+    info: 'Enlace a tu video pitch o demo de utilidad. Muy recomendado para captar atención. (Máx. 3 minutos).',
   },
 
-  // SECCIÓN 2: Conecta a tu Comunidad
+  // SECCIÓN 2: Conecta a tu Comunidad (6 preguntas)
   {
     id: 'website',
-    label: '¿Dónde puede la Comunidad aprender más sobre tu Creación?',
+    label: '¿Dónde puede la Comunidad aprender más sobre tu Creación? (Sitio Web Oficial)',
     placeholder: 'https://tusitioweb.com',
     component: 'url-input',
+    info: 'Tu sitio web oficial donde se describe la utilidad y el acceso que ofrece tu protocolo.',
   },
   {
     id: 'whitepaperUrl',
-    label: '¿Tienes un documento de visión o litepaper?',
+    label: '¿Tienes un "Litepaper" o documento de Visión que detalle el Protocolo de Utilidad?',
     placeholder: 'https://...',
     component: 'url-input',
+    info: 'Documento que explica la visión, la tecnología, el modelo económico (tokenomics) y, crucialmente, la **mecánica de utilidad** de tu proyecto.',
   },
   {
     id: 'twitterUrl',
     label: '¿Cuál es tu cuenta de X (Twitter)?',
     placeholder: 'https://twitter.com/...',
     component: 'url-input',
+    info: 'Tu cuenta oficial en X (Twitter) para comunicaciones con la comunidad.',
   },
   {
     id: 'discordUrl',
     label: '¿Dónde está tu comunidad en Discord?',
     placeholder: 'https://discord.gg/...',
     component: 'url-input',
+    info: 'Servidor de Discord donde la comunidad puede interactuar y participar.',
   },
   {
     id: 'telegramUrl',
     label: '¿Tienes un grupo de Telegram?',
     placeholder: 'https://t.me/...',
     component: 'url-input',
+    info: 'Grupo o canal de Telegram para anuncios importantes y comunicación directa.',
   },
   {
     id: 'linkedinUrl',
-    label: '¿Cuál es tu perfil de LinkedIn?',
+    label: '¿Cuál es tu perfil de LinkedIn (para mostrar credenciales del equipo)?',
     placeholder: 'https://linkedin.com/in/...',
     component: 'url-input',
+    info: 'Perfil profesional de LinkedIn para mostrar la trayectoria del equipo principal.',
   },
 
-  // SECCIÓN 3: Recursos y Artefactos
+  // SECCIÓN 3: La Utilidad y Economía de la Creación (9 preguntas)
+  {
+    id: 'fundUsage', // Mantiene la clave, pero cambia la pregunta
+    label: 'Describa la mecánica del Protocolo: ¿Cómo se genera valor para la comunidad (ej. acceso, recompensas, contenido)?',
+    placeholder: 'Ej: Los holders de Artefactos tendrán acceso prioritario a nuevos lanzamientos, podrán votar en funcionalidades, y recibirán recompensas por staking/labor...',
+    component: 'textarea-input',
+    info: 'Describe la regla fundamental de tu Creación. Explica el *beneficio tangible* que recibirán los poseedores del Artefacto.',
+  },
+  {
+    id: 'lockupPeriod', // Mantiene la clave, pero cambia la pregunta
+    label: '¿Cómo se mantiene la utilidad de los Artefactos a largo plazo?',
+    placeholder: 'Ej: Actualizaciones continuas del protocolo, nuevos casos de uso desbloqueados por tenencia prolongada, recompensas por participación activa, acceso a eventos exclusivos...',
+    component: 'textarea-input',
+    info: 'Describe el plan para que el valor de uso (utilidad) se mantenga y crezca más allá del lanzamiento inicial. La clave es la *utilidad continua*.',
+  },
+  {
+    id: 'applicantName', // Mantiene la clave, pero cambia la pregunta
+    label: 'Si incluye \'Labor\' (Work-to-Earn), describa el mecanismo: ¿Qué es \'Labor\' y cómo se calculará la recompensa?',
+    placeholder: 'Ej: Las acciones validadas incluyen: contribuir al DAO, moderar contenido. La recompensa se calcula por puntos acumulados semanalmente, canjeables por tokens adicionales o acceso premium...',
+    component: 'textarea-input',
+    info: 'Detalla cómo el sistema Work-to-Earn recompensa la contribución de la comunidad. Especifica las acciones y la fórmula de recompensa.',
+  },
+  {
+    id: 'isMintable', // Mantiene la clave, pero cambia la pregunta
+    label: '¿Tiene planes de integrar este Protocolo con otras herramientas/plataformas (Discord, e-commerce, Web3, etc.)?',
+    component: 'checkbox-input',
+    info: 'Marcar Sí si planeas integrar con otras plataformas. Describe las integraciones en el campo de descripción del proyecto.',
+  },
   {
     id: 'targetAmount',
     label: 'Para que esta Creación cobre vida, ¿cuántos Recursos (en USD) necesita recaudar de la comunidad en esta ronda?',
@@ -242,32 +297,32 @@ const formQuestions: FormQuestion[] = [
       { value: '1000000', label: '$1,000,000' },
       { value: 'custom', label: 'Otro monto (especificar)' },
     ],
-    info: 'Esta estimación es crucial para determinar la viabilidad del proyecto. Un monto realista atrae inversores confiados, mientras que uno inflado puede generar desconfianza.',
+    info: 'Monto en USD que necesitas recaudar. Sé realista: un monto bien justificado genera confianza.',
   },
   {
     id: 'tokenType',
     label: '¿Cómo planeas representar la participación en tu Creación? (Tipo de Artefacto digital)',
     component: 'select-input',
     options: [
-      { value: 'erc20', label: 'Fungible (ERC-20)' },
-      { value: 'erc721', label: 'No Fungible (ERC-721/NFT)' },
-      { value: 'erc1155', label: 'Semi-Fungible (ERC-1155)' },
+      { value: 'erc20', label: 'Fungible (ERC-20) - Para recompensas o gobernanza' },
+      { value: 'erc721', label: 'No Fungible (ERC-721/NFT) - Para acceso o identidad' },
+      { value: 'erc1155', label: 'Semi-Fungible (ERC-1155) - Para combinar ambos tipos' },
     ],
-    info: 'ERC-20: Tokens intercambiables ideales para gobernanza y recompensas. ERC-721: NFTs únicos perfectos para membresías exclusivas. ERC-1155: Combinación de ambos para mayor flexibilidad.',
+    info: 'Elige el estándar que mejor se adapte al uso y la escasez de tu Artefacto de Acceso.',
   },
   {
     id: 'totalTokens',
-    label: 'Definamos los Artefactos. ¿Cuántos tokens existirán en total (Supply Total)?',
+    label: 'Definamos los Artefactos. ¿Cuántos Artefactos existirán en total (Supply Total)?',
     placeholder: 'Ej: 10000000',
     component: 'number-input',
-    info: 'El supply total determina cuántos tokens existirán. Considera factores como: tamaño del mercado objetivo, estrategia de distribución, crecimiento proyectado y liquidez. Un supply muy grande puede diluir el valor, uno muy pequeño puede limitar la adopción.',
+    info: 'El suministro total de Artefactos. Este número define la escasez del acceso.',
   },
   {
     id: 'tokensOffered',
     label: '¿Cuántos Artefactos ofrecerás a la comunidad en esta ronda?',
     placeholder: 'Ej: 1000000',
     component: 'number-input',
-    info: 'Esta cantidad no puede exceder el Supply Total definido anteriormente. Considera tu estrategia de distribución: tokens para venta pública, equipo, advisors, tesorería, etc.',
+    info: 'Cantidad que se pondrá a disposición de la comunidad en esta fase.',
     relatedField: 'totalTokens',
   },
   {
@@ -275,58 +330,21 @@ const formQuestions: FormQuestion[] = [
     label: '¿Cuál será el precio (en USD) de cada Artefacto durante la recaudación?',
     placeholder: 'Ej: 0.10',
     component: 'number-input',
+    info: 'El precio inicial de venta del Artefacto de Acceso.',
   },
   {
-    id: 'estimatedApy',
-    label: '¿Cuál es el porcentaje de Recompensa por Utilidad que estimas generará anualmente?',
-    placeholder: 'Ej: 15%',
-    component: 'text-input',
-    maxLength: 50,
-    info: 'El APY (Annual Percentage Yield) representa el rendimiento anual estimado que los holders recibirán. Se calcula basado en las recompensas de utilidad generadas por el protocolo. Sé conservador en tus estimaciones.',
-  },
-  {
-    id: 'yieldSource',
-    label: '¿De dónde provendrán estas recompensas de utilidad?',
-    component: 'select-input',
-    options: [
-      { value: 'protocol_revenue', label: 'Ingresos del Protocolo (tarifas, comisiones)' },
-      { value: 'staking_rewards', label: 'Recompensas de Staking' },
-      { value: 'liquidity_mining', label: 'Liquidity Mining' },
-      { value: 'governance_rewards', label: 'Recompensas de Gobernanza' },
-      { value: 'utility_fees', label: 'Tarifas de Utilidad' },
-      { value: 'revenue_sharing', label: 'Participación en Ingresos' },
-      { value: 'other', label: 'Otros' },
-    ],
-  },
-  {
-    id: 'fundUsage',
-    label: '¿Cómo se utilizarán los Recursos recaudados? Sé transparente.',
-    placeholder: 'Ej: 40% desarrollo, 30% marketing, 20% operaciones, 10% tesorería...',
-    component: 'textarea-input',
-    info: 'La transparencia en el uso de fondos es fundamental en proyectos de utilidad. La comunidad confía en que los recursos se utilicen para crear valor real y sostenible.',
-  },
-  {
-    id: 'lockupPeriod',
-    label: '¿Existirá un periodo de bloqueo para los Artefactos del equipo o participantes iniciales?',
-    placeholder: 'Ej: 12 meses',
-    component: 'text-input',
-    maxLength: 100,
-    info: 'Los periodos de bloqueo generan confianza en la comunidad al demostrar compromiso a largo plazo. Equipos con tokens bloqueados muestran mayor alineación con el éxito del proyecto.',
+    id: 'recurringRewards',
+    label: 'Estructura de Recompensa Recurrente',
+    component: 'recurring-rewards-input',
   },
 
-  // SECCIÓN 4: El Equipo y la Gobernanza
-  {
-    id: 'applicantName',
-    label: '¿Cómo te llamas? Necesitamos tu nombre completo para el registro.',
-    placeholder: 'Ej: Juan Pérez',
-    component: 'text-input',
-    required: true,
-  },
+  // SECCIÓN 4: Datos del Creador (4 preguntas)
   {
     id: 'applicantPosition',
     label: '¿Cuál es tu rol en este proyecto de utilidad?',
     placeholder: 'Ej: Fundador y CEO',
     component: 'text-input',
+    info: 'Tu posición oficial en el proyecto. Esta información es pública.',
   },
   {
     id: 'applicantEmail',
@@ -341,79 +359,51 @@ const formQuestions: FormQuestion[] = [
     placeholder: '+1 234 567 8900',
     component: 'text-input',
     maxLength: 50,
+    info: 'Número de teléfono para comunicaciones urgentes de la plataforma.',
   },
   {
-    id: 'treasuryAddress',
-    label: '¿Dónde quieres que se distribuyan los fondos recaudados de la comunidad?',
-    placeholder: '0x...',
+    id: 'applicantWalletAddress',
+    label: 'Dirección de tu Billetera (Wallet) de Creador.',
+    placeholder: 'Se llenará automáticamente con tu billetera conectada',
     component: 'text-input',
-    info: 'Esta será la dirección principal donde se enviarán los fondos. Para mayor seguridad en proyectos de utilidad, considera usar una wallet multi-firma como Gnosis Safe.',
+    info: 'La dirección de tu billetera principal que se vinculará a la Creación para gobernanza y tarifas. Si no sabes cuál usar o no puedes decidir ahora, no te preocupes, podemos ayudarte más adelante.',
   },
 
-  // SECCIÓN 5: Confianza y Transparencia
+  // SECCIÓN 5: Transparencia y Estructura (Legal y Técnica) (6 preguntas)
   {
     id: 'legalStatus',
     label: '¿Cuál es el estatus legal de tu Creación y en qué jurisdicción opera?',
-    placeholder: 'Ej: LLC en Delaware, USA',
+    placeholder: 'Ej: LLC en Delaware, USA o DAO sin fines de lucro',
     component: 'text-input',
+    info: 'Información legal para demostrar la legitimidad de la entidad que gestiona la Creación.',
   },
   {
-    id: 'fiduciaryEntity',
-    label: '¿Existe una entidad fiduciaria que respalde los activos del mundo real (RWA)?',
-    placeholder: 'Ej: Custodia institucional certificada',
+    id: 'fiduciaryEntity', // Mantiene la clave, pero cambia la pregunta
+    label: 'Modelo de Monetización (Ingresos del Protocolo): ¿Cuál es el mecanismo principal que usará el Creador para generar ingresos y financiar las recompensas de Utilidad a largo plazo?',
+    placeholder: 'Ej: Suscripciones con Artefactos, Tarifas por Uso del Servicio, Venta de Productos/Servicios.',
     component: 'text-input',
     maxLength: 256,
+    info: 'Ej: Suscripciones con Artefactos, Tarifas por Uso del Servicio, Venta de Productos/Servicios.',
   },
   {
-    id: 'valuationDocumentUrl',
-    label: 'Sube los documentos que respalden la valuación de tu proyecto.',
-    placeholder: 'https://...',
-    component: 'url-input',
+    id: 'valuationDocumentUrl', // Mantiene la clave, pero cambia la pregunta
+    label: 'Describa la estrategia inicial para que la comunidad adquiera sus Artefactos de Acceso.',
+    placeholder: 'Ej: 50% vía Airdrop a holders de X NFT, 50% vía venta a precio fijo, asignación por mérito/labor.',
+    component: 'textarea-input',
+    info: 'Describe cómo planeas distribuir inicialmente tus Artefactos. Incluye porcentajes, criterios de elegibilidad y fases de lanzamiento.',
   },
   {
     id: 'dueDiligenceReportUrl',
-    label: '¿Tienes algún reporte de due diligence que compartir?',
-    placeholder: 'https://...',
-    component: 'url-input',
+    label: '¿Cómo planea mitigar el riesgo operativo o el fraude dentro de su propia \'Creación\' y comunidad?',
+    placeholder: 'Ej: MultiSig para tesorería, auditorías regulares, gobernanza comunitaria, seguros paramétricos...',
+    component: 'textarea-input',
+    info: 'Describe las medidas de seguridad y control que implementarás. Incluye: custodia de fondos, verificación de identidad, mecanismos de reporte, y protocolos de resolución de disputas.',
   },
 
-  // SECCIÓN 6: Parámetros Técnicos
-  {
-    id: 'isMintable',
-    label: '¿El contrato podrá crear (mintear) más Artefactos después del lanzamiento?',
-    component: 'select-input',
-    options: [
-      { value: 'true', label: 'Sí' },
-      { value: 'false', label: 'No' },
-    ],
-  },
-  {
-    id: 'isMutable',
-    label: '¿Los metadatos de los Artefactos podrán ser modificados después de su creación?',
-    component: 'select-input',
-    options: [
-      { value: 'true', label: 'Sí' },
-      { value: 'false', label: 'No' },
-    ],
-  },
-  {
-    id: 'updateAuthorityAddress',
-    label: '¿Qué dirección tendrá la autoridad para administrar el contrato?',
-    placeholder: '0x...',
-    component: 'text-input',
-  },
-
-  // SECCIÓN 7: Verificación Final
-  {
-    id: 'verificationAgreement',
-    label: 'Declaración del Creador: Declaro que toda la información es veraz y entiendo que la comunidad de Pandora\'s confiará en estos datos para participar en esta Creación.',
-    component: 'checkbox-input',
-    required: true,
-  },
 ];
 
 // Componentes de Input Personalizados
-function TextInput({ name, placeholder, maxLength, info }: { name: string; placeholder?: string; maxLength?: number; info?: string }) {
+function TextInput({ name, placeholder, maxLength, info, onHelpClick }: { name: string; placeholder?: string; maxLength?: number; info?: string; onHelpClick?: () => void }) {
   const { register, formState: { errors } } = useFormContext();
 
   return (
@@ -442,7 +432,7 @@ function TextInput({ name, placeholder, maxLength, info }: { name: string; place
   );
 }
 
-function TextareaInput({ name, placeholder }: { name: string; placeholder?: string }) {
+function TextareaInput({ name, placeholder, info, onHelpClick }: { name: string; placeholder?: string; info?: string; onHelpClick?: () => void }) {
   const { register, formState: { errors } } = useFormContext();
 
   return (
@@ -453,6 +443,22 @@ function TextareaInput({ name, placeholder }: { name: string; placeholder?: stri
         rows={4}
         className="w-full bg-transparent border-b-2 border-zinc-600 focus:border-lime-400 outline-none py-3 text-white placeholder-zinc-500 text-lg transition-colors resize-none"
       />
+      {info && (
+        <div className="flex items-start gap-2 mt-2">
+          <p className="text-sm text-zinc-400 leading-relaxed flex-1">
+            💡 {info}
+          </p>
+          {onHelpClick && (
+            <button
+              type="button"
+              onClick={onHelpClick}
+              className="text-lime-400 hover:text-lime-300 text-sm font-medium underline underline-offset-2 flex-shrink-0"
+            >
+              Más info
+            </button>
+          )}
+        </div>
+      )}
       {errors[name] && (
         <motion.p
           initial={{ opacity: 0, y: -10 }}
@@ -466,7 +472,7 @@ function TextareaInput({ name, placeholder }: { name: string; placeholder?: stri
   );
 }
 
-function SelectInput({ name, options }: { name: string; options?: { value: string; label: string }[] }) {
+function SelectInput({ name, options, info, onHelpClick }: { name: string; options?: { value: string; label: string }[]; info?: string; onHelpClick?: () => void }) {
   const { register, formState: { errors } } = useFormContext();
 
   return (
@@ -482,6 +488,22 @@ function SelectInput({ name, options }: { name: string; options?: { value: strin
           </option>
         ))}
       </select>
+      {info && (
+        <div className="flex items-start gap-2 mt-2">
+          <p className="text-sm text-zinc-400 leading-relaxed flex-1">
+            💡 {info}
+          </p>
+          {onHelpClick && (
+            <button
+              type="button"
+              onClick={onHelpClick}
+              className="text-lime-400 hover:text-lime-300 text-sm font-medium underline underline-offset-2 flex-shrink-0"
+            >
+              Más info
+            </button>
+          )}
+        </div>
+      )}
       {errors[name] && (
         <motion.p
           initial={{ opacity: 0, y: -10 }}
@@ -495,7 +517,7 @@ function SelectInput({ name, options }: { name: string; options?: { value: strin
   );
 }
 
-function NumberInput({ name, placeholder, maxValue, relatedField }: { name: string; placeholder?: string; maxValue?: number; relatedField?: string }) {
+function NumberInput({ name, placeholder, maxValue, relatedField, info, onHelpClick }: { name: string; placeholder?: string; maxValue?: number; relatedField?: string; info?: string; onHelpClick?: () => void }) {
   const { register, formState: { errors }, watch } = useFormContext();
 
   // Watch the related field for validation
@@ -520,6 +542,22 @@ function NumberInput({ name, placeholder, maxValue, relatedField }: { name: stri
         placeholder={placeholder}
         className="w-full bg-transparent border-b-2 border-zinc-600 focus:border-lime-400 outline-none py-3 text-white placeholder-zinc-500 text-lg transition-colors"
       />
+      {info && (
+        <div className="flex items-start gap-2 mt-2">
+          <p className="text-sm text-zinc-400 leading-relaxed flex-1">
+            💡 {info}
+          </p>
+          {onHelpClick && (
+            <button
+              type="button"
+              onClick={onHelpClick}
+              className="text-lime-400 hover:text-lime-300 text-sm font-medium underline underline-offset-2 flex-shrink-0"
+            >
+              Más info
+            </button>
+          )}
+        </div>
+      )}
       {errors[name] && (
         <motion.p
           initial={{ opacity: 0, y: -10 }}
@@ -533,7 +571,7 @@ function NumberInput({ name, placeholder, maxValue, relatedField }: { name: stri
   );
 }
 
-function UrlInput({ name, placeholder }: { name: string; placeholder?: string }) {
+function UrlInput({ name, placeholder, info }: { name: string; placeholder?: string; info?: string }) {
   const { register, formState: { errors } } = useFormContext();
 
   return (
@@ -544,6 +582,11 @@ function UrlInput({ name, placeholder }: { name: string; placeholder?: string })
         placeholder={placeholder}
         className="w-full bg-transparent border-b-2 border-zinc-600 focus:border-lime-400 outline-none py-3 text-white placeholder-zinc-500 text-lg transition-colors"
       />
+      {info && (
+        <p className="text-sm text-zinc-400 mt-2 leading-relaxed">
+          💡 {info}
+        </p>
+      )}
       {errors[name] && (
         <motion.p
           initial={{ opacity: 0, y: -10 }}
@@ -557,11 +600,25 @@ function UrlInput({ name, placeholder }: { name: string; placeholder?: string })
   );
 }
 
-function CheckboxInput({ name }: { name: string }) {
-  const { register, formState: { errors }, watch } = useFormContext();
+function CheckboxInput({ name, info, label }: { name: string; info?: string; label?: string }) {
+  const { register, formState: { errors }, watch, setValue } = useFormContext();
 
   // Watch the current value
   const currentValue = watch(name);
+
+  // Default label for verification agreement
+  const checkboxLabel = label ?? "Declaro que toda la información proporcionada es precisa. Entiendo y acepto que Pandora's Finance actúa exclusivamente como un proveedor de infraestructura SaaS 'no-code', y que soy el único responsable de la estructura legal, la promesa de utilidad y la gestión de la comunidad de mi 'Creación' y sus Artefactos.";
+
+  // Show confirmation only for verification agreement
+  const showConfirmation = name === 'verificationAgreement';
+
+  // Use larger text size for isMintable field (step 16)
+  const textSizeClass = name === 'isMintable' ? 'text-2xl md:text-3xl font-bold leading-tight' : 'text-lg leading-relaxed';
+
+  // Handle checkbox change for boolean values
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setValue(name, e.target.checked);
+  };
 
   return (
     <div className="space-y-2">
@@ -569,12 +626,19 @@ function CheckboxInput({ name }: { name: string }) {
         <input
           {...register(name)}
           type="checkbox"
+          checked={currentValue || false}
+          onChange={handleChange}
           className="mt-1 w-5 h-5 text-lime-400 bg-zinc-800 border-zinc-600 rounded focus:ring-lime-400 focus:ring-2"
         />
-        <span className="text-white text-lg leading-relaxed">
-          Acepto la declaración del creador y confirmo que toda la información proporcionada es veraz
+        <span className={`text-white ${textSizeClass}`}>
+          {checkboxLabel}
         </span>
       </label>
+      {info && (
+        <p className="text-sm text-zinc-400 mt-2 leading-relaxed">
+          💡 {info}
+        </p>
+      )}
 
       {errors[name] && (
         <motion.p
@@ -586,7 +650,7 @@ function CheckboxInput({ name }: { name: string }) {
         </motion.p>
       )}
 
-      {currentValue && (
+      {showConfirmation && currentValue && (
         <div className="mt-3 p-3 bg-lime-500/10 border border-lime-500/20 rounded-lg">
           <p className="text-sm text-lime-300 flex items-center gap-2">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -600,7 +664,116 @@ function CheckboxInput({ name }: { name: string }) {
   );
 }
 
-function FileInput({ name, accept = "image/*", placeholder }: { name: string; accept?: string; placeholder?: string }) {
+function RecurringRewardsInput() {
+  const { register, formState: { errors }, watch, setValue } = useFormContext();
+
+  // Watch all the checkbox values
+  const stakingEnabled = watch('stakingRewardsEnabled');
+  const revenueSharingEnabled = watch('revenueSharingEnabled');
+  const workToEarnEnabled = watch('workToEarnEnabled');
+  const tieredAccessEnabled = watch('tieredAccessEnabled');
+  const discountedFeesEnabled = watch('discountedFeesEnabled');
+
+  const rewardOptions = [
+    {
+      id: 'stakingRewardsEnabled',
+      label: 'Recompensas por Staking',
+      description: 'Recompensas por Bloqueo (Staking) del Artefacto.',
+      placeholder: 'Estima la frecuencia y el rango de % de Artefactos adicionales.',
+      enabled: stakingEnabled,
+      detailsField: 'stakingRewardsDetails'
+    },
+    {
+      id: 'revenueSharingEnabled',
+      label: 'Participación en Ingresos',
+      description: 'Distribución de una porción de los ingresos del Protocolo (Revenue Share).',
+      placeholder: 'Estima el % de ingresos que se distribuirá y la frecuencia.',
+      enabled: revenueSharingEnabled,
+      detailsField: 'revenueSharingDetails'
+    },
+    {
+      id: 'workToEarnEnabled',
+      label: 'Incentivos por Labor',
+      description: 'Pagos o incentivos por la "Labor" o contribución activa a la comunidad (Work-to-Earn).',
+      placeholder: 'Describe la magnitud promedio de la recompensa por Labor (ej. X tokens/semana).',
+      enabled: workToEarnEnabled,
+      detailsField: 'workToEarnDetails'
+    },
+    {
+      id: 'tieredAccessEnabled',
+      label: 'Acceso Escalable',
+      description: 'Desbloqueo de nueva utilidad/acceso a medida que se mantiene la posesión del Artefacto (Tiers).',
+      placeholder: 'Describe los hitos de tiempo o de uso que desbloquean nuevos beneficios.',
+      enabled: tieredAccessEnabled,
+      detailsField: 'tieredAccessDetails'
+    },
+    {
+      id: 'discountedFeesEnabled',
+      label: 'Descuentos/Tarifas Reducidas',
+      description: 'Reducción de tarifas por uso de servicios futuros del Creador.',
+      placeholder: 'Detalla el % promedio de descuento que se ofrece.',
+      enabled: discountedFeesEnabled,
+      detailsField: 'discountedFeesDetails'
+    }
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div className="text-xs text-zinc-400 mb-3">
+        💡 ¿Cómo y con qué frecuencia se traducirá la utilidad en valor recurrente para el poseedor del Artefacto?. Selecciona los tipos de recompensa recurrente que aplicarán y estima su frecuencia o magnitud.
+      </div>
+
+      {rewardOptions.map((option) => (
+        <div key={option.id} className="space-y-2">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              {...register(option.id)}
+              type="checkbox"
+              checked={option.enabled || false}
+              onChange={(e) => setValue(option.id, e.target.checked)}
+              className="mt-0.5 w-4 h-4 text-lime-400 bg-zinc-800 border-zinc-600 rounded focus:ring-lime-400 focus:ring-2"
+            />
+            <div className="flex-1">
+              <div className="text-white font-medium text-sm">
+                {option.label}
+              </div>
+              <div className="text-zinc-400 text-xs mt-0.5">
+                {option.description}
+              </div>
+            </div>
+          </label>
+
+          {option.enabled && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="ml-7"
+            >
+              <textarea
+                {...register(option.detailsField)}
+                placeholder={option.placeholder}
+                rows={2}
+                className="w-full bg-transparent border-b-2 border-zinc-600 focus:border-lime-400 outline-none py-1 text-white placeholder-zinc-500 text-sm transition-colors resize-none"
+              />
+              {errors[option.detailsField] && (
+                <motion.p
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-red-400 text-xs mt-1"
+                >
+                  {errors[option.detailsField]?.message as string}
+                </motion.p>
+              )}
+            </motion.div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function FileInput({ name, accept = "image/*", placeholder, info }: { name: string; accept?: string; placeholder?: string; info?: string }) {
   const { formState: { errors }, setValue, watch } = useFormContext();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -797,6 +970,19 @@ function ProgressBar({ currentStep, totalSteps }: { currentStep: number; totalSt
 export default function ConversationalForm() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [acceptanceChecked, setAcceptanceChecked] = useState(false);
+  const [infoModal, setInfoModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    content: React.ReactNode;
+    icon?: string;
+  }>({
+    isOpen: false,
+    title: '',
+    description: '',
+    content: null,
+  });
   const account = useActiveAccount();
 
   const methods = useForm<ProjectFormData>({
@@ -804,12 +990,694 @@ export default function ConversationalForm() {
     mode: 'onChange',
   });
 
-  const { trigger, handleSubmit, watch } = methods;
+  const { trigger, handleSubmit, watch, setValue } = methods;
 
   // Observar cambios en el título para personalización dinámica
   const projectTitle = watch('title') || 'tu Creación';
 
+  // Auto-fill wallet address when account changes
+  useEffect(() => {
+    if (account?.address) {
+      setValue('applicantWalletAddress', account.address.toLowerCase());
+    }
+  }, [account?.address, setValue]);
+
   const currentQuestion = formQuestions[currentStep];
+
+  // Funciones para abrir modales informativos
+  const openMechanicModal = useCallback(() => {
+    setInfoModal({
+      isOpen: true,
+      title: '¿Qué es la Mecánica de Utilidad?',
+      description: 'Entiende por qué tu protocolo necesita una mecánica clara y cómo definirla correctamente.',
+      content: (
+        <div className="space-y-4 text-gray-300">
+          <div className="bg-lime-500/10 border border-lime-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-lime-400 mb-2">🎯 Definición</h4>
+            <p className="text-sm">
+              La <strong>mecánica de utilidad</strong> es la regla fundamental que explica cómo tu protocolo genera valor para sus usuarios. Es la respuesta a &apos;¿Qué obtienen los holders de mis Artefactos?&apos;
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <h4 className="font-semibold text-white">🔑 Elementos Esenciales</h4>
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-start gap-2">
+                <span className="text-lime-400 mt-1">•</span>
+                <span><strong>Acceso Exclusivo:</strong> Puertas de entrada a servicios, comunidades o experiencias premium</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-lime-400 mt-1">•</span>
+                <span><strong>Recompensas Tangibles:</strong> Beneficios económicos, descuentos, o ventajas competitivas</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-lime-400 mt-1">•</span>
+                <span><strong>Gobernanza:</strong> Poder de decisión en el futuro del protocolo</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-lime-400 mt-1">•</span>
+                <span><strong>Utilidad Continua:</strong> Beneficios que se mantienen y crecen con el tiempo</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-blue-400 mb-2">⚠️ Por qué es Crucial</h4>
+            <p className="text-sm">
+              Sin una mecánica clara, tu protocolo se convierte en un simple &apos;token de inversión&apos;. Los usuarios necesitan entender exactamente qué valor obtienen al participar.
+            </p>
+          </div>
+
+          <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-purple-400 mb-2">💡 Ejemplos de Buenas Mecánicas</h4>
+            <ul className="text-sm space-y-1">
+              <li>• <strong>Acceso a Comunidad:</strong> &apos;Holders pueden unirse a nuestro Discord exclusivo con alpha calls&apos;</li>
+              <li>• <strong>Recompensas por Labor:</strong> &apos;Contribuciones a la DAO generan tokens adicionales&apos;</li>
+              <li>• <strong>Descuentos:</strong> &apos;Holders obtienen 50% descuento en productos/servicios&apos;</li>
+              <li>• <strong>Gobernanza:</strong> &apos;Voto en decisiones que afectan el futuro del protocolo&apos;</li>
+            </ul>
+          </div>
+        </div>
+      ),
+      icon: '⚙️'
+    });
+  }, []);
+
+  const openBenefitModal = useCallback(() => {
+    setInfoModal({
+      isOpen: true,
+      title: '¿Qué es un Beneficio Tangible?',
+      description: 'Aprende a definir beneficios concretos que los usuarios puedan entender y valorar.',
+      content: (
+        <div className="space-y-4 text-gray-300">
+          <div className="bg-lime-500/10 border border-lime-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-lime-400 mb-2">🎯 Beneficio Tangible</h4>
+            <p className="text-sm">
+              Un <strong>beneficio tangible</strong> es un valor concreto y medible que los holders de tus Artefactos reciben. Debe ser específico, cuantificable y verificable.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <h4 className="font-semibold text-white">✅ Características de un Buen Beneficio</h4>
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-start gap-2">
+                <span className="text-green-400 mt-1">✓</span>
+                <span><strong>Específico:</strong> &apos;50% descuento&apos; en lugar de &apos;descuentos&apos;</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-400 mt-1">✓</span>
+                <span><strong>Cuantificable:</strong> &apos;Acceso a 10 eventos exclusivos al año&apos;</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-400 mt-1">✓</span>
+                <span><strong>Verificable:</strong> &apos;Recompensas calculadas por algoritmo público&apos;</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-400 mt-1">✓</span>
+                <span><strong>Inmediato:</strong> Beneficios que se obtienen desde el primer día</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-red-400 mb-2">❌ Evita Beneficios Vagós</h4>
+            <ul className="text-sm space-y-1">
+              <li>• &apos;Valor futuro&apos; - Demasiado abstracto</li>
+              <li>• &apos;Potencial de crecimiento&apos; - No es un beneficio tangible</li>
+              <li>• &apos;Comunidad exclusiva&apos; - ¿Qué significa exactamente?</li>
+              <li>• &apos;Recompensas por participación&apos; - ¿Cuánto y cómo?</li>
+            </ul>
+          </div>
+
+          <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-purple-400 mb-2">💡 Ejemplos de Beneficios Tangibles</h4>
+            <ul className="text-sm space-y-1">
+              <li>• <strong>Económico:</strong> &apos;Recibe 5% de todas las transacciones del protocolo&apos;</li>
+              <li>• <strong>Acceso:</strong> &apos;Entrada gratuita a 12 eventos premium al año&apos;</li>
+              <li>• <strong>Utilidad:</strong> &apos;50% descuento en todos los productos de la plataforma&apos;</li>
+              <li>• <strong>Gobernanza:</strong> &apos;1 voto por cada Artefacto en decisiones DAO&apos;</li>
+            </ul>
+          </div>
+        </div>
+      ),
+      icon: '🎁'
+    });
+  }, []);
+
+  const openUtilityModal = useCallback(() => {
+    setInfoModal({
+      isOpen: true,
+      title: '¿Qué es la Utilidad Continua?',
+      description: 'Descubre cómo mantener el valor de tus Artefactos a largo plazo.',
+      content: (
+        <div className="space-y-4 text-gray-300">
+          <div className="bg-lime-500/10 border border-lime-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-lime-400 mb-2">🔄 Utilidad Continua</h4>
+            <p className="text-sm">
+              La <strong>utilidad continua</strong> asegura que tus Artefactos mantengan y aumenten su valor con el tiempo. Es el plan para que los beneficios no desaparezcan después del lanzamiento.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <h4 className="font-semibold text-white">🚀 Estrategias para Utilidad Continua</h4>
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-start gap-2">
+                <span className="text-blue-400 mt-1">📈</span>
+                <span><strong>Actualizaciones del Protocolo:</strong> Nuevas funcionalidades que agregan valor</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-400 mt-1">🎯</span>
+                <span><strong>Casos de Uso Expandidos:</strong> Nuevos escenarios donde los Artefactos son útiles</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-400 mt-1">⏰</span>
+                <span><strong>Beneficios por Tenencia:</strong> Ventajas adicionales por mantener los Artefactos largo tiempo</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-400 mt-1">🤝</span>
+                <span><strong>Integraciones:</strong> Conectar con otras plataformas y servicios</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-yellow-400 mb-2">⚠️ Riesgo de Utilidad Temporal</h4>
+            <p className="text-sm">
+              Muchos protocolos fracasan porque ofrecen beneficios solo durante el lanzamiento. Sin un plan de utilidad continua, los usuarios pierden interés y el valor de los Artefactos cae.
+            </p>
+          </div>
+
+          <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-purple-400 mb-2">💡 Ejemplos de Utilidad Continua</h4>
+            <ul className="text-sm space-y-1">
+              <li>• <strong>Evolución:</strong> &apos;Cada 6 meses agregamos nuevas funcionalidades votadas por la comunidad&apos;</li>
+              <li>• <strong>Expansión:</strong> &apos;Integramos con 3 nuevas plataformas cada trimestre&apos;</li>
+              <li>• <strong>Recompensas Crecientes:</strong> &apos;Las recompensas aumentan 10% cada año&apos;</li>
+              <li>• <strong>Exclusividad:</strong> &apos;Holders veteranos obtienen acceso a funciones beta primero&apos;</li>
+            </ul>
+          </div>
+        </div>
+      ),
+      icon: '🔄'
+    });
+  }, []);
+
+  const openWorkToEarnModal = useCallback(() => {
+    setInfoModal({
+      isOpen: true,
+      title: '¿Qué es Work-to-Earn?',
+      description: 'Entiende el modelo Work-to-Earn y cómo implementarlo correctamente en tu protocolo.',
+      content: (
+        <div className="space-y-4 text-gray-300">
+          <div className="bg-lime-500/10 border border-lime-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-lime-400 mb-2">💼 Work-to-Earn (W2E)</h4>
+            <p className="text-sm">
+              <strong>Work-to-Earn</strong> es un modelo económico donde los participantes reciben recompensas por contribuir activamente al protocolo. Es &apos;labor&apos; que genera &apos;ganancias&apos;.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <h4 className="font-semibold text-white">🎯 Cómo Funciona W2E</h4>
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-start gap-2">
+                <span className="text-orange-400 mt-1">1.</span>
+                <span><strong>Definir Acciones:</strong> ¿Qué actividades generan recompensas?</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-orange-400 mt-1">2.</span>
+                <span><strong>Establecer Valor:</strong> ¿Cuánto vale cada contribución?</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-orange-400 mt-1">3.</span>
+                <span><strong>Medir Contribución:</strong> ¿Cómo se verifica y cuantifica el trabajo?</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-orange-400 mt-1">4.</span>
+                <span><strong>Distribuir Recompensas:</strong> ¿Cuándo y cómo se pagan?</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-blue-400 mb-2">📋 Ejemplos de Acciones W2E</h4>
+            <ul className="text-sm space-y-1">
+              <li>• <strong>Contribución DAO:</strong> Propuestas, votación, moderación</li>
+              <li>• <strong>Creación de Contenido:</strong> Artículos, videos, tutoriales</li>
+              <li>• <strong>Desarrollo:</strong> Código, auditorías, mejoras técnicas</li>
+              <li>• <strong>Comunidad:</strong> Reclutamiento, soporte, traducción</li>
+              <li>• <strong>Marketing:</strong> Compartir en redes, referidos verificados</li>
+            </ul>
+          </div>
+
+          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-green-400 mb-2">✅ Mejores Prácticas W2E</h4>
+            <ul className="text-sm space-y-1">
+              <li>• <strong>Transparencia:</strong> Algoritmos públicos y verificables</li>
+              <li>• <strong>Sostenibilidad:</strong> Recompensas que no diluyan excesivamente</li>
+              <li>• <strong>Equidad:</strong> Oportunidades para todos los niveles de contribución</li>
+              <li>• <strong>Retroalimentación:</strong> Sistema de evaluación comunitario</li>
+            </ul>
+          </div>
+
+          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-red-400 mb-2">⚠️ Errores Comunes</h4>
+            <ul className="text-sm space-y-1">
+              <li>• Recompensas infladas que generan desconfianza</li>
+              <li>• Sistema demasiado complejo para participar</li>
+              <li>• Falta de verificación real de contribuciones</li>
+              <li>• Dependencia excesiva de contribuciones voluntarias</li>
+            </ul>
+          </div>
+        </div>
+      ),
+      icon: '💼'
+    });
+  }, []);
+
+  const openTokenTypeModal = useCallback(() => {
+    setInfoModal({
+      isOpen: true,
+      title: '¿Cómo decidir el tipo de Artefacto digital?',
+      description: 'Entiende las diferencias entre ERC-20, ERC-721 y ERC-1155 para elegir el estándar correcto.',
+      content: (
+        <div className="space-y-4 text-gray-300">
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-blue-400 mb-2">🎯 Tipos de Artefactos Digitales</h4>
+            <p className="text-sm">
+              Los <strong>Artefactos digitales</strong> son tokens que representan participación o acceso. Elige el estándar técnico según cómo se usará tu utilidad.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+              <h4 className="font-semibold text-green-400 mb-2">🪙 ERC-20 (Fungible)</h4>
+              <p className="text-sm mb-2"><strong>Para:</strong> Recompensas, gobernanza, staking</p>
+              <ul className="text-sm space-y-1">
+                <li>• <strong>Intercambiables:</strong> Todos los tokens son idénticos</li>
+                <li>• <strong>Divisibles:</strong> Se pueden fraccionar (ej: 0.5 tokens)</li>
+                <li>• <strong>Económicos:</strong> Bajo costo de transacción</li>
+                <li>• <strong>Ejemplo:</strong> Tokens de recompensa, monedas de gobernanza</li>
+              </ul>
+            </div>
+
+            <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
+              <h4 className="font-semibold text-purple-400 mb-2">🎨 ERC-721 (NFT - No Fungible)</h4>
+              <p className="text-sm mb-2"><strong>Para:</strong> Acceso único, identidad, membresía</p>
+              <ul className="text-sm space-y-1">
+                <li>• <strong>Únicos:</strong> Cada token es diferente</li>
+                <li>• <strong>No divisibles:</strong> Solo enteros (1 token completo)</li>
+                <li>• <strong>Metadata rica:</strong> Imágenes, atributos, historia</li>
+                <li>• <strong>Ejemplo:</strong> Pase de acceso VIP, membresía exclusiva</li>
+              </ul>
+            </div>
+
+            <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
+              <h4 className="font-semibold text-orange-400 mb-2">🔄 ERC-1155 (Semi-Fungible)</h4>
+              <p className="text-sm mb-2"><strong>Para:</strong> Combinar ambos tipos en un contrato</p>
+              <ul className="text-sm space-y-1">
+                <li>• <strong>Híbrido:</strong> Fungible y no fungible en un contrato</li>
+                <li>• <strong>Eficiente:</strong> Múltiples tipos de tokens</li>
+                <li>• <strong>Flexible:</strong> Cambiar entre fungible/no fungible</li>
+                <li>• <strong>Ejemplo:</strong> Juego con items únicos y monedas</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-yellow-400 mb-2">🤔 ¿Cómo decidir?</h4>
+            <ul className="text-sm space-y-1">
+              <li>• <strong>¿Escasez?</strong> ERC-721 si cada unidad debe ser única</li>
+              <li>• <strong>¿Recompensas?</strong> ERC-20 si necesitas dividir recompensas</li>
+              <li>• <strong>¿Complejo?</strong> ERC-1155 si necesitas ambos tipos</li>
+              <li>• <strong>¿Simple?</strong> ERC-20 para la mayoría de protocolos nuevos</li>
+            </ul>
+          </div>
+        </div>
+      ),
+      icon: '🪙'
+    });
+  }, []);
+
+  const openSupplyModal = useCallback(() => {
+    setInfoModal({
+      isOpen: true,
+      title: '¿Por qué es importante el Supply Total?',
+      description: 'Entiende cómo el suministro total afecta la escasez y valor de tus Artefactos.',
+      content: (
+        <div className="space-y-4 text-gray-300">
+          <div className="bg-lime-500/10 border border-lime-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-lime-400 mb-2">📊 Supply Total y Escasez</h4>
+            <p className="text-sm">
+              El <strong>Supply Total</strong> define cuántos Artefactos existirán jamás. Es la base de la escasez y valor económico de tu protocolo.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <h4 className="font-semibold text-white">🎯 Factores a Considerar</h4>
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-start gap-2">
+                <span className="text-blue-400 mt-1">👥</span>
+                <span><strong>Tamaño de Comunidad:</strong> ¿Cuántas personas quieres que participen?</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-400 mt-1">💰</span>
+                <span><strong>Modelo Económico:</strong> ¿Inflación controlada o suministro fijo?</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-400 mt-1">⏰</span>
+                <span><strong>Crecimiento:</strong> ¿Cuánto crecerá tu comunidad en 5 años?</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-400 mt-1">🎁</span>
+                <span><strong>Distribución:</strong> ¿Cuántos para venta, equipo, tesorería?</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-green-400 mb-2">✅ Ejemplos de Supply</h4>
+            <ul className="text-sm space-y-1">
+              <li>• <strong>Comunidad Pequeña (100-1,000):</strong> 10,000 - 100,000 tokens</li>
+              <li>• <strong>Comunidad Mediana (1k-10k):</strong> 100,000 - 1,000,000 tokens</li>
+              <li>• <strong>Comunidad Grande (10k+):</strong> 1,000,000 - 10,000,000 tokens</li>
+              <li>• <strong>Protocolos Globales:</strong> 100,000,000+ tokens</li>
+            </ul>
+          </div>
+
+          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-red-400 mb-2">⚠️ Errores Comunes</h4>
+            <ul className="text-sm space-y-1">
+              <li>• Supply demasiado grande = pérdida de valor por dilución</li>
+              <li>• Supply demasiado pequeño = exclusividad excesiva</li>
+              <li>• No considerar crecimiento futuro de la comunidad</li>
+              <li>• Olvidar tokens para recompensas y tesorería</li>
+            </ul>
+          </div>
+
+          <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-purple-400 mb-2">💡 Recomendaciones</h4>
+            <ul className="text-sm space-y-1">
+              <li>• <strong>Calcula:</strong> Comunidad objetivo × tokens por persona</li>
+              <li>• <strong>Reserva:</strong> 20-30% para recompensas futuras</li>
+              <li>• <strong>Escala:</strong> Considera crecimiento exponencial</li>
+              <li>• <strong>Equilibra:</strong> Accesibilidad vs. escasez de valor</li>
+            </ul>
+          </div>
+        </div>
+      ),
+      icon: '📊'
+    });
+  }, []);
+
+  const openCommunityOfferingModal = useCallback(() => {
+    setInfoModal({
+      isOpen: true,
+      title: '¿Cuántos Artefactos ofrecer en esta ronda?',
+      description: 'Entiende las fases de lanzamiento y por qué no ofrecer todo el supply inicial.',
+      content: (
+        <div className="space-y-4 text-gray-300">
+          <div className="bg-lime-500/10 border border-lime-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-lime-400 mb-2">🚀 Estrategia de Fases</h4>
+            <p className="text-sm">
+              No ofrezcas todo el Supply Total en la primera ronda. Divide el lanzamiento en <strong>fases estratégicas</strong> para construir momentum y valor.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <h4 className="font-semibold text-white">📈 Ventajas de Múltiples Rondas</h4>
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-start gap-2">
+                <span className="text-green-400 mt-1">📊</span>
+                <span><strong>Validación Progresiva:</strong> Prueba el producto con comunidad inicial</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-400 mt-1">💰</span>
+                <span><strong>Valor Creciente:</strong> Cada ronda a precio más alto</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-400 mt-1">🤝</span>
+                <span><strong>Compromiso:</strong> Comunidad comprometida contribuye al crecimiento</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-400 mt-1">🎯</span>
+                <span><strong>Flexibilidad:</strong> Ajustar estrategia basado en feedback</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-blue-400 mb-2">📅 Ejemplo de Fases</h4>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between items-center">
+                <span><strong>Fase 1 - Lanzamiento:</strong></span>
+                <span>10-20% del supply</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span><strong>Fase 2 - Crecimiento:</strong></span>
+                <span>20-30% del supply</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span><strong>Fase 3 - Expansión:</strong></span>
+                <span>30-40% del supply</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span><strong>Reservas (Futuro):</strong></span>
+                <span>20-30% del supply</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-yellow-400 mb-2">⚖️ Factores de Decisión</h4>
+            <ul className="text-sm space-y-1">
+              <li>• <strong>Riesgo del Proyecto:</strong> ¿Qué tan validado está tu protocolo?</li>
+              <li>• <strong>Capital Necesario:</strong> ¿Cuánto necesitas realmente para lanzar?</li>
+              <li>• <strong>Velocidad de Crecimiento:</strong> ¿Qué tan rápido puedes ejecutar?</li>
+              <li>• <strong>Mercado:</strong> ¿Hay demanda probada o necesitas validación?</li>
+            </ul>
+          </div>
+
+          <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-purple-400 mb-2">💡 Recomendaciones</h4>
+            <ul className="text-sm space-y-1">
+              <li>• <strong>Primera Ronda:</strong> 10-25% del supply total</li>
+              <li>• <strong>Precio Inicial:</strong> Accesible para comunidad early</li>
+              <li>• <strong>Crecimiento:</strong> 2x precio mínimo por ronda</li>
+              <li>• <strong>Comunicación:</strong> Explica claramente el roadmap de fases</li>
+            </ul>
+          </div>
+        </div>
+      ),
+      icon: '🚀'
+    });
+  }, []);
+
+  const openLegalModal = useCallback(() => {
+    setInfoModal({
+      isOpen: true,
+      title: '¿Por qué es importante tener una entidad legal?',
+      description: 'Entiende la importancia de formalizar tu proyecto legalmente.',
+      content: (
+        <div className="space-y-4 text-gray-300">
+          <div className="bg-lime-500/10 border border-lime-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-lime-400 mb-2">⚖️ Importancia Legal</h4>
+            <p className="text-sm">
+              Una <strong>entidad legal formal</strong> es crucial para proteger tu proyecto, sus participantes y establecer credibilidad en el mercado.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <h4 className="font-semibold text-white">🛡️ Beneficios de tener entidad legal</h4>
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-start gap-2">
+                <span className="text-green-400 mt-1">✓</span>
+                <span><strong>Protección Legal:</strong> Separa tus activos personales de los del proyecto</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-400 mt-1">✓</span>
+                <span><strong>Confianza:</strong> Demuestra seriedad y compromiso a inversores y comunidad</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-400 mt-1">✓</span>
+                <span><strong>Impuestos:</strong> Estructura clara para obligaciones fiscales</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-400 mt-1">✓</span>
+                <span><strong>Contratos:</strong> Capacidad para celebrar acuerdos legales vinculantes</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-blue-400 mb-2">🏢 Tipos de Entidades</h4>
+            <ul className="text-sm space-y-1">
+              <li>• <strong>LLC (Limited Liability Company):</strong> Protección limitada, flexible</li>
+              <li>• <strong>Corporation:</strong> Más formal, atractiva para inversores institucionales</li>
+              <li>• <strong>DAO (Decentralized Autonomous Organization):</strong> Modelo Web3 nativo</li>
+              <li>• <strong>Foundation:</strong> Para proyectos sin fines de lucro</li>
+            </ul>
+          </div>
+
+          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-yellow-400 mb-2">💡 Recomendaciones</h4>
+            <ul className="text-sm space-y-1">
+              <li>• <strong>Jurisdicción:</strong> Delaware (USA) es popular por su marco legal favorable</li>
+              <li>• <strong>Costo:</strong> $500-2,000 para constituir una LLC básica</li>
+              <li>• <strong>Tiempo:</strong> 1-4 semanas dependiendo de la jurisdicción</li>
+              <li>• <strong>Asesoría:</strong> Consulta con abogados especializados en Web3</li>
+            </ul>
+          </div>
+
+          <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-purple-400 mb-2">🤝 Ayuda de Pandora&apos;s</h4>
+            <p className="text-sm">
+              En <strong>Pandora&apos;s Finance</strong> podemos ayudarte a formalizar tu entidad legal, conectarte con abogados especializados en Web3 y guiarte en el proceso de constitución. No es obligatorio, pero muy recomendado para proyectos serios.
+            </p>
+          </div>
+        </div>
+      ),
+      icon: '⚖️'
+    });
+  }, []);
+
+  const openMonetizationModal = useCallback(() => {
+    setInfoModal({
+      isOpen: true,
+      title: '¿Cómo elegir el modelo de monetización correcto?',
+      description: 'Descubre diferentes estrategias para generar ingresos sostenibles.',
+      content: (
+        <div className="space-y-4 text-gray-300">
+          <div className="bg-lime-500/10 border border-lime-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-lime-400 mb-2">💰 Modelos de Monetización</h4>
+            <p className="text-sm">
+              El <strong>modelo de monetización</strong> define cómo tu protocolo genera ingresos para financiar las recompensas de utilidad y mantener la sostenibilidad a largo plazo.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+              <h4 className="font-semibold text-blue-400 mb-2">💳 Suscripciones con Artefactos</h4>
+              <ul className="text-sm space-y-1">
+                <li>• <strong>Acceso Premium:</strong> Niveles de membresía con beneficios escalables</li>
+                <li>• <strong>Renovación Anual:</strong> Pago recurrente por mantener acceso</li>
+                <li>• <strong>Ventajas:</strong> Ingresos predecibles, retención de usuarios</li>
+                <li>• <strong>Ejemplo:</strong> Gitcoin, Patreon</li>
+              </ul>
+            </div>
+
+            <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+              <h4 className="font-semibold text-green-400 mb-2">🔄 Tarifas por Uso del Servicio</h4>
+              <ul className="text-sm space-y-1">
+                <li>• <strong>Transacciones:</strong> Comisión por cada operación en la plataforma</li>
+                <li>• <strong>API Access:</strong> Tarifas por uso de servicios técnicos</li>
+                <li>• <strong>Ventajas:</strong> Escalable, alineado con crecimiento</li>
+                <li>• <strong>Ejemplo:</strong> Uniswap, OpenSea</li>
+              </ul>
+            </div>
+
+            <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
+              <h4 className="font-semibold text-purple-400 mb-2">🛒 Venta de Productos/Servicios</h4>
+              <ul className="text-sm space-y-1">
+                <li>• <strong>NFTs y Coleccionables:</strong> Arte digital, acceso exclusivo</li>
+                <li>• <strong>Mercancía:</strong> Productos físicos relacionados con la marca</li>
+                <li>• <strong>Servicios:</strong> Consultoría, desarrollo, soporte premium</li>
+                <li>• <strong>Ejemplo:</strong> Bored Ape Yacht Club, Adidas</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-yellow-400 mb-2">🎯 Factores para elegir</h4>
+            <ul className="text-sm space-y-1">
+              <li>• <strong>Tipo de Utilidad:</strong> ¿Es acceso, gobernanza, o financiero?</li>
+              <li>• <strong>Comunidad:</strong> ¿Qué está dispuesto a pagar tu público?</li>
+              <li>• <strong>Escalabilidad:</strong> ¿Cómo crece el ingreso con el proyecto?</li>
+              <li>• <strong>Sostenibilidad:</strong> ¿Genera valor continuo para holders?</li>
+            </ul>
+          </div>
+
+          <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-orange-400 mb-2">⚖️ Combinación de Modelos</h4>
+            <p className="text-sm">
+              Muchos protocolos exitosos combinan múltiples fuentes de ingreso. Por ejemplo: suscripciones básicas + tarifas premium + ventas de NFTs exclusivos.
+            </p>
+          </div>
+        </div>
+      ),
+      icon: '💰'
+    });
+  }, []);
+
+  const openAdoptionModal = useCallback(() => {
+    setInfoModal({
+      isOpen: true,
+      title: 'Estrategias de adopción para tu protocolo',
+      description: 'Aprende a diseñar una estrategia efectiva de distribución inicial.',
+      content: (
+        <div className="space-y-4 text-gray-300">
+          <div className="bg-lime-500/10 border border-lime-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-lime-400 mb-2">🎯 Estrategias de Adopción</h4>
+            <p className="text-sm">
+              La <strong>estrategia de adopción</strong> define cómo y a quién distribuyes inicialmente tus Artefactos, sentando las bases para el crecimiento sostenible de tu comunidad.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+              <h4 className="font-semibold text-blue-400 mb-2">💰 Venta Pública</h4>
+              <ul className="text-sm space-y-1">
+                <li>• <strong>IDO/IEO:</strong> Oferta inicial en exchange descentralizado</li>
+                <li>• <strong>Preventa:</strong> Venta privada a precio reducido</li>
+                <li>• <strong>Mercado Secundario:</strong> Trading libre después del lanzamiento</li>
+                <li>• <strong>Cuándo usar:</strong> Proyectos con producto validado</li>
+              </ul>
+            </div>
+
+            <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+              <h4 className="font-semibold text-green-400 mb-2">🏆 Asignación por Mérito (Labor)</h4>
+              <ul className="text-sm space-y-1">
+                <li>• <strong>Contribuciones:</strong> Recompensar trabajo realizado en el proyecto</li>
+                <li>• <strong>Staking de otros tokens:</strong> Holders de protocolos relacionados</li>
+                <li>• <strong>Cuándo usar:</strong> Construir comunidad comprometida desde el inicio</li>
+                <li>• <strong>Ejemplo:</strong> Airdrops basados en actividad on-chain</li>
+              </ul>
+            </div>
+
+            <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
+              <h4 className="font-semibold text-purple-400 mb-2">🎟️ Whitelist (Lista Blanca)</h4>
+              <ul className="text-sm space-y-1">
+                <li>• <strong>Criterios de Elegibilidad:</strong> Actividad en Discord, Twitter, etc.</li>
+                <li>• <strong>Raffles:</strong> Sorteos entre participantes activos</li>
+                <li>• <strong>Cuándo usar:</strong> Controlar distribución inicial</li>
+                <li>• <strong>Ventaja:</strong> Comunidad pre-comprometida</li>
+              </ul>
+            </div>
+
+            <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
+              <h4 className="font-semibold text-orange-400 mb-2">🎁 Airdrop Estratégico</h4>
+              <ul className="text-sm space-y-1">
+                <li>• <strong>Holders de NFTs:</strong> Propietarios de colecciones específicas</li>
+                <li>• <strong>Usuarios de dApps:</strong> Personas activas en protocolos similares</li>
+                <li>• <strong>Cuándo usar:</strong> Crear awareness masivo rápidamente</li>
+                <li>• <strong>Desventaja:</strong> Alto costo, menor compromiso</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-yellow-400 mb-2">📊 Factores de Éxito</h4>
+            <ul className="text-sm space-y-1">
+              <li>• <strong>Alineación:</strong> La estrategia debe reflejar los valores del proyecto</li>
+              <li>• <strong>Transparencia:</strong> Criterios claros y verificables</li>
+              <li>• <strong>Inclusividad:</strong> Oportunidades para diferentes niveles de compromiso</li>
+              <li>• <strong>Sostenibilidad:</strong> Plan para crecimiento post-lanzamiento</li>
+            </ul>
+          </div>
+        </div>
+      ),
+      icon: '🎯'
+    });
+  }, []);
 
   // Navegación
   const nextStep = useCallback(async () => {
@@ -881,7 +1749,16 @@ export default function ConversationalForm() {
         advisors: JSON.stringify(data.advisors ?? []),
         tokenDistribution: JSON.stringify(finalDistribution),
         status: "draft", // Los proyectos enviados desde el formulario conversacional empiezan como draft
-        featured: false
+        featured: false,
+        // Convertir booleanos a strings para evitar errores de validación
+        stakingRewardsEnabled: data.stakingRewardsEnabled ? "true" : "false",
+        revenueSharingEnabled: data.revenueSharingEnabled ? "true" : "false",
+        workToEarnEnabled: data.workToEarnEnabled ? "true" : "false",
+        tieredAccessEnabled: data.tieredAccessEnabled ? "true" : "false",
+        discountedFeesEnabled: data.discountedFeesEnabled ? "true" : "false",
+        isMintable: data.isMintable ? "true" : "false",
+        isMutable: data.isMutable ? "true" : "false",
+        legalEntityHelp: data.legalEntityHelp ? "true" : "false"
       };
 
       console.log('📤 Enviando datos a API:', submitData);
@@ -943,20 +1820,57 @@ export default function ConversationalForm() {
     const baseProps = { name: question.id, placeholder: question.placeholder };
 
     switch (question.component) {
-      case 'text-input':
-        return <TextInput {...baseProps} maxLength={question.maxLength} info={question.info} />;
-      case 'textarea-input':
-        return <TextareaInput {...baseProps} />;
-      case 'select-input':
-        return <SelectInput {...baseProps} options={question.options} />;
-      case 'number-input':
-        return <NumberInput {...baseProps} relatedField={question.relatedField} />;
+      case 'text-input': {
+        // Agregar enlaces a modales para pasos específicos
+        let onHelpClick;
+        if (question.id === 'legalStatus') {
+          onHelpClick = openLegalModal; // Paso 28: estatus legal
+        }
+        return <TextInput {...baseProps} maxLength={question.maxLength} info={question.info} onHelpClick={onHelpClick} />;
+      }
+      case 'textarea-input': {
+        // Agregar enlaces a modales para pasos específicos
+        let onHelpClick;
+        if (question.id === 'whitepaperUrl') {
+          onHelpClick = openMechanicModal; // Paso 8: mecánica de utilidad
+        } else if (question.id === 'fundUsage') {
+          onHelpClick = openBenefitModal; // Paso 13: beneficio tangible
+        } else if (question.id === 'lockupPeriod') {
+          onHelpClick = openUtilityModal; // Paso 14: utilidad continua
+        } else if (question.id === 'applicantName') {
+          onHelpClick = openWorkToEarnModal; // Paso 15: sistema Work-to-Earn
+        }
+        // Paso 16 (isMintable) no tiene "Más info"
+        return <TextareaInput {...baseProps} info={question.info} onHelpClick={onHelpClick} />;
+      }
+      case 'select-input': {
+        // Agregar enlaces a modales para pasos específicos
+        let onHelpClick;
+        if (question.id === 'tokenType') {
+          onHelpClick = openTokenTypeModal; // Paso 18: tipos de artefactos
+        } else if (question.id === 'yieldSource') {
+          onHelpClick = openMechanicModal; // Paso 22: estructura de recompensa (reutilizar modal)
+        }
+        return <SelectInput {...baseProps} options={question.options} info={question.info} onHelpClick={onHelpClick} />;
+      }
+      case 'number-input': {
+        // Agregar enlaces a modales para pasos específicos
+        let onHelpClick;
+        if (question.id === 'totalTokens') {
+          onHelpClick = openSupplyModal; // Paso 19: supply total
+        } else if (question.id === 'tokensOffered') {
+          onHelpClick = openCommunityOfferingModal; // Paso 20: cantidad a ofrecer
+        }
+        return <NumberInput {...baseProps} relatedField={question.relatedField} info={question.info} onHelpClick={onHelpClick} />;
+      }
       case 'url-input':
-        return <UrlInput {...baseProps} />;
+        return <UrlInput {...baseProps} info={question.info} />;
       case 'file-input':
-        return <FileInput {...baseProps} accept="image/png,image/jpeg,image/svg+xml" />;
+        return <FileInput {...baseProps} accept="image/png,image/jpeg,image/svg+xml" info={question.info} />;
       case 'checkbox-input':
-        return <CheckboxInput name={question.id} />;
+        return <CheckboxInput name={question.id} info={question.info} label={question.label} />;
+      case 'recurring-rewards-input':
+        return <RecurringRewardsInput />;
       default:
         return <TextInput {...baseProps} />;
     }
@@ -964,14 +1878,14 @@ export default function ConversationalForm() {
 
   return (
     <div className="min-h-screen text-white">
-      <div className="max-w-2xl mx-auto px-4 py-16">
+      <div className="max-w-2xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-bold mb-4">
-            Crear Proyecto de Utilidad
+            Lanza tu Protocolo de Utilidad
           </h1>
-          <p className="text-zinc-400">
-            Responde las preguntas paso a paso para configurar tu protocolo
+          <p className="text-lime-200 font-mono">
+            Diseña las reglas de tu Creación y activa a tu comunidad.
           </p>
         </div>
 
@@ -982,7 +1896,7 @@ export default function ConversationalForm() {
         <FormProvider {...methods}>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
             {/* Contenedor de preguntas con animación */}
-            <div className="relative h-[330px] overflow-hidden">
+            <div className="relative min-h-[420px] max-h-[60vh] overflow-hidden">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentStep}
@@ -992,18 +1906,46 @@ export default function ConversationalForm() {
                   transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                   className="absolute w-full"
                 >
-                  {currentQuestion && (
+                  {currentStep === formQuestions.length - 1 ? (
+                    /* Declaración de aceptación en el último paso */
                     <div className="space-y-6">
-                      <label className="block text-2xl md:text-3xl font-bold text-white leading-tight">
-                        {getPersonalizedLabel(currentQuestion.label, projectTitle)}
-                      </label>
+                      <div className="text-white text-lg font-medium leading-relaxed mb-6">
+                        Declaración del Creador (Aceptación de Términos SaaS): Declaro que toda la información proporcionada es precisa. Entiendo y acepto que Pandora&apos;s Finance actúa exclusivamente como un proveedor de infraestructura SaaS &apos;no-code&apos;, y que soy el único responsable de la estructura legal, la promesa de utilidad y la gestión de la comunidad de mi &apos;Piterillos&apos; y sus Artefactos.
+                      </div>
+
+                      {/* Checkbox de aceptación */}
+                      <div className="flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          checked={acceptanceChecked}
+                          onChange={(e) => setAcceptanceChecked(e.target.checked)}
+                          className="mt-1 w-5 h-5 text-lime-400 bg-zinc-800 border-zinc-600 rounded focus:ring-lime-400 focus:ring-2"
+                        />
+                        <span className="text-white text-base leading-relaxed">
+                          Acepto los términos y condiciones del servicio SaaS de Pandora&apos;s Finance
+                        </span>
+                      </div>
+                    </div>
+                  ) : currentQuestion ? (
+                    <div className="space-y-6">
+                      {currentQuestion.component !== 'checkbox-input' && (
+                        <label className={`block font-bold text-white leading-tight ${
+                          currentQuestion.id === 'recurringRewards'
+                            ? 'text-lg md:text-xl'
+                            : 'text-2xl md:text-3xl'
+                        }`}>
+                          {getPersonalizedLabel(currentQuestion.label, projectTitle)}
+                        </label>
+                      )}
 
                       {renderInputComponent(currentQuestion)}
                     </div>
-                  )}
+                  ) : null}
                 </motion.div>
               </AnimatePresence>
             </div>
+
+
 
             {/* Navegación */}
             <div className="flex justify-between items-center pt-8">
@@ -1021,8 +1963,8 @@ export default function ConversationalForm() {
               {currentStep === formQuestions.length - 1 ? (
                 <Button
                   type="submit"
-                  disabled={isSubmitting}
-                  className="bg-gradient-to-r from-lime-500 to-emerald-500 text-black font-bold px-8 py-3 rounded-xl hover:from-lime-400 hover:to-emerald-400 transition-all duration-300 flex items-center gap-2"
+                  disabled={isSubmitting || !acceptanceChecked}
+                  className="bg-gradient-to-r from-lime-500 to-emerald-500 text-black font-bold px-8 py-3 rounded-xl hover:from-lime-400 hover:to-emerald-400 transition-all duration-300 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
                     <>
@@ -1031,7 +1973,7 @@ export default function ConversationalForm() {
                     </>
                   ) : (
                     <>
-                      Enviar Aplicación
+                      Aceptar Términos y Enviar Aplicación
                       <ChevronRight className="w-4 h-4" />
                     </>
                   )}
@@ -1054,6 +1996,16 @@ export default function ConversationalForm() {
             </div>
           </form>
         </FormProvider>
+
+        {/* Modal Informativo */}
+        <InfoModal
+          isOpen={infoModal.isOpen}
+          onClose={() => setInfoModal(prev => ({ ...prev, isOpen: false }))}
+          title={infoModal.title}
+          description={infoModal.description}
+          content={infoModal.content}
+          icon={infoModal.icon}
+        />
       </div>
     </div>
   );
