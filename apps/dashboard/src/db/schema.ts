@@ -65,12 +65,25 @@ export const users = pgTable("users", {
 });
 
 export const businessCategoryEnum = pgEnum("business_category", [
-  "residential_real_estate", // Bienes Raíces Residencial
-  "commercial_real_estate", // Bienes Raíces Comercial
-  "tech_startup", // Startup Tecnológica
+  "residential_real_estate", // Bienes Raíces Residenciales
+  "commercial_real_estate", // Bienes Raíces Comerciales
+  "tech_startup", // Tech Startup
   "renewable_energy", // Energías Renovables
   "art_collectibles", // Arte y Coleccionables
   "intellectual_property", // Propiedad Intelectual
+  "defi", // DeFi (Finanzas Descentralizadas)
+  "gaming", // Gaming y NFTs de Juegos
+  "metaverse", // Metaverso y Real Estate Virtual
+  "music_audio", // Música y NFTs de Audio
+  "sports_fan_tokens", // Deportes y Fan Tokens
+  "education", // Educación y Aprendizaje
+  "healthcare", // Salud y Biotecnología
+  "supply_chain", // Cadena de Suministro
+  "infrastructure", // Infraestructura y DAO Tools
+  "social_networks", // Redes Sociales Web3
+  "carbon_credits", // Créditos de Carbono
+  "insurance", // Seguros Paramétricos
+  "prediction_markets", // Mercados de Predicción
   "other", // Otro
 ]);
 
