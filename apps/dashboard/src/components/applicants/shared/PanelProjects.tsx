@@ -86,48 +86,47 @@ export function PanelProjects({ pendingProjects, approvedOnlyProjects, isCollaps
         ) : (
           <div className="space-y-3 max-w-full">
             {approvedOnlyProjects.map((project) => (
-              <div key={project.id} className="bg-gray-50 dark:bg-zinc-800/50 rounded-xl overflow-hidden border border-gray-200 dark:border-zinc-700 hover:border-green-500/50 transition-all duration-300 group">
-                {/* Cover Image */}
-                <div className="relative w-full" style={{ paddingBottom: '56%' }}>
-                  {project.coverPhotoUrl ? (
-                    <Image
-                      src={project.coverPhotoUrl}
-                      alt={`${project.title} cover`}
-                      fill
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-200 dark:bg-zinc-700 flex items-center justify-center">
-                      <div className="w-8 h-8 text-zinc-500">📷</div>
+              <a key={project.id} href={`/projects/${project.slug}`} className="block">
+                <div className="bg-gray-50 dark:bg-zinc-800/50 rounded-xl overflow-hidden border border-gray-200 dark:border-zinc-700 hover:border-green-500/50 transition-all duration-300 group cursor-pointer">
+                  {/* Cover Image */}
+                  <div className="relative w-full" style={{ paddingBottom: '56%' }}>
+                    {project.coverPhotoUrl ? (
+                      <Image
+                        src={project.coverPhotoUrl}
+                        alt={`${project.title} cover`}
+                        fill
+                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-200 dark:bg-zinc-700 flex items-center justify-center">
+                        <div className="w-8 h-8 text-zinc-500">📷</div>
+                      </div>
+                    )}
+                    {/* Status Badge */}
+                    <div className="absolute top-2 right-2">
+                      <span className="px-2 py-1 text-xs font-medium bg-green-500/90 text-black rounded-full">
+                        Aprobado
+                      </span>
                     </div>
-                  )}
-                  {/* Status Badge */}
-                  <div className="absolute top-2 right-2">
-                    <span className="px-2 py-1 text-xs font-medium bg-green-500/90 text-black rounded-full">
-                      Aprobado
-                    </span>
                   </div>
-                </div>
 
-                {/* Content */}
-                <div className="p-3">
-                  <div className="flex justify-between items-center">
-                    <span className="px-2 py-1 text-xs font-medium bg-emerald-500/20 text-emerald-300 rounded-full">
-                      Aprobado
-                    </span>
-                    <a
-                      href={`/projects/${project.slug}`}
-                      className={`text-xs text-emerald-400 flex items-center gap-1 hover:opacity-80 transition-opacity`}
-                    >
-                      <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                      Ver
-                    </a>
+                  {/* Content */}
+                  <div className="p-3">
+                    <div className="flex justify-between items-center">
+                      <span className="px-2 py-1 text-xs font-medium bg-emerald-500/20 text-emerald-300 rounded-full">
+                        Aprobado
+                      </span>
+                      <div className={`text-xs text-emerald-400 flex items-center gap-1`}>
+                        <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        Ver
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </a>
             ))}
           </div>
         )}
