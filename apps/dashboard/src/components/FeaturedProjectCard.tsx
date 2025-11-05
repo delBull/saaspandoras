@@ -82,58 +82,62 @@ export function FeaturedProjectCard({
   ].join(" ");
 
   return (
-    <motion.div
-      ref={containerRef}
-      onHoverStart={() => setShowGradient(true)}
-      onHoverEnd={() => setShowGradient(false)}
-      onMouseMove={handleMouseMove}
-      className="relative w-full aspect-[2/1] md:aspect-[1.1/1] rounded-xl overflow-hidden group min-h-[240px] md:min-h-[220px]"
-    >
-      {onClose && (
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 z-20 p-1 bg-black/30 rounded-full text-gray-300 hover:text-white hover:bg-black/50 transition-colors"
-          aria-label="Cerrar banner"
-        >
-          <XMarkIcon className="h-4 w-4" />
-        </button>
-      )}
+    <Link href={`/projects/${projectSlug}`} className="block w-full">
+      <motion.div
+        ref={containerRef}
+        onHoverStart={() => setShowGradient(true)}
+        onHoverEnd={() => setShowGradient(false)}
+        onMouseMove={handleMouseMove}
+        className="relative w-full aspect-[2/1] md:aspect-[1.1/1] rounded-xl overflow-hidden group min-h-[240px] md:min-h-[220px] cursor-pointer"
+      >
+        {onClose && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }}
+            className="absolute top-3 right-3 z-20 p-1 bg-black/30 rounded-full text-gray-300 hover:text-white hover:bg-black/50 transition-colors"
+            aria-label="Cerrar banner"
+          >
+            <XMarkIcon className="h-4 w-4" />
+          </button>
+        )}
 
-      {imageUrl && (
-        <Image
-          src={imageUrl}
-          alt={title}
-          fill
-          sizes="(max-width: 768px) 90vw, 33vw"
-          priority
-          className="object-cover transition-transform duration-500 group-hover:scale-105 opacity-30"
-          style={{ zIndex: 0 }}
+        {imageUrl && (
+          <Image
+            src={imageUrl}
+            alt={title}
+            fill
+            sizes="(max-width: 768px) 90vw, 33vw"
+            priority
+            className="object-cover transition-transform duration-500 group-hover:scale-105 opacity-30"
+            style={{ zIndex: 0 }}
+          />
+        )}
+        <div
+          className="absolute inset-0 transition-opacity duration-300"
+          style={{
+            opacity: showGradient ? 1 : 0,
+            backgroundImage: `radial-gradient(
+              600px at ${mousePosition.x}px ${mousePosition.y}px,
+              rgba(255, 255, 255, 0.15),
+              transparent 40%
+            )`,
+          }}
         />
-      )}
-      <div
-        className="absolute inset-0 transition-opacity duration-300"
-        style={{
-          opacity: showGradient ? 1 : 0,
-          backgroundImage: `radial-gradient(
-            600px at ${mousePosition.x}px ${mousePosition.y}px,
-            rgba(255, 255, 255, 0.15),
-            transparent 40%
-          )`,
-        }}
-      />
-      <div className="absolute inset-0 p-[1px] rounded-xl bg-gradient-to-r from-white/10 to-white/5" style={{ zIndex: 3 }}>
-        <div className={cn(contentContainerClasses, "pb-12 md:pb-4")}>
-          <div className="flex-1 flex flex-col justify-end min-h-0">
-            <h3 className="text-lg font-semibold text-white mb-1 md:mb-2 leading-tight">{title}</h3>
-            <p className="text-sm text-gray-300/90 mb-3 md:mb-6 leading-relaxed line-clamp-3 overflow-hidden">
-              {/* Mobile: límite muy reducido (60 chars), Desktop: mayor límite (200 chars) */}
-              {subtitle.length > (typeof window !== 'undefined' && window.innerWidth < 768 ? 60 : 200)
-                ? `${subtitle.substring(0, typeof window !== 'undefined' && window.innerWidth < 768 ? 60 : 200)}...`
-                : subtitle}
-            </p>
-          </div>
-          <div className="flex-shrink-0">
-            <Link href={`/projects/${projectSlug}`}>
+        <div className="absolute inset-0 p-[1px] rounded-xl bg-gradient-to-r from-white/10 to-white/5" style={{ zIndex: 3 }}>
+          <div className={cn(contentContainerClasses, "pb-12 md:pb-4")}>
+            <div className="flex-1 flex flex-col justify-end min-h-0">
+              <h3 className="text-lg font-semibold text-white mb-1 md:mb-2 leading-tight">{title}</h3>
+              <p className="text-sm text-gray-300/90 mb-3 md:mb-6 leading-relaxed line-clamp-3 overflow-hidden">
+                {/* Mobile: límite muy reducido (60 chars), Desktop: mayor límite (200 chars) */}
+                {subtitle.length > (typeof window !== 'undefined' && window.innerWidth < 768 ? 60 : 200)
+                  ? `${subtitle.substring(0, typeof window !== 'undefined' && window.innerWidth < 768 ? 60 : 200)}...`
+                  : subtitle}
+              </p>
+            </div>
+            <div className="flex-shrink-0">
               <button
                 className={
                   cn(
@@ -151,10 +155,10 @@ export function FeaturedProjectCard({
               >
                 {actionText}
               </button>
-            </Link>
+            </div>
           </div>
         </div>
-      </div>
-    </motion.div>
+      </motion.div>
+    </Link>
   );
 }
