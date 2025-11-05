@@ -52,7 +52,7 @@ function TotalBalance({ total }: { total: number }) {
       <h1 className="text-5xl md:text-6xl font-bold text-white tracking-tighter">
         ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
       </h1>
-      <p className="text-xs font-mono font-semibold text-red-400 mt-2">Total recompensado</p>
+      <p className="text-xs font-mono font-semibold text-gray-300 mt-2">Total recompensado</p>
     </div>
   );
 }

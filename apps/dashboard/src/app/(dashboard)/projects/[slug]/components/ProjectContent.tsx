@@ -1,12 +1,70 @@
 'use client';
 
 import { ChatBubbleLeftIcon, UserGroupIcon, QuestionMarkCircleIcon, BellIcon } from '@heroicons/react/24/outline';
+import { Globe, FileText, ExternalLink } from 'lucide-react';
+
+// Usar la misma interfaz que en el componente principal
+interface ProjectData {
+  id: number | string;
+  title: string;
+  slug: string;
+  logo_url?: string | null;
+  cover_photo_url?: string | null;
+  tagline?: string | null;
+  description: string;
+  business_category?: string | null;
+  video_pitch?: string | null;
+  website?: string | null;
+  whitepaper_url?: string | null;
+  twitter_url?: string | null;
+  discord_url?: string | null;
+  telegram_url?: string | null;
+  linkedin_url?: string | null;
+  target_amount?: string | number | null;
+  total_valuation_usd?: string | number | null;
+  token_type?: string | null;
+  total_tokens?: string | number | null;
+  tokens_offered?: string | number | null;
+  token_price_usd?: string | number | null;
+  estimated_apy?: string | null;
+  yield_source?: string | null;
+  lockup_period?: string | null;
+  fund_usage?: string | null;
+  team_members?: string | null;
+  advisors?: string | null;
+  token_distribution?: string | null;
+  contract_address?: string | null;
+  treasury_address?: string | null;
+  legal_status?: string | null;
+  valuation_document_url?: string | null;
+  fiduciary_entity?: string | null;
+  due_diligence_report_url?: string | null;
+  is_mintable?: boolean | null;
+  is_mutable?: boolean | null;
+  update_authority_address?: string | null;
+  applicant_name?: string | null;
+  applicant_position?: string | null;
+  applicant_email?: string | null;
+  applicant_phone?: string | null;
+  applicant_wallet_address?: string | null;
+  verification_agreement?: boolean | null;
+  image_url?: string | null;
+  socials?: string | null;
+  raised_amount?: string | number | null;
+  returns_paid?: string | number | null;
+  status: string;
+  featured?: boolean | null;
+  featured_button_text?: string | null;
+  created_at?: string | Date | null;
+  updated_at?: string | Date | null;
+}
 
 interface ProjectContentProps {
   activeTab: string;
+  project?: ProjectData;
 }
 
-export function ProjectContent({ activeTab }: ProjectContentProps) {
+export function ProjectContent({ activeTab, project }: ProjectContentProps) {
   const renderContent = () => {
     switch (activeTab) {
       case 'campaign':
@@ -14,18 +72,81 @@ export function ProjectContent({ activeTab }: ProjectContentProps) {
           <div className="space-y-8">
             {/* Project Story Section */}
             <div className="mb-8">
-              <h2 className="text-2xl font-bold text-white mb-6">About this project</h2>
-              <p className="text-gray-300 leading-relaxed text-lg mb-6">
-                This is a revolutionary project that combines blockchain technology with real-world impact.
-                Our mission is to democratize access to innovative investment opportunities while maintaining
-                transparency and security for all participants.
-              </p>
+              <h2 className="text-2xl font-bold text-white mb-6">Acerca de esta creación</h2>
+              {project?.description ? (
+                <p className="text-gray-300 leading-relaxed text-lg mb-6">
+                  {project.description}
+                </p>
+              ) : (
+                <div className="bg-zinc-800/50 rounded-lg p-6 mb-6 border border-zinc-700">
+                  <div className="text-center">
+                    <FileText className="w-12 h-12 text-zinc-500 mx-auto mb-3" />
+                    <h3 className="text-lg font-semibold text-white mb-2">Descripción No Disponible</h3>
+                    <p className="text-zinc-400 text-sm">
+                      La descripción detallada de esta creación aún no ha sido proporcionada por el creador.
+                      Esta información aparecerá aquí cuando esté disponible.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Social Links & Resources - Moved here immediately after About */}
+              <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6 mb-6">
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                  <Globe className="w-5 h-5 text-lime-400" />
+                  Comunidades y Recursos del Proyecto
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {project?.website && (
+                    <a href={project.website} target="_blank" rel="noopener noreferrer"
+                       className="p-3 bg-zinc-800 rounded-lg border border-zinc-700 hover:border-lime-400 hover:bg-zinc-700 transition-all duration-300 group flex items-center gap-3">
+                      <Globe className="w-4 h-4 text-lime-400" />
+                      <span className="text-white text-sm">Sitio Web</span>
+                      <ExternalLink className="w-3 h-3 text-zinc-400 group-hover:text-lime-400" />
+                    </a>
+                  )}
+                  {project?.whitepaper_url && (
+                    <a href={project.whitepaper_url} target="_blank" rel="noopener noreferrer"
+                       className="p-3 bg-zinc-800 rounded-lg border border-zinc-700 hover:border-blue-400 hover:bg-zinc-700 transition-all duration-300 group flex items-center gap-3">
+                      <FileText className="w-4 h-4 text-blue-400" />
+                      <span className="text-white text-sm">Whitepaper</span>
+                      <ExternalLink className="w-3 h-3 text-zinc-400 group-hover:text-blue-400" />
+                    </a>
+                  )}
+                  {project?.twitter_url && (
+                    <a href={project.twitter_url} target="_blank" rel="noopener noreferrer"
+                       className="p-3 bg-zinc-800 rounded-lg border border-zinc-700 hover:border-blue-400 hover:bg-zinc-700 transition-all duration-300 group flex items-center gap-3">
+                      <Globe className="w-4 h-4 text-blue-400" />
+                      <span className="text-white text-sm">Twitter</span>
+                      <ExternalLink className="w-3 h-3 text-zinc-400 group-hover:text-blue-400" />
+                    </a>
+                  )}
+                  {project?.discord_url && (
+                    <a href={project.discord_url} target="_blank" rel="noopener noreferrer"
+                       className="p-3 bg-zinc-800 rounded-lg border border-zinc-700 hover:border-indigo-400 hover:bg-zinc-700 transition-all duration-300 group flex items-center gap-3">
+                      <Globe className="w-4 h-4 text-indigo-400" />
+                      <span className="text-white text-sm">Discord</span>
+                      <ExternalLink className="w-3 h-3 text-zinc-400 group-hover:text-indigo-400" />
+                    </a>
+                  )}
+                  {(!project?.website && !project?.whitepaper_url && !project?.twitter_url && !project?.discord_url) && (
+                    <div className="col-span-full">
+                      <div className="text-center py-4">
+                        <Globe className="w-8 h-8 text-zinc-500 mx-auto mb-2" />
+                        <p className="text-zinc-400 text-sm">
+                          Los enlaces y recursos del proyecto estarán disponibles próximamente.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
 
               {/* Project Learn More Section */}
               <div className="bg-zinc-900 rounded-xl p-8 mb-6">
-                <h3 className="text-xl font-bold text-white mb-4">Learn about accountability on Pandoras</h3>
+                <h3 className="text-xl font-bold text-white mb-4">Aprende sobre responsabilidad en Pandoras</h3>
                 <p className="text-gray-300 mb-4">
-                    Questions about this project? <a href="#faq" className="text-lime-400 hover:underline">Check out the FAQ</a>
+                    ¿Preguntas sobre esta creación? <a href="#faq" className="text-lime-400 hover:underline">Revisa las preguntas frecuentes</a>
                 </p>
               </div>
             </div>
@@ -35,37 +156,66 @@ export function ProjectContent({ activeTab }: ProjectContentProps) {
       case 'faq':
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white mb-6">Frequently Asked Questions</h2>
+            <h2 className="text-2xl font-bold text-white mb-6">Preguntas Frecuentes</h2>
 
             <div className="space-y-4">
               <div className="bg-zinc-900 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
                   <QuestionMarkCircleIcon className="w-5 h-5 text-lime-400" />
-                  What is the minimum investment?
+                  ¿Cómo funciona el sistema de utilidad en esta creación?
                 </h3>
                 <p className="text-gray-300">
-                  The minimum investment is $100 USD. This allows more investors to participate in our project.
+                  Esta creación utiliza tokens de utilidad que otorgan acceso a beneficios específicos como membresías,
+                  descuentos, contenido exclusivo o participación en decisiones comunitarias. Los tokens no representan
+                  propiedad financiera sino derechos de uso dentro del ecosistema.
                 </p>
               </div>
 
               <div className="bg-zinc-900 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
                   <QuestionMarkCircleIcon className="w-5 h-5 text-lime-400" />
-                  When will the project launch?
+                  ¿Qué beneficios obtengo al participar?
                 </h3>
                 <p className="text-gray-300">
-                  The project is expected to launch in Q1 2025, pending regulatory approval and final testing.
+                  Dependiendo de la creación específica, puedes obtener acceso prioritario a productos/servicios,
+                  participación en gobernanza comunitaria, recompensas por lealtad, o beneficios exclusivos
+                  que solo los miembros pueden disfrutar.
                 </p>
               </div>
 
               <div className="bg-zinc-900 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
                   <QuestionMarkCircleIcon className="w-5 h-5 text-lime-400" />
-                  What are the risks involved?
+                  ¿Los tokens tienen algún valor especulativo?
                 </h3>
                 <p className="text-gray-300">
-                  As with any investment, there are risks including market volatility and project execution risks.
-                  Please read our full risk disclosure document.
+                  No, estos son tokens de utilidad pura diseñados exclusivamente para acceso y participación.
+                  No representan inversiones financieras ni promesas de ganancias económicas.
+                  Su valor radica en los beneficios que proporcionan dentro del ecosistema.
+                </p>
+              </div>
+
+              <div className="bg-zinc-900 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                  <QuestionMarkCircleIcon className="w-5 h-5 text-lime-400" />
+                  ¿Cómo se distribuyen los tokens?
+                </h3>
+                <p className="text-gray-300">
+                  La distribución es justa y transparente. Una porción va al equipo creador, otra a la comunidad inicial,
+                  y el resto se distribuye a través de mecanismos de participación como airdrops por engagement,
+                  recompensas por contribuciones, o ventas comunitarias.
+                </p>
+              </div>
+
+              <div className="bg-zinc-900 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                  <QuestionMarkCircleIcon className="w-5 h-5 text-lime-400" />
+                  ¿Qué pasa si la creación no cumple sus objetivos?
+                </h3>
+                <p className="text-gray-300">
+                  Los tokens de utilidad mantienen su valor dentro del ecosistema creado. Si una iniciativa específica
+                  no prospera, los participantes pueden usar sus tokens en otras creaciones compatibles dentro
+                  del ecosistema Pandoras, manteniendo así su valor de participación.
                 </p>
               </div>
             </div>
@@ -75,101 +225,75 @@ export function ProjectContent({ activeTab }: ProjectContentProps) {
       case 'updates':
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white mb-6">Project Updates</h2>
+            <h2 className="text-2xl font-bold text-white mb-6">Actualizaciones del Proyecto</h2>
 
-            <div className="space-y-4">
-              <div className="bg-zinc-900 rounded-lg p-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-lime-400 rounded-full flex items-center justify-center flex-shrink-0">
-                    <BellIcon className="w-6 h-6 text-black" />
+            {project?.updated_at ? (
+              <div className="space-y-4">
+                <div className="bg-zinc-900 rounded-lg p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-lime-400 rounded-full flex items-center justify-center flex-shrink-0">
+                      <BellIcon className="w-6 h-6 text-black" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-2">Proyecto Actualizado</h3>
+                      <p className="text-gray-300 mb-2">
+                        Esta creación ha sido actualizada recientemente. Los cambios pueden incluir
+                        nuevas funcionalidades, mejoras en la documentación, o actualizaciones en los términos de participación.
+                      </p>
+                      <span className="text-sm text-gray-400">
+                        Última actualización: {new Date(project.updated_at).toLocaleDateString('es-ES')}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-white mb-2">Development Milestone Reached</h3>
-                    <p className="text-gray-300 mb-2">
-                      We&apos;ve successfully completed the alpha testing phase with excellent results.
-                      The smart contracts are performing as expected.
-                    </p>
-                    <span className="text-sm text-gray-400">2 days ago</span>
+                </div>
+
+                <div className="bg-zinc-900 rounded-lg p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-blue-400 rounded-full flex items-center justify-center flex-shrink-0">
+                      <BellIcon className="w-6 h-6 text-black" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-2">Creación Publicada</h3>
+                      <p className="text-gray-300 mb-2">
+                        Esta creación fue publicada inicialmente y está disponible para participación comunitaria.
+                        Todas las actualizaciones futuras serán registradas aquí automáticamente.
+                      </p>
+                      <span className="text-sm text-gray-400">
+                        Fecha de creación: {new Date(project.created_at ?? Date.now()).toLocaleDateString('es-ES')}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
-
-              <div className="bg-zinc-900 rounded-lg p-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-blue-400 rounded-full flex items-center justify-center flex-shrink-0">
-                    <BellIcon className="w-6 h-6 text-black" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-white mb-2">Partnership Announcement</h3>
-                    <p className="text-gray-300 mb-2">
-                      Exciting news! We&apos;ve partnered with a leading DeFi protocol to enhance our platform&apos;s capabilities.
-                    </p>
-                    <span className="text-sm text-gray-400">1 week ago</span>
-                  </div>
+            ) : (
+              <div className="bg-zinc-800/50 rounded-lg p-8 border border-zinc-700">
+                <div className="text-center">
+                  <BellIcon className="w-12 h-12 text-zinc-500 mx-auto mb-3" />
+                  <h3 className="text-lg font-semibold text-white mb-2">Sin Actualizaciones Recientes</h3>
+                  <p className="text-zinc-400 text-sm">
+                    Las actualizaciones del proyecto aparecerán aquí cuando se realicen cambios
+                    en la configuración, términos o funcionalidades de esta creación.
+                  </p>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         );
 
       case 'comments':
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white mb-6">Comments & Discussion</h2>
+            <h2 className="text-2xl font-bold text-white mb-6">Comentarios y Discusión</h2>
 
-            <div className="space-y-4">
-              <div className="bg-zinc-900 rounded-lg p-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-gradient-to-br from-lime-400 to-emerald-400 rounded-full flex items-center justify-center">
-                    <span className="text-black font-bold text-sm">JD</span>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="font-semibold text-white">John Doe</span>
-                      <span className="text-sm text-gray-400">3 hours ago</span>
-                    </div>
-                    <p className="text-gray-300">
-                      This project looks very promising! The team seems experienced and the technology is cutting-edge.
-                      Looking forward to the launch.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-zinc-900 rounded-lg p-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full flex items-center justify-center">
-                    <span className="text-black font-bold text-sm">SM</span>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="font-semibold text-white">Sarah Miller</span>
-                      <span className="text-sm text-gray-400">1 day ago</span>
-                    </div>
-                    <p className="text-gray-300">
-                      Great to see the progress updates! The transparency is impressive.
-                      How will the token distribution work?
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-zinc-900 rounded-lg p-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-red-400 rounded-full flex items-center justify-center">
-                    <span className="text-black font-bold text-sm">MR</span>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="font-semibold text-white">Mike Rodriguez</span>
-                      <span className="text-sm text-gray-400">2 days ago</span>
-                    </div>
-                    <p className="text-gray-300">
-                      The FAQ section is very comprehensive. It addresses most of my concerns about the investment risks.
-                      Well done!
-                    </p>
-                  </div>
-                </div>
+            <div className="bg-zinc-800/50 rounded-lg p-8 border border-zinc-700">
+              <div className="text-center">
+                <ChatBubbleLeftIcon className="w-12 h-12 text-zinc-500 mx-auto mb-3" />
+                <h3 className="text-lg font-semibold text-white mb-2">Próximamente Disponible</h3>
+                <p className="text-zinc-400 text-sm">
+                  La sección de comentarios y discusión estará disponible próximamente.
+                  Podrás interactuar con otros participantes, compartir opiniones y
+                  contribuir al desarrollo de esta creación.
+                </p>
               </div>
             </div>
           </div>
@@ -178,61 +302,27 @@ export function ProjectContent({ activeTab }: ProjectContentProps) {
       case 'community':
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white mb-6">Community</h2>
+            <h2 className="text-2xl font-bold text-white mb-6">Comunidad</h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
-                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                  <UserGroupIcon className="w-5 h-5 text-lime-400" />
-                  Community Stats
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Total Members</span>
-                    <span className="text-white font-mono">2,847</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Active This Week</span>
-                    <span className="text-white font-mono">1,203</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Discussions</span>
-                    <span className="text-white font-mono">156</span>
-                  </div>
+            <div className="bg-zinc-800/50 rounded-lg p-8 border border-zinc-700">
+              <div className="text-center">
+                <UserGroupIcon className="w-12 h-12 text-zinc-500 mx-auto mb-3" />
+                <h3 className="text-lg font-semibold text-white mb-2">Próximamente Disponible</h3>
+                <p className="text-zinc-400 text-sm mb-4">
+                  La sección de comunidad estará disponible próximamente con estadísticas,
+                  actividad reciente y guías comunitarias.
+                </p>
+                {/* Dummy data para referencia futura */}
+                <div className="text-xs text-zinc-500 mt-4 p-4 bg-zinc-900/50 rounded border">
+                  <p className="mb-2"><strong>Dummy Data (para desarrollo futuro):</strong></p>
+                  <p>• Total Members: 2,847</p>
+                  <p>• Active This Week: 1,203</p>
+                  <p>• Discussions: 156</p>
+                  <p>• +12 new members joined</p>
+                  <p>• +8 discussions started</p>
+                  <p>• +45 comments posted</p>
                 </div>
               </div>
-
-              <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
-                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                  <ChatBubbleLeftIcon className="w-5 h-5 text-blue-400" />
-                  Recent Activity
-                </h3>
-                <div className="space-y-3">
-                  <div className="text-sm">
-                    <span className="text-lime-400">+12</span>
-                    <span className="text-gray-400 ml-2">new members joined</span>
-                  </div>
-                  <div className="text-sm">
-                    <span className="text-blue-400">+8</span>
-                    <span className="text-gray-400 ml-2">discussions started</span>
-                  </div>
-                  <div className="text-sm">
-                    <span className="text-purple-400">+45</span>
-                    <span className="text-gray-400 ml-2">comments posted</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
-              <h3 className="text-lg font-bold text-white mb-4">Community Guidelines</h3>
-              <ul className="text-gray-300 space-y-2 text-sm">
-                <li>• Be respectful and constructive in discussions</li>
-                <li>• Share relevant information and insights</li>
-                <li>• Report any suspicious activity</li>
-                <li>• Help new members understand the project</li>
-                <li>• Follow our code of conduct at all times</li>
-              </ul>
             </div>
           </div>
         );
