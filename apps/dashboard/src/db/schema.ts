@@ -119,6 +119,19 @@ export const projects = pgTable("projects", {
   yieldSource: yieldSourceEnum("yield_source").default("other"),
   lockupPeriod: varchar("lockup_period", { length: 100 }), // Periodo de lock-up
   fundUsage: text("fund_usage"), // Destino de los fondos
+
+  // Sección 3.1: Estructura de Recompensa Recurrente
+  recurringRewards: text("recurring_rewards"), // Descripción de recompensas recurrentes
+  stakingRewardsEnabled: boolean("staking_rewards_enabled").default(false),
+  stakingRewardsDetails: text("staking_rewards_details"),
+  revenueSharingEnabled: boolean("revenue_sharing_enabled").default(false),
+  revenueSharingDetails: text("revenue_sharing_details"),
+  workToEarnEnabled: boolean("work_to_earn_enabled").default(false),
+  workToEarnDetails: text("work_to_earn_details"),
+  tieredAccessEnabled: boolean("tiered_access_enabled").default(false),
+  tieredAccessDetails: text("tiered_access_details"),
+  discountedFeesEnabled: boolean("discounted_fees_enabled").default(false),
+  discountedFeesDetails: text("discounted_fees_details"),
   
   // Sección 4: Equipo y Transparencia
   teamMembers: jsonb("team_members"), // Array de {name, position, linkedin}
@@ -145,6 +158,10 @@ export const projects = pgTable("projects", {
   applicantPhone: varchar("applicant_phone", { length: 50 }),
   applicantWalletAddress: varchar("applicant_wallet_address", { length: 42 }),
   verificationAgreement: boolean("verification_agreement").default(false),
+
+  // Campos adicionales
+  integrationDetails: text("integration_details"), // Detalles de integraciones
+  legalEntityHelp: boolean("legal_entity_help").default(false), // Necesita ayuda con entidad legal
   
   // Campos existentes (mantener compatibilidad)
   imageUrl: text("image_url"),
