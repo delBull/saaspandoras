@@ -72,96 +72,98 @@ export function ProjectCard({ project, variant = 'approved', gridColumns = 3 }: 
   };
 
   return (
-    <div className={getCardStyles()}>
-      <div className="relative w-full bg-gray-200 dark:bg-zinc-700" style={{ paddingBottom: getImageAspectRatio() }}>
-        {project.coverPhotoUrl ? (
-          <Image
-            src={project.coverPhotoUrl}
-            alt={`Cover photo for ${project.title}`}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <ImageIcon className={`${gridColumns === 6 ? 'w-8 h-8' : gridColumns === 4 ? 'w-10 h-10' : 'w-12 h-12'} text-zinc-500`} />
-          </div>
-        )}
-
-        {/* Status Badge */}
-        {variant === 'pending' && (
-          <div className="absolute top-2 right-2">
-            <span className="px-2 py-1 text-xs font-medium bg-yellow-500/90 text-black rounded-full">
-              Pendiente
-            </span>
-          </div>
-        )}
-        {project.status === 'live' && (
-          <div className="absolute top-2 right-2">
-            <span className="px-2 py-1 text-xs font-medium bg-lime-500/90 text-black rounded-full">
-              Desatado
-            </span>
-          </div>
-        )}
-        {project.status === 'approved' && (
-          <div className="absolute top-2 right-2">
-            <span className="px-2 py-1 text-xs font-medium bg-green-500/90 text-black rounded-full">
-              Aprobado
-            </span>
-          </div>
-        )}
-      </div>
-
-      <div className={`flex flex-col flex-grow ${getPadding()}`}>
-        <h3 className={`font-bold text-gray-900 dark:text-white mb-2 line-clamp-1 ${getTitleSize()}`}>
-          {project.title}
-        </h3>
-        <p className={`text-gray-600 dark:text-gray-400 mb-4 line-clamp-2 flex-grow text-sm ${getDescriptionHeight()}`}>
-          {project.description}
-        </p>
-
-        {!isPending && project.status !== 'pending' && (
-          <div className="mb-4">
-            <div className="flex justify-between items-center text-xs text-gray-600 dark:text-gray-400 mb-2">
-              <span>Progreso de Financiamiento</span>
-              <span className="font-semibold text-gray-900 dark:text-white">{progress.toFixed(1)}%</span>
-            </div>
-            <div className="w-full bg-gray-200 dark:bg-zinc-700 rounded-full h-2 mb-2">
-              <div
-                className="bg-gradient-to-r from-lime-500 to-emerald-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            <div className="flex justify-between items-center text-xs text-gray-600 dark:text-gray-400">
-              <span>${raisedAmount.toLocaleString()} recaudados</span>
-              <span>de ${targetAmount.toLocaleString()}</span>
-            </div>
-          </div>
-        )}
-
-        <div className={`flex justify-between items-center ${isPending ? 'pt-2' : 'pt-3'} border-t border-gray-200 dark:border-zinc-700 mt-auto`}>
-          {variant === 'pending' ? (
-            <span className={`px-2 py-1 text-xs font-medium bg-yellow-500/20 text-yellow-300 rounded-full ${
-              gridColumns === 6 ? 'px-1.5 py-0.5 text-xs' : gridColumns === 4 ? 'px-2 py-1 text-xs' : 'px-2 py-1 text-xs'
-            }`}>
-              En Revisión
-            </span>
+    <Link href={`/projects/${project.slug}`} className="block">
+      <div className={getCardStyles()}>
+        <div className="relative w-full bg-gray-200 dark:bg-zinc-700" style={{ paddingBottom: getImageAspectRatio() }}>
+          {project.coverPhotoUrl ? (
+            <Image
+              src={project.coverPhotoUrl}
+              alt={`Cover photo for ${project.title}`}
+              fill
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
+            />
           ) : (
-            <span className={`px-2 py-1 text-xs font-medium bg-emerald-500/20 text-emerald-300 rounded-full ${
-              gridColumns === 6 ? 'px-1.5 py-0.5 text-xs' : gridColumns === 4 ? 'px-2 py-1 text-xs' : 'px-2 py-1 text-xs'
-            }`}>
-              Aprobado
-            </span>
+            <div className="w-full h-full flex items-center justify-center">
+              <ImageIcon className={`${gridColumns === 6 ? 'w-8 h-8' : gridColumns === 4 ? 'w-10 h-10' : 'w-12 h-12'} text-zinc-500`} />
+            </div>
           )}
-          <Link href={`/projects/${project.slug}`} className={`flex items-center gap-1 hover:opacity-80 transition-opacity overflow-hidden ${
-            isPending ? 'text-xs' : gridColumns === 6 ? 'text-xs' : 'text-sm'
-          } ${variant === 'pending' ? 'text-lime-400' : 'text-emerald-400'}`}>
-            <EyeIcon className={`${gridColumns === 6 ? 'w-3 h-3' : 'w-4 h-4'} flex-shrink-0`} />
-            <span className={`truncate ${gridColumns === 6 ? 'hidden' : gridColumns === 4 ? 'hidden sm:inline' : 'inline'}`}>
-              {gridColumns === 6 || gridColumns === 4 ? 'Ver' : 'Ver Proyecto'}
-            </span>
-          </Link>
+
+          {/* Status Badge */}
+          {variant === 'pending' && (
+            <div className="absolute top-2 right-2">
+              <span className="px-2 py-1 text-xs font-medium bg-yellow-500/90 text-black rounded-full">
+                Pendiente
+              </span>
+            </div>
+          )}
+          {project.status === 'live' && (
+            <div className="absolute top-2 right-2">
+              <span className="px-2 py-1 text-xs font-medium bg-lime-500/90 text-black rounded-full">
+                Desatado
+              </span>
+            </div>
+          )}
+          {project.status === 'approved' && (
+            <div className="absolute top-2 right-2">
+              <span className="px-2 py-1 text-xs font-medium bg-green-500/90 text-black rounded-full">
+                Aprobado
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className={`flex flex-col flex-grow ${getPadding()}`}>
+          <h3 className={`font-bold text-gray-900 dark:text-white mb-2 line-clamp-1 ${getTitleSize()}`}>
+            {project.title}
+          </h3>
+          <p className={`text-gray-600 dark:text-gray-400 mb-4 line-clamp-2 flex-grow text-sm ${getDescriptionHeight()}`}>
+            {project.description}
+          </p>
+
+          {!isPending && project.status !== 'pending' && (
+            <div className="mb-4">
+              <div className="flex justify-between items-center text-xs text-gray-600 dark:text-gray-400 mb-2">
+                <span>Progreso de Financiamiento</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{progress.toFixed(1)}%</span>
+              </div>
+              <div className="w-full bg-gray-200 dark:bg-zinc-700 rounded-full h-2 mb-2">
+                <div
+                  className="bg-gradient-to-r from-lime-500 to-emerald-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <div className="flex justify-between items-center text-xs text-gray-600 dark:text-gray-400">
+                <span>${raisedAmount.toLocaleString()} recaudados</span>
+                <span>de ${targetAmount.toLocaleString()}</span>
+              </div>
+            </div>
+          )}
+
+          <div className={`flex justify-between items-center ${isPending ? 'pt-2' : 'pt-3'} border-t border-gray-200 dark:border-zinc-700 mt-auto`}>
+            {variant === 'pending' ? (
+              <span className={`px-2 py-1 text-xs font-medium bg-yellow-500/20 text-yellow-300 rounded-full ${
+                gridColumns === 6 ? 'px-1.5 py-0.5 text-xs' : gridColumns === 4 ? 'px-2 py-1 text-xs' : 'px-2 py-1 text-xs'
+              }`}>
+                En Revisión
+              </span>
+            ) : (
+              <span className={`px-2 py-1 text-xs font-medium bg-emerald-500/20 text-emerald-300 rounded-full ${
+                gridColumns === 6 ? 'px-1.5 py-0.5 text-xs' : gridColumns === 4 ? 'px-2 py-1 text-xs' : 'px-2 py-1 text-xs'
+              }`}>
+                Aprobado
+              </span>
+            )}
+            <div className={`flex items-center gap-1 overflow-hidden ${
+              isPending ? 'text-xs' : gridColumns === 6 ? 'text-xs' : 'text-sm'
+            } ${variant === 'pending' ? 'text-lime-400' : 'text-emerald-400'}`}>
+              <EyeIcon className={`${gridColumns === 6 ? 'w-3 h-3' : 'w-4 h-4'} flex-shrink-0`} />
+              <span className={`truncate ${gridColumns === 6 ? 'hidden' : gridColumns === 4 ? 'hidden sm:inline' : 'inline'}`}>
+                {gridColumns === 6 || gridColumns === 4 ? 'Ver' : 'Ver Proyecto'}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
