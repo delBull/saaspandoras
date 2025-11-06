@@ -27,14 +27,35 @@ import {
   Layers         // Para 'Módulos'
 } from "lucide-react";
 import { AnimatedBackground } from "@/components/apply/AnimatedBackground";
+import { PreFilterModal } from "@/components/apply/PreFilterModal";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export default function ApplyInfoPage() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [showPreFilterModal, setShowPreFilterModal] = useState(false);
+  const [selectedFormType, setSelectedFormType] = useState<'multi-step' | 'conversational' | null>(null);
   const router = useRouter();
   const { open } = useProjectModal();
   const { openModal } = useTermsModal();
+
+  // Función para manejar el clic en los botones
+  const handleFormSelection = (formType: 'multi-step' | 'conversational') => {
+    if (!acceptedTerms) return;
+    setSelectedFormType(formType);
+    setShowPreFilterModal(true);
+  };
+
+  // Función para proceder después del modal de pre-filtro
+  const handleProceedToForm = () => {
+    setShowPreFilterModal(false);
+    if (selectedFormType === 'multi-step') {
+      void open(); // Abre el modal del multi-step form
+    } else if (selectedFormType === 'conversational') {
+      void router.push('/apply/utility'); // Redirige al conversational form
+    }
+    setSelectedFormType(null);
+  };
 
   // --- TRANSFORMACIÓN #1: DE "CLASES DE ACTIVOS" A "CASOS DE USO" ---
   // Se eliminan "Bienes Raíces", "Startup", "Energías" (Securities)
@@ -457,7 +478,7 @@ export default function ApplyInfoPage() {
               <Button
                 size="lg"
                 disabled={!acceptedTerms}
-                onClick={open}
+                onClick={() => handleFormSelection('multi-step')}
                 className={cn(
                   "bg-gradient-to-r from-lime-500 to-emerald-500 text-black font-bold text-base md:text-lg px-8 md:px-12 py-4 md:py-6 rounded-xl transition-all duration-300",
                   acceptedTerms
@@ -474,7 +495,7 @@ export default function ApplyInfoPage() {
               <Button
                 size="lg"
                 disabled={!acceptedTerms}
-                onClick={() => router.push('/apply/utility')}
+                onClick={() => handleFormSelection('conversational')}
                 variant="outline"
                 className={cn(
                   "border-2 border-purple-500/50 bg-purple-500/10 text-purple-300 font-bold text-base md:text-lg px-8 md:px-12 py-4 md:py-6 rounded-xl transition-all duration-300 hover:bg-purple-500/20 hover:border-purple-400",
@@ -497,6 +518,14 @@ export default function ApplyInfoPage() {
           </div>
         </motion.div>
       </div>
+
+      {/* Modal de Pre-Filtro */}
+      <PreFilterModal
+        isOpen={showPreFilterModal}
+        onClose={() => setShowPreFilterModal(false)}
+        onProceed={handleProceedToForm}
+        formType={selectedFormType}
+      />
 
       {/* Modal is now rendered globally in DashboardClientWrapper */}
     </div>

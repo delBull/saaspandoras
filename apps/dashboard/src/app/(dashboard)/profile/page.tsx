@@ -493,7 +493,7 @@ export default function ProfilePage() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center p-4 bg-gradient-to-br from-yellow-500/10 to-orange-500/10 rounded-lg border border-yellow-500/20">
                   <div className="text-2xl font-bold text-yellow-400">{gamification.totalPoints}</div>
-                  <div className="text-xs text-gray-400">Puntos Totales</div>
+                  <div className="text-xs text-gray-400">Tokens Totales</div>
                 </div>
                 <div className="text-center p-4 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-lg border border-blue-500/20">
                   <div className="text-2xl font-bold text-blue-400">Nivel {gamification.currentLevel}</div>

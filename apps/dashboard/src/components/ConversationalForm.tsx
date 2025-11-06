@@ -1099,9 +1099,12 @@ export default function ConversationalForm() {
       if (userWallet) {
         try {
           console.log('🎮 Triggering project application event for user:', userWallet);
-          await gamificationEngine.trackEvent(
+          // Importar la función del service directamente
+          const { trackGamificationEvent } = await import('@/lib/gamification/service');
+
+          await trackGamificationEvent(
             userWallet,
-            EventType.PROJECT_APPLICATION_SUBMITTED,
+            'project_application_submitted',
             {
               projectTitle: safeData.title,
               projectId: (responseData as { id?: string | number })?.id?.toString() ?? 'unknown',
