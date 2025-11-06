@@ -67,6 +67,7 @@ export async function GET() {
       }
 
       // Get users with their project counts using a simpler approach
+      // Count ALL projects (including drafts) - the admin should see all user activity
       const usersQuery = await sql`
         SELECT
           u."id",
@@ -85,11 +86,13 @@ export async function GET() {
         FROM "users" u
         LEFT JOIN (
           SELECT
-            p."applicant_wallet_address",
+            LOWER(p."applicant_wallet_address") as wallet_lower,
             COUNT(p.id) as project_count
           FROM "projects" p
-          GROUP BY p."applicant_wallet_address"
-        ) project_counts ON LOWER(u."walletAddress") = LOWER(project_counts."applicant_wallet_address")
+          WHERE p."applicant_wallet_address" IS NOT NULL
+            AND p."applicant_wallet_address" != ''
+          GROUP BY LOWER(p."applicant_wallet_address")
+        ) project_counts ON LOWER(u."walletAddress") = project_counts.wallet_lower
         WHERE LOWER(u."walletAddress") != LOWER(${SUPER_ADMIN_WALLETS[0]})
         ORDER BY u."createdAt" DESC
       `;
