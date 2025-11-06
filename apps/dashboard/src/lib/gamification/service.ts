@@ -840,8 +840,8 @@ private static async updateUserProfilePoints(userId: string, pointsToAdd: number
 
       // 🎯 PROJECT APPLICATION: Achievement por primera aplicación enviada
       if (eventType === 'project_application_submitted') {
-        await this.unlockAchievement(userId, 'primer_aplicante');
-        console.log(`🎉 Unlocked "Primer Aplicante" achievement for user ${userId}`);
+        await this.unlockAchievement(userId, 'primer_borrador');
+        console.log(`🎉 Unlocked "Primer Borrador" achievement for user ${userId}`);
       }
 
       // 🎯 PROJECT APPROVAL: Achievement por proyecto aprobado por admin
@@ -921,7 +921,21 @@ private static async updateUserProfilePoints(userId: string, pointsToAdd: number
           created_at: new Date()
         },
         {
-          name: "Primer Aplicante",
+          name: "Primer Borrador",
+          description: "Envía tu primera aplicación de proyecto",
+          icon: "📝",
+          type: "creator" as any,
+          required_points: 0,
+          required_level: 1,
+          required_events: JSON.stringify(["project_application_submitted"]),
+          points_reward: 0,
+          badge_url: "/badges/applicant.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
+        },
+        {
+          name: "Aplicante Proactivo",
           description: "Gana 100 tokens por actividades",
           icon: "📝",
           type: "creator" as any,

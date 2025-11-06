@@ -14,63 +14,7 @@ import {
 } from "lucide-react";
 import { ProjectNavigation } from "./components/ProjectNavigation";
 import { ProjectContent } from "./components/ProjectContent";
-
-// Type for project data
-interface ProjectData {
-  id: number | string;
-  title: string;
-  slug: string;
-  logo_url?: string | null;
-  cover_photo_url?: string | null;
-  tagline?: string | null;
-  description: string;
-  business_category?: string | null;
-  video_pitch?: string | null;
-  website?: string | null;
-  whitepaper_url?: string | null;
-  twitter_url?: string | null;
-  discord_url?: string | null;
-  telegram_url?: string | null;
-  linkedin_url?: string | null;
-  target_amount?: string | number | null;
-  total_valuation_usd?: string | number | null;
-  token_type?: string | null;
-  total_tokens?: string | number | null;
-  tokens_offered?: string | number | null;
-  token_price_usd?: string | number | null;
-  estimated_apy?: string | null;
-  yield_source?: string | null;
-  lockup_period?: string | null;
-  fund_usage?: string | null;
-  team_members?: string | null;
-  advisors?: string | null;
-  token_distribution?: string | null;
-  contract_address?: string | null;
-  treasury_address?: string | null;
-  legal_status?: string | null;
-  valuation_document_url?: string | null;
-  fiduciary_entity?: string | null;
-  due_diligence_report_url?: string | null;
-  is_mintable?: boolean | null;
-  is_mutable?: boolean | null;
-  update_authority_address?: string | null;
-  applicant_name?: string | null;
-  applicant_position?: string | null;
-  applicant_email?: string | null;
-  applicant_phone?: string | null;
-  applicant_wallet_address?: string | null;
-  verification_agreement?: boolean | null;
-  image_url?: string | null;
-  socials?: string | null;
-  raised_amount?: string | number | null;
-  returns_paid?: string | number | null;
-  status: string;
-  featured?: boolean | null;
-  featured_button_text?: string | null;
-  created_at?: string | Date | null;
-}
-
-
+import type { ProjectData } from "../types";
 
 // Helper para parsear JSON de forma segura
 function safeJsonParse<T>(jsonString: string | null | undefined, defaultValue: T): T {
@@ -552,7 +496,7 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
             {/* Additional Dynamic Sections */}
             <div className="space-y-8">
               {/* Utility Protocol Details */}
-              {(project.total_tokens ?? project.estimated_apy ?? project.yield_source) && (
+              {(project.total_tokens ?? project.estimated_apy ?? project.yield_source ?? project.fund_usage ?? project.lockup_period) && (
                 <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
                   <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
                     <Puzzle className="w-5 h-5 text-lime-400" /> Detalles del Protocolo de Utilidad
@@ -581,11 +525,98 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
                     )}
                     {project.fund_usage && (
                       <div className="bg-zinc-800/50 rounded-lg p-4">
-                        <h4 className="font-semibold text-white mb-2">Uso de Recursos</h4>
+                        <h4 className="font-semibold text-white mb-2">Mecánica del Protocolo</h4>
                         <p className="text-white text-sm">{project.fund_usage}</p>
-                        <p className="text-zinc-400 text-sm">Cómo se utilizarán los fondos</p>
+                        <p className="text-zinc-400 text-sm">Regla fundamental de valor para holders</p>
                       </div>
                     )}
+                    {project.lockup_period && (
+                      <div className="bg-zinc-800/50 rounded-lg p-4">
+                        <h4 className="font-semibold text-white mb-2">Utilidad Continua</h4>
+                        <p className="text-white text-sm">{project.lockup_period}</p>
+                        <p className="text-zinc-400 text-sm">Plan para mantener valor a largo plazo</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Recurring Rewards Structure */}
+              {(project.recurring_rewards ??
+                project.staking_rewards_enabled ??
+                project.revenue_sharing_enabled ??
+                project.work_to_earn_enabled ??
+                project.tiered_access_enabled ??
+                project.discounted_fees_enabled) && (
+                <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+                  <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                    <Ticket className="w-5 h-5 text-lime-400" /> Estructura de Recompensa Recurrente
+                  </h3>
+                  <div className="space-y-4">
+                    {project.recurring_rewards && (
+                      <div className="bg-zinc-800/50 rounded-lg p-4">
+                        <h4 className="font-semibold text-white mb-2">Descripción General</h4>
+                        <p className="text-white text-sm">{project.recurring_rewards}</p>
+                        <p className="text-zinc-400 text-sm">Cómo se traducirá la utilidad en valor recurrente</p>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {project.staking_rewards_enabled && (
+                        <div className="bg-zinc-800/50 rounded-lg p-4">
+                          <h4 className="font-semibold text-lime-400 mb-2">🏦 Staking Rewards</h4>
+                          {project.staking_rewards_details && (
+                            <p className="text-white text-sm">{project.staking_rewards_details}</p>
+                          )}
+                        </div>
+                      )}
+                      {project.revenue_sharing_enabled && (
+                        <div className="bg-zinc-800/50 rounded-lg p-4">
+                          <h4 className="font-semibold text-lime-400 mb-2">💰 Revenue Sharing</h4>
+                          {project.revenue_sharing_details && (
+                            <p className="text-white text-sm">{project.revenue_sharing_details}</p>
+                          )}
+                        </div>
+                      )}
+                      {project.work_to_earn_enabled && (
+                        <div className="bg-zinc-800/50 rounded-lg p-4">
+                          <h4 className="font-semibold text-lime-400 mb-2">⚡ Work-to-Earn</h4>
+                          {project.work_to_earn_details && (
+                            <p className="text-white text-sm">{project.work_to_earn_details}</p>
+                          )}
+                        </div>
+                      )}
+                      {project.tiered_access_enabled && (
+                        <div className="bg-zinc-800/50 rounded-lg p-4">
+                          <h4 className="font-semibold text-lime-400 mb-2">🏆 Tiered Access</h4>
+                          {project.tiered_access_details && (
+                            <p className="text-white text-sm">{project.tiered_access_details}</p>
+                          )}
+                        </div>
+                      )}
+                      {project.discounted_fees_enabled && (
+                        <div className="bg-zinc-800/50 rounded-lg p-4">
+                          <h4 className="font-semibold text-lime-400 mb-2">💎 Discounted Fees</h4>
+                          {project.discounted_fees_details && (
+                            <p className="text-white text-sm">{project.discounted_fees_details}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Integrations */}
+              {project.integration_details && (
+                <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+                  <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                    <Code className="w-5 h-5 text-lime-400" /> Integraciones y Expansión
+                  </h3>
+                  <div className="bg-zinc-800/50 rounded-lg p-4">
+                    <h4 className="font-semibold text-white mb-2">Planes de Integración</h4>
+                    <p className="text-white text-sm">{project.integration_details}</p>
+                    <p className="text-zinc-400 text-sm">Cómo se conectará con otras plataformas y herramientas</p>
                   </div>
                 </div>
               )}

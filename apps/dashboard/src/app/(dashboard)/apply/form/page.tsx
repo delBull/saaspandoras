@@ -10,9 +10,6 @@ import { ApplicationSuccessNotification } from "@/components/apply/ApplicationSu
 import { ApplicationDraftNotification } from "@/components/apply/ApplicationDraftNotification";
 import { EnhancedMultiStepForm } from "@/components/apply/EnhancedMultiStepForm";
 
-
-
-
 // Force dynamic rendering - this page uses authentication and should not be prerendered
 export const dynamic = 'force-dynamic';
 
@@ -371,7 +368,7 @@ export default function ApplyFormPage() {
         isOpen={showSuccessNotification}
         onClose={handleNotificationClose}
         title="¡Aplicación Enviada Exitosamente!"
-        description="Tu proyecto ha sido recibido y está siendo procesado por nuestro equipo de revisión. Te contactaremos pronto con los próximos pasos del proceso de selección elite."
+        description="Tu creación ha sido recibida y está siendo procesado por nuestro equipo de revisión. Te contactaremos pronto con los próximos pasos del proceso de selección elite."
         redirectDelay={8}
         redirectUrl="/"
       />
