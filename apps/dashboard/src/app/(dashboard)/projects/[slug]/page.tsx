@@ -1,12 +1,12 @@
 'use client';
 
 import { notFound } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { ProjectData } from "../types";
+import ProjectVideoSection, { type ProjectVideoSectionRef } from "../../../../components/projects/ProjectVideoSection";
 import ProjectNavigationHeader from "../../../../components/projects/ProjectNavigationHeader";
 import ProjectSidebar from "../../../../components/projects/ProjectSidebar";
 import ProjectHeader from "../../../../components/projects/ProjectHeader";
-import ProjectVideoSection from "../../../../components/projects/ProjectVideoSection";
 import ProjectContentTabs from "../../../../components/projects/ProjectContentTabs";
 import ProjectDetails from "../../../../components/projects/ProjectDetails";
 import MobileInvestmentCard from "../../../../components/projects/MobileInvestmentCard";
@@ -16,6 +16,21 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
   const [project, setProject] = useState<ProjectData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentSlug, setCurrentSlug] = useState<string>('');
+  const videoRef = useRef<ProjectVideoSectionRef>(null);
+
+  // Función para mostrar el video
+  const showVideoFromHeader = () => {
+    if (videoRef.current) {
+      videoRef.current.showVideo();
+    }
+  };
+
+  // Exponer el ref del video para uso global
+  useEffect(() => {
+    if (videoRef.current) {
+      (window as Window & { projectVideoRef?: ProjectVideoSectionRef }).projectVideoRef = videoRef.current;
+    }
+  }, []);
 
   // Load project data on mount
   useEffect(() => {
@@ -72,10 +87,10 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
           {/* Main Content Area (Left side) */}
           <div className="lg:mr-80 xl:mr-80 2xl:mr-80">
             {/* Project Header Component */}
-            <ProjectHeader project={project} />
+            <ProjectHeader project={project} onVideoClick={showVideoFromHeader} />
 
             {/* Video Section */}
-            <ProjectVideoSection project={project} />
+            <ProjectVideoSection ref={videoRef} project={project} />
 
             {/* New Utility-Focused Content Tabs */}
             <ProjectContentTabs project={project} />
