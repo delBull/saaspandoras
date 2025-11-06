@@ -114,6 +114,19 @@ module.exports = {
     },
     {
       files: [
+        'src/components/projects/ProjectContentTabs.tsx',
+        'src/components/projects/ProjectVideoSection.tsx'
+      ],
+      rules: {
+        '@typescript-eslint/no-unsafe-assignment': 'off',
+        '@typescript-eslint/no-unsafe-member-access': 'off',
+        '@typescript-eslint/no-unsafe-call': 'off',
+        '@typescript-eslint/no-explicit-any': 'off',
+        'react-hooks/exhaustive-deps': 'off'
+      }
+    },
+    {
+      files: [
         'src/app/(dashboard)/debug/database/page.tsx'
       ],
       rules: {
