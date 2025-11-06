@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from 'react';
 import { useForm, FormProvider, useFormContext } from 'react-hook-form';
+import type { FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
@@ -8,16 +9,34 @@ import { Button } from '@/components/ui/button';
 import { z } from 'zod';
 import Image from 'next/image';
 import { useActiveAccount } from 'thirdweb/react';
+import { useRouter } from 'next/navigation';
 // 🎮 IMPORTAR EVENTOS DE GAMIFICACIÓN
 import { gamificationEngine, EventType } from "@pandoras/gamification";
 // 📖 MODAL DE INFORMACIÓN
 import { InfoModal } from './InfoModal';
+// 🔄 MODAL DE RESULTADO (Loading/Success/Error)
+import { ResultModal } from './ResultModal';
+// 📜 MODAL DE TÉRMINOS Y CONDICIONES
+import { useTermsModal } from '@/contexts/TermsModalContext';
+// 🧩 COMPONENTES DE INPUT MODULARES
+import {
+  TextInput,
+  TextareaInput,
+  SelectInput,
+  NumberInput,
+  UrlInput,
+  CheckboxInput,
+  RecurringRewardsInput,
+  FileInput
+} from './conversational-form/inputComponents';
+// 📋 PREGUNTAS DEL FORMULARIO
+import { formQuestions } from './conversational-form/formQuestions';
 
 // Schema de validación completo basado en DB schema - Versión Utility
 const projectSchema = z.object({
-  // Campos requeridos - Identidad de la Creación
-  title: z.string().min(3, "El nombre debe tener al menos 3 caracteres").max(256, "El nombre es demasiado largo"),
-  description: z.string().min(10, "La descripción debe tener al menos 10 caracteres"),
+  // Campos requeridos - Identidad de la Creación (temporalmente opcionales para pruebas)
+  title: z.string().min(3, "El nombre debe tener al menos 3 caracteres").max(256, "El nombre es demasiado largo").optional(),
+  description: z.string().min(10, "La descripción debe tener al menos 10 caracteres").optional(),
   businessCategory: z.enum([
     'residential_real_estate',
     'commercial_real_estate',
@@ -39,7 +58,7 @@ const projectSchema = z.object({
     'insurance',
     'prediction_markets',
     'other'
-  ]),
+  ]).optional(),
 
   // Campos opcionales - Identidad
   tagline: z.string().max(140, "El eslogan es demasiado largo").optional(),
@@ -103,7 +122,7 @@ const projectSchema = z.object({
   // Confianza y Transparencia
   legalStatus: z.string().optional(),
   fiduciaryEntity: z.string().max(256).optional(),
-  valuationDocumentUrl: z.string().url("URL inválida").optional().or(z.literal("")),
+  valuationDocumentUrl: z.string().optional(),
   dueDiligenceReportUrl: z.string().url("URL inválida").optional().or(z.literal("")),
 
   // Parámetros Técnicos
@@ -127,9 +146,9 @@ const projectSchema = z.object({
 });
 
 // Tipos
-type ProjectFormData = z.infer<typeof projectSchema>;
+export type ProjectFormData = z.infer<typeof projectSchema>;
 
-interface FormQuestion {
+export interface FormQuestion {
   id: keyof ProjectFormData;
   label: string;
   placeholder?: string;
@@ -141,800 +160,9 @@ interface FormQuestion {
   relatedField?: string;
 }
 
-// Array de preguntas del formulario conversacional - Versión Utility Final
-const formQuestions: FormQuestion[] = [
-  // SECCIÓN 1: La Identidad de tu Creación (6 preguntas)
-  {
-    id: 'title',
-    label: '¡Hola, Creador! ¿Cómo se llama esta nueva Creación (Protocolo de Utilidad)?',
-    placeholder: 'Ej: Pandora\'s DAO o Acceso Total NFT',
-    component: 'text-input',
-    required: true,
-    maxLength: 256,
-  },
-  {
-    id: 'tagline',
-    label: '¿Cuál es el eslogan o frase que resume el Valor o la Utilidad de tu Creación?',
-    placeholder: 'Ej: Acceso ilimitado a nuestra comunidad por tu Labor.',
-    component: 'text-input',
-    maxLength: 140,
-    info: 'Un eslogan memorable que capture la esencia de tu protocolo de utilidad. Debe enfocarse en el beneficio, no en la inversión.',
-  },
-  {
-    id: 'businessCategory',
-    label: 'Para ayudar a la Comunidad a descubrirla, ¿en qué categoría clasificarías tu Creación?',
-    component: 'select-input',
-    options: [
-      { value: 'residential_real_estate', label: 'Bienes Raíces (Utilidad Inmobiliaria)' },
-      { value: 'commercial_real_estate', label: 'Bienes Raíces (Acceso y Gobernanza)' },
-      { value: 'tech_startup', label: 'Tech Startup (Membresía y Acceso)' },
-      { value: 'renewable_energy', label: 'Energías Renovables (Recompensas y Gobernanza)' },
-      { value: 'art_collectibles', label: 'Arte y Coleccionables (Acceso a Drops)' },
-      { value: 'intellectual_property', label: 'Propiedad Intelectual (Derechos de Uso)' },
-      { value: 'defi', label: 'DeFi (Protocolos de Staking/Yield)' },
-      { value: 'gaming', label: 'Gaming y NFTs de Juegos (Utilidad In-Game)' },
-      { value: 'metaverse', label: 'Metaverso y Real Estate Virtual (Acceso a Territorios)' },
-      { value: 'music_audio', label: 'Música y NFTs de Audio (Derechos de Escucha/Drops)' },
-      { value: 'sports_fan_tokens', label: 'Deportes y Fan Tokens (Votación y Beneficios)' },
-      { value: 'education', label: 'Educación y Aprendizaje (Cursos y Certificados)' },
-      { value: 'healthcare', label: 'Salud y Biotecnología (Acceso a Datos/Servicios)' },
-      { value: 'supply_chain', label: 'Cadena de Suministro (Transparencia y Trazabilidad)' },
-      { value: 'infrastructure', label: 'Infraestructura y DAO Tools (Utilidad de Herramientas)' },
-      { value: 'social_networks', label: 'Redes Sociales Web3 (Membresía y Recompensas)' },
-      { value: 'carbon_credits', label: 'Créditos de Carbono (Utilidad Ecológica)' },
-      { value: 'insurance', label: 'Seguros Paramétricos (Acceso a Pólizas)' },
-      { value: 'prediction_markets', label: 'Mercados de Predicción (Acceso y Votación)' },
-      { value: 'other', label: 'Otro (Especificar en descripción)' },
-    ],
-    required: true,
-    info: 'Selecciona la categoría que mejor describa la utilidad principal de tu protocolo. Esta clasificación ayuda a la comunidad a encontrar Creaciones relevantes.',
-  },
-  {
-    id: 'logoUrl',
-    label: 'Artefacto visual: Sube el logo que represente tu Creación.',
-    placeholder: 'Haz click para seleccionar tu logo',
-    component: 'file-input',
-    info: 'Logo en PNG/SVG (recomendado 512x512px). Debe ser tu logo oficial y de alta calidad.',
-  },
-  {
-    id: 'coverPhotoUrl',
-    label: '¿Tienes una imagen de portada que capture el espíritu de tu Creación?',
-    placeholder: 'Haz click para seleccionar tu imagen de portada',
-    component: 'file-input',
-    info: 'Imagen principal (JPG/PNG, máx. 1920x1080px). Será el fondo "hero" de tu página de protocolo.',
-  },
-  {
-    id: 'videoPitch',
-    label: '¿Tienes un video (YouTube/Vimeo) que muestre el alma y la utilidad de tu Creación?',
-    placeholder: 'https://...',
-    component: 'url-input',
-    info: 'Enlace a tu video pitch o demo de utilidad. Muy recomendado para captar atención. (Máx. 3 minutos).',
-  },
 
-  // SECCIÓN 2: Conecta a tu Comunidad (6 preguntas)
-  {
-    id: 'website',
-    label: '¿Dónde puede la Comunidad aprender más sobre tu Creación? (Sitio Web Oficial)',
-    placeholder: 'https://tusitioweb.com',
-    component: 'url-input',
-    info: 'Tu sitio web oficial donde se describe la utilidad y el acceso que ofrece tu protocolo.',
-  },
-  {
-    id: 'whitepaperUrl',
-    label: '¿Tienes un "Litepaper" o documento de Visión que detalle el Protocolo de Utilidad?',
-    placeholder: 'https://...',
-    component: 'url-input',
-    info: 'Documento que explica la visión, la tecnología, el modelo económico (tokenomics) y, crucialmente, la **mecánica de utilidad** de tu proyecto.',
-  },
-  {
-    id: 'twitterUrl',
-    label: '¿Cuál es tu cuenta de X (Twitter)?',
-    placeholder: 'https://twitter.com/...',
-    component: 'url-input',
-    info: 'Tu cuenta oficial en X (Twitter) para comunicaciones con la comunidad.',
-  },
-  {
-    id: 'discordUrl',
-    label: '¿Dónde está tu comunidad en Discord?',
-    placeholder: 'https://discord.gg/...',
-    component: 'url-input',
-    info: 'Servidor de Discord donde la comunidad puede interactuar y participar.',
-  },
-  {
-    id: 'telegramUrl',
-    label: '¿Tienes un grupo de Telegram?',
-    placeholder: 'https://t.me/...',
-    component: 'url-input',
-    info: 'Grupo o canal de Telegram para anuncios importantes y comunicación directa.',
-  },
-  {
-    id: 'linkedinUrl',
-    label: '¿Cuál es tu perfil de LinkedIn (para mostrar credenciales del equipo)?',
-    placeholder: 'https://linkedin.com/in/...',
-    component: 'url-input',
-    info: 'Perfil profesional de LinkedIn para mostrar la trayectoria del equipo principal.',
-  },
 
-  // SECCIÓN 3: La Utilidad y Economía de la Creación (9 preguntas)
-  {
-    id: 'fundUsage', // Mantiene la clave, pero cambia la pregunta
-    label: 'Describa la mecánica del Protocolo: ¿Cómo se genera valor para la comunidad (ej. acceso, recompensas, contenido)?',
-    placeholder: 'Ej: Los holders de Artefactos tendrán acceso prioritario a nuevos lanzamientos, podrán votar en funcionalidades, y recibirán recompensas por staking/labor...',
-    component: 'textarea-input',
-    info: 'Describe la regla fundamental de tu Creación. Explica el *beneficio tangible* que recibirán los poseedores del Artefacto.',
-  },
-  {
-    id: 'lockupPeriod', // Mantiene la clave, pero cambia la pregunta
-    label: '¿Cómo se mantiene la utilidad de los Artefactos a largo plazo?',
-    placeholder: 'Ej: Actualizaciones continuas del protocolo, nuevos casos de uso desbloqueados por tenencia prolongada, recompensas por participación activa, acceso a eventos exclusivos...',
-    component: 'textarea-input',
-    info: 'Describe el plan para que el valor de uso (utilidad) se mantenga y crezca más allá del lanzamiento inicial. La clave es la *utilidad continua*.',
-  },
-  {
-    id: 'applicantName', // Mantiene la clave, pero cambia la pregunta
-    label: 'Si incluye \'Labor\' (Work-to-Earn), describa el mecanismo: ¿Qué es \'Labor\' y cómo se calculará la recompensa?',
-    placeholder: 'Ej: Las acciones validadas incluyen: contribuir al DAO, moderar contenido. La recompensa se calcula por puntos acumulados semanalmente, canjeables por tokens adicionales o acceso premium...',
-    component: 'textarea-input',
-    info: 'Detalla cómo el sistema Work-to-Earn recompensa la contribución de la comunidad. Especifica las acciones y la fórmula de recompensa.',
-  },
-  {
-    id: 'isMintable', // Mantiene la clave, pero cambia la pregunta
-    label: '¿Tiene planes de integrar este Protocolo con otras herramientas/plataformas (Discord, e-commerce, Web3, etc.)?',
-    component: 'checkbox-input',
-    info: 'Marcar Sí si planeas integrar con otras plataformas. Describe las integraciones en el campo de descripción del proyecto.',
-  },
-  {
-    id: 'targetAmount',
-    label: 'Para que esta Creación cobre vida, ¿cuántos Recursos (en USD) necesita recaudar de la comunidad en esta ronda?',
-    placeholder: 'Ej: 100000',
-    component: 'select-input',
-    options: [
-      { value: 'not_sure', label: 'Aún no estoy seguro(a)' },
-      { value: '50000', label: '$50,000' },
-      { value: '100000', label: '$100,000' },
-      { value: '250000', label: '$250,000' },
-      { value: '500000', label: '$500,000' },
-      { value: '1000000', label: '$1,000,000' },
-      { value: 'custom', label: 'Otro monto (especificar)' },
-    ],
-    info: 'Monto en USD que necesitas recaudar. Sé realista: un monto bien justificado genera confianza.',
-  },
-  {
-    id: 'tokenType',
-    label: '¿Cómo planeas representar la participación en tu Creación? (Tipo de Artefacto digital)',
-    component: 'select-input',
-    options: [
-      { value: 'erc20', label: 'Fungible (ERC-20) - Para recompensas o gobernanza' },
-      { value: 'erc721', label: 'No Fungible (ERC-721/NFT) - Para acceso o identidad' },
-      { value: 'erc1155', label: 'Semi-Fungible (ERC-1155) - Para combinar ambos tipos' },
-    ],
-    info: 'Elige el estándar que mejor se adapte al uso y la escasez de tu Artefacto de Acceso.',
-  },
-  {
-    id: 'totalTokens',
-    label: 'Definamos los Artefactos. ¿Cuántos Artefactos existirán en total (Supply Total)?',
-    placeholder: 'Ej: 10000000',
-    component: 'number-input',
-    info: 'El suministro total de Artefactos. Este número define la escasez del acceso.',
-  },
-  {
-    id: 'tokensOffered',
-    label: '¿Cuántos Artefactos ofrecerás a la comunidad en esta ronda?',
-    placeholder: 'Ej: 1000000',
-    component: 'number-input',
-    info: 'Cantidad que se pondrá a disposición de la comunidad en esta fase.',
-    relatedField: 'totalTokens',
-  },
-  {
-    id: 'tokenPriceUsd',
-    label: '¿Cuál será el precio (en USD) de cada Artefacto durante la recaudación?',
-    placeholder: 'Ej: 0.10',
-    component: 'number-input',
-    info: 'El precio inicial de venta del Artefacto de Acceso.',
-  },
-  {
-    id: 'recurringRewards',
-    label: 'Estructura de Recompensa Recurrente',
-    component: 'recurring-rewards-input',
-  },
 
-  // SECCIÓN 4: Datos del Creador (4 preguntas)
-  {
-    id: 'applicantPosition',
-    label: '¿Cuál es tu rol en este proyecto de utilidad?',
-    placeholder: 'Ej: Fundador y CEO',
-    component: 'text-input',
-    info: 'Tu posición oficial en el proyecto. Esta información es pública.',
-  },
-  {
-    id: 'applicantEmail',
-    label: '¿Cuál es tu email? Lo usaremos para mantenerte al tanto del progreso.',
-    placeholder: 'tu@email.com',
-    component: 'text-input',
-    required: true,
-  },
-  {
-    id: 'applicantPhone',
-    label: '¿Tienes un número de teléfono para contacto urgente? (opcional)',
-    placeholder: '+1 234 567 8900',
-    component: 'text-input',
-    maxLength: 50,
-    info: 'Número de teléfono para comunicaciones urgentes de la plataforma.',
-  },
-  {
-    id: 'applicantWalletAddress',
-    label: 'Dirección de tu Billetera (Wallet) de Creador.',
-    placeholder: 'Se llenará automáticamente con tu billetera conectada',
-    component: 'text-input',
-    info: 'La dirección de tu billetera principal que se vinculará a la Creación para gobernanza y tarifas. Si no sabes cuál usar o no puedes decidir ahora, no te preocupes, podemos ayudarte más adelante.',
-  },
-
-  // SECCIÓN 5: Transparencia y Estructura (Legal y Técnica) (6 preguntas)
-  {
-    id: 'legalStatus',
-    label: '¿Cuál es el estatus legal de tu Creación y en qué jurisdicción opera?',
-    placeholder: 'Ej: LLC en Delaware, USA o DAO sin fines de lucro',
-    component: 'text-input',
-    info: 'Información legal para demostrar la legitimidad de la entidad que gestiona la Creación.',
-  },
-  {
-    id: 'fiduciaryEntity', // Mantiene la clave, pero cambia la pregunta
-    label: 'Modelo de Monetización (Ingresos del Protocolo): ¿Cuál es el mecanismo principal que usará el Creador para generar ingresos y financiar las recompensas de Utilidad a largo plazo?',
-    placeholder: 'Ej: Suscripciones con Artefactos, Tarifas por Uso del Servicio, Venta de Productos/Servicios.',
-    component: 'text-input',
-    maxLength: 256,
-    info: 'Ej: Suscripciones con Artefactos, Tarifas por Uso del Servicio, Venta de Productos/Servicios.',
-  },
-  {
-    id: 'valuationDocumentUrl', // Mantiene la clave, pero cambia la pregunta
-    label: 'Describa la estrategia inicial para que la comunidad adquiera sus Artefactos de Acceso.',
-    placeholder: 'Ej: 50% vía Airdrop a holders de X NFT, 50% vía venta a precio fijo, asignación por mérito/labor.',
-    component: 'textarea-input',
-    info: 'Describe cómo planeas distribuir inicialmente tus Artefactos. Incluye porcentajes, criterios de elegibilidad y fases de lanzamiento.',
-  },
-  {
-    id: 'dueDiligenceReportUrl',
-    label: '¿Cómo planea mitigar el riesgo operativo o el fraude dentro de su propia \'Creación\' y comunidad?',
-    placeholder: 'Ej: MultiSig para tesorería, auditorías regulares, gobernanza comunitaria, seguros paramétricos...',
-    component: 'textarea-input',
-    info: 'Describe las medidas de seguridad y control que implementarás. Incluye: custodia de fondos, verificación de identidad, mecanismos de reporte, y protocolos de resolución de disputas.',
-  },
-
-];
-
-// Componentes de Input Personalizados
-function TextInput({ name, placeholder, maxLength, info, onHelpClick }: { name: string; placeholder?: string; maxLength?: number; info?: string; onHelpClick?: () => void }) {
-  const { register, formState: { errors } } = useFormContext();
-
-  return (
-    <div className="space-y-2">
-      <input
-        {...register(name)}
-        placeholder={placeholder}
-        maxLength={maxLength}
-        className="w-full bg-transparent border-b-2 border-zinc-600 focus:border-lime-400 outline-none py-3 text-white placeholder-zinc-500 text-lg transition-colors"
-      />
-      {info && (
-        <p className="text-sm text-zinc-400 mt-2 leading-relaxed">
-          💡 {info}
-        </p>
-      )}
-      {errors[name] && (
-        <motion.p
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-red-400 text-sm"
-        >
-          {errors[name]?.message as string}
-        </motion.p>
-      )}
-    </div>
-  );
-}
-
-function TextareaInput({ name, placeholder, info, onHelpClick }: { name: string; placeholder?: string; info?: string; onHelpClick?: () => void }) {
-  const { register, formState: { errors } } = useFormContext();
-
-  return (
-    <div className="space-y-2">
-      <textarea
-        {...register(name)}
-        placeholder={placeholder}
-        rows={4}
-        className="w-full bg-transparent border-b-2 border-zinc-600 focus:border-lime-400 outline-none py-3 text-white placeholder-zinc-500 text-lg transition-colors resize-none"
-      />
-      {info && (
-        <div className="flex items-start gap-2 mt-2">
-          <p className="text-sm text-zinc-400 leading-relaxed flex-1">
-            💡 {info}
-          </p>
-          {onHelpClick && (
-            <button
-              type="button"
-              onClick={onHelpClick}
-              className="text-lime-400 hover:text-lime-300 text-sm font-medium underline underline-offset-2 flex-shrink-0"
-            >
-              Más info
-            </button>
-          )}
-        </div>
-      )}
-      {errors[name] && (
-        <motion.p
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-red-400 text-sm"
-        >
-          {errors[name]?.message as string}
-        </motion.p>
-      )}
-    </div>
-  );
-}
-
-function SelectInput({ name, options, info, onHelpClick }: { name: string; options?: { value: string; label: string }[]; info?: string; onHelpClick?: () => void }) {
-  const { register, formState: { errors } } = useFormContext();
-
-  return (
-    <div className="space-y-2">
-      <select
-        {...register(name)}
-        className="w-full bg-zinc-800/0 border-b-2 border-zinc-600 focus:border-lime-400 outline-none py-3 text-white text-lg transition-colors"
-      >
-        <option value="">Selecciona una opción...</option>
-        {options?.map((option) => (
-          <option key={option.value} value={option.value} className="bg-zinc-800/0">
-            {option.label}
-          </option>
-        ))}
-      </select>
-      {info && (
-        <div className="flex items-start gap-2 mt-2">
-          <p className="text-sm text-zinc-400 leading-relaxed flex-1">
-            💡 {info}
-          </p>
-          {onHelpClick && (
-            <button
-              type="button"
-              onClick={onHelpClick}
-              className="text-lime-400 hover:text-lime-300 text-sm font-medium underline underline-offset-2 flex-shrink-0"
-            >
-              Más info
-            </button>
-          )}
-        </div>
-      )}
-      {errors[name] && (
-        <motion.p
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-red-400 text-sm"
-        >
-          {errors[name]?.message as string}
-        </motion.p>
-      )}
-    </div>
-  );
-}
-
-function NumberInput({ name, placeholder, maxValue, relatedField, info, onHelpClick }: { name: string; placeholder?: string; maxValue?: number; relatedField?: string; info?: string; onHelpClick?: () => void }) {
-  const { register, formState: { errors }, watch } = useFormContext();
-
-  // Watch the related field for validation
-  const relatedValue = relatedField ? watch(relatedField) : undefined;
-
-  return (
-    <div className="space-y-2">
-      <input
-        {...register(name, {
-          valueAsNumber: true,
-          validate: (value) => {
-            if (maxValue !== undefined && value > maxValue) {
-              return `No puede exceder ${maxValue}`;
-            }
-            if (relatedField && relatedValue && value > relatedValue) {
-              return `No puede exceder el valor del campo relacionado (${relatedValue})`;
-            }
-            return true;
-          }
-        })}
-        type="number"
-        placeholder={placeholder}
-        className="w-full bg-transparent border-b-2 border-zinc-600 focus:border-lime-400 outline-none py-3 text-white placeholder-zinc-500 text-lg transition-colors"
-      />
-      {info && (
-        <div className="flex items-start gap-2 mt-2">
-          <p className="text-sm text-zinc-400 leading-relaxed flex-1">
-            💡 {info}
-          </p>
-          {onHelpClick && (
-            <button
-              type="button"
-              onClick={onHelpClick}
-              className="text-lime-400 hover:text-lime-300 text-sm font-medium underline underline-offset-2 flex-shrink-0"
-            >
-              Más info
-            </button>
-          )}
-        </div>
-      )}
-      {errors[name] && (
-        <motion.p
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-red-400 text-sm"
-        >
-          {errors[name]?.message as string}
-        </motion.p>
-      )}
-    </div>
-  );
-}
-
-function UrlInput({ name, placeholder, info }: { name: string; placeholder?: string; info?: string }) {
-  const { register, formState: { errors } } = useFormContext();
-
-  return (
-    <div className="space-y-2">
-      <input
-        {...register(name)}
-        type="url"
-        placeholder={placeholder}
-        className="w-full bg-transparent border-b-2 border-zinc-600 focus:border-lime-400 outline-none py-3 text-white placeholder-zinc-500 text-lg transition-colors"
-      />
-      {info && (
-        <p className="text-sm text-zinc-400 mt-2 leading-relaxed">
-          💡 {info}
-        </p>
-      )}
-      {errors[name] && (
-        <motion.p
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-red-400 text-sm"
-        >
-          {errors[name]?.message as string}
-        </motion.p>
-      )}
-    </div>
-  );
-}
-
-function CheckboxInput({ name, info, label }: { name: string; info?: string; label?: string }) {
-  const { register, formState: { errors }, watch, setValue } = useFormContext();
-
-  // Watch the current value
-  const currentValue = watch(name);
-
-  // Default label for verification agreement
-  const checkboxLabel = label ?? "Declaro que toda la información proporcionada es precisa. Entiendo y acepto que Pandora's Finance actúa exclusivamente como un proveedor de infraestructura SaaS 'no-code', y que soy el único responsable de la estructura legal, la promesa de utilidad y la gestión de la comunidad de mi 'Creación' y sus Artefactos.";
-
-  // Show confirmation only for verification agreement
-  const showConfirmation = name === 'verificationAgreement';
-
-  // Use larger text size for isMintable field (step 16)
-  const textSizeClass = name === 'isMintable' ? 'text-2xl md:text-3xl font-bold leading-tight' : 'text-lg leading-relaxed';
-
-  // Handle checkbox change for boolean values
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setValue(name, e.target.checked);
-  };
-
-  return (
-    <div className="space-y-2">
-      <label className="flex items-start gap-3 cursor-pointer">
-        <input
-          {...register(name)}
-          type="checkbox"
-          checked={currentValue || false}
-          onChange={handleChange}
-          className="mt-1 w-5 h-5 text-lime-400 bg-zinc-800 border-zinc-600 rounded focus:ring-lime-400 focus:ring-2"
-        />
-        <span className={`text-white ${textSizeClass}`}>
-          {checkboxLabel}
-        </span>
-      </label>
-      {info && (
-        <p className="text-sm text-zinc-400 mt-2 leading-relaxed">
-          💡 {info}
-        </p>
-      )}
-
-      {errors[name] && (
-        <motion.p
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-red-400 text-sm"
-        >
-          {errors[name]?.message as string}
-        </motion.p>
-      )}
-
-      {showConfirmation && currentValue && (
-        <div className="mt-3 p-3 bg-lime-500/10 border border-lime-500/20 rounded-lg">
-          <p className="text-sm text-lime-300 flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            Declaración aceptada
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function RecurringRewardsInput() {
-  const { register, formState: { errors }, watch, setValue } = useFormContext();
-
-  // Watch all the checkbox values
-  const stakingEnabled = watch('stakingRewardsEnabled');
-  const revenueSharingEnabled = watch('revenueSharingEnabled');
-  const workToEarnEnabled = watch('workToEarnEnabled');
-  const tieredAccessEnabled = watch('tieredAccessEnabled');
-  const discountedFeesEnabled = watch('discountedFeesEnabled');
-
-  const rewardOptions = [
-    {
-      id: 'stakingRewardsEnabled',
-      label: 'Recompensas por Staking',
-      description: 'Recompensas por Bloqueo (Staking) del Artefacto.',
-      placeholder: 'Estima la frecuencia y el rango de % de Artefactos adicionales.',
-      enabled: stakingEnabled,
-      detailsField: 'stakingRewardsDetails'
-    },
-    {
-      id: 'revenueSharingEnabled',
-      label: 'Participación en Ingresos',
-      description: 'Distribución de una porción de los ingresos del Protocolo (Revenue Share).',
-      placeholder: 'Estima el % de ingresos que se distribuirá y la frecuencia.',
-      enabled: revenueSharingEnabled,
-      detailsField: 'revenueSharingDetails'
-    },
-    {
-      id: 'workToEarnEnabled',
-      label: 'Incentivos por Labor',
-      description: 'Pagos o incentivos por la "Labor" o contribución activa a la comunidad (Work-to-Earn).',
-      placeholder: 'Describe la magnitud promedio de la recompensa por Labor (ej. X tokens/semana).',
-      enabled: workToEarnEnabled,
-      detailsField: 'workToEarnDetails'
-    },
-    {
-      id: 'tieredAccessEnabled',
-      label: 'Acceso Escalable',
-      description: 'Desbloqueo de nueva utilidad/acceso a medida que se mantiene la posesión del Artefacto (Tiers).',
-      placeholder: 'Describe los hitos de tiempo o de uso que desbloquean nuevos beneficios.',
-      enabled: tieredAccessEnabled,
-      detailsField: 'tieredAccessDetails'
-    },
-    {
-      id: 'discountedFeesEnabled',
-      label: 'Descuentos/Tarifas Reducidas',
-      description: 'Reducción de tarifas por uso de servicios futuros del Creador.',
-      placeholder: 'Detalla el % promedio de descuento que se ofrece.',
-      enabled: discountedFeesEnabled,
-      detailsField: 'discountedFeesDetails'
-    }
-  ];
-
-  return (
-    <div className="space-y-4">
-      <div className="text-xs text-zinc-400 mb-3">
-        💡 ¿Cómo y con qué frecuencia se traducirá la utilidad en valor recurrente para el poseedor del Artefacto?. Selecciona los tipos de recompensa recurrente que aplicarán y estima su frecuencia o magnitud.
-      </div>
-
-      {rewardOptions.map((option) => (
-        <div key={option.id} className="space-y-2">
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              {...register(option.id)}
-              type="checkbox"
-              checked={option.enabled || false}
-              onChange={(e) => setValue(option.id, e.target.checked)}
-              className="mt-0.5 w-4 h-4 text-lime-400 bg-zinc-800 border-zinc-600 rounded focus:ring-lime-400 focus:ring-2"
-            />
-            <div className="flex-1">
-              <div className="text-white font-medium text-sm">
-                {option.label}
-              </div>
-              <div className="text-zinc-400 text-xs mt-0.5">
-                {option.description}
-              </div>
-            </div>
-          </label>
-
-          {option.enabled && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="ml-7"
-            >
-              <textarea
-                {...register(option.detailsField)}
-                placeholder={option.placeholder}
-                rows={2}
-                className="w-full bg-transparent border-b-2 border-zinc-600 focus:border-lime-400 outline-none py-1 text-white placeholder-zinc-500 text-sm transition-colors resize-none"
-              />
-              {errors[option.detailsField] && (
-                <motion.p
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-red-400 text-xs mt-1"
-                >
-                  {errors[option.detailsField]?.message as string}
-                </motion.p>
-              )}
-            </motion.div>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function FileInput({ name, accept = "image/*", placeholder, info }: { name: string; accept?: string; placeholder?: string; info?: string }) {
-  const { formState: { errors }, setValue, watch } = useFormContext();
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState<'idle' | 'success' | 'error'>('idle');
-
-  // Observar el valor actual del campo para mostrar feedback
-  const currentValue = watch(name);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    console.log('📁 File selected:', file.name, 'Size:', file.size, 'Type:', file.type);
-
-    setIsUploading(true);
-    setUploadStatus('idle');
-
-    // Validar tamaño
-    if (file.size > 5 * 1024 * 1024) {
-      console.error('❌ File too large:', file.size);
-      setUploadStatus('error');
-      setIsUploading(false);
-      alert("El archivo debe ser menor a 5MB");
-      return;
-    }
-
-    // Validar tipo
-    if (!file.type.startsWith('image/')) {
-      console.error('❌ Invalid file type:', file.type);
-      setUploadStatus('error');
-      setIsUploading(false);
-      alert("Solo se permiten archivos de imagen (PNG, JPG, SVG)");
-      return;
-    }
-
-    console.log('✅ File validation passed, reading file...');
-
-    const reader = new FileReader();
-    reader.onloadstart = () => {
-      console.log('📖 FileReader started');
-    };
-
-    reader.onloadend = () => {
-      console.log('✅ FileReader completed, setting value...');
-      const result = reader.result as string;
-      setValue(name, result);
-      setUploadStatus('success');
-      setIsUploading(false);
-      console.log('✅ File uploaded successfully');
-    };
-
-    reader.onerror = () => {
-      console.error('❌ FileReader error');
-      setUploadStatus('error');
-      setIsUploading(false);
-      alert("Error al leer el archivo");
-    };
-
-    reader.readAsDataURL(file);
-  };
-
-  return (
-    <div className="space-y-2">
-      <div className="relative">
-        <input
-          type="file"
-          accept={accept}
-          onChange={handleFileChange}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-          disabled={isUploading}
-        />
-        <div className={`w-full px-4 py-3 bg-zinc-800/50 border-2 border-dashed rounded-lg text-center transition-colors cursor-pointer ${
-          uploadStatus === 'success'
-            ? 'border-green-400 bg-green-500/5 text-green-400'
-            : uploadStatus === 'error'
-            ? 'border-red-400 bg-red-500/5 text-red-400'
-            : isUploading
-            ? 'border-yellow-400 bg-yellow-500/5 text-yellow-400'
-            : 'border-zinc-600 text-zinc-400 hover:border-lime-400 hover:bg-lime-500/5'
-        }`}>
-          {isUploading ? (
-            <>
-              <div className="animate-spin w-5 h-5 mx-auto mb-1 border-2 border-current border-t-transparent rounded-full"></div>
-              <p className="text-sm">Subiendo archivo...</p>
-            </>
-          ) : uploadStatus === 'success' ? (
-            <>
-              <svg className="w-5 h-5 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <p className="text-sm">Archivo subido correctamente</p>
-            </>
-          ) : uploadStatus === 'error' ? (
-            <>
-              <svg className="w-5 h-5 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              <p className="text-sm">Error al subir archivo</p>
-            </>
-          ) : (
-            <>
-              <svg className="w-5 h-5 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
-              <p className="text-sm">{placeholder ?? "Click para seleccionar archivo"}</p>
-              <p className="text-xs mt-1">PNG/JPG hasta 5MB</p>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Mostrar preview si hay un archivo subido */}
-      {currentValue && uploadStatus === 'success' && (
-        <div className="mt-3 p-4 bg-zinc-800/30 rounded-lg border border-zinc-700">
-          <div className="flex justify-center">
-            {name === 'logoUrl' ? (
-              // Logo: cuadrado, más pequeño, object-cover para ver completo
-              <Image
-                src={currentValue}
-                alt="Preview del logo"
-                width={120}
-                height={120}
-                className="w-24 h-24 object-cover rounded-lg border border-zinc-600"
-                unoptimized
-              />
-            ) : name === 'coverPhotoUrl' ? (
-              // Cover photo: usar w-full para ocupar todo el ancho disponible
-              <Image
-                src={currentValue}
-                alt="Preview de portada"
-                width={400}
-                height={200}
-                className="w-full h-auto max-h-24 object-cover rounded-lg border border-zinc-600"
-                unoptimized
-              />
-            ) : (
-              // Default fallback
-              <Image
-                src={currentValue}
-                alt="Preview"
-                width={240}
-                height={160}
-                className="max-w-full h-auto max-h-40 object-contain rounded border border-zinc-600"
-                unoptimized
-              />
-            )}
-          </div>
-        </div>
-      )}
-
-      {errors[name] && (
-        <motion.p
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-red-400 text-sm"
-        >
-          {errors[name]?.message as string}
-        </motion.p>
-      )}
-    </div>
-  );
-}
 
 // Función para personalizar las preguntas con el nombre del proyecto
 function getPersonalizedLabel(originalLabel: string, projectTitle: string): string {
@@ -971,6 +199,9 @@ export default function ConversationalForm() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [acceptanceChecked, setAcceptanceChecked] = useState(false);
+
+  // Hook para el modal de términos
+  const { openModal } = useTermsModal();
   const [infoModal, setInfoModal] = useState<{
     isOpen: boolean;
     title: string;
@@ -979,6 +210,22 @@ export default function ConversationalForm() {
     icon?: string;
   }>({
     isOpen: false,
+    title: '',
+    description: '',
+    content: null,
+  });
+
+  // Modal de resultado (loading/success/error)
+  const [resultModal, setResultModal] = useState<{
+    isOpen: boolean;
+    type: 'loading' | 'success' | 'error';
+    title: string;
+    description: string;
+    content: React.ReactNode;
+    icon?: string;
+  }>({
+    isOpen: false,
+    type: 'loading',
     title: '',
     description: '',
     content: null,
@@ -993,7 +240,7 @@ export default function ConversationalForm() {
   const { trigger, handleSubmit, watch, setValue } = methods;
 
   // Observar cambios en el título para personalización dinámica
-  const projectTitle = watch('title') || 'tu Creación';
+  const projectTitle = watch('title') ?? 'tu Creación';
 
   // Auto-fill wallet address when account changes
   useEffect(() => {
@@ -1727,42 +974,97 @@ export default function ConversationalForm() {
     }
   }, [currentStep, currentQuestion]);
 
-  // Submit handler
+  // Manejador de errores de validación
+  const onValidationErrors = (errors: FieldErrors<ProjectFormData>) => {
+    console.error("Errores de validación del formulario:", errors);
+    const errorFields = Object.keys(errors).join(", ");
+    alert(`Hay errores en el formulario. Revisa los campos: ${errorFields}`);
+  };
+
+  // Submit handler - Actualizado para coincidir con multi-step-form
   const onSubmit = async (data: ProjectFormData) => {
+    // Re-validate to ensure type safety and satisfy the linter (como en multi-step-form)
+    const validation = projectSchema.safeParse(data);
+    if (!validation.success) {
+      console.error("Final submit data failed validation:", validation.error.flatten());
+      setResultModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Error de Validación',
+        description: 'Los datos del formulario no son válidos. Revisa la información e intenta nuevamente.',
+        content: null,
+      });
+      return;
+    }
+    const safeData = validation.data; // Use this safely typed data
+
+    console.log('🚀 onSubmit called with validated data:', safeData);
+
+    // Mostrar modal de loading
+    setResultModal({
+      isOpen: true,
+      type: 'loading',
+      title: 'Enviando Aplicación',
+      description: 'Estamos procesando tu solicitud. Esto puede tomar unos momentos...',
+      content: null,
+    });
+
     setIsSubmitting(true);
-    console.log('📝 Formulario completado:', data);
+
+    const tokenDist = safeData.tokenDistribution ?? {};
+    // Asegurar distribución válida para clientes (permitir suma de 100%) - como en multi-step-form
+    const finalDistribution = {
+      publicSale: (tokenDist as { publicSale?: number }).publicSale ?? 100,
+      team: (tokenDist as { team?: number }).team ?? 0,
+      treasury: (tokenDist as { treasury?: number }).treasury ?? 0,
+      marketing: (tokenDist as { marketing?: number }).marketing ?? 0,
+    };
+
+    // Verificar suma para clientes públicos - como en multi-step-form
+    const total = (finalDistribution.publicSale ?? 0) + (finalDistribution.team ?? 0) + (finalDistribution.treasury ?? 0) + (finalDistribution.marketing ?? 0);
+    if (total > 100) {
+      setResultModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Error en Distribución de Tokens',
+        description: 'La distribución total de tokens no puede exceder el 100%. Revisa los porcentajes.',
+        content: null,
+      });
+      setIsSubmitting(false);
+      return;
+    }
+    if (total === 0) {
+      // Si suma es 0, establecer publicSale al 100% por defecto
+      finalDistribution.publicSale = 100;
+    }
+
+    // Preparar datos con valores por defecto para campos opcionales que el servidor requiere
+    const submitData = {
+      ...safeData,
+      // Valores por defecto para campos opcionales que el servidor requiere
+      title: safeData.title ?? 'Proyecto sin título',
+      description: safeData.description ?? 'Descripción pendiente',
+      businessCategory: safeData.businessCategory ?? 'other',
+      estimatedApy: safeData.estimatedApy ? String(safeData.estimatedApy) : undefined, // Convertir a string como espera el servidor
+      teamMembers: JSON.stringify(safeData.teamMembers ?? []),
+      advisors: JSON.stringify(safeData.advisors ?? []),
+      tokenDistribution: JSON.stringify(finalDistribution),
+      status: "draft", // Los proyectos enviados desde el formulario conversacional empiezan como draft
+      featured: false, // ✅ Featured debe ser manual, nunca automático
+      // Convertir booleanos a strings para evitar errores de validación
+      stakingRewardsEnabled: safeData.stakingRewardsEnabled ? "true" : "false",
+      revenueSharingEnabled: safeData.revenueSharingEnabled ? "true" : "false",
+      workToEarnEnabled: safeData.workToEarnEnabled ? "true" : "false",
+      tieredAccessEnabled: safeData.tieredAccessEnabled ? "true" : "false",
+      discountedFeesEnabled: safeData.discountedFeesEnabled ? "true" : "false",
+      isMintable: safeData.isMintable ? "true" : "false",
+      isMutable: safeData.isMutable ? "true" : "false",
+      legalEntityHelp: safeData.legalEntityHelp ? "true" : "false"
+    };
+
+    console.log('📤 Enviando datos a API:', submitData);
 
     try {
-      // Preparar datos para envío
-      const tokenDist = data.tokenDistribution ?? {};
-      const finalDistribution = {
-        publicSale: (tokenDist as { publicSale?: number })?.publicSale ?? 0,
-        team: (tokenDist as { team?: number })?.team ?? 0,
-        treasury: (tokenDist as { treasury?: number })?.treasury ?? 0,
-        marketing: (tokenDist as { marketing?: number })?.marketing ?? 0,
-      };
-
-      const submitData = {
-        ...data,
-        estimatedApy: data.estimatedApy ? String(data.estimatedApy) : undefined,
-        teamMembers: JSON.stringify(data.teamMembers ?? []),
-        advisors: JSON.stringify(data.advisors ?? []),
-        tokenDistribution: JSON.stringify(finalDistribution),
-        status: "draft", // Los proyectos enviados desde el formulario conversacional empiezan como draft
-        featured: false,
-        // Convertir booleanos a strings para evitar errores de validación
-        stakingRewardsEnabled: data.stakingRewardsEnabled ? "true" : "false",
-        revenueSharingEnabled: data.revenueSharingEnabled ? "true" : "false",
-        workToEarnEnabled: data.workToEarnEnabled ? "true" : "false",
-        tieredAccessEnabled: data.tieredAccessEnabled ? "true" : "false",
-        discountedFeesEnabled: data.discountedFeesEnabled ? "true" : "false",
-        isMintable: data.isMintable ? "true" : "false",
-        isMutable: data.isMutable ? "true" : "false",
-        legalEntityHelp: data.legalEntityHelp ? "true" : "false"
-      };
-
-      console.log('📤 Enviando datos a API:', submitData);
-
       // Enviar a API
       const response = await fetch('/api/projects/utility-application', {
         method: 'POST',
@@ -1771,28 +1073,43 @@ export default function ConversationalForm() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Error desconocido' })) as { message?: string };
-        throw new Error(errorData.message ?? `Error del servidor (${response.status})`);
+        let errorMessage = "Error al guardar el proyecto";
+        let errorData: unknown = null;
+
+        try {
+          const responseText = await response.text();
+          console.log('Response text:', responseText);
+          errorData = JSON.parse(responseText);
+          errorMessage = (errorData as { message?: string }).message ?? errorMessage;
+          console.log('Parsed error data:', errorData);
+        } catch {
+          errorMessage = `Error del servidor (${response.status}) - respuesta no válida`;
+        }
+
+        console.error("❌ Error del servidor:", errorData);
+        throw new Error(errorMessage);
       }
 
+      // La respuesta se usa solo para log, así que 'unknown' es seguro.
       const responseData: unknown = await response.json();
-      console.log('✅ Proyecto creado exitosamente:', responseData);
+      console.log('✅ Success response:', responseData);
 
-      // 🎮 TRIGGER EVENTO DE APLICACIÓN DE PROYECTO
+      // 🎮 TRIGGER EVENTO DE APLICACIÓN DE PROYECTO - usando el mismo método que multi-step-form
       const userWallet = account?.address?.toLowerCase();
       if (userWallet) {
         try {
           console.log('🎮 Triggering project application event for user:', userWallet);
-          // Usar el servicio de gamificación del dashboard que maneja la DB real
+          // Importar la función del service directamente
           const { trackGamificationEvent } = await import('@/lib/gamification/service');
+
           await trackGamificationEvent(
             userWallet,
             'project_application_submitted',
             {
-              projectTitle: data.title,
+              projectTitle: safeData.title,
               projectId: (responseData as { id?: string | number })?.id?.toString() ?? 'unknown',
-              businessCategory: data.businessCategory,
-              targetAmount: data.targetAmount,
+              businessCategory: safeData.businessCategory,
+              targetAmount: safeData.targetAmount,
               isPublicApplication: true,
               submissionType: 'utility_form_draft'
             }
@@ -1804,12 +1121,26 @@ export default function ConversationalForm() {
         }
       }
 
-      alert('¡Aplicación enviada exitosamente! 🎉\n\nTu proyecto ha sido guardado como borrador y recibirás 50 tokens por tu primera aplicación.');
-
+      // Mostrar modal de éxito
+      setResultModal({
+        isOpen: true,
+        type: 'success',
+        title: '¡Aplicación Enviada Exitosamente! 🎉',
+        description: 'Tu proyecto ha sido guardado como borrador y recibirás 50 tokens por tu primera aplicación.',
+        content: null,
+      });
     } catch (error) {
       console.error('❌ Error al enviar:', error);
       const message = error instanceof Error ? error.message : 'Error desconocido al enviar el formulario';
-      alert(`Error al enviar el formulario: ${message}`);
+
+      // Mostrar modal de error
+      setResultModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Error al Enviar Aplicación',
+        description: message,
+        content: null,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -1894,7 +1225,7 @@ export default function ConversationalForm() {
 
         {/* Formulario */}
         <FormProvider {...methods}>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+          <form onSubmit={handleSubmit(onSubmit, onValidationErrors)} className="space-y-8">
             {/* Contenedor de preguntas con animación */}
             <div className="relative min-h-[420px] max-h-[60vh] overflow-hidden">
               <AnimatePresence mode="wait">
@@ -1918,11 +1249,22 @@ export default function ConversationalForm() {
                         <input
                           type="checkbox"
                           checked={acceptanceChecked}
-                          onChange={(e) => setAcceptanceChecked(e.target.checked)}
+                          onChange={(e) => {
+                            setAcceptanceChecked(e.target.checked);
+                            setValue('verificationAgreement', e.target.checked ? 'accepted' : '');
+                          }}
                           className="mt-1 w-5 h-5 text-lime-400 bg-zinc-800 border-zinc-600 rounded focus:ring-lime-400 focus:ring-2"
                         />
                         <span className="text-white text-base leading-relaxed">
-                          Acepto los términos y condiciones del servicio SaaS de Pandora&apos;s Finance
+                          Acepto los{" "}
+                          <button
+                            type="button"
+                            onClick={openModal}
+                            className="text-lime-400 underline hover:text-lime-300 transition-colors"
+                          >
+                            términos y condiciones
+                          </button>{" "}
+                          del servicio SaaS de Pandora&apos;s Finance
                         </span>
                       </div>
                     </div>
@@ -2005,6 +1347,16 @@ export default function ConversationalForm() {
           description={infoModal.description}
           content={infoModal.content}
           icon={infoModal.icon}
+        />
+
+        {/* Modal de Resultado (Loading/Success/Error) */}
+        <ResultModal
+          isOpen={resultModal.isOpen}
+          type={resultModal.type}
+          title={resultModal.title}
+          description={resultModal.description}
+          content={resultModal.content}
+          icon={resultModal.icon}
         />
       </div>
     </div>
