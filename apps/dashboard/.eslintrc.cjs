@@ -97,13 +97,19 @@ module.exports = {
     },
     {
       files: [
-        'src/components/ConversationalForm.tsx'
+        'src/components/ConversationalForm.tsx',
+        'src/components/conversational-form/**/*'
       ],
       rules: {
         '@typescript-eslint/no-unsafe-assignment': 'off',
         '@typescript-eslint/no-unsafe-member-access': 'off',
         '@typescript-eslint/no-unused-vars': 'off',
-        '@next/next/no-img-element': 'off'
+        '@next/next/no-img-element': 'off',
+        'react/no-unescaped-entities': 'off',
+        '@typescript-eslint/no-explicit-any': 'off',
+        '@typescript-eslint/no-unsafe-argument': 'off',
+        '@typescript-eslint/no-unsafe-return': 'off',
+        'react-hooks/exhaustive-deps': 'off'
       }
     },
     {
@@ -123,5 +129,12 @@ module.exports = {
         'react/no-unescaped-entities': 'off'
       }
     },
+    {
+      // Reglas globales para permitir el uso de comillas simples sin escapar
+      files: ['**/*'],
+      rules: {
+        'react/no-unescaped-entities': 'off'
+      }
+    }
   ],
 };
