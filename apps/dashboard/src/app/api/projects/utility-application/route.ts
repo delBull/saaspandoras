@@ -110,6 +110,30 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Project created successfully:', newProject);
 
+    // 🎮 TRIGGER GAMIFICATION EVENT FOR PROJECT APPLICATION
+    try {
+      const { trackGamificationEvent } = await import('@/lib/gamification/service');
+
+      if (body.applicantWalletAddress) {
+        await trackGamificationEvent(
+          body.applicantWalletAddress,
+          'project_application_submitted',
+          {
+            projectId: newProject.id.toString(),
+            projectTitle: body.title,
+            businessCategory: body.businessCategory,
+            targetAmount: body.targetAmount,
+            isPublicApplication: true,
+            submissionType: 'utility_form_api'
+          }
+        );
+        console.log('✅ Gamification event tracked for project application');
+      }
+    } catch (gamificationError) {
+      console.warn('⚠️ Failed to track gamification event:', gamificationError);
+      // Don't fail the project creation if gamification fails
+    }
+
     return NextResponse.json({
       message: 'Proyecto creado exitosamente',
       project: newProject,

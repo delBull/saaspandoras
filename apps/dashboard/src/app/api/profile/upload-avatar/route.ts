@@ -79,16 +79,25 @@ export async function POST(request: NextRequest) {
 
     // Store image using Vercel Blob Storage
     console.log('Using Vercel Blob Storage for avatar upload');
+    console.log('BLOB_READ_WRITE_TOKEN present:', !!process.env.BLOB_READ_WRITE_TOKEN);
 
-    // Upload to Vercel Blob
-    const blob = await put(filename, processedBuffer, {
-      access: 'public',
-      contentType: 'image/webp'
-    });
+    let imageUrl: string;
+    let finalProcessedSize: number;
 
-    const imageUrl = blob.url;
-    const finalProcessedSize = processedBuffer.length;
-    console.log('Blob storage upload successful:', imageUrl);
+    try {
+      // Upload to Vercel Blob
+      const blob = await put(filename, processedBuffer, {
+        access: 'public',
+        contentType: 'image/webp'
+      });
+
+      imageUrl = blob.url;
+      finalProcessedSize = processedBuffer.length;
+      console.log('Blob storage upload successful:', imageUrl);
+    } catch (blobError) {
+      console.error('Blob storage error:', blobError);
+      throw blobError;
+    }
 
     // Update user profile in database
     const result = await db
