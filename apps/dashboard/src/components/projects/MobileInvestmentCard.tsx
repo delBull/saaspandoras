@@ -27,7 +27,7 @@ export default function MobileInvestmentCard({ project, targetAmount }: MobileIn
               className="bg-lime-400 h-full rounded-full transition-all duration-500"
               style={{ width: `${Math.min(raisedPercentage, 100)}%` }}
             ></div>
-          </div>
+          </div> 
 
           <div className="flex justify-between text-sm mb-6">
             <span className="text-gray-400">1,000 participantes</span>
