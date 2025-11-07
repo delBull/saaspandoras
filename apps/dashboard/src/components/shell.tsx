@@ -46,7 +46,7 @@ export function DashboardShell({
         className={cn(
           "flex-1 relative",
           "h-screen overflow-y-auto",
-          "p-2 sm:p-2 md:p-8",
+          "p-2 sm:p-2 md:px-8 md:pb-8 md:pt-4",
           "bg-gradient-to-br from-gray-950 to-fuchsia-950/30 via-fuchsia-9¡50/40",
           "rounded-tl-[4rem]",
           className,

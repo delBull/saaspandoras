@@ -90,19 +90,19 @@ export function Sidebar({
   // Track if we've already set the initial state for /applicants page
   const autoCloseStateSet = useRef(false);
 
-  // Auto-close sidebar when navigating to /applicants (but allow manual opening)
+  // Auto-close sidebar when navigating to /applicants or /profile (but allow manual opening)
   useEffect(() => {
-    const shouldAutoClose = pathname === '/applicants' || pathname.startsWith('/projects/');
+    const shouldAutoClose = pathname === '/applicants' || pathname.startsWith('/projects/') || pathname === '/profile';
 
     if (shouldAutoClose && !autoCloseStateSet.current) {
       console.log('📍 Auto-close page detected - setting initial closed state for:', pathname);
-      // Only set to closed on first visit to /applicants, but allow manual opening after
+      // Only set to closed on first visit to /applicants or /profile, but allow manual opening after
       if (open) {
         setOpen(false);
       }
       autoCloseStateSet.current = true;
     } else if (!shouldAutoClose) {
-      // Reset the flag when leaving /applicants page
+      // Reset the flag when leaving /applicants or /profile page
       autoCloseStateSet.current = false;
     }
   }, [pathname, open]);
