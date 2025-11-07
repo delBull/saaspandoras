@@ -64,7 +64,10 @@ export default function ProfilePage() {
     }
   };
 
-  if (isLoading) {
+  // Unified loading state - wait for both profile and gamification data
+  const isPageLoading = isLoading || (!profile && !walletAddress) || (walletAddress && !gamification);
+
+  if (isPageLoading) {
     return (
       <div className="py-4 px-2 md:px-6">
         <div className="animate-pulse">
@@ -72,13 +75,14 @@ export default function ProfilePage() {
           <div className="space-y-4">
             <div className="h-32 bg-zinc-700 rounded"></div>
             <div className="h-48 bg-zinc-700 rounded"></div>
+            <div className="h-64 bg-zinc-700 rounded"></div>
           </div>
         </div>
       </div>
     );
   }
 
-  // Only deny access if there's an error AND we're not loading AND no profile data
+  // Only deny access if there's a REAL error
   if (isError && !profile && !walletAddress) {
     return (
       <div className="py-4 px-2 md:px-6">
@@ -86,35 +90,6 @@ export default function ProfilePage() {
           <CardHeader>
             <CardTitle>Acceso Denegado</CardTitle>
             <CardDescription>No se encontró tu sesión. Conéctate a tu wallet para ver tu perfil.</CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
-  }
-
-  // Show loading state briefly while profile loads
-  if (isLoading && !profile) {
-    return (
-      <div className="py-4 px-2 md:px-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-zinc-700 rounded mb-4 w-64"></div>
-          <div className="space-y-4">
-            <div className="h-32 bg-zinc-700 rounded"></div>
-            <div className="h-48 bg-zinc-700 rounded"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Only deny access if there's a REAL error (not loading state)
-  if (isError) {
-    return (
-      <div className="py-4 px-2 md:px-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Error Loading Profile</CardTitle>
-            <CardDescription>No se pudo cargar tu información de perfil. Intenta refrescar la página.</CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -148,26 +123,22 @@ export default function ProfilePage() {
         {/* Avatar y Info Básica */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-3">
-              <div className="relative mb-5">
+            <div className="flex items-center gap-4">
+              <div className="relative">
                 <AvatarEditor variant="desktop" />
               </div>
-              <div>
-                <div className="text-lg font-semibold text-white">
-                  {profile?.name ?? 'Usuario'}
-                </div>
-              </div>
-            </CardTitle>
-            {/* KYC Básico Button */}
-            {!(profile?.kycCompleted && profile?.kycLevel === 'basic') && (
-              <Link href="/profile/kyc">
-                <Button
-                  className="w-full bg-lime-500 hover:bg-lime-600 text-black font-medium px-4 py-2 shadow-lg flex-shrink-0 text-base whitespace-nowrap"
-                >
-                  🔒 Completa KYC Básico
-                </Button>
-              </Link>
-            )}
+              {/* KYC Básico Button - Moved next to avatar and made smaller */}
+              {!(profile?.kycCompleted && profile?.kycLevel === 'basic') && (
+                <Link href="/profile/kyc">
+                  <Button
+                    size="sm"
+                    className="bg-lime-500 hover:bg-lime-600 text-black font-medium px-3 py-1.5 shadow-lg text-sm whitespace-nowrap"
+                  >
+                    🔒 KYC Básico
+                  </Button>
+                </Link>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>

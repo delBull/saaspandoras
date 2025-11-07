@@ -1,16 +1,52 @@
 'use client';
 
+import { forwardRef, useImperativeHandle, useState, useRef } from "react";
 import type { ProjectData } from "../../app/(dashboard)/projects/types";
+
+export interface ProjectVideoSectionRef {
+  showVideo: () => void;
+  scrollToVideo: () => void;
+}
 
 interface ProjectVideoSectionProps {
   project: ProjectData;
 }
 
-export default function ProjectVideoSection({ project }: ProjectVideoSectionProps) {
+const ProjectVideoSection = forwardRef<ProjectVideoSectionRef, ProjectVideoSectionProps>(({ project }, ref) => {
+  const [isVideoVisible, setIsVideoVisible] = useState(false);
+  const videoRef = useRef<HTMLDivElement>(null);
+
+  const showVideo = () => {
+    setIsVideoVisible(true);
+  };
+
+  const scrollToVideo = () => {
+    if (!isVideoVisible) {
+      setIsVideoVisible(true);
+    }
+    // Delay para asegurar que el elemento esté visible
+    setTimeout(() => {
+      const videoElement = videoRef.current;
+      if (videoElement) {
+        videoElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
+  };
+
+  useImperativeHandle(ref, () => ({
+    showVideo,
+    scrollToVideo
+  }), []);
+
   if (!project.video_pitch) return null;
 
+  // Si el video no está visible, no renderizar nada (ocultar todo el espacio)
+  if (!isVideoVisible) {
+    return null;
+  }
+
   return (
-    <div className="mb-8" data-video-section>
+    <div ref={videoRef} className="mb-8" data-video-section>
       <div className="aspect-video bg-zinc-900 rounded-xl overflow-hidden">
         {(() => {
           let embedUrl = '';
@@ -61,4 +97,8 @@ export default function ProjectVideoSection({ project }: ProjectVideoSectionProp
       </div>
     </div>
   );
-}
+});
+
+ProjectVideoSection.displayName = 'ProjectVideoSection';
+
+export default ProjectVideoSection;

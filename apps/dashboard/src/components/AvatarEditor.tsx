@@ -117,7 +117,7 @@ export function AvatarEditor({ variant = 'desktop', onClose }: AvatarEditorProps
               alt="Profile Avatar"
               width={64}
               height={64}
-              className="w-16 h-16 rounded-full border-2 border-lime-400"
+              className="w-16 h-16 rounded-lg border-2 border-lime-400"
             />
             <button
               onClick={() => setShowModal(true)}
@@ -236,7 +236,7 @@ export function AvatarEditor({ variant = 'desktop', onClose }: AvatarEditorProps
           alt="Profile"
           width={64}
           height={64}
-          className="w-16 h-16 rounded-full border-2 border-lime-400"
+          className="w-16 h-16 rounded-lg border-2 border-lime-400"
         />
         <button
           onClick={() => setShowModal(true)}

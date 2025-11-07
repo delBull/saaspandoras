@@ -93,6 +93,11 @@ export function useProfile() {
          },
          // Add onError callback for debugging
          onError: (error: Error) => {
+           // Don't log expected errors (no wallet connected)
+           if (error.message === 'No wallet authentication available') {
+             return;
+           }
+
            if (process.env.NODE_ENV === 'development') {
              console.error('❌ Profile fetch error:', {
                message: error.message,

@@ -701,7 +701,7 @@ export default function AdminDashboardPage() {
           )}
         </div>
         <ProjectApplicationButton
-          buttonText="➕ Añadir Creación"
+          buttonText="➕"
           className="px-3 sm:px-4 py-2 bg-lime-500 hover:bg-lime-600 text-zinc-900 rounded-md font-semibold transition text-sm sm:text-base whitespace-nowrap"
           variant="default"
         />
