@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { useFormContext } from 'react-hook-form';
+import { useEffect } from 'react';
 
 export function RecurringRewardsInput() {
   const { register, formState: { errors }, watch, setValue } = useFormContext();
@@ -10,6 +11,47 @@ export function RecurringRewardsInput() {
   const workToEarnEnabled = watch('workToEarnEnabled') as boolean;
   const tieredAccessEnabled = watch('tieredAccessEnabled') as boolean;
   const discountedFeesEnabled = watch('discountedFeesEnabled') as boolean;
+
+  // Watch all the details fields
+  const stakingDetails = watch('stakingRewardsDetails') as string;
+  const revenueSharingDetails = watch('revenueSharingDetails') as string;
+  const workToEarnDetails = watch('workToEarnDetails') as string;
+  const tieredAccessDetails = watch('tieredAccessDetails') as string;
+  const discountedFeesDetails = watch('discountedFeesDetails') as string;
+
+  // Consolidate all data into recurringRewards field as JSON
+  useEffect(() => {
+    const rewardsData = {
+      stakingRewardsEnabled: stakingEnabled || false,
+      stakingRewardsDetails: stakingDetails || '',
+      revenueSharingEnabled: revenueSharingEnabled || false,
+      revenueSharingDetails: revenueSharingDetails || '',
+      workToEarnEnabled: workToEarnEnabled || false,
+      workToEarnDetails: workToEarnDetails || '',
+      tieredAccessEnabled: tieredAccessEnabled || false,
+      tieredAccessDetails: tieredAccessDetails || '',
+      discountedFeesEnabled: discountedFeesEnabled || false,
+      discountedFeesDetails: discountedFeesDetails || '',
+    };
+
+    // Only set value if there's actual data
+    const hasData = Object.values(rewardsData).some(value =>
+      typeof value === 'boolean' ? value : typeof value === 'string' && value.trim().length > 0
+    );
+
+    if (hasData) {
+      setValue('recurringRewards', JSON.stringify(rewardsData));
+    } else {
+      setValue('recurringRewards', '');
+    }
+  }, [
+    stakingEnabled, stakingDetails,
+    revenueSharingEnabled, revenueSharingDetails,
+    workToEarnEnabled, workToEarnDetails,
+    tieredAccessEnabled, tieredAccessDetails,
+    discountedFeesEnabled, discountedFeesDetails,
+    setValue
+  ]);
 
   const rewardOptions = [
     {

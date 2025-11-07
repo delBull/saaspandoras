@@ -128,7 +128,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
               {project.token_price_usd && (
                 <div className="flex justify-between">
                   <span className="text-gray-400">Costo de Acceso</span>
-                  <span className="text-lime-400 font-mono">${Number(project.token_price_usd).toFixed(6)}</span>
+                  <span className="text-lime-400 font-mono">${Number(project.token_price_usd) % 1 === 0 ? Number(project.token_price_usd).toFixed(0) : Number(project.token_price_usd).toFixed(2)}</span>
                 </div>
               )}
             </div>
