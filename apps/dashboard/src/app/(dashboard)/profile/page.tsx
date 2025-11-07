@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Button } from '@saasfly/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@saasfly/ui/card';
-import { ClipboardDocumentIcon, CheckIcon, WalletIcon, ShieldCheckIcon, ArrowTopRightOnSquareIcon, BoltIcon, KeyIcon, ExclamationTriangleIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { ClipboardDocumentIcon, CheckIcon, WalletIcon, ShieldCheckIcon, ArrowTopRightOnSquareIcon, BoltIcon, KeyIcon, ExclamationTriangleIcon, ArrowLeftIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import { useProfile } from '@/hooks/useProfile';
 import Link from 'next/link';
@@ -13,6 +13,7 @@ import { useRealGamification } from '@/hooks/useRealGamification';
 import { ReferralShareCard } from '@/components/ReferralShareCard';
 import { ReferralsCard } from '../../../components/ReferralsCard';
 import { AvatarEditor } from '@/components/AvatarEditor';
+import { InfoModal } from '@/components/InfoModal';
 
 // Extended UserAchievement type with achievement details (for type assertion)
 interface ExtendedUserAchievement {
@@ -38,6 +39,7 @@ export default function ProfilePage() {
   const { profile, isLoading, isError } = useProfile();
   const account = useActiveAccount();
   const [copied, setCopied] = useState(false);
+  const [kycModalOpen, setKycModalOpen] = useState(false);
 
   // Use account from useActiveAccount hook instead of cookies
   const walletAddress = account?.address;
@@ -122,23 +124,29 @@ export default function ProfilePage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Avatar y Info Básica */}
         <Card>
-          <CardHeader>
+          <CardHeader className="relative">
             <div className="flex items-center gap-4">
               <div className="relative">
                 <AvatarEditor variant="desktop" />
               </div>
-              {/* KYC Básico Button - Moved next to avatar and made smaller */}
-              {!(profile?.kycCompleted && profile?.kycLevel === 'basic') && (
-                <Link href="/profile/kyc">
-                  <Button
-                    size="sm"
-                    className="bg-lime-500 hover:bg-lime-600 text-black font-medium px-3 py-1.5 shadow-lg text-sm whitespace-nowrap"
-                  >
-                    🔒 KYC Básico
-                  </Button>
-                </Link>
-              )}
             </div>
+            {/* KYC Básico Link positioned absolutely in top-right */}
+            {!(profile?.kycCompleted && profile?.kycLevel === 'basic') && (
+              <div className="absolute top-4 right-6 flex items-center gap-2">
+                <Link href="/profile/kyc">
+                  <span className="text-xs text-gray-400 hover:text-lime-400 transition-colors cursor-pointer underline">
+                    KYC Básico
+                  </span>
+                </Link>
+                <button
+                  onClick={() => setKycModalOpen(true)}
+                  className="text-gray-400 hover:text-lime-400 transition-colors"
+                  title="¿Qué es KYC Básico?"
+                >
+                  <QuestionMarkCircleIcon className="w-5 h-5" />
+                </button>
+              </div>
+            )}
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -203,138 +211,313 @@ export default function ProfilePage() {
         </Card>
 
         {/* Información Detallada - Primera sección */}
-        <div className="lg:col-span-1 space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Información Personal</CardTitle>
-                  <CardDescription>
-                    Detalles de tu cuenta y estado de verificación
-                  </CardDescription>
+        <div className="lg:col-span-1 space-y-4">
+          {/* Header con título y botón de editar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <h2 className="text-xl font-bold text-white">Información Personal</h2>
+              <p className="text-gray-400 text-sm">Detalles de tu cuenta y estado de verificación</p>
+            </div>
+            <Link href="/profile/edit">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2 text-gray-400 hover:text-white border-gray-600 hover:border-gray-500 w-full sm:w-auto"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+                Editar Datos
+              </Button>
+            </Link>
+          </div>
+
+          {/* Información Básica */}
+          <Card className="bg-gradient-to-br from-zinc-900/50 to-zinc-800/50 border-zinc-700/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                  <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
                 </div>
-                <Link href="/profile/edit">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-2 text-gray-400 hover:text-white"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                    </svg>
-                    Editar Datos
-                  </Button>
-                </Link>
-              </div>
+                Información Básica
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Información Básica */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-300 mb-3">Información Básica</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-400">Nombre</label>
-                    <p className="text-white">{profile?.name ?? 'No registrado'}</p>
+            <CardContent className="pt-0">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-zinc-800/30 rounded-lg p-3 border border-zinc-700/30">
+                    <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Nombre</label>
+                    <p className="text-white font-medium mt-1">{profile?.name ?? 'No registrado'}</p>
                   </div>
 
-                  <div>
-                    <label className="text-sm font-medium text-gray-400">Email</label>
-                    <p className="text-white">{profile?.email ?? 'No registrado'}</p>
+                  <div className="bg-zinc-800/30 rounded-lg p-3 border border-zinc-700/30">
+                    <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Email</label>
+                    <p className="text-white font-medium mt-1 break-all">{profile?.email ?? 'No registrado'}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-zinc-800/30 rounded-lg p-3 border border-zinc-700/30">
+                    <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Ocupación</label>
+                    <p className="text-white font-medium mt-1">{profile?.kycData?.occupation ?? 'No especificada'}</p>
                   </div>
 
-                  <div>
-                    <label className="text-sm font-medium text-gray-400">Ocupación</label>
-                    <p className="text-white">{profile?.kycData?.occupation ?? 'No especificada'}</p>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-gray-400">ID Fiscal / RFC</label>
-                    <p className="text-white font-mono">{profile?.kycData?.taxId ?? 'No registrado'}</p>
+                  <div className="bg-zinc-800/30 rounded-lg p-3 border border-zinc-700/30">
+                    <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">ID Fiscal / RFC</label>
+                    <p className="text-white font-mono font-medium mt-1">{profile?.kycData?.taxId ?? 'No registrado'}</p>
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
-              {/* Información KYC */}
-              {profile?.kycCompleted && (
-                <div>
-                  <h4 className="text-sm font-medium text-gray-300 mb-3">Información KYC</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-gray-400">Nombre Completo</label>
-                      <p className="text-white">{profile?.kycData?.fullName ?? 'No registrado'}</p>
+          {/* Información KYC - Solo si está completada */}
+          {profile?.kycCompleted && (
+            <Card className="bg-gradient-to-br from-green-900/20 to-emerald-900/20 border-green-700/30">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
+                    <ShieldCheckIcon className="w-4 h-4 text-green-400" />
+                  </div>
+                  Información KYC
+                  <span className="ml-auto flex items-center gap-1 text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full">
+                    <div className="w-1.5 h-1.5 bg-green-400 rounded-full"></div>
+                    Verificado
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="bg-zinc-800/30 rounded-lg p-3 border border-zinc-700/30">
+                      <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Nombre Completo</label>
+                      <p className="text-white font-medium mt-1">{profile?.kycData?.fullName ?? 'No registrado'}</p>
                     </div>
 
-                    <div>
-                      <label className="text-sm font-medium text-gray-400">Teléfono</label>
-                      <p className="text-white">{profile?.kycData?.phoneNumber ?? 'No registrado'}</p>
+                    <div className="bg-zinc-800/30 rounded-lg p-3 border border-zinc-700/30">
+                      <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Teléfono</label>
+                      <p className="text-white font-medium mt-1">{profile?.kycData?.phoneNumber ?? 'No registrado'}</p>
                     </div>
+                  </div>
 
-                    <div>
-                      <label className="text-sm font-medium text-gray-400">Fecha de Nacimiento</label>
-                      <p className="text-white">{profile?.kycData?.dateOfBirth ?
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="bg-zinc-800/30 rounded-lg p-3 border border-zinc-700/30">
+                      <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Fecha de Nacimiento</label>
+                      <p className="text-white font-medium mt-1">{profile?.kycData?.dateOfBirth ?
                         new Date(profile.kycData.dateOfBirth).toLocaleDateString('es-ES') :
                         'No registrada'}</p>
                     </div>
 
-                    <div>
-                      <label className="text-sm font-medium text-gray-400">Nacionalidad</label>
-                      <p className="text-white">{profile?.kycData?.nationality ?? 'No registrada'}</p>
+                    <div className="bg-zinc-800/30 rounded-lg p-3 border border-zinc-700/30">
+                      <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Nacionalidad</label>
+                      <p className="text-white font-medium mt-1">{profile?.kycData?.nationality ?? 'No registrada'}</p>
                     </div>
                   </div>
                 </div>
-              )}
+              </CardContent>
+            </Card>
+          )}
 
-              {/* Dirección */}
-              {profile?.kycData?.address && (
-                <div>
-                  <h4 className="text-sm font-medium text-gray-300 mb-3">Dirección</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-gray-400">Dirección</label>
-                      <p className="text-white">{profile.kycData.address.street ?? 'No registrada'}</p>
+          {/* Dirección - Solo si existe */}
+          {profile?.kycData?.address && (
+            <Card className="bg-gradient-to-br from-purple-900/20 to-indigo-900/20 border-purple-700/30">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                    <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
+                  Dirección Residencial
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="bg-zinc-800/30 rounded-lg p-3 border border-zinc-700/30">
+                    <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Dirección</label>
+                    <p className="text-white font-medium mt-1">{profile.kycData.address.street ?? 'No registrada'}</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="bg-zinc-800/30 rounded-lg p-3 border border-zinc-700/30">
+                      <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Ciudad</label>
+                      <p className="text-white font-medium mt-1">{profile.kycData.address.city ?? 'No registrada'}</p>
                     </div>
 
-                    <div>
-                      <label className="text-sm font-medium text-gray-400">Ciudad</label>
-                      <p className="text-white">{profile.kycData.address.city ?? 'No registrada'}</p>
+                    <div className="bg-zinc-800/30 rounded-lg p-3 border border-zinc-700/30">
+                      <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">País</label>
+                      <p className="text-white font-medium mt-1">{profile.kycData.address.country ?? 'No registrado'}</p>
                     </div>
 
-                    <div>
-                      <label className="text-sm font-medium text-gray-400">País</label>
-                      <p className="text-white">{profile.kycData.address.country ?? 'No registrado'}</p>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium text-gray-400">Código Postal</label>
-                      <p className="text-white font-mono">{profile.kycData.address.postalCode ?? 'No registrado'}</p>
+                    <div className="bg-zinc-800/30 rounded-lg p-3 border border-zinc-700/30">
+                      <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Código Postal</label>
+                      <p className="text-white font-mono font-medium mt-1">{profile.kycData.address.postalCode ?? 'No registrado'}</p>
                     </div>
                   </div>
                 </div>
-              )}
+              </CardContent>
+            </Card>
+          )}
 
-              {/* Estado de Cuenta */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-300 mb-3">Estado de Cuenta</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-400">Rol</label>
-                    <p className="text-white capitalize">{profile?.role ?? 'pandorian'}</p>
+          {/* Estado de Cuenta */}
+          <Card className="bg-gradient-to-br from-orange-900/20 to-red-900/20 border-orange-700/30">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <div className="w-8 h-8 bg-orange-500/20 rounded-lg flex items-center justify-center">
+                  <svg className="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                Estado de Cuenta
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="grid grid-cols-1 gap-4">
+                {/* Rol y Conexiones */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-zinc-800/30 rounded-lg p-4 border border-zinc-700/30">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Rol</label>
+                        <p className="text-white font-medium capitalize">{profile?.role ?? 'pandorian'}</p>
+                      </div>
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="text-sm font-medium text-gray-400">Connections</label>
-                    <p className="text-white">{profile?.connectionCount ?? 1}</p>
+                  <div className="bg-zinc-800/30 rounded-lg p-4 border border-zinc-700/30">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Conexiones Totales</label>
+                        <p className="text-white font-medium">{profile?.connectionCount ?? 1}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Estado KYC */}
+                <div className="bg-zinc-800/30 rounded-lg p-4 border border-zinc-700/30">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                      profile?.kycCompleted ? 'bg-green-500/20' : 'bg-yellow-500/20'
+                    }`}>
+                      {profile?.kycCompleted ? (
+                        <ShieldCheckIcon className="w-4 h-4 text-green-400" />
+                      ) : (
+                        <ExclamationTriangleIcon className="w-4 h-4 text-yellow-400" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Estado KYC</label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className={`w-2 h-2 rounded-full ${
+                          profile?.kycCompleted ? 'bg-green-500' : 'bg-yellow-500'
+                        }`}></div>
+                        <span className="text-white font-medium">
+                          {profile?.kycCompleted ? 'Verificado' : 'Pendiente'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-400 ml-11">
+                    {profile?.kycCompleted
+                      ? 'Tu identidad ha sido verificada exitosamente'
+                      : 'Completa el proceso de KYC Básico para acceder a más funciones'
+                    }
+                  </p>
+                </div>
+
+                {/* Última Conexión */}
+                <div className="bg-zinc-800/30 rounded-lg p-4 border border-zinc-700/30">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 bg-cyan-500/20 rounded-lg flex items-center justify-center">
+                      <svg className="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Última Conexión</label>
+                      <p className="text-white font-medium">
+                        {profile?.lastConnectionAt ?
+                          new Date(profile.lastConnectionAt).toLocaleDateString('es-ES', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          }) :
+                          'Nunca'
+                        }
+                      </p>
+                    </div>
+                  </div>
+                  {profile?.lastConnectionAt && (
+                    <p className="text-xs text-gray-400 ml-11">
+                      {(() => {
+                        const now = new Date();
+                        const lastConnection = new Date(profile.lastConnectionAt);
+                        const diffTime = Math.abs(now.getTime() - lastConnection.getTime());
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                        if (diffDays === 1) return 'Hace 1 día';
+                        if (diffDays < 7) return `Hace ${diffDays} días`;
+                        if (diffDays < 30) return `Hace ${Math.floor(diffDays / 7)} semanas`;
+                        return `Hace ${Math.floor(diffDays / 30)} meses`;
+                      })()}
+                    </p>
+                  )}
+                </div>
+
+                {/* Creaciones Aplicadas y Pandora's Key */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-zinc-800/30 rounded-lg p-4 border border-zinc-700/30">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Creaciones Aplicadas</label>
+                        <p className="text-white font-medium">{profile?.projectCount ?? 0}</p>
+                      </div>
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="text-sm font-medium text-gray-400">Estado KYC</label>
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${
-                        profile?.kycCompleted ? 'bg-green-500' : 'bg-yellow-500'
-                      }`}></div>
-                      <span className="text-white">
-                        {profile?.kycCompleted ? 'Verificado' : 'Pendiente'}
-                      </span>
+                  <div className="bg-zinc-800/30 rounded-lg p-4 border border-zinc-700/30">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                        profile?.hasPandorasKey ? 'bg-lime-500/20' : 'bg-gray-500/20'
+                      }`}>
+                        <KeyIcon className={`w-4 h-4 ${
+                          profile?.hasPandorasKey ? 'text-lime-400' : 'text-gray-400'
+                        }`} />
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">Pandora's Key</label>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`font-medium ${
+                            profile?.hasPandorasKey ? 'text-lime-400' : 'text-gray-400'
+                          }`}>
+                            {profile?.hasPandorasKey ? 'Activada' : 'Inactiva'}
+                          </span>
+                          <div className={`w-2 h-2 rounded-full ${
+                            profile?.hasPandorasKey ? 'bg-lime-500' : 'bg-gray-500'
+                          }`}></div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -427,24 +610,6 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Actividad Reciente</CardTitle>
-              <CardDescription>
-                Tu actividad en las últimas conexiones
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-gray-400">
-                <p>Última conexión: {profile?.lastConnectionAt ?
-                  new Date(profile.lastConnectionAt).toLocaleString('es-ES') :
-                  'N/A'
-                }</p>
-                <p className="mt-2">Creaciones Aplicadas: {profile?.projectCount ?? 0}</p>
-                <p>Tiene Pandora&apos;s Key: {profile?.hasPandorasKey ? '✅' : '❌'}</p>
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Gamificación y Logros */}
@@ -551,6 +716,72 @@ export default function ProfilePage() {
           )}
         </div>
       </div>
+
+      {/* Modal de información KYC Básico */}
+      <InfoModal
+        isOpen={kycModalOpen}
+        onClose={() => setKycModalOpen(false)}
+        title="¿Qué es KYC Básico?"
+        description="Información sobre la verificación de identidad"
+        icon="🛡️"
+        content={
+          <div className="space-y-4">
+            <div>
+              <h4 className="font-semibold text-white mb-2">¿Qué es KYC Básico?</h4>
+              <p className="text-gray-300 text-sm leading-relaxed">
+                KYC Básico es un proceso de verificación de identidad simplificado que nos ayuda a confirmar
+                que eres una persona real y no un bot o cuenta fraudulenta.
+              </p>
+            </div>
+
+            <div>
+              <h4 className="font-semibold text-white mb-2">¿Por qué lo pedimos?</h4>
+              <ul className="text-gray-300 text-sm space-y-1 ml-4">
+                <li>• <strong>Seguridad:</strong> Proteger la plataforma contra fraudes y abusos</li>
+                <li>• <strong>Confiabilidad:</strong> Asegurar que las comunidades sean reales y valiosas</li>
+                <li>• <strong>Cumplimiento:</strong> Mantener estándares regulatorios básicos</li>
+                <li>• <strong>Recompensas:</strong> Permitir la distribución justa de tokens y beneficios</li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-semibold text-white mb-2">¿Qué información pedimos?</h4>
+              <ul className="text-gray-300 text-sm space-y-1 ml-4">
+                <li>• Nombre completo y fecha de nacimiento</li>
+                <li>• Dirección de email y teléfono</li>
+                <li>• Dirección residencial básica</li>
+                <li>• Identificación fiscal (RFC u equivalente)</li>
+              </ul>
+            </div>
+
+            <div className="bg-blue-900/20 border border-blue-700/30 rounded-lg p-3">
+              <div className="flex items-start gap-2">
+                <span className="text-blue-400 mt-0.5">ℹ️</span>
+                <div>
+                  <p className="text-blue-200 text-sm font-medium">¿Es obligatorio?</p>
+                  <p className="text-blue-100 text-xs mt-1">
+                    No, KYC Básico es completamente opcional. Puedes usar la plataforma sin verificarte,
+                    pero algunas funciones avanzadas pueden requerir verificación.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-green-900/20 border border-green-700/30 rounded-lg p-3">
+              <div className="flex items-start gap-2">
+                <span className="text-green-400 mt-0.5">🔒</span>
+                <div>
+                  <p className="text-green-200 text-sm font-medium">Privacidad y Seguridad</p>
+                  <p className="text-green-100 text-xs mt-1">
+                    Toda la información se almacena de forma segura y encriptada.
+                    Nunca compartimos tus datos personales con terceros.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      />
     </div>
   );
 }
