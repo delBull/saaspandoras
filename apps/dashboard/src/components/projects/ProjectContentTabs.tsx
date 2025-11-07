@@ -37,6 +37,14 @@ interface ProjectContentTabsProps {
 }
 
 export default function ProjectContentTabs({ project }: ProjectContentTabsProps) {
+  // Función para mostrar el video (ya no utilizada)
+  const _showVideo = () => {
+    const videoRef = (window as any).projectVideoRef;
+    if (videoRef?.showVideo) {
+      videoRef.showVideo();
+    }
+  };
+
   // Parsear el estimated_apy JSON para mostrar la tabla de recompensas
   let rewardsStructure;
   try {
@@ -157,13 +165,11 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
 
                   {/* Video Pitch - si existe */}
                   {typeof projectObj.video_pitch === 'string' && projectObj.video_pitch && (
-                    <button
-                      onClick={() => {
-                        // Scroll to video section
-                        const videoSection = document.querySelector('[data-video-section]');
-                        videoSection?.scrollIntoView({ behavior: 'smooth' });
-                      }}
-                      className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group text-left"
+                    <a
+                      href={projectObj.video_pitch}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group"
                     >
                       <svg className="w-5 h-5 text-lime-400 group-hover:text-lime-300" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M8 5v14l11-7z"/>
@@ -172,7 +178,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                         <p className="text-white font-medium">Video Pitch</p>
                         <p className="text-zinc-400 text-sm">Ver presentación del proyecto</p>
                       </div>
-                    </button>
+                    </a>
                   )}
                 </div>
               </SectionCard>
@@ -203,11 +209,77 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
             )}
           </SectionCard>
 
-          <SectionCard title="Mecanismo de Recompensa (Labor/Work-to-Earn)" icon={Briefcase}>
-            <p className="text-zinc-300 whitespace-pre-line">{project.applicant_name ?? 'No especificado'}</p>
-            <p className="mt-4 text-sm text-zinc-400">
-              *Esta información define qué acciones son validadas como contribución a la Creación.
-            </p>
+          <SectionCard title="Recompensas de Staking" icon={Puzzle}>
+            {project.staking_rewards_enabled ? (
+              <div>
+                <p className="text-lime-400 font-medium mb-2">✅ Habilitado</p>
+                {project.staking_rewards_details && (
+                  <p className="text-zinc-300">{project.staking_rewards_details}</p>
+                )}
+              </div>
+            ) : (
+              <p className="text-zinc-400">No habilitado</p>
+            )}
+          </SectionCard>
+
+          <SectionCard title="Revenue Sharing" icon={Puzzle}>
+            {project.revenue_sharing_enabled ? (
+              <div>
+                <p className="text-lime-400 font-medium mb-2">✅ Habilitado</p>
+                {project.revenue_sharing_details && (
+                  <p className="text-zinc-300">{project.revenue_sharing_details}</p>
+                )}
+              </div>
+            ) : (
+              <p className="text-zinc-400">No habilitado</p>
+            )}
+          </SectionCard>
+
+          <SectionCard title="Work-to-Earn" icon={Briefcase}>
+            {project.work_to_earn_enabled ? (
+              <div>
+                <p className="text-lime-400 font-medium mb-2">✅ Habilitado</p>
+                {project.work_to_earn_details && (
+                  <p className="text-zinc-300">{project.work_to_earn_details}</p>
+                )}
+              </div>
+            ) : (
+              <p className="text-zinc-400">No habilitado</p>
+            )}
+          </SectionCard>
+
+          <SectionCard title="Tiered Access" icon={Star}>
+            {project.tiered_access_enabled ? (
+              <div>
+                <p className="text-lime-400 font-medium mb-2">✅ Habilitado</p>
+                {project.tiered_access_details && (
+                  <p className="text-zinc-300">{project.tiered_access_details}</p>
+                )}
+              </div>
+            ) : (
+              <p className="text-zinc-400">No habilitado</p>
+            )}
+          </SectionCard>
+
+          <SectionCard title="Discounted Fees" icon={Star}>
+            {project.discounted_fees_enabled ? (
+              <div>
+                <p className="text-lime-400 font-medium mb-2">✅ Habilitado</p>
+                {project.discounted_fees_details && (
+                  <p className="text-zinc-300">{project.discounted_fees_details}</p>
+                )}
+              </div>
+            ) : (
+              <p className="text-zinc-400">No habilitado</p>
+            )}
+          </SectionCard>
+
+          <SectionCard title="Recompensas Recurrentes" icon={Star}>
+            {project.recurring_rewards ? (
+              <p className="text-zinc-300 whitespace-pre-line">{project.recurring_rewards}</p>
+            ) : (
+              <p className="text-zinc-400">No especificado</p>
+            )}
           </SectionCard>
         </div>
       ),
@@ -241,9 +313,16 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
           </SectionCard>
 
           <SectionCard title="Planes de Integración Tecnológica" icon={Code}>
-            <p className="text-zinc-300 whitespace-pre-line">{project.is_mintable ? 'Sí, integraremos con Discord para verificar la tenencia del Artefacto y con Shopify para aplicar descuentos automáticos en mercancía.' : 'No especificados'}</p>
+            <p className="text-zinc-300 whitespace-pre-line">{project.integration_details ?? 'No especificados'}</p>
             <p className="mt-4 text-sm text-zinc-400">
               *Integraciones con Discord, e-commerce, o servicios Web3 que amplían el uso.
+            </p>
+          </SectionCard>
+
+          <SectionCard title="Uso de Fondos" icon={ExternalLink}>
+            <p className="text-zinc-300 whitespace-pre-line">{project.fund_usage ?? 'No especificado'}</p>
+            <p className="mt-4 text-sm text-zinc-400">
+              *Cómo se utilizarán los fondos recaudados.
             </p>
           </SectionCard>
         </div>
@@ -278,6 +357,12 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
           <SectionCard title="Información del Creador" icon={Crown}>
             <p className="text-zinc-300"><span className="font-semibold text-white">Nombre del Solicitante:</span> {project.applicant_name ?? 'No especificado'}</p>
             <p className="text-zinc-300"><span className="font-semibold text-white">Posición:</span> {project.applicant_position ?? 'No especificada'}</p>
+            {project.applicant_email && (
+              <p className="text-zinc-300"><span className="font-semibold text-white">Email:</span> {project.applicant_email}</p>
+            )}
+            {project.applicant_phone && (
+              <p className="text-zinc-300"><span className="font-semibold text-white">Teléfono:</span> {project.applicant_phone}</p>
+            )}
           </SectionCard>
         </div>
       ),
