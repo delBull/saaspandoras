@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "~/db";
 import { sql } from "drizzle-orm";
 
-// Type for project data
+// Type for project data - Updated with new optimized fields
 interface ProjectData {
   id: number | string;
   title: string;
@@ -47,6 +47,17 @@ interface ProjectData {
   applicant_phone?: string | null;
   applicant_wallet_address?: string | null;
   verification_agreement?: boolean | null;
+  // New optimized fields
+  protoclMecanism?: string | null;
+  artefactUtility?: string | null;
+  worktoearnMecanism?: string | null;
+  integrationPlan?: boolean | null;
+  monetizationModel?: string | null;
+  adquireStrategy?: string | null;
+  mitigationPlan?: string | null;
+  recurring_rewards?: string | null;
+  integration_details?: string | null;
+  legal_entity_help?: boolean | null;
   image_url?: string | null;
   socials?: string | null;
   raised_amount?: string | number | null;
@@ -93,10 +104,42 @@ export async function GET(
         "tokens_offered",
         "token_price_usd",
         "estimated_apy",
+        "yield_source",
+        "lockup_period",
+        "fund_usage",
         "team_members",
         "advisors",
+        "token_distribution",
+        "contract_address",
+        "treasury_address",
+        "legal_status",
+        "valuation_document_url",
+        "fiduciary_entity",
+        "due_diligence_report_url",
+        "is_mintable",
+        "is_mutable",
+        "update_authority_address",
         "applicant_name",
+        "applicant_position",
         "applicant_email",
+        "applicant_phone",
+        "applicant_wallet_address",
+        "verification_agreement",
+        "protoclMecanism",
+        "artefactUtility",
+        "worktoearnMecanism",
+        "integrationPlan",
+        "monetizationModel",
+        "adquireStrategy",
+        "mitigationPlan",
+        "recurring_rewards",
+        "integration_details",
+        "legal_entity_help",
+        "image_url",
+        "socials",
+        "returns_paid",
+        "featured",
+        "featured_button_text",
         "created_at"
       FROM "projects"
       WHERE "slug" = ${slug}

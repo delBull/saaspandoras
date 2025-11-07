@@ -14,15 +14,7 @@ import {
 import type { ProjectData } from "../../app/(dashboard)/projects/types";
 import SectionCard from "./SectionCard";
 
-// Helper para parsear JSON de forma segura
-function safeJsonParse<T>(jsonString: string | null | undefined, defaultValue: T): T {
-  if (!jsonString) return defaultValue;
-  try {
-    return JSON.parse(jsonString) as T;
-  } catch (e) {
-    return defaultValue;
-  }
-}
+// Función removida ya que no se usa en las nuevas tabs
 
 // --- CONTENIDO DINÁMICO POR TABS (MECÁNICA, SOSTENIBILIDAD, TRANSPARENCIA) ---
 interface Tab {
@@ -45,13 +37,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
     }
   };
 
-  // Parsear el estimated_apy JSON para mostrar la tabla de recompensas
-  let rewardsStructure;
-  try {
-    rewardsStructure = safeJsonParse(project.estimated_apy as string | null, {});
-  } catch {
-    rewardsStructure = {};
-  }
+  // Variable removida ya que no se usa en las nuevas tabs
 
   const tabs: Tab[] = [
     // --- TAB 0: CAMPAÑA (LA PRESENTACIÓN) ---
@@ -194,92 +180,122 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
       icon: Puzzle,
       content: (
         <div className="space-y-8 mb-8">
+          {/* Mecánica del Protocolo - Nueva clave */}
+          {project.protoclMecanism && (
+            <SectionCard title="Mecánica del Protocolo" icon={Puzzle}>
+              <p className="text-zinc-300 whitespace-pre-line">{project.protoclMecanism}</p>
+            </SectionCard>
+          )}
+
+          {/* Utilidad a Largo Plazo - Nueva clave */}
+          {project.artefactUtility && (
+            <SectionCard title="Utilidad a Largo Plazo de los Artefactos" icon={Star}>
+              <p className="text-zinc-300 whitespace-pre-line">{project.artefactUtility}</p>
+            </SectionCard>
+          )}
+
+          {/* Mecánica del Protocolo (desde ProjectDetails) */}
+          {project.fund_usage && (
+            <SectionCard title="Mecánica del Protocolo" icon={Puzzle}>
+              <p className="text-zinc-300 whitespace-pre-line">{project.fund_usage}</p>
+              <p className="mt-4 text-sm text-zinc-400">
+                *Regla fundamental de valor para holders del Artefacto.
+              </p>
+            </SectionCard>
+          )}
+
+          {/* Utilidad Continua (desde ProjectDetails) */}
+          {project.lockup_period && (
+            <SectionCard title="Utilidad Continua" icon={Star}>
+              <p className="text-zinc-300 whitespace-pre-line">{project.lockup_period}</p>
+              <p className="mt-4 text-sm text-zinc-400">
+                *Plan para mantener valor a largo plazo.
+              </p>
+            </SectionCard>
+          )}
+
+          {/* Sistema Work-to-Earn - Nueva clave */}
+          {project.worktoearnMecanism && (
+            <SectionCard title="Sistema Work-to-Earn" icon={Briefcase}>
+              <p className="text-zinc-300 whitespace-pre-line">{project.worktoearnMecanism}</p>
+            </SectionCard>
+          )}
+
+          {/* Plan de Integraciones - Nueva clave */}
+          {project.integrationPlan && (
+            <SectionCard title="Plan de Integraciones" icon={Code}>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                <span className="text-green-400 text-sm font-medium">Planea integraciones con otras plataformas</span>
+              </div>
+            </SectionCard>
+          )}
+
+          {/* Estructura de Recompensa Recurrente */}
           <SectionCard title="Estructura de Recompensa Recurrente" icon={Star}>
-            {Object.keys(rewardsStructure).length > 0 ? (
-              <ul className="space-y-3">
-                {Object.entries(rewardsStructure).map(([type, value]) => (
-                  <li key={type} className="p-3 bg-zinc-700/50 rounded-lg">
-                    <p className="font-semibold text-white">{type.toUpperCase().replace(/_/g, ' ')}</p>
-                    <p className="text-lime-400">{String(value)}</p>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-zinc-400">No hay recompensas recurrentes definidas en esta Creación.</p>
-            )}
-          </SectionCard>
+            {(() => {
+              // Intentar parsear como JSON primero (formato nuevo), luego como string simple
+              let rewardsData;
+              try {
+                rewardsData = project.recurring_rewards ? JSON.parse(project.recurring_rewards) : null;
+              } catch {
+                rewardsData = null;
+              }
 
-          <SectionCard title="Recompensas de Staking" icon={Puzzle}>
-            {project.staking_rewards_enabled ? (
-              <div>
-                <p className="text-lime-400 font-medium mb-2">✅ Habilitado</p>
-                {project.staking_rewards_details && (
-                  <p className="text-zinc-300">{project.staking_rewards_details}</p>
-                )}
-              </div>
-            ) : (
-              <p className="text-zinc-400">No habilitado</p>
-            )}
-          </SectionCard>
+              if (rewardsData) {
+                // Formato JSON: mostrar estructura detallada
+                const rewardsList = [];
+                if (rewardsData.stakingRewardsEnabled) {
+                  rewardsList.push({
+                    type: 'Staking Rewards',
+                    details: rewardsData.stakingRewardsDetails || 'Habilitado'
+                  });
+                }
+                if (rewardsData.revenueSharingEnabled) {
+                  rewardsList.push({
+                    type: 'Revenue Sharing',
+                    details: rewardsData.revenueSharingDetails || 'Habilitado'
+                  });
+                }
+                if (rewardsData.workToEarnEnabled) {
+                  rewardsList.push({
+                    type: 'Work-to-Earn',
+                    details: rewardsData.workToEarnDetails || 'Habilitado'
+                  });
+                }
+                if (rewardsData.tieredAccessEnabled) {
+                  rewardsList.push({
+                    type: 'Tiered Access',
+                    details: rewardsData.tieredAccessDetails || 'Habilitado'
+                  });
+                }
+                if (rewardsData.discountedFeesEnabled) {
+                  rewardsList.push({
+                    type: 'Discounted Fees',
+                    details: rewardsData.discountedFeesDetails || 'Habilitado'
+                  });
+                }
 
-          <SectionCard title="Revenue Sharing" icon={Puzzle}>
-            {project.revenue_sharing_enabled ? (
-              <div>
-                <p className="text-lime-400 font-medium mb-2">✅ Habilitado</p>
-                {project.revenue_sharing_details && (
-                  <p className="text-zinc-300">{project.revenue_sharing_details}</p>
-                )}
-              </div>
-            ) : (
-              <p className="text-zinc-400">No habilitado</p>
-            )}
-          </SectionCard>
-
-          <SectionCard title="Work-to-Earn" icon={Briefcase}>
-            {project.work_to_earn_enabled ? (
-              <div>
-                <p className="text-lime-400 font-medium mb-2">✅ Habilitado</p>
-                {project.work_to_earn_details && (
-                  <p className="text-zinc-300">{project.work_to_earn_details}</p>
-                )}
-              </div>
-            ) : (
-              <p className="text-zinc-400">No habilitado</p>
-            )}
-          </SectionCard>
-
-          <SectionCard title="Tiered Access" icon={Star}>
-            {project.tiered_access_enabled ? (
-              <div>
-                <p className="text-lime-400 font-medium mb-2">✅ Habilitado</p>
-                {project.tiered_access_details && (
-                  <p className="text-zinc-300">{project.tiered_access_details}</p>
-                )}
-              </div>
-            ) : (
-              <p className="text-zinc-400">No habilitado</p>
-            )}
-          </SectionCard>
-
-          <SectionCard title="Discounted Fees" icon={Star}>
-            {project.discounted_fees_enabled ? (
-              <div>
-                <p className="text-lime-400 font-medium mb-2">✅ Habilitado</p>
-                {project.discounted_fees_details && (
-                  <p className="text-zinc-300">{project.discounted_fees_details}</p>
-                )}
-              </div>
-            ) : (
-              <p className="text-zinc-400">No habilitado</p>
-            )}
-          </SectionCard>
-
-          <SectionCard title="Recompensas Recurrentes" icon={Star}>
-            {project.recurring_rewards ? (
-              <p className="text-zinc-300 whitespace-pre-line">{project.recurring_rewards}</p>
-            ) : (
-              <p className="text-zinc-400">No especificado</p>
-            )}
+                return rewardsList.length > 0 ? (
+                  <div className="space-y-3">
+                    {rewardsList.map((reward, index) => (
+                      <div key={index} className="p-3 bg-zinc-700/50 rounded-lg">
+                        <p className="font-semibold text-white text-sm">{reward.type}</p>
+                        <p className="text-zinc-300 text-sm mt-1">{reward.details}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-zinc-400">No hay recompensas recurrentes activas definidas.</p>
+                );
+              } else if (project.recurring_rewards) {
+                // Formato string simple (legacy)
+                return <p className="text-zinc-300 whitespace-pre-line">{project.recurring_rewards}</p>;
+              } else {
+                // No hay datos
+                return <p className="text-zinc-400">No hay recompensas recurrentes definidas en esta Creación.</p>;
+              }
+            })()}
           </SectionCard>
         </div>
       ),
@@ -291,38 +307,66 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
       icon: Shield,
       content: (
         <div className="space-y-8 mb-8">
-          <SectionCard title="Sostenibilidad de la Utilidad a Largo Plazo" icon={Globe}>
-            <p className="text-zinc-300 whitespace-pre-line">{project.lockup_period ?? 'No especificada'}</p>
-            <p className="mt-4 text-sm text-zinc-400">
-              *Detalla el roadmap de utilidad para mantener el valor de acceso.
-            </p>
+          {/* Meta de Adopción - Nueva clave */}
+          {project.target_amount && (
+            <SectionCard title="Meta de Adopción" icon={Globe}>
+              <p className="text-zinc-300">
+                <span className="font-semibold text-lime-400 text-lg">${project.target_amount.toLocaleString()}</span>
+                <span className="text-zinc-400 ml-2">USD objetivo</span>
+              </p>
+              <p className="mt-4 text-sm text-zinc-400">
+                *Monto necesario para lanzar esta Creación de utilidad.
+              </p>
+            </SectionCard>
+          )}
+
+          {/* Modelo de Monetización - Nueva clave */}
+          {project.monetizationModel && (
+            <SectionCard title="Modelo de Monetización (Ingresos del Protocolo)" icon={ExternalLink}>
+              <p className="text-zinc-300 whitespace-pre-line">{project.monetizationModel}</p>
+              <p className="mt-4 text-sm text-lime-400">
+                *Este modelo financia la utilidad recurrente.
+              </p>
+            </SectionCard>
+          )}
+
+          {/* Estrategia de Adquisición - Nueva clave */}
+          {project.adquireStrategy && (
+            <SectionCard title="Estrategia de Adopción (Go-To-Market)" icon={Star}>
+              <p className="text-zinc-300 whitespace-pre-line">{project.adquireStrategy}</p>
+              <p className="mt-4 text-sm text-zinc-400">
+                *Detalla el plan inicial de distribución de Artefactos (Airdrop, Venta Fija, Mérito).
+              </p>
+            </SectionCard>
+          )}
+
+          {/* Parámetros del Artefacto */}
+          <SectionCard title="Parámetros del Artefacto" icon={Code}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-zinc-300"><span className="font-semibold text-white">Tipo:</span> {project.token_type ?? 'ERC-721'}</p>
+              </div>
+              <div>
+                <p className="text-zinc-300"><span className="font-semibold text-white">Supply Total:</span> {project.total_tokens ? project.total_tokens.toLocaleString() : 'No especificado'}</p>
+              </div>
+              <div>
+                <p className="text-zinc-300"><span className="font-semibold text-white">Para Venta:</span> {project.tokens_offered ? project.tokens_offered.toLocaleString() : 'No especificado'}</p>
+              </div>
+              <div>
+                <p className="text-zinc-300"><span className="font-semibold text-white">Precio:</span> {project.token_price_usd ? `$${Number(project.token_price_usd) % 1 === 0 ? Number(project.token_price_usd).toFixed(0) : Number(project.token_price_usd).toFixed(2)}` : 'No especificado'}</p>
+              </div>
+            </div>
           </SectionCard>
 
-          <SectionCard title="Modelo de Monetización (Ingresos del Protocolo)" icon={ExternalLink}>
-            <p className="text-zinc-300 whitespace-pre-line">{project.fiduciary_entity ?? 'No especificado'}</p>
-            <p className="mt-4 text-sm text-lime-400">
-              *Este modelo financia la utilidad recurrente.
-            </p>
-          </SectionCard>
-
-          <SectionCard title="Estrategia de Adopción (Go-To-Market)" icon={Star}>
-            <p className="text-zinc-300 whitespace-pre-line">{project.valuation_document_url ?? 'No especificada'}</p>
+          {/* Estructura de Recompensa Recurrente */}
+          <SectionCard title="Estructura de Recompensa Recurrente" icon={Star}>
+            {project.recurring_rewards ? (
+              <p className="text-zinc-300 whitespace-pre-line">{project.recurring_rewards}</p>
+            ) : (
+              <p className="text-zinc-400">No especificada</p>
+            )}
             <p className="mt-4 text-sm text-zinc-400">
-              *Detalla el plan inicial de distribución de Artefactos (Airdrop, Venta Fija, Mérito).
-            </p>
-          </SectionCard>
-
-          <SectionCard title="Planes de Integración Tecnológica" icon={Code}>
-            <p className="text-zinc-300 whitespace-pre-line">{project.integration_details ?? 'No especificados'}</p>
-            <p className="mt-4 text-sm text-zinc-400">
-              *Integraciones con Discord, e-commerce, o servicios Web3 que amplían el uso.
-            </p>
-          </SectionCard>
-
-          <SectionCard title="Uso de Fondos" icon={ExternalLink}>
-            <p className="text-zinc-300 whitespace-pre-line">{project.fund_usage ?? 'No especificado'}</p>
-            <p className="mt-4 text-sm text-zinc-400">
-              *Cómo se utilizarán los fondos recaudados.
+              *Sistema de recompensas continuas para mantener la utilidad.
             </p>
           </SectionCard>
         </div>
@@ -335,24 +379,59 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
       icon: Shield,
       content: (
         <div className="space-y-8 mb-8">
+          {/* Estatus Legal - Nueva clave */}
           <SectionCard title="Estatus Legal y Jurisdicción" icon={Briefcase}>
-            <p className="text-zinc-300">Estatus: <span className="font-semibold text-white">{project.legal_status ?? 'No especificado'}</span></p>
-          </SectionCard>
-
-          <SectionCard title="Mitigación de Riesgo Operativo y Fraude" icon={Shield}>
-            <p className="text-zinc-300 whitespace-pre-line">{project.due_diligence_report_url ?? 'No especificada'}</p>
+            <p className="text-zinc-300 whitespace-pre-line">{project.legal_status ?? 'No especificado'}</p>
             <p className="mt-4 text-sm text-zinc-400">
-              *Plan del Creador para manejar el fraude interno y el riesgo de uso de la comunidad.
+              *Información legal para demostrar la legitimidad de la entidad.
             </p>
           </SectionCard>
 
-          <SectionCard title="Parámetros de Contrato (Smart Contract)" icon={Code}>
-            <ul className="space-y-2 text-sm text-zinc-300">
-              <li><span className="font-semibold text-white">Tipo de Artefacto:</span> {project.token_type ?? 'ERC-721'}</li>
-              <li><span className="font-semibold text-white">Mutabilidad de Reglas:</span> {project.is_mutable ? 'Mutable (Las reglas pueden actualizarse)' : 'Inmutable (Reglas fijas)'}</li>
-              <li><span className="font-semibold text-white">Dirección de Autoridad:</span> {project.update_authority_address ?? project.contract_address ?? 'No especificada'}</li>
-            </ul>
-          </SectionCard>
+          {/* Entidad Fiduciaria (desde ProjectDetails) */}
+          {project.fiduciary_entity && (
+            <SectionCard title="Entidad Fiduciaria" icon={Shield}>
+              <p className="text-zinc-300 whitespace-pre-line">{project.fiduciary_entity}</p>
+              <p className="mt-4 text-sm text-zinc-400">
+                *Custodia de activos del mundo real.
+              </p>
+            </SectionCard>
+          )}
+
+          {/* Documento de Valuación (desde ProjectDetails) */}
+          {project.valuation_document_url && (
+            <SectionCard title="Documento de Valuación" icon={Code}>
+              <a href={project.valuation_document_url} target="_blank" rel="noopener noreferrer"
+                 className="text-lime-400 hover:text-lime-300 underline text-sm">
+                Ver documento →
+              </a>
+              <p className="mt-2 text-sm text-zinc-400">
+                *Análisis de valuación del proyecto.
+              </p>
+            </SectionCard>
+          )}
+
+          {/* Reporte de Due Diligence (desde ProjectDetails) */}
+          {project.due_diligence_report_url && (
+            <SectionCard title="Reporte de Due Diligence" icon={Shield}>
+              <a href={project.due_diligence_report_url} target="_blank" rel="noopener noreferrer"
+                 className="text-lime-400 hover:text-lime-300 underline text-sm">
+                Ver reporte →
+              </a>
+              <p className="mt-2 text-sm text-zinc-400">
+                *Análisis de riesgos y validación.
+              </p>
+            </SectionCard>
+          )}
+
+          {/* Mitigación de Riesgos - Nueva clave */}
+          {project.mitigationPlan && (
+            <SectionCard title="Mitigación de Riesgo Operativo y Fraude" icon={Shield}>
+              <p className="text-zinc-300 whitespace-pre-line">{project.mitigationPlan}</p>
+              <p className="mt-4 text-sm text-zinc-400">
+                *Plan del Creador para manejar el fraude interno y el riesgo de uso de la comunidad.
+              </p>
+            </SectionCard>
+          )}
 
           <SectionCard title="Información del Creador" icon={Crown}>
             <p className="text-zinc-300"><span className="font-semibold text-white">Nombre del Solicitante:</span> {project.applicant_name ?? 'No especificado'}</p>
@@ -362,6 +441,9 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
             )}
             {project.applicant_phone && (
               <p className="text-zinc-300"><span className="font-semibold text-white">Teléfono:</span> {project.applicant_phone}</p>
+            )}
+            {project.applicant_wallet_address && (
+              <p className="text-zinc-300"><span className="font-semibold text-white">Wallet:</span> {project.applicant_wallet_address.slice(0, 6)}...{project.applicant_wallet_address.slice(-4)}</p>
             )}
           </SectionCard>
         </div>

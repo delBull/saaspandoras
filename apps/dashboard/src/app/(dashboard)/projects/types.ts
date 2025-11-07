@@ -43,17 +43,14 @@ export interface ProjectData {
   applicant_phone?: string | null;
   applicant_wallet_address?: string | null;
   verification_agreement?: boolean | null;
-  // New fields from ConversationalForm (snake_case as per DB schema)
-  staking_rewards_enabled?: boolean | null;
-  staking_rewards_details?: string | null;
-  revenue_sharing_enabled?: boolean | null;
-  revenue_sharing_details?: string | null;
-  work_to_earn_enabled?: boolean | null;
-  work_to_earn_details?: string | null;
-  tiered_access_enabled?: boolean | null;
-  tiered_access_details?: string | null;
-  discounted_fees_enabled?: boolean | null;
-  discounted_fees_details?: string | null;
+  // New optimized fields from ConversationalForm (snake_case as per DB schema)
+  protoclMecanism?: string | null;
+  artefactUtility?: string | null;
+  worktoearnMecanism?: string | null;
+  integrationPlan?: boolean | null;
+  monetizationModel?: string | null;
+  adquireStrategy?: string | null;
+  mitigationPlan?: string | null;
   recurring_rewards?: string | null;
   integration_details?: string | null;
   legal_entity_help?: boolean | null;
