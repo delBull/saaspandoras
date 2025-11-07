@@ -114,9 +114,9 @@ export default function ProfilePage() {
         <div className="space-y-4">
           <WalletInfo
             walletAddress={walletAddress}
-            profileWalletAddress={profile?.walletAddress || undefined}
+            profileWalletAddress={profile?.walletAddress ?? undefined}
             kycCompleted={profile?.kycCompleted}
-            kycLevel={profile?.kycLevel || undefined}
+            kycLevel={profile?.kycLevel ?? undefined}
             onKycModalOpen={() => setKycModalOpen(true)}
           />
 
