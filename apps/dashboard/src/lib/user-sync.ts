@@ -15,11 +15,10 @@ export async function syncThirdwebUser(userData: {
       image: userData.image
     });
 
-    // Lista de SUPER ADMINS hardcodeados (siempre admin sin importar BD)
-    const SUPER_ADMINS = [
-      '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9', // Tú - siempre admin
-      // Agrega aquí otros superadmin si necesitas
-    ].map(addr => addr.toLowerCase());
+    // Lista de SUPER ADMINS desde variable de entorno (siempre admin sin importar BD)
+    const SUPER_ADMINS = (process.env.SUPER_ADMIN_WALLET ?? '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9')
+      .split(',')
+      .map(addr => addr.trim().toLowerCase());
 
     // Leer TODAS las wallets admin adicionales desde la base de datos
     const adminWallets = await db.execute(sql`
@@ -116,7 +115,12 @@ export async function syncThirdwebUser(userData: {
       // IMPORTANTE: Esta llamada se hace al final para no bloquear la sincronización básica
       // Si Thirdweb API no está configurado o falla, el usuario aún funciona con datos básicos
 
-      const enrichedProfile = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/thirdweb-fetch?address=${userData.walletAddress}`, {
+      // Usar la URL correcta en producción (Vercel URL) o desarrollo
+      const baseUrl = process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+
+      const enrichedProfile = await fetch(`${baseUrl}/api/thirdweb-fetch?address=${userData.walletAddress}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

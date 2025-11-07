@@ -41,7 +41,7 @@ export function ReferralModal({ isOpen, onClose, onReferralComplete }: ReferralM
         setReferrerWallet(refFromUrl);
       } else if (referrerWallet === '') {
         // Auto-popular con Super Admin wallet si está vacío (bonus automático)
-        const superAdminWallet = '0x00c9f7EE6d1808C09B61E561Af6c787060BFE7C9';
+        const superAdminWallet = process.env.NEXT_PUBLIC_SUPER_ADMIN_WALLET ?? '0x00c9f7EE6d1808C09B61E561Af6c787060BFE7C9';
         console.log('🎯 Auto-populde Super Admin wallet para bonus automático');
         setReferrerWallet(superAdminWallet);
       }
