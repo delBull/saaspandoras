@@ -43,7 +43,7 @@ export function AccountStatus({
                 </div>
                 <div>
                   <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Rol</span>
-                  <p className="text-white font-medium capitalize">{role ?? 'pandorian'}</p>
+                  <p className="text-white text-xs font-medium capitalize">{role ?? 'pandorian'}</p>
                 </div>
               </div>
             </div>
@@ -57,7 +57,7 @@ export function AccountStatus({
                 </div>
                 <div>
                   <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Conexiones Totales</span>
-                  <p className="text-white font-medium">{connectionCount ?? 1}</p>
+                  <p className="text-white text-xs font-medium">{connectionCount ?? 1}</p>
                 </div>
               </div>
             </div>
@@ -81,7 +81,7 @@ export function AccountStatus({
                   <div className={`w-2 h-2 rounded-full ${
                     kycCompleted ? 'bg-green-500' : 'bg-yellow-500'
                   }`}></div>
-                  <span className="text-white font-medium">
+                  <span className="text-white text-xs font-medium">
                     {kycCompleted ? 'Verificado' : 'Pendiente'}
                   </span>
                 </div>
@@ -105,7 +105,7 @@ export function AccountStatus({
               </div>
               <div>
                 <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Última Conexión</span>
-                <p className="text-white font-medium">
+                <p className="text-white text-xs font-medium">
                   {lastConnectionAt ?
                     new Date(lastConnectionAt).toLocaleDateString('es-ES', {
                       day: 'numeric',
@@ -147,7 +147,7 @@ export function AccountStatus({
                 </div>
                 <div>
                   <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Creaciones Aplicadas</span>
-                  <p className="text-white font-medium">{projectCount ?? 0}</p>
+                  <p className="text-white text-xs font-medium">{projectCount ?? 0}</p>
                 </div>
               </div>
             </div>
@@ -164,7 +164,7 @@ export function AccountStatus({
                 <div className="flex-1">
                   <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Pandora's Key</span>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className={`font-medium ${
+                    <span className={`text-xs font-medium ${
                       hasPandorasKey ? 'text-lime-400' : 'text-gray-400'
                     }`}>
                       {hasPandorasKey ? 'Activada' : 'Inactiva'}

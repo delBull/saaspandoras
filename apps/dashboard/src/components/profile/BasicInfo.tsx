@@ -25,24 +25,24 @@ export function BasicInfo({ name, email, occupation, taxId }: BasicInfoProps) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="bg-zinc-800/30 rounded-lg p-3 border border-zinc-700/30">
               <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Nombre</span>
-              <p className="text-white font-medium mt-1">{name ?? 'No registrado'}</p>
+              <p className="text-white text-xs font-medium mt-1">{name ?? 'No registrado'}</p>
             </div>
 
             <div className="bg-zinc-800/30 rounded-lg p-3 border border-zinc-700/30">
               <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Email</span>
-              <p className="text-white font-medium mt-1 break-all">{email ?? 'No registrado'}</p>
+              <p className="text-white text-xs font-medium mt-1 break-all">{email ?? 'No registrado'}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="bg-zinc-800/30 rounded-lg p-3 border border-zinc-700/30">
               <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Ocupación</span>
-              <p className="text-white font-medium mt-1">{occupation ?? 'No especificada'}</p>
+              <p className="text-white text-xs font-medium mt-1">{occupation ?? 'No especificada'}</p>
             </div>
 
             <div className="bg-zinc-800/30 rounded-lg p-3 border border-zinc-700/30">
               <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">ID Fiscal / RFC</span>
-              <p className="text-white font-mono font-medium mt-1">{taxId ?? 'No registrado'}</p>
+              <p className="text-white text-xs font-mono font-medium mt-1">{taxId ?? 'No registrado'}</p>
             </div>
           </div>
         </div>
