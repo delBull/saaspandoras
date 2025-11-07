@@ -9,7 +9,14 @@ export async function POST(request: NextRequest) {
     console.log('📥 Received utility application request');
 
     const body = await request.json();
-    console.log('📦 Request body:', body);
+    console.log('📦 Request body keys:', Object.keys(body));
+    console.log('📦 Request body sample values:', {
+      title: body.title,
+      businessCategory: body.businessCategory,
+      applicantWalletAddress: body.applicantWalletAddress,
+      status: body.status,
+      featured: body.featured
+    });
 
     // Validar campos requeridos
     if (!body.title || !body.description || !body.businessCategory) {
@@ -73,8 +80,15 @@ export async function POST(request: NextRequest) {
       fiduciaryEntity: body.fiduciaryEntity || null,
       valuationDocumentUrl: body.valuationDocumentUrl || null,
       dueDiligenceReportUrl: body.dueDiligenceReportUrl || null,
+      // Convertir campos booleanos de string a boolean
+      stakingRewardsEnabled: body.stakingRewardsEnabled === 'true' ? true : body.stakingRewardsEnabled === 'false' ? false : null,
+      revenueSharingEnabled: body.revenueSharingEnabled === 'true' ? true : body.revenueSharingEnabled === 'false' ? false : null,
+      workToEarnEnabled: body.workToEarnEnabled === 'true' ? true : body.workToEarnEnabled === 'false' ? false : null,
+      tieredAccessEnabled: body.tieredAccessEnabled === 'true' ? true : body.tieredAccessEnabled === 'false' ? false : null,
+      discountedFeesEnabled: body.discountedFeesEnabled === 'true' ? true : body.discountedFeesEnabled === 'false' ? false : null,
       isMintable: body.isMintable === 'true' ? true : body.isMintable === 'false' ? false : null,
       isMutable: body.isMutable === 'true' ? true : body.isMutable === 'false' ? false : null,
+      legalEntityHelp: body.legalEntityHelp === 'true' ? true : body.legalEntityHelp === 'false' ? false : null,
       updateAuthorityAddress: body.updateAuthorityAddress || null,
       applicantName: body.applicantName || null,
       applicantPosition: body.applicantPosition || null,

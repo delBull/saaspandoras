@@ -148,12 +148,38 @@ export class GamificationService {
    * Track gamification event using real database
    */
   static async trackEvent(
-    userId: string,
+    walletAddress: string,
     eventType: string,
     metadata?: Record<string, unknown>
   ): Promise<GamificationEvent> {
-    console.log(`🎯 GamificationService: Tracking event ${eventType} for user ${userId}`);
+    console.log(`🎯 GamificationService: Tracking event ${eventType} for wallet ${walletAddress}`);
     try {
+      // First, ensure user exists in users table and get their numeric ID
+      const userRecord = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.walletAddress, walletAddress))
+        .limit(1);
+
+      let userId: string;
+      if (!userRecord || userRecord.length === 0 || !userRecord[0]) {
+        // User doesn't exist in users table, create them
+        console.log(`👤 Creating user record for wallet ${walletAddress}`);
+        const newUser = await db.insert(users).values({
+          id: walletAddress, // Use wallet address as ID since it's unique
+          walletAddress: walletAddress,
+          createdAt: new Date()
+        }).returning({ id: users.id });
+
+        if (!newUser || newUser.length === 0 || !newUser[0]) {
+          throw new Error('Failed to create user record');
+        }
+        userId = newUser[0].id.toString();
+        console.log(`✅ Created user with ID ${userId} for wallet ${walletAddress}`);
+      } else {
+        userId = userRecord[0].id.toString();
+      }
+
       // Get points for this event type
       const points = this.getEventPoints(eventType);
       console.log(`💰 Event ${eventType} grants ${points} points`);
@@ -161,7 +187,7 @@ export class GamificationService {
       // Award points directly using raw SQL (without events table dependency)
       let finalTotalPoints = 0;
       if (points > 0) {
-        console.log(`🎯 Awarding ${points} points to user ${userId}`);
+        console.log(`🎯 Awarding ${points} points to user ${userId} (wallet: ${walletAddress})`);
 
         // Get current points first to calculate final total
         const currentProfile = await db.execute(sql`
@@ -181,7 +207,7 @@ export class GamificationService {
           WHERE user_id = ${userId}
         `);
 
-        // Insert points record
+        // Insert points record using numeric user ID
         await db.execute(sql`
           INSERT INTO user_points
           (user_id, points, reason, category, metadata, created_at)
@@ -190,14 +216,14 @@ export class GamificationService {
       }
 
       // 🚀 CHECK AND UNLOCK ACHIEVEMENTS AUTOMATICALLY
-      await this.checkAndUnlockAchievements(userId, eventType, finalTotalPoints);
+      await this.checkAndUnlockAchievements(walletAddress, eventType, finalTotalPoints);
 
-      console.log(`✅ Event tracked: +${points} points awarded to user ${userId}`);
+      console.log(`✅ Event tracked: +${points} points awarded to wallet ${walletAddress} (user ID: ${userId})`);
 
       // Return basic event object (without ID dependency)
       return {
-        id: `event_${Date.now()}_${userId}`,
-        userId,
+        id: `event_${Date.now()}_${walletAddress}`,
+        userId: walletAddress,
         type: 'daily_login' as any,
         category: 'daily' as any,
         points,
@@ -205,7 +231,7 @@ export class GamificationService {
         createdAt: new Date()
       };
     } catch (error) {
-      console.error(`❌ Error tracking event for user ${userId}:`, error);
+      console.error(`❌ Error tracking event for wallet ${walletAddress}:`, error);
       throw error;
     }
   }

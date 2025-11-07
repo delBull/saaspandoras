@@ -89,7 +89,8 @@ async function getFeaturedProjects(): Promise<FeaturedProjectCardData[]> {
     });
 
     if (!response.ok) {
-      throw new Error(`API responded with status ${response.status}`);
+      console.warn(`⚠️ Featured API responded with status ${response.status}, returning empty array`);
+      return [];
     }
 
     const projects = await response.json() as Record<string, unknown>[];
