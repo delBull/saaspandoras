@@ -15,6 +15,7 @@ import { useActiveAccount } from "thirdweb/react";
 import { ethereum } from "thirdweb/chains";
 import { WalletBalance, NetworkSelector, ConnectWalletButton } from "@/components/wallet";
 import { SUPPORTED_NETWORKS } from "@/config/networks";
+import { usePathname } from "next/navigation";
 
 interface TopNavbarProps {
   wallet?: string;
@@ -36,6 +37,7 @@ export function TopNavbar({
   const [copyAnimation, setCopyAnimation] = useState(false);
 
   const account = useActiveAccount();
+  const pathname = usePathname();
 
   // Multi-chain wallet state - ensure we have a valid chain
   const [selectedChain, setSelectedChain] = useState(ethereum);
@@ -176,48 +178,100 @@ export function TopNavbar({
     }
   };
 
+  // Check if we're on specific pages that need special handling
+  const isApplicantsPage = pathname === '/applicants';
+
+  // Get panel state from localStorage for dynamic adjustment
+  const [panelCollapsed, setPanelCollapsed] = useState(true);
+
+  // Listen for panel state changes
+  useEffect(() => {
+    if (!isApplicantsPage) return;
+
+    const checkPanelState = () => {
+      const stored = localStorage.getItem('applicants-panel-collapsed');
+      const isCollapsed = stored === null ? true : stored === 'true'; // Default to true (collapsed)
+      setPanelCollapsed(isCollapsed);
+    };
+
+    // Check immediately
+    checkPanelState();
+
+    // Listen for storage changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'applicants-panel-collapsed') {
+        checkPanelState();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    // Also listen for custom events
+    const handlePanelChange = () => checkPanelState();
+    window.addEventListener('applicants-panel-changed', handlePanelChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('applicants-panel-changed', handlePanelChange);
+    };
+  }, [isApplicantsPage]);
+
+
+
   return (
-    <div className="absolute top-4 right-7 z-30">
-      <div className="flex items-center gap-4">
-        {/* Profile Button */}
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
+    <div className="relative w-full z-40 md:block hidden">
+      <div className={`bg-gradient-to-r from-purple-950/10 to-black/20 backdrop-blur-sm transition-all duration-500 ${
+        isApplicantsPage ? (panelCollapsed ? 'mr-8 lg:mr-12' : 'mr-[240px] lg:mr-[270px]') : ''
+      }`}>
+        <div className={`px-4 ${
+          isApplicantsPage ? '' : 'max-w-7xl mx-auto'
+        }`}>
+          <div className="flex items-center">
+            {/* Right side - Profile and other items - Always pushed to the right */}
+            <div className="flex items-center gap-4 ml-auto">
+              {/* Profile Button */}
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
 
-            const isOpening = !profileDropdown;
-            setProfileDropdown(!profileDropdown);
+                  const isOpening = !profileDropdown;
+                  setProfileDropdown(!profileDropdown);
 
-            if (isOpening) {
-              setDropdownOpenedAt(Date.now());
-            }
-          }}
-          onMouseDown={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-          className="flex items-center gap-3 px-3 py-2"
-          title="Perfil"
-        >
-          <Image
-            src={userProfile?.image ?? '/images/avatars/onlybox2.png'}
-            alt="Profile Avatar"
-            width={32}
-            height={32}
-            className="w-8 h-8 rounded-full border border-lime-400"
-          />
-          <span className="text-sm text-gray-300 font-medium">Perfil</span>
-        </button>
+                  if (isOpening) {
+                    setDropdownOpenedAt(Date.now());
+                  }
+                }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-zinc-800/50 transition-colors"
+                title="Perfil"
+              >
+                <Image
+                  src={userProfile?.image ?? '/images/avatars/onlybox2.png'}
+                  alt="Profile Avatar"
+                  width={32}
+                  height={32}
+                  className="w-8 h-8 rounded-lg border border-lime-400"
+                />
+                <span className="text-sm text-gray-300 font-medium">Perfil</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
-        {/* Profile Dropdown */}
-        <AnimatePresence>
-          {profileDropdown && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              className="absolute top-full right-4 mt-2 w-80 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 topnav-profile-dropdown"
-            >
+      {/* Profile Dropdown */}
+      <AnimatePresence>
+        {profileDropdown && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="absolute top-full right-4 mt-2 w-80 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 topnav-profile-dropdown"
+          >
               <div className="p-3 space-y-2">
                 {/* Wallet Copy Section - FIRST PRIORITY */}
                 <button
@@ -352,10 +406,9 @@ export function TopNavbar({
                   />
                 </div>
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

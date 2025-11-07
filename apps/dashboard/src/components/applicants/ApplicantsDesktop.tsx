@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { PanelProjects } from "./shared/PanelProjects";
 import { ProjectGrid } from "./shared/ProjectGrid";
 import { ApplicantsFilters } from "./ApplicantsFilters";
@@ -66,6 +67,13 @@ export function ApplicantsDesktop({
   // } = useProjectFilters({
   //   projects: [...pendingProjects, ...approvedProjects],
   // });
+
+  // Save panel state to localStorage for navbar adjustment
+  useEffect(() => {
+    localStorage.setItem('applicants-panel-collapsed', isPendingPanelCollapsed.toString());
+    // Dispatch custom event for immediate updates
+    window.dispatchEvent(new CustomEvent('applicants-panel-changed'));
+  }, [isPendingPanelCollapsed]);
 
   return (
     <div className="hidden lg:block min-h-screen">
