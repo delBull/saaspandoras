@@ -11,7 +11,6 @@ import {
   Shield,
   Target,
   Award,
-  ArrowRight,
   BookOpen,
   Rocket,
   Sparkles,
@@ -473,40 +472,22 @@ export default function ApplyInfoPage() {
               de la plataforma.
             </p>
 
-            {/* Botones para formularios - Original y Nuevo (Beta) */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button
-                size="lg"
-                disabled={!acceptedTerms}
-                onClick={() => handleFormSelection('multi-step')}
-                className={cn(
-                  "bg-gradient-to-r from-lime-500 to-emerald-500 text-black font-bold text-base md:text-lg px-8 md:px-12 py-4 md:py-6 rounded-xl transition-all duration-300",
-                  acceptedTerms
-                    ? "hover:from-lime-400 hover:to-emerald-400 hover:scale-105 shadow-lg shadow-lime-500/25"
-                    : "opacity-50 cursor-not-allowed"
-                )}
-              >
-                <span className="flex items-center gap-2">
-                  Empezar a Construir
-                  <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
-                </span>
-              </Button>
-
+            {/* Botón único para formulario conversacional */}
+            <div className="flex justify-center">
               <Button
                 size="lg"
                 disabled={!acceptedTerms}
                 onClick={() => handleFormSelection('conversational')}
-                variant="outline"
                 className={cn(
-                  "border-2 border-purple-500/50 bg-purple-500/10 text-purple-300 font-bold text-base md:text-lg px-8 md:px-12 py-4 md:py-6 rounded-xl transition-all duration-300 hover:bg-purple-500/20 hover:border-purple-400",
+                  "font-bold text-base md:text-lg px-8 md:px-12 py-4 md:py-6 rounded-xl transition-all duration-300",
                   acceptedTerms
-                    ? "hover:scale-105 shadow-lg shadow-purple-500/25"
-                    : "opacity-50 cursor-not-allowed"
+                    ? "bg-gradient-to-r from-lime-500 to-emerald-500 text-black hover:from-lime-400 hover:to-emerald-400 hover:scale-105 shadow-lg shadow-lime-500/25"
+                    : "border-2 border-purple-500/50 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 hover:border-purple-400 hover:scale-105 shadow-lg shadow-purple-500/25"
                 )}
               >
                 <span className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 md:w-5 md:h-5" />
-                  Planea tu Creación (Beta)
+                  Planea tu Creación
                 </span>
               </Button>
             </div>
