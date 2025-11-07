@@ -80,15 +80,17 @@ export async function POST(request: NextRequest) {
     // Store image using Vercel Blob Storage
     console.log('Using Vercel Blob Storage for avatar upload');
     console.log('BLOB_READ_WRITE_TOKEN present:', !!process.env.BLOB_READ_WRITE_TOKEN);
+    console.log('Environment:', process.env.NODE_ENV);
 
     let imageUrl: string;
     let finalProcessedSize: number;
 
     try {
-      // Upload to Vercel Blob
+      // Upload to Vercel Blob with explicit token
       const blob = await put(filename, processedBuffer, {
         access: 'public',
-        contentType: 'image/webp'
+        contentType: 'image/webp',
+        token: process.env.BLOB_READ_WRITE_TOKEN
       });
 
       imageUrl = blob.url;
