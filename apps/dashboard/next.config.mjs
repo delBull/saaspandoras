@@ -30,6 +30,23 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'api.qrserver.com',
       },
+      // Vercel Blob Storage domains
+      {
+        protocol: 'https',
+        hostname: '*.vercel-storage.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.vercel.app',
+      },
+      {
+        protocol: 'https',
+        hostname: 'vercel-storage.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'vercel.app',
+      },
     ],
   },
   transpilePackages: [
