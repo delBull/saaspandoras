@@ -2,7 +2,7 @@ import type { FormQuestion } from './schema';
 
 // Array de preguntas del formulario conversacional - Versión Utility Final
 export const formQuestions: FormQuestion[] = [
-  // SECCIÓN 1: La Identidad de tu Creación (6 preguntas)
+  // SECCIÓN 1: La Identidad de tu Creación (7 preguntas)
   {
     id: 'title',
     label: '¡Hola, Creador! ¿Cómo se llama esta nueva Creación (Protocolo de Utilidad)?',
@@ -121,30 +121,30 @@ export const formQuestions: FormQuestion[] = [
     info: 'Perfil profesional de LinkedIn para mostrar la trayectoria del equipo principal.',
   },
 
-  // SECCIÓN 3: La Utilidad y Economía de la Creación (9 preguntas)
+  // SECCIÓN 3: La Utilidad y Economía de la Creación (10 preguntas)
   {
-    id: 'fundUsage', // Mantiene la clave, pero cambia la pregunta
+    id: 'protoclMecanism', // Nueva Clave
     label: 'Describa la mecánica del Protocolo: ¿Cómo se genera valor para la comunidad (ej. acceso, recompensas, contenido)?',
     placeholder: 'Ej: Los holders de Artefactos tendrán acceso prioritario a nuevos lanzamientos, podrán votar en funcionalidades, y recibirán recompensas por staking/labor...',
     component: 'textarea-input',
     info: 'Describe la regla fundamental de tu Creación. Explica el *beneficio tangible* que recibirán los poseedores del Artefacto.',
   },
   {
-    id: 'lockupPeriod', // Mantiene la clave, pero cambia la pregunta
+    id: 'artefactUtility', // Nueva Clave
     label: '¿Cómo se mantiene la utilidad de los Artefactos a largo plazo?',
     placeholder: 'Ej: Actualizaciones continuas del protocolo, nuevos casos de uso desbloqueados por tenencia prolongada, recompensas por participación activa, acceso a eventos exclusivos...',
     component: 'textarea-input',
     info: 'Describe el plan para que el valor de uso (utilidad) se mantenga y crezca más allá del lanzamiento inicial. La clave es la *utilidad continua*.',
   },
   {
-    id: 'applicantName', // Mantiene la clave, pero cambia la pregunta
+    id: 'worktoearnMecanism', // Nueva Clave
     label: 'Si incluye \'Labor\' (Work-to-Earn), describa el mecanismo: ¿Qué es \'Labor\' y cómo se calculará la recompensa?',
     placeholder: 'Ej: Las acciones validadas incluyen: contribuir al DAO, moderar contenido. La recompensa se calcula por puntos acumulados semanalmente, canjeables por tokens adicionales o acceso premium...',
     component: 'textarea-input',
     info: 'Detalla cómo el sistema Work-to-Earn recompensa la contribución de la comunidad. Especifica las acciones y la fórmula de recompensa.',
   },
   {
-    id: 'isMintable', // Mantiene la clave, pero cambia la pregunta
+    id: 'integrationPlan', // Nueva Clave
     label: '¿Tiene planes de integrar este Protocolo con otras herramientas/plataformas (Discord, e-commerce, Web3, etc.)?',
     component: 'checkbox-input',
     info: 'Marcar Sí si planeas integrar con otras plataformas. Describe las integraciones en el campo de descripción del proyecto.',
@@ -204,7 +204,14 @@ export const formQuestions: FormQuestion[] = [
     component: 'recurring-rewards-input',
   },
 
-  // SECCIÓN 4: Datos del Creador (4 preguntas)
+  // SECCIÓN 4: Datos del Creador (5 preguntas)
+  {
+    id: 'applicantName',
+    label: '¿Cuál es tu nombre completo?',
+    placeholder: 'Ej: Juan Pérez García',
+    component: 'text-input',
+    info: 'Tu nombre completo tal como aparecerá públicamente en el proyecto.',
+  },
   {
     id: 'applicantPosition',
     label: '¿Cuál es tu rol en este proyecto de utilidad?',
@@ -235,7 +242,7 @@ export const formQuestions: FormQuestion[] = [
     info: 'La dirección de tu billetera principal que se vinculará a la Creación para gobernanza y tarifas. Si no sabes cuál usar o no puedes decidir ahora, no te preocupes, podemos ayudarte más adelante.',
   },
 
-  // SECCIÓN 5: Transparencia y Estructura (Legal y Técnica) (6 preguntas)
+  // SECCIÓN 5: Transparencia y Estructura (Legal y Técnica) (4 preguntas)
   {
     id: 'legalStatus',
     label: '¿Cuál es el estatus legal de tu Creación y en qué jurisdicción opera?',
@@ -244,7 +251,7 @@ export const formQuestions: FormQuestion[] = [
     info: 'Información legal para demostrar la legitimidad de la entidad que gestiona la Creación.',
   },
   {
-    id: 'fiduciaryEntity', // Mantiene la clave, pero cambia la pregunta
+    id: 'monetizationModel', // Nueva Clave
     label: 'Modelo de Monetización (Ingresos del Protocolo): ¿Cuál es el mecanismo principal que usará el Creador para generar ingresos y financiar las recompensas de Utilidad a largo plazo?',
     placeholder: 'Ej: Suscripciones con Artefactos, Tarifas por Uso del Servicio, Venta de Productos/Servicios.',
     component: 'text-input',
@@ -252,14 +259,14 @@ export const formQuestions: FormQuestion[] = [
     info: 'Ej: Suscripciones con Artefactos, Tarifas por Uso del Servicio, Venta de Productos/Servicios.',
   },
   {
-    id: 'valuationDocumentUrl', // Mantiene la clave, pero cambia la pregunta
+    id: 'adquireStrategy', // Nueva Clave
     label: 'Describa la estrategia inicial para que la comunidad adquiera sus Artefactos de Acceso.',
     placeholder: 'Ej: 50% vía Airdrop a holders de X NFT, 50% vía venta a precio fijo, asignación por mérito/labor.',
     component: 'textarea-input',
     info: 'Describe cómo planeas distribuir inicialmente tus Artefactos. Incluye porcentajes, criterios de elegibilidad y fases de lanzamiento.',
   },
   {
-    id: 'dueDiligenceReportUrl',
+    id: 'mitigationPlan', // Nueva Clave
     label: '¿Cómo planea mitigar el riesgo operativo o el fraude dentro de su propia \'Creación\' y comunidad?',
     placeholder: 'Ej: MultiSig para tesorería, auditorías regulares, gobernanza comunitaria, seguros paramétricos...',
     component: 'textarea-input',

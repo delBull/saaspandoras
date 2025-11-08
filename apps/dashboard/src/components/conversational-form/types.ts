@@ -1,7 +1,7 @@
 "use client";
 import { z } from 'zod';
 
-// Schema de validación completo basado en DB schema - Versión Utility
+// Schema de validación completo basado en DB schema - Versión Utility Optimizada
 export const projectSchema = z.object({
   // Campos requeridos - Identidad de la Creación (temporalmente opcionales para pruebas)
   title: z.string().min(3, "El nombre debe tener al menos 3 caracteres").max(256, "El nombre es demasiado largo").optional(),
@@ -43,61 +43,21 @@ export const projectSchema = z.object({
   telegramUrl: z.string().url("URL inválida").max(512).optional().or(z.literal("")),
   linkedinUrl: z.string().url("URL inválida").max(512).optional().or(z.literal("")),
 
+  // Utilidad y Economía de la Creación - NUEVAS CLAVES
+  protoclMecanism: z.string().min(10, "La descripción debe tener al menos 10 caracteres").optional(),
+  artefactUtility: z.string().min(10, "La descripción debe tener al menos 10 caracteres").optional(),
+  worktoearnMecanism: z.string().min(10, "La descripción debe tener al menos 10 caracteres").optional(),
+  integrationPlan: z.boolean().optional(),
+
   // Recursos y Artefactos
   targetAmount: z.union([z.number().min(1), z.string()]).optional(),
-  totalValuationUsd: z.number().min(0).optional(),
   tokenType: z.enum(['erc20', 'erc721', 'erc1155']).optional(),
   totalTokens: z.number().min(1, "Debe haber al menos 1 token").optional(),
   tokensOffered: z.number().min(1, "Debe ofrecer al menos 1 token").optional(),
   tokenPriceUsd: z.number().min(0.01, "El precio debe ser mayor a 0.01 USD").optional(),
-  estimatedApy: z.string().max(50).optional(),
-  yieldSource: z.enum(['protocol_revenue', 'staking_rewards', 'liquidity_mining', 'governance_rewards', 'utility_fees', 'revenue_sharing', 'other']).optional(),
 
   // Estructura de Recompensa Recurrente
-  stakingRewardsEnabled: z.boolean().optional(),
-  stakingRewardsDetails: z.string().optional(),
-  revenueSharingEnabled: z.boolean().optional(),
-  revenueSharingDetails: z.string().optional(),
-  workToEarnEnabled: z.boolean().optional(),
-  workToEarnDetails: z.string().optional(),
-  tieredAccessEnabled: z.boolean().optional(),
-  tieredAccessDetails: z.string().optional(),
-  discountedFeesEnabled: z.boolean().optional(),
-  discountedFeesDetails: z.string().optional(),
-
   recurringRewards: z.string().optional(),
-
-  fundUsage: z.string().optional(),
-  lockupPeriod: z.string().max(100).optional(),
-
-  // Equipo y Gobernanza
-  teamMembers: z.array(z.object({
-    name: z.string(),
-    position: z.string(),
-    linkedin: z.string().optional()
-  })).optional(),
-  advisors: z.array(z.object({
-    name: z.string(),
-    specialty: z.string()
-  })).optional(),
-  tokenDistribution: z.object({
-    communitySale: z.number().min(0).max(100),
-    teamFounders: z.number().min(0).max(100),
-    treasury: z.number().min(0).max(100),
-    marketing: z.number().min(0).max(100)
-  }).optional(),
-  treasuryAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/, "Dirección de tesorería inválida").optional().or(z.literal("")),
-
-  // Confianza y Transparencia
-  legalStatus: z.string().optional(),
-  fiduciaryEntity: z.string().max(256).optional(),
-  valuationDocumentUrl: z.string().optional(),
-  dueDiligenceReportUrl: z.string().url("URL inválida").optional().or(z.literal("")),
-
-  // Parámetros Técnicos
-  isMintable: z.boolean().optional(),
-  isMutable: z.boolean().optional(),
-  updateAuthorityAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/, "Dirección de autoridad inválida").optional().or(z.literal("")),
 
   // Información del Creador
   applicantName: z.string().min(2, "El nombre es requerido").max(256),
@@ -106,12 +66,11 @@ export const projectSchema = z.object({
   applicantPhone: z.string().max(50).optional(),
   applicantWalletAddress: z.string().optional(),
 
-  // Campos adicionales
-  integrationDetails: z.string().optional(),
-  legalEntityHelp: z.boolean().optional(),
-
-  // Verificación Final
-  verificationAgreement: z.string().optional(),
+  // Transparencia y Estructura (Legal y Técnica) - NUEVAS CLAVES
+  legalStatus: z.string().optional(),
+  monetizationModel: z.string().max(256).optional(),
+  adquireStrategy: z.string().min(10, "La descripción debe tener al menos 10 caracteres").optional(),
+  mitigationPlan: z.string().min(10, "La descripción debe tener al menos 10 caracteres").optional(),
 });
 
 // Tipos

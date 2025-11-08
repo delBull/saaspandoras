@@ -68,10 +68,6 @@ export default function FormContent({
         let onHelpClick;
         if (question.id === 'whitepaperUrl') {
           onHelpClick = modals.openMechanicModal;
-        } else if (question.id === 'fundUsage') {
-          onHelpClick = modals.openBenefitModal;
-        } else if (question.id === 'lockupPeriod') {
-          onHelpClick = modals.openUtilityModal;
         } else if (question.id === 'applicantName') {
           onHelpClick = modals.openWorkToEarnModal;
         }
@@ -81,8 +77,6 @@ export default function FormContent({
         let onHelpClick;
         if (question.id === 'tokenType') {
           onHelpClick = modals.openTokenTypeModal;
-        } else if (question.id === 'yieldSource') {
-          onHelpClick = modals.openMechanicModal;
         }
         return <SelectInput {...baseProps} options={question.options} info={question.info} onHelpClick={onHelpClick} />;
       }
@@ -133,7 +127,6 @@ export default function FormContent({
                   checked={acceptanceChecked}
                   onChange={(e) => {
                     onAcceptanceChange(e.target.checked);
-                    setValue('verificationAgreement', e.target.checked ? 'accepted' : '');
                   }}
                   className="mt-1 w-5 h-5 text-lime-400 bg-zinc-800 border-zinc-600 rounded focus:ring-lime-400 focus:ring-2"
                 />
