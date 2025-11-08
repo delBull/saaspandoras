@@ -377,7 +377,7 @@ export default function ProfileEditPage() {
                   className="w-4 h-4 text-lime-600 bg-gray-100 border-gray-300 rounded focus:ring-lime-500"
                 />
                 <label htmlFor="kycCompleted" className="text-sm font-medium text-white">
-                  KYC Básico completado - Estoy listo para invertir
+                  KYC Básico completado
                 </label>
               </div>
 
@@ -397,7 +397,7 @@ export default function ProfileEditPage() {
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
                     <span className="text-yellow-400 text-sm font-medium">
-                      ⚠️ Complete la información KYC para acceder a inversiones
+                      ⚠️ Complete la información KYC para acceder a creaciones de comunidades.
                     </span>
                   </div>
                 </div>
