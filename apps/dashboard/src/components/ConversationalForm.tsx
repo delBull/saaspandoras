@@ -177,32 +177,13 @@ export default function ConversationalForm() {
 
     setIsSubmitting(true);
 
-    const tokenDist = safeData.tokenDistribution ?? {};
-    // Asegurar distribución válida para clientes (permitir suma de 100%) - como en multi-step-form
+    // Distribución de tokens por defecto para proyectos de utilidad
     const finalDistribution = {
-      publicSale: (tokenDist as { publicSale?: number }).publicSale ?? 100,
-      team: (tokenDist as { team?: number }).team ?? 0,
-      treasury: (tokenDist as { treasury?: number }).treasury ?? 0,
-      marketing: (tokenDist as { marketing?: number }).marketing ?? 0,
+      publicSale: 100,
+      team: 0,
+      treasury: 0,
+      marketing: 0,
     };
-
-    // Verificar suma para clientes públicos - como en multi-step-form
-    const total = (finalDistribution.publicSale ?? 0) + (finalDistribution.team ?? 0) + (finalDistribution.treasury ?? 0) + (finalDistribution.marketing ?? 0);
-    if (total > 100) {
-      setResultModal({
-        isOpen: true,
-        type: 'error',
-        title: 'Error en Distribución de Tokens',
-        description: 'La distribución total de tokens no puede exceder el 100%. Revisa los porcentajes.',
-        content: null,
-      });
-      setIsSubmitting(false);
-      return;
-    }
-    if (total === 0) {
-      // Si suma es 0, establecer publicSale al 100% por defecto
-      finalDistribution.publicSale = 100;
-    }
 
     // Preparar datos con valores por defecto para campos opcionales que el servidor requiere
     const submitData = {
@@ -211,21 +192,9 @@ export default function ConversationalForm() {
       title: safeData.title ?? 'Proyecto sin título',
       description: safeData.description ?? 'Descripción pendiente',
       businessCategory: safeData.businessCategory ?? 'other',
-      estimatedApy: safeData.estimatedApy ? String(safeData.estimatedApy) : undefined, // Convertir a string como espera el servidor
-      teamMembers: JSON.stringify(safeData.teamMembers ?? []),
-      advisors: JSON.stringify(safeData.advisors ?? []),
       tokenDistribution: JSON.stringify(finalDistribution),
       status: "draft", // Los proyectos enviados desde el formulario conversacional empiezan como draft
       featured: false, // ✅ Featured debe ser manual, nunca automático
-      // Convertir booleanos a strings para evitar errores de validación
-      stakingRewardsEnabled: safeData.stakingRewardsEnabled ? "true" : "false",
-      revenueSharingEnabled: safeData.revenueSharingEnabled ? "true" : "false",
-      workToEarnEnabled: safeData.workToEarnEnabled ? "true" : "false",
-      tieredAccessEnabled: safeData.tieredAccessEnabled ? "true" : "false",
-      discountedFeesEnabled: safeData.discountedFeesEnabled ? "true" : "false",
-      isMintable: safeData.isMintable ? "true" : "false",
-      isMutable: safeData.isMutable ? "true" : "false",
-      legalEntityHelp: safeData.legalEntityHelp ? "true" : "false"
     };
 
     console.log('📤 Enviando datos a API:', submitData);
@@ -314,7 +283,7 @@ export default function ConversationalForm() {
 
   const handleAcceptanceChange = (checked: boolean) => {
     setAcceptanceChecked(checked);
-    setValue('verificationAgreement', checked ? 'accepted' : '');
+    // No necesitamos setValue aquí ya que no tenemos verificationAgreement en el schema
   };
 
   const handleOpenTermsModal = () => {
