@@ -3,7 +3,7 @@
 import { ChatBubbleLeftIcon, UserGroupIcon, QuestionMarkCircleIcon, BellIcon } from '@heroicons/react/24/outline';
 import { Globe, FileText, ExternalLink } from 'lucide-react';
 
-// Usar la misma interfaz que en el componente principal
+// Interfaz actualizada con las nuevas claves optimizadas
 interface ProjectData {
   id: number | string;
   title: string;
@@ -20,34 +20,33 @@ interface ProjectData {
   discord_url?: string | null;
   telegram_url?: string | null;
   linkedin_url?: string | null;
+
+  // Nuevas claves optimizadas
+  protoclMecanism?: string | null;
+  artefactUtility?: string | null;
+  worktoearnMecanism?: string | null;
+  integrationPlan?: boolean | null;
+
   target_amount?: string | number | null;
-  total_valuation_usd?: string | number | null;
   token_type?: string | null;
   total_tokens?: string | number | null;
   tokens_offered?: string | number | null;
   token_price_usd?: string | number | null;
-  estimated_apy?: string | null;
-  yield_source?: string | null;
-  lockup_period?: string | null;
-  fund_usage?: string | null;
-  team_members?: string | null;
-  advisors?: string | null;
-  token_distribution?: string | null;
-  contract_address?: string | null;
-  treasury_address?: string | null;
-  legal_status?: string | null;
-  valuation_document_url?: string | null;
-  fiduciary_entity?: string | null;
-  due_diligence_report_url?: string | null;
-  is_mintable?: boolean | null;
-  is_mutable?: boolean | null;
-  update_authority_address?: string | null;
+
+  recurringRewards?: string | null;
+
   applicant_name?: string | null;
   applicant_position?: string | null;
   applicant_email?: string | null;
   applicant_phone?: string | null;
   applicant_wallet_address?: string | null;
-  verification_agreement?: boolean | null;
+
+  legal_status?: string | null;
+  monetizationModel?: string | null;
+  adquireStrategy?: string | null;
+  mitigationPlan?: string | null;
+
+  contract_address?: string | null;
   image_url?: string | null;
   socials?: string | null;
   raised_amount?: string | number | null;
@@ -87,6 +86,98 @@ export function ProjectContent({ activeTab, project }: ProjectContentProps) {
                       Esta información aparecerá aquí cuando esté disponible.
                     </p>
                   </div>
+                </div>
+              )}
+
+              {/* Protocol Mechanism - Nueva información */}
+              {project?.protoclMecanism && (
+                <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6 mb-6">
+                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-purple-400" />
+                    Mecánica del Protocolo
+                  </h3>
+                  <p className="text-gray-300 leading-relaxed">
+                    {project.protoclMecanism}
+                  </p>
+                </div>
+              )}
+
+              {/* Artefact Utility - Nueva información */}
+              {project?.artefactUtility && (
+                <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6 mb-6">
+                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-cyan-400" />
+                    Utilidad a Largo Plazo de los Artefactos
+                  </h3>
+                  <p className="text-gray-300 leading-relaxed">
+                    {project.artefactUtility}
+                  </p>
+                </div>
+              )}
+
+              {/* Work-to-Earn Mechanism - Nueva información */}
+              {project?.worktoearnMecanism && (
+                <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6 mb-6">
+                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-orange-400" />
+                    Sistema Work-to-Earn
+                  </h3>
+                  <p className="text-gray-300 leading-relaxed">
+                    {project.worktoearnMecanism}
+                  </p>
+                </div>
+              )}
+
+              {/* Integration Plan - Nueva información */}
+              {project?.integrationPlan && (
+                <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6 mb-6">
+                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-pink-400" />
+                    Plan de Integraciones
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                    <span className="text-green-400 text-sm font-medium">Planea integraciones con otras plataformas</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Monetization Model - Nueva información */}
+              {project?.monetizationModel && (
+                <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6 mb-6">
+                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-yellow-400" />
+                    Modelo de Monetización
+                  </h3>
+                  <p className="text-gray-300 leading-relaxed">
+                    {project.monetizationModel}
+                  </p>
+                </div>
+              )}
+
+              {/* Acquisition Strategy - Nueva información */}
+              {project?.adquireStrategy && (
+                <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6 mb-6">
+                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-indigo-400" />
+                    Estrategia de Adquisición Inicial
+                  </h3>
+                  <p className="text-gray-300 leading-relaxed">
+                    {project.adquireStrategy}
+                  </p>
+                </div>
+              )}
+
+              {/* Mitigation Plan - Nueva información */}
+              {project?.mitigationPlan && (
+                <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6 mb-6">
+                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-red-400" />
+                    Plan de Mitigación de Riesgos
+                  </h3>
+                  <p className="text-gray-300 leading-relaxed">
+                    {project.mitigationPlan}
+                  </p>
                 </div>
               )}
 
