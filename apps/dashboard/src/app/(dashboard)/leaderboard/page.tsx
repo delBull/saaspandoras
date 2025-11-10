@@ -15,7 +15,102 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { AnimatedBackground } from "@/components/apply/AnimatedBackground";
+
+// Component for user avatars using real profile images when available
+function UserAvatar({ userId, size = 12 }: { userId: string; size?: number }) {
+  const [userProfile, setUserProfile] = useState<{ image?: string; name?: string } | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!userId) return;
+
+      try {
+        setLoading(true);
+        // Fetch minimal user profile data for avatar
+        const response = await fetch('/api/profile', {
+          headers: {
+            'x-wallet-address': userId,
+          },
+        });
+
+        if (response.ok) {
+          const profile = await response.json();
+          setUserProfile({
+            image: profile.image,
+            name: profile.name
+          });
+        }
+      } catch (error) {
+        console.warn('Failed to fetch user profile for avatar:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void fetchUserProfile();
+  }, [userId]);
+
+  // Generate a consistent color based on wallet address for fallback
+  const getColorFromWallet = (address: string) => {
+    const colors = [
+      'from-yellow-400 to-orange-500',
+      'from-blue-400 to-purple-500',
+      'from-green-400 to-emerald-500',
+      'from-pink-400 to-rose-500',
+      'from-indigo-400 to-blue-500',
+      'from-red-400 to-pink-500',
+      'from-purple-400 to-indigo-500',
+      'from-cyan-400 to-blue-500'
+    ];
+    const hash = address.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+    return colors[hash % colors.length];
+  };
+
+  const displayText = userId ? `${userId.slice(0, 4)}...${userId.slice(-2)}` : '??';
+
+  // Show real profile image if available
+  if (userProfile?.image && !loading) {
+    return (
+      <div className={`w-${size} h-${size} rounded-lg border-2 border-white/20 overflow-hidden`}>
+        <Image
+          src={userProfile.image}
+          alt={userProfile.name || 'User avatar'}
+          width={size * 4} // Convert Tailwind size to pixels
+          height={size * 4}
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            // Fallback to generated avatar on image load error
+            const target = e.target as HTMLElement;
+            target.style.display = 'none';
+            const parent = target.parentElement;
+            if (parent) {
+              parent.innerHTML = `<div class="w-full h-full rounded-lg bg-gradient-to-br ${getColorFromWallet(userId)} flex items-center justify-center font-mono text-white font-bold text-xs">${displayText}</div>`;
+            }
+          }}
+        />
+      </div>
+    );
+  }
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className={`w-${size} h-${size} rounded-lg border-2 border-white/20 bg-gray-700 animate-pulse flex items-center justify-center`}>
+        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+      </div>
+    );
+  }
+
+  // Fallback to generated avatar
+  return (
+    <div className={`w-${size} h-${size} rounded-lg border-2 border-white/20 bg-gradient-to-br ${getColorFromWallet(userId)} flex items-center justify-center font-mono text-white font-bold text-xs overflow-hidden`}>
+      {displayText}
+    </div>
+  );
+}
 
 // Interface for API response direct from service
 interface LeaderboardApiResponse {
@@ -83,11 +178,15 @@ export default function LeaderboardPage() {
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardUser[]>([]);
 
   useEffect(() => {
+    console.log('🏆 LEADERBOARD: useEffect triggered, loading data...');
+
     const loadLeaderboard = async () => {
       try {
-        // Use the main gamification API to get leaderboard data
-        // We'll use a dummy wallet address since we just need the leaderboard
-        const response = await fetch('/api/gamification/user/data/0x0000000000000000000000000000000000000000');
+        console.log('🏆 LEADERBOARD: Making API call to /api/gamification/leaderboard/points');
+        // Use the correct leaderboard API
+        const response = await fetch('/api/gamification/leaderboard/points?limit=20');
+        console.log('🏆 LEADERBOARD: API response status:', response.status);
+
         if (response.ok) {
           const result = await response.json();
           const data = result.leaderboard ?? [];
@@ -95,21 +194,27 @@ export default function LeaderboardPage() {
           console.log('🔍 DEBUG - Leaderboard data array:', data);
           console.log('🔍 DEBUG - First user data:', data[0]);
 
-          const transformedData = data.map((user: any, index: number): LeaderboardUser => ({
-            rank: user.rank ?? index + 1,
-            userId: user.userId ?? user.user_id ?? `user_${index}`,
-            displayName: user.walletAddress ? `${user.walletAddress.slice(0, 6)}...${user.walletAddress.slice(-4)}` : 'Usuario',
-            name: user.walletAddress ? `${user.walletAddress.slice(0, 6)}...${user.walletAddress.slice(-4)}` : 'Usuario',
-            totalPoints: user.points ?? user.totalPoints ?? user.total_points ?? 0,
-            currentLevel: user.currentLevel ?? user.level ?? 1,
-            achievementsUnlocked: user.achievementsUnlocked ?? 0,
-            level: user.currentLevel ?? user.level ?? 1,
-            badge: 'Rising',
-            streak: user.currentStreak ?? 0,
-            recentActivity: 'Hoy',
-            trending: 'stable'
-          }));
+          // Simple transformation without achievements fetching
+          const transformedData = data.map((user: any, index: number): LeaderboardUser => {
+            const walletAddress = user.walletAddress ?? user.userId ?? user.user_id ?? `user_${index}`;
 
+            return {
+              rank: user.rank ?? index + 1,
+              userId: walletAddress,
+              displayName: user.walletAddress ? `${user.walletAddress.slice(0, 6)}...${user.walletAddress.slice(-4)}` : 'Usuario',
+              name: user.walletAddress ? `${user.walletAddress.slice(0, 6)}...${user.walletAddress.slice(-4)}` : 'Usuario',
+              totalPoints: user.points ?? user.totalPoints ?? user.total_points ?? 0,
+              currentLevel: user.currentLevel ?? user.level ?? 1,
+              achievementsUnlocked: 0, // Simplified
+              level: user.currentLevel ?? user.level ?? 1,
+              badge: 'Rising',
+              streak: user.currentStreak ?? 0,
+              recentActivity: 'Hoy',
+              trending: 'stable'
+            };
+          });
+
+          console.log('🏆 LEADERBOARD: Setting leaderboard data:', transformedData.length, 'users');
           setLeaderboardData(transformedData);
           console.log('✅ Loaded leaderboard data:', data.length, 'users');
         } else {
@@ -118,6 +223,7 @@ export default function LeaderboardPage() {
         }
       } catch (error) {
         console.error('❌ Error loading leaderboard:', error);
+        // Set empty array to trigger error state in UI
         setLeaderboardData([]);
       }
     };
@@ -137,9 +243,7 @@ export default function LeaderboardPage() {
   const topThree = sortedData.slice(0, 3);
 
   const sortOptions = [
-    { key: 'points' as const, label: 'Por Tokens', icon: Zap },
-    { key: 'achievements' as const, label: 'Por Logros', icon: Award },
-    { key: 'level' as const, label: 'Por Nivel', icon: Target }
+    { key: 'points' as const, label: 'Por Tokens', icon: Zap }
   ];
 
   return (
@@ -155,7 +259,7 @@ export default function LeaderboardPage() {
           className="mb-12"
         >
           <div className="flex items-center gap-4 mb-6">
-            <Link href="/dashboard">
+            <Link href="/profile/dashboard">
               <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Volver al dashboard
@@ -212,8 +316,8 @@ export default function LeaderboardPage() {
                   🥈 2do Lugar
                 </div>
 
-                <div className="w-20 h-20 mx-auto mb-4 border-4 border-yellow-500 shadow-lg bg-gray-700 rounded-full flex items-center justify-center font-bold text-xl text-white">
-                  {topThree[1]?.name.charAt(0).toUpperCase() ?? '?'}
+                <div className="flex justify-center mb-4">
+                  <UserAvatar userId={topThree[1]?.userId || ''} size={20} />
                 </div>
 
                 <h3 className="text-xl font-bold text-white mb-2">{topThree[1]?.name ?? 'Usuario'}</h3>
@@ -221,9 +325,7 @@ export default function LeaderboardPage() {
                   <Zap className="w-4 h-4 text-yellow-400" />
                   <span className="text-yellow-400 font-semibold">{(topThree[1]?.totalPoints ?? 0).toLocaleString()} tokens</span>
                 </div>
-                <div className="text-sm text-gray-400">
-                  Nivel {topThree[1]?.level ?? 1} • {topThree[1]?.achievementsUnlocked ?? 0} logros
-                </div>
+                {/* Removed level and achievements text */}
               </CardContent>
             </Card>
           </motion.div>
@@ -243,8 +345,8 @@ export default function LeaderboardPage() {
                   🥇 1er Lugar
                 </div>
 
-                <div className="w-24 h-24 mx-auto mb-4 border-4 border-yellow-400 shadow-lg bg-gray-700 rounded-full flex items-center justify-center font-bold text-2xl text-white">
-                  {topThree[0]?.name.charAt(0).toUpperCase() ?? '?'}
+                <div className="flex justify-center mb-4">
+                  <UserAvatar userId={topThree[0]?.userId || ''} size={24} />
                 </div>
 
                 <h3 className="text-2xl font-bold text-white mb-2">{topThree[0]?.name ?? 'Usuario'}</h3>
@@ -252,9 +354,7 @@ export default function LeaderboardPage() {
                   <Zap className="w-5 h-5 text-yellow-400" />
                   <span className="text-yellow-400 font-bold text-lg">{(topThree[0]?.totalPoints ?? 0).toLocaleString()} tokens</span>
                 </div>
-                <div className="text-sm text-gray-400">
-                  Nivel {topThree[0]?.level ?? 1} • {topThree[0]?.achievementsUnlocked ?? 0} logros
-                </div>
+                {/* Removed level and achievements text */}
               </CardContent>
             </Card>
           </motion.div>
@@ -273,8 +373,8 @@ export default function LeaderboardPage() {
                   🥉 3er Lugar
                 </div>
 
-                <div className="w-20 h-20 mx-auto mb-4 border-4 border-amber-500 shadow-lg bg-gray-700 rounded-full flex items-center justify-center font-bold text-xl text-white">
-                  {topThree[2]?.name.charAt(0).toUpperCase() ?? '?'}
+                <div className="flex justify-center mb-4">
+                  <UserAvatar userId={topThree[2]?.userId || ''} size={20} />
                 </div>
 
                 <h3 className="text-xl font-bold text-white mb-2">{topThree[2]?.name ?? 'Usuario'}</h3>
@@ -282,9 +382,7 @@ export default function LeaderboardPage() {
                   <Zap className="w-4 h-4 text-amber-400" />
                   <span className="text-amber-400 font-semibold">{(topThree[2]?.totalPoints ?? 0).toLocaleString()} tokens</span>
                 </div>
-                <div className="text-sm text-gray-400">
-                  Nivel {topThree[2]?.level ?? 1} • {topThree[2]?.achievementsUnlocked ?? 0} logros
-                </div>
+                {/* Removed level and achievements text */}
               </CardContent>
             </Card>
           </motion.div>
@@ -326,13 +424,7 @@ export default function LeaderboardPage() {
                 Ranking Completo
               </CardTitle>
               <CardDescription className="text-zinc-400">
-                Los mejores usuarios de la plataforma ordenados por {
-                  sortBy === 'points' ?
-                    'tokens' :
-                    sortBy === 'achievements' ?
-                      'logros' :
-                      'nivel'
-                }
+                Los mejores usuarios de la plataforma ordenados por tokens
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -379,9 +471,7 @@ export default function LeaderboardPage() {
 
                     {/* Avatar */}
                     <div className="flex-shrink-0">
-                      <div className="w-12 h-12 rounded-full border-2 border-gray-600 bg-gray-700 flex items-center justify-center font-bold text-white">
-                        {user.displayName.charAt(0).toUpperCase()}
-                      </div>
+                      <UserAvatar userId={user.userId} size={12} />
                     </div>
 
                     {/* User Info */}
@@ -392,24 +482,7 @@ export default function LeaderboardPage() {
                           {user.badge}
                         </span>
                       </div>
-                      {/* Desktop: Mostrar toda la info en una línea */}
-                      <div className="hidden md:flex items-center gap-4 text-sm text-gray-400">
-                        <span>Nivel {user.level}</span>
-                        <span>{user.achievementsUnlocked} logros</span>
-                        <span>Streak: {user.streak} días</span>
-                        <span>Activo {user.recentActivity}</span>
-                      </div>
-                      {/* Mobile: Info compacta en dos líneas */}
-                      <div className="md:hidden space-y-1">
-                        <div className="flex items-center gap-3 text-xs text-gray-400">
-                          <span>Nv. {user.level}</span>
-                          <span>{user.achievementsUnlocked} logros</span>
-                        </div>
-                        <div className="flex items-center gap-3 text-xs text-gray-400">
-                          <span>🔥 {user.streak}d</span>
-                          <span>{user.recentActivity}</span>
-                        </div>
-                      </div>
+                      {/* Removed level and achievements info */}
                     </div>
 
                     {/* Points */}

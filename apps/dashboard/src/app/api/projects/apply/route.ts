@@ -8,6 +8,7 @@ import { projectApiSchema } from "@/lib/project-schema-api";
 import { getAuth } from "@/lib/auth";
 import { headers } from "next/headers";
 import slugify from "slugify";
+import { trackGamificationEvent } from "@/lib/gamification/service";
 
 export async function POST(request: Request) {
   try {
@@ -105,6 +106,26 @@ export async function POST(request: Request) {
         status: "pending",
       })
       .returning();
+
+    // 🎯 TRACK GAMIFICATION EVENT: Project application submitted
+    if (applicantWalletAddress && newProject) {
+      try {
+        await trackGamificationEvent(
+          applicantWalletAddress,
+          'project_application_submitted',
+          {
+            projectId: newProject.id.toString(),
+            projectTitle: newProject.title,
+            projectSlug: newProject.slug,
+            submittedAt: new Date().toISOString()
+          }
+        );
+        console.log(`🎯 Gamification event tracked: project_application_submitted for ${applicantWalletAddress}`);
+      } catch (gamificationError) {
+        console.warn('⚠️ Failed to track gamification event:', gamificationError);
+        // Don't fail the project creation if gamification tracking fails
+      }
+    }
 
     return NextResponse.json(newProject, { status: 201 });
   } catch (error) {

@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 import type {
   UserGamificationProfile,
   UserAchievement,
@@ -216,11 +216,11 @@ export async function GET(
       }
     }
 
-    // 3. Get user achievements
+    // 3. Get ALL available achievements with user progress (LEFT JOIN to include all achievements)
     const achievementsResult = await db
       .select({
         userAchievementId: userAchievements.id,
-        achievementId: userAchievements.achievementId,
+        achievementId: achievements.id,
         progress: userAchievements.progress,
         isUnlocked: userAchievements.isUnlocked,
         unlockedAt: userAchievements.unlockedAt,
@@ -230,17 +230,20 @@ export async function GET(
         type: achievements.type,
         pointsReward: achievements.pointsReward
       })
-      .from(userAchievements)
-      .innerJoin(achievements, eq(userAchievements.achievementId, achievements.id))
-      .where(eq(userAchievements.userId, userId));
+      .from(achievements)
+      .leftJoin(userAchievements, and(
+        eq(achievements.id, userAchievements.achievementId),
+        eq(userAchievements.userId, userId)
+      ))
+      .orderBy(achievements.id); // Consistent ordering
 
     const achievementsData: UserAchievement[] = achievementsResult.map((item) => ({
       id: item.achievementId.toString(),
       userId: walletAddress,
       achievementId: item.achievementId.toString(),
       progress: item.progress || 0,
-      isCompleted: item.isUnlocked || false,
-      isUnlocked: item.isUnlocked || false,
+      isCompleted: Boolean(item.isUnlocked), // Convert to boolean - null becomes false
+      isUnlocked: Boolean(item.isUnlocked), // Convert to boolean - null becomes false
       completedAt: item.unlockedAt || undefined,
       name: item.name,
       description: item.description,
