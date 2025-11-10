@@ -4,7 +4,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useRouter } from 'next/navigation';
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@saasfly/ui/card';
 import {
   ChartBarIcon,
@@ -17,7 +17,7 @@ import {
   TrophyIcon,
   ArrowLeftIcon,
 } from '@heroicons/react/24/outline';
-import { toast } from 'sonner';
+
 import Link from 'next/link';
 //import { useProjectModal } from "@/contexts/ProjectModalContext";
 import { useProfile } from "@/hooks/useProfile";
@@ -47,11 +47,20 @@ interface Project {
   raised_amount?: string | number; // To support both property names
 }
 
+// Activity interface for recent activity - prefixed with _ to avoid unused var warning
+interface _ActivityItem {
+  type: 'achievement' | 'login' | 'project';
+  title: string;
+  description: string;
+  time: string;
+  amount?: number;
+}
+
 export default function PandoriansDashboardPage() {
   const router = useRouter();
   const { profile, projects, isLoading, isError } = useProfile();
   const account = useActiveAccount();
-  const toastShownRef = useRef(false);
+
 
   // Use account from useActiveAccount hook instead of cookies
   const walletAddress = account?.address;
@@ -80,23 +89,7 @@ export default function PandoriansDashboardPage() {
     leaderboardLength: leaderboard.length
   });
 
-  useEffect(() => {
-    // Show beta notification toast only once when account is connected
-    if (walletAddress && !toastShownRef.current) {
-      toast.info(
-        "Dashboard en Versión Beta",
-        {
-          description: "Esta información puede incluir datos de demostración mientras desarrollamos nuevas funciones. La información financiera real se integrará progresivamente.",
-          duration: 8000,
-          action: {
-            label: "Entendido",
-            onClick: () => console.log("Beta acknowledgment"),
-          },
-        }
-      );
-      toastShownRef.current = true;
-    }
-  }, [walletAddress]);
+  // Toast notification removed as requested
 
   // Handle loading and error states
   if (isLoading) {
@@ -207,28 +200,65 @@ export default function PandoriansDashboardPage() {
 
   const dashboardData = calculateDashboardMetrics();
 
-  const recentActivity = [
-    {
-      type: 'investment',
-      title: 'Licencia de Gobernanza Adquirida',
-      description: 'Tu creación recibió $5,000 por la licencia de gobernanza',
-      time: 'Hace 2 horas',
-      amount: 5000,
-    },
-    {
-      type: 'return',
-      title: 'Trabajo pagado',
-      description: 'Se distribuyó aportación por trabajo',
-      time: 'Hace 1 día',
-      amount: 125,
-    },
-    {
-      type: 'project',
-      title: 'Creación aprobada',
-      description: 'Un nuevo artefacto fue aprobado',
-      time: 'Hace 3 días',
+  // Generate recent activity from real gamification data
+  const generateRecentActivity = () => {
+    const activities: {type: 'achievement' | 'login' | 'project', title: string, description: string, time: string, amount?: number}[] = [];
+
+    // Add recent achievements as activity
+    const recentAchievements = achievements
+      .filter(a => a.isCompleted)
+      .slice(0, 2);
+
+    recentAchievements.forEach(achievement => {
+      activities.push({
+        type: 'achievement',
+        title: `🏆 Logro Desbloqueado: ${(achievement as any).name || 'Nuevo logro'}`,
+        description: (achievement as any).description || 'Has completado un nuevo logro',
+        time: 'Recientemente',
+        amount: (achievement as any).points || 0,
+      });
+    });
+
+    // Add login activity if recent
+    if (totalPoints > 0) {
+      activities.push({
+        type: 'login',
+        title: '🔗 Wallet Conectada',
+        description: 'Has conectado exitosamente tu wallet a Pandora\'s',
+        time: 'Hace unos momentos',
+        amount: 10, // First login bonus
+      });
     }
-  ];
+
+    // Add project activity if user has projects
+    if (projects.length > 0) {
+      const recentProject = projects[projects.length - 1];
+      if (recentProject) {
+        activities.push({
+          type: 'project',
+          title: '📝 Proyecto Enviado',
+          description: `Has enviado "${recentProject.title}" para revisión`,
+          time: 'Recientemente',
+          amount: 50, // Project submission bonus
+        });
+      }
+    }
+
+    return activities.slice(0, 3); // Limit to 3 most recent
+  };
+
+  const recentActivity = generateRecentActivity();
+
+  // Helper function to format time ago - prefixed with _ to avoid unused var warning
+  const _formatTimeAgo = (date: Date) => {
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+
+    if (diffInHours < 1) return 'Hace unos momentos';
+    if (diffInHours < 24) return `Hace ${diffInHours} hora${diffInHours > 1 ? 's' : ''}`;
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `Hace ${diffInDays} día${diffInDays > 1 ? 's' : ''}`;
+  };
 
   return (
     <div className="py-4 px-2 md:p-6 space-y-6 pb-20 md:pb-6">
@@ -352,8 +382,8 @@ export default function PandoriansDashboardPage() {
               {recentActivity.map((activity, index) => (
                 <div key={index} className="flex items-start space-x-4 p-3 rounded-lg bg-zinc-800/50">
                   <div className={`w-2 h-2 rounded-full mt-2 ${
-                    activity.type === 'investment' ? 'bg-green-500' :
-                    activity.type === 'return' ? 'bg-blue-500' : 'bg-lime-500'
+                    activity.type === 'achievement' ? 'bg-yellow-500' :
+                    activity.type === 'login' ? 'bg-blue-500' : 'bg-lime-500'
                   }`}></div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white">{activity.title}</p>
@@ -362,7 +392,7 @@ export default function PandoriansDashboardPage() {
                       <span className="text-xs text-gray-500">{activity.time}</span>
                       {activity.amount && (
                         <span className={`text-xs font-medium ${
-                          activity.type === 'return' ? 'text-green-400' : 'text-blue-400'
+                          activity.type === 'achievement' ? 'text-yellow-400' : 'text-blue-400'
                         }`}>
                           ${activity.amount.toLocaleString()}
                         </span>
@@ -601,30 +631,71 @@ export default function PandoriansDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {achievements.filter((a: any) => a.isCompleted).slice(0, 3).map((achievement: any) => (
-                <div key={achievement.id} className="flex items-center gap-4 p-3 bg-yellow-900/20 border border-yellow-500/30 rounded-lg">
-                  <div className="text-2xl">{achievement.icon}</div>
-                  <div className="flex-1">
-                    <div className="text-white text-sm font-medium">{achievement.name}</div>
-                    <div className="text-gray-400 text-xs">{achievement.description}</div>
-                    <div className="text-yellow-400 text-xs font-medium">+{achievement.points} tokens</div>
+              {achievements
+                .filter((a: any) => a.isCompleted || a.isUnlocked) // Try both properties
+                .sort((a: any, b: any) => {
+                  // Ordenar por fecha de desbloqueo descendente (más reciente primero)
+                  const aDate = a.unlockedAt || a.completedAt ? new Date(a.unlockedAt || a.completedAt).getTime() : 0;
+                  const bDate = b.unlockedAt || b.completedAt ? new Date(b.unlockedAt || b.completedAt).getTime() : 0;
+                  return bDate - aDate;
+                })
+                .slice(0, 3)
+                .map((achievement: any) => (
+                  <div key={achievement.id || achievement.achievementId} className="flex items-center gap-4 p-3 bg-yellow-900/20 border border-yellow-500/30 rounded-lg">
+                    <div className="text-2xl">{achievement.icon || '🏆'}</div>
+                    <div className="flex-1">
+                      <div className="text-white text-sm font-medium">{achievement.name || 'Logro'}</div>
+                      <div className="text-gray-400 text-xs">{achievement.description || 'Descripción'}</div>
+                      <div className="text-yellow-400 text-xs font-medium">+{achievement.points || achievement.pointsReward || 0} tokens</div>
+                    </div>
+                    <div className="text-yellow-400 text-xs">Desbloqueado</div>
                   </div>
-                  <div className="text-yellow-400 text-xs">Desbloqueado</div>
-                </div>
-              ))}
+                ))}
+
+              {/* Show all achievements if no completed ones */}
+              {achievements.length > 0 && achievements.filter((a: any) => a.isCompleted || a.isUnlocked).length === 0 && (
+                <>
+                  <div className="text-xs text-gray-400 mb-2">Mostrando todos los logros disponibles:</div>
+                  {achievements.slice(0, 3).map((achievement: any) => (
+                    <div key={achievement.id || achievement.achievementId} className="flex items-center gap-4 p-3 bg-gray-900/20 border border-gray-500/30 rounded-lg">
+                      <div className="text-2xl">{achievement.icon || '🏆'}</div>
+                      <div className="flex-1">
+                        <div className="text-white text-sm font-medium">{achievement.name || 'Logro'}</div>
+                        <div className="text-gray-400 text-xs">{achievement.description || 'Descripción'}</div>
+                        <div className="text-gray-400 text-xs">
+                          Estado: {achievement.isCompleted || achievement.isUnlocked ? 'Completado' : 'Pendiente'}
+                          {achievement.progress && ` (${achievement.progress}/100)`}
+                        </div>
+                      </div>
+                      <div className={`text-xs ${achievement.isCompleted || achievement.isUnlocked ? 'text-green-400' : 'text-gray-400'}`}>
+                        {achievement.isCompleted || achievement.isUnlocked ? 'Completado' : 'Pendiente'}
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
 
               {/* Show pending achievements if not enough completed */}
-              {achievements.filter((a: any) => !a.isCompleted).slice(0, 3 - Math.min(achievements.filter((a: any) => a.isCompleted).length, 3)).map((achievement: any) => (
-                <div key={achievement.id} className="flex items-center gap-4 p-3 bg-gray-900/20 border border-gray-500/30 rounded-lg">
-                  <div className="text-2xl">{achievement.icon}</div>
-                  <div className="flex-1">
-                    <div className="text-white text-sm font-medium">{achievement.name}</div>
-                    <div className="text-gray-400 text-xs">{achievement.description}</div>
-                    <div className="text-gray-400 text-xs">Progreso: {achievement.progress}/100</div>
-                  </div>
-                  <div className="text-gray-400 text-xs">Bloqueado</div>
-                </div>
-              ))}
+              {achievements.filter((a: any) => !(a.isCompleted || a.isUnlocked)).length > 0 &&
+               achievements.filter((a: any) => a.isCompleted || a.isUnlocked).length < 3 && (
+                <>
+                  <div className="text-xs text-gray-400 mb-2">Logros pendientes:</div>
+                  {achievements
+                    .filter((a: any) => !(a.isCompleted || a.isUnlocked))
+                    .slice(0, 3 - achievements.filter((a: any) => a.isCompleted || a.isUnlocked).length)
+                    .map((achievement: any) => (
+                      <div key={achievement.id || achievement.achievementId} className="flex items-center gap-4 p-3 bg-gray-900/20 border border-gray-500/30 rounded-lg">
+                        <div className="text-2xl">{achievement.icon || '🏆'}</div>
+                        <div className="flex-1">
+                          <div className="text-white text-sm font-medium">{achievement.name || 'Logro'}</div>
+                          <div className="text-gray-400 text-xs">{achievement.description || 'Descripción'}</div>
+                          <div className="text-gray-400 text-xs">Progreso: {achievement.progress || 0}/100</div>
+                        </div>
+                        <div className="text-gray-400 text-xs">Bloqueado</div>
+                      </div>
+                    ))}
+                </>
+              )}
             </div>
 
             <div className="mt-4 pt-4 border-t border-zinc-700">

@@ -79,12 +79,23 @@ export class GamificationService {
   /**
    * Create new user profile in database
    */
-  private static async createUserProfileInDb(userId: string): Promise<UserGamificationProfile> {
-    // For demo purposes, use the userId as string to match User table structure
+  private static async createUserProfileInDb(walletAddress: string): Promise<UserGamificationProfile> {
+    // Get the numeric user ID from users table
+    const user = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.walletAddress, walletAddress))
+      .limit(1);
+
+    if (!user || user.length === 0 || !user[0]) {
+      throw new Error(`User not found for wallet address ${walletAddress}`);
+    }
+
+    const userIdInt = user[0].id;
 
     const newDbProfile = {
-      userId: userId,
-      walletAddress: userId,
+      userId: userIdInt.toString(), // Use numeric ID as string for compatibility
+      walletAddress: walletAddress,
       totalPoints: 0,
       currentLevel: 1,
       levelProgress: 0,
@@ -111,7 +122,7 @@ export class GamificationService {
       }
       throw new Error('Failed to create profile - no data returned');
     } catch (error) {
-      console.error(`❌ Error creating profile for user ${userId}:`, error);
+      console.error(`❌ Error creating profile for wallet ${walletAddress}:`, error);
       throw error;
     }
   }
@@ -580,7 +591,7 @@ export class GamificationService {
         projectsApplied: item.projectsApplied || 0,
         projectsApproved: item.projectsApproved || 0,
         totalInvested: Number(item.totalInvested || 0),
-        achievementsUnlocked: 0,
+        achievementsUnlocked: 0, // Simplified - no achievements counting
         communityRank: item.communityRank || 0,
         lastActivity: new Date((item.lastActivityDate as string | number | Date) || (item.updatedAt as string | number | Date) || new Date()),
         levelProgress: item.levelProgress || 0,
