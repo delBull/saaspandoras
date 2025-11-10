@@ -36,13 +36,7 @@ export default function EducationPage() {
     void fetchCourses();
   }, []);
 
-  // Mostrar toast de datos de prueba al cargar la página
-  useEffect(() => {
-    toast.info("📚 Esta sección muestra cursos de ejemplo. Estamos trabajando en el contenido educativo completo.", {
-      duration: 6000,
-      description: "Próximamente tendrás acceso a cursos interactivos reales con quizzes y modulos."
-    });
-  }, []);
+  // Toast notification removed as requested
 
   const fetchCourses = async () => {
     try {
