@@ -85,45 +85,65 @@ export default function AchievementsPage() {
   const account = useActiveAccount();
   const gamification = useRealGamification(account?.address ?? '');
 
-  // Load all available achievements from main gamification API
+  // Force refresh on mount to ensure fresh data
   useEffect(() => {
-    const loadAllAchievements = async () => {
-      try {
-        console.log('🚀 Fetching user achievements from main API...');
-        // Use the main gamification API that includes user achievement status
-        const achievementsResponse = await fetch(`/api/gamification/user/achievements/full/${account?.address ?? ''}`);
-        console.log('📡 API Response Status:', achievementsResponse.status);
-
-        const achievementsData = await achievementsResponse.json();
-        console.log('📦 API Response Data:', achievementsData);
-
-        if (achievementsResponse.ok && achievementsData.achievements && Array.isArray(achievementsData.achievements)) {
-          console.log('✅ Setting achievements with user status:', achievementsData.achievements.length, 'items');
-          console.log('📊 Completion stats:', {
-            total: achievementsData.achievements.length,
-            unlocked: achievementsData.achievements.filter((a: any) => a.isUnlocked).length,
-            locked: achievementsData.achievements.filter((a: any) => !a.isUnlocked).length
-          });
-          setAllAvailableAchievements(achievementsData.achievements);
-        } else {
-          console.log('❌ API Response not valid, using fallback');
-          console.log('achievementsResponse.ok:', achievementsResponse.ok);
-          console.log('achievementsData.achievements exists:', !!achievementsData.achievements);
-          console.log('isArray:', Array.isArray(achievementsData.achievements));
-          setAllAvailableAchievements([]);
-        }
-      } catch (error) {
-        console.error('Failed to load achievements:', error);
-        setAllAvailableAchievements([]);
-      } finally {
-        setLoadingAchievements(false);
-      }
-    };
-
     if (account?.address) {
-      void loadAllAchievements();
+      console.log('🔄 Forcing refresh of gamification data...');
+      void gamification.refreshData();
     }
-  }, [account?.address]);
+  }, [account?.address, gamification.refreshData]);
+
+  // Use the gamification hook data directly - no need for separate API call
+  useEffect(() => {
+    if (gamification.achievements && gamification.achievements.length > 0) {
+      console.log('🎯 Using achievements from gamification hook:', gamification.achievements.length, 'items');
+
+      // Debug: Log first few achievements with their completion status
+      console.log('🔍 First 3 achievements from hook:', gamification.achievements.slice(0, 3).map((a: any) => ({
+        name: a.name,
+        isCompleted: a.isCompleted,
+        isUnlocked: a.isUnlocked,
+        progress: a.progress
+      })));
+
+      console.log('📊 Completion stats:', {
+        total: gamification.achievements.length,
+        unlocked: gamification.achievements.filter((a: any) => a.isCompleted).length,
+        locked: gamification.achievements.filter((a: any) => !a.isCompleted).length
+      });
+
+      // Transform hook data to match expected format
+      const transformedAchievements = gamification.achievements.map((achievement: any) => {
+        const isUnlocked = Boolean(achievement.isCompleted || achievement.isUnlocked);
+        console.log(`🔄 Transforming ${achievement.name}: isCompleted=${achievement.isCompleted}, isUnlocked=${achievement.isUnlocked} → final isUnlocked=${isUnlocked}`);
+
+        return {
+          id: achievement.achievementId || achievement.id,
+          name: achievement.name,
+          description: achievement.description,
+          icon: achievement.icon,
+          type: achievement.category || achievement.type,
+          pointsReward: achievement.points,
+          isUnlocked: isUnlocked,
+          progress: achievement.progress || 0,
+          required: achievement.required || 100,
+          category: achievement.category || 'general'
+        };
+      });
+
+      console.log('✅ Final transformed achievements:', transformedAchievements.slice(0, 3).map(a => ({
+        name: a.name,
+        isUnlocked: a.isUnlocked
+      })));
+
+      setAllAvailableAchievements(transformedAchievements);
+    } else {
+      console.log('⚠️ No achievements from gamification hook, using empty array');
+      setAllAvailableAchievements([]);
+    }
+
+    setLoadingAchievements(false);
+  }, [gamification.achievements]);
 
   // Group achievements by real categories from BD
   const generateAchievementsByCategory = () => {
