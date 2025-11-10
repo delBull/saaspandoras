@@ -1,13 +1,6 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
-import postgres from "postgres";
-
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) {
-  throw new Error("DATABASE_URL is not set");
-}
-
-const sql = postgres(connectionString);
+import { sql } from "@/lib/database";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

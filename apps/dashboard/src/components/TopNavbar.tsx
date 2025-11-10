@@ -219,8 +219,8 @@ export function TopNavbar({
 
 
   return (
-    <div className="relative w-full z-40 md:block hidden">
-      <div className={`bg-gradient-to-r from-purple-950/10 to-black/20 backdrop-blur-sm transition-all duration-500 ${
+    <div className="absolute w-full z-40 md:block hidden pt-4">
+      <div className={`bg-gradient-to-r from-purple-950/0 to-black/0 transition-all duration-500 ${
         isApplicantsPage ? (panelCollapsed ? 'mr-8 lg:mr-12' : 'mr-[240px] lg:mr-[270px]') : ''
       }`}>
         <div className={`px-4 ${
