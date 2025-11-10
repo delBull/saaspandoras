@@ -1,15 +1,8 @@
 import { NextResponse } from "next/server";
 import { getAuth } from "@/lib/auth";
 import { headers } from "next/headers";
-import postgres from "postgres";
 import { ensureUser } from "@/lib/user";
-
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) {
-  throw new Error("DATABASE_URL is not set");
-}
-
-const sql = postgres(connectionString);
+import { sql } from "@/lib/database";
 
 // Test database connection at startup
 

@@ -92,18 +92,24 @@ export function useProfile() {
            }
          },
          // Add onError callback for debugging
-         onError: (error: Error) => {
+         onError: (error) => {
            // Don't log expected errors (no wallet connected)
-           if (error.message === 'No wallet authentication available') {
+           if (error instanceof Error && error.message === 'No wallet authentication available') {
              return;
            }
 
            if (process.env.NODE_ENV === 'development') {
-             console.error('❌ Profile fetch error:', {
-               message: error.message,
-               isQuotaError: error.message.includes('quota') || error.message.includes('limit'),
-               stack: error.stack
-             });
+             try {
+               const errorObj = error instanceof Error ? {
+                 message: error.message,
+                 isQuotaError: error.message.includes('quota') || error.message.includes('limit'),
+                 stack: error.stack
+               } : { error: String(error), type: typeof error };
+               console.error('❌ Profile fetch error:', errorObj);
+             } catch (logError) {
+               // Fallback if logging itself fails
+               console.error('❌ Profile fetch error: [Unable to format error]');
+             }
            }
          }
        }
