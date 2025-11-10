@@ -44,20 +44,12 @@ export async function PUT(request: Request) {
     const body = await request.json();
     const { walletAddress, processAll = false, forceRun = false } = body;
 
-    // TEMPORAL: Permitir con token de bypass de Vercel para staging
-    const url = new URL(request.url);
-    const vercelBypassToken = url.searchParams.get('x-vercel-protection-bypass');
+    // Verificar autenticación de admin
+    const { session } = await getAuth(await headers());
+    const userIsAdmin = await isAdmin(session?.address ?? session?.userId);
 
-    if (vercelBypassToken === 'tdZhKyIMrsZhsU9sfKYvf9NcXngbaVu4') {
-      console.log('⚠️ VERCEL BYPASS TOKEN ACCEPTED - Skipping admin auth for staging');
-    } else {
-      // Verificar autenticación de admin
-      const { session } = await getAuth(await headers());
-      const userIsAdmin = await isAdmin(session?.address ?? session?.userId);
-
-      if (!userIsAdmin) {
-        return NextResponse.json({ error: 'Unauthorized - Admin required' }, { status: 403 });
-      }
+    if (!userIsAdmin) {
+      return NextResponse.json({ error: 'Unauthorized - Admin required' }, { status: 403 });
     }
 
     if (processAll) {
