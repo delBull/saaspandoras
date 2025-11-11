@@ -120,104 +120,22 @@ export async function PUT(request: Request) {
       }
     }
 
-  return NextResponse.json({
-    success: true,
-    message: `Historical actions reprocessed successfully`,
-    data: {
-      walletAddress: userWallet,
-      eventsProcessed: processedEvents,
-      totalPointsGranted: totalPointsGranted,
-      projectsProcessed: userProjects.length,
-      referralsProcessed: userReferralRecords.length
-    }
-  });
-}
-
-// Función para reprocesar TODOS los usuarios
-async function reprocessAllUsers() {
-  console.log(`🔄 Starting bulk reprocessing of all users...`);
-
-  // Obtener todos los usuarios que tienen proyectos
-  const usersWithProjects = await db.query.projects.findMany({
-    columns: { applicantWalletAddress: true }
-  });
-
-  // Obtener todos los usuarios que tienen referidos
-  const usersWithReferrals = await db.query.userReferrals.findMany({
-    columns: { referrerWalletAddress: true }
-  });
-
-  // Combinar y deduplicar las wallets
-  const walletSet = new Set<string>();
-
-  usersWithProjects.forEach(p => {
-    if (p.applicantWalletAddress) walletSet.add(p.applicantWalletAddress.toLowerCase());
-  });
-
-  usersWithReferrals.forEach(r => {
-    if (r.referrerWalletAddress) walletSet.add(r.referrerWalletAddress.toLowerCase());
-  });
-
-  const activeUsers = Array.from(walletSet).map(walletAddress => ({ walletAddress }));
-  console.log(`👥 Found ${activeUsers.length} users with activity to reprocess`);
-
-  let totalEventsProcessed = 0;
-  let totalPointsGranted = 0;
-  let usersProcessed = 0;
-  const results = [];
-
-  for (const user of activeUsers) {
-    const walletAddress = user.walletAddress;
-    console.log(`\n🔄 Processing user ${usersProcessed + 1}/${activeUsers.length}: ${walletAddress}`);
-
-    try {
-      const userResult = await reprocessUser(walletAddress);
-      const userData = await userResult.json();
-
-      if (userData.success) {
-        totalEventsProcessed += userData.data.eventsProcessed;
-        totalPointsGranted += userData.data.totalPointsGranted;
-        usersProcessed++;
-        results.push({
-          walletAddress,
-          eventsProcessed: userData.data.eventsProcessed,
-          pointsGranted: userData.data.totalPointsGranted,
-          success: true
-        });
-      } else {
-        results.push({
-          walletAddress,
-          error: userData.error,
-          success: false
-        });
+    return NextResponse.json({
+      success: true,
+      message: `Historical actions reprocessed successfully`,
+      data: {
+        walletAddress: userWallet,
+        eventsProcessed: processedEvents,
+        totalPointsGranted: totalPointsGranted,
+        projectsProcessed: userProjects.length,
+        referralsProcessed: userReferralRecords.length
       }
-    } catch (error) {
-      console.error(`❌ Failed to process user ${walletAddress}:`, error);
-      results.push({
-        walletAddress,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        success: false
-      });
-    }
-
-    // Pequeña pausa para no sobrecargar
-    await new Promise(resolve => setTimeout(resolve, 100));
+    });
+  } catch (error) {
+    console.error('❌ API Error reprocessing user actions:', error);
+    return NextResponse.json(
+      { error: 'Failed to reprocess user actions', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
   }
-
-  console.log(`\n🎉 Bulk reprocessing complete!`);
-  console.log(`   - Users processed: ${usersProcessed}/${activeUsers.length}`);
-  console.log(`   - Total events: ${totalEventsProcessed}`);
-  console.log(`   - Total points granted: ${totalPointsGranted}`);
-
-  return NextResponse.json({
-    success: true,
-    message: `Bulk historical reprocessing completed`,
-    data: {
-      totalUsers: activeUsers.length,
-      usersProcessed,
-      totalEventsProcessed,
-      totalPointsGranted,
-      results
-    }
-  });
 }
