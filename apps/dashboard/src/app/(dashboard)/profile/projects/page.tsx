@@ -13,8 +13,6 @@ import {
   PencilIcon,
   ChartBarIcon,
   CurrencyDollarIcon,
-  UsersIcon,
-  ClockIcon,
   CheckCircleIcon,
   EyeIcon,
 } from '@heroicons/react/24/outline';
@@ -370,7 +368,7 @@ export default function ProfileProjectsPage() {
       <div className="flex items-center gap-4 mb-4">
         <button
           onClick={() => router.back()}
-          className="text-gray-400 hover:text-white transition-colors"
+          className="text-gray-400 hover:text-white transition-colors z-40"
           aria-label="Volver atrás"
         >
           <span className="text-lg">←</span>
@@ -547,137 +545,141 @@ export default function ProfileProjectsPage() {
         </div>
       )}
 
-      {/* Projects List */}
-      <div className="space-y-6 max-w-7xl mx-auto">
+      {/* All Projects List - Moved from Dashboard */}
+      {userProjects.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FolderIcon className="w-5 h-5" />
+              Todas Mis Creaciones
+            </CardTitle>
+            <CardDescription>
+              Vista completa de todas tus creaciones por estado
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {userProjects.map((project) => (
+                <div key={project.id} className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-3 h-3 rounded-full ${
+                      project.status === 'live' ? 'bg-green-500' :
+                      project.status === 'approved' ? 'bg-blue-500' :
+                      project.status === 'pending' ? 'bg-yellow-500' :
+                      project.status === 'completed' ? 'bg-emerald-500' :
+                      project.status === 'rejected' ? 'bg-red-500' :
+                      'bg-gray-500'
+                    }`}></div>
+                    <div>
+                      <div className="text-white text-sm font-medium">{project.title}</div>
+                      <div className="text-gray-400 text-xs">
+                        Estado: {
+                          project.status === 'live' ? '🏃‍♂️ Activo' :
+                          project.status === 'approved' ? '✅ Aprobado' :
+                          project.status === 'pending' ? '⏳ En Revisión' :
+                          project.status === 'completed' ? '🏁 Completado' :
+                          project.status === 'rejected' ? '❌ Rechazado' :
+                          project.status === 'draft' ? '📝 Borrador' :
+                          project.status
+                        }
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Link href={`/projects/${(project as any).slug || project.id}`}>
+                      <button className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition-colors">
+                        Ver
+                      </button>
+                    </Link>
+                    {project.status !== 'live' && project.status !== 'completed' && (
+                      <Link href={`/admin/projects/${project.id}/edit`}>
+                        <button className="px-3 py-1 bg-zinc-600 hover:bg-zinc-700 text-white rounded text-xs font-medium transition-colors">
+                          Editar
+                        </button>
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Projects List - Simplified Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
         {userProjects.length > 0 ? (
           userProjects.map((project) => {
             const metrics = calculateProjectMetrics(project);
             return (
-              <Card key={project.id} className="hover:bg-zinc-800/50 transition-colors">
-                <CardHeader>
-                  <div className="flex flex-col gap-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <CardTitle className="text-xl text-white mb-2">{project.title}</CardTitle>
-                        <div className="flex items-center gap-4 text-sm text-gray-400 flex-wrap">
-                          <span>Estado: {
-                            project.status === 'live' ? '🏃‍♂️ Activo' :
-                            project.status === 'approved' ? '✅ Aprobado' :
-                            project.status === 'pending' ? '⏳ En Revisión' :
-                            project.status === 'rejected' ? '❌ Rechazado' :
-                            project.status === 'completed' ? '🏁 Completado' :
-                            project.status
-                          }</span>
-                          <span>Meta ${(metrics.targetAmount).toLocaleString()} USD</span>
-                        </div>
+              <Card key={project.id} className="hover:bg-zinc-800/50 transition-colors border-zinc-700">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-lg text-white mb-1 truncate">{project.title}</CardTitle>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${
+                          project.status === 'live' ? 'bg-green-500' :
+                          project.status === 'approved' ? 'bg-blue-500' :
+                          project.status === 'pending' ? 'bg-yellow-500' :
+                          project.status === 'completed' ? 'bg-emerald-500' :
+                          project.status === 'rejected' ? 'bg-red-500' :
+                          'bg-gray-500'
+                        }`}></div>
+                        <span className="text-sm text-gray-400">
+                          {project.status === 'live' ? 'Activo' :
+                           project.status === 'approved' ? 'Aprobado' :
+                           project.status === 'pending' ? 'En Revisión' :
+                           project.status === 'completed' ? 'Completado' :
+                           project.status === 'rejected' ? 'Rechazado' :
+                           project.status === 'draft' ? 'Borrador' :
+                           project.status}
+                        </span>
                       </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <Link href={`/profile/projects/${project.id}/edit`} className="flex-1 min-w-0">
-                        <Button size="sm" variant="outline" className="w-full text-xs">
-                          <PencilIcon className="w-4 h-4 mr-2" />
-                          <span className="hidden sm:inline">Editar</span>
-                          <span className="sm:hidden">Editar</span>
-                        </Button>
-                      </Link>
-                      <Link href={`/projects/${(project as any).slug || project.id}`} className="flex-1 min-w-0">
-                        <Button size="sm" variant="outline" className="w-full text-xs">
-                          <EyeIcon className="w-4 h-4 mr-2" />
-                          <span className="hidden sm:inline">Ver Artefacto</span>
-                          <span className="sm:hidden">👁️ Ver</span>
-                        </Button>
-                      </Link>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Key Metrics */}
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-sm font-medium text-gray-400">Inversión Inicial</label>
-                        <p className="text-white font-semibold">${metrics.raisedAmount.toLocaleString()}</p>
-                      </div>
 
-                      <div>
-                        <label className="text-sm font-medium text-gray-400">Valor Actual</label>
-                        <p className="text-green-400 font-semibold">${metrics.currentValue.toLocaleString()}</p>
-                      </div>
-
-                      <div>
-                        <label className="text-sm font-medium text-gray-400">Ganancia</label>
-                        <p className="text-blue-400 font-semibold">
-                          +${(metrics.currentValue - metrics.raisedAmount).toLocaleString()}
-                        </p>
-                      </div>
+                <CardContent className="pt-0">
+                  {/* Essential Info Only */}
+                  <div className="space-y-3 mb-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-400">Meta</span>
+                      <span className="text-white font-medium">${metrics.targetAmount.toLocaleString()}</span>
                     </div>
 
-                    {/* Returns */}
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-sm font-medium text-gray-400">Retornos Pagados</label>
-                        <p className="text-green-500 font-semibold">${metrics.returnsPaid.toLocaleString()}</p>
+                    {metrics.raisedAmount > 0 && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-400">Recaudado</span>
+                        <span className="text-green-400 font-medium">${metrics.raisedAmount.toLocaleString()}</span>
                       </div>
+                    )}
 
-                      <div>
-                        <label className="text-sm font-medium text-gray-400">Retornos Pendientes</label>
-                        <p className="text-yellow-500 font-semibold">${metrics.pendingReturns.toLocaleString()}</p>
+                    {project.status === 'live' && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-400">Inversionistas</span>
+                        <span className="text-blue-400 font-medium">{metrics.investors}</span>
                       </div>
-
-                      <div>
-                        <label className="text-sm font-medium text-gray-400">Próximo Pago</label>
-                        <p className="text-white font-semibold">
-                          {metrics.daysToNextPayment ? `${metrics.daysToNextPayment} días` : 'N/A'}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Community */}
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-sm font-medium text-gray-400">Inversionistas</label>
-                        <div className="flex items-center gap-2">
-                          <UsersIcon className="w-4 h-4 text-gray-400" />
-                          <p className="text-white font-semibold">{metrics.investors}</p>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="text-sm font-medium text-gray-400">Financiamiento</label>
-                        <p className="text-lime-400 font-semibold">{metrics.fundingProgress}%</p>
-                      </div>
-
-                      {metrics.hasTimeline && (
-                        <Link
-                          href={`/projects/${(project as any).slug || project.id}/timeline`}
-                          className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm"
-                        >
-                          <ClockIcon className="w-4 h-4" />
-                          Ver timeline completo
-                        </Link>
-                      )}
-                    </div>
+                    )}
                   </div>
 
-                  {/* Funding Progress Bar */}
-                  <div className="mt-6 pt-6 border-t border-zinc-700">
-                    <div className="flex justify-between text-sm mb-2">
-                      <span className="text-gray-400">Progreso de Financiamiento</span>
-                      <span className="text-green-400">{metrics.fundingProgress}%</span>
-                    </div>
-                    <div className="w-full bg-zinc-700 rounded-full h-2">
-                      <div
-                        className="bg-lime-500 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${metrics.fundingProgress}%` }}
-                      ></div>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {metrics.fundingProgress >= 100
-                        ? '✅ Meta completa'
-                        : `${(metrics.targetAmount - metrics.raisedAmount).toLocaleString()} restantes para meta completa`
-                      }
-                    </p>
+                  {/* Action Buttons - Both Edit and View */}
+                  <div className="flex gap-2">
+                    <Link href={`/projects/${(project as any).slug || project.id}`} className="flex-1">
+                      <Button size="sm" variant="outline" className="w-full bg-blue-600 hover:bg-blue-700 border-blue-600 hover:border-blue-700">
+                        <EyeIcon className="w-4 h-4 mr-2" />
+                        Ver
+                      </Button>
+                    </Link>
+
+                    {project.status !== 'live' && project.status !== 'completed' && (
+                      <Link href={`/profile/projects/${project.id}/edit`} className="flex-1">
+                        <Button size="sm" variant="outline" className="w-full bg-zinc-600 hover:bg-zinc-700 border-zinc-600 hover:border-zinc-700">
+                          <PencilIcon className="w-4 h-4 mr-2" />
+                          Editar
+                        </Button>
+                      </Link>
+                    )}
                   </div>
                 </CardContent>
               </Card>

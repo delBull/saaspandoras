@@ -53,7 +53,7 @@ export function MobileNavMenu({ profile }: MobileNavMenuProps) {
       disabled: true,
     },
     {
-      label: 'Creaciones',
+      label: 'Protocolos',
       href: '/applicants',
       icon: <PackageCheckIcon className="w-6 h-6" />,
       disabled: false,

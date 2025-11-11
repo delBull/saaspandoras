@@ -351,7 +351,7 @@ export function Sidebar({
         disabled: false,
       },
       {
-        label: "Creaciones",
+        label: "Protocolos",
         href: "/applicants",
         icon: (
           <PackageCheckIcon className="h-5 w-5 shrink-0 text-gray-400" />

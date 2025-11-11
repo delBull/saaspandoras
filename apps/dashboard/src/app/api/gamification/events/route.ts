@@ -38,11 +38,15 @@ export async function POST(request: Request) {
   }
 }
 
-// Endpoint especial para reprocesar acciones históricas de un usuario
+// Endpoint simple para reprocesar acciones de un usuario específico (solo para admins)
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { walletAddress, processAll = false, forceRun = false } = body;
+    const { walletAddress } = body;
+
+    if (!walletAddress) {
+      return NextResponse.json({ error: 'walletAddress is required' }, { status: 400 });
+    }
 
     // Verificar autenticación de admin
     const { session } = await getAuth(await headers());
@@ -52,101 +56,69 @@ export async function PUT(request: Request) {
     const url = new URL(request.url);
     const vercelBypassToken = url.searchParams.get('x-vercel-protection-bypass');
 
-    if (processAll) {
-      // Procesar TODOS los usuarios
-      return await reprocessAllUsers();
-    } else {
-      // Procesar un usuario específico
-      if (!walletAddress) {
-        return NextResponse.json({ error: 'walletAddress is required' }, { status: 400 });
-      }
-      return await reprocessUser(walletAddress.toLowerCase());
-    }
+    const userWallet = walletAddress.toLowerCase();
+    console.log(`🔄 Reprocessing historical actions for user: ${userWallet}`);
 
-  } catch (error) {
-    console.error('❌ API Error reprocessing historical actions:', error);
-    return NextResponse.json(
-      { error: 'Failed to reprocess historical actions', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
-  }
-}
+    let processedEvents = 0;
+    let totalPointsGranted = 0;
 
-// Función para reprocesar un usuario específico
-async function reprocessUser(userWallet: string) {
-  console.log(`🔄 Reprocessing historical actions for user: ${userWallet}`);
+    // 1. Reprocesar proyectos enviados
+    const userProjects = await db.query.projects.findMany({
+      where: eq(projects.applicantWalletAddress, userWallet),
+      columns: { id: true, title: true, status: true, createdAt: true }
+    });
 
-  let processedEvents = 0;
-  let totalPointsGranted = 0;
-
-  // 1. Reprocesar proyectos enviados
-  const userProjects = await db.query.projects.findMany({
-    where: eq(projects.applicantWalletAddress, userWallet),
-    columns: { id: true, title: true, status: true, createdAt: true }
-  });
-
-  console.log(`📝 Found ${userProjects.length} projects for user`);
-
-  for (const project of userProjects) {
-    // Otorgar puntos por envío de proyecto (50 puntos)
-    try {
-      await trackGamificationEvent(userWallet, 'project_application_submitted', {
-        projectId: project.id.toString(),
-        projectTitle: project.title,
-        submittedAt: project.createdAt.toISOString(),
-        isHistorical: true
-      });
-      processedEvents++;
-      totalPointsGranted += 50;
-      console.log(`✅ Processed project submission: ${project.title}`);
-    } catch (error) {
-      console.warn(`⚠️ Failed to process project ${project.id}:`, error);
-    }
-
-    // Si el proyecto está aprobado, otorgar puntos por aprobación (100 puntos)
-    if (project.status === 'approved') {
+    for (const project of userProjects) {
+      // Otorgar puntos por envío de proyecto (50 puntos)
       try {
-        await trackGamificationEvent(userWallet, 'project_application_approved', {
+        await trackGamificationEvent(userWallet, 'project_application_submitted', {
           projectId: project.id.toString(),
           projectTitle: project.title,
-          approvalDate: new Date().toISOString(),
+          submittedAt: project.createdAt.toISOString(),
           isHistorical: true
         });
         processedEvents++;
-        totalPointsGranted += 100;
-        console.log(`✅ Processed project approval: ${project.title}`);
+        totalPointsGranted += 50;
       } catch (error) {
-        console.warn(`⚠️ Failed to process approval for project ${project.id}:`, error);
+        console.warn(`⚠️ Failed to process project ${project.id}:`, error);
+      }
+
+      // Si el proyecto está aprobado, otorgar puntos por aprobación (100 puntos)
+      if (project.status === 'approved') {
+        try {
+          await trackGamificationEvent(userWallet, 'project_application_approved', {
+            projectId: project.id.toString(),
+            projectTitle: project.title,
+            approvalDate: new Date().toISOString(),
+            isHistorical: true
+          });
+          processedEvents++;
+          totalPointsGranted += 100;
+        } catch (error) {
+          console.warn(`⚠️ Failed to process approval for project ${project.id}:`, error);
+        }
       }
     }
-  }
 
-  // 2. Reprocesar referidos realizados
-  const userReferralRecords = await db.query.userReferrals.findMany({
-    where: eq(userReferrals.referrerWalletAddress, userWallet),
-    columns: { id: true, referredWalletAddress: true, status: true, createdAt: true }
-  });
+    // 2. Reprocesar referidos realizados
+    const userReferralRecords = await db.query.userReferrals.findMany({
+      where: eq(userReferrals.referrerWalletAddress, userWallet),
+      columns: { id: true, referredWalletAddress: true, status: true, createdAt: true }
+    });
 
-  console.log(`👥 Found ${userReferralRecords.length} referrals made by user`);
-
-  for (const referral of userReferralRecords) {
-    try {
-      await trackGamificationEvent(userWallet, 'referral_made', {
-        referredWallet: referral.referredWalletAddress,
-        referralDate: referral.createdAt.toISOString(),
-        isHistorical: true
-      });
-      processedEvents++;
-      totalPointsGranted += 200; // 200 puntos por referido
-      console.log(`✅ Processed referral: ${referral.referredWalletAddress.slice(0, 6)}...`);
-    } catch (error) {
-      console.warn(`⚠️ Failed to process referral ${referral.id}:`, error);
+    for (const referral of userReferralRecords) {
+      try {
+        await trackGamificationEvent(userWallet, 'referral_made', {
+          referredWallet: referral.referredWalletAddress,
+          referralDate: referral.createdAt.toISOString(),
+          isHistorical: true
+        });
+        processedEvents++;
+        totalPointsGranted += 200;
+      } catch (error) {
+        console.warn(`⚠️ Failed to process referral ${referral.id}:`, error);
+      }
     }
-  }
-
-  console.log(`🎉 Historical reprocessing complete for ${userWallet}:`);
-  console.log(`   - Events processed: ${processedEvents}`);
-  console.log(`   - Total points granted: ${totalPointsGranted}`);
 
   return NextResponse.json({
     success: true,
@@ -227,7 +199,6 @@ async function reprocessAllUsers() {
         success: false
       });
     }
-  }
 
     // Pequeña pausa para no sobrecargar
     await new Promise(resolve => setTimeout(resolve, 100));
