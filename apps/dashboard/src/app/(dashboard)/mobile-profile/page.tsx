@@ -18,6 +18,7 @@ import {
   CogIcon,
 } from '@heroicons/react/24/outline';
 import { AvatarEditor } from '@/components/AvatarEditor';
+import { ConnectWalletButton } from '@/components/wallet';
 
 export default function MobileProfilePage() {
   const account = useActiveAccount();
@@ -75,12 +76,9 @@ export default function MobileProfilePage() {
         <AvatarEditor variant="mobile" />
 
         <div className="flex-1">
-          <p className="text-white font-medium text-sm">
-            {account?.address ?
-              `${account.address.slice(0, 12)}...${account.address.slice(-8)}` :
-              'Conecta tu wallet'
-            }
-          </p>
+          <ConnectWalletButton
+            className="w-full text-left"
+          />
         </div>
       </div>
 

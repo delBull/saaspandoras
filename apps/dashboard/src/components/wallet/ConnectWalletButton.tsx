@@ -1,7 +1,6 @@
 import React from "react";
 import { ConnectButton } from "thirdweb/react";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
-import { WalletIcon } from "@heroicons/react/24/outline";
 import { client } from "@/lib/thirdweb-client";
 import { SUPPORTED_NETWORKS } from "@/config/networks";
 
@@ -41,7 +40,6 @@ export function ConnectWalletButton({
 }: ConnectWalletButtonProps) {
   return (
     <>
-      <WalletIcon className="w-5 h-5 text-gray-400" />
       <ConnectButton
         {...baseWalletConfig}
         locale="es_ES"
