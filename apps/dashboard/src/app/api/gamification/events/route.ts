@@ -44,8 +44,9 @@ export async function PUT(request: Request) {
     const body = await request.json();
     const { walletAddress } = body;
 
-    if (!walletAddress) {
-      return NextResponse.json({ error: 'walletAddress is required' }, { status: 400 });
+      if (!userIsAdmin) {
+        return NextResponse.json({ error: 'Unauthorized - Admin required' }, { status: 403 });
+      }
     }
 
     // Verificar autenticación de admin
@@ -59,22 +60,26 @@ export async function PUT(request: Request) {
     const userWallet = walletAddress.toLowerCase();
     console.log(`🔄 Reprocessing historical actions for user: ${userWallet}`);
 
-    let processedEvents = 0;
-    let totalPointsGranted = 0;
+  } catch (error) {
+    console.error('❌ API Error reprocessing historical actions:', error);
+    return NextResponse.json(
+      { error: 'Failed to reprocess historical actions', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
+}
 
-    // 1. Reprocesar proyectos enviados
-    const userProjects = await db.query.projects.findMany({
-      where: eq(projects.applicantWalletAddress, userWallet),
-      columns: { id: true, title: true, status: true, createdAt: true }
-    });
+// Función para reprocesar un usuario específico
+async function reprocessUser(userWallet: string) {
+  console.log(`🔄 Reprocessing historical actions for user: ${userWallet}`);
 
     for (const project of userProjects) {
       // Otorgar puntos por envío de proyecto (50 puntos)
       try {
-        await trackGamificationEvent(userWallet, 'project_application_submitted', {
+        await trackGamificationEvent(userWallet, 'project_application_approved', {
           projectId: project.id.toString(),
           projectTitle: project.title,
-          submittedAt: project.createdAt.toISOString(),
+          approvalDate: new Date().toISOString(),
           isHistorical: true
         });
         processedEvents++;
@@ -99,12 +104,13 @@ export async function PUT(request: Request) {
         }
       }
     }
+  }
 
-    // 2. Reprocesar referidos realizados
-    const userReferralRecords = await db.query.userReferrals.findMany({
-      where: eq(userReferrals.referrerWalletAddress, userWallet),
-      columns: { id: true, referredWalletAddress: true, status: true, createdAt: true }
-    });
+  // 2. Reprocesar referidos realizados
+  const userReferralRecords = await db.query.userReferrals.findMany({
+    where: eq(userReferrals.referrerWalletAddress, userWallet),
+    columns: { id: true, referredWalletAddress: true, status: true, createdAt: true }
+  });
 
     for (const referral of userReferralRecords) {
       try {
@@ -119,6 +125,7 @@ export async function PUT(request: Request) {
         console.warn(`⚠️ Failed to process referral ${referral.id}:`, error);
       }
     }
+  }
 
     return NextResponse.json({
       success: true,
@@ -138,4 +145,21 @@ export async function PUT(request: Request) {
       { status: 500 }
     );
   }
+
+  console.log(`\n🎉 Bulk reprocessing complete!`);
+  console.log(`   - Users processed: ${usersProcessed}/${activeUsers.length}`);
+  console.log(`   - Total events: ${totalEventsProcessed}`);
+  console.log(`   - Total points granted: ${totalPointsGranted}`);
+
+  return NextResponse.json({
+    success: true,
+    message: `Bulk historical reprocessing completed`,
+    data: {
+      totalUsers: activeUsers.length,
+      usersProcessed,
+      totalEventsProcessed,
+      totalPointsGranted,
+      results
+    }
+  });
 }
