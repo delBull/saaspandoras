@@ -3,9 +3,9 @@ import { z } from 'zod';
 
 // Schema de validación completo basado en DB schema - Versión Utility Optimizada
 export const projectSchema = z.object({
-  // Campos requeridos - Identidad de la Creación (temporalmente opcionales para pruebas)
-  title: z.string().min(3, "El nombre debe tener al menos 3 caracteres").max(256, "El nombre es demasiado largo").optional(),
-  description: z.string().min(10, "La descripción debe tener al menos 10 caracteres").optional(),
+  // Campos requeridos - Identidad de la Creación
+  title: z.string().min(3, "El nombre debe tener al menos 3 caracteres").max(256, "El nombre es demasiado largo"),
+  description: z.string().min(10, "La descripción debe tener al menos 10 caracteres"),
   businessCategory: z.enum([
     'residential_real_estate',
     'commercial_real_estate',
@@ -27,7 +27,7 @@ export const projectSchema = z.object({
     'insurance',
     'prediction_markets',
     'other'
-  ]).optional(),
+  ]),
 
   // Campos opcionales - Identidad
   tagline: z.string().max(140, "El eslogan es demasiado largo").optional(),
@@ -50,8 +50,8 @@ export const projectSchema = z.object({
   integrationPlan: z.boolean().optional(),
 
   // Recursos y Artefactos
-  targetAmount: z.union([z.number().min(1), z.string()]).optional(),
-  tokenType: z.enum(['erc20', 'erc721', 'erc1155']).optional(),
+  targetAmount: z.union([z.number().min(1), z.string()]),
+  tokenType: z.enum(['not_sure', 'erc20', 'erc721', 'erc1155']).optional(),
   totalTokens: z.number().min(1, "Debe haber al menos 1 token").optional(),
   tokensOffered: z.number().min(1, "Debe ofrecer al menos 1 token").optional(),
   tokenPriceUsd: z.number().min(0.01, "El precio debe ser mayor a 0.01 USD").optional(),
@@ -67,8 +67,30 @@ export const projectSchema = z.object({
   applicantWalletAddress: z.string().optional(),
 
   // Transparencia y Estructura (Legal y Técnica) - NUEVAS CLAVES
-  legalStatus: z.string().optional(),
-  monetizationModel: z.string().max(256).optional(),
+  legalStatus: z.enum([
+    'persona_fisica_mexico',
+    'sociedad_civil_mexico',
+    'sapi_mexico',
+    'sapib_mexico',
+    'srl_mexico',
+    'sa_mexico',
+    'sc_mexico',
+    'asociacion_civil_mexico',
+    'fundacion_mexico',
+    'cooperativa_mexico',
+    'otra_entidad_mexico',
+    'llc_delaware_usa',
+    'corporation_delaware_usa',
+    'llc_california_usa',
+    'corporation_california_usa',
+    'dao_usa',
+    'otra_entidad_usa',
+    'sin_entidad_juridica',
+    'persona_fisica_usa',
+    'otra_jurisdiccion'
+  ]),
+  legalStatusDetails: z.string().optional(),
+  monetizationModel: z.string().min(3, "El modelo de monetización es requerido").max(256),
   adquireStrategy: z.string().min(10, "La descripción debe tener al menos 10 caracteres").optional(),
   mitigationPlan: z.string().min(10, "La descripción debe tener al menos 10 caracteres").optional(),
 });

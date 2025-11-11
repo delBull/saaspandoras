@@ -1,6 +1,7 @@
 "use client";
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback } from 'react';
+import { useFormContext } from 'react-hook-form';
 import { useInfoModals } from './modals';
 import {
   TextInput,
@@ -37,20 +38,23 @@ export default function FormContent({
   setInfoModal,
   onOpenTermsModal
 }: FormContentProps) {
+  const { watch } = useFormContext();
+
   // Personalizar labels basado en el nombre del proyecto
   const getPersonalizedLabel = useCallback((originalLabel: string, title: string): string => {
     if (!title || title === 'tu Creación') {
       return originalLabel;
     }
     return originalLabel
-      .replace(/tu Creación/g, title)
-      .replace(/esta Creación/g, title)
-      .replace(/la Creación/g, title)
-      .replace(/Creación/g, title);
+      .replace(/Protocolo de Utilidad/g, title);
   }, []);
 
   // Hook para modales
   const modals = useInfoModals(setInfoModal);
+
+  // Verificar si se debe mostrar el campo de detalles legales
+  const legalStatus = watch('legalStatus');
+  const showLegalStatusDetails = legalStatus === 'otra_jurisdiccion' || legalStatus === 'otra_entidad_mexico' || legalStatus === 'otra_entidad_usa';
 
   // Función para renderizar componente de input
   const renderInputComponent = useCallback((question: FormQuestion) => {
@@ -61,15 +65,21 @@ export default function FormContent({
         let onHelpClick;
         if (question.id === 'legalStatus') {
           onHelpClick = modals.openLegalModal;
+        } else if (question.id === 'monetizationModel') {
+          onHelpClick = modals.openMonetizationModalDetailed;
         }
         return <TextInput {...baseProps} maxLength={question.maxLength} info={question.info} onHelpClick={onHelpClick} />;
       }
       case 'textarea-input': {
         let onHelpClick;
-        if (question.id === 'whitepaperUrl') {
-          onHelpClick = modals.openMechanicModal;
-        } else if (question.id === 'applicantName') {
+        if (question.id === 'protoclMecanism') {
+          onHelpClick = modals.openBenefitModal;
+        } else if (question.id === 'artefactUtility') {
+          onHelpClick = modals.openUtilityModal;
+        } else if (question.id === 'worktoearnMecanism') {
           onHelpClick = modals.openWorkToEarnModal;
+        } else if (question.id === 'adquireStrategy') {
+          onHelpClick = modals.openAdoptionStrategyModal;
         }
         return <TextareaInput {...baseProps} info={question.info} onHelpClick={onHelpClick} />;
       }
@@ -89,14 +99,19 @@ export default function FormContent({
         }
         return <NumberInput {...baseProps} relatedField={question.relatedField} info={question.info} onHelpClick={onHelpClick} />;
       }
-      case 'url-input':
-        return <UrlInput {...baseProps} info={question.info} />;
+      case 'url-input': {
+        let onHelpClick;
+        if (question.id === 'whitepaperUrl') {
+          onHelpClick = modals.openMechanicModal;
+        }
+        return <UrlInput {...baseProps} info={question.info} onHelpClick={onHelpClick} />;
+      }
       case 'file-input':
         return <FileInput {...baseProps} accept="image/png,image/jpeg,image/svg+xml" info={question.info} />;
       case 'checkbox-input':
         return <CheckboxInput name={question.id} info={question.info} label={question.label} />;
       case 'recurring-rewards-input':
-        return <RecurringRewardsInput />;
+        return <RecurringRewardsInput onHelpClick={modals.openRecurringRewardsModal} />;
       default:
         return <TextInput {...baseProps} />;
     }
@@ -156,6 +171,26 @@ export default function FormContent({
               )}
 
               {renderInputComponent(currentQuestion)}
+
+              {/* Campo adicional para detalles legales cuando se selecciona "otra" */}
+              {currentQuestion.id === 'legalStatus' && showLegalStatusDetails && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="space-y-6"
+                >
+                  <div className="block font-bold text-white text-2xl md:text-3xl leading-tight">
+                    Especifica detalles adicionales sobre tu estatus legal
+                  </div>
+                  <TextInput
+                    name="legalStatusDetails"
+                    placeholder="Ej: Sociedad Anónima en Panamá, Cooperativa en Argentina, etc."
+                    maxLength={256}
+                    info="Si seleccionaste 'Otra jurisdicción' o 'Otra Entidad', especifica aquí los detalles exactos de tu estatus legal y jurisdicción."
+                  />
+                </motion.div>
+              )}
             </div>
           ) : null}
         </motion.div>

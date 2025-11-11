@@ -95,7 +95,7 @@ export default function ProfilePage() {
       <div className="flex items-center gap-4 mb-4">
         <button
           onClick={() => window.history.back()}
-          className="text-gray-400 hover:text-white transition-colors"
+          className="text-gray-400 hover:text-white transition-colors z-40"
           aria-label="Volver atrás"
         >
           <ArrowLeftIcon className="w-5 h-5" />
