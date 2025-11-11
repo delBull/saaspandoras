@@ -43,10 +43,7 @@ export default function FormContent({
       return originalLabel;
     }
     return originalLabel
-      .replace(/tu Creación/g, title)
-      .replace(/esta Creación/g, title)
-      .replace(/la Creación/g, title)
-      .replace(/Creación/g, title);
+      .replace(/Protocolo de Utilidad/g, title);
   }, []);
 
   // Hook para modales
@@ -66,9 +63,11 @@ export default function FormContent({
       }
       case 'textarea-input': {
         let onHelpClick;
-        if (question.id === 'whitepaperUrl') {
-          onHelpClick = modals.openMechanicModal;
-        } else if (question.id === 'applicantName') {
+        if (question.id === 'protoclMecanism') {
+          onHelpClick = modals.openBenefitModal;
+        } else if (question.id === 'artefactUtility') {
+          onHelpClick = modals.openUtilityModal;
+        } else if (question.id === 'worktoearnMecanism') {
           onHelpClick = modals.openWorkToEarnModal;
         }
         return <TextareaInput {...baseProps} info={question.info} onHelpClick={onHelpClick} />;
@@ -89,14 +88,19 @@ export default function FormContent({
         }
         return <NumberInput {...baseProps} relatedField={question.relatedField} info={question.info} onHelpClick={onHelpClick} />;
       }
-      case 'url-input':
-        return <UrlInput {...baseProps} info={question.info} />;
+      case 'url-input': {
+        let onHelpClick;
+        if (question.id === 'whitepaperUrl') {
+          onHelpClick = modals.openMechanicModal;
+        }
+        return <UrlInput {...baseProps} info={question.info} onHelpClick={onHelpClick} />;
+      }
       case 'file-input':
         return <FileInput {...baseProps} accept="image/png,image/jpeg,image/svg+xml" info={question.info} />;
       case 'checkbox-input':
         return <CheckboxInput name={question.id} info={question.info} label={question.label} />;
       case 'recurring-rewards-input':
-        return <RecurringRewardsInput />;
+        return <RecurringRewardsInput onHelpClick={modals.openRecurringRewardsModal} />;
       default:
         return <TextInput {...baseProps} />;
     }

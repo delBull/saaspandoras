@@ -5,9 +5,10 @@ interface UrlInputProps {
   name: string;
   placeholder?: string;
   info?: string;
+  onHelpClick?: () => void;
 }
 
-export function UrlInput({ name, placeholder, info }: UrlInputProps) {
+export function UrlInput({ name, placeholder, info, onHelpClick }: UrlInputProps) {
   const { register, formState: { errors } } = useFormContext();
 
   return (
@@ -19,9 +20,20 @@ export function UrlInput({ name, placeholder, info }: UrlInputProps) {
         className="w-full bg-transparent border-b-2 border-zinc-600 focus:border-lime-400 outline-none py-3 text-white placeholder-zinc-500 text-lg transition-colors"
       />
       {info && (
-        <p className="text-sm text-zinc-400 mt-2 leading-relaxed">
-          💡 {info}
-        </p>
+        <div className="flex items-start gap-2 mt-2">
+          <p className="text-sm text-zinc-400 leading-relaxed flex-1">
+            💡 {info}
+          </p>
+          {onHelpClick && (
+            <button
+              type="button"
+              onClick={onHelpClick}
+              className="text-lime-400 hover:text-lime-300 text-sm font-medium underline underline-offset-2 flex-shrink-0"
+            >
+              Más info
+            </button>
+          )}
+        </div>
       )}
       {errors[name] && (
         <motion.p
