@@ -16,6 +16,7 @@ import { ethereum } from "thirdweb/chains";
 import { WalletBalance, NetworkSelector, ConnectWalletButton } from "@/components/wallet";
 import { SUPPORTED_NETWORKS } from "@/config/networks";
 import { usePathname } from "next/navigation";
+import { WalletIcon } from "@heroicons/react/24/outline";
 
 interface TopNavbarProps {
   wallet?: string;
@@ -401,6 +402,7 @@ export function TopNavbar({
 
                 {/* Connect/Disconnect Button */}
                 <div className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full">
+                  <WalletIcon className="w-5 h-5 text-gray-400 md:block" />
                   <ConnectWalletButton
                     className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full"
                   />
