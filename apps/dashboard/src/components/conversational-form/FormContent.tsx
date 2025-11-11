@@ -1,6 +1,7 @@
 "use client";
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback } from 'react';
+import { useFormContext } from 'react-hook-form';
 import { useInfoModals } from './modals';
 import {
   TextInput,
@@ -37,6 +38,8 @@ export default function FormContent({
   setInfoModal,
   onOpenTermsModal
 }: FormContentProps) {
+  const { watch } = useFormContext();
+
   // Personalizar labels basado en el nombre del proyecto
   const getPersonalizedLabel = useCallback((originalLabel: string, title: string): string => {
     if (!title || title === 'tu Creación') {
@@ -49,6 +52,10 @@ export default function FormContent({
   // Hook para modales
   const modals = useInfoModals(setInfoModal);
 
+  // Verificar si se debe mostrar el campo de detalles legales
+  const legalStatus = watch('legalStatus');
+  const showLegalStatusDetails = legalStatus === 'otra_jurisdiccion' || legalStatus === 'otra_entidad_mexico' || legalStatus === 'otra_entidad_usa';
+
   // Función para renderizar componente de input
   const renderInputComponent = useCallback((question: FormQuestion) => {
     const baseProps = { name: question.id, placeholder: question.placeholder };
@@ -58,6 +65,8 @@ export default function FormContent({
         let onHelpClick;
         if (question.id === 'legalStatus') {
           onHelpClick = modals.openLegalModal;
+        } else if (question.id === 'monetizationModel') {
+          onHelpClick = modals.openMonetizationModalDetailed;
         }
         return <TextInput {...baseProps} maxLength={question.maxLength} info={question.info} onHelpClick={onHelpClick} />;
       }
@@ -69,6 +78,8 @@ export default function FormContent({
           onHelpClick = modals.openUtilityModal;
         } else if (question.id === 'worktoearnMecanism') {
           onHelpClick = modals.openWorkToEarnModal;
+        } else if (question.id === 'adquireStrategy') {
+          onHelpClick = modals.openAdoptionStrategyModal;
         }
         return <TextareaInput {...baseProps} info={question.info} onHelpClick={onHelpClick} />;
       }
@@ -160,6 +171,26 @@ export default function FormContent({
               )}
 
               {renderInputComponent(currentQuestion)}
+
+              {/* Campo adicional para detalles legales cuando se selecciona "otra" */}
+              {currentQuestion.id === 'legalStatus' && showLegalStatusDetails && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="space-y-6"
+                >
+                  <div className="block font-bold text-white text-2xl md:text-3xl leading-tight">
+                    Especifica detalles adicionales sobre tu estatus legal
+                  </div>
+                  <TextInput
+                    name="legalStatusDetails"
+                    placeholder="Ej: Sociedad Anónima en Panamá, Cooperativa en Argentina, etc."
+                    maxLength={256}
+                    info="Si seleccionaste 'Otra jurisdicción' o 'Otra Entidad', especifica aquí los detalles exactos de tu estatus legal y jurisdicción."
+                  />
+                </motion.div>
+              )}
             </div>
           ) : null}
         </motion.div>
