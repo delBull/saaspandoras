@@ -32,7 +32,7 @@ export function NetworkSelector({ selectedChain, onChainChange, supportedNetwork
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between p-2 bg-zinc-800/50 border border-zinc-700 rounded-lg hover:bg-zinc-700/50 transition-colors"
+        className="w-full min-w-[200px] flex items-center justify-between p-3 bg-zinc-800/50 border border-zinc-700 rounded-lg hover:bg-zinc-700/50 transition-colors"
       >
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 bg-green-500 rounded-full"></div>

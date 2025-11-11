@@ -5,9 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useActiveAccount, useSendTransaction } from 'thirdweb/react';
-import { ethereum } from 'thirdweb/chains';
-import { NetworkSelector } from '@/components/wallet';
-import { SUPPORTED_NETWORKS } from '@/config/networks';
+import type { ethereum } from 'thirdweb/chains';
+
 import { client } from '@/lib/thirdweb-client';
 import { WalletQRDisplay } from './PandorasQRCode';
 
@@ -131,9 +130,8 @@ function ReceiveCryptoForm({ selectedChain, account }: { selectedChain: typeof e
   );
 }
 
-export function SendReceiveInterface() {
+export function SendReceiveInterface({ selectedChain }: { selectedChain: typeof ethereum }) {
   const account = useActiveAccount();
-  const [selectedChain, setSelectedChain] = useState(ethereum);
 
   if (!account) return null;
 
@@ -146,12 +144,6 @@ export function SendReceiveInterface() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <NetworkSelector
-          selectedChain={selectedChain}
-          onChainChange={setSelectedChain}
-          supportedNetworks={SUPPORTED_NETWORKS}
-        />
-
         <Tabs defaultValue="send" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-4">
             <TabsTrigger value="send">📤 Enviar</TabsTrigger>
