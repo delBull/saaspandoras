@@ -2,7 +2,11 @@ import { motion } from 'framer-motion';
 import { useFormContext } from 'react-hook-form';
 import { useEffect } from 'react';
 
-export function RecurringRewardsInput() {
+interface RecurringRewardsInputProps {
+  onHelpClick?: () => void;
+}
+
+export function RecurringRewardsInput({ onHelpClick }: RecurringRewardsInputProps) {
   const { register, formState: { errors }, watch, setValue } = useFormContext();
 
   // Watch all the checkbox values
@@ -98,56 +102,69 @@ export function RecurringRewardsInput() {
 
   return (
     <div className="space-y-4">
-      <div className="text-xs text-zinc-400 mb-3">
-        💡 ¿Cómo y con qué frecuencia se traducirá la utilidad en valor recurrente para el poseedor del Artefacto?. Selecciona los tipos de recompensa recurrente que aplicarán y estima su frecuencia o magnitud.
+      <div className="flex items-start gap-2 mb-3">
+        <p className="text-xs text-zinc-400 leading-relaxed flex-1 md:block hidden">
+          💡 Selecciona los tipos de recompensa recurrente que aplicarán y estima su frecuencia o magnitud. Si aún no estás seguro de qué elegir, puedes dejarlo en blanco y te ayudaremos a seleccionar lo más adecuado.
+        </p>
+        {onHelpClick && (
+          <button
+            type="button"
+            onClick={onHelpClick}
+            className="text-lime-400 hover:text-lime-300 text-xs font-medium underline underline-offset-2 flex-shrink-0"
+          >
+            Más info
+          </button>
+        )}
       </div>
 
-      {rewardOptions.map((option) => (
-        <div key={option.id} className="space-y-2">
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              {...register(option.id)}
-              type="checkbox"
-              checked={option.enabled || false}
-              onChange={(e) => setValue(option.id, e.target.checked)}
-              className="mt-0.5 w-4 h-4 text-lime-400 bg-zinc-800 border-zinc-600 rounded focus:ring-lime-400 focus:ring-2"
-            />
-            <div className="flex-1">
-              <div className="text-white font-medium text-sm">
-                {option.label}
-              </div>
-              <div className="text-zinc-400 text-xs mt-0.5">
-                {option.description}
-              </div>
-            </div>
-          </label>
-
-          {option.enabled && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="ml-7"
-            >
-              <textarea
-                {...register(option.detailsField)}
-                placeholder={option.placeholder}
-                rows={2}
-                className="w-full bg-transparent border-b-2 border-zinc-600 focus:border-lime-400 outline-none py-1 text-white placeholder-zinc-500 text-sm transition-colors resize-none"
+      <div className="grid grid-cols-2 md:grid-cols-2 gap-3 md:gap-4">
+        {rewardOptions.map((option) => (
+          <div key={option.id} className="space-y-1.5 md:space-y-2">
+            <label className="flex items-start gap-2 md:gap-3 cursor-pointer">
+              <input
+                {...register(option.id)}
+                type="checkbox"
+                checked={option.enabled || false}
+                onChange={(e) => setValue(option.id, e.target.checked)}
+                className="mt-0.5 w-3.5 h-3.5 md:w-4 md:h-4 text-lime-400 bg-zinc-800 border-zinc-600 rounded focus:ring-lime-400 focus:ring-2 flex-shrink-0"
               />
-              {errors[option.detailsField] && (
-                <motion.p
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-red-400 text-xs mt-1"
-                >
-                  {errors[option.detailsField]?.message as string}
-                </motion.p>
-              )}
-            </motion.div>
-          )}
-        </div>
-      ))}
+              <div className="flex-1 min-w-0">
+                <div className="text-white font-medium text-xs md:text-sm break-words leading-tight md:leading-normal">
+                  {option.label}
+                </div>
+                <div className="text-zinc-400 text-xs mt-0.5 leading-relaxed break-words">
+                  {option.description}
+                </div>
+              </div>
+            </label>
+
+            {option.enabled && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="ml-7"
+              >
+                <textarea
+                  {...register(option.detailsField)}
+                  placeholder={option.placeholder}
+                  rows={2}
+                  className="w-full bg-transparent border-b-2 border-zinc-600 focus:border-lime-400 outline-none py-1 text-white placeholder-zinc-500 text-sm transition-colors resize-none break-words"
+                />
+                {errors[option.detailsField] && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-red-400 text-xs mt-1 break-words"
+                  >
+                    {errors[option.detailsField]?.message as string}
+                  </motion.p>
+                )}
+              </motion.div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

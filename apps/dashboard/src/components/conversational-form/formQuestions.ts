@@ -1,4 +1,4 @@
-import type { FormQuestion } from './schema';
+import type { FormQuestion } from './types';
 
 // Array de preguntas del formulario conversacional - Versión Utility Final
 export const formQuestions: FormQuestion[] = [
@@ -8,7 +8,7 @@ export const formQuestions: FormQuestion[] = [
     label: '¡Hola, Creador! ¿Cómo se llama esta nueva Creación (Protocolo de Utilidad)?',
     placeholder: 'Ej: Pandora\'s DAO o Acceso Total NFT',
     component: 'text-input',
-    // required: true, // Temporalmente no requerido para pruebas
+    required: true,
     maxLength: 256,
   },
   {
@@ -16,6 +16,7 @@ export const formQuestions: FormQuestion[] = [
     label: '¿Cuál es el eslogan o frase que resume el Valor o la Utilidad de tu Creación?',
     placeholder: 'Ej: Acceso ilimitado a nuestra comunidad por tu Labor.',
     component: 'text-input',
+    required: true,
     maxLength: 140,
     info: 'Un eslogan memorable que capture la esencia de tu protocolo de utilidad. Debe enfocarse en el beneficio, no en la inversión.',
   },
@@ -24,6 +25,7 @@ export const formQuestions: FormQuestion[] = [
     label: 'Describe tu Creación: ¿Qué problema resuelve y cómo beneficia a tu comunidad?',
     placeholder: 'Ej: Mi protocolo conecta creadores con su audiencia a través de tokens de utilidad que dan acceso exclusivo a contenido premium, eventos y recompensas por participación activa.',
     component: 'textarea-input',
+    required: true,
     info: 'Describe claramente qué hace tu protocolo, qué problema resuelve y cómo beneficia a los holders de tus Artefactos. Esta descripción aparecerá en tu página de proyecto.',
   },
   {
@@ -52,7 +54,7 @@ export const formQuestions: FormQuestion[] = [
       { value: 'prediction_markets', label: 'Mercados de Predicción (Acceso y Votación)' },
       { value: 'other', label: 'Otro (Especificar en descripción)' },
     ],
-    // required: true, // Temporalmente no requerido para pruebas
+    required: true,
     info: 'Selecciona la categoría que mejor describa la utilidad principal de tu protocolo. Esta clasificación ayuda a la comunidad a encontrar Creaciones relevantes.',
   },
   {
@@ -134,6 +136,7 @@ export const formQuestions: FormQuestion[] = [
     label: '¿Cómo se mantiene la utilidad de los Artefactos a largo plazo?',
     placeholder: 'Ej: Actualizaciones continuas del protocolo, nuevos casos de uso desbloqueados por tenencia prolongada, recompensas por participación activa, acceso a eventos exclusivos...',
     component: 'textarea-input',
+    required: false,
     info: 'Describe el plan para que el valor de uso (utilidad) se mantenga y crezca más allá del lanzamiento inicial. La clave es la *utilidad continua*.',
   },
   {
@@ -141,13 +144,14 @@ export const formQuestions: FormQuestion[] = [
     label: 'Si incluye \'Labor\' (Work-to-Earn), describa el mecanismo: ¿Qué es \'Labor\' y cómo se calculará la recompensa?',
     placeholder: 'Ej: Las acciones validadas incluyen: contribuir al DAO, moderar contenido. La recompensa se calcula por puntos acumulados semanalmente, canjeables por tokens adicionales o acceso premium...',
     component: 'textarea-input',
+    required: false,
     info: 'Detalla cómo el sistema Work-to-Earn recompensa la contribución de la comunidad. Especifica las acciones y la fórmula de recompensa.',
   },
   {
     id: 'integrationPlan', // Nueva Clave
     label: '¿Tiene planes de integrar este Protocolo con otras herramientas/plataformas (Discord, e-commerce, Web3, etc.)?',
     component: 'checkbox-input',
-    info: 'Marcar Sí si planeas integrar con otras plataformas. Describe las integraciones en el campo de descripción del proyecto.',
+    info: 'Marcar Sí, si planeas integrar con otras plataformas, o deja sin marcar si no sabes o no lo harás en este momento.',
   },
   {
     id: 'targetAmount',
@@ -163,6 +167,7 @@ export const formQuestions: FormQuestion[] = [
       { value: '1000000', label: '$1,000,000' },
       { value: 'custom', label: 'Otro monto (especificar)' },
     ],
+    required: true,
     info: 'Monto en USD que necesitas recaudar. Sé realista: un monto bien justificado genera confianza.',
   },
   {
@@ -170,6 +175,7 @@ export const formQuestions: FormQuestion[] = [
     label: '¿Cómo planeas representar la participación en tu Creación? (Tipo de Artefacto digital)',
     component: 'select-input',
     options: [
+      { value: 'not_sure', label: 'Aún no estoy seguro(a)' },
       { value: 'erc20', label: 'Fungible (ERC-20) - Para recompensas o gobernanza' },
       { value: 'erc721', label: 'No Fungible (ERC-721/NFT) - Para acceso o identidad' },
       { value: 'erc1155', label: 'Semi-Fungible (ERC-1155) - Para combinar ambos tipos' },
@@ -181,14 +187,14 @@ export const formQuestions: FormQuestion[] = [
     label: 'Definamos los Artefactos. ¿Cuántos Artefactos existirán en total (Supply Total)?',
     placeholder: 'Ej: 10000000',
     component: 'number-input',
-    info: 'El suministro total de Artefactos. Este número define la escasez del acceso.',
+    info: 'El suministro total de Artefactos. Este número define la escasez del acceso. Si aún no lo sabes, elige un número alto y ajustaremos más adelante.',
   },
   {
     id: 'tokensOffered',
     label: '¿Cuántos Artefactos ofrecerás a la comunidad en esta ronda?',
     placeholder: 'Ej: 1000000',
     component: 'number-input',
-    info: 'Cantidad que se pondrá a disposición de la comunidad en esta fase.',
+    info: 'Cantidad que se pondrá a disposición de la comunidad en esta fase. Si aún no lo sabes, elige un número la misma cnatidad del paso anterior.',
     relatedField: 'totalTokens',
   },
   {
@@ -196,7 +202,7 @@ export const formQuestions: FormQuestion[] = [
     label: '¿Cuál será el precio (en USD) de cada Artefacto durante la recaudación?',
     placeholder: 'Ej: 0.10',
     component: 'number-input',
-    info: 'El precio inicial de venta del Artefacto de Acceso.',
+    info: 'El precio inicial de venta del Artefacto de Acceso. Sí aún no lo sabes, elige un valor bajo para maximizar la adopción inicial.',
   },
   {
     id: 'recurringRewards',
@@ -210,6 +216,7 @@ export const formQuestions: FormQuestion[] = [
     label: '¿Cuál es tu nombre completo?',
     placeholder: 'Ej: Juan Pérez García',
     component: 'text-input',
+    required: true,
     info: 'Tu nombre completo tal como aparecerá públicamente en el proyecto.',
   },
   {
@@ -248,6 +255,7 @@ export const formQuestions: FormQuestion[] = [
     label: '¿Cuál es el estatus legal de tu Creación y en qué jurisdicción opera?',
     placeholder: 'Ej: LLC en Delaware, USA o DAO sin fines de lucro',
     component: 'text-input',
+    required: true,
     info: 'Información legal para demostrar la legitimidad de la entidad que gestiona la Creación.',
   },
   {
@@ -255,6 +263,7 @@ export const formQuestions: FormQuestion[] = [
     label: 'Modelo de Monetización (Ingresos del Protocolo): ¿Cuál es el mecanismo principal que usará el Creador para generar ingresos y financiar las recompensas de Utilidad a largo plazo?',
     placeholder: 'Ej: Suscripciones con Artefactos, Tarifas por Uso del Servicio, Venta de Productos/Servicios.',
     component: 'text-input',
+    required: true,
     maxLength: 256,
     info: 'Ej: Suscripciones con Artefactos, Tarifas por Uso del Servicio, Venta de Productos/Servicios.',
   },
@@ -263,6 +272,7 @@ export const formQuestions: FormQuestion[] = [
     label: 'Describa la estrategia inicial para que la comunidad adquiera sus Artefactos de Acceso.',
     placeholder: 'Ej: 50% vía Airdrop a holders de X NFT, 50% vía venta a precio fijo, asignación por mérito/labor.',
     component: 'textarea-input',
+    required: false,
     info: 'Describe cómo planeas distribuir inicialmente tus Artefactos. Incluye porcentajes, criterios de elegibilidad y fases de lanzamiento.',
   },
   {

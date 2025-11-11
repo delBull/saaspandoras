@@ -685,6 +685,119 @@ export function useInfoModals(setInfoModal: (state: InfoModalState) => void) {
     });
   }, []);
 
+  const openRecurringRewardsModal = useCallback(() => {
+    setInfoModal({
+      isOpen: true,
+      title: 'Entendiendo la Sostenibilidad de tu Protocolo',
+      description: 'Esta sección define cómo tu Activo de Creación (el NFT) genera valor recurrente para el holder y, lo más importante, cómo se mantiene la postura Anti-Security de tu Protocolo.',
+      content: (
+        <div className="space-y-6 text-gray-300">
+          <div className="bg-lime-500/10 border border-lime-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-lime-400 mb-3 text-lg">1. Recompensas por Staking (Bloqueo)</h4>
+            <div className="space-y-3">
+              <div>
+                <h5 className="font-medium text-white mb-2">¿Qué es?</h5>
+                <p className="text-sm leading-relaxed">
+                  El holder bloquea su Activo de Creación o sus Artefactos (tokens de recompensa) dentro del smart contract del Protocolo para asegurar o habilitar una función. A cambio, recibe una recompensa periódica en Artefactos o en Acceso mejorado.
+                </p>
+              </div>
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                <h5 className="font-medium text-red-400 mb-2 flex items-center gap-2">
+                  <span className="text-lg">🚨</span> Advertencia Estratégica
+                </h5>
+                <p className="text-sm leading-relaxed">
+                  Para mantener la postura Anti-Security, el staking debe estar vinculado a una función de seguridad o validación. No debe ser un bloqueo pasivo que simplemente otorga rendimientos por holding. El holder debe correr un riesgo (ser slashed) si no participa en la validación activa.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-blue-400 mb-3 text-lg">2. Participación en Ingresos (Revenue Share)</h4>
+            <div className="space-y-3">
+              <div>
+                <h5 className="font-medium text-white mb-2">¿Qué es?</h5>
+                <p className="text-sm leading-relaxed">
+                  Un porcentaje del Modelo de Monetización del Protocolo (ingresos por suscripciones, tarifas, rentas, etc.) se asigna a un pool de fondos de la Tesorería.
+                </p>
+              </div>
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                <h5 className="font-medium text-red-400 mb-2 flex items-center gap-2">
+                  <span className="text-lg">🚨</span> Advertencia Legal (Punto Crítico)
+                </h5>
+                <p className="text-sm leading-relaxed font-medium">
+                  EL INGRESO NO PUEDE SER UN DIVIDENDO PASIVO. Los fondos de este pool se deben usar EXCLUSIVAMENTE para financiar y pagar las recompensas de Artefactos a los holders que realizan Labor (Work-to-Earn). El Activo de Creación no debe otorgar una participación automática de las ganancias por sí mismo.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-green-400 mb-3 text-lg">3. Incentivos por Labor (Work-to-Earn)</h4>
+            <div className="space-y-3">
+              <div>
+                <h5 className="font-medium text-white mb-2">¿Qué es?</h5>
+                <p className="text-sm leading-relaxed">
+                  El Activo de Creación desbloquea el derecho a trabajar en el Protocolo. El holder gana Artefactos como pago por completar tareas verificables que añaden valor directo (ej. ventas, auditoría de hitos de construcción, moderación).
+                </p>
+              </div>
+              <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-3">
+                <h5 className="font-medium text-green-400 mb-2 flex items-center gap-2">
+                  <span className="text-lg">🟢</span> Recomendación de Pandora's
+                </h5>
+                <p className="text-sm leading-relaxed">
+                  Esta es la vía principal para demostrar que tu Activo de Creación NO es un security. La ganancia es un ingreso laboral por un servicio prestado. Es vital que estas tareas sean verificables y que el pago (Artefacto) sea la causa directa del trabajo.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-purple-400 mb-3 text-lg">4. Acceso Escalable (Tiers)</h4>
+            <div className="space-y-3">
+              <div>
+                <h5 className="font-medium text-white mb-2">¿Qué es?</h5>
+                <p className="text-sm leading-relaxed">
+                  La utilidad o los beneficios del Activo de Creación mejoran o se amplían a medida que se cumplen ciertos criterios:
+                </p>
+                <ul className="text-sm mt-2 space-y-1 ml-4">
+                  <li>• Mantenimiento del holding por un período específico (Tiempo).</li>
+                  <li>• Finalización de hitos de Labor.</li>
+                  <li>• Acumulación de Artefactos (staking).</li>
+                </ul>
+              </div>
+              <div>
+                <h5 className="font-medium text-white mb-2">Estrategia</h5>
+                <p className="text-sm leading-relaxed">
+                  Es un excelente complemento. Premia la lealtad y el compromiso al vincular la utilidad con la participación, fomentando la retención del Activo de Creación.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
+            <h4 className="font-semibold text-orange-400 mb-3 text-lg">5. Descuentos/Tarifas Reducidas</h4>
+            <div className="space-y-3">
+              <div>
+                <h5 className="font-medium text-white mb-2">¿Qué es?</h5>
+                <p className="text-sm leading-relaxed">
+                  El Activo de Creación funciona como una membresía premium, otorgando al holder descuentos en los servicios o productos futuros del Creador (ej. 50% de descuento en el Skybar, tarifas reducidas por uso de servicios SaaS, etc.).
+                </p>
+              </div>
+              <div>
+                <h5 className="font-medium text-white mb-2">Riesgo</h5>
+                <p className="text-sm leading-relaxed">
+                  Esta es la forma más simple de utilidad y presenta el menor riesgo legal. Define claramente el valor que el holder recibe por ser parte de la comunidad.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+      icon: '🔄'
+    });
+  }, []);
+
   return {
     openMechanicModal,
     openBenefitModal,
@@ -695,6 +808,7 @@ export function useInfoModals(setInfoModal: (state: InfoModalState) => void) {
     openCommunityOfferingModal,
     openLegalModal,
     openMonetizationModal,
-    openAdoptionModal
+    openAdoptionModal,
+    openRecurringRewardsModal
   };
 }

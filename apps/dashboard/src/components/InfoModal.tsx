@@ -22,7 +22,7 @@ export function InfoModal({
   description,
   content,
   icon = '💡',
-  size = 'md'
+  size = 'lg'
 }: InfoModalProps) {
   const sizeClasses = {
     sm: 'max-w-sm',
