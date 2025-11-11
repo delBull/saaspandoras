@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@saasfly/ui/card';
 import { Button } from '@/components/ui/button';
 import { useActiveAccount } from 'thirdweb/react';
+import { ethereum } from 'thirdweb/chains';
 import {
   BalanceDashboard,
   WalletInfoPanel,
@@ -41,10 +42,10 @@ export default function WalletPage() {
           <BalanceDashboard />
 
           {/* NFT Gallery */}
-          <NFTGallery />
+          <NFTGallery selectedChain={ethereum} />
 
           {/* Send & Receive Interface */}
-          <SendReceiveInterface />
+                <SendReceiveInterface selectedChain={ethereum} />
 
           {/* Transaction History */}
           <TransactionHistory />

@@ -1,14 +1,12 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@saasfly/ui/card';
 import { useActiveAccount } from 'thirdweb/react';
-import { ethereum } from 'thirdweb/chains';
-import { NetworkSelector } from '@/components/wallet';
-import { SUPPORTED_NETWORKS } from '@/config/networks';
-import { getContractAddress } from '~/lib/wallet-contracts';
+import type { ethereum } from 'thirdweb/chains';
 
-export function NFTGallery() {
+import { getContractAddress } from '@/lib/wallet-contracts';
+
+export function NFTGallery({ selectedChain }: { selectedChain: typeof ethereum }) {
   const account = useActiveAccount();
-  const [selectedChain, setSelectedChain] = useState(ethereum);
 
   if (!account) return null;
 
@@ -24,13 +22,6 @@ export function NFTGallery() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Selector de red para NFTs */}
-        <NetworkSelector
-          selectedChain={selectedChain}
-          onChainChange={setSelectedChain}
-          supportedNetworks={SUPPORTED_NETWORKS}
-        />
-
         {pandorasKeyAddress && pandorasKeyAddress !== "0x..." ? (
           <div className="text-center py-8">
             <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-4">
