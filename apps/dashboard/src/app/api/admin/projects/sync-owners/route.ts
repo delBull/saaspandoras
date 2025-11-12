@@ -101,7 +101,7 @@ export async function POST() {
     
     if (projectsToSync.length === 0) {
       console.log('🔄 SYNC: No projects found with an empty applicant_name. The issue might be in the frontend data fetching.');
-      return NextResponse.json({ message: "No se encontraron creaciones con nombre de propietario vacío.", projectsUpdated: 0 }, { status: 200 });
+      return NextResponse.json({ message: "No se encontraron protocolos con nombre de propietario vacío.", projectsUpdated: 0 }, { status: 200 });
     }
 
     console.log('🔄 SYNC: Projects to be updated (showing first 5):', projectsToSync.slice(0, 5));

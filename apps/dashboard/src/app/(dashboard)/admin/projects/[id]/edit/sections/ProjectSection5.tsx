@@ -216,7 +216,7 @@ export function ProjectSection5() {
               <h5 className="font-medium text-blue-300">Importante: Cumplimiento Legal</h5>
             </div>
             <p className="text-sm text-blue-200">
-              Esta sección es crítica para la aprobación. Las creaciones deben cumplir con todas las regulaciones locales 
+              Esta sección es crítica para la aprobación. Las protocolos deben cumplir con todas las regulaciones locales 
               e internacionales aplicables a la tokenización de activos. Consulta con abogados especializados en blockchain 
               y securities law antes de continuar.
             </p>

@@ -221,11 +221,11 @@ export function GamificationDashboard({
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-blue-400">{profile.projectsApplied}</div>
-            <div className="text-sm text-zinc-400">Creaciones Aplicadas</div>
+            <div className="text-sm text-zinc-400">Protocolos Aplicadas</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-green-400">{profile.projectsApproved}</div>
-            <div className="text-sm text-zinc-400">Creaciones Aprobadas</div>
+            <div className="text-sm text-zinc-400">Protocolos Aprobadas</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-orange-400">{profile.communityContributions}</div>

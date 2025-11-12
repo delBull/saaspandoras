@@ -102,7 +102,7 @@ export default function ApplicantsPage() {
       <div className="flex items-center justify-center min-h-screen text-white">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-12 h-12 animate-spin text-lime-500" />
-          <p className="text-lg text-gray-400">Cargando Creaciones...</p>
+          <p className="text-lg text-gray-400">Cargando Protocolos...</p>
         </div>
       </div>
     );

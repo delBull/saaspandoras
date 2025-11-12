@@ -146,7 +146,7 @@ export function AccountStatus({
                   </svg>
                 </div>
                 <div>
-                  <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Creaciones Aplicadas</span>
+                  <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Protocolos Aplicados</span>
                   <p className="text-white text-xs font-medium">{projectCount ?? 0}</p>
                 </div>
               </div>
