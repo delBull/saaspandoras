@@ -386,7 +386,7 @@ export default function ProfileEditPage() {
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                     <span className="text-green-400 text-sm font-medium">
-                      ✅ KYC Básico verificado - Ahora puede participar en creaciones de comunidades.
+                      ✅ KYC Básico verificado - Ahora puede participar en protocolos de comunidades.
                     </span>
                   </div>
                 </div>
@@ -397,7 +397,7 @@ export default function ProfileEditPage() {
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
                     <span className="text-yellow-400 text-sm font-medium">
-                      ⚠️ Complete la información KYC para acceder a creaciones de comunidades.
+                      ⚠️ Complete la información KYC para acceder a protocolos de comunidades.
                     </span>
                   </div>
                 </div>

@@ -378,9 +378,9 @@ export function TopNavbar({
                   >
                     <FolderIcon className="w-5 h-5 text-gray-400" />
                     <div>
-                      <div className="text-white text-sm">Tus Creaciones</div>
+                      <div className="text-white text-sm">Tus Protocolos</div>
                       <div className="text-gray-400 text-xs">
-                        {userProfile?.projectCount ? `${userProfile.projectCount} creaciones` : 'Gestionar creaciones'}
+                        {userProfile?.projectCount ? `${userProfile.projectCount} protocolos` : 'Gestionar protocolos'}
                       </div>
                     </div>
                   </Link>

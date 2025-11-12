@@ -45,34 +45,34 @@ export function PreFilterModal({ isOpen, onClose, onProceed }: PreFilterModalPro
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed inset-0 z-[10000] flex items-center justify-center p-4"
+            className="fixed inset-0 z-[10000] flex items-center justify-center p-4 pt-0"
           >
-            <div className="w-full max-w-2xl bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl max-h-[90vh] overflow-hidden">
+            <div className="w-full max-w-2xl bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl max-h-[85vh] overflow-hidden">
               {/* Header */}
-              <div className="flex items-start justify-between p-6 pb-4 border-b border-zinc-700">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-r from-lime-500 to-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
+              <div className="flex items-start justify-between p-2 md:p-6 pb-3 md:pb-4 border-b border-zinc-700">
+                <div className="flex items-center gap-3 md:gap-4">
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-r from-lime-500 to-emerald-500 rounded-full flex items-center justify-center flex-shrink-0 text-lg md:text-xl">
                     📝
                   </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-white mb-1">
-                      El Manifiesto del Creador: ¿Estás Listo para la Utilidad?
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-lg md:text-2xl font-bold text-white mb-1 leading-tight">
+                      El Manifiesto del Creador
                     </h2>
-                    <p className="text-gray-400 text-sm leading-relaxed">
-                      Antes de invertir 15 minutos en configurar tu protocolo, confirma que estás comprometido con construir utilidad real para tu comunidad.
+                    <p className="text-gray-400 text-xs md:text-sm leading-relaxed">
+                      Confirma tu compromiso con la utilidad real para tu comunidad.
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={onClose}
-                  className="p-2 hover:bg-zinc-800 rounded-lg transition-colors flex-shrink-0"
+                  className="p-1.5 md:p-2 hover:bg-zinc-800 rounded-lg transition-colors flex-shrink-0"
                 >
-                  <X className="w-5 h-5 text-gray-400" />
+                  <X className="w-4 h-4 md:w-5 md:h-5 text-gray-400" />
                 </button>
               </div>
 
               {/* Content */}
-              <div className="p-6 max-h-[60vh] overflow-y-auto space-y-6">
+              <div className="p-6 max-h-[55vh] overflow-y-auto space-y-6">
                 {/* Sección 1: Tiempo Estimado */}
                 <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-4">
                   <div className="flex items-start gap-3">
@@ -169,8 +169,8 @@ export function PreFilterModal({ isOpen, onClose, onProceed }: PreFilterModalPro
               </div>
 
               {/* Footer */}
-              <div className="px-6 pb-8 pt-4 border-t border-zinc-700">
-                <div className="flex flex-col sm:flex-row gap-3 justify-end mt-4">
+              <div className="px-6 pb-12 md:pb-8 border-t border-zinc-700">
+                <div className="flex flex-col sm:flex-row gap-3 justify-center mt-4">
                   <Button
                     onClick={onClose}
                     variant="outline"
