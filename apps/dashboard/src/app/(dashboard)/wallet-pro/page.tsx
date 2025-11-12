@@ -23,9 +23,10 @@ import {
   ChartBarIcon,
 } from '@heroicons/react/24/outline';
 import { useActiveAccount } from 'thirdweb/react';
-import { ethereum } from 'thirdweb/chains';
+import { ethereum, base } from 'thirdweb/chains';
 import { NetworkSelector } from '@/components/wallet';
 import { SUPPORTED_NETWORKS } from '@/config/networks';
+import { getContractAddress } from '@/lib/wallet-contracts';
 import {
   NFTGallery,
   SendReceiveInterface,
@@ -36,8 +37,21 @@ export default function WalletProPage() {
   const router = useRouter();
   const account = useActiveAccount();
 
-  // Estado para el selector de red global
-  const [selectedChain, setSelectedChain] = React.useState(ethereum);
+  // Filtrar redes que tienen contratos PANDORAS_KEY configurados
+  const networksWithNFTs = React.useMemo(() =>
+    SUPPORTED_NETWORKS.filter(network => {
+      const contractAddress = getContractAddress('PANDORAS_KEY', network.chain.id);
+      return contractAddress && contractAddress !== "0x...";
+    }),
+    []
+  );
+
+  // Estado para el selector de red global - inicializar con Base si tiene NFTs, sino la primera disponible
+  const [selectedChain, setSelectedChain] = React.useState(() => {
+    // Buscar Base en las redes con NFTs
+    const baseNetwork = networksWithNFTs.find(network => network.chain.id === base.id);
+    return baseNetwork?.chain ?? networksWithNFTs[0]?.chain ?? ethereum;
+  });
 
   const quickActions = [
     {
