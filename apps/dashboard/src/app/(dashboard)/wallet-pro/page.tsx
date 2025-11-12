@@ -179,10 +179,18 @@ export default function WalletProPage() {
                         theme="dark"
                         locale="es_ES"
                         autoConnect={{ timeout: 20000 }}
-                        className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 text-white font-semibold py-2 px-4 rounded-lg text-sm"
-                      >
-                        Gestionar
-                      </ConnectButton>
+                        connectButton={{
+                          style: {
+                            width: '100%',
+                            background: 'linear-gradient(to right, #f97316, #dc2626)',
+                            color: 'white',
+                            fontWeight: '600',
+                            padding: '8px 16px',
+                            borderRadius: '8px',
+                            fontSize: '14px',
+                          }
+                        }}
+                      />
                     </div>
                   ) : (
                     <>
@@ -304,11 +312,17 @@ export default function WalletProPage() {
                   theme="dark"
                   locale="es_ES"
                   autoConnect={{ timeout: 20000 }}
-                  className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 text-white font-semibold px-8 py-3 rounded-lg"
-                >
-                  <WalletIcon className="w-5 h-5 mr-2" />
-                  Conectar Wallet
-                </ConnectButton>
+                  connectButton={{
+                    style: {
+                      background: 'linear-gradient(to right, #f97316, #dc2626)',
+                      color: 'white',
+                      fontWeight: '600',
+                      padding: '12px 32px',
+                      borderRadius: '8px',
+                      fontSize: '16px',
+                    }
+                  }}
+                />
                 <Button variant="outline" className="border-zinc-700 hover:border-orange-500/50">
                   <QrCodeIcon className="w-5 h-5 mr-2" />
                   Escanear QR
