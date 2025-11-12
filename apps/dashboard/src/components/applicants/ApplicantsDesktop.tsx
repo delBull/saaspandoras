@@ -93,9 +93,9 @@ export function ApplicantsDesktop({
         <div className="top-0 z-10 flex flex-col gap-4 px-6 lg:px-0 py-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-white">Creaciones</h1>
+              <h1 className="text-3xl font-bold text-white">Protocolos</h1>
               <p className="text-gray-400 text-base">
-                {`${approvedProjects.filter(p => p.status === 'live').length} de ${approvedProjects.length} creaciones desatadas`}
+                {`${approvedProjects.filter(p => p.status === 'live').length} de ${approvedProjects.length} protocolos desatados`}
               </p>
             </div>
           </div>

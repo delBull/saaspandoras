@@ -55,9 +55,9 @@ export function ApplicantsMobile({
       {/* Header */}
       <div className="top-0 z-20 flex justify-between items-center px-2 py-6 gap-6 bg-zinc-950/80 backdrop-blur-sm">
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold text-white truncate">Creaciones</h1>
+          <h1 className="text-2xl font-bold text-white truncate">Protocolos</h1>
           <p className="text-gray-400 text-sm truncate">
-            {`${approvedProjects.filter(p => p.status === 'live').length} de ${approvedProjects.length} creaciones desatadas`}
+            {`${approvedProjects.filter(p => p.status === 'live').length} de ${approvedProjects.length} protocolos desatados`}
           </p>
         </div>
         {/* Enlace a /apply en la parte superior derecha */}
@@ -76,7 +76,7 @@ export function ApplicantsMobile({
             onClick={() => setShowMobileModal(true)}
             className="flex-1 flex items-center justify-center px-3 py-3 bg-yellow-500/20 text-yellow-300 rounded-lg text-xs font-medium hover:bg-yellow-500/30 transition-colors"
           >
-            Ver {pendingProjects.length > 0 ? `${pendingProjects.length} Creaciones en Revisión` : 'Creaciones de Revisión'}
+            Ver {pendingProjects.length > 0 ? `${pendingProjects.length} Protocolos en Revisión` : 'Protocolos de Revisión'}
           </button>
 
           <button
@@ -84,8 +84,8 @@ export function ApplicantsMobile({
             className="flex-1 flex items-center justify-center px-3 py-3 bg-green-500/20 text-green-300 rounded-lg text-xs font-medium hover:bg-green-500/30 transition-colors"
           >
             Ver {approvedOnlyProjects.length > 0
-              ? `${approvedOnlyProjects.length} Creaciones Aprobadas`
-              : 'Creaciones Aprobadas'}
+              ? `${approvedOnlyProjects.length} Protocolos Aprobados`
+              : 'Protocolos Aprobados'}
           </button>
         </div>
       </div>
@@ -113,7 +113,7 @@ export function ApplicantsMobile({
         onClose={() => setShowMobileApprovedModal(false)}
         pendingProjects={approvedOnlyProjects}
         approvedProjects={approvedOnlyProjects}
-        title="Creaciones Aprobadas"
+        title="Protocolos Aprobados"
       />
     </div>
   );

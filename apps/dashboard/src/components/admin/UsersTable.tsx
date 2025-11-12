@@ -105,8 +105,8 @@ export function UsersTable({ users }: UsersTableProps) {
                 <option>📅 Última conexión ↑</option>
                 <option>📝 Nombre A-Z</option>
                 <option>📝 Nombre Z-A</option>
-                <option>📊 Creaciones ↓</option>
-                <option>📊 Creaciones ↑</option>
+                <option>📊 Protocolos ↓</option>
+                <option>📊 Protocolos ↑</option>
                 <option>🔗 Conexiones ↓</option>
                 <option>🔗 Conexiones ↑</option>
               </select>
@@ -164,7 +164,7 @@ export function UsersTable({ users }: UsersTableProps) {
               <th className="px-4 py-3 text-left font-semibold text-gray-300">Usuario</th>
               <th className="px-4 py-3 text-left font-semibold text-gray-300">Wallet</th>
               <th className="px-4 py-3 text-left font-semibold text-gray-300">Rol</th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-300">Creaciones</th>
+              <th className="px-4 py-3 text-left font-semibold text-gray-300">Protocolos</th>
               <th className="px-4 py-3 text-left font-semibold text-gray-300">Conexiones</th>
               <th className="px-4 py-3 text-left font-semibold text-gray-300">Última Conex.</th>
               <th className="px-4 py-3 text-left font-semibold text-gray-300">Pandoras Key</th>
@@ -273,7 +273,7 @@ export function UsersTable({ users }: UsersTableProps) {
         <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-400">Con Creaciones</p>
+              <p className="text-sm font-medium text-gray-400">Con Protocolos</p>
               <p className="text-2xl font-bold text-cyan-400">
                 {users.filter(u => u.projectCount > 0).length}
               </p>

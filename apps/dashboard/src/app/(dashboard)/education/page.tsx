@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@saasfly/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@saasfly/ui/card';
 import { BookOpenIcon, ClockIcon, UserGroupIcon, TrophyIcon, PlayIcon } from '@heroicons/react/24/outline';
+import { ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -28,6 +30,7 @@ interface Course {
 }
 
 export default function EducationPage() {
+  const router = useRouter();
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [startingCourseId, setStartingCourseId] = useState<string | null>(null);
@@ -166,6 +169,17 @@ export default function EducationPage() {
 
   return (
     <div className="p-6 space-y-6 pb-20 md:pb-6">
+      {/* Back Button - Mobile & Desktop */}
+      <div className="flex items-center gap-4 mb-4">
+        <button
+          onClick={() => router.back()}
+          className="text-gray-400 hover:text-white transition-colors z-40"
+          aria-label="Volver atrás"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

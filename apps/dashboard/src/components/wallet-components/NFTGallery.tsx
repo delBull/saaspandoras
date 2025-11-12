@@ -1,11 +1,173 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@saasfly/ui/card';
+import { Card, CardContent } from '@saasfly/ui/card';
 import { useActiveAccount } from 'thirdweb/react';
 import { getContract, readContract } from 'thirdweb';
 import type { ethereum } from 'thirdweb/chains';
 import { client } from '@/lib/thirdweb-client';
-
+import { motion } from 'framer-motion';
 import { getContractAddress } from '@/lib/wallet-contracts';
+
+// Tipos para el componente mobile-friendly
+
+// Componente Mobile-Friendly para el árbol jerárquico
+
+// Componente Mobile-Friendly para el árbol jerárquico
+const MobileVaultTree: React.FC<{ nftBalance: number | null; isLoading: boolean; error: string | null }> = ({
+  nftBalance,
+  isLoading,
+  error
+}) => {
+  if (isLoading) {
+    return (
+      <div className="text-center py-8">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-4"
+        >
+          <span className="text-lg">🔄</span>
+        </motion.div>
+        <p className="text-gray-400 text-sm">Cargando colección NFT...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-4">
+          <span className="text-lg">❌</span>
+        </div>
+        <p className="text-red-400 text-sm mb-2">{error}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Pandoras Key - Nivel Superior */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 p-1 pt-6 mt-6 rounded-2xl shadow-xl"
+      >
+        <div className="bg-zinc-900 rounded-xl p-4 text-center">
+          <motion.div
+            animate={{ rotate: [0, 5, -5, 0] }}
+            transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+            className="text-3xl mb-2"
+          >
+            🔑
+          </motion.div>
+          <h3 className="text-lg font-bold text-white mb-1">Pandoras Key</h3>
+          <p className="text-xs text-purple-300 mb-2">Smart Wallet NFT</p>
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-1 rounded-full">
+              Madre
+            </span>
+            <span className="text-xs bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded-full">
+              W2E
+            </span>
+          </div>
+          {nftBalance !== null && (
+            <div className="text-sm text-green-400 font-medium">
+              {nftBalance} NFT{nftBalance !== 1 ? 's' : ''}
+            </div>
+          )}
+        </div>
+      </motion.div>
+
+      {/* Flecha hacia abajo */}
+      <div className="flex justify-center">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8 }}
+          className="text-purple-400 text-xl"
+        >
+          ↓
+        </motion.div>
+      </div>
+
+      {/* Accesos - Nivel Medio */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {[
+          { name: "Acceso Alpha", icon: "🚀", color: "from-blue-500 to-cyan-500", desc: "Acceso Premium" },
+          { name: "Acceso Beta", icon: "⚡", color: "from-green-500 to-emerald-500", desc: "Acceso Avanzado" },
+          { name: "Acceso Gamma", icon: "🔮", color: "from-purple-500 to-indigo-500", desc: "Acceso Elite" }
+        ].map((acceso, index) => (
+          <motion.div
+            key={acceso.name}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 1 + index * 0.1 }}
+            className={`bg-gradient-to-br ${acceso.color} p-1 rounded-xl shadow-lg`}
+          >
+            <div className="bg-zinc-900 rounded-lg p-3 text-center">
+              <div className="text-xl mb-1">{acceso.icon}</div>
+              <h4 className="text-sm font-bold text-white mb-1">{acceso.name}</h4>
+              <p className="text-xs text-gray-400">{acceso.desc}</p>
+              <div className="mt-2 text-xs bg-zinc-800/50 text-gray-300 px-2 py-1 rounded">
+                Próximamente
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Flecha hacia abajo */}
+      <div className="flex justify-center">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.8 }}
+          className="text-blue-400 text-xl"
+        >
+          ↓
+        </motion.div>
+      </div>
+
+      {/* Artefactos - Nivel Inferior */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {[
+          { name: "Artefacto A1", icon: "💎", color: "from-cyan-500 to-blue-500", type: "Alpha" },
+          { name: "Artefacto A2", icon: "🔥", color: "from-red-500 to-orange-500", type: "Alpha" },
+          { name: "Artefacto B1", icon: "🌟", color: "from-emerald-500 to-green-500", type: "Beta" },
+          { name: "Artefacto B2", icon: "⚡", color: "from-yellow-500 to-amber-500", type: "Beta" },
+          { name: "Artefacto G1", icon: "🎭", color: "from-indigo-500 to-purple-500", type: "Gamma" },
+          { name: "Artefacto G2", icon: "👑", color: "from-pink-500 to-rose-500", type: "Gamma" }
+        ].map((artefacto, index) => (
+          <motion.div
+            key={artefacto.name}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4, delay: 2 + index * 0.05 }}
+            className={`bg-gradient-to-br ${artefacto.color} p-0.5 rounded-lg shadow-md`}
+          >
+            <div className="bg-zinc-900 rounded-md p-2 text-center">
+              <div className="text-lg mb-1">{artefacto.icon}</div>
+              <h5 className="text-xs font-bold text-white mb-1">{artefacto.name}</h5>
+              <p className="text-xs text-gray-400">{artefacto.type}</p>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Leyenda simplificada */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 2.5 }}
+        className="mt-6 p-3 bg-gradient-to-r from-zinc-800/50 to-zinc-900/50 border border-zinc-700/50 rounded-lg"
+      >
+        <p className="text-center text-xs text-gray-400">
+          Los Artefactos se desbloquean al obtener los Accesos correspondientes dentro de tu Pandoras Key
+        </p>
+      </motion.div>
+    </div>
+  );
+};
 
 export function NFTGallery({ selectedChain }: { selectedChain: typeof ethereum }) {
   const account = useActiveAccount();
@@ -59,160 +221,21 @@ export function NFTGallery({ selectedChain }: { selectedChain: typeof ethereum }
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Mi Bóveda de Utilidad</CardTitle>
-        <CardDescription>
-          Activos de Creación (llaves de acceso)
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent>
         {pandorasKeyAddress && pandorasKeyAddress !== "0x..." ? (
-          <div className="space-y-4">
-            {isLoading ? (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">🔄</span>
-                </div>
-                <p className="text-gray-400 mb-4">
-                  Cargando colección NFT...
-                </p>
-                <p className="text-sm text-gray-500">
-                  Conectando con contrato Pandoras Key en {selectedChain.name}
-                </p>
-              </div>
-            ) : error ? (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">❌</span>
-                </div>
-                <p className="text-red-400 mb-4">
-                  {error}
-                </p>
-                <p className="text-sm text-gray-500">
-                  Dirección del contrato: {pandorasKeyAddress}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {/* Estadísticas de NFTs */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-lg p-4">
-                    <div className="text-2xl font-bold text-purple-400 mb-1">
-                      {nftBalance ?? 0}
-                    </div>
-                    <div className="text-sm text-gray-400">NFTs Totales</div>
-                  </div>
-                  <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-lg p-4">
-                    <div className="text-2xl font-bold text-blue-400 mb-1">
-                      {selectedChain.name}
-                    </div>
-                    <div className="text-sm text-gray-400">Red</div>
-                  </div>
-                </div>
-
-                {/* Lista de NFTs con datos reales */}
-                {nftBalance && nftBalance > 0 ? (
-                  <div className="space-y-3">
-                    <h4 className="text-lg font-semibold text-white">Tus NFTs</h4>
-                    <div className="text-sm text-green-400 mb-4 font-medium">
-                      ✅ ¡Felicitaciones! Tienes {nftBalance} NFT{nftBalance !== 1 ? 's' : ''} en {selectedChain.name}
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {/* Mostrar NFTs con datos simulados pero realistas */}
-                      {Array.from({ length: Math.min(nftBalance, 6) }, (_, i) => (
-                        <div key={i} className="bg-gradient-to-br from-zinc-900/50 to-zinc-800/50 border border-zinc-700/50 rounded-lg p-4 hover:border-purple-500/30 transition-all duration-300 group">
-                          <div className="aspect-square bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 rounded-lg mb-3 flex items-center justify-center relative overflow-hidden">
-                            {/* Placeholder para imagen real del NFT */}
-                            <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-pink-600/20 group-hover:from-purple-500/30 group-hover:to-pink-500/30 transition-all duration-300"></div>
-                            <div className="relative z-10 text-center">
-                              <div className="text-3xl mb-1">🔑</div>
-                              <div className="text-xs text-white/80 font-medium">Pandoras</div>
-                              <div className="text-xs text-white/60">Key</div>
-                            </div>
-                            {/* Badge de rareza */}
-                            <div className="absolute top-2 right-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black text-xs px-2 py-1 rounded-full font-bold">
-                              W2E
-                            </div>
-                          </div>
-                          <div className="space-y-1">
-                            <h5 className="font-medium text-white">Pandoras Key</h5>
-                            <p className="text-sm text-gray-400">Work-to-Earn Achievement</p>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-purple-400 font-medium">ERC721</span>
-                              <span className="text-xs text-gray-500 font-mono">
-                                #{String(Math.floor(Math.random() * 10000) + 1000).padStart(4, '0')}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {nftBalance > 6 && (
-                      <div className="text-center pt-4">
-                        <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-lg p-3">
-                          <p className="text-sm text-purple-300 font-medium">
-                            🎨 Y {nftBalance - 6} NFT{nftBalance - 6 !== 1 ? 's' : ''} más en tu colección
-                          </p>
-                          <p className="text-xs text-gray-400 mt-1">
-                            Explora todos tus activos digitales
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Información del contrato */}
-                    <div className="mt-6 p-4 bg-gradient-to-r from-zinc-800/50 to-zinc-900/50 border border-zinc-700/50 rounded-lg">
-                      <h5 className="font-medium text-white mb-2 flex items-center gap-2">
-                        <span className="text-purple-400">📋</span>
-                        Detalles del Contrato
-                      </h5>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Red:</span>
-                          <span className="text-white font-medium">{selectedChain.name}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Tipo:</span>
-                          <span className="text-purple-400 font-medium">ERC721</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Contrato:</span>
-                          <span className="text-gray-300 font-mono text-xs">
-                            {pandorasKeyAddress?.slice(0, 8)}...{pandorasKeyAddress?.slice(-6)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <div className="w-16 h-16 bg-gradient-to-br from-gray-500 to-gray-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <span className="text-2xl">📭</span>
-                    </div>
-                    <p className="text-gray-400 mb-4">
-                      No tienes NFTs en esta red
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Completa misiones de work-to-earn para ganar tus primeros NFTs
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          <MobileVaultTree nftBalance={nftBalance} isLoading={isLoading} error={error} />
         ) : (
           <div className="text-center py-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl">🎨</span>
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-lg">🌳</span>
             </div>
-            <p className="text-gray-400 mb-4">
-              Próximamente: Vista completa de NFTs
+            <p className="text-gray-400 text-sm mb-2">
+              Árbol de Activos Digitales
             </p>
-            <p className="text-sm text-gray-500">
-              Una vez desplegado el contrato Pandoras Key, podrás ver aquí tus NFTs ganados por work-to-earn
+            <p className="text-xs text-gray-500">
+              Una vez desplegado el contrato Pandoras Key, podrás ver aquí tu árbol jerárquico de NFTs
             </p>
-            <div className="mt-4 p-3 bg-zinc-800/50 rounded-lg">
+            <div className="mt-3 p-2 bg-zinc-800/50 rounded-lg">
               <p className="text-xs text-gray-400">
                 Dirección del contrato: {pandorasKeyAddress ?? "No configurada"}
               </p>
