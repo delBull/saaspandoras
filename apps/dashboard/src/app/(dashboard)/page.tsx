@@ -332,8 +332,8 @@ export default function DashboardPage() {
       <TotalBalance total={totalInvestmentValue} />
       <div className="grid grid-cols-4 my-6 md:hidden">
         <ActionButton icon={<QrCodeIcon className="w-8 h-8 text-gray-300"/>} label="Depositar" disabled />
-        <ActionButton href="/swap" icon={<ArrowPathIcon className="w-8 h-8 text-gray-300"/>} label="Swap" disabled />
-        <ActionButton href="/applicants" icon={<UserGroupIcon className="w-8 h-8 text-gray-300"/>} label="Creaciones" />
+        <ActionButton href="/wallet-pro" icon={<ArrowPathIcon className="w-8 h-8 text-gray-300"/>} label="Wallet" />
+        <ActionButton href="/applicants" icon={<UserGroupIcon className="w-8 h-8 text-gray-300"/>} label="Protocolos" />
         <ActionButton icon={<BanknotesIcon className="w-8 h-8 text-gray-300"/>} label="Recompensas" disabled />
       </div>
       <BannersSection />

@@ -53,8 +53,8 @@ export default function MobileProfilePage() {
     {
       href: '/profile/projects',
       icon: <FolderIcon className="w-5 h-5 text-gray-400" />,
-      label: 'Tus Creaciones',
-      description: 'Gestionar creaciones',
+      label: 'Tus Protocolos',
+      description: 'Gestionar protocoloes',
     },
     {
       href: '/settings', // Placeholder por ahora
@@ -122,22 +122,6 @@ export default function MobileProfilePage() {
           </CardContent>
         </Card>
       )}
-
-      {/* Coming Soon - Wallet page */}
-      <Card className="border-dashed border-gray-600">
-        <CardContent className="p-6 text-center">
-          <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-xl">💰</span>
-          </div>
-          <h3 className="text-lg font-medium text-white mb-2">Wallet Management</h3>
-          <p className="text-gray-400 text-sm mb-4">
-            Vista detallada de balance, transacciones y gestión de fondos disponible próximamente.
-          </p>
-          <Button variant="outline" disabled className="w-full">
-            Próximamente
-          </Button>
-        </CardContent>
-      </Card>
     </div>
   );
 }

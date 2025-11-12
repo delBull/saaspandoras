@@ -104,7 +104,7 @@ export function WalletInfo({
               </div>
               <div className="flex items-center gap-2 text-xs text-gray-400">
                 <BoltIcon className="w-3 h-3 text-yellow-400" />
-                <span>Permite impulsar creaciones DeFi</span>
+                <span>Permite impulsar protocolos DeFi</span>
               </div>
               <div className="flex items-center gap-2 text-xs text-gray-400">
                 <ArrowTopRightOnSquareIcon className="w-3 h-3 text-purple-400" />

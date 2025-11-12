@@ -522,7 +522,7 @@ export default function LeaderboardPage() {
           <div className="flex gap-4 justify-center flex-wrap">
             <Link href="/applicants">
               <Button className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-bold px-8 py-3 rounded-xl hover:from-yellow-300 hover:to-orange-400 transition-all duration-300 hover:scale-105">
-                Explorar Creaciones Disponibles
+                Explorar Protocolos Disponibles
               </Button>
             </Link>
 

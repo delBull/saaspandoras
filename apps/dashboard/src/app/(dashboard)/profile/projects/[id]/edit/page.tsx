@@ -95,7 +95,7 @@ export default function EditProjectPage() {
           <p className="text-gray-400 mb-6">{error}</p>
           <Link href="/profile/projects">
             <button className="px-4 py-2 bg-lime-500 hover:bg-lime-600 text-zinc-900 rounded-lg">
-              Regresar a Mis Creaciones
+              Regresar a Mis Protocolos
             </button>
           </Link>
         </div>
@@ -111,7 +111,7 @@ export default function EditProjectPage() {
           <p className="text-gray-400 mb-6">El proyecto que intentas editar no existe o no tienes permisos para editarlo.</p>
           <Link href="/profile/projects">
             <button className="px-4 py-2 bg-lime-500 hover:bg-lime-600 text-zinc-900 rounded-lg">
-              Regresar a Mis Creaciones
+              Regresar a Mis Protocolos
             </button>
           </Link>
         </div>
@@ -126,7 +126,7 @@ export default function EditProjectPage() {
           <div className="mb-6">
             <Link href="/profile/projects">
               <button className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-sm font-medium transition-colors">
-                ← Regresar a Mis Creaciones
+                ← Regresar a Mis Protocolos
               </button>
             </Link>
           </div>
