@@ -23,7 +23,11 @@ export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, initi
 
   // Thirdweb hooks
   const account = useActiveAccount();
-  const balanceQuery = useWalletBalance({ account, chain: base });
+  const balanceQuery = useWalletBalance({
+    client,
+    address: account?.address,
+    chain: base
+  });
 
   // Lógica de Envío
   const [recipient, setRecipient] = useState('');
