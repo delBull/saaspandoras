@@ -11,116 +11,85 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   WalletIcon,
-  ArrowUpIcon,
-  ArrowDownIcon,
   QrCodeIcon,
-  ClockIcon,
   CogIcon,
   ShieldCheckIcon,
   SparklesIcon,
-  CreditCardIcon,
   BanknotesIcon,
   ChartBarIcon,
+  KeyIcon,
 } from '@heroicons/react/24/outline';
-import { useActiveAccount } from 'thirdweb/react';
-import { ethereum, base } from 'thirdweb/chains';
-import { NetworkSelector } from '@/components/wallet';
+import { useActiveAccount, ConnectButton, useWalletBalance } from 'thirdweb/react';
+import { inAppWallet, createWallet } from 'thirdweb/wallets';
+import { base } from 'thirdweb/chains';
+import { client } from '@/lib/thirdweb-client';
 import { SUPPORTED_NETWORKS } from '@/config/networks';
-import { getContractAddress } from '@/lib/wallet-contracts';
 import {
   NFTGallery,
-  SendReceiveInterface,
   TransactionHistory
 } from '@/components/wallet-components';
+
+export type ModalType = 'none' | 'send' | 'receive' | 'buy' | 'history';
+
+// BalanceData interface removed - using direct typing
 
 export default function WalletProPage() {
   const router = useRouter();
   const account = useActiveAccount();
 
-  // Filtrar redes que tienen contratos PANDORAS_KEY configurados
-  const networksWithNFTs = React.useMemo(() =>
-    SUPPORTED_NETWORKS.filter(network => {
-      const contractAddress = getContractAddress('PANDORAS_KEY', network.chain.id);
-      return contractAddress && contractAddress !== "0x...";
-    }),
-    []
-  );
+  // Fijar la red a Base por ahora
+  const selectedChain = base;
 
-  // Estado para el selector de red global - inicializar con Base si tiene NFTs, sino la primera disponible
-  const [selectedChain, setSelectedChain] = React.useState(() => {
-    // Buscar Base en las redes con NFTs
-    const baseNetwork = networksWithNFTs.find(network => network.chain.id === base.id);
-    return baseNetwork?.chain ?? networksWithNFTs[0]?.chain ?? ethereum;
+  // Obtener balance real de ETH en Base
+  const { data: balanceData } = useWalletBalance({
+    client,
+    address: account?.address,
+    chain: base,
   });
 
-  const quickActions = [
-    {
-      icon: <ArrowUpIcon className="w-6 h-6" />,
-      title: 'Enviar',
-      description: 'Transferir crypto',
-      color: 'from-blue-500 to-cyan-500',
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      action: () => {},
-    },
-    {
-      icon: <ArrowDownIcon className="w-6 h-6" />,
-      title: 'Recibir',
-      description: 'Generar QR',
-      color: 'from-green-500 to-emerald-500',
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      action: () => {},
-    },
-    {
-      icon: <QrCodeIcon className="w-6 h-6" />,
-      title: 'Escanear',
-      description: 'Pagar con QR',
-      color: 'from-purple-500 to-pink-500',
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      action: () => {},
-    },
-    {
-      icon: <ClockIcon className="w-6 h-6" />,
-      title: 'Historial',
-      description: 'Ver transacciones',
-      color: 'from-orange-500 to-red-500',
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      action: () => {},
-    },
-  ];
+  // Formatear el balance en USD
+  const walletBalance = React.useMemo(() => {
+    if (!balanceData) return '$0.00';
+    // Usar el valor en USD si está disponible, sino convertir ETH a USD aproximado
+    const balance = balanceData as { usdValue?: number; displayValue: string };
+    const usdValue = balance.usdValue ?? parseFloat(balance.displayValue) * 2500; // aproximado
+    return `$${usdValue.toFixed(5)}`;
+  }, [balanceData]);
 
   const walletStats = [
     {
+      icon: null,
+      label: 'Gestión Wallet',
+      value: null,
+      change: null,
+      positive: true,
+      isWalletButton: true,
+    },
+    {
       icon: <BanknotesIcon className="w-5 h-5" />,
       label: 'Balance Total',
-      value: '$2,847.32',
-      change: '+12.5%',
+      value: walletBalance,
+      change: 'Base Network',
       positive: true,
     },
     {
-      icon: <CreditCardIcon className="w-5 h-5" />,
-      label: 'Tokens',
-      value: '8 activos',
-      change: '+2 nuevos',
+      icon: <KeyIcon className="w-5 h-5" />,
+      label: 'Accesos',
+      value: '0',
+      change: 'Próximamente',
       positive: true,
     },
     {
-      icon: <ChartBarIcon className="w-5 h-5" />,
-      label: 'PNL 30d',
-      value: '+$234.67',
-      change: '+8.2%',
-      positive: true,
-    },
-    {
-      icon: <ShieldCheckIcon className="w-5 h-5" />,
-      label: 'Seguridad',
-      value: '100%',
-      change: 'Verificado',
+      icon: <SparklesIcon className="w-5 h-5" />,
+      label: 'Artefactos',
+      value: '0',
+      change: 'Próximamente',
       positive: true,
     },
   ];
 
   return (
-    <div className="min-h-screen text-white">
+    <div className="min-h-screen text-white pb-20 md:pb-0">
       <div className="relative max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         {/* Back Button - Mobile & Desktop */}
         <div className="flex items-center gap-4 mb-4">
@@ -183,111 +152,87 @@ export default function WalletProPage() {
                   transition={{ delay: 0.6 + index * 0.1 }}
                   className="bg-gradient-to-br from-zinc-900/50 to-zinc-800/50 border border-zinc-700/50 rounded-xl p-6 backdrop-blur-sm hover:border-orange-500/30 transition-all duration-300"
                 >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="p-2 bg-orange-500/10 rounded-lg">
-                      <div className="text-orange-400">
-                        {stat.icon}
+                  {stat.isWalletButton ? (
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-3 mb-3">
+                        <div className="p-2 bg-orange-500/10 rounded-lg">
+                          <WalletIcon className="w-5 h-5 text-orange-400" />
+                        </div>
+                        <div className="text-sm text-zinc-400">{stat.label}</div>
                       </div>
+                      <ConnectButton
+                        client={client}
+                        chains={SUPPORTED_NETWORKS.map(network => network.chain)}
+                        wallets={[
+                          inAppWallet({
+                            auth: {
+                              options: ["email", "google", "apple", "facebook", "passkey"],
+                            },
+                            executionMode: {
+                              mode: "EIP7702",
+                              sponsorGas: true,
+                            },
+                          }),
+                          createWallet("io.metamask"),
+                        ]}
+                        theme="dark"
+                        locale="es_ES"
+                        autoConnect={{ timeout: 20000 }}
+                        className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 text-white font-semibold py-2 px-4 rounded-lg text-sm"
+                      >
+                        Gestionar
+                      </ConnectButton>
                     </div>
-                    <div className="text-sm text-zinc-400">{stat.label}</div>
-                  </div>
-                  <div className="text-2xl font-bold text-white mb-1">{stat.value}</div>
-                  <div className={`text-sm ${stat.positive ? 'text-green-400' : 'text-red-400'}`}>
-                    {stat.change}
-                  </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="p-2 bg-orange-500/10 rounded-lg">
+                          <div className="text-orange-400">
+                            {stat.icon}
+                          </div>
+                        </div>
+                        <div className="text-sm text-zinc-400">{stat.label}</div>
+                      </div>
+                      <div className="text-2xl font-bold text-white mb-1">{stat.value}</div>
+                      <div className={`text-sm ${stat.positive ? 'text-green-400' : 'text-red-400'}`}>
+                        {stat.change}
+                      </div>
+                    </>
+                  )}
                 </motion.div>
               ))}
             </motion.div>
 
-            {/* Quick Actions */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.8 }}
-              className="mb-12"
-            >
-              <div className="text-center mb-8">
-                <h2 className="text-2xl md:text-3xl font-bold mb-2">
-                  Acciones
-                  <span className="bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent"> Rápidas</span>
-                </h2>
-                <p className="text-zinc-400">Operaciones comunes a un clic de distancia</p>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                {quickActions.map((action, index) => (
-                  <motion.div
-                    key={action.title}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 1 + index * 0.1 }}
-                    className="group relative p-6 bg-zinc-900/30 border border-zinc-800 rounded-xl hover:border-orange-500/50 transition-all duration-300 hover:bg-zinc-800/30 cursor-pointer"
-                    onClick={action.action}
-                  >
-                    <div className={`inline-flex p-3 rounded-lg bg-gradient-to-r mb-4 ${action.color}`}>
-                      <div className="text-white">
-                        {action.icon}
-                      </div>
-                    </div>
-                    <h3 className="font-bold text-lg text-white mb-2">{action.title}</h3>
-                    <p className="text-zinc-400 text-sm">{action.description}</p>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
-
             {/* Main Wallet Sections */}
             <div className="space-y-8">
-              {/* Container with Global Network Selector and Both Sections */}
+              {/* Container with NFT Gallery */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 1.2 }}
                 className="bg-gradient-to-r from-zinc-900/30 to-zinc-800/30 border border-zinc-700/30 rounded-xl p-6 backdrop-blur-sm"
               >
-                {/* Global Network Selector - Left side and wider */}
-                <div className="flex justify-start mb-6">
-                  <div className="bg-gradient-to-r from-zinc-900/50 to-zinc-800/50 border border-zinc-700/50 rounded-xl p-6 backdrop-blur-sm min-w-[300px]">
-                    <div className="flex items-center gap-4">
-                      <span className="text-sm text-zinc-400 font-medium">Red Blockchain:</span>
-                      <NetworkSelector
-                        selectedChain={selectedChain}
-                        onChainChange={setSelectedChain}
-                        supportedNetworks={SUPPORTED_NETWORKS}
-                      />
-                    </div>
-                  </div>
+                {/* Header for NFT Section */}
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-white mb-2">Mi Bóveda de Utilidad</h3>
+                  <p className="text-zinc-400 text-sm">Árbol jerárquico de activos digitales</p>
                 </div>
 
-                {/* Desktop: Two Column Layout for Send/Receive and NFT Gallery */}
-                <div className="flex flex-col lg:flex-row gap-8">
-                  {/* Send & Receive Interface */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 1.4 }}
-                    className="flex-1 min-h-0"
-                  >
-                    <SendReceiveInterface selectedChain={selectedChain} />
-                  </motion.div>
-
-                  {/* NFT Gallery */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 1.6 }}
-                    className="flex-1 min-h-0"
-                  >
-                    <NFTGallery selectedChain={selectedChain} />
-                  </motion.div>
-                </div>
+                {/* NFT Gallery - Full Width */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1.4 }}
+                >
+                  <NFTGallery selectedChain={selectedChain} />
+                </motion.div>
               </motion.div>
 
               {/* Transaction History - Full Width */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.8 }}
+                transition={{ delay: 1.6 }}
               >
                 <TransactionHistory />
               </motion.div>
@@ -335,17 +280,34 @@ export default function WalletProPage() {
               </h2>
 
               <p className="text-zinc-400 text-lg mb-8 max-w-xl mx-auto">
-                Accede a todas las funciones avanzadas de gestión de activos digitales.
+                Accede a todas las funciones avanzadas de gestiรณn de activos digitales.
                 Balances multi-chain, envío/recepción de crypto y mucho más.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/applicants">
-                  <Button className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 text-white font-semibold px-8 py-3">
-                    <WalletIcon className="w-5 h-5 mr-2" />
-                    Conectar Wallet
-                  </Button>
-                </Link>
+                <ConnectButton
+                  client={client}
+                  chains={SUPPORTED_NETWORKS.map(network => network.chain)}
+                  wallets={[
+                    inAppWallet({
+                      auth: {
+                        options: ["email", "google", "apple", "facebook", "passkey"],
+                      },
+                      executionMode: {
+                        mode: "EIP7702",
+                        sponsorGas: true,
+                      },
+                    }),
+                    createWallet("io.metamask"),
+                  ]}
+                  theme="dark"
+                  locale="es_ES"
+                  autoConnect={{ timeout: 20000 }}
+                  className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 text-white font-semibold px-8 py-3 rounded-lg"
+                >
+                  <WalletIcon className="w-5 h-5 mr-2" />
+                  Conectar Wallet
+                </ConnectButton>
                 <Button variant="outline" className="border-zinc-700 hover:border-orange-500/50">
                   <QrCodeIcon className="w-5 h-5 mr-2" />
                   Escanear QR
@@ -372,6 +334,8 @@ export default function WalletProPage() {
             </div>
           </motion.div>
         )}
+
+
       </div>
     </div>
   );

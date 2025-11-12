@@ -331,8 +331,8 @@ export function Sidebar({
     const projectsItem = (isAdmin || (userProfile?.role === 'applicant' && userProfile?.projectCount > 0)) ? [{
       href: "/profile/projects",
       icon: <FolderIcon className="w-5 h-5 text-gray-400" />,
-      label: "Tus Creaciones",
-      description: userProfile?.projectCount ? `${userProfile.projectCount} creaciones` : 'Gestionar creaciones',
+      label: "Tus Protocolos",
+      description: userProfile?.projectCount ? `${userProfile.projectCount} protocolos` : 'Gestionar protocolos',
       onClick: () => {
         setProfileDropdown(false);
         if (isMobile) setMobileOpen(false);
@@ -364,8 +364,7 @@ export function Sidebar({
         icon: (
           <BanknotesIcon className="h-5 w-5 shrink-0 text-gray-400" />
         ),
-        comingSoon: true,
-        disabled: true,
+        disabled: false,
       },
             {
         label: "Feed", 

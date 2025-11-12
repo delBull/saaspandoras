@@ -35,7 +35,7 @@ export function PlatformMetrics() {
       icon: <Target className="w-8 h-8" />,
       value: 50,
       suffix: "+",
-      label: "Creaciones Activos",
+      label: "Protocolos Activos",
       description: "Activos generando rendimientos",
       color: "from-blue-500 to-cyan-500",
       targetValue: 50

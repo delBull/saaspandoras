@@ -221,7 +221,7 @@ export default function ApplyInfoPage() {
             <span className="text-sm font-medium text-lime-400">Plataforma No-Code</span>
           </motion.div>
 
-          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6">
+          <h1 className="text-3xl md:text-7xl font-extrabold tracking-tight mb-6">
             <span className="bg-gradient-to-r from-white via-lime-200 to-white bg-clip-text text-transparent">
               Construye tu
             </span>

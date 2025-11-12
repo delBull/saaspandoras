@@ -25,8 +25,8 @@ export function ProjectGrid({
         <EyeIcon className="w-8 h-8 text-gray-400 dark:text-zinc-500 mx-auto mb-2" />
         <p className="text-gray-600 dark:text-gray-400 text-sm">
           {variant === 'pending'
-            ? "No hay creaciones en revisión"
-            : "En esta sección se muestran las creaciones 'desatadas' listas para compartir. Por el momento, todas las creaciones están en proceso de revisión y preparación."}
+            ? "No hay Protocolos en revisión"
+            : "En esta sección se muestran los Protocolos 'desatados' listas para compartir. Por el momento, todas las protocolos están en proceso de revisión y preparación."}
         </p>
       </div>
     );
