@@ -66,7 +66,7 @@ export function MobileNavMenu({ profile }: MobileNavMenuProps) {
     },
     {
       label: 'Wallet',
-      href: '/wallet', 
+      href: '/wallet-pro', 
       icon: <CurrencyDollarIcon className="w-6 h-6" />,
       disabled: false, 
     },
