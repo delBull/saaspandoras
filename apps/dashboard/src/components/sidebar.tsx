@@ -358,21 +358,21 @@ export function Sidebar({
         ),
         disabled: false,
       },
+      {
+        label: "Wallet",
+        href: "wallet-pro",
+        icon: (
+          <BanknotesIcon className="h-5 w-5 shrink-0 text-gray-400" />
+        ),
+        comingSoon: true,
+        disabled: true,
+      },
             {
         label: "Feed", 
         type: "path",
         href: "#",
         icon: (
           <PanelTopIcon className="h-5 w-5 shrink-0 text-gray-400" />
-        ),
-        comingSoon: true,
-        disabled: true,
-      },
-      {
-        label: "Recompensas",
-        href: "#",
-        icon: (
-          <BanknotesIcon className="h-5 w-5 shrink-0 text-gray-400" />
         ),
         comingSoon: true,
         disabled: true,
