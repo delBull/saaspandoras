@@ -7,7 +7,7 @@ import {
   CurrencyDollarIcon,
   ViewfinderCircleIcon,
 } from "@heroicons/react/24/outline";
-import { PackageCheckIcon, PanelTopIcon } from "lucide-react"
+import { PackageCheckIcon, Hash } from "lucide-react"
 import { usePathname } from "next/navigation";
 import { usePersistedAccount } from "@/hooks/usePersistedAccount";
 
@@ -49,7 +49,7 @@ export function MobileNavMenu({ profile }: MobileNavMenuProps) {
     {
       label: 'Feed',
       href: '/feed',
-      icon: <PanelTopIcon className="w-6 h-6" />,
+      icon: <Hash className="w-6 h-6" />,
       disabled: true,
     },
     {

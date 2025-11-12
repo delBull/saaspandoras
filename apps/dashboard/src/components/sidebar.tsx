@@ -24,7 +24,7 @@ import { ethereum } from "thirdweb/chains";
 import { WalletBalance, NetworkSelector, ConnectWalletButton } from "@/components/wallet";
 import { SUPPORTED_NETWORKS, DEFAULT_NETWORK } from "@/config/networks";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
-import { PackageCheckIcon } from "lucide-react";
+import { Hash, PackageCheckIcon } from "lucide-react";
 import { usePathname } from 'next/navigation';
 import * as Tooltip from "@radix-ui/react-tooltip";
 
@@ -371,7 +371,7 @@ export function Sidebar({
         type: "path",
         href: "#",
         icon: (
-          <PanelTopIcon className="h-5 w-5 shrink-0 text-gray-400" />
+          <Hash className="h-5 w-5 shrink-0 text-gray-400" />
         ),
         comingSoon: true,
         disabled: true,
