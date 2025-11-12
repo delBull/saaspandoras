@@ -371,7 +371,7 @@ export function Sidebar({
         type: "path",
         href: "#",
         icon: (
-          <BanknotesIcon className="h-5 w-5 shrink-0 text-gray-400" />
+          <PanelTopIcon className="h-5 w-5 shrink-0 text-gray-400" />
         ),
         comingSoon: true,
         disabled: true,
