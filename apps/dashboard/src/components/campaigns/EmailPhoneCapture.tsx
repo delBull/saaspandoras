@@ -15,7 +15,7 @@ interface EmailPhoneCaptureProps {
 
 export function EmailPhoneCapture({
   title = "Mantente al Tanto",
-  description = "Recibe actualizaciones exclusivas sobre nuevas creaciones y oportunidades de inversión",
+  description = "Recibe actualizaciones exclusivas sobre nuevas protocolos y oportunidades de inversión",
   className = "",
   onCapture
 }: EmailPhoneCaptureProps) {

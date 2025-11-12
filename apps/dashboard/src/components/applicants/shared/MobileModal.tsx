@@ -13,7 +13,7 @@ interface MobileModalProps {
 export function MobileModal({ isOpen, onClose, pendingProjects, approvedProjects, title }: MobileModalProps) {
   // Si hay approvedProjects, usamos esos, si no, usamos pending
   const displayProjects = approvedProjects ?? pendingProjects;
-  const displayTitle = title ?? 'Creaciones en Revisión';
+  const displayTitle = title ?? 'Protocolos en Revisión';
   const displayVariant: 'pending' | 'approved' = approvedProjects ? 'approved' : 'pending';
   return (
     <div className={`fixed inset-0 z-50 lg:hidden transition-all duration-300 ease-out ${
@@ -29,7 +29,7 @@ export function MobileModal({ isOpen, onClose, pendingProjects, approvedProjects
         aria-label="Cerrar modal"
       />
 
-      {/* Modal Panel - Consistent margins like "Creaciones en Revisión" */}
+      {/* Modal Panel - Consistent margins like "Protocolos en Revisión" */}
       <div className="absolute inset-x-0 top-20 bottom-20 md:bottom-6 bg-zinc-900 rounded-lg overflow-hidden border border-zinc-800 shadow-2xl mx-0 md:mx-2">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-zinc-800 bg-zinc-900/95">

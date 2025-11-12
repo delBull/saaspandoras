@@ -93,8 +93,8 @@ export async function GET() {
     const fallbackProjects = [
       {
         id: Math.floor(Math.random() * 10000) + 1000, // Random ID to avoid conflicts
-        title: 'Verifica tus creeaciones en admin',
-        description: 'Para ver tus creaciones reales, dirígete a admin dashboard y verifica que estén publicados.',
+        title: 'Verifica tus protocolos en admin',
+        description: 'Para ver tus protocolos reales, dirígete a admin dashboard y verifica que estén publicados.',
         slug: 'verificacion-admin-' + Date.now(),
         status: 'draft', // Mark as draft so they understand they're not real
         businessCategory: 'other',

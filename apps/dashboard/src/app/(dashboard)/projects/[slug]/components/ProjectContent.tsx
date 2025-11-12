@@ -305,7 +305,7 @@ export function ProjectContent({ activeTab, project }: ProjectContentProps) {
                 </h3>
                 <p className="text-gray-300">
                   Los tokens de utilidad mantienen su valor dentro del ecosistema creado. Si una iniciativa específica
-                  no prospera, los participantes pueden usar sus tokens en otras creaciones compatibles dentro
+                  no prospera, los participantes pueden usar sus tokens en otras protocolos compatibles dentro
                   del ecosistema Pandoras, manteniendo así su valor de participación.
                 </p>
               </div>

@@ -5,3 +5,4 @@ export { NFTGallery } from './NFTGallery';
 export { SendReceiveInterface } from './SendReceiveInterface';
 export { TransactionHistory } from './TransactionHistory';
 export { PandorasQRCode, WalletQRDisplay } from './PandorasQRCode';
+export { WalletModal } from './wallet-modal';

@@ -320,7 +320,7 @@ export default function ProfileProjectsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Acceso Denegado</CardTitle>
-            <CardDescription>Necesitas estar conectado para ver tus creaciones.</CardDescription>
+            <CardDescription>Necesitas estar conectado para ver tus protocolos.</CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -378,7 +378,7 @@ export default function ProfileProjectsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Mis Creaciones</h1>
+          <h1 className="text-2xl font-bold text-white">Mis Protocolos</h1>
           <p className="text-gray-400">Gestiona y monitorea tu desemepño</p>
           {/* Debug info in development */}
           {process.env.NODE_ENV === 'development' && (
@@ -404,8 +404,8 @@ export default function ProfileProjectsPage() {
                 <div>
                   <p className="text-sm font-medium text-gray-400">
                     {walletAddress?.toLowerCase() === '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9'
-                      ? 'Creaciones Gestionados'
-                      : 'Mis Creaciones'
+                      ? 'Protocolos Gestionados'
+                      : 'Mis Protocolos'
                     }
                   </p>
                   <p className="text-2xl font-bold text-white">{userProjects.length}</p>
@@ -467,7 +467,7 @@ export default function ProfileProjectsPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-400">Creaciones desatadas</p>
+                      <p className="text-sm font-medium text-gray-400">Protocolos desatados</p>
                       <p className="text-2xl font-bold text-lime-500">
                         {userProjects.filter(p => p.status === 'live' || p.status === 'approved').length}
                       </p>
@@ -551,10 +551,10 @@ export default function ProfileProjectsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FolderIcon className="w-5 h-5" />
-              Todas Mis Creaciones
+              Todos Mis Protocolos
             </CardTitle>
             <CardDescription>
-              Vista completa de todas tus creaciones por estado
+              Vista completa de todas tus rotocolos por estado
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -689,9 +689,9 @@ export default function ProfileProjectsPage() {
           <Card>
             <CardContent className="p-12 text-center">
               <FolderIcon className="w-16 h-16 text-gray-500 mx-auto mb-4" />
-              <h3 className="text-xl font-medium text-white mb-2">Sin Creaciones Desatadas</h3>
+              <h3 className="text-xl font-medium text-white mb-2">Sin Protocolos</h3>
               <p className="text-gray-400 mb-6">
-                Aún no has aplicado a ningúna creación. Comienza tu jornada aplicando a oportunidades interesantes.
+                Aún no has aplicado ningún protocolo. Comienza tu jornada aplicando a oportunidades interesantes.
               </p>
               {/*
                 <Link href="/apply">
