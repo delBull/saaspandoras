@@ -24,7 +24,6 @@ import { inAppWallet, createWallet } from 'thirdweb/wallets';
 import { base } from 'thirdweb/chains';
 import { client } from '@/lib/thirdweb-client';
 import { SUPPORTED_NETWORKS } from '@/config/networks';
-import { getContractAddress } from '@/lib/wallet-contracts';
 import {
   NFTGallery,
   TransactionHistory
