@@ -46,6 +46,7 @@ function MobileHeader({ userName, walletAddress, profile }: { userName: string |
   );
 }
 
+/*
 function TotalBalance({ total }: { total: number }) {
   return (
     <div className="text-left mt-2 ml-5 md:my-6">
@@ -56,6 +57,7 @@ function TotalBalance({ total }: { total: number }) {
     </div>
   );
 }
+*/
 
 function ActionButton({ icon, label, disabled = false, href }: { icon: React.ReactNode, label: string, disabled?: boolean, href?: string }) {
   const commonClasses = "w-20 h-20 bg-zinc-800 rounded-lg flex items-center justify-center transition-colors hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed";
@@ -295,8 +297,31 @@ function BannersSection() {
 }
 
 function SecondaryTabs({ activeTab, setActiveTab }: { activeTab: string, setActiveTab: (tab: string) => void }) {
-  const tabs = ["Accesos", "Fracciones"];
+  const tabs = ["Accesos", "Artefactos"];
   return ( <div className="flex items-center gap-4"> {tabs.map(tab => ( <button key={tab} onClick={() => setActiveTab(tab)} className={`pb-2 text-sm font-bold transition-colors ${activeTab === tab ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}> {tab} </button> ))} </div> );
+}
+
+function TypewriterText({ text, className, delay = 0 }: { text: string; className?: string; delay?: number }) {
+  const [displayText, setDisplayText] = useState('');
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (currentIndex < text.length) {
+        setDisplayText(prev => prev + text[currentIndex]);
+        setCurrentIndex(prev => prev + 1);
+      }
+    }, 100); // Speed of typing
+
+    return () => clearTimeout(timer);
+  }, [currentIndex, text, delay]);
+
+  return (
+    <h1 className={className}>
+      {displayText}
+      <span className="animate-pulse">|</span>
+    </h1>
+  );
 }
 
 export default function DashboardPage() {
@@ -321,7 +346,7 @@ export default function DashboardPage() {
 
   const ethAmount = poolStats ? Number(poolStats[0]) / 1e18 : 0;
   const usdcAmount = poolStats ? Number(poolStats[1]) / 1e6 : 0;
-  const totalInvestmentValue = usdcAmount + (ethAmount * 3000);
+  // const totalInvestmentValue = usdcAmount + (ethAmount * 3000);
 
   // Add console.log to track renders (remove in production)
   console.log('DashboardPage render - account:', account?.address?.substring(0, 8));
@@ -329,7 +354,14 @@ export default function DashboardPage() {
   return (
     <div className="pb-20 md:pb-6">
       <MobileHeader userName={null} walletAddress={account?.address} profile={profile} />
-      <TotalBalance total={totalInvestmentValue} />
+      <div className="text-left pt-2 md:pt-6 ml-5 md:my-6">
+        {/* Typewriter Welcome Title */}
+        <TypewriterText
+          text="La Infraestructura para el Acceso Digital."
+          className="text-2xl md:text-5xl font-bold text-white tracking-tighter"
+          delay={800}
+        />
+      </div>
       <div className="grid grid-cols-4 my-6 md:hidden">
         <ActionButton icon={<QrCodeIcon className="w-8 h-8 text-gray-300"/>} label="Depositar" disabled />
         <ActionButton href="/wallet-pro" icon={<ArrowPathIcon className="w-8 h-8 text-gray-300"/>} label="Wallet" />
@@ -350,7 +382,7 @@ export default function DashboardPage() {
           </div>
           <div className="p-2">
             {secondaryTab === "Accesos" && ( <div className="p-8 text-center text-gray-500 rounded-lg bg-zinc-900"> <LockClosedIcon className="w-10 h-10 mx-auto mb-2" /> <p className="font-bold">Llaves de Acceso</p> <p className="text-sm">Tus NFTs de acceso se listarán aquí.</p> </div> )}
-            {secondaryTab === "Fracciones" && ( <div className="p-8 text-center text-gray-500 rounded-lg bg-zinc-900"> <Squares2X2Icon className="w-10 h-10 mx-auto mb-2" /> <p className="font-bold">Fracciones</p> <p className="text-sm">Tus fracciones de aportación.</p> </div> )}
+            {secondaryTab === "Artefactos" && ( <div className="p-8 text-center text-gray-500 rounded-lg bg-zinc-900"> <Squares2X2Icon className="w-10 h-10 mx-auto mb-2" /> <p className="font-bold">Artefactos</p> <p className="text-sm">Tus artefactos de aportación.</p> </div> )}
           </div>
         </div>
       </div>
