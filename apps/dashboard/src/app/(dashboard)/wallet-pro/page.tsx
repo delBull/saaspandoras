@@ -24,7 +24,6 @@ import { inAppWallet, createWallet } from 'thirdweb/wallets';
 import { base } from 'thirdweb/chains';
 import { client } from '@/lib/thirdweb-client';
 import { SUPPORTED_NETWORKS } from '@/config/networks';
-import { getContractAddress } from '@/lib/wallet-contracts';
 import {
   NFTGallery,
   TransactionHistory
@@ -143,73 +142,178 @@ export default function WalletProPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12"
+              className="space-y-6 md:space-y-0 mb-12"
             >
-              {walletStats.map((stat, index) => (
+              {/* Mobile Layout */}
+              <div className="block md:hidden space-y-6">
+                {/* Gestión Wallet - Full width */}
                 <motion.div
-                  key={stat.label}
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.6 + index * 0.1 }}
-                  className="bg-gradient-to-br from-zinc-900/50 to-zinc-800/50 border border-zinc-700/50 rounded-xl p-6 backdrop-blur-sm hover:border-orange-500/30 transition-all duration-300"
+                  transition={{ delay: 0.6 }}
+                  className="bg-gradient-to-br from-zinc-900/50 to-zinc-800/50 border border-zinc-700/50 rounded-xl p-4 backdrop-blur-sm hover:border-orange-500/30 transition-all duration-300"
                 >
-                  {stat.isWalletButton ? (
-                    <div className="text-center">
-                      <div className="flex items-center justify-center gap-3 mb-3">
-                        <div className="p-2 bg-orange-500/10 rounded-lg">
-                          <WalletIcon className="w-5 h-5 text-orange-400" />
-                        </div>
-                        <div className="text-sm text-zinc-400">{stat.label}</div>
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-3 mb-3">
+                      <div className="p-2 bg-orange-500/10 rounded-lg">
+                        <WalletIcon className="w-5 h-5 text-orange-400" />
                       </div>
-                      <ConnectButton
-                        client={client}
-                        chains={SUPPORTED_NETWORKS.map(network => network.chain)}
-                        wallets={[
-                          inAppWallet({
-                            auth: {
-                              options: ["email", "google", "apple", "facebook", "passkey"],
-                            },
-                            executionMode: {
-                              mode: "EIP7702",
-                              sponsorGas: true,
-                            },
-                          }),
-                          createWallet("io.metamask"),
-                        ]}
-                        theme="dark"
-                        locale="es_ES"
-                        autoConnect={{ timeout: 20000 }}
-                        connectButton={{
-                          style: {
-                            width: '100%',
-                            background: 'linear-gradient(to right, #f97316, #dc2626)',
-                            color: 'white',
-                            fontWeight: '600',
-                            padding: '8px 16px',
-                            borderRadius: '8px',
-                            fontSize: '14px',
-                          }
-                        }}
-                      />
+                      <div className="text-sm text-zinc-400">Gestión Wallet</div>
                     </div>
-                  ) : (
-                    <>
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="p-2 bg-orange-500/10 rounded-lg">
-                          <div className="text-orange-400">
-                            {stat.icon}
-                          </div>
-                        </div>
-                        <div className="text-sm text-zinc-400">{stat.label}</div>
-                      </div>
-                      <div className="text-2xl font-bold text-white mb-1">{stat.value}</div>
-                      <div className={`text-sm ${stat.positive ? 'text-green-400' : 'text-red-400'}`}>
-                        {stat.change}
-                      </div>
-                    </>
-                  )}
+                    <ConnectButton
+                      client={client}
+                      chains={SUPPORTED_NETWORKS.map(network => network.chain)}
+                      wallets={[
+                        inAppWallet({
+                          auth: {
+                            options: ["email", "google", "apple", "facebook", "passkey"],
+                          },
+                          executionMode: {
+                            mode: "EIP7702",
+                            sponsorGas: true,
+                          },
+                        }),
+                        createWallet("io.metamask"),
+                      ]}
+                      theme="dark"
+                      locale="es_ES"
+                      autoConnect={{ timeout: 20000 }}
+                      connectButton={{
+                        style: {
+                          width: '100%',
+                          background: 'linear-gradient(to right, #f97316, #dc2626)',
+                          color: 'white',
+                          fontWeight: '600',
+                          padding: '10px 16px',
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                        }
+                      }}
+                    />
+                  </div>
                 </motion.div>
-              ))}
+
+                {/* Balance Total - Full width */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.7 }}
+                  className="bg-gradient-to-br from-zinc-900/50 to-zinc-800/50 border border-zinc-700/50 rounded-xl p-4 backdrop-blur-sm hover:border-orange-500/30 transition-all duration-300"
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 bg-orange-500/10 rounded-lg">
+                      <BanknotesIcon className="w-5 h-5 text-orange-400" />
+                    </div>
+                    <div className="text-sm text-zinc-400">Balance Total</div>
+                  </div>
+                  <div className="text-2xl font-bold text-white mb-1">{walletBalance}</div>
+                  <div className="text-sm text-green-400">Base Network</div>
+                </motion.div>
+
+                {/* Accesos and Artefactos - 2 columns */}
+                <div className="grid grid-cols-2 gap-4">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.8 }}
+                    className="bg-gradient-to-br from-zinc-900/50 to-zinc-800/50 border border-zinc-700/50 rounded-xl p-4 backdrop-blur-sm hover:border-orange-500/30 transition-all duration-300"
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-2 bg-orange-500/10 rounded-lg">
+                        <KeyIcon className="w-5 h-5 text-orange-400" />
+                      </div>
+                      <div className="text-sm text-zinc-400">Accesos</div>
+                    </div>
+                    <div className="text-2xl font-bold text-white mb-1">0</div>
+                    <div className="text-sm text-green-400">Próximamente</div>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.9 }}
+                    className="bg-gradient-to-br from-zinc-900/50 to-zinc-800/50 border border-zinc-700/50 rounded-xl p-4 backdrop-blur-sm hover:border-orange-500/30 transition-all duration-300"
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-2 bg-orange-500/10 rounded-lg">
+                        <SparklesIcon className="w-5 h-5 text-orange-400" />
+                      </div>
+                      <div className="text-sm text-zinc-400">Artefactos</div>
+                    </div>
+                    <div className="text-2xl font-bold text-white mb-1">0</div>
+                    <div className="text-sm text-green-400">Próximamente</div>
+                  </motion.div>
+                </div>
+              </div>
+
+              {/* Desktop Layout */}
+              <div className="hidden md:grid md:grid-cols-4 gap-6">
+                {walletStats.map((stat, index) => (
+                  <motion.div
+                    key={stat.label}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.6 + index * 0.1 }}
+                    className="bg-gradient-to-br from-zinc-900/50 to-zinc-800/50 border border-zinc-700/50 rounded-xl p-4 backdrop-blur-sm hover:border-orange-500/30 transition-all duration-300"
+                  >
+                    {stat.isWalletButton ? (
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-3 mb-3">
+                          <div className="p-2 bg-orange-500/10 rounded-lg">
+                            <WalletIcon className="w-5 h-5 text-orange-400" />
+                          </div>
+                          <div className="text-sm text-zinc-400">{stat.label}</div>
+                        </div>
+                        <ConnectButton
+                          client={client}
+                          chains={SUPPORTED_NETWORKS.map(network => network.chain)}
+                          wallets={[
+                            inAppWallet({
+                              auth: {
+                                options: ["email", "google", "apple", "facebook", "passkey"],
+                              },
+                              executionMode: {
+                                mode: "EIP7702",
+                                sponsorGas: true,
+                              },
+                            }),
+                            createWallet("io.metamask"),
+                          ]}
+                          theme="dark"
+                          locale="es_ES"
+                          autoConnect={{ timeout: 20000 }}
+                          connectButton={{
+                            style: {
+                              width: '100%',
+                              background: 'linear-gradient(to right, #f97316, #dc2626)',
+                              color: 'white',
+                              fontWeight: '600',
+                              padding: '8px 16px',
+                              borderRadius: '8px',
+                              fontSize: '14px',
+                            }
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="p-2 bg-orange-500/10 rounded-lg">
+                            <div className="text-orange-400">
+                              {stat.icon}
+                            </div>
+                          </div>
+                          <div className="text-sm text-zinc-400">{stat.label}</div>
+                        </div>
+                        <div className="text-2xl font-bold text-white mb-1">{stat.value}</div>
+                        <div className={`text-sm ${stat.positive ? 'text-green-400' : 'text-red-400'}`}>
+                          {stat.change}
+                        </div>
+                      </>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
             </motion.div>
 
             {/* Main Wallet Sections */}
