@@ -110,15 +110,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
         applicantPosition: true,
         verificationAgreement: true,
 
-        // Additional fields that might be in the extended schema
-        protoclMecanism: true,
-        worktoearnMecanism: true,
-        artefactUtility: true,
-        monetizationModel: true,
-        mitigationPlan: true,
-        adquireStrategy: true,
-        integrationPlan: true,
-        recurringRewards: true,
+        // Note: Additional fields from extended schema are not currently defined in the database schema
       }
     });
 
