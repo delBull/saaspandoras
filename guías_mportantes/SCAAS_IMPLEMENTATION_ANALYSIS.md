@@ -242,7 +242,7 @@ packages/protocol-deployer/
     "dotenv": "^16.5.0"
   },
   "devDependencies": {
-    "hardhat": "^2.19.0",
+    "hardhat": "^2.24.1",
     "@nomiclabs/hardhat-ethers": "^2.2.3",
     "@nomiclabs/hardhat-etherscan": "^3.1.7"
   }
