@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import type { Project } from '@/types/admin';
 
 interface ProjectTableViewProps {
@@ -105,12 +106,20 @@ export function ProjectTableView({
                 </td>
 
                 <td className="px-4 py-3 text-center">
-                  <button
-                    onClick={() => setExpandedProject(expandedProject === p.id ? null : p.id)}
-                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition-colors"
-                  >
-                    {expandedProject === p.id ? 'Ocultar' : 'Ver'}
-                  </button>
+                  <div className="space-y-2 md:space-y-0 md:grid md:grid-cols-2 md:gap-2">
+                    <button
+                      onClick={() => setExpandedProject(expandedProject === p.id ? null : p.id)}
+                      className="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 hover:text-zinc-200 rounded text-xs font-medium transition-colors block w-full border border-zinc-600 hover:border-zinc-500"
+                    >
+                      {expandedProject === p.id ? 'Ocultar' : 'Ver'}
+                    </button>
+                    <Link
+                      href={`/admin/projects/${p.id}/report`}
+                      className="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 hover:text-zinc-200 rounded text-xs font-medium transition-colors block w-full border border-zinc-600 hover:border-zinc-500"
+                    >
+                      📄 One Pager
+                    </Link>
+                  </div>
                 </td>
 
                 <td className="px-4 py-3 text-right">
