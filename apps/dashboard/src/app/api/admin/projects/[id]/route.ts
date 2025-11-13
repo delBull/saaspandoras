@@ -22,6 +22,114 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
+export async function GET(_request: Request, { params }: RouteParams) {
+  const { session } = await getAuth(await headers());
+
+  // Check if user is admin using either userId or address
+  const userIsAdmin = await isAdmin(session?.userId) ||
+                     await isAdmin(session?.address);
+
+  if (!userIsAdmin) {
+    return NextResponse.json({ message: "No autorizado" }, { status: 403 });
+  }
+
+  const { id } = await params;
+  const projectId = Number(id);
+
+  if (isNaN(projectId)) {
+    return NextResponse.json({ message: "ID de proyecto inválido" }, { status: 400 });
+  }
+
+  try {
+    console.log('🔍 GET: Fetching project with ID:', projectId);
+
+    // Obtener el proyecto específico
+    const project = await db.query.projects.findFirst({
+      where: eq(projectsSchema.id, projectId),
+      columns: {
+        // Basic info
+        id: true,
+        title: true,
+        description: true,
+        slug: true,
+        tagline: true,
+        businessCategory: true,
+        targetAmount: true,
+        status: true,
+        createdAt: true,
+
+        // URLs and links
+        website: true,
+        whitepaperUrl: true,
+        twitterUrl: true,
+        discordUrl: true,
+        telegramUrl: true,
+        linkedinUrl: true,
+        logoUrl: true,
+        coverPhotoUrl: true,
+        videoPitch: true,
+
+        // Due diligence
+        valuationDocumentUrl: true,
+        dueDiligenceReportUrl: true,
+        legalStatus: true,
+        fiduciaryEntity: true,
+
+        // Applicant info
+        applicantName: true,
+        applicantEmail: true,
+        applicantPhone: true,
+        applicantWalletAddress: true,
+
+        // Featured status
+        featured: true,
+        featuredButtonText: true,
+
+        // Financial info
+        totalValuationUsd: true,
+        tokenPriceUsd: true,
+        totalTokens: true,
+        tokensOffered: true,
+        tokenType: true,
+        estimatedApy: true,
+        yieldSource: true,
+        lockupPeriod: true,
+        fundUsage: true,
+
+        // Team and distribution
+        teamMembers: true,
+        advisors: true,
+        tokenDistribution: true,
+        contractAddress: true,
+        treasuryAddress: true,
+
+        // Technical
+        isMintable: true,
+        isMutable: true,
+        updateAuthorityAddress: true,
+        applicantPosition: true,
+        verificationAgreement: true,
+
+        // Note: Additional fields from extended schema are not currently defined in the database schema
+      }
+    });
+
+    if (!project) {
+      console.log('🔍 GET: Project not found:', projectId);
+      return NextResponse.json({ message: "Proyecto no encontrado" }, { status: 404 });
+    }
+
+    console.log('🔍 GET: Project found:', project.title);
+    return NextResponse.json(project);
+  } catch (error) {
+    console.error("🔍 GET: Error al obtener el proyecto:", error);
+    return NextResponse.json(
+      { message: "Error interno del servidor.", error: String(error) },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PATCH(request: Request, { params }: RouteParams) {
   const { session } = await getAuth(await headers());
 
