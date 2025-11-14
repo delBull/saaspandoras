@@ -14,6 +14,11 @@
     "format": "prettier --write .",
     "typecheck": "turbo typecheck",
     "postinstall": "bun run check-deps:ci",
+    "workspaces": [
+      "apps/*",
+      "packages/*",
+      "tooling/*"
+    ],
     "check-deps": "check-dependency-version-consistency .",
     "check-deps:ci": "check-dependency-version-consistency . || echo '⚠️  Version mismatches detected - continuing for CI/CD compatibility'",
     "fix-deps": "check-dependency-version-consistency . --fix",
