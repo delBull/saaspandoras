@@ -15,7 +15,8 @@
     "test:security": "forge test --match-path 'test/security/*.t.sol' -v",
     "test:all": "forge test -v",
     "coverage": "forge coverage --report lcov",
-    "clean": "rm -rf dist out cache",
+    "clean": "rm -rf dist out cache node_modules .pnpm",
+    "postinstall": "node scripts/fix-ethers.js",
     "deploy:local": "forge script script/Deploy.s.sol --fork-url http://localhost:8545 --broadcast",
     "deploy:testnet": "forge script script/Deploy.s.sol --rpc-url $BASE_GOERLI_RPC_URL --private-key $PRIVATE_KEY --broadcast --verify"
   },
