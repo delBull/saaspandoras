@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@erc721a/ERC721A.sol";
+import "erc721a/contracts/ERC721A.sol";
 
 /**
  * @title W2ELicense - Licencia de Acceso W2E

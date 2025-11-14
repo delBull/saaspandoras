@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./W2ELicense.sol";
 import "../interfaces/IW2ELicense.sol";
@@ -13,7 +14,7 @@ import "../interfaces/IW2EUtilityToken.sol";
  * @notice Contrato principal que maneja toda la lógica Work-to-Earn
  * @dev Gestiona validación, votación, staking y distribución de recompensas
  */
-contract W2ELoom is Ownable, ReentrancyGuard {
+contract W2ELoom is Ownable, ReentrancyGuard, Pausable {
     // ========== DEPENDENCIAS ==========
 
     /// @notice Contrato de licencias ERC-721A
@@ -1214,6 +1215,36 @@ contract W2ELoom is Ownable, ReentrancyGuard {
         for (uint256 i = 1; i <= totalPhases; i++) {
             salesCounts[i] = phaseSalesCount[i];
         }
+    }
+
+    // ========== FUNCIONES DE ACTIVACIÓN ==========
+
+    /**
+     * @notice Activa el protocolo cuando se alcanzan las condiciones
+     * @dev Callable por la fábrica después del despliegue
+     */
+    function activateProtocol() external onlyOwner {
+        require(protocolState == ProtocolState.PRE_LIVE, "W2E: Protocol not in pre-live state");
+        protocolState = ProtocolState.LIVE;
+        isActive = true;
+    }
+
+    // ========== FUNCIONES DE PAUSA (PAUSABLE) ==========
+
+    /**
+     * @notice Pausa el protocolo
+     * @dev Solo callable por el owner
+     */
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /**
+     * @notice Reanuda el protocolo pausado
+     * @dev Solo callable por el owner
+     */
+    function unpause() external onlyOwner {
+        _unpause();
     }
 
     // ========== FUNCIONES DE SEGURIDAD ==========

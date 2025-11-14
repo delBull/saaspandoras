@@ -1,6 +1,6 @@
 [submodule "packages/protocol-deployer/lib/openzeppelin-contracts"]
 	path = packages/protocol-deployer/lib/openzeppelin-contracts
-	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+	url = https://github.com/openzeppelin/openzeppelin-contracts
 [submodule "packages/protocol-deployer/lib/ERC721A"]
 	path = packages/protocol-deployer/lib/ERC721A
 	url = https://github.com/chiru-labs/ERC721A

@@ -40,15 +40,6 @@ const publicRoute = [
 
 const protectedRoutes = ["/(\\w{2}/)?admin(.*)"];
 
-const authRoutes = [
-  "/api/auth(.*)",
-  "/api/auth/callback(.*)",
-  "/api/auth/signin(.*)",
-  "/api/auth/signout(.*)",
-  "/(\\w{2}/)?login(.*)",
-  "/(\\w{2}/)?register(.*)",
-];
-
 function getLocale(req: NextRequest): string | undefined {
   const negotiatorHeaders: Record<string, string> = {};
   req.headers.forEach((value, key) => (negotiatorHeaders[key] = value));
@@ -82,11 +73,6 @@ export default async function middleware(
   req: NextRequest,
   event: NextFetchEvent,
 ) {
-  // Debug logs
-  // console.log('Requested Path:', req.nextUrl.pathname);
-  // console.log('Is Public Page:', isPublicPage(req));
-  // console.log('Is Auth Route:', authRoutes.some(pattern => new RegExp(`^${pattern}$`).test(req.nextUrl.pathname)));
-
   // Check if current path requires skipping middleware
   if (
     req.nextUrl.pathname.startsWith("/api/auth") ||
@@ -130,16 +116,12 @@ const authMiddleware = withAuth(
     const locale = getLocale(req) ?? i18n.defaultLocale;
     const pathname = req.nextUrl.pathname;
 
-    // console.log('Auth Middleware - Path:', pathname, 'Auth:', isAuth);
-
     // Check if current path is login or register
     const isAuthPath =
       pathname.includes("/login") || pathname.includes("/register");
 
     // If authenticated and trying to access login, redirect appropriately
     if (isAuth && isAuthPath) {
-      // console.log('Authenticated user accessing auth path, handling redirection');
-
       const callbackUrl = req.nextUrl.searchParams.get("callbackUrl");
       if (callbackUrl) {
         // Handle relative URLs
@@ -173,7 +155,6 @@ const authMiddleware = withAuth(
       );
 
       if (protectedRoute) {
-        // console.log('Unauthenticated user accessing protected route, redirecting to login');
         const from = pathname;
         return NextResponse.redirect(
           new URL(

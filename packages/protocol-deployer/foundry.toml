@@ -1,39 +1,20 @@
 [profile.default]
-src = 'contracts'
-out = 'out'
-libs = ['lib']
+src = "contracts"
+out = "out"
+libs = ["lib"]
+solc_version = "0.8.20"
 
-# Excluir contratos experimentales del build por defecto
-# Los contratos experimentales tienen errores conocidos y no afectan el core
-skip = [
-    'contracts/experimental/*'
+remappings = [
+    "@openzeppelin/=lib/openzeppelin-contracts/",
+    "erc721a/=lib/ERC721A/"
 ]
 
-# Configuración del compilador
-solc_version = '0.8.20'
+# Habilitar IR y optimizer para resolver stack overflow
+viaIR = true
 optimizer = true
 optimizer_runs = 200
 
-# Archivo de remappings
-remappings = [
-    "@openzeppelin/=lib/openzeppelin-contracts/",
-    "@erc721a/=lib/ERC721A/"
+# Excluir contratos experimentales que tienen errores conocidos
+skip = [
+    'contracts/experimental/*'
 ]
-
-# Configuración de testing
-[profile.testing]
-# Solo incluir contratos core y tesorerías para testing
-src = 'contracts'
-test = 'test'
-cache_path = 'cache'
-
-# Configuración de deployment
-[profile.deployment]
-# Configuración optimizada para deployment
-optimizer_runs = 1000
-
-# Configuración de CI
-[profile.ci]
-# Configuración para integración continua
-verbosity = 3
-ffi = true

@@ -186,13 +186,21 @@ contract ModularFactory is Ownable, ReentrancyGuard, Pausable {
 
         // 3. Desplegar Motor W2E (Loom)
         W2ELoom loom = new W2ELoom(
-            address(treasury),       // _protocolTreasury
-            pboxToken,              // _pboxToken
-            pandoraKey,             // _licenseNFT
+            address(0),             // _licenseNFT (se setea después)
+            address(0),             // _utilityToken (se setea después)
+            address(treasury),      // _pandoraRootTreasury
+            address(treasury),      // _protocolTreasuryAddress
             pandoraOracle,          // _pandoraOracle
-            rootTreasury,           // _rootTreasury
-            config.quorumPercentage, // _quorumPercentage
-            config.votingPeriodHours // _votingPeriodHours
+            address(0),             // _platformFeeWallet
+            address(0),             // _creatorWallet
+            config.creatorPayoutPct, // _creatorPayoutPct
+            config.quorumPercentage, // _minQuorumPercentage
+            config.votingPeriodHours * 3600, // _votingPeriodSeconds
+            15 * 24 * 3600,         // _emergencyPeriodSeconds (15 días)
+            config.quorumPercentage, // _emergencyQuorumPct
+            0,                      // _stakingRewardRate
+            20,                     // _phiFundSplitPct
+            owner()                 // initialOwner
         );
 
         // ========== VINCULACIÓN ==========
@@ -281,7 +289,7 @@ contract ModularFactory is Ownable, ReentrancyGuard, Pausable {
 
         // Activar contratos
         W2ELoom(addresses.loom).activateProtocol();
-        PBOXProtocolTreasury(addresses.treasury).activateProtocol();
+        PBOXProtocolTreasury(payable(addresses.treasury)).activateProtocol();
 
         creation.active = true;
 
@@ -296,7 +304,7 @@ contract ModularFactory is Ownable, ReentrancyGuard, Pausable {
         require(addresses.loom != address(0), "Factory: Creation not found");
 
         W2ELoom(addresses.loom).pause();
-        PBOXProtocolTreasury(addresses.treasury).pause();
+        PBOXProtocolTreasury(payable(addresses.treasury)).pause();
 
         creations[slug].active = false;
 
@@ -311,7 +319,7 @@ contract ModularFactory is Ownable, ReentrancyGuard, Pausable {
         require(addresses.loom != address(0), "Factory: Creation not found");
 
         W2ELoom(addresses.loom).unpause();
-        PBOXProtocolTreasury(addresses.treasury).unpause();
+        PBOXProtocolTreasury(payable(addresses.treasury)).unpause();
 
         creations[slug].active = true;
 

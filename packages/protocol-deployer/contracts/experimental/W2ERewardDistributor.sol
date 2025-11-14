@@ -44,36 +44,7 @@ contract W2ERewardDistributor is IW2ERewardDistributor, Ownable, ReentrancyGuard
     address public feeRecipient;
     
     // ========== ESTRUCTURAS DE DISTRIBUCIÓN ==========
-    
-    /// @notice Información de distribución por tarea
-    struct RewardDistribution {
-        uint256 taskId;
-        uint256 totalReward;
-        uint256 distributedAmount;
-        uint256 remainingAmount;
-        uint256 participantsCount;
-        uint256 createdAt;
-        bool finalized;
-        bool claimed;
-        uint256 claimDeadline;
-    }
-    
-    /// @notice Recompensas por votante
-    struct VoterReward {
-        uint256 taskId;
-        uint256 rewardAmount;
-        uint256 slashingAmount;
-        bool claimed;
-        uint256 claimTime;
-        bool isSlashed;
-    }
-    
-    /// @notice Lista de ganadores para evitar loops (gas optimization)
-    struct WinnerInfo {
-        address winner;
-        uint256 rewardAmount;
-        bool claimed;
-    }
+    // Las structs están definidas en IW2ERewardDistributor
     
     // ========== STORAGE ==========
     
@@ -443,6 +414,23 @@ contract W2ERewardDistributor is IW2ERewardDistributor, Ownable, ReentrancyGuard
         require(newRecipient != address(0), "W2E: Invalid recipient");
         feeRecipient = newRecipient;
         _logEvent("FEE_RECIPIENT_UPDATED", abi.encode(newRecipient));
+    }
+
+    /**
+     * @notice Obtiene configuración actual de distribución
+     */
+    function getDistributionConfig() external view returns (
+        uint256 minParticipationRewardPct_,
+        uint256 maxSlashingPct_,
+        uint256 claimDuration_,
+        uint256 distributionFeeBps_
+    ) {
+        return (
+            minParticipationRewardPct,
+            maxSlashingPct,
+            claimDuration,
+            distributionFeeBps
+        );
     }
     
     // ========== FUNCIONES DE VISTA ==========

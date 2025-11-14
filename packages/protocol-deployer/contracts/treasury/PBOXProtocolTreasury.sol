@@ -3,13 +3,14 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 
 /**
  * @title PBOXProtocolTreasury - Tesorería Específica de Protocolo
  * @notice Tesorería híbrida para fondos específicos de cada protocolo
  * @dev Control compartido entre Pandora (pandoraOracle) y DAO del protocolo
  */
-contract PBOXProtocolTreasury is Ownable, ReentrancyGuard {
+contract PBOXProtocolTreasury is Ownable, ReentrancyGuard, Pausable {
     // ========== CONFIGURACIÓN HÍBRIDA ==========
     
     /// @notice Signatarios de Pandora (CEO, CTO, Legal)
@@ -435,8 +436,36 @@ contract PBOXProtocolTreasury is Ownable, ReentrancyGuard {
     event OperationalWithdrawal(address indexed recipient, uint256 amount, string purpose);
     event EmergencyExecution(uint256 indexed proposalId, address indexed recipient, uint256 amount);
     
+    // ========== FUNCIONES DE ACTIVACIÓN ==========
+
+    /**
+     * @notice Activa el protocolo cuando se alcanzan las condiciones
+     * @dev Callable por la fábrica después del despliegue
+     */
+    function activateProtocol() external onlyOwner {
+        // Protocolo activado - lógica adicional puede agregarse aquí
+    }
+
+    // ========== FUNCIONES DE PAUSA (PAUSABLE) ==========
+
+    /**
+     * @notice Pausa la tesorería
+     * @dev Solo callable por el owner
+     */
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /**
+     * @notice Reanuda la tesorería pausada
+     * @dev Solo callable por el owner
+     */
+    function unpause() external onlyOwner {
+        _unpause();
+    }
+
     // ========== FUNCIONES RECEIVED ==========
-    
+
     /**
      * @notice Permite recibir ETH
      */
