@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -32,7 +32,7 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export default function StartPage() {
+function StartPageContent() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -740,5 +740,13 @@ export default function StartPage() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+export default function StartPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-black flex items-center justify-center"><div className="text-white">Cargando...</div></div>}>
+      <StartPageContent />
+    </Suspense>
   );
 }
