@@ -2,7 +2,7 @@
   "name": "nextjs-template",
   "private": true,
   "scripts": {
-    "build": "turbo build ",
+    "build": "turbo build --filter='./packages/*' && turbo build",
     "clean": "git clean -xdf node_modules",
     "clean:workspaces": "turbo clean",
     "db:push": "cd ./packages/db/ && bun db:push",
@@ -14,11 +14,6 @@
     "format": "prettier --write .",
     "typecheck": "turbo typecheck",
     "postinstall": "bun run check-deps:ci",
-    "workspaces": [
-      "apps/*",
-      "packages/*",
-      "tooling/*"
-    ],
     "check-deps": "check-dependency-version-consistency .",
     "check-deps:ci": "check-dependency-version-consistency . || echo '⚠️  Version mismatches detected - continuing for CI/CD compatibility'",
     "fix-deps": "check-dependency-version-consistency . --fix",
