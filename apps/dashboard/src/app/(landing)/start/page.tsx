@@ -23,6 +23,7 @@ import {
   Palette,        // Para Arte (Utilidad)
 } from "lucide-react";
 import { ModernBackground } from "@/components/ui/modern-background";
+import { useGoogleAnalytics, trackEvent, trackNewsletterSubscription, trackPageView } from "@/lib/analytics";
 import { TypewriterText } from "@/components/ui/typewriter-text";
 import { AnimatedGradientText } from "@/components/ui/animated-gradient-text";
 import { StaggerText } from "@/components/ui/stagger-text";
@@ -35,6 +36,10 @@ export default function StartPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [isSubscribed, setIsSubscribed] = useState(false);
+
+  // Google Analytics tracking
+  useGoogleAnalytics();
+  trackPageView('Landing Start Page');
 
   // --- TRANSFORMACIÓN #1: DE "BARRERAS DE INVERSIÓN" A "BARRERAS DEL CREADOR" ---
   const barriers = [
@@ -106,10 +111,43 @@ export default function StartPage() {
     }
   ];
 
-  const handleSubscription = () => {
-    if (email || phone) {
-      setIsSubscribed(true);
-      // Aquí iría la lógica para enviar a backend
+  const handleSubscription = async () => {
+    if (!email && !phone) return;
+    
+    try {
+      const response = await fetch('/api/newsletter-subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email || phone,
+          source: 'landing-start',
+          tags: ['web3-creator', 'start-landing'],
+          language: 'es',
+          metadata: {
+            page: 'dashboard/landing/start',
+            timestamp: new Date().toISOString(),
+            userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'unknown'
+          }
+        }),
+      });
+
+      if (response.ok) {
+        setIsSubscribed(true);
+        setEmail('');
+        setPhone('');
+        
+        // Track successful subscription in Google Analytics
+        trackNewsletterSubscription('landing-start', email ? 'email' : 'phone');
+        trackEvent('newsletter_subscription', 'conversion', 'Landing Start', 1);
+      } else {
+        const errorData = await response.json() as { message?: string };
+        alert('Error: ' + (errorData.message ?? 'No se pudo procesar la suscripción'));
+      }
+    } catch (error) {
+      console.error('Error al suscribirse:', error);
+      alert('Error de conexión. Intenta nuevamente.');
     }
   };
 
