@@ -2,7 +2,7 @@ import path from 'path';
 
 const nextConfig = {
   // Explicitly set workspace root to avoid detecting multiple lockfiles
-  outputFileTracingRoot: path.resolve(process.cwd(), '..'),
+  outputFileTracingRoot: path.resolve(process.cwd(), '../..'),
 
   images: {
     remotePatterns: [
@@ -33,11 +33,11 @@ const nextConfig = {
       // Vercel Blob Storage domains
       {
         protocol: 'https',
-        hostname: '**.vercel-storage.com',
+        hostname: '*.vercel-storage.com',
       },
       {
         protocol: 'https',
-        hostname: '**.vercel.app',
+        hostname: '*.vercel.app',
       },
       {
         protocol: 'https',
@@ -57,10 +57,12 @@ const nextConfig = {
       // Exclude Node.js modules from client-side bundle
       config.externals = config.externals || [];
       config.externals.push({
-  'fs': 'node:fs',
-  'tls': 'node:tls',
-  'perf_hooks': 'node:perf_hooks'
-});
+        'tls': 'tls',
+        'fs': 'fs',
+        'perf_hooks': 'perf_hooks',
+        'postgres': 'postgres',
+        'drizzle-orm': 'drizzle-orm'
+      });
     }
 
     return config;

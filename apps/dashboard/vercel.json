@@ -3,13 +3,8 @@
   "installCommand": "bun install",
   "framework": "nextjs",
 
-  "includeFiles": ["../**/*"],
-
   "functions": {
     "src/app/api/**/*.ts": {
-      "runtime": "nodejs20.x"
-    },
-    "src/pages/api/**/*.ts": {
       "runtime": "nodejs20.x"
     }
   }
