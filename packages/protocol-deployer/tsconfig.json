@@ -1,31 +1,19 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "CommonJS",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "lib": ["ES2022"],
     "outDir": "./dist",
+    "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "moduleResolution": "node",
-    "allowSyntheticDefaultImports": true,
     "types": ["node"]
   },
-  "include": [
-    "src/**/*",
-    "hardhat.config.ts",
-    "*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "contracts"
-  ]
+  "include": ["src"]
 }
