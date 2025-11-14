@@ -2,26 +2,43 @@
   "$schema": "https://turborepo.org/schema.json",
   "globalDependencies": ["**/.env"],
   "pipeline": {
-    "topo": {
-      "dependsOn": ["^topo"]
-    },
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "next-env.d.ts", "dist/**"]
+      "inputs": ["src/**", "package.json", "tsconfig.json"],
+      "outputs": [
+        "dist/**",
+        ".next/**",
+        "!.next/cache/**"
+      ]
+    },
+    "build#packages": {
+      "dependsOn": [],
+      "inputs": [
+        "packages/*/src/**",
+        "packages/*/package.json",
+        "packages/*/tsconfig.json"
+      ],
+      "outputs": ["packages/*/dist/**"]
+    },
+    "build#apps": {
+      "dependsOn": ["build#packages"],
+      "inputs": [
+        "apps/*/src/**",
+        "apps/*/package.json",
+        "apps/*/tsconfig.json"
+      ],
+      "outputs": ["apps/*/.next/**"]
     },
     "dev": {
       "persistent": true,
       "cache": false
     },
-    "format": {
-      "outputs": ["node_modules/.cache/.prettiercache"]
-    },
     "lint": {
-      "dependsOn": ["^topo"],
+      "dependsOn": ["^build#packages"],
       "outputs": ["node_modules/.cache/.eslintcache"]
     },
     "typecheck": {
-      "dependsOn": ["^topo"],
+      "dependsOn": ["^build#packages"],
       "outputs": ["node_modules/.cache/tsbuildinfo.json"]
     },
     "clean": {

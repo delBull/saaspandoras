@@ -17,6 +17,24 @@
       ],
       "@/*": [
         "./src/*"
+      ],
+      "@pandoras/gamification": [
+        "../../packages/gamification/src"
+      ],
+      "@pandoras/gamification/*": [
+        "../../packages/gamification/src/*"
+      ],
+      "@saasfly/ui": [
+        "../../packages/ui/src"
+      ],
+      "@saasfly/ui/*": [
+        "../../packages/ui/src/*"
+      ],
+      "@saasfly/db": [
+        "../../packages/db/index.ts"
+      ],
+      "@saasfly/api": [
+        "../../packages/api/src"
       ]
     }
   },
