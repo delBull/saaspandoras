@@ -1,9 +1,4 @@
-import path from 'path';
-
 const nextConfig = {
-  // Explicitly set workspace root to avoid detecting multiple lockfiles
-  outputFileTracingRoot: path.resolve(process.cwd(), '../..'),
-
   images: {
     remotePatterns: [
       {
