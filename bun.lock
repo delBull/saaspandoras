@@ -271,7 +271,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@thirdweb-dev/sdk": "^4.0.9",
-        "ethers": "6.8.1",
+        "ethers": "5.7.2",
       },
       "devDependencies": {
         "@types/node": "^20.8.10",
