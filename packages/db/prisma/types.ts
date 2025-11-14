@@ -12,10 +12,6 @@ export type Customer = {
   authUserId: string;
   name: string | null;
   plan: SubscriptionPlan | null;
-  stripeCustomerId: string | null;
-  stripeSubscriptionId: string | null;
-  stripePriceId: string | null;
-  stripeCurrentPeriodEnd: Timestamp | null;
   createdAt: Generated<Timestamp>;
   updatedAt: Generated<Timestamp>;
 };

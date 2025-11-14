@@ -10,14 +10,14 @@ export const authRouter = createTRPCRouter({
     const userId = opts.ctx.userId as string;
     const customer = await db
       .selectFrom("Customer")
-      .select(["plan", "stripeCurrentPeriodEnd"])
+      .select(["plan"])
       .where("authUserId", "=", userId)
       .executeTakeFirst();
 
     if (!customer) return null;
     return {
       plan: customer.plan,
-      endsAt: customer.stripeCurrentPeriodEnd,
+      endsAt: null,
     };
   }),
 });

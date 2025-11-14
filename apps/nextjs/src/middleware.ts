@@ -77,8 +77,7 @@ export default async function middleware(
   if (
     req.nextUrl.pathname.startsWith("/api/auth") ||
     req.nextUrl.pathname.includes("/api/auth/callback") ||
-    isNoNeedProcess(req) ||
-    req.nextUrl.pathname.startsWith("/api/webhooks/")
+    isNoNeedProcess(req)
   ) {
     return NextResponse.next();
   }
