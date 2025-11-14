@@ -20,7 +20,6 @@ const config = {
     "@saasfly/db",
     "@saasfly/shared",
     "@saasfly/ui",
-    "@saasfly/stripe",
     "@walletconnect/ethereum-provider",
     "viem",
     "wagmi",
@@ -45,12 +44,12 @@ const config = {
     minimumCacheTTL: 60,
   },
   async rewrites() {
-    return [
+    return Promise.resolve([
       {
         source: "/:lang/docs/:slug",
         destination: "/docs/:slug",
       },
-    ];
+    ]);
   },
   /** We already do linting and typechecking as separate tasks in CI */
   eslint: { ignoreDuringBuilds: true },
