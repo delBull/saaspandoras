@@ -1,7 +1,7 @@
 {
   "$schema": "https://turborepo.org/schema.json",
   "globalDependencies": ["**/.env"],
-  "tasks": {
+  "pipeline": {
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["src/**", "package.json", "tsconfig.json"],
@@ -11,7 +11,8 @@
         "!.next/cache/**"
       ]
     },
-    "build#packages": {
+
+    "build-packages": {
       "dependsOn": [],
       "inputs": [
         "packages/*/src/**",
@@ -20,8 +21,9 @@
       ],
       "outputs": ["packages/*/dist/**"]
     },
-    "build#apps": {
-      "dependsOn": ["build#packages"],
+
+    "build-apps": {
+      "dependsOn": ["build-packages"],
       "inputs": [
         "apps/*/src/**",
         "apps/*/package.json",
@@ -29,18 +31,22 @@
       ],
       "outputs": ["apps/*/.next/**"]
     },
+
     "dev": {
       "persistent": true,
       "cache": false
     },
+
     "lint": {
-      "dependsOn": ["^build#packages"],
+      "dependsOn": ["^build-packages"],
       "outputs": ["node_modules/.cache/.eslintcache"]
     },
+
     "typecheck": {
-      "dependsOn": ["^build#packages"],
+      "dependsOn": ["^build-packages"],
       "outputs": ["node_modules/.cache/tsbuildinfo.json"]
     },
+
     "clean": {
       "cache": false
     }
