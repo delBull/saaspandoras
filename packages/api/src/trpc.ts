@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { initTRPC } from "@trpc/server";
-import { getToken, type JWT } from "next-auth/jwt";
+import { getToken } from "next-auth/jwt";
+import type { JWT } from "next-auth/jwt";
 import { ZodError } from "zod";
 
 import { transformer } from "./transformer";
