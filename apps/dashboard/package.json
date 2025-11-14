@@ -41,6 +41,7 @@
     "@trpc/server": "10.44.1",
     "@types/formidable": "^3.4.5",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/pg": "^8.11.0",
     "@vercel/blob": "^2.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -77,12 +78,14 @@
     "viem": "^2.17.3"
   },
   "devDependencies": {
+    "@next/eslint-plugin-next": "14.0.1",
     "@saasfly/eslint-config": "workspace:*",
     "@saasfly/prettier-config": "workspace:*",
     "@saasfly/tailwind-config": "workspace:*",
     "@saasfly/typescript-config": "workspace:*",
     "@types/crypto-js": "^4.2.2",
     "@types/node": "^22.15.34",
+    "@types/pg": "^8.11.0",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
     "autoprefixer": "10.4.17",
