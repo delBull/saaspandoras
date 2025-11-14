@@ -32,14 +32,24 @@
   "license": "MIT",
   "dependencies": {
     "@thirdweb-dev/sdk": "^4.0.9",
-    "ethers": "^6.8.1"
+    "ethers": "6.8.1"
+  },
+  "overrides": {
+    "ethers": "6.8.1"
+  },
+  "pnpm": {
+    "peerDependencyRules": {
+      "ignoreMissing": [
+        "ethers"
+      ]
+    }
   },
   "devDependencies": {
     "@types/node": "^20.8.10",
-    "@typescript-eslint/eslint-plugin": "^6.9.0",
-    "@typescript-eslint/parser": "^6.9.0",
-    "eslint": "^8.52.0",
+    "@typescript-eslint/eslint-plugin": "^8.15.0",
+    "@typescript-eslint/parser": "8.15.0",
+    "eslint": "9.15.0",
     "jest": "^29.7.0",
-    "typescript": "^5.2.2"
+    "typescript": "5.7.2"
   }
 }
