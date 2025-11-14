@@ -29,6 +29,7 @@
     "@trpc/client": "10.44.1",
     "@trpc/server": "10.44.1",
     "@t3-oss/env-nextjs": "0.8.0",
+    "next-auth": "^4.24.11",
     "superjson": "2.2.1",
     "dinero.js": "2.0.0-alpha.14",
     "@dinero.js/currencies": "2.0.0-alpha.14",
