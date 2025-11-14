@@ -1,9 +1,15 @@
 {
   "buildCommand": "bun run build",
   "installCommand": "bun install",
-  "framework": null,
+  "framework": "nextjs",
+
+  "includeFiles": ["../**/*"],
+
   "functions": {
     "src/app/api/**/*.ts": {
+      "runtime": "nodejs20.x"
+    },
+    "src/pages/api/**/*.ts": {
       "runtime": "nodejs20.x"
     }
   }
