@@ -129,7 +129,11 @@ export class PointsManager {
       }
     };
 
-    return levelInfo[level] || levelInfo[1];
+    return levelInfo[level] ?? levelInfo[1] ?? {
+      name: 'Novato',
+      color: 'bg-gray-500',
+      benefits: ['Acceso básico', 'Soporte comunidad']
+    };
   }
 
   /**
