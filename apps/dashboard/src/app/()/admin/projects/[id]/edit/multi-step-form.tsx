@@ -306,7 +306,6 @@ export function MultiStepForm({
       }
       if (typeof input === "string" && input.trim().startsWith('{')) {
         try {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           const parsedValue = JSON.parse(input);
           if (parsedValue !== null && typeof parsedValue === 'object' && !Array.isArray(parsedValue)) {
             return parsedValue as T;

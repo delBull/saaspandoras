@@ -316,7 +316,7 @@ export default function AdminDashboardPage() {
 
     // Start admin verification without timeout - let it complete naturally
     void checkAdminStatus();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     // Set loading to false immediately if user is not admin (prevents infinite loading)
