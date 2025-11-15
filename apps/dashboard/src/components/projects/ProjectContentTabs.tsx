@@ -11,7 +11,7 @@ import {
   ExternalLink,
   Globe
 } from "lucide-react";
-import type { ProjectData } from "../../app/dashboard/projects/types";
+import type { ProjectData } from "@/app/()/projects/types";
 import SectionCard from "./SectionCard";
 
 // Función removida ya que no se usa en las nuevas tabs

@@ -1,5 +1,13 @@
 {
   "buildCommand": "bun run build",
   "installCommand": "bun install",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "env": {
+    "TURBOPACK": "0"
+  },
+  "functions": {
+    "**/*.js": {
+      "runtime": "@vercel/node"
+    }
+  }
 }
