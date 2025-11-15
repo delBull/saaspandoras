@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 function StartPageContent() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [name, setName] = useState("");
   const [isSubscribed, setIsSubscribed] = useState(false);
 
   // Google Analytics tracking
@@ -113,7 +114,7 @@ function StartPageContent() {
 
   const handleSubscription = async () => {
     if (!email && !phone) return;
-    
+
     try {
       const response = await fetch('/api/newsletter-subscribe', {
         method: 'POST',
@@ -121,6 +122,7 @@ function StartPageContent() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          name,
           email: email || phone,
           source: 'landing-start',
           tags: ['web3-creator', 'start-landing'],
@@ -135,9 +137,10 @@ function StartPageContent() {
 
       if (response.ok) {
         setIsSubscribed(true);
+        setName('');
         setEmail('');
         setPhone('');
-        
+
         // Track successful subscription in Google Analytics
         trackNewsletterSubscription('landing-start', email ? 'email' : 'phone');
         trackEvent('newsletter_subscription', 'conversion', 'Landing Start', 1);
@@ -147,7 +150,7 @@ function StartPageContent() {
       }
     } catch (error) {
       console.error('Error al suscribirse:', error);
-      alert('Error de conexión. Intenta nuevamente.');
+      alert('Error de conexión. Inténtalo nuevamente.');
     }
   };
 
@@ -628,36 +631,48 @@ function StartPageContent() {
                 <Mail className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-white mb-2">
-                Mantente al Tanto
+                ¡Únete al Movimiento!
               </h3>
               <p className="text-zinc-400">
-                Recibe actualizaciones de la plataforma, nuevos módulos &apos;No-Code&apos; y casos de uso para Creadores
+                Sé el primero en lanzar protocolos de utilidad con herramientas 'No-Code'. Recibe invitación prioritaria al formulario de aplicación.
               </p>
             </div>
 
             {!isSubscribed ? (
               <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row gap-2">
+                {/* Desktop: Email + Name horizontal, Botón abajo full-width */}
+                {/* Mobile: Nombre arriba, Email centro, Botón abajo */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <input
+                    type="text"
+                    placeholder="Tu nombre (opcional)"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="p-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:border-blue-500 focus:outline-none md:order-1"
+                  />
                   <input
                     type="email"
                     placeholder="tu@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="flex-1 p-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:border-blue-500 focus:outline-none"
+                    className="p-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:border-blue-500 focus:outline-none md:order-2"
                   />
-                  <Button
-                    onClick={handleSubscription}
-                    className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white px-6 w-full sm:w-auto"
-                  >
-                    Suscribir
-                  </Button>
                 </div>
+
+                <Button
+                  onClick={() => handleSubscription()}
+                  disabled={!email}
+                  className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white py-3 text-lg font-semibold rounded-lg transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Suscribir
+                </Button>
 
                 <div className="text-center text-zinc-500 text-sm">
                   O recibe notificaciones por SMS
                 </div>
 
-                <div className="flex gap-2">
+                {/* Phone input with aligned button */}
+                <div className="flex gap-3">
                   <input
                     type="tel"
                     placeholder="+52 55 1234 5678"
@@ -666,10 +681,11 @@ function StartPageContent() {
                     className="flex-1 p-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:border-blue-500 focus:outline-none"
                   />
                   <Button
-                    onClick={handleSubscription}
-                    className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-400 hover:to-blue-400 text-white px-6"
+                    onClick={() => handleSubscription()}
+                    disabled={!phone}
+                    className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-400 hover:to-blue-400 text-white px-6 py-3 rounded-lg min-h-[48px] flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Phone className="w-4 h-4" />
+                    <Phone className="w-5 h-5" />
                   </Button>
                 </div>
               </div>
