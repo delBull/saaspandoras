@@ -184,7 +184,7 @@ if (environment === 'production') {
 ```
 
 ### **✅ EMAIL MARKETING:**
-- ✅ **Resend API** configurada ({{RESEND_API_KEY}})
+- ✅ **Resend API** configurada correctamente con variables de entorno
 - ✅ **Templates HTML** profesionales para todos los ambientes
 - ✅ **Confirmación de suscripción** automática
 
