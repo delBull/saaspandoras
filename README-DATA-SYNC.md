@@ -4,8 +4,8 @@
 
 Tu aplicación funciona correctamente en **local** pero en **staging/production** no se muestran los datos porque las bases de datos son diferentes:
 
-- **Local**: `postgresql://Marco@localhost:5432/pandoras_local`
-- **Staging**: `postgresql://neondb_owner:***@ep-withered-thunder-adt88vka-pooler.c-2.us-east-1.aws.neon.tech/neondb`
+- **Local**: `{{DATABASE_URL_LOCAL}}` (localhost)
+- **Staging**: `{{DATABASE_URL_STAGING}}`
 
 ## ✅ Solución: Scripts de Sincronización
 
@@ -35,9 +35,11 @@ node import-staging-data.js
 
 ### Paso 1: Exportar datos locales
 ```bash
-cd /Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras
+cd your-project-directory
 node export-local-data.js
 ```
+
+> 💡 **Nota**: No uses rutas absolutas ya que contienen información de tu directorio local
 
 **Resultado esperado:**
 ```
@@ -51,7 +53,7 @@ node export-local-data.js
 📤 Exportando usuarios...
 📤 Exportando proyectos...
 📤 Exportando administradores...
-✅ Datos exportados exitosamente a: /Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/local-data-export.json
+✅ Datos exportados exitosamente a: ./local-data-export.json
 ```
 
 ### Paso 2: Importar datos a staging
@@ -87,14 +89,12 @@ node import-staging-data.js
 Después de la importación, verifica que los datos estén en staging:
 
 ```bash
-# Verificar usuarios
-psql "postgresql://neondb_owner:npg_uj0h1LpbAQxi@ep-withered-thunder-adt88vka-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require" -c "SELECT COUNT(*) FROM users;"
+# Reemplaza {{DATABASE_URL_STAGING}} con tu URL real de staging
+psql "{{DATABASE_URL_STAGING}}" -c "SELECT COUNT(*) FROM users;"
 
-# Verificar proyectos
-psql "postgresql://neondb_owner:npg_uj0h1LpbAQxi@ep-withered-thunder-adt88vka-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require" -c "SELECT COUNT(*) FROM projects;"
-
-# Verificar administradores
-psql "postgresql://neondb_owner:npg_uj0h1LpbAQxi@ep-withered-thunder-adt88vka-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require" -c "SELECT COUNT(*) FROM administrators;"
+# Ejemplo de comando para otros ambientes:
+# psql "$DATABASE_URL" -c "SELECT COUNT(*) FROM projects;"
+# psql "$DATABASE_URL" -c "SELECT COUNT(*) FROM administrators;"
 ```
 
 ## 🎯 Problemas que se Solucionan

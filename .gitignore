@@ -51,3 +51,7 @@ package-lock.json
 .idea/
 
 .env
+
+# Internal documentation with sensitive information
+DOCUMENTACIÓN/
+README-DATA-SYNC.md

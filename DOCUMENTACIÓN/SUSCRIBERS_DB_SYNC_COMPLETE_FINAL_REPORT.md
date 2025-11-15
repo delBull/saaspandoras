@@ -178,13 +178,13 @@ if (environment === 'production') {
   SUPABASE_SERVICE_KEY = process.env.DEV_SUSCRIBERS_SUPABASE_SERVICE_ROLE_KEY;
 } else {
   // Local Development - usa PostgreSQL local
-  SUPABASE_URL = 'postgresql://neondb_owner:npg_XtkQf2q0BRHU@ep-winter-cake-a4djzmho-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require';
-  SUPABASE_SERVICE_KEY = 'local-dev-connection';
+  SUPABASE_URL = process.env.LOCAL_DATABASE_URL;
+  SUPABASE_SERVICE_KEY = 'connection-from-env';
 }
 ```
 
 ### **✅ EMAIL MARKETING:**
-- ✅ **Resend API** configurada (`re_bqdhCmVr_85rh4Uvw5F6QtVtfsbJDKgmG`)
+- ✅ **Resend API** configurada ({{RESEND_API_KEY}})
 - ✅ **Templates HTML** profesionales para todos los ambientes
 - ✅ **Confirmación de suscripción** automática
 
