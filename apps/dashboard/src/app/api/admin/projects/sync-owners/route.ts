@@ -3,11 +3,7 @@ import { db } from "~/db";
 // import { drizzle } from "drizzle-orm/postgres-js";
 // import postgres from "postgres";
 
-// Initialize database connection
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) {
-  throw new Error("DATABASE_URL is not set in environment variables");
-}
+// Database connection will be validated at runtime
 
 // const client = postgres(connectionString);
 // const db = drizzle(client, { schema: { projects: projectsSchema } });
