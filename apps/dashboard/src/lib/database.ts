@@ -4,11 +4,6 @@ import postgres from "postgres";
 // This prevents "too many clients" errors by reusing connections
 const connectionString = process.env.DATABASE_URL;
 
-// DEBUG: Log the database URL to verify which one is being used
-console.log('🐛 DATABASE_URL in use:', connectionString?.substring(0, 50) + '...');
-console.log('🐛 Environment:', process.env.NODE_ENV);
-console.log('🐛 Vercel Env:', process.env.VERCEL_ENV);
-
 if (!connectionString) {
   throw new Error("DATABASE_URL is not set");
 }
