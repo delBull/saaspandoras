@@ -207,7 +207,7 @@ const metrics = {
 **Archivos afectados:**
 - `src/lib/auth.ts` - Logs con datos de sesión
 - `src/app/api/admin/projects/[id]/route.ts` - Logs con datos proyecto
-- `src/app/(dashboard)/layout.tsx` - Información sesión expuesta
+- `src/app/dashboard/layout.tsx` - Información sesión expuesta
 
 **Solución implementada:** ✅ `sanitizeLogData()` utility
 

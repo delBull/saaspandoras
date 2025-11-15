@@ -155,7 +155,7 @@ Páginas UI:
 #### 🏗️ **Aplicación de Proyectos (+50 pts):**
 ```typescript
 // Se activa automáticamente en:
-// apps/dashboard/src/app/(dashboard)/admin/projects/[id]/edit/multi-step-form.tsx
+// apps/dashboard/src/app/dashboard/admin/projects/[id]/edit/multi-step-form.tsx
 // Cuando el usuario completa y envía una aplicación
 
 gamificationEngine.trackEvent(
@@ -757,7 +757,7 @@ export async function POST(request: Request) {
 #### **4. PÁGINA TIENDA DE RECOMPENSAS:**
 
 ```typescript
-// apps/dashboard/src/app/(dashboard)/gamification/rewards/page.tsx
+// apps/dashboard/src/app/dashboard/gamification/rewards/page.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -1416,7 +1416,7 @@ async function testAllEvents() {
 
 ### 🎯 **TAREA 3: ADAPTAR /profile/dashboard - DATA REAL**
 
-#### **Ubicación:** `apps/dashboard/src/app/(dashboard)/profile/dashboard/page.tsx`
+#### **Ubicación:** `apps/dashboard/src/app/dashboard/profile/dashboard/page.tsx`
 
 #### **Secciones a Adaptar:**
 
@@ -1460,7 +1460,7 @@ const gamificationStats = {
 
 ### 🎯 **TAREA 4: CORREGIR /profile/achievements - DATA REAL + EVENTS**
 
-#### **Ubicación:** `apps/dashboard/src/app/(dashboard)/profile/achievements/page.tsx`
+#### **Ubicación:** `apps/dashboard/src/app/dashboard/profile/achievements/page.tsx`
 
 #### **Problemas Identificados:**
 
@@ -1505,7 +1505,7 @@ const achievementTriggers = {
 
 ##### **🎯 Achievement Page Logic:**
 ```tsx
-// apps/dashboard/src/app/(dashboard)/profile/achievements/page.tsx
+// apps/dashboard/src/app/dashboard/profile/achievements/page.tsx
 
 // ACTUALMENTE: achievements = []
 // NECESARIO: achievements = await fetch('/api/gamification/user/achievements')

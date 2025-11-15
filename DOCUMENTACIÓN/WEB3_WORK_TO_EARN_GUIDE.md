@@ -118,7 +118,7 @@ PandorasKey NFT actúa como **smart wallet** que contiene todos los assets, rewa
 - ✅ Transaction history
 
 ### **Archivos a Crear/Modificar:**
-- `apps/dashboard/src/app/(dashboard)/wallet/page.tsx` - Redesign completo
+- `apps/dashboard/src/app/dashboard/wallet/page.tsx` - Redesign completo
 - `apps/dashboard/src/components/wallet/BalanceCard.tsx`
 - `apps/dashboard/src/components/wallet/NFTGallery.tsx`
 - `apps/dashboard/src/components/wallet/SendReceive.tsx`

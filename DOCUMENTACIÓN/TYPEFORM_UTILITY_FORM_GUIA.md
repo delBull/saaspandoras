@@ -533,9 +533,9 @@ function mapTypeformToProject(typeformResponse: any) {
 
 ### **✅ Archivos Activos y Funcionales:**
 - ✅ `apps/dashboard/src/components/ConversationalForm.tsx` → **COMPLETO**
-- ✅ `apps/dashboard/src/app/(dashboard)/apply/utility/page.tsx` → **ACTIVO**
-- ✅ `apps/dashboard/src/app/(dashboard)/admin/projects/[id]/edit/utility-form.tsx` → **ACTIVO**
-- ✅ `apps/dashboard/src/app/(dashboard)/apply/page.tsx` → **ACTUALIZADO**
+- ✅ `apps/dashboard/src/app/dashboard/apply/utility/page.tsx` → **ACTIVO**
+- ✅ `apps/dashboard/src/app/dashboard/admin/projects/[id]/edit/utility-form.tsx` → **ACTIVO**
+- ✅ `apps/dashboard/src/app/dashboard/apply/page.tsx` → **ACTUALIZADO**
 
 ### **🎯 Estado Final del Sistema:**
 

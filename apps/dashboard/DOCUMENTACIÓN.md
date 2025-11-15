@@ -40,7 +40,7 @@ La aplicación sigue la estructura del App Router de Next.js.
         *   `ThirdwebProvider`: Provee el contexto de Thirdweb a toda la aplicación, permitiendo que cualquier componente acceda a hooks como `useActiveAccount`, `useConnectModal`, etc.
         *   `Toaster`: Para mostrar notificaciones.
 
-2.  **`app/(dashboard)/layout.tsx` (Dashboard Layout):**
+2.  **`app/dashboard/layout.tsx` (Dashboard Layout):**
     *   Define la estructura visual principal del dashboard.
     *   Utiliza el componente `<DashboardShell>` que a su vez renderiza:
         *   `<Sidebar>`: La barra de navegación lateral.
@@ -50,7 +50,7 @@ La aplicación sigue la estructura del App Router de Next.js.
 ### 2.2. Enrutamiento (Routing)
 
 *   Se utiliza el **App Router** de Next.js.
-*   Las rutas dentro del grupo `(dashboard)` no incluyen `/dashboard` en la URL. Por ejemplo, la página de swap, ubicada en `app/(dashboard)/swap/page.tsx`, es accesible a través de la URL `/swap`.
+*   Las rutas dentro del grupo `(dashboard)` no incluyen `/dashboard` en la URL. Por ejemplo, la página de swap, ubicada en `app/dashboard/swap/page.tsx`, es accesible a través de la URL `/swap`.
 *   Los enlaces en el `<Sidebar>` deben apuntar a estas rutas simplificadas (ej. `href="/swap"` en lugar de `href="/dashboard/swap"`).
 
 ## 3. Autenticación y Conexión Web3 (Thirdweb)
@@ -158,5 +158,5 @@ La base de datos para el deployment de staging está dada de alta en neon con el
 ¡Espero que esta documentación sea de gran ayuda para ti y tu equipo!
 
 <!--
-[PROMPT_SUGGESTION]¿Cómo puedo añadir un nuevo enlace a la barra lateral que apunte a una nueva página `/app/(dashboard)/analytics/page.tsx`?[/PROMPT_SUGGESTION]
+[PROMPT_SUGGESTION]¿Cómo puedo añadir un nuevo enlace a la barra lateral que apunte a una nueva página `/app/dashboard/analytics/page.tsx`?[/PROMPT_SUGGESTION]
 [PROMPT_SUGGESTION]Explícame en detalle cómo funciona el hook `useQuote.ts` y cómo interactúa con Uniswap V3.[/PROMPT_SUGGESTION]

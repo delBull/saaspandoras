@@ -1,7 +1,7 @@
 'use client';
 
 import { forwardRef, useImperativeHandle, useState, useRef } from "react";
-import type { ProjectData } from "../../app/(dashboard)/projects/types";
+import type { ProjectData } from "../../app/dashboard/projects/types";
 
 export interface ProjectVideoSectionRef {
   showVideo: () => void;

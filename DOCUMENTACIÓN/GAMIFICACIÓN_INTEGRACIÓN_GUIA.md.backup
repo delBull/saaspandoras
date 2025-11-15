@@ -253,7 +253,7 @@ const baseItems = [
 
 ### Paso 4: 🎮 Página de Achievements Completa (CON DATOS DE PRUEBA)
 
-**Archivo:** `apps/dashboard/src/app/(dashboard)/profile/achievements/page.tsx`
+**Archivo:** `apps/dashboard/src/app/dashboard/profile/achievements/page.tsx`
 
 **STATUS:** ✅ **COMPLETADA - Funcional con datos de prueba**
 
@@ -379,7 +379,7 @@ function getUserAchievement(userId: string, achievementId: string) {
 
 ### Paso 4: 📊 Integrar Dashboard de Gamificación
 
-**Archivo:** `apps/dashboard/src/app/(dashboard)/profile/dashboard/page.tsx`
+**Archivo:** `apps/dashboard/src/app/dashboard/profile/dashboard/page.tsx`
 
 ```tsx
 'use client';

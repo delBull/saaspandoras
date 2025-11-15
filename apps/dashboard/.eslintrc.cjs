@@ -53,9 +53,9 @@ module.exports = {
     {
       files: [
         'src/components/sidebar.tsx',
-        'src/app/(dashboard)/profile/projects/page.tsx',
-        'src/app/(dashboard)/profile/page.tsx',
-        'src/app/(dashboard)/profile/dashboard/page.tsx'
+        'src/app/dashboard/profile/projects/page.tsx',
+        'src/app/dashboard/profile/page.tsx',
+        'src/app/dashboard/profile/dashboard/page.tsx'
       ],
       rules: {
         '@typescript-eslint/no-explicit-any': 'off',
@@ -75,8 +75,8 @@ module.exports = {
         'src/lib/gamification/service.ts',
         'src/app/api/gamification/**/*.ts',
         'src/app/api/education/**/*.ts',
-        'src/app/(dashboard)/leaderboard/page.tsx',
-        'src/app/(dashboard)/profile/achievements/page.tsx',
+        'src/app/dashboard/leaderboard/page.tsx',
+        'src/app/dashboard/profile/achievements/page.tsx',
         'src/hooks/useRealGamification.ts',
         'src/hooks/useReferralDetection.ts',
         'src/hooks/useThirdwebUserSync.ts'
@@ -127,7 +127,7 @@ module.exports = {
     },
     {
       files: [
-        'src/app/(dashboard)/debug/database/page.tsx'
+        'src/app/dashboard/debug/database/page.tsx'
       ],
       rules: {
         '@typescript-eslint/no-explicit-any': 'off',

@@ -726,7 +726,7 @@ export async function POST(
 
 #### **3.1 Dashboard de Configuración W2E con Selector de Red**
 
-**Ubicación**: `apps/dashboard/src/app/(dashboard)/admin/projects/[id]/w2e-config/page.tsx`
+**Ubicación**: `apps/dashboard/src/app/dashboard/admin/projects/[id]/w2e-config/page.tsx`
 
 ```typescript
 type NetworkType = 'sepolia' | 'base';
@@ -1019,7 +1019,7 @@ export default function W2EConfigPage({ params }: { params: { id: string } }) {
 
 #### **3.2 Panel de Control W2E**
 
-**Ubicación**: `apps/dashboard/src/app/(dashboard)/admin/projects/[id]/w2e-dashboard/page.tsx`
+**Ubicación**: `apps/dashboard/src/app/dashboard/admin/projects/[id]/w2e-dashboard/page.tsx`
 
 ```typescript
 export default function W2EDashboardPage({ params }: { params: { id: string } }) {
@@ -1135,7 +1135,7 @@ export default function W2EDashboardPage({ params }: { params: { id: string } })
 
 #### **4.1 Página de Proyecto con W2E**
 
-**Ubicación**: `apps/dashboard/src/app/(dashboard)/projects/[slug]/page.tsx`
+**Ubicación**: `apps/dashboard/src/app/dashboard/projects/[slug]/page.tsx`
 
 ```typescript
 export default function ProjectPage({ params }: { params: { slug: string } }) {
