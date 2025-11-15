@@ -38,9 +38,6 @@ export function ReferralsCard() {
   useEffect(() => {
     if (!account?.address) return;
 
-    /* eslint-disable @typescript-eslint/no-floating-promises,
-       @typescript-eslint/no-unsafe-assignment,
-       @typescript-eslint/no-unsafe-member-access */
     const fetchReferrals = async () => {
       try {
         setIsLoading(true);
@@ -82,13 +79,9 @@ export function ReferralsCard() {
     };
 
     fetchReferrals();
-    /* eslint-enable */
   }, [account?.address]);
 
   // Handle adding new referrer
-  /* eslint-disable @typescript-eslint/no-unsafe-assignment,
-     @typescript-eslint/no-unsafe-member-access, 
-     @typescript-eslint/no-unsafe-argument */
   const handleAddReferrer = async () => {
     if (!account?.address || !newReferrer.trim()) return;
 
@@ -148,7 +141,6 @@ export function ReferralsCard() {
       setIsSubmitting(false);
     }
   };
-  /* eslint-enable */
 
   // If not connected, show login message
   if (!account?.address) {
