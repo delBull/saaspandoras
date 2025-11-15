@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { MultiStepForm } from '@/app/(dashboard)/admin/projects/[id]/edit/multi-step-form';
+import { MultiStepForm } from '@/app/dashboard/admin/projects/[id]/edit/multi-step-form';
 import { useActiveAccount } from 'thirdweb/react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';

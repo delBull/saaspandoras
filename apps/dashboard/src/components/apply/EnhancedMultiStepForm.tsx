@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MultiStepForm } from "@/app/(dashboard)/admin/projects/[id]/edit/multi-step-form";
+import { MultiStepForm } from "@/app/dashboard/admin/projects/[id]/edit/multi-step-form";
 
 interface Project {
   id?: number;
