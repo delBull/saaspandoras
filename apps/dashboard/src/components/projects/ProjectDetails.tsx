@@ -1,7 +1,7 @@
 'use client';
 
 import { Puzzle, Ticket, Code, Crown, PieChart } from "lucide-react";
-import type { ProjectData } from "../../app/dashboard/projects/types";
+import type { ProjectData } from "@/app/()/projects/types";
 
 interface ProjectDetailsProps {
   project: ProjectData;

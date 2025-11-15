@@ -3,8 +3,9 @@
 const nextConfig = {
   // 🔧 Evita fallos de tracing en Vercel (muy importante para segmentos como (dashboard))
   experimental: {
-    serverComponentsExternalPackages: ["drizzle-orm", "postgres"],
+    // Note: serverComponentsExternalPackages has been moved to serverExternalPackages
   },
+  serverExternalPackages: ["drizzle-orm", "postgres"],
 
   images: {
     remotePatterns: [

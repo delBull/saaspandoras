@@ -8,7 +8,7 @@ import { Loader2, ArrowLeftIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ApplicantsDesktop } from "./ApplicantsDesktop";
 import { ApplicantsMobile } from "./ApplicantsMobile";
-import { MultiStepForm } from "../../app/dashboard/admin/projects/[id]/edit/multi-step-form";
+import { MultiStepForm } from "@/app/()/admin/projects/[id]/edit/multi-step-form";
 import { useApplicantsDataBasic, type ApplicantsData } from "../../hooks/applicants/useApplicantsDataBasic";
 import { useProjectFilters } from "../../hooks/applicants/useProjectFilters";
 

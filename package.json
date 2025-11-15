@@ -22,10 +22,10 @@
     "@turbo/gen": "1.13.3",
     "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^22.15.34",
-    "check-dependency-version-consistency": "4.1.0",
     "@typescript-eslint/eslint-plugin": "^7.10.0",
-    "eslint-plugin-turbo": "1.13.3",
+    "check-dependency-version-consistency": "4.1.0",
     "drizzle-kit": "^0.31.4",
+    "eslint-plugin-turbo": "1.13.3",
     "node-gyp": "^11.4.2",
     "node-gyp-build": "^4.8.4",
     "prettier": "3.2.5",
@@ -70,5 +70,5 @@
   "overrides": {
     "next": "15.5.4",
     "ethers": "5.7.2"
- }
+  }
 }
