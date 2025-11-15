@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import type { ProjectData } from "../../app/(dashboard)/projects/types";
+import type { ProjectData } from "../../app/dashboard/projects/types";
 
 interface ProjectHeaderProps {
   project: ProjectData;

@@ -1,7 +1,7 @@
 'use client';
 
 import { Puzzle, Ticket } from "lucide-react";
-import type { ProjectData } from "../../app/(dashboard)/projects/types";
+import type { ProjectData } from "../../app/dashboard/projects/types";
 
 interface ProjectSidebarProps {
   project: ProjectData;

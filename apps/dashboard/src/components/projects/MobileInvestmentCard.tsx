@@ -1,6 +1,6 @@
 'use client';
 
-import type { ProjectData } from "../../app/(dashboard)/projects/types";
+import type { ProjectData } from "../../app/dashboard/projects/types";
 
 interface MobileInvestmentCardProps {
   project: ProjectData;
