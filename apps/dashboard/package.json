@@ -29,6 +29,8 @@
     "@radix-ui/react-label": "next",
     "@radix-ui/react-slot": "next",
     "@radix-ui/react-tabs": "next",
+    "@react-email/components": "^1.0.1",
+    "@react-email/tailwind": "^2.0.1",
     "@saasfly/api": "workspace:*",
     "@saasfly/db": "workspace:*",
     "@saasfly/ui": "workspace:*",

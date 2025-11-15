@@ -1,10 +1,14 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
-// Configure Resend - PRODUCTION READY
-// API Key: re_bqdhCmVr_85rh4Uvw5F6QtVtfsbJDKgmG
-const RESEND_API_KEY = process.env.RESEND_API_KEY ?? 're_bqdhCmVr_85rh4Uvw5F6QtVtfsbJDKgmG';
+// Configure Resend - SECURE ENVIRONMENT VARIABLES
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL ?? 'noreply@pandoras.finance';
+
+// Validate Resend configuration
+if (!RESEND_API_KEY) {
+  console.error('❌ RESEND_API_KEY not configured in environment variables');
+}
 
 // Database configuration - Environment-specific
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -39,7 +43,7 @@ interface Subscriber {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, source, tags, language, metadata } = body;
+    const { email, name, source, tags, language, metadata } = body;
 
     // Validate email
     if (!email?.includes('@')) {
@@ -89,53 +93,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Send email via Resend
+        // Send email via Resend with React Email template
     if (RESEND_API_KEY && contactEmail) {
       try {
+        // Import React Email component dynamically
+        const { render } = await import('@react-email/components');
+        const PandorasWelcomeEmail = (await import('@/emails/creator-email')).default;
+
+        // Render the React Email to HTML
+        const html = render(
+          PandorasWelcomeEmail({
+            email: contactEmail,
+            name: name,
+            source: source,
+          })
+        );
+
         const emailData = {
           from: FROM_EMAIL,
           to: [contactEmail],
           subject: '¡Bienvenido a Pandora\'s - La Evolución del Creador!',
-          html: `
-            <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; padding: 40px 20px;">
-              <div style="text-align: center; margin-bottom: 30px;">
-                <h1 style="font-size: 32px; margin: 0; background: linear-gradient(45deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">¡Bienvenido, Futuro Creador!</h1>
-              </div>
-              
-              <div style="background: rgba(255, 255, 255, 0.1); padding: 30px; border-radius: 15px; backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2);">
-                <h2 style="color: #a3e635; margin-top: 0;">La Evolución del Creador ya comenzó</h2>
-                
-                <p style="font-size: 16px; line-height: 1.6;">
-                  ¡Gracias por unirte a la revolución de las comunidades soberanas! 🎉
-                </p>
-                
-                <p style="font-size: 16px; line-height: 1.6;">
-                  Estás a punto de descubrir cómo <strong>transformar audiencias pasivas en comunidades activas</strong> mediante protocolos de utilidad, membresías NFT y sistemas Work-to-Earn.
-                </p>
-                
-                <div style="background: linear-gradient(45deg, #1e293b, #334155); padding: 20px; border-radius: 10px; margin: 25px 0;">
-                  <h3 style="color: #3b82f6; margin-top: 0;">🔮 Próximamente recibirás:</h3>
-                  <ul style="padding-left: 20px;">
-                    <li>Guías paso a paso para crear tu primer protocolo</li>
-                    <li>Plantillas de contratos pre-auditados</li>
-                    <li>Casos de estudio de creadores exitosos</li>
-                    <li>Acceso prioritario a nuevas funcionalidades</li>
-                  </ul>
-                </div>
-                
-                <p style="font-size: 14px; color: #94a3b8; font-style: italic;">
-                  Mientras tanto, puedes comenzar explorando nuestra plataforma en desarrollo. 
-                  ¿Alguna pregunta? Responde a este email y te ayudaremos personalmente.
-                </p>
-              </div>
-              
-              <div style="text-align: center; margin-top: 30px;">
-                <p style="color: #64748b; font-size: 12px;">
-                  © 2025 Pandora's Finance. Construyendo el futuro de las comunidades digitales.
-                </p>
-              </div>
-            </div>
-          `
+          html: html,
         };
 
         const emailResponse = await fetch('https://api.resend.com/emails', {
