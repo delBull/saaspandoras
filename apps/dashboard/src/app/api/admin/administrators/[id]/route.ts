@@ -1,25 +1,23 @@
 import { db } from "~/db";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-// import { drizzle } from "drizzle-orm/postgres-js";
-// import postgres from "postgres";
 import { administrators } from "@/db/schema";
-
-// Initialize database connection
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) {
-  throw new Error("DATABASE_URL is not set in environment variables");
-}
-
-// const client = postgres(connectionString);
-// const db = drizzle(client, { schema: { projects: projectsSchema } });
-
-// ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
-export const runtime = "nodejs";
 import { eq } from "drizzle-orm";
 import { getAuth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
+
+// ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
+export const runtime = "nodejs";
+
+// Helper function to ensure database is available
+function ensureDatabaseConnection() {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error("DATABASE_URL is not set in environment variables");
+  }
+  return connectionString;
+}
 
 const updateAliasSchema = z.object({
   alias: z.string().max(100, "El alias no puede tener más de 100 caracteres.").optional(),

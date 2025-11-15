@@ -8,14 +8,16 @@ import type { UserData } from "@/types/admin";
 export const runtime = "nodejs";
 export const dynamic = 'force-dynamic';
 
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) {
-  throw new Error("DATABASE_URL is not set");
+// Database connection helper
+function getDatabaseConnection() {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error("DATABASE_URL is not set");
+  }
+  return postgres(connectionString, {
+    prepare: false // Disable prepared statements for compatibility
+  });
 }
-
-const sql = postgres(connectionString, {
-  prepare: false // Disable prepared statements for compatibility
-});
 
 // ADMIN ONLY - Users management endpoint
 export async function GET() {
@@ -52,6 +54,9 @@ export async function GET() {
     // Define constants first
     const SUPER_ADMIN_WALLETS = ['0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9'] as const;
 
+    // Get database connection for this request
+    const sql = getDatabaseConnection();
+
     // Use postgres.js directly - the simplest possible query
     try {
       console.log('🛠️ [Admin/Users] Testing basic query...');
@@ -63,6 +68,8 @@ export async function GET() {
 
       if (userCount === 0) {
         console.log('🛠️ [Admin/Users] No users found, returning empty array');
+        // Cleanup connection
+        await sql.end();
         return NextResponse.json([]);
       }
 
