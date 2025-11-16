@@ -4,9 +4,12 @@ import { db } from "~/db";
 // import postgres from "postgres";
 
 // Initialize database connection
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) {
-  throw new Error("DATABASE_URL is not set in environment variables");
+function getDatabaseConnection() {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error("DATABASE_URL is not set in environment variables");
+  }
+  return db; // assuming db is imported from @/db
 }
 
 // const client = postgres(connectionString);
