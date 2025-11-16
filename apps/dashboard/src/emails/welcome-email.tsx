@@ -19,7 +19,7 @@ interface PandorasSimpleWelcomeEmailProps {
 export default function PandorasSimpleWelcomeEmail({
   email,
   name = 'Futuro Creador',
-  source = 'landing',
+  source = 'welcome-marketing',
 }: PandorasSimpleWelcomeEmailProps) {
   return (
     <Html>
