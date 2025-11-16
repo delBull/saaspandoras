@@ -1,25 +1,16 @@
 import { db } from "~/db";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-// import { drizzle } from "drizzle-orm/postgres-js";
-// import postgres from "postgres";
 import { administrators } from "@/db/schema";
-
-// Initialize database connection
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) {
-  throw new Error("DATABASE_URL is not set in environment variables");
-}
-
-// const client = postgres(connectionString);
-// const db = drizzle(client, { schema: { projects: projectsSchema } });
-
-// ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
-export const runtime = "nodejs";
 import { eq } from "drizzle-orm";
 import { getAuth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { SUPER_ADMIN_WALLET } from "@/lib/constants";
+import { getSuperAdminWallet } from "@/lib/constants";
+
+// ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
+export const runtime = "nodejs";
+
+// Database connection helper - only used at runtime
 
 const updateAliasSchema = z.object({
   alias: z.string().max(100, "El alias no puede tener más de 100 caracteres.").optional(),
@@ -29,7 +20,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const contextParams = await params;
   const { session } = await getAuth(await headers());
 
-  if (session?.userId?.toLowerCase() !== SUPER_ADMIN_WALLET.toLowerCase()) {
+  if (session?.userId?.toLowerCase() !== getSuperAdminWallet()) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
   }
 
@@ -66,7 +57,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   const contextParams = await params;
   const { session } = await getAuth(await headers());
 
-  if (session?.userId?.toLowerCase() !== SUPER_ADMIN_WALLET.toLowerCase()) {
+  if (session?.userId?.toLowerCase() !== getSuperAdminWallet()) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
   }
 
@@ -80,7 +71,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     where: eq(administrators.id, adminId),
   });
 
-  if (adminToDelete?.walletAddress.toLowerCase() === SUPER_ADMIN_WALLET) {
+  if (adminToDelete?.walletAddress.toLowerCase() === getSuperAdminWallet()) {
     return NextResponse.json(
       { message: "No se puede eliminar al Super Administrador." },
       { status: 403 }

@@ -660,11 +660,11 @@ function StartPageContent() {
                 </div>
 
                 <Button
-                  onClick={() => handleSubscription()}
+                  onClick={handleSubscription}
                   disabled={!email}
-                  className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white py-3 text-lg font-semibold rounded-lg transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white py-4 text-lg font-bold rounded-lg transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                 >
-                  Suscribir
+                  📝 ¡Registrar mi Interés como Creador!
                 </Button>
 
                 <div className="text-center text-zinc-500 text-sm">
@@ -695,9 +695,9 @@ function StartPageContent() {
                 animate={{ scale: 1 }}
                 className="p-6 bg-green-500/10 border border-green-500/20 rounded-lg"
               >
-                <CheckCircle className="w-8 h-8 text-green-400 mx-auto mb-2" />
-                <p className="text-green-400 font-medium">¡Gracias por suscribirte!</p>
-                <p className="text-zinc-400 text-sm">Te mantendremos informado sobre las mejores herramientas para creadores.</p>
+              <CheckCircle className="w-8 h-8 text-green-400 mx-auto mb-2" />
+              <p className="text-green-400 font-bold text-lg">🎉 ¡Interés registrado exitosamente!</p>
+              <p className="text-zinc-400 text-sm mt-2">Próximamente recibirás acceso prioritario al formulario completo para lanzar tu primer protocolo de utilidad. ¡Prepárate para revolucionar tu comunidad digital!</p>
               </motion.div>
             )}
           </GlassCard>

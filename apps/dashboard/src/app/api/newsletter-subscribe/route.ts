@@ -96,18 +96,27 @@ export async function POST(request: NextRequest) {
         // Send email via Resend with React Email template
     if (RESEND_API_KEY && contactEmail) {
       try {
-        // Import React Email component dynamically
-        const { render } = await import('@react-email/components');
+        // Import React Email render function from correct package
+        const { render } = await import('@react-email/render');
         const PandorasWelcomeEmail = (await import('@/emails/creator-email')).default;
 
-        // Render the React Email to HTML
-        const html = render(
+        // Render the React Email to HTML (render is async in @react-email/render)
+        const html = await render(
           PandorasWelcomeEmail({
             email: contactEmail,
             name: name,
             source: source,
           })
         );
+
+        console.log('HTML render result type:', typeof html);
+        console.log('HTML render result (first 200 chars):', html.substring(0, 200));
+
+        // Validate that we got a valid HTML string
+        if (!html || typeof html !== 'string' || html.trim().length === 0) {
+          console.error('Email render failed - empty or invalid HTML');
+          throw new Error('Failed to render email HTML');
+        }
 
         const emailData = {
           from: FROM_EMAIL,
