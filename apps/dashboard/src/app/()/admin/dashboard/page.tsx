@@ -30,6 +30,9 @@ interface WalletSession {
 
 export const dynamic = 'force-dynamic';
 
+// CRÍTICO: Movemos TODAS las fetch calls al useEffect cliente-side
+// ✅ Esto evita que se ejecuten durante el BUILD de Vercel
+
 export default function AdminDashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<UserData[]>([]);
