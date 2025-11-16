@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import {
   // --- Iconos ELIMINADOS (Securities) ---
   // TrendingUp, Building2, Heart, Crown, Coins,
-  
+
   // --- Iconos MANTENIDOS/AÑADIDOS (Utilidad/SaaS) ---
   Users,          // Para Comunidad
   Shield,         // Para Seguridad
@@ -22,6 +22,7 @@ import {
   Code,           // Para Contratos
   Palette,        // Para Arte (Utilidad)
 } from "lucide-react";
+import WhatsAppLeadForm from "@/components/WhatsAppLeadForm";
 import { ModernBackground } from "@/components/ui/modern-background";
 import { useGoogleAnalytics, trackEvent, trackNewsletterSubscription, trackPageView } from "@/lib/analytics";
 import { TypewriterText } from "@/components/ui/typewriter-text";
@@ -37,6 +38,7 @@ function StartPageContent() {
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [selectedMethod, setSelectedMethod] = useState<'email' | 'whatsapp' | null>(null);
 
   // Google Analytics tracking
   useGoogleAnalytics();
@@ -226,6 +228,7 @@ function StartPageContent() {
             <Button
               size="lg"
               className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white font-bold text-base md:text-lg px-8 md:px-12 py-4 md:py-6 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg shadow-blue-500/25 w-full sm:w-auto max-w-xs md:max-w-none"
+              onClick={() => document.getElementById('subscription')?.scrollIntoView({ behavior: 'smooth' })}
             >
               <span className="flex items-center gap-2">
                 [ Empezar a Construir Gratis ]
@@ -620,6 +623,7 @@ function StartPageContent() {
 
         {/* --- TRANSFORMACIÓN #8: SUSCRIPCIÓN (LENGUAJE) --- */}
         <motion.div
+          id="subscription"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 4.8 }}
@@ -640,54 +644,137 @@ function StartPageContent() {
 
             {!isSubscribed ? (
               <div className="space-y-4">
-                {/* Desktop: Email + Name horizontal, Botón abajo full-width */}
-                {/* Mobile: Nombre arriba, Email centro, Botón abajo */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <input
-                    type="text"
-                    placeholder="Tu nombre (opcional)"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="p-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:border-blue-500 focus:outline-none md:order-1"
-                  />
-                  <input
-                    type="email"
-                    placeholder="tu@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="p-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:border-blue-500 focus:outline-none md:order-2"
-                  />
-                </div>
+                {/* Selector de Método de Contacto */}
+                {!selectedMethod ? (
+                  <div className="space-y-4">
+                    <p className="text-zinc-400 text-center mb-6">
+                      Elige cómo quieres que te contactemos:
+                    </p>
 
-                <Button
-                  onClick={handleSubscription}
-                  disabled={!email}
-                  className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white py-4 text-lg font-bold rounded-lg transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                >
-                  📝 ¡Registrar mi Interés como Creador!
-                </Button>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Opción Email */}
+                      <button
+                        onClick={() => setSelectedMethod('email')}
+                        className="p-6 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg hover:border-blue-400/40 transition-all duration-200 text-left group"
+                      >
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center group-hover:bg-blue-500/30 transition-colors">
+                            <Mail className="w-5 h-5 text-blue-400" />
+                          </div>
+                          <h4 className="font-semibold text-blue-400">Por Email</h4>
+                        </div>
+                        <p className="text-zinc-400 text-sm mb-3">
+                          Recibe actualizaciones por email sobre protocolos y guías.
+                        </p>
+                        <div className="text-xs text-zinc-500">
+                          ✅ Gratis • ✅ Inmediato • ✅ Detallado
+                        </div>
+                      </button>
 
-                <div className="text-center text-zinc-500 text-sm">
-                  O recibe notificaciones por SMS
-                </div>
-
-                {/* Phone input with aligned button */}
-                <div className="flex gap-3">
-                  <input
-                    type="tel"
-                    placeholder="+52 55 1234 5678"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="flex-1 p-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:border-blue-500 focus:outline-none"
-                  />
-                  <Button
-                    onClick={() => handleSubscription()}
-                    disabled={!phone}
-                    className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-400 hover:to-blue-400 text-white px-6 py-3 rounded-lg min-h-[48px] flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                      {/* Opción WhatsApp */}
+                      <button
+                        onClick={() => setSelectedMethod('whatsapp')}
+                        className="p-6 bg-gradient-to-r from-green-500/10 to-blue-500/10 border border-green-500/20 rounded-lg hover:border-green-400/40 transition-all duration-200 text-left group"
+                      >
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center group-hover:bg-green-500/30 transition-colors">
+                            <Phone className="w-5 h-5 text-green-400" />
+                          </div>
+                          <h4 className="font-semibold text-green-400">Por WhatsApp</h4>
+                        </div>
+                        <p className="text-zinc-400 text-sm mb-3">
+                          Conversación personalizada para diseñar tu protocolo.
+                        </p>
+                        <div className="text-xs text-zinc-500">
+                          ✅ Rápido • ✅ Personal • ✅ Interactivo
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* Modal/Formulario Seleccionado */
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.2 }}
+                    className="space-y-4"
                   >
-                    <Phone className="w-5 h-5" />
-                  </Button>
-                </div>
+                    {/* Header del Modal */}
+                    <div className="text-center mb-6">
+                      <div className={cn(
+                        "inline-flex items-center gap-2 px-4 py-2 rounded-full mb-4",
+                        selectedMethod === 'email'
+                          ? "bg-blue-500/10 border border-blue-500/20"
+                          : "bg-green-500/10 border border-green-500/20"
+                      )}>
+                        {selectedMethod === 'email' ? (
+                          <>
+                            <Mail className="w-4 h-4 text-blue-400" />
+                            <span className="text-blue-400 font-medium">Registro por Email</span>
+                          </>
+                        ) : (
+                          <>
+                            <Phone className="w-4 h-4 text-green-400" />
+                            <span className="text-green-400 font-medium">Registro por WhatsApp</span>
+                          </>
+                        )}
+                      </div>
+
+                      <Button
+                        onClick={() => setSelectedMethod(null)}
+                        variant="ghost"
+                        size="sm"
+                        className="text-zinc-400 hover:text-zinc-300 mb-4"
+                      >
+                        ← Cambiar método
+                      </Button>
+                    </div>
+
+                    {selectedMethod === 'email' ? (
+                      /* Formulario Email */
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <input
+                            type="text"
+                            placeholder="Tu nombre (opcional)"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            className="p-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:border-blue-500 focus:outline-none md:order-1"
+                          />
+                          <input
+                            type="email"
+                            placeholder="tu@email.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && email && handleSubscription()}
+                            className="p-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:border-blue-500 focus:outline-none md:order-2"
+                          />
+                        </div>
+
+                        <Button
+                          onClick={handleSubscription}
+                          disabled={!email}
+                          className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white py-4 text-lg font-bold rounded-lg transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                        >
+                          📝 ¡Registrar mi Interés como Creador!
+                        </Button>
+
+                        <p className="text-zinc-500 text-xs text-center">
+                          Recibirás un email confirmando tu registro.
+                        </p>
+                      </div>
+                    ) : (
+                      /* Formulario WhatsApp */
+                      <div className="space-y-4">
+                        <WhatsAppLeadForm />
+
+                        <p className="text-zinc-500 text-xs text-center">
+                          Te llevará a WhatsApp con las instrucciones para aplicar.
+                        </p>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
               </div>
             ) : (
               <motion.div
@@ -746,6 +833,7 @@ function StartPageContent() {
             <Button
               size="lg"
               className="bg-gradient-to-r from-lime-500 to-green-500 hover:from-lime-400 hover:to-green-400 text-black font-bold text-base md:text-xl px-8 md:px-16 py-4 md:py-8 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg shadow-lime-500/25 w-full sm:w-auto"
+              onClick={() => document.getElementById('subscription')?.scrollIntoView({ behavior: 'smooth' })}
             >
               <span className="flex items-center gap-2">
                 Unirme a la Evolución del Creador
