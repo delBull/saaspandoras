@@ -52,19 +52,38 @@ export async function processIncomingMessage(message: WhatsAppMessage): Promise<
  * Detectar si el mensaje es un trigger para iniciar aplicación
  */
 function isInitialTrigger(text: string): boolean {
+  const lowerText = text.toLowerCase();
+
+  // Triggers más comprehensivos
   const triggers = [
-    /inicio/i,
-    /aplicación/i,
-    /protocolo/i,
-    /proyecto/i,
-    /quiero crear/i,
-    /comenzar/i
+    "inicio",
+    "aplicación",
+    "protocolo",
+    "proyecto",
+    "quiero crear",
+    "comenzar",
+    "creador",
+    "hacer mi protocolo",
+    "utilidad",
+    "pandoras",
+    "pandora's"
   ];
 
-  return triggers.some(trigger =>
-    text.toLowerCase().includes(trigger.source.replace(/[/\\]/g, '')) ||
-    text.toLowerCase().includes('pandoras')
+  // Verificar si contiene al menos 2 keywords de protocolo
+  const hasProtocolKeywords = [
+    "protocolo",
+    "utilidad",
+    "proyecto",
+    "crear",
+    "pandoras"
+  ].some(keyword => lowerText.includes(keyword));
+
+  // O un trigger específico
+  const hasSpecificTrigger = triggers.some(trigger =>
+    lowerText.includes(trigger)
   );
+
+  return hasProtocolKeywords || hasSpecificTrigger;
 }
 
 /**
