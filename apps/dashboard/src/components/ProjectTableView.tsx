@@ -37,6 +37,7 @@ export function ProjectTableView({
             <th className="px-4 py-3 text-left font-semibold text-gray-300">Título</th>
             <th className="px-4 py-3 text-left font-semibold text-gray-300">Monto (USD)</th>
             <th className="px-4 py-3 text-left font-semibold text-gray-300">Estado</th>
+            <th className="px-4 py-3 text-center font-semibold text-gray-300">Flujo</th>
             <th className="px-4 py-3 text-center font-semibold text-gray-300">Featured</th>
             <th className="px-4 py-3 text-center font-semibold text-gray-300">Detalles</th>
             <th className="px-4 py-3 text-right font-semibold text-gray-300">Acciones</th>
@@ -75,6 +76,17 @@ export function ProjectTableView({
                       </svg>
                     </button>
                   </div>
+                </td>
+                <td className="px-4 py-3 text-center">
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                    p.source === "whatsapp_form"
+                      ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                      : p.source === "web_form"
+                      ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                      : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+                  }`}>
+                    {p.source === "whatsapp_form" ? "📱 WhatsApp" : p.source === "web_form" ? "🌐 Web" : "❓ Desconocido"}
+                  </span>
                 </td>
 
                 {/* Featured Column */}
