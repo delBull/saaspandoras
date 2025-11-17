@@ -73,7 +73,7 @@ function isInitialTrigger(text: string): boolean {
 async function startNewApplication(userPhone: string, initialMessage: string): Promise<boolean> {
   // Extraer nombre si está presente
   const nameMatch = initialMessage.match(/soy\s+([^(]+?)(?:\s*\(|$)/i);
-  const applicantName = nameMatch ? nameMatch[1].trim() : null;
+  const applicantName = nameMatch?.[1]?.trim() || null;
 
   try {
     // Crear estado inicial
