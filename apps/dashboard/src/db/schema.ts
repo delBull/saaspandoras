@@ -422,6 +422,19 @@ export const userReferrals = pgTable("user_referrals", {
   ),
 }));
 
+// --- WHATSAPP BOT SUPPORT TABLE ---
+// Estado conversacional para usuarios usando el formulario por WhatsApp
+export const whatsappApplicationStates = pgTable("whatsapp_application_states", {
+  id: serial("id").primaryKey(),
+  userPhone: varchar("user_phone", { length: 20 }).notNull().unique(), // Número de WhatsApp del usuario
+  wallet: varchar("wallet", { length: 42 }), // Wallet cuando se completa sección de solicitante
+  currentStep: integer("current_step").default(0).notNull(), // Paso actual en el formulario (36 preguntas)
+  answers: jsonb("answers").default({}).notNull(), // Respuestas acumuladas
+  completed: boolean("completed").default(false).notNull(), // Si terminó el formulario
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Export types
 export type Project = typeof projects.$inferSelect;
 export type User = typeof users.$inferSelect;
@@ -433,3 +446,4 @@ export type UserAchievement = typeof userAchievements.$inferSelect;
 export type Reward = typeof rewards.$inferSelect;
 export type UserReward = typeof userRewards.$inferSelect;
 export type UserReferral = typeof userReferrals.$inferSelect;
+export type WhatsAppApplicationState = typeof whatsappApplicationStates.$inferSelect;
