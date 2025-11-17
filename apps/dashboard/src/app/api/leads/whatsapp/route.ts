@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+// import { createClient } from "@supabase/supabase-js";  // Comentado para build sin DB
 
 export const runtime = "nodejs";
 
-// Inicializa Supabase (usa las env vars disponibles - anon key para desarrollo)
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_DEV_SUSCRIBERS_SUPABASE_ANON_KEY!
-);
+// // Supabase desactivado temporalmente para producción
+// const supabase = createClient(
+//   process.env.NEXT_PUBLIC_SUPABASE_URL!,
+//   process.env.NEXT_PUBLIC_DEV_SUSCRIBERS_SUPABASE_ANON_KEY!
+// );
 
 export async function POST(req: Request) {
   try {
