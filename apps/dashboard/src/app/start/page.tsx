@@ -231,7 +231,7 @@ function StartPageContent() {
               onClick={() => document.getElementById('subscription')?.scrollIntoView({ behavior: 'smooth' })}
             >
               <span className="flex items-center gap-2">
-                [ Empezar a Construir Gratis ]
+                [ Empezar a Construir Ahora ]
                 <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
               </span>
             </Button>
@@ -387,15 +387,6 @@ function StartPageContent() {
                 </div>
 
                 <div className="space-y-4 mb-6">
-                  <div className="flex gap-2">
-                    <button className="flex-1 p-2 bg-zinc-800 rounded-lg text-sm text-zinc-300 hover:bg-zinc-700 transition-colors">
-                      Acceso a Discord
-                    </button>
-                    <button className="flex-1 p-2 bg-zinc-800 rounded-lg text-sm text-zinc-300 hover:bg-zinc-700 transition-colors">
-                      Airdrop Futuro
-                    </button>
-                  </div>
-
                   <div className="p-3 bg-zinc-800/50 rounded-lg">
                     <p className="text-xs text-zinc-400 mb-1">Beneficio Clave</p>
                     <p className="text-lg font-bold text-green-400">Acceso a Discord Privado</p>
@@ -558,9 +549,11 @@ function StartPageContent() {
                 <GlassCard className="text-center h-full">
                   <h3 className="font-bold text-lg text-white mb-3">{item.title}</h3>
                   <p className="text-zinc-400 text-sm mb-4">{item.description}</p>
+                  {/*
                   <Link href="#" className="text-cyan-400 hover:text-cyan-300 text-sm transition-colors">
                     [{item.link}]
                   </Link>
+                  */}
                 </GlassCard>
               </motion.div>
             ))}
@@ -573,7 +566,9 @@ function StartPageContent() {
             className="text-center"
           >
             <Link
-              href="#whitepaper"
+              href="/whitepaper"
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 transition-colors text-lg font-medium"
             >
               Lee nuestro Litepaper (Técnico) para una inmersión profunda

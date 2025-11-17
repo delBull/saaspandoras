@@ -1,22 +1,25 @@
 export const WHATSAPP = {
-  TOKEN: process.env.WHATSAPP_ACCESS_TOKEN || 'EAAOo6PmybsEBP5H8EmtrGTLZAkgcBZA4aiGEv1vFrtongatir7NQwzPm38ZBP3j5EhRUmgLWUBh9zMJcTIIklOp8BOoxHaJTVBdnuAnp6xum0FtbnFHPzYOV18LZCIy3mPmwJZBxDO17gPZBhenWdF0kAbpq5KyXHa2B0nVN8E96au6OLqVko2NiMxERpu97XQ6q2jVei59rMZAYdJ8p53qprAfQqAnyf0jpIGzNZBC5ZCoZC5TyW5UwzxRe4ZD',
-  PHONE_NUMBER_ID: process.env.WHATSAPP_PHONE_NUMBER_ID || '685462974640240',
-  BUSINESS_ACCOUNT_ID: process.env.WHATSAPP_BUSINESS_ACCOUNT_ID || '1263835731804296',
-  VERIFY_TOKEN: process.env.WHATSAPP_VERIFY_TOKEN || 'pandoras_whatsapp_verify_2025',
+  TOKEN: process.env.WHATSAPP_ACCESS_TOKEN!,
+  PHONE_NUMBER_ID: process.env.WHATSAPP_PHONE_NUMBER_ID!,
+  BUSINESS_ACCOUNT_ID: process.env.WHATSAPP_BUSINESS_ACCOUNT_ID!,
+  VERIFY_TOKEN: process.env.WHATSAPP_VERIFY_TOKEN!,
   API_URL: "https://graph.facebook.com/v19.0",
   WEBHOOK_BASE_URL: process.env.NEXT_PUBLIC_URL,
 };
 
-// Validación de configuración
+// Validación segura de configuración
 export function validateWhatsAppConfig() {
-  const required = ['TOKEN', 'PHONE_NUMBER_ID', 'VERIFY_TOKEN'];
-  const missing = required.filter(key => !WHATSAPP[key as keyof typeof WHATSAPP]);
+  const required = ['TOKEN', 'PHONE_NUMBER_ID', 'VERIFY_TOKEN'] as const;
+  const missing = required.filter(key => !WHATSAPP[key]);
 
   if (missing.length > 0) {
-    console.warn('❌ WhatsApp config missing:', missing);
+    console.error('❌ Faltan variables de WhatsApp (REQUERIDAS):', missing);
+    console.error('🔧 Configura las siguientes variables de entorno:');
+    missing.forEach(key => console.error(`   - ${key}`));
+    console.error('🔒 Estas variables deben estar en .env.local y Vercel (encriptadas)');
     return false;
   }
 
-  console.log('✅ WhatsApp config validated');
+  console.log('✅ Configuración WhatsApp validada y segura');
   return true;
 }
