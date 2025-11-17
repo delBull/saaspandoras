@@ -15,6 +15,7 @@ export interface Project {
   businessCategory?: string;
   targetAmount: number;
   status: ProjectStatus;
+  source?: string; // Identifies where project came from: 'web_form' | 'whatsapp_form'
   createdAt: string;
   completionData?: ReturnType<typeof calculateProjectCompletion>;
   // Due diligence info
