@@ -1,22 +1,21 @@
 import { NextResponse } from "next/server";
-import { db } from "~/db";
-// import { drizzle } from "drizzle-orm/postgres-js";
-// import postgres from "postgres";
-
-// Initialize database connection
-function getDatabaseConnection() {
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) {
-    throw new Error("DATABASE_URL is not set in environment variables");
-  }
-  return db; // assuming db is imported from @/db
-}
-
-// const client = postgres(connectionString);
-// const db = drizzle(client, { schema: { projects: projectsSchema } });
 import { sql } from "drizzle-orm";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { headers } from "next/headers";
+
+// ⚠️ Dynamic imports para evitar problemas de build
+let db: any = null;
+
+async function loadDependencies() {
+  if (!db) {
+    const dbModule = await import("~/db");
+    db = dbModule.db;
+  }
+}
+
+// Force dynamic runtime
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 interface FeaturedUpdateRequest {
   featured?: boolean;
@@ -27,6 +26,8 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  await loadDependencies();
+
   try {
     console.log('🚀 Featured-Toggle API: Starting PATCH request');
 
