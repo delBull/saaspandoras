@@ -23,7 +23,7 @@ async function loadDependencies() {
 function getDatabaseConnection() {
   if (!sql) {
     sql = postgres(process.env.DATABASE_URL!, {
-      ssl: false, // Deshabilitar SSL para evitar problemas de TLS
+      ssl: process.env.NODE_ENV === 'production' ? 'require' : false, // SSL solo en producción
       max: 1,
       idle_timeout: 20,
       connect_timeout: 10,
