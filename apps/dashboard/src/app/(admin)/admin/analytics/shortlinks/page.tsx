@@ -101,12 +101,12 @@ export default function ShortlinkAnalyticsPage() {
       </div>
 
       {/* Estado del sistema */}
-      <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+      <div className="p-4">
         <div className="flex items-center gap-3">
           <div className="w-3 h-3 bg-green-500 rounded-full"></div>
           <div>
-            <h3 className="font-medium text-green-800">Sistema operativo</h3>
-            <p className="text-green-600 text-sm">
+            <h3 className="font-medium text-green-500">Sistema operativo</h3>
+            <p className="text-gray-300 text-sm">
               {events.length} eventos registrados • Dashboard completo con gráficos
             </p>
           </div>
@@ -114,7 +114,7 @@ export default function ShortlinkAnalyticsPage() {
       </div>
 
       {/* Tabla de eventos */}
-      <div className="bg-white dark:bg-neutral-900 rounded-xl border">
+      <div className="dark:bg-neutral-900 rounded-xl border">
         <div className="p-6 border-b">
           <h2 className="text-xl font-semibold">Todos los Eventos</h2>
           <p className="text-gray-600 text-sm mt-1">

@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { getAuth, isAdmin } from "@/lib/auth";
 import { headers } from "next/headers";
 import postgres from "postgres";
 import type { UserData } from "@/types/admin";
@@ -9,12 +8,28 @@ export const dynamic = "force-dynamic";
 
 // ✅ Singleton seguro para postgres.js (evita pools infinitos)
 let sql: ReturnType<typeof postgres> | null = null;
+// Dynamic imports para evitar problemas de build (igual que otros endpoints)
+let getAuth: any = null;
+let isAdmin: any = null;
+
+async function loadDependencies() {
+  if (!getAuth || !isAdmin) {
+    const authModule = await import("@/lib/auth");
+    getAuth = authModule.getAuth;
+    isAdmin = authModule.isAdmin;
+  }
+}
 
 function getDatabaseConnection() {
   if (!sql) {
     sql = postgres(process.env.DATABASE_URL!, {
-      ssl: "require",
+      ssl: false, // Deshabilitar SSL para evitar problemas de TLS
       max: 1,
+      idle_timeout: 20,
+      connect_timeout: 10,
+      connection: {
+        application_name: 'pandoras-users-api'
+      }
     });
   }
   return sql;
@@ -23,9 +38,16 @@ function getDatabaseConnection() {
 // ADMIN ONLY - Users management endpoint
 export async function GET() {
   try {
+    await loadDependencies(); // Importar funciones dinámicamente
+
     console.log("🛠️ [Admin/Users] API called - starting authentication check");
 
+    // Debug: verificar que las funciones se cargaron correctamente
+    console.log("🛠️ [Admin/Users] getAuth available:", typeof getAuth);
+    console.log("🛠️ [Admin/Users] isAdmin available:", typeof isAdmin);
+
     const { session } = await getAuth(await headers());
+    console.log("🛠️ [Admin/Users] session obtained:", !!session);
 
     const walletAddress = session?.address ?? session?.userId;
     if (!walletAddress) {
