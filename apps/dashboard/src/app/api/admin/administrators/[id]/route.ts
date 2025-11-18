@@ -1,12 +1,37 @@
-import { db } from "~/db";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { administrators } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { getAuth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { getSuperAdminWallet } from "@/lib/constants";
 
+// ⚠️ Dynamic imports para evitar problemas de build
+let db: any = null;
+let administrators: any = null;
+let getAuth: any = null;
+let getSuperAdminWallet: any = null;
+
+async function loadDependencies() {
+  if (!db) {
+    const dbModule = await import("~/db");
+    db = dbModule.db;
+  }
+  if (!administrators) {
+    const schemaModule = await import("@/db/schema");
+    administrators = schemaModule.administrators;
+  }
+}
+
+async function loadAuthHelpers() {
+  if (!getAuth) {
+    const authModule = await import("@/lib/auth");
+    getAuth = authModule.getAuth;
+  }
+  if (!getSuperAdminWallet) {
+    const constantsModule = await import("@/lib/constants");
+    getSuperAdminWallet = constantsModule.getSuperAdminWallet;
+  }
+}
+
+export const dynamic = 'force-dynamic';
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
 export const runtime = "nodejs";
 
@@ -17,6 +42,9 @@ const updateAliasSchema = z.object({
 });
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  await loadDependencies();
+  await loadAuthHelpers();
+
   const contextParams = await params;
   const { session } = await getAuth(await headers());
 
@@ -54,6 +82,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  await loadDependencies();
+  await loadAuthHelpers();
+
   const contextParams = await params;
   const { session } = await getAuth(await headers());
 
