@@ -49,24 +49,87 @@ export function DashboardClientWrapper({
 }) {
   const pathname = usePathname();
   const { account } = usePersistedAccount();
+  const { profile } = useProfile();
   const [userName, setUserName] = useState<string | null>(null);
+
+  // Estados de loading para controlar UI
+  const [isLoadingUserData, setIsLoadingUserData] = useState(true);
 
   // 🎁 ACTIVAR DETECCIÓN AUTOMÁTICA DE REFERIDOS
   useReferralDetection();
 
-  const { profile } = useProfile();
-
   useEffect(() => {
+    // Esperar un poco para que se carguen los datos del perfil antes de mostrar navbar
     if (account?.address) {
+      // Esperar 300ms para datos de perfil
+      setTimeout(() => {
+        setIsLoadingUserData(false);
+      }, 300);
       // Ensure wallet information is available in cookies for server-side requests
       if (typeof window !== 'undefined') {
         document.cookie = `wallet-address=${account.address}; path=/; max-age=86400; samesite=strict`;
         document.cookie = `thirdweb:wallet-address=${account.address}; path=/; max-age=86400; samesite=strict`;
       }
+    } else {
+      setIsLoadingUserData(false); // Si no hay wallet, no esperamos
     }
+
     // Username always null for simpler architecture
     setUserName(null);
   }, [account?.address]);
+
+  // 🔴 PANTALLA COMPLETA DE LOADING - OCULTA TODO HASTA 300ms
+  if (isLoadingUserData && account?.address) {
+    return (
+      <TokenPriceProvider>
+        <TermsModalProvider>
+          {/* LOADING FULLSCREEN PARA TODAS LAS PÁGINAS */}
+          <div className="min-h-screen bg-zinc-900 animate-pulse">
+            {/* HEADER SIMULADO */}
+            <div className="flex items-center justify-center p-4 border-b border-zinc-800">
+              <div className="max-w-7xl w-full flex items-center justify-between">
+                {/* SIDEBAR SIMULADA */}
+                <div className="flex items-center space-x-4">
+                  <div className="w-8 h-8 bg-zinc-700 rounded"></div>
+                  <div className="space-y-2">
+                    <div className="w-24 h-4 bg-zinc-700 rounded"></div>
+                    <div className="w-16 h-3 bg-zinc-700 rounded"></div>
+                  </div>
+                </div>
+                {/* TOPNAVBAR SIMULADA */}
+                <div className="w-32 h-8 bg-zinc-700 rounded"></div>
+              </div>
+            </div>
+            {/* CONTENIDO PRINCIPAL SIMULADO */}
+            <div className="max-w-7xl mx-auto px-4 py-6">
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <div className="space-y-2">
+                    <div className="w-48 h-6 bg-zinc-700 rounded"></div>
+                    <div className="w-32 h-4 bg-zinc-700 rounded"></div>
+                  </div>
+                  <div className="w-24 h-8 bg-zinc-700 rounded"></div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="h-32 bg-zinc-700 rounded"></div>
+                  <div className="h-32 bg-zinc-700 rounded"></div>
+                  <div className="h-32 bg-zinc-700 rounded"></div>
+                </div>
+                {/* TABLA O CONTENIDO PRINCIPAL */}
+                <div className="space-y-4">
+                  <div className="w-full h-8 bg-zinc-700 rounded"></div>
+                  <div className="w-full h-64 bg-zinc-700 rounded"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <TermsModalRenderer />
+          <RewardModalManager />
+        </TermsModalProvider>
+      </TokenPriceProvider>
+    );
+  }
 
   return (
     <TokenPriceProvider>
@@ -79,7 +142,7 @@ export function DashboardClientWrapper({
           isSuperAdmin={isSuperAdmin}
           sidebarDefaultOpen={pathname === '/applicants' ? false : undefined}
         >
-          {/* Top Navbar with Profile - Superior derecha */}
+          {/* Top Navbar with Profile - Superior derecha - OK */}
           <div className="relative md:block hidden">
             <TopNavbar
               wallet={account?.address}
@@ -100,24 +163,27 @@ export function DashboardClientWrapper({
                  transition={{ duration: 0.3, ease: "easeInOut" }}
                  className="pb-4 md:pb-0"
                >
-                 <Suspense
-                   fallback={
-                     <div className="p-8 animate-pulse space-y-4 pb-20 md:pb-0">
-                       <div className="h-8 w-1/3 rounded bg-fuchsia-950" />
-                       <div className="h-64 w-full rounded bg-fuchsia-950" />
-                     </div>
-                   }
-                 >
-                   {children}
-                 </Suspense>
+                 {/* SOLO MOSTRAR CHILDREN SI NO ESTÁ EN LOADING GLOBAL */}
+                 {!isLoadingUserData && (
+                   <Suspense
+                     fallback={
+                       <div className="p-8 animate-pulse space-y-4 pb-20 md:pb-0">
+                         <div className="h-8 w-1/3 rounded bg-fuchsia-950" />
+                         <div className="h-64 w-full rounded bg-fuchsia-950" />
+                       </div>
+                     }
+                   >
+                     {children}
+                   </Suspense>
+                 )}
                </motion.div>
              </AnimatePresence>
            </NFTGate>
           </AutoLoginGate>
         </DashboardShell>
 
-        {/* Mobile Navigation Menu - Fijo al bottom con altura exacta */}
-        <MobileNavMenu profile={profile} />
+        {/* Mobile Navigation Menu - Fijo al bottom pero solo si no está cargando */}
+        {!isLoadingUserData && <MobileNavMenu profile={profile} />}
 
         <TermsModalRenderer />
 
