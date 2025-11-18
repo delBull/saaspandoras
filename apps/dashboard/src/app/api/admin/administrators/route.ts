@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { headers } from "next/headers";
-import { getAuth, isAdmin } from "@/lib/auth";
-import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 
 // ⚠️ Dynamic imports para evitar problemas de build
 let db: any = null;
 let administrators: any = null;
+let getAuth: any = null;
+let isAdmin: any = null;
+let SUPER_ADMIN_WALLET: any = null;
 
 async function loadDependencies() {
   if (!db) {
@@ -19,11 +20,36 @@ async function loadDependencies() {
   }
 }
 
+async function loadAuthHelpers() {
+  if (!getAuth || !isAdmin || !SUPER_ADMIN_WALLET) {
+    const authModule = await import("@/lib/auth");
+    const constantsModule = await import("@/lib/constants");
+    getAuth = authModule.getAuth;
+    isAdmin = authModule.isAdmin;
+    SUPER_ADMIN_WALLET = constantsModule.SUPER_ADMIN_WALLET;
+  }
+}
+
 // Force dynamic runtime
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-  // Super admins hardcodeados que aparecen en la UI
+const addAdminSchema = z.object({
+  walletAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/, "Dirección de wallet inválida."),
+  alias: z.string().max(100, "El alias no puede tener más de 100 caracteres.").optional(),
+});
+
+export async function GET() {
+  await loadDependencies();
+  await loadAuthHelpers();
+
+  const { session } = await getAuth(await headers());
+
+  if (!await isAdmin(session?.userId)) {
+    return NextResponse.json({ message: "No autorizado" }, { status: 403 });
+  }
+
+  // Super admins hardcodeados que aparecen en la UI (creados dinámicamente)
   const SUPER_ADMINS = [
     {
       id: 999,
@@ -35,20 +61,6 @@ export const dynamic = "force-dynamic";
       updated_at: new Date("2024-01-01T00:00:00.000Z")
     }
   ];
-
-const addAdminSchema = z.object({
-  walletAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/, "Dirección de wallet inválida."),
-  alias: z.string().max(100, "El alias no puede tener más de 100 caracteres.").optional(),
-});
-
-export async function GET() {
-  await loadDependencies();
-
-  const { session } = await getAuth(await headers());
-
-  if (!await isAdmin(session?.userId)) {
-    return NextResponse.json({ message: "No autorizado" }, { status: 403 });
-  }
 
   const dbAdmins = await db.query.administrators.findMany();
   // Combinar admins de BD con super admins hardcodeados
@@ -63,6 +75,7 @@ export async function GET() {
  */
 export async function POST(request: Request) {
   await loadDependencies();
+  await loadAuthHelpers();
 
   const requestHeaders = await headers();
   console.log('🔍 POST /api/admin/administrators - Incoming headers:');

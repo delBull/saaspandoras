@@ -1,15 +1,24 @@
 import { NextResponse } from "next/server";
-import { getAuth, isAdmin } from "@/lib/auth";
 import { headers } from "next/headers";
 import { sql } from "drizzle-orm";
 
 // ⚠️ Dynamic imports para evitar problemas de build
 let db: any = null;
+let getAuth: any = null;
+let isAdmin: any = null;
 
 async function loadDependencies() {
   if (!db) {
     const dbModule = await import("~/db");
     db = dbModule.db;
+  }
+}
+
+async function loadAuthHelpers() {
+  if (!getAuth || !isAdmin) {
+    const authModule = await import("@/lib/auth");
+    getAuth = authModule.getAuth;
+    isAdmin = authModule.isAdmin;
   }
 }
 
@@ -19,6 +28,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   await loadDependencies();
+  await loadAuthHelpers();
 
   try {
     // Información básica sin autenticación

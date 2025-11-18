@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
-import { getAuth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { getSuperAdminWallet } from "@/lib/constants";
 
 // ⚠️ Dynamic imports para evitar problemas de build
 let db: any = null;
 let administrators: any = null;
+let getAuth: any = null;
+let getSuperAdminWallet: any = null;
 
 async function loadDependencies() {
   if (!db) {
@@ -17,6 +17,17 @@ async function loadDependencies() {
   if (!administrators) {
     const schemaModule = await import("@/db/schema");
     administrators = schemaModule.administrators;
+  }
+}
+
+async function loadAuthHelpers() {
+  if (!getAuth) {
+    const authModule = await import("@/lib/auth");
+    getAuth = authModule.getAuth;
+  }
+  if (!getSuperAdminWallet) {
+    const constantsModule = await import("@/lib/constants");
+    getSuperAdminWallet = constantsModule.getSuperAdminWallet;
   }
 }
 
@@ -32,6 +43,7 @@ const updateAliasSchema = z.object({
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   await loadDependencies();
+  await loadAuthHelpers();
 
   const contextParams = await params;
   const { session } = await getAuth(await headers());
@@ -71,6 +83,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   await loadDependencies();
+  await loadAuthHelpers();
 
   const contextParams = await params;
   const { session } = await getAuth(await headers());
