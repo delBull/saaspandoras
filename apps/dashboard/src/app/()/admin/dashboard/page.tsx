@@ -12,6 +12,7 @@ import type { ProjectStatus, Project, AdminData, UserData } from "@/types/admin"
 import { ProjectApplicationButton } from "@/components/ProjectApplicationButton";
 import { ProjectTableView } from "@/components/ProjectTableView";
 import { ProjectCardsView } from "@/components/ProjectCardsView";
+import { ShortlinksAnalyticsTab } from "@/components/admin/ShortlinksAnalyticsTab";
 
 // NOTE: Using 'draft' and 'incomplete' in UI but DB ENUM needs migration to include these values
 
@@ -710,7 +711,7 @@ export default function AdminDashboardPage() {
         />
       </div>
 
-      <AdminTabs swaps={mockSwaps} users={users} showSettings={true} showUsers={true}>
+      <AdminTabs swaps={mockSwaps} users={users} showSettings={true} showUsers={true} showShortlinks={true}>
         {/* Tab de proyectos */}
         <div key="projects-tab" className="space-y-6">
           {/* Barra de herramientas mejorada */}
@@ -914,6 +915,9 @@ export default function AdminDashboardPage() {
 
         {/* Tab de configuración */}
         <AdminSettings key="settings-tab" initialAdmins={admins} />
+
+        {/* Tab de Shortlinks Analytics */}
+        <ShortlinksAnalyticsTab key="shortlinks-tab" />
       </AdminTabs>
 
       {/* Dropdown de Status - Renderizado fuera de la tabla para z-index máximo */}

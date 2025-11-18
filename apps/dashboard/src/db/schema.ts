@@ -424,6 +424,41 @@ export const userReferrals = pgTable("user_referrals", {
 
 // --- WHATSAPP BOT SUPPORT TABLE ---
 // Estado conversacional para usuarios usando el formulario por WhatsApp
+// --- SHORTLINKS MANAGEMENT TABLES ---
+// Shortlinks personalizados creados por admins
+export const shortlinks = pgTable("shortlinks", {
+  id: serial("id").primaryKey(),
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  destinationUrl: text("destination_url").notNull(),
+  title: varchar("title", { length: 255 }),
+  description: text("description"),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdBy: varchar("created_by", { length: 255 }).references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// --- SHORTLINKS ANALYTICS TABLES ---
+// Tracking de clicks en shortlinks para marketing analytics
+export const shortlinkEvents = pgTable("shortlink_events", {
+  id: serial("id").primaryKey(),
+  slug: varchar("slug", { length: 50 }).notNull(),              // 'w' para /w
+  ip: varchar("ip", { length: 45 }),                           // IPv4/IPv6
+  userAgent: text("user_agent"),                                // Navegador/device
+  referer: text("referer"),                                     // URL de origen
+  utmSource: varchar("utm_source", { length: 100 }),           // google, facebook, etc.
+  utmMedium: varchar("utm_medium", { length: 100 }),           // cpc, social, email
+  utmCampaign: varchar("utm_campaign", { length: 100 }),       // campaign_name
+  utmTerm: varchar("utm_term", { length: 100 }),               // keywords
+  utmContent: varchar("utm_content", { length: 100 }),         // content variation
+  deviceType: varchar("device_type", { length: 50 }),          // mobile, desktop, tablet
+  browser: varchar("browser", { length: 100 }),                // chrome, safari, etc.
+  country: varchar("country", { length: 10 }),                 // MX, US, ES
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// --- WHATSAPP BOT SUPPORT TABLE ---
+// Estado conversacional para usuarios usando el formulario por WhatsApp
 export const whatsappApplicationStates = pgTable("whatsapp_application_states", {
   id: serial("id").primaryKey(),
   userPhone: varchar("user_phone", { length: 20 }).notNull().unique(), // Número de WhatsApp del usuario
@@ -447,3 +482,5 @@ export type Reward = typeof rewards.$inferSelect;
 export type UserReward = typeof userRewards.$inferSelect;
 export type UserReferral = typeof userReferrals.$inferSelect;
 export type WhatsAppApplicationState = typeof whatsappApplicationStates.$inferSelect;
+export type ShortlinkEvent = typeof shortlinkEvents.$inferSelect;
+export type Shortlink = typeof shortlinks.$inferSelect;
