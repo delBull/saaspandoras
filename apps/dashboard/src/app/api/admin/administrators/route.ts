@@ -1,14 +1,27 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { db } from "~/db";
+import { headers } from "next/headers";
+import { getAuth, isAdmin } from "@/lib/auth";
+import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 
-// ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
+// ⚠️ Dynamic imports para evitar problemas de build
+let db: any = null;
+let administrators: any = null;
+
+async function loadDependencies() {
+  if (!db) {
+    const dbModule = await import("~/db");
+    db = dbModule.db;
+  }
+  if (!administrators) {
+    const schemaModule = await import("@/db/schema");
+    administrators = schemaModule.administrators;
+  }
+}
+
+// Force dynamic runtime
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-import { administrators } from "@/db/schema";
-import { getAuth, isAdmin } from "@/lib/auth";
-import { headers } from "next/headers";
-import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 
   // Super admins hardcodeados que aparecen en la UI
   const SUPER_ADMINS = [
@@ -29,6 +42,8 @@ const addAdminSchema = z.object({
 });
 
 export async function GET() {
+  await loadDependencies();
+
   const { session } = await getAuth(await headers());
 
   if (!await isAdmin(session?.userId)) {
@@ -47,6 +62,8 @@ export async function GET() {
  * Solo accesible por el Super Admin.
  */
 export async function POST(request: Request) {
+  await loadDependencies();
+
   const requestHeaders = await headers();
   console.log('🔍 POST /api/admin/administrators - Incoming headers:');
   for (const [key, value] of requestHeaders.entries()) {
