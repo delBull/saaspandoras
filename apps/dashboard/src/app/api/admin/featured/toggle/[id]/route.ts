@@ -1,22 +1,30 @@
 import { NextResponse } from "next/server";
-import { db } from "~/db";
-// import { drizzle } from "drizzle-orm/postgres-js";
-// import postgres from "postgres";
+import { sql } from "drizzle-orm";
+import { headers } from "next/headers";
 
-// Initialize database connection
-function getDatabaseConnection() {
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) {
-    throw new Error("DATABASE_URL is not set in environment variables");
+// ⚠️ Dynamic imports para evitar problemas de build
+let db: any = null;
+let getAuth: any = null;
+let isAdmin: any = null;
+
+async function loadDependencies() {
+  if (!db) {
+    const dbModule = await import("~/db");
+    db = dbModule.db;
   }
-  return db; // assuming db is imported from @/db
 }
 
-// const client = postgres(connectionString);
-// const db = drizzle(client, { schema: { projects: projectsSchema } });
-import { sql } from "drizzle-orm";
-import { getAuth, isAdmin } from "@/lib/auth";
-import { headers } from "next/headers";
+async function loadAuthHelpers() {
+  if (!getAuth || !isAdmin) {
+    const authModule = await import("@/lib/auth");
+    getAuth = authModule.getAuth;
+    isAdmin = authModule.isAdmin;
+  }
+}
+
+// Force dynamic runtime
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 interface FeaturedUpdateRequest {
   featured?: boolean;
@@ -27,6 +35,9 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  await loadDependencies();
+  await loadAuthHelpers();
+
   try {
     console.log('🚀 Featured-Toggle API: Starting PATCH request');
 

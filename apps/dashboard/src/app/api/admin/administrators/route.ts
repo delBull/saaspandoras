@@ -1,16 +1,55 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { db } from "~/db";
+import { headers } from "next/headers";
 
-// ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
+// ⚠️ Dynamic imports para evitar problemas de build
+let db: any = null;
+let administrators: any = null;
+let getAuth: any = null;
+let isAdmin: any = null;
+let SUPER_ADMIN_WALLET: any = null;
+
+async function loadDependencies() {
+  if (!db) {
+    const dbModule = await import("~/db");
+    db = dbModule.db;
+  }
+  if (!administrators) {
+    const schemaModule = await import("@/db/schema");
+    administrators = schemaModule.administrators;
+  }
+}
+
+async function loadAuthHelpers() {
+  if (!getAuth || !isAdmin || !SUPER_ADMIN_WALLET) {
+    const authModule = await import("@/lib/auth");
+    const constantsModule = await import("@/lib/constants");
+    getAuth = authModule.getAuth;
+    isAdmin = authModule.isAdmin;
+    SUPER_ADMIN_WALLET = constantsModule.SUPER_ADMIN_WALLET;
+  }
+}
+
+// Force dynamic runtime
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-import { administrators } from "@/db/schema";
-import { getAuth, isAdmin } from "@/lib/auth";
-import { headers } from "next/headers";
-import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 
-  // Super admins hardcodeados que aparecen en la UI
+const addAdminSchema = z.object({
+  walletAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/, "Dirección de wallet inválida."),
+  alias: z.string().max(100, "El alias no puede tener más de 100 caracteres.").optional(),
+});
+
+export async function GET() {
+  await loadDependencies();
+  await loadAuthHelpers();
+
+  const { session } = await getAuth(await headers());
+
+  if (!await isAdmin(session?.userId)) {
+    return NextResponse.json({ message: "No autorizado" }, { status: 403 });
+  }
+
+  // Super admins hardcodeados que aparecen en la UI (creados dinámicamente)
   const SUPER_ADMINS = [
     {
       id: 999,
@@ -22,18 +61,6 @@ import { SUPER_ADMIN_WALLET } from "@/lib/constants";
       updated_at: new Date("2024-01-01T00:00:00.000Z")
     }
   ];
-
-const addAdminSchema = z.object({
-  walletAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/, "Dirección de wallet inválida."),
-  alias: z.string().max(100, "El alias no puede tener más de 100 caracteres.").optional(),
-});
-
-export async function GET() {
-  const { session } = await getAuth(await headers());
-
-  if (!await isAdmin(session?.userId)) {
-    return NextResponse.json({ message: "No autorizado" }, { status: 403 });
-  }
 
   const dbAdmins = await db.query.administrators.findMany();
   // Combinar admins de BD con super admins hardcodeados
@@ -47,6 +74,9 @@ export async function GET() {
  * Solo accesible por el Super Admin.
  */
 export async function POST(request: Request) {
+  await loadDependencies();
+  await loadAuthHelpers();
+
   const requestHeaders = await headers();
   console.log('🔍 POST /api/admin/administrators - Incoming headers:');
   for (const [key, value] of requestHeaders.entries()) {
