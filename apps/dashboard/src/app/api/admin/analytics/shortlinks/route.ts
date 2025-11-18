@@ -1,37 +1,16 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { headers } from "next/headers";
-import { and, asc, desc, eq, gte, lte, like } from "drizzle-orm";
-import { shortlinkEvents } from "@/db/schema";
+import { and, asc, desc, eq, gte, lte, like, sql } from "drizzle-orm";
+import { db } from "~/db";
+import { getAuth, isAdmin } from "@/lib/auth";
+import { shortlinkEvents } from "~/db/schema";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-// Load dependencies dynamically to avoid build issues
-let db: any = null;
-let getAuth: any = null;
-let isAdmin: any = null;
-
-async function loadDependencies() {
-  if (!db) {
-    const dbModule = await import("~/db");
-    db = dbModule.db;
-  }
-}
-
-async function loadAuthHelpers() {
-  if (!getAuth || !isAdmin) {
-    const authModule = await import("@/lib/auth");
-    getAuth = authModule.getAuth;
-    isAdmin = authModule.isAdmin;
-  }
-}
-
 export async function GET(req: NextRequest) {
   try {
-    await loadDependencies();
-    await loadAuthHelpers();
-
     // Auth check
     const { session } = await getAuth(await headers());
     if (!session?.userId || !await isAdmin(session.userId)) {
@@ -81,12 +60,16 @@ export async function GET(req: NextRequest) {
       conditions.push(eq(shortlinkEvents.country, country));
     }
 
+    console.log("🛠️ Shortlinks API: Executing query for slug:", slug, "with conditions:", conditions.length);
+
     // Execute query
     const events = await db
       .select()
       .from(shortlinkEvents)
       .where(and(...conditions))
       .orderBy(desc(shortlinkEvents.createdAt));
+
+    console.log("🛠️ Shortlinks API: Query successful, found events:", events.length);
 
     // Calculate totals for analytics
     const totalClicks = events.length;

@@ -20,9 +20,10 @@ interface AdminTabsProps {
   children: ReactNode[]; // Ahora espera un array de nodos
   showSettings?: boolean;
   showUsers?: boolean;
+  showShortlinks?: boolean;
 }
 
-export function AdminTabs({ swaps, users, children, showSettings = false, showUsers = false }: AdminTabsProps) {
+export function AdminTabs({ swaps, users, children, showSettings = false, showUsers = false, showShortlinks = false }: AdminTabsProps) {
   const [activeTab, setActiveTab] = useState('projects');
 
   const totalVolume = swaps.reduce((a, s) => a + (s.status === 'success' ? s.fromAmountUsd : 0), 0);
@@ -42,6 +43,11 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
           <button onClick={() => setActiveTab('swaps')} className={`pb-2 font-semibold ${activeTab === 'swaps' ? 'text-lime-400 border-b-2 border-lime-400' : 'text-gray-400'}`}>
             Swaps
           </button>
+          {showShortlinks && (
+            <button onClick={() => setActiveTab('shortlinks')} className={`pb-2 font-semibold ${activeTab === 'shortlinks' ? 'text-fuchsia-900 border-b-2 border-fuchsia-900' : 'text-gray-400'} flex items-center gap-2`}>
+              Shortlinks
+            </button>
+          )}
           {showSettings && (
             <button onClick={() => setActiveTab('settings')} className={`pb-2 font-semibold ${activeTab === 'settings' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-400'}`}>
               Config
@@ -104,6 +110,8 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
           </div>
         </div>
       )}
+
+      {activeTab === 'shortlinks' && showShortlinks && children[2]}
 
       {activeTab === 'settings' && showSettings && children[1]}
     </>

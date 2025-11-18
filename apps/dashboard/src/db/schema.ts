@@ -424,6 +424,20 @@ export const userReferrals = pgTable("user_referrals", {
 
 // --- WHATSAPP BOT SUPPORT TABLE ---
 // Estado conversacional para usuarios usando el formulario por WhatsApp
+// --- SHORTLINKS MANAGEMENT TABLES ---
+// Shortlinks personalizados creados por admins
+export const shortlinks = pgTable("shortlinks", {
+  id: serial("id").primaryKey(),
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  destinationUrl: text("destination_url").notNull(),
+  title: varchar("title", { length: 255 }),
+  description: text("description"),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdBy: varchar("created_by", { length: 255 }).references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // --- SHORTLINKS ANALYTICS TABLES ---
 // Tracking de clicks en shortlinks para marketing analytics
 export const shortlinkEvents = pgTable("shortlink_events", {
@@ -469,3 +483,4 @@ export type UserReward = typeof userRewards.$inferSelect;
 export type UserReferral = typeof userReferrals.$inferSelect;
 export type WhatsAppApplicationState = typeof whatsappApplicationStates.$inferSelect;
 export type ShortlinkEvent = typeof shortlinkEvents.$inferSelect;
+export type Shortlink = typeof shortlinks.$inferSelect;
