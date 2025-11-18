@@ -78,15 +78,72 @@ export function ProjectTableView({
                   </div>
                 </td>
                 <td className="px-4 py-3 text-center">
-                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                    p.source === "whatsapp_form"
-                      ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                      : p.source === "web_form"
-                      ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                      : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
-                  }`}>
-                    {p.source === "whatsapp_form" ? "📱 WhatsApp" : p.source === "web_form" ? "🌐 Web" : "❓ Desconocido"}
-                  </span>
+                  {(() => {
+                    // Lógica mejorada para distinguir WhatsApp vs Web
+                    const phone = p.applicantPhone?.trim();
+                    const hasEmail = !!p.applicantEmail;
+                    const createdAt = new Date(p.createdAt);
+
+                    // Fecha de referencia: cuando empezó el WhatsApp bot (aprox 18 nov 2025)
+                    const whatsappStartDate = new Date('2025-11-15T00:00:00Z');
+
+                    let source = "unknown";
+                    let confidence = "low";
+
+                    // PATRÓN 1: Fecha reciente (después del whatsapp bot) + teléfono internacional
+                    if (createdAt >= whatsappStartDate && phone) {
+                      // Formatos internacionales comunes que indican WhatsApp
+                      const internationalPatterns = [
+                        /^\+/, // +52, +1, etc
+                        /^00\d/, // 00952, 001, etc
+                        /^52/, // 52XXXX (México directo)
+                        /^1/, // 1XXXX (USA directo)
+                      ];
+
+                      const isInternationalNumber = internationalPatterns.some(pattern => pattern.test(phone));
+                      const isRecentProject = (Date.now() - createdAt.getTime()) < (30 * 24 * 60 * 60 * 1000); // Últimos 30 días
+
+                      if (isInternationalNumber && phone.length >= 10) {
+                        source = "whatsapp";
+                        confidence = "high";
+                      } else if (isRecentProject && phone) {
+                        source = "whatsapp";
+                        confidence = "medium";
+                      }
+                    }
+
+                    // PATRÓN 2: Proyectos antiguos sin teléfono son definitivamente web
+                    if (source === "unknown" && createdAt < whatsappStartDate && hasEmail) {
+                      source = "web";
+                    }
+
+                    // PATRÓN 3: Cualquier proyecto con email es web por defecto (máxima cobertura)
+                    if (source === "unknown" && hasEmail) {
+                      source = "web";
+                    }
+
+                    // PATRÓN 4: Si tiene teléfono pero es proyecto muy antiguo, es más probable que sea web
+                    if (source === "unknown" && phone && createdAt < whatsappStartDate) {
+                      source = "web"; // Proyectos antiguos con teléfono opcional
+                    }
+
+                    // ÚLTIMO FALLBACK: Todo lo que llegue aquí es web (por defecto)
+                    if (source === "unknown") {
+                      source = "web"; // Máxima cobertura - asumir web si no hay evidencia de whatsapp
+                    }
+
+                    return (
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        source === "whatsapp"
+                          ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                          : source === "web"
+                          ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                          : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+                      }`}>
+                        {source === "whatsapp" ? "📱 WhatsApp" : source === "web" ? "🌐 Web" : "❓ Desconocido"}
+                      </span>
+                    );
+                  })()}
                 </td>
 
                 {/* Featured Column */}
