@@ -49,7 +49,23 @@ export async function getUserState(userPhone: string): Promise<WhatsAppState | n
 }
 
 /**
- * Crear nuevo estado para usuario según teléfono
+ * Obtener o crear estado para usuario (UPSERT)
+ */
+export async function getOrCreateUserState(userPhone: string): Promise<WhatsAppState | null> {
+  // Primero intentar obtener el estado existente
+  const existingState = await getUserState(userPhone);
+  if (existingState) {
+    console.log(`📱 Estado existente encontrado para ${userPhone}`);
+    return existingState;
+  }
+
+  // Si no existe, crear nuevo estado
+  console.log(`🆕 Creando nuevo estado para ${userPhone}`);
+  return await createUserState(userPhone);
+}
+
+/**
+ * Crear nuevo estado para usuario según teléfono (solo si no existe)
  */
 export async function createUserState(userPhone: string): Promise<WhatsAppState | null> {
   try {
@@ -75,10 +91,13 @@ export async function createUserState(userPhone: string): Promise<WhatsAppState 
     };
   } catch (error) {
     console.error('Error creating WhatsApp user state:', error);
-    // Si ya existe, devolver el existente
+
+    // Si ya existe, devolver el existente (UPSERT behavior)
     if (error && typeof error === 'object' && 'code' in error && error.code === '23505') { // unique_violation
+      console.log(`⚡ Estado ya existía para ${userPhone}, retornando existente`);
       return getUserState(userPhone);
     }
+
     return null;
   }
 }

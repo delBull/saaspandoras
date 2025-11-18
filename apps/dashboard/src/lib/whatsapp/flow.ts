@@ -1,5 +1,5 @@
 import { formQuestions } from '@/components/conversational-form/formQuestions';
-import { getUserState, createUserState, saveAnswer, advanceStep, markCompleted, getCurrentAnswers } from './db';
+import { getUserState, getOrCreateUserState, saveAnswer, advanceStep, markCompleted, getCurrentAnswers } from './db';
 
 // Tipos para los mensajes de WhatsApp
 interface WhatsAppMessage {
@@ -38,8 +38,10 @@ export async function processIncomingMessage(message: WhatsAppMessage): Promise<
   if (isInitialTrigger(currentText)) {
     const success = await startNewApplication(userPhone, currentText);
     if (success) {
+      // Mensaje de bienvenida alentador
+      const welcomeMessage = "¡Genial decisión! 🚀 Vamos a crear tu protocolo de utilidad juntos en solo 5 minutos.\n\nResponde a las preguntas para construir algo increíble.\n\n";
       const nextQuestion = getQuestionText(0);
-      return { nextQuestion };
+      return { nextQuestion: welcomeMessage + nextQuestion };
     }
     return { error: 'Error al iniciar aplicación' };
   }
@@ -95,10 +97,10 @@ async function startNewApplication(userPhone: string, initialMessage: string): P
   const applicantName = nameMatch?.[1]?.trim() || null;
 
   try {
-    // Crear estado inicial
-    const newState = await createUserState(userPhone);
+    // Obtener o crear estado inicial (ELLJETTA por posibilidad duplicada)
+    const newState = await getOrCreateUserState(userPhone);
     if (!newState) {
-      console.error('Error creando estado inicial');
+      console.error('Error obteniendo/creando estado inicial');
       return false;
     }
 
