@@ -471,7 +471,7 @@ export const whatsappApplicationStates = pgTable("whatsapp_application_states", 
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Tabla dedicada para el flujo de 8 preguntas (filtrado)
+// Tabla dedicada para el flujo de 8 preguntas (filtrado) - MANTENER EXISTENTE
 export const whatsappPreapplyLeads = pgTable("whatsapp_preapply_leads", {
   id: serial("id").primaryKey(),
   userPhone: varchar("user_phone", { length: 20 }).notNull(), // Número de WhatsApp del usuario
@@ -486,6 +486,41 @@ export const whatsappPreapplyLeads = pgTable("whatsapp_preapply_leads", {
   uniquePhone: uniqueIndex("unique_whatsapp_lead_phone").on(table.userPhone),
 }));
 
+// --- MULTI-FLOW SYSTEM TABLES --- (NUEVO SISTEMA)
+
+// Tabla: whatsapp_users - Identidad base del usuario WhatsApp
+export const whatsappUsers = pgTable("whatsapp_users", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()), // UUID
+  phone: text("phone").notNull().unique(), // "5213222741987"
+  name: text("name"), // opcional, se puede extraer de respuestas
+  priorityLevel: text("priority_level").default("normal").notNull(), // 'high', 'normal', 'support'
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// Tabla: whatsapp_sessions - Conversaciones activas con estado dinámico
+export const whatsappSessions = pgTable("whatsapp_sessions", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()), // UUID
+  userId: text("user_id").references(() => whatsappUsers.id).notNull(),
+  flowType: text("flow_type").notNull(), // "eight_q", "high_ticket", "support", "human"
+  state: jsonb("state").default({}).notNull(), // datos del progreso específico del flujo
+  currentStep: integer("current_step").default(0).notNull(), // pregunta actual (0-8 para eight_q)
+  isActive: boolean("is_active").default(true).notNull(),
+  startedAt: timestamp("started_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  // Una sola sesión activa por usuario
+});
+
+// Tabla: whatsapp_messages - Bitácora completa para análisis y soporte humano
+export const whatsappMessages = pgTable("whatsapp_messages", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()), // UUID
+  sessionId: text("session_id").references(() => whatsappSessions.id),
+  direction: text("direction").notNull(), // "incoming" / "outgoing"
+  body: text("body"),
+  messageType: text("message_type").default("text").notNull(), // "text", "image", "audio"
+  timestamp: timestamp("timestamp", { withTimezone: true }).defaultNow().notNull(),
+});
+
 // Export types
 export type Project = typeof projects.$inferSelect;
 export type User = typeof users.$inferSelect;
@@ -495,8 +530,18 @@ export type UserPointsRecord = typeof userPoints.$inferSelect;
 export type Achievement = typeof achievements.$inferSelect;
 export type UserAchievement = typeof userAchievements.$inferSelect;
 export type Reward = typeof rewards.$inferSelect;
-export type UserReward = typeof userRewards.$inferSelect;
+export type UserReward = typeof userRewards.$inferInsert;
 export type UserReferral = typeof userReferrals.$inferSelect;
+
+// WhatsApp Multi-Flow Types - SISTEMA MULTI-FLOW
+export type WhatsAppUser = typeof whatsappUsers.$inferSelect;
+export type WhatsAppSession = typeof whatsappSessions.$inferSelect;
+export type WhatsAppMessage = typeof whatsappMessages.$inferSelect;
+
+// WhatsApp Legacy Types - MANTENER EXISTENTES
 export type WhatsAppApplicationState = typeof whatsappApplicationStates.$inferSelect;
+export type WhatsAppPreapplyLead = typeof whatsappPreapplyLeads.$inferSelect;
+
+// Shortlinks Types
 export type ShortlinkEvent = typeof shortlinkEvents.$inferSelect;
 export type Shortlink = typeof shortlinks.$inferSelect;
