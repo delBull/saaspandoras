@@ -39,6 +39,9 @@ last_updated: 2025-11-18
 | **🤖 Flow Processor** | `preapply-flow.ts` | ✅ Listo | 8 preguntas + validaciones |
 | **📡 Pre-Apply Webhook** | `/api/whatsapp/preapply/` | ✅ Listo | Webhook dedicada |
 | **⚙️ Configuración** | `flowConfig.ts` | ✅ Listo | Preguntas + mensajes personalizados |
+| **🖥️ Frontend** | `WhatsAppLeadForm.tsx` | ✅ Listo | Activado para flujo preapply |
+| **📊 UI Admin** | `WhatsAppLeadsTab.tsx` | ✅ Listo | Panel de gestión de leads |
+| **💼 Tab Marketing** | `AdminTabs.tsx` | ✅ Listo | Nueva tab con sub-tabs expansibles |
 
 ### 🎯 **OBJETIVO v3.0:**
 
@@ -54,6 +57,27 @@ last_updated: 2025-11-18
 - ✅ **Transferencia automática** al web form cuando pase filtro
 - ✅ **Status management** (Pending → Approved) desde admin
 - ✅ ** Comunicación bidireccional** (bot ⇄ admin ⇄ usuario)
+
+---
+
+## 🤖 MEDIA + ENLACES + PDFs + INFO EXTRA PARA CADA PREGUNTA (OPTIMIZADO PARA WHATSAPP)
+
+### 📌 PRINCIPIO GENERAL (muy importante)
+
+**WhatsApp NO es un sitio web → No puedes abrumar.**
+Debe seguir esta regla:
+
+**1 pregunta = 1 mensaje principal → + 1 opción de "Necesitas más info?"**
+
+Ejemplo del botón textual:
+
+"¿Quieres ver ejemplos claros de mecanismos verificables?
+Escribe: INFO_MECANISMO"
+
+Opción:
+— **INFO_x dispara un mensaje adicional.**
+— Mantienes el flujo limpio.
+— Sólo lo ve quien lo necesita.
 
 ---
 
@@ -86,14 +110,42 @@ Ejemplos: tareas medibles, contenido curado, flujos verificables, aportes reales
 
 ### 🔷 **1. FILTRO Q1 — MECANISMO DE UTILIDAD VERIFICABLE**
 
+**🎯 Objetivo:** Asegurarte de que el creador entiende SU UTILIDAD VERIFICABLE.
+
 **Tipo:** Texto largo con ejemplo + botón de ejemplos
-**WhatsApp:** texto + quick reply "Ver ejemplos"
+**WhatsApp:** texto + trigger INFO_MECANISMO
 
 **Pregunta:**
 ```
 ¿Cuál es la acción verificable que realiza el usuario dentro de tu Creación?
 (Lo que podemos medir, validar y recompensar).
 Explica brevemente cómo funciona.
+```
+
+**Trigger INFO:**
+¿Quieres ver ejemplos claros de mecanismos verificables?
+Escribe: INFO_MECANISMO
+
+**💡 Contenido multimedia de apoyo:**
+- **Mini PDF:** "Qué es un mecanismo verificable y ejemplos válidos en Pandora's" (una sola página, simple, sin tecnicismos)
+- **Infografía:** Cuadrante Verificable vs No verificable
+- **Mensajes de ejemplos:** "Moderación verificable de contenido con timestamps", "Tareas con outputs cuantificables", "Participación en flujos o decisiones que pueden ser loggeadas"
+- **Micro-video:** 20–30s explicando "qué es una acción verificable"
+
+**Respuesta automática INFO_MECANISMO:**
+```
+🔍 Mecanismos Verificables en Pandora's:
+
+Ejemplos válidos:
+✅ Moderación verificable de contenido con timestamps
+✅ Tareas con outputs cuantificables
+✅ Participación en flujos o decisiones que pueden ser loggeadas
+✅ Contenido curado con métricas medibles
+
+📄 PDF completo: pndrs.link/mechanic-guide
+🖼️ Infografía: pndrs.link/mechanic-infographic
+
+¿Esto aclara tu idea?
 ```
 
 **Botones:**
@@ -110,13 +162,40 @@ Ejemplo: enviar contenido, votar, subir tarea, confirmar asistencia, completar m
 
 ### 🔷 **2. FILTRO Q2 — FLUJO DEL USUARIO**
 
+**🎯 Objetivo:** Validar si el creador entiende cómo un usuario interactúa con su protocolo.
+
 **Tipo:** Respuesta abierta + Ayuda guiada
-**WhatsApp:** texto + quick replies
+**WhatsApp:** texto + trigger INFO_FLUJO
 
 **Pregunta:**
 ```
 Explica cómo interactúa un usuario final con tu Protocolo paso a paso.
 Incluye: qué hace, qué recibe, y cómo se activa cada utilidad.
+```
+
+**Trigger INFO:**
+¿Quieres ver ejemplos de flujos utilitarios y cómo se mapean?
+Escribe: INFO_FLUJO
+
+**💡 Contenido multimedia de apoyo:**
+- **Plantilla visual:** "User Flow Canvas (simple)" PNG
+- **Mini PDF:** "Cómo definir un flujo utilitario en 5 pasos"
+- **Ejemplos reales:** Flujos de protocolos existentes (sin marcas)
+
+**Respuesta automática INFO_FLUJO:**
+```
+🌊 Flujos Utilitarios Ejemplos:
+
+Flujo Básico:
+👤 Usuario llega → 🔓 Activa acceso → 🎯 Completa misiones → 🎁 Gana recompensas → 🎮 Participa en dinámicas
+
+Ejemplo Real:
+1️⃣ Compra acceso VIP → 2️⃣ Completa evaluación semanal → 3️⃣ Recibe NFT exclusivo → 4️⃣ Desbloquea beneficios premium
+
+📄 Guía completa: pndrs.link/flow-guide
+🖼️ Plantilla visual: pndrs.link/flow-canvas
+
+¿Te ayuda a definir tu flujo?
 ```
 
 **Botones:**
@@ -132,8 +211,10 @@ Incluye: qué hace, qué recibe, y cómo se activa cada utilidad.
 
 ### 🔷 **3. FILTRO Q3 — ROLES / OPERACIÓN**
 
+**🎯 Objetivo:** Confirmar si existe alguien operando el protocolo.
+
 **Tipo:** Formato semi-estructurado
-**WhatsApp:** texto normal + guía en bullets
+**WhatsApp:** texto + trigger INFO_ROLES
 
 **Pregunta:**
 ```
@@ -145,8 +226,33 @@ Indica:
 – Rol (fundador / operador / CM)
 ```
 
-**Extra (opcional activado por la IA según respuesta):**
+**Trigger INFO:**
+¿Necesitas ver qué roles existen y qué hace cada uno?
+Escribe: INFO_ROLES
 
+**💡 Contenido multimedia de apoyo:**
+- **Tabla simple (imagen)** PNG con roles posibles en Pandora's
+- **Mini PDF:** "Checklist del Operador de Protocolo"
+- **Mensaje ejemplo:** "Un operador aprueba tareas → desbloquea utilidades → distribuye recompensas"
+
+**Respuesta automática INFO_ROLES:**
+```
+👥 Roles en Pandora's:
+
+🧑‍💼 Administrador → Gestiona beneficios y aprobaciones
+🛠️ Operador → Ejecuta tareas diarias del protocolo
+📢 CM → Maneja comunidad y comunicaciones
+
+Ejemplo real:
+"Un operador aprueba tareas → desbloquea utilidades → distribuye recompensas"
+
+📋 Checklist completo: pndrs.link/operator-checklist
+📊 Tabla de roles: pndrs.link/roles-table
+
+¿Necesitas más detalles sobre algún rol?
+```
+
+**Extra (opcional activado por la IA según respuesta):**
 ```
 ¿Cuáles acciones administrativas crees que necesitarás?
 – Activar beneficios
@@ -162,8 +268,10 @@ Indica:
 
 ### 🔷 **4. FILTRO Q4 — ETAPA DEL PROYECTO**
 
+**🎯 Objetivo:** Clasificar al lead en un nivel de madurez.
+
 **Tipo:** Select Input
-**WhatsApp:** lista numerada
+**WhatsApp:** lista + trigger INFO_ESTADO
 
 **Pregunta:**
 ```
@@ -177,15 +285,40 @@ Indica:
 4. Comunidad activa
 5. Primeras ventas
 
+**Trigger INFO:**
+¿Quieres saber qué significa cada fase del estado del proyecto?
+Escribe: INFO_ESTADO
+
+**💡 Contenido multimedia de apoyo:**
+- **Imagen tipo barra de progreso:** Idea → MVP → Operación → Comunidad → Ventas → Evolución
+- **PDF:** "Guía rápida para avanzar de Idea → MVP en Utility Protocols"
+
+**Respuesta automática INFO_ESTADO:**
+```
+📊 Etapas del Proyecto:
+
+1️⃣ Idea → Solo concepto, necesita validación
+2️⃣ MVP → Versión mínima funcional lista
+3️⃣ En operación → Ya corriendo con usuarios reales
+4️⃣ Comunidad activa → Base sólida de usuarios
+5️⃣ Primeras ventas → Generando ingresos
+
+📈 Roadmap visual: pndrs.link/project-stages
+📄 Guía completa: pndrs.link/idea-to-mvp
+
+¿En cuál etapa estás realmente?
+```
+
 **Objetivo:** Clasificar funnel.
 
 ---
 
 ### 🔷 **5. FILTRO Q5 — OBJETIVO CLARO**
 
-**Tipo:** Respuesta corta (ideal)
+**🎯 Objetivo:** Entender qué quiere lograr el creador.
+
+**Tipo:** Respuesta corta + trigger INFO_OBJETIVO
 **WhatsApp:** texto
-**Estilo:** claridad operacional
 
 **Pregunta:**
 ```
@@ -193,13 +326,43 @@ Indica:
 (Accesos, misiones, recompensas, comunidad, membresías, ventas, etc.)
 ```
 
+**Trigger INFO:**
+¿Necesitas ayuda para definir bien tu objetivo?
+Escribe: INFO_OBJETIVO
+
+**💡 Contenido multimedia de apoyo:**
+- **Infografía:** Mapa visual de "Objetivos principales dentro de Pandora's"
+- **Mensaje guía:** "Un objetivo debe ser medible, tangible y utilitario"
+
+**Respuesta automática INFO_OBJETIVO:**
+```
+🎯 Objetivos Válidos en Pandora's:
+
+✅ Crear evaluadores verificados de contenido
+✅ Sistema de micro-tasks con recompensas
+✅ Comunidad curada de creadores premium
+✅ Marketplace de servicios verificables
+✅ Red social con utility integrada
+
+❌ "Quiero tokenizar" (muy vago)
+
+📊 Mapa de objetivos: pndrs.link/objectives-map
+💡 Guía de definición: pndrs.link/define-goals
+
+¿Te ayuda a clarificar tu objetivo?
+```
+
+**Estilo:** claridad operacional
+
 **Objetivo:** Detectar intención y evitar "quiero tokenizar por tokenizar".
 
 ---
 
 ### 🔷 **6. FILTRO Q6 — RECURSOS DEL EQUIPO**
 
-**Tipo:** Select Input + texto extra
+**🎯 Objetivo:** Validar capacidad operativa.
+
+**Tipo:** Select Input + trigger INFO_EQUIPO
 **WhatsApp:** lista numerada
 
 **Pregunta:**
@@ -212,6 +375,31 @@ Indica:
 2. 2–4 personas
 3. 5+
 
+**Trigger INFO:**
+¿Quieres ver cómo debe verse un equipo mínimo para operar un protocolo?
+Escribe: INFO_EQUIPO
+
+**💡 Contenido multimedia de apoyo:**
+- **Imagen simple:** "Estructuras básicas de equipo según tamaño"
+- **PDF:** Recursos mínimos para operar un Protocolo
+
+**Respuesta automática INFO_EQUIPO:**
+```
+👨‍💻 Equipos por tamaño:
+
+🤠 Solo yo: Low throughput, proyectos pequeños
+👥 2–4 personas: Viable, buen equilibrio
+🏢 5+: Escalable, proyectos complejos
+
+Recursos mínimos:
+• 1 Persona técnica (dev/smart contracts)
+• 1 Persona operativa (community/execution)
+• 1 Persona estratégica (vision/roadmap)
+
+📊 Estructuras visuales: pndrs.link/team-structures
+📋 Requisitos detalle: pndrs.link/minimum-resources
+```
+
 **Luego:**
 ```
 ¿Quién será el responsable técnico?
@@ -223,7 +411,9 @@ Indica:
 
 ### 🔷 **7. FILTRO Q7 — COMUNIDAD**
 
-**Tipo:** Select Input múltiple
+**🎯 Objetivo:** Medir potencial de adopción.
+
+**Tipo:** Select múltiple + trigger INFO_COMUNIDAD
 **WhatsApp:** numerado (1–8)
 
 **Pregunta:**
@@ -242,18 +432,68 @@ Elige todas las que apliquen.
 7. Comunidad compradora real
 8. Comunidad privada (Discord/Telegram)
 
+**Trigger INFO:**
+¿Quieres entender mejor qué tipo de comunidad es válida para tu protocolo?
+Escribe: INFO_COMUNIDAD
+
+**💡 Contenido multimedia de apoyo:**
+- **Infografía:** "Niveles de comunidad y su impacto en el protocolo"
+- **Mini guía PDF:** "Cómo activar comunidad para Utility Protocols"
+
+**Respuesta automática INFO_COMUNIDAD:**
+```
+🌐 Tipos de Comunidad Válidos:
+
+🔴 Riesgoso: Comunidad fantasma (<50 usuarios)
+🟡 Medio: Comunidad básica (50-200)
+🟢 Bueno: Comunidad activa (>200 reales)
+
+Priorizar:
+✅ Comunidad compradora real
+✅ Comunidad privada (Discord/Telegram)
+✅ Comunidad activa en redes
+
+📊 Impact Matrix: pndrs.link/community-impact
+📖 Guía activación: pndrs.link/activate-community
+```
+
 **Objetivo:** Clasificación para marketing + scoring interno.
 
 ---
 
 ### 🔷 **8. FILTRO Q8 — FECHA DE LANZAMIENTO**
 
-**Tipo:** Respuesta corta (texto)
+**🎯 Objetivo:** Detectar urgencia real.
+
+**Tipo:** Texto + trigger INFO_TIEMPO
 **WhatsApp:** texto
 
 **Pregunta:**
 ```
 ¿Cuál es tu fecha estimada para lanzar la primera versión de tu Protocolo?
+```
+
+**Trigger INFO:**
+¿Quieres una guía de tiempos recomendados para lanzar?
+Escribe: INFO_TIEMPO
+
+**💡 Contenido multimedia de apoyo:**
+- **Imagen simple:** Roadmap base de 30–60–90 días
+- **PDF:** "Cómo estimar tu fecha de lanzamiento"
+
+**Respuesta automática INFO_TIEMPO:**
+```
+⏰ Roadmap de Lanzamiento Recomendado:
+
+📅 30 días: Setup básico + validación inicial
+📅 60 días: MVP funcional + primeros testers
+📅 90 días: Lanzamiento completo + comunidad
+
+Timeline realista:
+"Lo ideal es prever 30 días para el setup + 30 para activación"
+
+📊 Roadmap template: pndrs.link/launch-roadmap
+📋 Guía estimación: pndrs.link/estimate-launch-date
 ```
 
 **Objetivo:** Detectar urgencia real.
@@ -299,6 +539,78 @@ Agenda tu llamada final aquí: [Link Calendly].
 ```
 
 **Objetivo:** Cerrar la venta y empujar a ejecución.
+
+---
+
+## 🖥️ PANEL DE ADMINISTRACIÓN - WHATSAPP LEADS
+
+### ✅ **NUEVA TAB "MARKETING" - IMPLEMENTADA**
+
+**Estado:** ✅ **COMPLETADA** | **Ubicación:** `/admin/dashboard/ → Tab: 📈 Marketing`
+
+#### **🔷 Sub-Tabs Expansibles:**
+
+| Sub-Tab | Estado | Descripción |
+|---------|--------|-------------|
+| **💬 WA Leads** | ✅ **Activa** | Gestión completa de leads filtrados |
+| 🔗 Shortlinks | 📋 **Próximamente** | Gestión de URLs acortadas |
+| 📧 Newsletter | 📋 **Próximamente** | Envío masivo y tracking |
+| 🎯 Campaigns | 📋 **Próximamente** | Campañas de marketing integradas |
+
+#### **📊 Funcionalidades WA Leads - Completas:**
+
+| Función | Estado | Detalles |
+|---------|--------|----------|
+| **📈 KPIs en tiempo real** | ✅ | Total | Pendientes | Aprobados | Completados |
+| **📋 Tabla completa** | ✅ | ID, Teléfono, Nombre, Email, Status, Paso, Fecha |
+| **🔍 Filtros avanzados** | ✅ | Por status (pending/approved/completed/rejected) |
+| **📤 Export CSV** | ✅ | Leads + metadata en archivo descargable |
+| **⚡ Status management** | ✅ | Aprobar/Rechazar/Completar leads |
+| **🔄 Actualización en vivo** | ✅ | Refresh automático cada acción |
+| **👁️ UI responsive** | ✅ | Móvil, tablet, desktop optimizado |
+| **🔒 Privacidad** | ✅ | Teléfonos parcialmente enmascarados |
+
+#### **🎨 Interfaz de Usuario:**
+
+```
+📈 MARKETING TAB
+├── 💬 WA Leads (ACTIVA)
+│   ├── 📊 Estadísticas Cards
+│   ├── 🔍 Controles (Refresh + Filtros)
+│   ├── 📋 Tabla de Leads (con acciones)
+│   └── 📤 Exportar CSV
+│
+├── 🔗 Shortlinks (PRÓXIMAMENTE)
+├── 📧 Newsletter (PRÓXIMAMENTE)
+└── 🎯 Campaigns (PRÓXIMAMENTE)
+```
+
+#### **🔗 Arquitectura Técnica:**
+
+```typescript
+// Nueva prop agregada en AdminTabs
+<AdminTabs
+  showMarketing={true}  // Activa nueva tab
+  {...otherProps}
+/>
+
+// Componente WhatsAppLeadsTab integrado
+<WhatsAppLeadsTab />
+
+// APIs conectadas:
+/api/admin/whatsapp-preapply        // GET: Lista leads
+/api/admin/whatsapp-preapply/:id/status  // PATCH: Cambiar status
+```
+
+### 📱 **Flow Completo Integrado:**
+
+```
+1. Usuario visita landing      → WhatsAppLeadForm send "start"
+2. WhatsApp Bot procesa 8 preguntas → Guarda en whatsapp_preapply_leads
+3. Admin ve leads en panel     → Gestiona status (pending→approved)
+4. Usuario aprobado            → Bot informa aprobación
+5. Usuario completado          → Bot confirma <Apply> final
+```
 
 ---
 
@@ -458,10 +770,141 @@ await processBotMessage(phone, messageText);
 | Fase | Estado | Descripción |
 |------|--------|-------------|
 | **1. Bot Conversacional** | ✅ **COMPLETADO** | Funcionando en producción |
-| **2. Soporte Humano** | 📋 **PLANEADO** | Estructura definida, implementación pendiente |
-| **3. Panel de Agentes** | 🔨 **PENDIENTE** | UI/UX por definir |
-| **4. Notificaciones** | 🔨 **PENDIENTE** | Slack/Email alerts |
-| **5. Analytics Avanzados** | 🔮 **FUTURO** | Métricas detalladas |
+| **2. Sistema INFO_x Triggers** | 🆕 **DOCUMENTADO** | Ready para implementación técnica |
+| **3. Contenido Multimedia** | 🆕 **ESPECIFICADO** | PDFs, imágenes y enlaces definidos |
+| **4. Soporte Humano** | 📋 **PLANEADO** | Estructura definida, implementación pendiente |
+| **5. Panel de Agentes** | 🔨 **PENDIENTE** | UI/UX por definir |
+| **6. Notificaciones** | 🔨 **PENDIENTE** | Slack/Email alerts |
+| **7. Analytics Avanzados** | 🔮 **FUTURO** | Métricas detalladas |
+
+### 🚀 **SIGUIENTE FASE: IMPLEMENTACIÓN SISTEMA INFO_x**
+
+#### **🎯 IMPLEMENTACIÓN TÉCNICA REQUERIDA:**
+
+| Componente | Archivo | Estado | Prioridad |
+|------------|---------|--------|-----------|
+| **Detector de Triggers** | `preapply-flow.ts` | 🔄 **MODIFICAR** | ALTA |
+| **Sistema de Respuestas** | `flowConfig.ts` | 🔄 **EXTENDER** | ALTA |
+| **Helper Enlaces** | `shortlink-manager.ts` | 🆕 **CREAR** | ALTA |
+| **Sistema PDFs** | `pdf-templates/` | 🆕 **CREAR** | MEDIA |
+| **Imágenes Infografías** | `public/whatsapp-media/` | 🆕 **CREAR** | MEDIA |
+| **Micro-videos** | `public/whatsapp-videos/` | 🆕 **CREAR** | BAJA |
+
+#### **🔧 EJEMPLO DE CÓDIGO PARA TRIGGER DETECTION:**
+
+```typescript
+// Agregar al processPreapplyMessage function
+const infoTriggers = {
+  'INFO_MECANISMO': sendMechanicInfo,
+  'INFO_FLUJO': sendFlowInfo,
+  'INFO_ROLES': sendRolesInfo,
+  'INFO_ESTADO': sendStatusInfo,
+  'INFO_OBJETIVO': sendObjectiveInfo,
+  'INFO_EQUIPO': sendTeamInfo,
+  'INFO_COMUNIDAD': sendCommunityInfo,
+  'INFO_TIEMPO': sendTimeInfo,
+  'INFO_DOC': sendFullDocumentation
+};
+
+// Detectar y responder triggers INFO_x
+const upperMessage = message.toUpperCase();
+for (const [trigger, handler] of Object.entries(infoTriggers)) {
+  if (upperMessage.includes(trigger)) {
+    return handler(userPhone);
+  }
+}
+```
+
+#### **📁 SISTEMA DE CONTENIDOS MULTIMEDIA:**
+
+```
+📁 public/whatsapp-media/
+├── 📄 mechanic-guide.pdf
+├── 🖼️ mechanic-infographic.png
+├── 📄 flow-guide.pdf
+├── 🖼️ flow-canvas.png
+├── 📊 roles-table.png
+├── 📋 operator-checklist.pdf
+├── 📈 project-stages.png
+├── 📄 idea-to-mvp.pdf
+├── 🎯 objectives-map.png
+├── 📊 team-structures.png
+├── 🌐 community-impact.png
+├── 📅 launch-roadmap.png
+└── 📈 complete-manual.pdf (INFO_DOC)
+```
+
+#### **🔗 SISTEMA DE SHORTLINKS PERSONALIZADO:**
+
+##### **Opción 1: Dominio Ultra-Corto Recomendado** ⭐
+
+**Comprar dominio corto** (~$10-20/año): `pnd.rs`, `pn.rs`, `pndr.as`
+
+```typescript
+// Configuración técnica recomendada:
+const WHATSAPP_SHORTLINK_DOMAIN = 'pnd.rs'; // Ultra-corto (4 chars)
+
+const WHATSAPP_SHORTLINKS = {
+  'mechanic-guide': `${WHATSAPP_SHORTLINK_DOMAIN}/mechanic-guide`,
+  'mechanic-infographic': `${WHATSAPP_SHORTLINK_DOMAIN}/mechanic-infographic`,
+  'flow-guide': `${WHATSAPP_SHORTLINK_DOMAIN}/flow-guide`,
+  'flow-canvas': `${WHATSAPP_SHORTLINK_DOMAIN}/flow-canvas`,
+  'roles-table': `${WHATSAPP_SHORTLINK_DOMAIN}/roles-table`,
+  'operator-checklist': `${WHATSAPP_SHORTLINK_DOMAIN}/operator-checklist`,
+  // ... etc para todos los recursos
+};
+```
+
+**URLs ultra-cortas resultantes:**
+```
+pnd.rs/mechanic-guide      → /public/whatsapp-media/mechanic-guide.pdf
+pnd.rs/mechanic-infographic → /public/whatsapp-media/mechanic-infographic.png
+pnd.rs/flow-guide          → /public/whatsapp-media/flow-guide.pdf
+pnd.rs/roles-table         → /public/whatsapp-media/roles-table.png
+pnd.rs/community-impact    → /public/whatsapp-media/community-impact.png
+```
+
+##### **Configuración DNS Recomendada:**
+```dns
+# Para pnd.rs apuntando a tu servidor principal
+TIPO: CNAME
+NOMBRE: @
+VALOR: pandoras.finance  (tu servidor actual)
+
+# O usando Digital Ocean, Vercel, etc. para CDN
+TIPO: CNAME
+NOMBRE: @
+VALOR: cname.vercel-dns.com
+```
+
+##### **Opción 2: Servicio Externo (Premium)**
+Si prefieres servicio completo con analytics:
+
+```bash
+# Servicios recomendados con custom domain (~$29/mes):
+# - Bitly Custom Domain
+# - Rebrandly Custom Domain
+# Resultado: pnd.rs/mechanic (pero pago mensual)
+```
+
+##### **Implementación en Código:**
+```typescript
+// Extensión del flowConfig.ts para shortlinks
+const WHATSAPP_SHORTLINK_CONFIG = {
+  domain: 'pnd.rs',
+  baseUrl: 'https://pnd.rs',
+  resources: {
+    'mechanic-guide': 'mechanic-guide.pdf',
+    'mechanic-infographic': 'mechanic-infographic.png',
+    // ... todos los demás
+  }
+} as const;
+
+// Función helper para generar URLs cortas
+export const getWhatsAppShortlink = (resource: keyof typeof WHATSAPP_SHORTLINK_CONFIG.resources) => {
+  return `${WHATSAPP_SHORTLINK_CONFIG.baseUrl}/${resource}`;
+};
+```
 
 ## 🎯 CONCLUSIÓN
 
