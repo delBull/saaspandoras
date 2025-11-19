@@ -13,36 +13,97 @@ interface WhatsAppLead {
   applicant_email: string;
   created_at: string;
   updated_at: string;
+
+  // Multi-Flow fields
+  flow_type?: string;
+  priority_level?: string;
+  session_id?: string;
+  last_message?: string;
 }
 
-interface LeadsStats {
+interface MultiFlowStats {
+  // Totales globales
   total: number;
-  pending: number;
-  approved: number;
-  completed: number;
+  active: number;
+
+  // Por flow type
+  eight_q: {
+    total: number;
+    pending: number;
+    approved: number;
+    completed: number;
+  };
+  high_ticket: {
+    total: number;
+    scheduled: number;
+    contacted: number;
+  };
+  support: {
+    total: number;
+    escalated: number;
+    resolved: number;
+  };
+  human: {
+    total: number;
+    active: number;
+    resolved: number;
+  };
 }
 
 export default function WhatsAppLeadsTab() {
   const [leads, setLeads] = useState<WhatsAppLead[]>([]);
-  const [stats, setStats] = useState<LeadsStats>({ total: 0, pending: 0, approved: 0, completed: 0 });
+  const [stats, setStats] = useState<MultiFlowStats>({
+    total: 0,
+    active: 0,
+    eight_q: { total: 0, pending: 0, approved: 0, completed: 0 },
+    high_ticket: { total: 0, scheduled: 0, contacted: 0 },
+    support: { total: 0, escalated: 0, resolved: 0 },
+    human: { total: 0, active: 0, resolved: 0 }
+  });
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [flowFilter, setFlowFilter] = useState<string>("all");
+  const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [updatingLeadId, setUpdatingLeadId] = useState<number | null>(null);
 
   const fetchLeads = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/whatsapp-preapply');
+      // Nuevo endpoint multi-flow
+      const response = await fetch('/api/admin/whatsapp/multi-flow');
       const data = await response.json();
+
       setLeads(data.leads || []);
-      setStats({
-        total: data.total || 0,
-        pending: data.pending || 0,
-        approved: data.approved || 0,
-        completed: data.completed || 0,
-      });
+      setStats(data.stats || stats);
     } catch (error) {
       console.error('Error fetching leads:', error);
+      // Fallback al endpoint antiguo si falla el nuevo
+      try {
+        const fallbackResponse = await fetch('/api/admin/whatsapp-preapply');
+        const fallbackData = await fallbackResponse.json();
+
+        setLeads((fallbackData.leads || []).map((lead: any) => ({
+          ...lead,
+          flow_type: 'eight_q', // Mark as legacy eight_q
+          priority_level: 'normal'
+        })));
+
+        setStats({
+          total: fallbackData.total || 0,
+          active: fallbackData.total || 0,
+          eight_q: {
+            total: fallbackData.total || 0,
+            pending: fallbackData.pending || 0,
+            approved: fallbackData.approved || 0,
+            completed: fallbackData.completed || 0
+          },
+          high_ticket: { total: 0, scheduled: 0, contacted: 0 },
+          support: { total: 0, escalated: 0, resolved: 0 },
+          human: { total: 0, active: 0, resolved: 0 }
+        });
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError);
+      }
     } finally {
       setLoading(false);
     }
@@ -75,14 +136,17 @@ export default function WhatsAppLeadsTab() {
   };
 
   const exportToCSV = () => {
-    const csvHeaders = ['ID', 'Teléfono', 'Nombre', 'Email', 'Status', 'Paso', 'Fecha Creación', 'Último Update'];
+    const csvHeaders = ['ID', 'Teléfono', 'Nombre', 'Email', 'Status', 'Flujo', 'Prioridad', 'Paso', 'Último Mensaje', 'Fecha Creación', 'Último Update'];
     const csvData = leads.map(lead => [
       lead.id,
       lead.user_phone,
       lead.applicant_name || '',
       lead.applicant_email || '',
       lead.status,
+      lead.flow_type || 'unknown',
+      lead.priority_level || 'normal',
       lead.step,
+      lead.last_message || '',
       new Date(lead.created_at).toLocaleString(),
       new Date(lead.updated_at).toLocaleString(),
     ]);
@@ -94,8 +158,37 @@ export default function WhatsAppLeadsTab() {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `whatsapp-leads-${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `whatsapp-multi-flow-leads-${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
+  };
+
+  const getFlowColor = (flowType?: string) => {
+    switch (flowType) {
+      case 'eight_q': return 'bg-cyan-500';
+      case 'high_ticket': return 'bg-yellow-500';
+      case 'support': return 'bg-red-500';
+      case 'human': return 'bg-blue-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  const getFlowIcon = (flowType?: string) => {
+    switch (flowType) {
+      case 'eight_q': return '🔢';
+      case 'high_ticket': return '💎';
+      case 'support': return '🆘';
+      case 'human': return '👨‍💼';
+      default: return '💬';
+    }
+  };
+
+  const getPriorityColor = (priority?: string) => {
+    switch (priority) {
+      case 'high': return 'text-red-400 border-red-400/20';
+      case 'normal': return 'text-blue-400 border-blue-400/20';
+      case 'support': return 'text-purple-400 border-purple-400/20';
+      default: return 'text-gray-400 border-gray-400/20';
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -119,8 +212,16 @@ export default function WhatsAppLeadsTab() {
   };
 
   const filteredLeads = leads.filter(lead => {
-    if (filter === "all") return true;
-    return lead.status === filter;
+    // Status filter
+    const statusMatch = statusFilter === "all" || lead.status === statusFilter;
+
+    // Flow filter
+    const flowMatch = flowFilter === "all" || lead.flow_type === flowFilter;
+
+    // Priority filter
+    const priorityMatch = priorityFilter === "all" || lead.priority_level === priorityFilter;
+
+    return statusMatch && flowMatch && priorityMatch;
   });
 
   useEffect(() => {
@@ -129,52 +230,86 @@ export default function WhatsAppLeadsTab() {
 
   return (
     <div className="space-y-6">
-      {/* Estadísticas Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-500/20 rounded-lg">
-              <Users className="w-5 h-5 text-blue-400" />
+      {/* Estadísticas Multi-Flow Dashboard */}
+      <div className="space-y-4">
+        {/* Global Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-500/20 rounded-lg">
+                <Users className="w-5 h-5 text-blue-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-blue-400">{stats.total}</p>
+                <p className="text-xs text-zinc-400">Total Conversaciones</p>
+              </div>
             </div>
-            <div>
-              <p className="text-2xl font-bold text-blue-400">{stats.total}</p>
-              <p className="text-xs text-zinc-400">Total Leads</p>
+          </div>
+
+          <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-orange-500/20 rounded-lg">
+                <Clock className="w-5 h-5 text-orange-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-orange-400">{stats.active}</p>
+                <p className="text-xs text-zinc-400">Conversaciones Activas</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-cyan-500/20 rounded-lg">
+                <Users className="w-5 h-5 text-cyan-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-cyan-400">{stats.eight_q.total}</p>
+                <p className="text-xs text-zinc-400">Flujo 8 Preguntas</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-500/20 rounded-lg">
+                <MessageSquare className="w-5 h-5 text-purple-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-purple-400">{stats.support.total + stats.human.total}</p>
+                <p className="text-xs text-zinc-400">Soporte/Asistencia</p>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-yellow-500/20 rounded-lg">
-              <Clock className="w-5 h-5 text-yellow-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-yellow-400">{stats.pending}</p>
-              <p className="text-xs text-zinc-400">Pendientes</p>
+        {/* Flow-specific Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-4">
+            <div className="text-center">
+              <p className="text-lg font-bold text-green-400">{stats.eight_q.approved}</p>
+              <p className="text-xs text-zinc-400">Eight_Q Aprobados</p>
             </div>
           </div>
-        </div>
 
-        <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-500/20 rounded-lg">
-              <CheckCircle className="w-5 h-5 text-green-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-green-400">{stats.approved}</p>
-              <p className="text-xs text-zinc-400">Aprobados</p>
+          <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-4">
+            <div className="text-center">
+              <p className="text-lg font-bold text-yellow-400">{stats.high_ticket.total}</p>
+              <p className="text-xs text-zinc-400">High Ticket</p>
             </div>
           </div>
-        </div>
 
-        <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-500/20 rounded-lg">
-              <MessageSquare className="w-5 h-5 text-purple-400" />
+          <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-4">
+            <div className="text-center">
+              <p className="text-lg font-bold text-red-400">{stats.support.escalated}</p>
+              <p className="text-xs text-zinc-400">Soporte Escalado</p>
             </div>
-            <div>
-              <p className="text-2xl font-bold text-purple-400">{stats.completed}</p>
-              <p className="text-xs text-zinc-400">Completados</p>
+          </div>
+
+          <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-4">
+            <div className="text-center">
+              <p className="text-lg font-bold text-blue-400">{stats.human.active}</p>
+              <p className="text-xs text-zinc-400">Agentes Activos</p>
             </div>
           </div>
         </div>
@@ -192,18 +327,45 @@ export default function WhatsAppLeadsTab() {
             Refresh
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Filter className="w-4 h-4 text-zinc-400" />
+
+            {/* Status Filter */}
             <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm focus:border-blue-500 outline-none"
             >
-              <option value="all">Todos los Status</option>
+              <option value="all">Todos Status</option>
               <option value="pending">Pendientes</option>
               <option value="approved">Aprobados</option>
               <option value="completed">Completados</option>
               <option value="rejected">Rechazados</option>
+            </select>
+
+            {/* Flow Type Filter */}
+            <select
+              value={flowFilter}
+              onChange={(e) => setFlowFilter(e.target.value)}
+              className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm focus:border-blue-500 outline-none"
+            >
+              <option value="all">Todos Flujos</option>
+              <option value="eight_q">8 Preguntas</option>
+              <option value="high_ticket">High Ticket</option>
+              <option value="support">Soporte</option>
+              <option value="human">Agentes</option>
+            </select>
+
+            {/* Priority Filter */}
+            <select
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value)}
+              className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm focus:border-blue-500 outline-none"
+            >
+              <option value="all">Todas Prioridades</option>
+              <option value="high">Alta</option>
+              <option value="normal">Normal</option>
+              <option value="support">Soporte</option>
             </select>
           </div>
         </div>
@@ -227,8 +389,11 @@ export default function WhatsAppLeadsTab() {
                 <th className="px-4 py-3 text-left font-medium text-zinc-300">Teléfono</th>
                 <th className="px-4 py-3 text-left font-medium text-zinc-300">Nombre</th>
                 <th className="px-4 py-3 text-left font-medium text-zinc-300">Email</th>
+                <th className="px-4 py-3 text-left font-medium text-zinc-300">Flujo</th>
                 <th className="px-4 py-3 text-left font-medium text-zinc-300">Status</th>
+                <th className="px-4 py-3 text-left font-medium text-zinc-300">Prioridad</th>
                 <th className="px-4 py-3 text-left font-medium text-zinc-300">Paso</th>
+                <th className="px-4 py-3 text-left font-medium text-zinc-300">Último Mensaje</th>
                 <th className="px-4 py-3 text-left font-medium text-zinc-300">Fecha</th>
                 <th className="px-4 py-3 text-left font-medium text-zinc-300">Acciones</th>
               </tr>
@@ -236,17 +401,21 @@ export default function WhatsAppLeadsTab() {
             <tbody className="divide-y divide-zinc-700">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-zinc-400">
+                  <td colSpan={11} className="px-4 py-8 text-center text-zinc-400">
                     <div className="flex items-center justify-center gap-2">
                       <RefreshCw className="w-4 h-4 animate-spin" />
-                      Cargando leads...
+                      Cargando leads multi-flow...
                     </div>
                   </td>
                 </tr>
               ) : filteredLeads.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-zinc-400">
-                    {filter === "all" ? "No hay leads aún" : `No hay leads con status "${filter}"`}
+                  <td colSpan={11} className="px-4 py-8 text-center text-zinc-400">
+                    {(
+                      statusFilter === "all" &&
+                      flowFilter === "all" &&
+                      priorityFilter === "all"
+                    ) ? "No hay leads aún" : "No hay leads que coincidan con los filtros"}
                   </td>
                 </tr>
               ) : (
@@ -265,13 +434,32 @@ export default function WhatsAppLeadsTab() {
                       {lead.applicant_email || "-"}
                     </td>
                     <td className="px-4 py-3">
+                      <div className={`inline-flex items-center gap-2 px-2 py-1 rounded-full text-xs border ${getPriorityColor(lead.priority_level)}`}>
+                        <div className={`w-2 h-2 rounded-full ${getFlowColor(lead.flow_type)}`}></div>
+                        <span>{lead.flow_type || 'unknown'}</span>
+                        <span className="font-semibold">{getFlowIcon(lead.flow_type)}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
                       <div className={`flex items-center gap-2 ${getStatusColor(lead.status)}`}>
                         {getStatusIcon(lead.status)}
-                        {lead.status}
+                        <span className="capitalize">{lead.status}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className={`inline-flex items-center gap-2 px-2 py-1 rounded-full text-xs border ${getPriorityColor(lead.priority_level)}`}>
+                        <span className="capitalize">{lead.priority_level || 'normal'}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-zinc-300">
-                      {lead.step}/8
+                      {lead.flow_type === 'eight_q' ? `${lead.step}/8` :
+                       lead.flow_type === 'high_ticket' ? `${lead.step}/3` :
+                       lead.flow_type === 'support' ? 'Escalado' :
+                       lead.flow_type === 'human' ? 'Agente' :
+                       '-'}
+                    </td>
+                    <td className="px-4 py-3 text-zinc-400 max-w-xs truncate">
+                      {lead.last_message || "Sin mensajes"}
                     </td>
                     <td className="px-4 py-3 text-zinc-400">
                       {new Date(lead.created_at).toLocaleDateString()}
@@ -285,14 +473,14 @@ export default function WhatsAppLeadsTab() {
                               disabled={updatingLeadId === lead.id}
                               className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors disabled:opacity-50"
                             >
-                              Aprobar
+                              ✓ Aprobar
                             </button>
                             <button
                               onClick={() => updateLeadStatus(lead.id, 'rejected')}
                               disabled={updatingLeadId === lead.id}
                               className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors disabled:opacity-50"
                             >
-                              Rechazar
+                              ✗ Rechazar
                             </button>
                           </>
                         )}
@@ -303,13 +491,32 @@ export default function WhatsAppLeadsTab() {
                             disabled={updatingLeadId === lead.id}
                             className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors disabled:opacity-50"
                           >
-                            Completar
+                            🎯 Completar
                           </button>
                         )}
 
                         {lead.status === 'completed' && (
                           <span className="px-3 py-1 bg-gray-600 text-white text-xs rounded">
-                            Finalizado
+                            ✅ Finalizado
+                          </span>
+                        )}
+
+                        {lead.status === 'rejected' && (
+                          <span className="px-3 py-1 bg-red-800 text-red-200 text-xs rounded">
+                            🚫 Rechazado
+                          </span>
+                        )}
+
+                        {/* Special actions for different flows */}
+                        {lead.flow_type === 'support' && lead.status !== 'completed' && (
+                          <span className="px-2 py-1 bg-orange-600 text-white text-xs rounded">
+                            🆘 Soporte
+                          </span>
+                        )}
+
+                        {lead.flow_type === 'human' && (
+                          <span className="px-2 py-1 bg-purple-600 text-white text-xs rounded">
+                            👨‍💼 Agente
                           </span>
                         )}
                       </div>
@@ -322,10 +529,6 @@ export default function WhatsAppLeadsTab() {
         </div>
       </div>
 
-      {/* Info Footer */}
-      <div className="text-xs text-zinc-500 bg-zinc-800/30 border border-zinc-700 rounded-lg p-3">
-        <p><strong>📱 WhatsApp Leads:</strong> Leads filtered by 8 critical questions → Protocol validation → Ready for application form</p>
-      </div>
     </div>
   );
 }
