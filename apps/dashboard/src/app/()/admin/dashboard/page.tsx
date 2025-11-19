@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { AdminSettings } from "@/components/admin/AdminSettings";
+import WhatsAppLeadsTab from "@/components/admin/WhatsAppLeadsTab";
 import { UnauthorizedAccess } from "@/components/admin/UnauthorizedAccess";
 
 import { useProjectActions } from "@/hooks/useProjectActions";
@@ -711,7 +712,7 @@ export default function AdminDashboardPage() {
         />
       </div>
 
-      <AdminTabs swaps={mockSwaps} users={users} showSettings={true} showUsers={true} showShortlinks={true}>
+      <AdminTabs swaps={mockSwaps} users={users} showSettings={true} showUsers={true} showShortlinks={true} showMarketing={true}>
         {/* Tab de proyectos */}
         <div key="projects-tab" className="space-y-6">
           {/* Barra de herramientas mejorada */}
