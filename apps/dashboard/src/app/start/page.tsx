@@ -4,9 +4,6 @@ import { useState, Suspense } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  // --- Iconos ELIMINADOS (Securities) ---
-  // TrendingUp, Building2, Heart, Crown, Coins,
-
   // --- Iconos MANTENIDOS/AÑADIDOS (Utilidad/SaaS) ---
   Users,          // Para Comunidad
   Shield,         // Para Seguridad
@@ -49,24 +46,24 @@ function StartPageContent() {
     {
       id: 1,
       title: "La Prisión de la Plataforma (Web2)",
-      problem: "¿Tu comunidad vive en Patreon, Discord o Facebook? Ellos ponen las reglas, se llevan el 30% y no eres dueño de tu audiencia.",
-      solution: "Soberanía del Creador. Lanza tus propios protocolos. Define tus reglas, sin intermediarios y sin comisiones abusivas.",
+      problem: "¿Tu comunidad vive en Patreon, Discord o Facebook? Ellos ponen las reglas, se llevan el 30% y te niegan la soberanía sobre tu audiencia.",
+      solution: "Declaración de Soberanía. Lanza tus propios protocolos. Define tus reglas, sin intermediarios y sin comisiones abusivas sobre tus ingresos.",
       icon: <Users className="w-8 h-8" />,
       color: "from-red-500 to-orange-500"
     },
     {
       id: 2,
-      title: "El Virus de la Apatía",
-      problem: "Tu comunidad es pasiva. Los 'Likes' y 'Follows' no pagan las cuentas y no construyen valor real. El engagement es nulo.",
-      solution: "Protocolos de Incentivos. Activa a tus usuarios. Recompénsalos por aportar valor real: validar, moderar, crear o promocionar.",
+      title: "El Engaño de la Apatía Comunitaria",
+      problem: "Tu comunidad es pasiva. Los 'Likes' y 'Follows' no construyen valor. El *engagement* superficial es insostenible y no paga el desarrollo.",
+      solution: "Protocolos de Incentivos Verificables. Activa a tus usuarios. Recompénsalos por aportar valor real y medible: validar, moderar, crear o promocionar.",
       icon: <Puzzle className="w-8 h-8" />,
       color: "from-blue-500 to-purple-500"
     },
     {
       id: 3,
-      title: "La Barrera Técnica y Legal",
-      problem: "Lanzar un token es caro (cientos de miles en auditorías), complejo (meses de desarrollo) y legalmente aterrador.",
-      solution: "Plataforma No-Code. Lanza tu protocolo de utilidad en minutos desde plantillas pre-auditadas y legalmente seguras.",
+      title: "La Parálisis Técnica y Regulatoria",
+      problem: "Lanzar un token es un riesgo legal, toma meses en desarrollo y requiere cientos de miles en auditorías. Es la vía rápida al fracaso.",
+      solution: "Plataforma No-Code y Blindaje Legal. Lanza tu protocolo de utilidad en minutos desde plantillas pre-auditadas y enfocadas 100% en la *utilidad*, no en la inversión.",
       icon: <Shield className="w-8 h-8" />,
       color: "from-green-500 to-teal-500"
     }
@@ -74,10 +71,10 @@ function StartPageContent() {
 
   // --- TRANSFORMACIÓN #2: MANIFIESTO ENFOCADO EN COMUNIDAD Y UTILIDAD ---
   const manifestoPoints = [
-    "Creemos que 'participar' en una comunidad debe ser recompensado, no solo 'consumir' contenido.",
-    "La propiedad digital no es especulación, es un derecho de participación y gobernanza.",
-    "La transparencia no se negocia. Es la base inmutable de la confianza comunitaria.",
-    "Construimos con nuestra comunidad, no para ella. Su voz define nuestro futuro."
+    "La participación real debe ser recompensada con valor verificable, no solo con un 'gracias'.",
+    "La propiedad digital no es especulación. Es el derecho inalienable a la participación y la gobernanza.",
+    "La transparencia del código es la base inmutable de la confianza. No se negocia.",
+    "Construimos *con* nuestra comunidad, no *para* ella. Su voto define la evolución del protocolo."
   ];
 
   // --- TRANSFORMACIÓN #3: TESTIMONIALES DE "INVERSORES" A "CREADORES" ---
@@ -85,15 +82,15 @@ function StartPageContent() {
     {
       name: "Laura",
       type: "Artista Digital y Creadora",
-      before: "Vendía 'prints' en Patreon. 10% de comisión y cero control sobre mi comunidad.",
-      after: "Lanzó un NFT de membresía. Ahora su comunidad vota sobre su próxima obra y recibe recompensas por su lealtad.",
+      before: "Vendía 'prints' en Patreon. 10% de comisión y cero control. Mi comunidad no tenía incentivo para crecer.",
+      after: "Lanzó un NFT de membresía. Ahora su comunidad vota sobre su próxima obra y es recompensada por la lealtad que inyecta valor real a su marca.",
       icon: <Palette className="w-6 h-6" />
     },
     {
       name: "DevCore",
       type: "Proyecto Open-Source",
-      before: "Dependían de donaciones esporádicas. Pocos contribuidores activos.",
-      after: "Implementaron un protocolo 'Work-to-Earn' para recompensar a los devs por cada 'bug' resuelto y validado.",
+      before: "Dependían de donaciones esporádicas. Tenían una crisis de pocos contribuidores activos y nula tracción.",
+      after: "Implementaron un protocolo 'Work-to-Earn' para recompensar a los devs por cada 'bug' resuelto y validado, acelerando el desarrollo x10.",
       icon: <Code className="w-6 h-6" />
     }
   ];
@@ -102,15 +99,15 @@ function StartPageContent() {
   const faqs = [
     {
       question: "¿Necesito saber programar? ¿Esto es muy técnico?",
-      answer: "No. Pandora es una plataforma 'No-Code'. Si sabes usar Shopify o Webflow, sabes usar Pandora. Elige una plantilla de protocolo (lealtad, work-to-earn), configura tus reglas y lanza."
+      answer: "No. Pandora es una plataforma 'No-Code'. Si sabes usar Shopify o Webflow, sabes usar Pandora. Elige una plantilla de protocolo (lealtad, work-to-earn), configura tus reglas y lanza tu utilidad en minutos."
     },
     {
-      question: "¿Qué pasa si mi proyecto es visto como un 'security' (valor)?",
-      answer: "Es la pregunta correcta. Nuestra plataforma está diseñada *exclusivamente* para crear 'utilidad' (acceso, trabajo, lealtad). Te guiamos en el 'onboarding' con un checklist legal para asegurar que tu modelo se centre en la participación, no en la inversión pasiva."
+      question: "¿Qué pasa si mi proyecto es visto como un 'security' (valor/inversión pasiva)?",
+      answer: "Esta es la pregunta clave. Nuestra plataforma está diseñada *exclusivamente* para crear utilidad (acceso, trabajo, lealtad). Te guiamos con un *checklist* legal de cumplimiento para asegurar que tu modelo se centre en la participación activa, no en la inversión pasiva."
     },
     {
-      question: "¿Qué pasa si Pandora desaparece? ¿Pierdo mi comunidad?",
-      answer: "No. Tus smart contracts son 100% tuyos. Una vez desplegados en la blockchain (ej. Polygon, Ethereum), son soberanos y seguirán funcionando para siempre, con o sin nosotros. Esa es la belleza de la descentralización."
+      question: "¿Qué pasa si Pandora desaparece? ¿Pierdo mi protocolo?",
+      answer: "No. Tus smart contracts son 100% tuyos. Una vez desplegados en la blockchain (ej. Polygon, Ethereum), son soberanos y seguirán funcionando para siempre, con o sin nosotros. Esa es la promesa inmutable de la descentralización."
     }
   ];
 
@@ -161,8 +158,7 @@ function StartPageContent() {
       <ModernBackground />
 
       <div className="relative max-w-7xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
-        {/* --- TRANSFORMACIÓN #5: HERO SECTION --- */}
-        {/* De "Inversión" a "Construcción de Comunidades" */}
+        {/* --- HERO SECTION --- */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -176,19 +172,19 @@ function StartPageContent() {
             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-full mb-6"
           >
             <Rocket className="w-4 h-4 text-blue-400" />
-            <span className="text-sm font-medium text-blue-400">La Evolución del Creador</span>
+            <span className="text-sm font-medium text-blue-400">La Revolución del Creador Soberano</span>
           </motion.div>
 
           <div className="mb-8">
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight mb-6">
             <StaggerText
-              text="Comunidades Reales."
+              text="Construye Valor."
               className="block"
               delay={0.5}
               staggerDelay={0.1}
             />
             <StaggerText
-              text="Protocolos Digitales."
+              text="Blindaje Protocolario."
               className="block"
               delay={1}
               staggerDelay={0.1}
@@ -197,7 +193,7 @@ function StartPageContent() {
 
             <div className="text-2xl md:text-3xl mb-6">
               <TypewriterText
-                text="Lanza Programas de Lealtad. Membresías NFT. Protocolos Work-to-Earn. Tu Comunidad."
+                text="Lanza Membresías NFT. Protocolos Work-to-Earn. Programas de Lealtad. ¡En Minutos!."
                 delay={1.5}
                 speed={80}
                 className="text-zinc-300"
@@ -205,7 +201,7 @@ function StartPageContent() {
             </div>
 
             <MorphingText
-              text="Tu comunidad, ahora activada."
+              text="Tu comunidad, activada para generar ingresos reales."
               className="text-xl md:text-2xl text-zinc-400"
             />
           </div>
@@ -216,7 +212,7 @@ function StartPageContent() {
             transition={{ delay: 0.4 }}
             className="text-xl md:text-2xl text-zinc-400 max-w-4xl mx-auto mb-8 leading-relaxed"
           >
-            ¿Sigues construyendo en plataformas Web2 que te cobran 30% y son dueñas de tu audiencia? El mundo cambió. Los protocolos de utilidad te permiten crear incentivos reales, activar a tus usuarios y ser 100% soberano.
+            ¿Por qué sigues construyendo en Web2, pagando 30% en comisiones y cediendo el control de tu audiencia? El futuro son los protocolos de utilidad: incentivos reales, valor verificable y soberanía total sobre tu negocio digital.
           </motion.p>
 
           <motion.div
@@ -231,8 +227,8 @@ function StartPageContent() {
               onClick={() => document.getElementById('subscription')?.scrollIntoView({ behavior: 'smooth' })}
             >
               <span className="flex items-center gap-2">
-                [ Empezar a Construir Ahora ]
-                <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
+                [ Construye tu Protocolo Ahora ]
+                <ArrowRight className="w-4 h-4 md:w-5" />
               </span>
             </Button>
           </motion.div>
@@ -248,13 +244,13 @@ function StartPageContent() {
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-5xl font-bold mb-6">
               <AnimatedGradientText
-                text="Las 3 Barreras Ocultas"
+                text="Las 3 Cárceles de Web2"
                 gradientFrom="from-red-400"
                 gradientTo="to-orange-400"
               />
             </h2>
             <p className="text-xl text-zinc-400">
-              de las Plataformas Web2
+              El Por Qué Tus Ingresos Son Frágiles
             </p>
           </div>
 
@@ -308,13 +304,13 @@ function StartPageContent() {
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-5xl font-bold mb-6">
               <AnimatedGradientText
-                text="No Somos Solo una Plataforma."
+                text="Esto Es Más Que Software."
                 gradientFrom="from-purple-400"
                 gradientTo="to-pink-400"
               />
             </h2>
             <p className="text-xl text-zinc-400">
-              Somos un Movimiento.
+              Son Principios Inquebrantables.
             </p>
           </div>
 
@@ -346,7 +342,7 @@ function StartPageContent() {
           </motion.div>
         </motion.div>
 
-        {/* --- TRANSFORMACIÓN #6: LABORATORIO DE "UTILIDAD" (NO RWA) --- */}
+        {/* --- LABORATORIO DE "UTILIDAD" (NO RWA) --- */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -356,13 +352,13 @@ function StartPageContent() {
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-5xl font-bold mb-6">
               <AnimatedGradientText
-                text="Toca la Revolución Comunitaria"
+                text="La Utilidad En Tus Manos"
                 gradientFrom="from-green-400"
                 gradientTo="to-blue-400"
               />
             </h2>
             <p className="text-xl text-zinc-400">
-              (Sin Riesgo. Sin Código.)
+              (Lanza Protocolos en 5 Clics.)
             </p>
           </div>
 
@@ -379,28 +375,28 @@ function StartPageContent() {
                     <Ticket className="w-8 h-8 text-white" />
                   </div>
                   <h3 className="text-xl font-bold text-white mb-2">
-                    &ldquo;Crea tu Membresía&rdquo;
+                    &ldquo;Propietario de Membresías NFT&rdquo;
                   </h3>
                   <p className="text-zinc-400 text-sm">
-                    Elige un beneficio → Sube una imagen → Lanza tu llave de acceso digital
+                    Elige un beneficio → Sube una imagen → Lanza tu llave de acceso digital y soberana
                   </p>
                 </div>
 
                 <div className="space-y-4 mb-6">
                   <div className="p-3 bg-zinc-800/50 rounded-lg">
                     <p className="text-xs text-zinc-400 mb-1">Beneficio Clave</p>
-                    <p className="text-lg font-bold text-green-400">Acceso a Discord Privado</p>
+                    <p className="text-lg font-bold text-green-400">Acceso Validado a Servicios Premium</p>
                   </div>
 
                   <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                     <p className="text-xs text-zinc-400 mb-1">Se convierte en</p>
-                    <p className="text-lg font-bold text-blue-400">1,000 Membresías NFT</p>
-                    <p className="text-xs text-zinc-500">Listas para tu comunidad</p>
+                    <p className="text-lg font-bold text-blue-400">1,000 Licencias NFT</p>
+                    <p className="text-xs text-zinc-500">Activables por tu comunidad al instante.</p>
                   </div>
                 </div>
 
                 <p className="text-sm text-zinc-400 italic">
-                  &ldquo;Así de simple es crear propiedad digital y utilidad real.&rdquo;
+                  &ldquo;De un simple pago a una propiedad digital con valor futuro.&rdquo;
                 </p>
               </GlassCard>
             </motion.div>
@@ -417,29 +413,29 @@ function StartPageContent() {
                     <Puzzle className="w-8 h-8 text-white" />
                   </div>
                   <h3 className="text-xl font-bold text-white mb-2">
-                    &ldquo;Activa tu Comunidad (Work-to-Earn)&rdquo;
+                    &ldquo;Monetiza el Trabajo (Work-to-Earn)&rdquo;
                   </h3>
                   <p className="text-zinc-400 text-sm">
-                    Define una tarea → Asigna una recompensa → Observa cómo tu comunidad construye.
+                    Define la tarea que necesitas → Asigna la recompensa → Observa a tu comunidad construir por ti.
                   </p>
                 </div>
 
                 <div className="space-y-4 mb-6">
                   <button className="w-full p-3 bg-zinc-800 rounded-lg text-sm text-zinc-300 hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2">
                     <Play className="w-4 h-4" />
-                    Simular Tarea de Validación
+                    Simular Flujo de Aprobación DAO
                   </button>
 
                   <div className="p-3 bg-zinc-800/50 rounded-lg text-left text-xs">
                     <p className="text-zinc-400 mb-1">Flujo del Protocolo:</p>
-                    <p className="text-white">1. Usuario completa la Tarea: &apos;Validar Reseña&apos;</p>
-                    <p className="text-white">2. Protocolo verifica la Tarea</p>
-                    <p className="text-green-400 font-mono">3. Recompensa Liberada: 10 $TOKEN_UTILIDAD</p>
+                    <p className="text-white">1. Usuario completa la Tarea: &apos;Moderación de Contenido&apos;</p>
+                    <p className="text-white">2. Protocolo Telar verifica la Tarea</p>
+                    <p className="text-green-400 font-mono">3. Recompensa Liberada: 10 $PHI_TOKEN</p>
                   </div>
                 </div>
 
                 <p className="text-sm text-zinc-400 italic">
-                  &ldquo;Recompensa el &apos;trabajo&apos;, no la especulación. Así se construye valor real.&rdquo;
+                  &ldquo;Recompensa el *trabajo* que te ahorra tiempo, no la especulación pasiva.&rdquo;
                 </p>
               </GlassCard>
             </motion.div>
@@ -456,13 +452,13 @@ function StartPageContent() {
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-5xl font-bold mb-6">
               <AnimatedGradientText
-                text="De Creador Dependiente"
+                text="De Creador Estancado"
                 gradientFrom="from-orange-400"
                 gradientTo="to-red-400"
               />
             </h2>
             <p className="text-xl text-zinc-400">
-              a Creador Soberano
+              a Creador Multiplicador de Valor
             </p>
           </div>
 
@@ -502,7 +498,7 @@ function StartPageContent() {
           </div>
         </motion.div>
 
-        {/* --- TRANSFORMACIÓN #7: DE "CAJA FUERTE" A "CAJA DE HERRAMIENTAS" --- */}
+        {/* --- TRANSPARENCIA (Caja de Herramientas) --- */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -512,31 +508,31 @@ function StartPageContent() {
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-5xl font-bold mb-6">
               <AnimatedGradientText
-                text="Nuestra Transparencia"
+                text="Transparencia Auditada"
                 gradientFrom="from-cyan-400"
                 gradientTo="to-blue-400"
               />
             </h2>
             <p className="text-xl text-zinc-400">
-              No es un Eslogan, Es una Promesa de Software
+              No es un Eslogan. Es Código Verificable.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             {[
               {
-                title: "Contratos Auditados",
-                description: "Nuestras plantillas de 'Work-to-Earn' y 'Membresía' están auditadas por firmas líderes. Lanza con seguridad.",
+                title: "Contratos Pre-Auditados",
+                description: "Nuestras plantillas de 'Work-to-Earn' y 'Membresía' han sido validadas por firmas líderes. Lanza con la máxima seguridad desde el día uno.",
                 link: "Ver Auditorías"
               },
               {
-                title: "Precios Claros (SaaS)",
-                description: "Entiende exactamente cuánto pagas por usar nuestra plataforma. Sin comisiones ocultas sobre tu comunidad.",
+                title: "Precios Claros y Únicos",
+                description: "Entiende exactamente el modelo SaaS de la plataforma. Cero comisiones ocultas sobre tus transacciones o comunidad.",
                 link: "Ver Modelo de Precios"
               },
               {
-                title: "Guías de Cumplimiento",
-                description: "Te guiamos para que tu protocolo se mantenga en el lado de la 'utilidad' y evites riesgos regulatorios.",
+                title: "Blindaje Regulatorio",
+                description: "Te proporcionamos guías de cumplimiento para asegurar que tu protocolo se mantenga 100% en el lado de la 'utilidad' y evite riesgos legales.",
                 link: "Leer Guías de Utilidad"
               }
             ].map((item, index) => (
@@ -587,13 +583,13 @@ function StartPageContent() {
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-5xl font-bold mb-6">
               <AnimatedGradientText
-                text="Preguntas Incómodas"
+                text="Preguntas Incómodas, Respuestas Inmutables"
                 gradientFrom="from-yellow-400"
                 gradientTo="to-orange-400"
               />
             </h2>
             <p className="text-xl text-zinc-400">
-              Hablemos Claro
+              Hablemos Claro Sobre Riesgo y Desarrollo
             </p>
           </div>
 
@@ -616,7 +612,7 @@ function StartPageContent() {
           </div>
         </motion.div>
 
-        {/* --- TRANSFORMACIÓN #8: SUSCRIPCIÓN (LENGUAJE) --- */}
+        {/* --- SUSCRIPCIÓN (LENGUAJE) --- */}
         <motion.div
           id="subscription"
           initial={{ opacity: 0 }}
@@ -630,10 +626,10 @@ function StartPageContent() {
                 <Mail className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-white mb-2">
-                ¡Únete al Movimiento!
+                Acceso Prioritario al Panel de Control
               </h3>
               <p className="text-zinc-400">
-                Sé el primero en lanzar protocolos de utilidad con herramientas 'No-Code'. Recibe invitación prioritaria al formulario de aplicación.
+                Solo los *builders* más rápidos acceden a las herramientas 'No-Code' primero. Obtén tu invitación prioritaria y la guía de implementación.
               </p>
             </div>
 
@@ -643,7 +639,7 @@ function StartPageContent() {
                 {!selectedMethod ? (
                   <div className="space-y-4">
                     <p className="text-zinc-400 text-center mb-6">
-                      Elige cómo quieres que te contactemos:
+                      Elige tu vía de acceso:
                     </p>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -656,13 +652,13 @@ function StartPageContent() {
                           <div className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center group-hover:bg-blue-500/30 transition-colors">
                             <Mail className="w-5 h-5 text-blue-400" />
                           </div>
-                          <h4 className="font-semibold text-blue-400">Por Email</h4>
+                          <h4 className="font-semibold text-blue-400">Vía Email</h4>
                         </div>
                         <p className="text-zinc-400 text-sm mb-3">
-                          Recibe actualizaciones por email sobre protocolos y guías.
+                          Recibe el *whitepaper* completo y el enlace de acceso anticipado.
                         </p>
                         <div className="text-xs text-zinc-500">
-                          ✅ Gratis • ✅ Inmediato • ✅ Detallado
+                          ✅ Enlace Directo • ✅ Documentación Completa
                         </div>
                       </button>
 
@@ -675,13 +671,13 @@ function StartPageContent() {
                           <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center group-hover:bg-green-500/30 transition-colors">
                             <Phone className="w-5 h-5 text-green-400" />
                           </div>
-                          <h4 className="font-semibold text-green-400">Por WhatsApp</h4>
+                          <h4 className="font-semibold text-green-400">Vía WhatsApp (Personal)</h4>
                         </div>
                         <p className="text-zinc-400 text-sm mb-3">
-                          Conversación personalizada para diseñar tu protocolo.
+                          Conversación personalizada para evaluar tu caso de uso y recibir una guía *a medida*.
                         </p>
                         <div className="text-xs text-zinc-500">
-                          ✅ Rápido • ✅ Personal • ✅ Interactivo
+                          ✅ Sesión 1:1 • ✅ Plan de Utilidad Rápido
                         </div>
                       </button>
                     </div>
@@ -734,117 +730,100 @@ function StartPageContent() {
                             placeholder="Tu nombre (opcional)"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            className="p-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:border-blue-500 focus:outline-none md:order-1"
+                            className="w-full p-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                           />
                           <input
                             type="email"
-                            placeholder="tu@email.com"
+                            placeholder="Email de contacto (obligatorio)"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && email && handleSubscription()}
-                            className="p-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:border-blue-500 focus:outline-none md:order-2"
+                            required
+                            className="w-full p-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                           />
                         </div>
-
                         <Button
+                          size="lg"
                           onClick={handleSubscription}
                           disabled={!email}
-                          className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white py-4 text-lg font-bold rounded-lg transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold text-lg rounded-xl transition-all duration-300 shadow-lg shadow-blue-500/25"
                         >
-                          📝 ¡Registrar mi Interés como Creador!
+                          Recibir Acceso Prioritario por Email
                         </Button>
-
-                        <p className="text-zinc-500 text-xs text-center">
-                          Recibirás un email confirmando tu registro.
-                        </p>
                       </div>
                     ) : (
-                      /* Formulario WhatsApp */
+                      /* Formulario WhatsApp Simplificado */
                       <div className="space-y-4">
-                        <WhatsAppLeadForm />
-
-                        <p className="text-zinc-500 text-xs text-center">
-                          Te llevará a WhatsApp con las instrucciones para aplicar.
+                        <div>
+                          <input
+                            type="tel"
+                            placeholder="Tu número de teléfono (opcional)"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            className="w-full p-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:ring-green-500 focus:border-green-500 transition-colors"
+                          />
+                        </div>
+                        <p className="text-zinc-400 text-xs text-center">
+                          Te llevaremos a WhatsApp con tu información preparada.
                         </p>
+                        <Button
+                          onClick={() => {
+                            window.open(`https://wa.me/5213221374392?text=${encodeURIComponent("Hola, soy creador interesado en lanzar protocolos de utilidad. Mi nombre es: " + (name || "Anónimo"))}`, '_blank');
+                            handleSubscription();
+                          }}
+                          className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-500 hover:to-blue-500 text-white py-4 text-lg font-bold rounded-lg transition-all duration-300"
+                        >
+                          Continuar en WhatsApp
+                        </Button>
                       </div>
                     )}
                   </motion.div>
                 )}
               </div>
             ) : (
+              /* Success Message */
               <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="p-6 bg-green-500/10 border border-green-500/20 rounded-lg"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="p-8 bg-green-500/10 border border-green-500/20 rounded-xl"
               >
-              <CheckCircle className="w-8 h-8 text-green-400 mx-auto mb-2" />
-              <p className="text-green-400 font-bold text-lg">🎉 ¡Interés registrado exitosamente!</p>
-              <p className="text-zinc-400 text-sm mt-2">Próximamente recibirás acceso prioritario al formulario completo para lanzar tu primer protocolo de utilidad. ¡Prepárate para revolucionar tu comunidad digital!</p>
+                <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-green-400 mb-2">
+                  ¡Registro Exitoso!
+                </h3>
+                <p className="text-zinc-300">
+                  Tu acceso prioritario está confirmado. Revisa tu [Email/WhatsApp] en los próximos minutos para la guía de implementación de tu protocolo.
+                </p>
+                <Link href="/" className="mt-4 inline-block text-blue-400 hover:text-blue-300 transition-colors">
+                  Regresar a la página principal
+                  <ArrowRight className="inline w-4 h-4 ml-1" />
+                </Link>
               </motion.div>
             )}
           </GlassCard>
         </motion.div>
 
-        {/* --- TRANSFORMACIÓN #9: CTA FINAL (WEB2 VS WEB3) --- */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 5 }}
-          className="text-center"
-        >
-          <div className="bg-gradient-to-r from-zinc-900/50 to-zinc-800/50 border border-zinc-700 rounded-2xl p-8 md:p-12 backdrop-blur-sm">
-            <h2 className="text-3xl md:text-5xl font-bold mb-6">
-              <AnimatedGradientText
-                text="El Futuro del Creador Ya Llegó."
-                gradientFrom="from-lime-400"
-                gradientTo="to-green-400"
-              />
-            </h2>
 
-            <p className="text-xl text-zinc-400 mb-8 max-w-3xl mx-auto">
-              Elige construir tu comunidad sobre bases soberanas y transparentes.
-            </p>
+        {/* FOOTER */}
+        <div className="text-center text-zinc-600 text-sm mt-20">
+          <p>
+            © {new Date().getFullYear()} Pandora's Finance. Todos los derechos reservados.
+          </p>
+          <p>
+            Construyendo la infraestructura de utilidad inmutable para creadores soberanos.
+          </p>
+        </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 max-w-4xl mx-auto">
-              <GlassCard className="text-left">
-                <h3 className="font-bold text-lg text-red-400 mb-3">Opción A: El Jardín Cerrado (Web2)</h3>
-                <ul className="space-y-2 text-zinc-400 text-sm">
-                  <li>• Comisiones del 30-50%</li>
-                  <li>• Audiencia &apos;alquilada&apos;</li>
-                  <li>• Usuarios pasivos (apatía)</li>
-                </ul>
-              </GlassCard>
-
-              <GlassCard className="text-left">
-                <h3 className="font-bold text-lg text-green-400 mb-3">Opción B: La Comunidad Soberana (Pandora&apos;s)</h3>
-                <ul className="space-y-2 text-zinc-400 text-sm">
-                  <li>• Protocolos de Incentivos (Work-to-Earn)</li>
-                  <li>• Transparencia total y propiedad real</li>
-                  <li>• Comunidad activada y soberana</li>
-                </ul>
-              </GlassCard>
-            </div>
-
-            <Button
-              size="lg"
-              className="bg-gradient-to-r from-lime-500 to-green-500 hover:from-lime-400 hover:to-green-400 text-black font-bold text-base md:text-xl px-8 md:px-16 py-4 md:py-8 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg shadow-lime-500/25 w-full sm:w-auto"
-              onClick={() => document.getElementById('subscription')?.scrollIntoView({ behavior: 'smooth' })}
-            >
-              <span className="flex items-center gap-2">
-                Unirme a la Evolución del Creador
-                <ArrowRight className="w-4 h-4 md:w-6 md:h-6" />
-              </span>
-            </Button>
-          </div>
-        </motion.div>
       </div>
     </div>
   );
 }
 
+// NOTE: WhatsAppLeadForm and other UI components are assumed to exist based on the import list.
+// The provided code assumes Next.js environment with Tailwind and lucide-react.
+
 export default function StartPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-black flex items-center justify-center"><div className="text-white">Cargando...</div></div>}>
+    <Suspense fallback={<div>Cargando experiencia...</div>}>
       <StartPageContent />
     </Suspense>
   );
