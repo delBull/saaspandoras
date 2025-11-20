@@ -8,7 +8,7 @@ export default async function HighTicketEmailPreviewPage() {
   const html = await render(
     PandorasHighTicketEmail({
       name: 'Founder',
-      whatsappLink: 'https://wa.me/521XXXXXXXXXX?text=Hola%2C%20soy%20founder%20y%20quiero%20aplicar%20al%20programa%20Founders%20de%20Pandora%27s.%20Tengo%20capital%20disponible.',
+      whatsappLink: `https://wa.me/5213117348048?text=${encodeURIComponent("Hola, soy founder y quiero aplicar al programa de Pandora's. Tengo capital disponible.")}`,
       source: 'founders-landing-modal',
     })
   );

@@ -81,17 +81,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // WhatsApp link for immediate contact
-    const whatsappLink = `https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_CONTACT || '5213117348048'}?text=${encodeURIComponent(
-      `Hola, soy ${name || 'Creador'} y acabo de completar el filtro de 8 preguntas. Mi email es ${email}. Quiero discutir la viabilidad de mi protocolo.`
+    // WhatsApp link - EXACT SAME as utility-protocol page WhatsAppUtilityLeadForm
+    const whatsappLink = `https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_BUSINESS_PHONE}?text=${encodeURIComponent(
+      "Estoy interesado en crear un utility protocol funcional"
     )}`;
 
     // Render email template
     const emailHtml = await render(
       PandorasProtocolFilterEmail({
         name: name || 'Creador',
-        contactEmail: 'arquitectura@pandoras.finance',
-        whatsappLink: whatsappLink
+        whatsappLink: whatsappLink,
+        applyLink: 'https://dash.pandoras.finance/apply'
       })
     );
 

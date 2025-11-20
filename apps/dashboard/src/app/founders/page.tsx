@@ -32,7 +32,7 @@ import WhatsAppFoundersForm from "@/components/WhatsAppFoundersForm";
 
 // Founders configuration
 const FOUNDERS_SPOTS = 5;
-const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_CONTACT || "521XXXXXXXXXXX";
+const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_BUSINESS_PHONE || "5213221374392";
 const WHATSAPP_PRE_MESSAGE = encodeURIComponent(
   "Hola, soy founder y quiero aplicar al programa de Pandora’s. Mi proyecto está listo para inversión operativa."
 );
