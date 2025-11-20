@@ -28,7 +28,7 @@ export default function PandorasHighTicketEmail({
   return (
     <Html>
       <Head />
-      <Preview>Programa Exclusivo para Founders — Solo 5 lugares al trimestre</Preview>
+      <Preview>Pandora’s Inner Circle — Solo 5 fundadores ingresan cada ciclo.</Preview>
 
       <Tailwind>
         <Body className="bg-white font-sans text-gray-900">
@@ -41,7 +41,7 @@ export default function PandorasHighTicketEmail({
                 Pandora's Finance
               </Text>
               <Text className="text-gray-600 text-xs uppercase tracking-wider">
-                Programa Founders Select
+                Programa inner Circle
               </Text>
 
               <Heading className="mt-6 mb-4 text-4xl font-semibold leading-tight">
@@ -56,11 +56,11 @@ export default function PandorasHighTicketEmail({
             {/* VALUE PROP BLOCK */}
             <Section className="bg-yellow-50 p-8 rounded-2xl my-4 border border-yellow-200">
               <Text className="text-base text-gray-800 leading-7">
-                Abriendo solo para <strong>5 founders por trimestre</strong> — necesitamos preservar la calidad del programa. Los lugares van rápido.
+                Abriendo solo para <strong>5 founders por semestre</strong> — necesitamos preservar la calidad del programa. Los lugares van rápido.
               </Text>
 
               <Text className="mt-4 text-base text-gray-800 leading-7">
-                Los founders que Applicant aquí entienden: no se trata de hype o especulación. Se trata de construir infraestructura Web3 preparada para producción real.
+                Los founders que aplican aquí entienden: no se trata de hype o especulación. Se trata de construir infraestructura Web3 preparada para producción real.
               </Text>
             </Section>
 
@@ -78,7 +78,7 @@ export default function PandorasHighTicketEmail({
                 <Column>
                   <Text className="text-gray-800 text-base leading-6 mb-3">
                     ✅ Tienes un producto web con al menos 100 usuarios activos<br/>
-                    ✅ Cuentas con capital para cubrir desarrollo y auditoría ($5,000-10,000)<br/>
+                    ✅ Cuentas con capital para cubrir desarrollo ($5,000-13,000)<br/>
                     ✅ Estás preparado para invertir tiempo en una transición Web3<br/>
                     ✅ Entiendes que el éxito va más allá de smart contracts
                   </Text>
@@ -93,13 +93,13 @@ export default function PandorasHighTicketEmail({
             {/* PROCESS BLOCK */}
             <Section className="p-8">
               <Heading className="text-2xl font-semibold mb-4 text-gray-900">
-                Qué incluye el proceso Founders Select:
+                Qué incluye el proceso Innver Circle:
               </Heading>
 
               <Row className="text-left space-y-3">
                 <Column>
                   <Text className="text-gray-700 leading-6">
-                    <strong>Diagnóstico técnico inicial:</strong> Evaluación detallada de tu producto, comunidad y readiness técnico (2-3 días).<br/><br/>
+                    <strong>Diagnóstico técnico inicial:</strong> Evaluación detallada de tu producto, comunidad y análisis técnico (2-3 días).<br/><br/>
 
                     <strong>Arquitectura a medida:</strong> Diseño de 3-5 protocolos de utilidad básicos + tokenomics preliminares.<br/><br/>
 
@@ -118,14 +118,21 @@ export default function PandorasHighTicketEmail({
               </Heading>
 
               <Text className="text-gray-200 text-base leading-6 mb-6">
-                El formulario inicial toma menos de 10 minutos y nos ayuda a prepararte mejor. Te garantizamos respuesta en 24 horas (inclusive fines de semana).
+                El formulario inicial toma unos 15 minutos y nos ayuda a prepararte mejor. Te garantizamos respuesta en 24 horas.
               </Text>
 
               <Link
                 href="https://pandoras.finance/apply"
-                className="inline-block bg-yellow-500 text-black font-bold text-lg rounded-full px-8 py-4 no-underline hover:bg-yellow-400 transition-colors"
+                className="inline-block bg-yellow-500 text-black font-bold text-lg rounded-full px-8 py-4 no-underline"
+                style={{
+                  backgroundColor: '#EAB308',
+                  color: '#000',
+                  padding: '16px 32px',
+                  textDecoration: 'none',
+                  borderRadius: '50px'
+                }}
               >
-                Aplicar Ahora - Founders Program
+                Aplicar Ahora - Inner Circle
               </Link>
 
               <Text className="mt-4 text-gray-400 text-sm">
@@ -136,6 +143,15 @@ export default function PandorasHighTicketEmail({
               <Link
                 href={whatsappLink}
                 className="mt-6 inline-block bg-transparent border border-white text-white font-bold text-sm rounded-full px-6 py-3 no-underline"
+                style={{
+                  backgroundColor: 'transparent',
+                  color: '#fff',
+                  padding: '12px 24px',
+                  textDecoration: 'none',
+                  borderRadius: '50px',
+                  border: '1px solid #fff',
+                  marginTop: '24px'
+                }}
               >
                 O agendar una llamada directa →
               </Link>
@@ -154,12 +170,16 @@ export default function PandorasHighTicketEmail({
             {/* CLOSING */}
             <Section className="p-8 text-center">
               <Text className="text-gray-800 text-base leading-7 italic mb-4">
-                El mundo Web3 necesita más constructores y menos especuladores. Si eres un constructor, este program está hecho para ti.
+                El mundo Web3 necesita más constructores y menos especuladores. Si eres un constructor, este programa está hecho para ti.
               </Text>
 
               <Link
                 href="https://pandoras.finance/apply"
-                className="text-blue-600 underline hover:text-blue-800"
+                className="underline text-blue-600"
+                style={{
+                  color: '#2563EB',
+                  textDecoration: 'underline'
+                }}
               >
                 pandoras.finance/apply →
               </Link>
@@ -176,7 +196,7 @@ export default function PandorasHighTicketEmail({
                 © {new Date().getFullYear()} Pandora's Finance
               </Text>
               <Text className="text-yellow-700 text-xs mt-1">
-                Email enviado desde {source} — Programa exclusivo para founders preparados
+                Correo exclusivo del Inner Circle Program — Espacio limitado de 5 fundadores al semestre
               </Text>
             </Section>
 

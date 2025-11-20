@@ -1,20 +1,73 @@
-// API Endpoint for sending Founders High-Ticket Email
+// API Endpoint for sending Founders High-Ticket Email using Resend
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { render } from '@react-email/render';
 import PandorasHighTicketEmail from '@/emails/PandorasHighTicketEmail';
+import { render } from '@react-email/render';
 
-// Simple email sending simulation (replace with actual email service like Resend, SendGrid, etc.)
-function sendEmail(to: string, subject: string, html: string) {
-  // TODO: Replace with actual email service
-  // For now, just log it
-  console.log(`📧 EMAIL SENT:`);
-  console.log(`To: ${to}`);
-  console.log(`Subject: ${subject}`);
-  console.log(`Body: ${html.substring(0, 200)}...`);
+// Configure Resend - SECURE ENVIRONMENT VARIABLES (same as newsletter-subscribe)
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL ?? 'founders@pandoras.finance';
 
-  // Simulate successful send
-  return true;
+// Validate Resend configuration
+if (!RESEND_API_KEY) {
+  console.error('❌ RESEND_API_KEY not configured in environment variables');
+}
+
+// Send email using Resend (same implementation as newsletter-subscribe)
+async function sendEmail(to: string, subject: string, html: string) {
+  if (!RESEND_API_KEY) {
+    console.warn('⚠️ RESEND_API_KEY not configured - simulating email send');
+    console.log(`📧 EMAIL SIMULATED:`);
+    console.log(`To: ${to}`);
+    console.log(`Subject: ${subject}`);
+    console.log(`Body: ${html.substring(0, 200)}...`);
+    return true;
+  }
+
+  try {
+    const emailData = {
+      from: FROM_EMAIL,
+      to: [to],
+      subject: subject,
+      html: html,
+      tags: [
+        {
+          name: 'audience',
+          value: 'highticket'
+        },
+        {
+          name: 'source',
+          value: 'founders-landing'
+        },
+        {
+          name: 'type',
+          value: 'high-ticket-founders'
+        }
+      ],
+    };
+
+    const emailResponse = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(emailData),
+    });
+
+    if (!emailResponse.ok) {
+      const error = await emailResponse.text();
+      console.error('Resend error:', error);
+      throw new Error('Failed to send email via Resend');
+    }
+
+    const result = await emailResponse.json();
+    console.log(`✅ High-Ticket Founder email sent via Resend: ${result.id}`);
+    return true;
+  } catch (error) {
+    console.error('❌ Resend email send failed:', error);
+    throw error;
+  }
 }
 
 export async function POST(request: NextRequest) {
