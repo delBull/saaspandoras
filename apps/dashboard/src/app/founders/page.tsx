@@ -28,13 +28,13 @@ import { StaggerText } from "@/components/ui/stagger-text";
 import { MorphingText } from "@/components/ui/morphing-text";
 import { cn } from "@/lib/utils";
 import { useGoogleAnalytics, trackEvent, trackNewsletterSubscription, trackPageView } from "@/lib/analytics";
-import WhatsAppLeadForm from "@/components/WhatsAppLeadForm";
+import WhatsAppFoundersForm from "@/components/WhatsAppFoundersForm";
 
 // Founders configuration
 const FOUNDERS_SPOTS = 5;
 const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_CONTACT || "521XXXXXXXXXXX";
 const WHATSAPP_PRE_MESSAGE = encodeURIComponent(
-  "Hola, soy founder y quiero aplicar al programa Founders de Pandora's. Tengo capital y quiero hablar con un estratega."
+  "Hola, soy founder y quiero aplicar al programa de Pandora’s. Mi proyecto está listo para inversión operativa."
 );
 const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_NUMBER}?text=${WHATSAPP_PRE_MESSAGE}`;
 const EMAIL_LINK = `mailto:founders@pandoras.finance?subject=${encodeURIComponent(
@@ -43,7 +43,7 @@ const EMAIL_LINK = `mailto:founders@pandoras.finance?subject=${encodeURIComponen
   "Hola,\n\nSoy founder interesado en aplicar al Founders Program. Tengo capital y quiero agendar una llamada. Mi web/proyecto: \n\nSaludos."
 )}`;
 
-function Hero({ onEmailClick }: { onEmailClick: () => void }) {
+function Hero({ onMethodSelect }: { onMethodSelect: (method: 'email' | 'whatsapp') => void }) {
   return (
     <motion.section
       initial={{ opacity: 0, y: 24 }}
@@ -60,7 +60,7 @@ function Hero({ onEmailClick }: { onEmailClick: () => void }) {
         </div>
 
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-tight mb-6">
-          <StaggerText text="Founders Select" className="block" delay={0.4} />
+          <StaggerText text="Founders Inner Circle" className="block" delay={0.4} />
           <span className="block text-2xl md:text-3xl text-zinc-300 mt-3">
             Lanza tu protocolo, accede al capital estratégico y lanza con soporte experto.
           </span>
@@ -76,26 +76,22 @@ function Hero({ onEmailClick }: { onEmailClick: () => void }) {
         </div>
 
         <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-          <a
-            href={WHATSAPP_LINK}
-            onClick={() => trackEvent('founders_cta', 'click', 'whatsapp')}
-            className="w-full sm:w-auto"
-            target="_blank"
-            rel="noopener noreferrer"
+          <Button
+            size="lg"
+            className="bg-gradient-to-r from-green-400 to-lime-400 w-full sm:w-auto"
+            onClick={() => onMethodSelect('whatsapp')}
           >
-            <Button size="lg" className="bg-gradient-to-r from-green-400 to-lime-400">
-              <span className="flex items-center gap-3">
-                <Phone className="w-5 h-5" />
-                Hablar con un Estratega
-              </span>
-            </Button>
-          </a>
+            <span className="flex items-center gap-3">
+              <Phone className="w-5 h-5" />
+              Hablar con un Estratega
+            </span>
+          </Button>
 
           <Button
             size="lg"
             variant="ghost"
             className="border border-zinc-700 w-full sm:w-auto"
-            onClick={onEmailClick}
+            onClick={() => onMethodSelect('email')}
           >
             <span className="flex items-center gap-3">
               <Mail className="w-5 h-5" />
@@ -121,7 +117,7 @@ function Hero({ onEmailClick }: { onEmailClick: () => void }) {
   );
 }
 
-function StoryBlock() {
+function StoryBlock({ onMethodSelect }: { onMethodSelect: (method: 'email' | 'whatsapp') => void }) {
   return (
     <motion.section initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="mb-10">
       <div className="max-w-5xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
@@ -163,9 +159,7 @@ function StoryBlock() {
             </div>
 
             <div className="mt-6">
-              <a href={WHATSAPP_LINK} target="_blank" rel="noreferrer" onClick={() => trackEvent('founders_offer', 'click', 'whatsapp')}>
-                <Button className="w-full">Quiero aplicar — hablar con un estratega</Button>
-              </a>
+              <Button onClick={() => onMethodSelect('whatsapp')} className="w-full">Quiero aplicar — hablar con un estratega</Button>
             </div>
           </div>
         </motion.div>
@@ -213,7 +207,7 @@ function ProgramSteps() {
         <h3 className="text-2xl font-bold mb-4">Proceso en 3 pasos</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {steps.map((s, i) => (
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.12 }}>
+            <motion.div key={s.title} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.12 }}>
               <GlassCard>
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
@@ -233,7 +227,7 @@ function ProgramSteps() {
   );
 }
 
-function SocialProof() {
+function SocialProof({ onMethodSelect }: { onMethodSelect: (method: 'email' | 'whatsapp') => void }) {
   return (
     <motion.section initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }} className="mb-10">
       <div className="max-w-6xl mx-auto px-4">
@@ -244,12 +238,8 @@ function SocialProof() {
           </div>
 
           <div className="flex gap-3">
-            <a href={WHATSAPP_LINK} target="_blank" rel="noreferrer" onClick={() => trackEvent('social_proof', 'click', 'whatsapp')}>
-              <Button variant="outline">Hablar con un Estratega</Button>
-            </a>
-            <a href={EMAIL_LINK} onClick={() => trackEvent('social_proof', 'click', 'email')}>
-              <Button variant="ghost">Enviar email</Button>
-            </a>
+            <Button onClick={() => onMethodSelect('whatsapp')} variant="outline">Hablar con un Estratega</Button>
+            <Button onClick={() => onMethodSelect('email')} variant="ghost">Enviar email</Button>
           </div>
         </div>
       </div>
@@ -314,6 +304,7 @@ function FoundersPageContent() {
   const [email, setEmail] = useState('');
   const [emailSending, setEmailSending] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [selectedMethod, setSelectedMethod] = useState<'email' | 'whatsapp' | null>(null);
 
   const sendFoundersEmail = async () => {
     if (!email.trim()) return;
@@ -358,14 +349,35 @@ function FoundersPageContent() {
         <ModernBackground />
 
         <div className="relative max-w-6xl mx-auto px-4 py-16">
-          <Hero onEmailClick={() => {
-            setEmailModal(true);
-            trackEvent('founders_cta', 'click', 'email_modal');
+          <Hero onMethodSelect={(method) => {
+            if (method === 'email') {
+              setEmailModal(true);
+              trackEvent('founders_cta', 'click', 'email_modal');
+            } else if (method === 'whatsapp') {
+              setSelectedMethod('whatsapp');
+              trackEvent('founders_cta', 'click', 'whatsapp_modal');
+            }
           }} />
-          <StoryBlock />
+          <StoryBlock onMethodSelect={(method) => {
+            if (method === 'email') {
+              setEmailModal(true);
+              trackEvent('founders_offer', 'click', 'email');
+            } else if (method === 'whatsapp') {
+              setSelectedMethod('whatsapp');
+              trackEvent('founders_offer', 'click', 'whatsapp');
+            }
+          }} />
           <WhyPandoras />
           <ProgramSteps />
-          <SocialProof />
+          <SocialProof onMethodSelect={(method) => {
+            if (method === 'email') {
+              setEmailModal(true);
+              trackEvent('social_proof', 'click', 'email');
+            } else if (method === 'whatsapp') {
+              setSelectedMethod('whatsapp');
+              trackEvent('social_proof', 'click', 'whatsapp');
+            }
+          }} />
           <FAQ />
 
           {/* CTA final */}
@@ -375,13 +387,26 @@ function FoundersPageContent() {
               <p className="text-zinc-400 mb-4">Si tienes capital y urgencia, aplica ahora para recibir atención prioritaria.</p>
 
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <a href={WHATSAPP_LINK} target="_blank" rel="noreferrer" onClick={() => trackEvent('founders_apply', 'click', 'whatsapp')}>
-                  <Button className="bg-gradient-to-r from-green-400 to-lime-400"><Phone className="w-4 h-4 mr-2" />Hablar con un Estratega</Button>
-                </a>
+                <Button
+                  onClick={() => {
+                    setSelectedMethod('whatsapp');
+                    trackEvent('founders_apply', 'click', 'whatsapp');
+                  }}
+                  className="bg-gradient-to-r from-green-400 to-lime-400"
+                >
+                  <Phone className="w-4 h-4 mr-2" />Hablar con un Estratega
+                </Button>
 
-                <a href={EMAIL_LINK} onClick={() => trackEvent('founders_apply', 'click', 'email')}>
-                  <Button variant="ghost" className="border border-zinc-700"><Mail className="w-4 h-4 mr-2" />Enviar email</Button>
-                </a>
+                <Button
+                  onClick={() => {
+                    setEmailModal(true);
+                    trackEvent('founders_apply', 'click', 'email');
+                  }}
+                  variant="ghost"
+                  className="border border-zinc-700"
+                >
+                  <Mail className="w-4 h-4 mr-2" />Enviar email
+                </Button>
 
                 <Link href="/apply" onClick={() => trackEvent('founders_apply', 'click', 'apply')}>
                   <Button className="bg-gradient-to-r from-blue-500 to-purple-500"><ArrowRight className="w-4 h-4 mr-2" />Ir a Apply</Button>
@@ -403,7 +428,7 @@ function FoundersPageContent() {
         </div>
 
         {/* Email Modal */}
-        <AnimatePresence>
+        <AnimatePresence key="email-modal">
           {emailModal && (
             <motion.div
               initial={{ opacity: 0 }}
@@ -500,6 +525,55 @@ function FoundersPageContent() {
               </motion.div>
             </motion.div>
           )}
+
+        {/* WhatsApp Modal */}
+        <AnimatePresence key="whatsapp-modal">
+          {selectedMethod === 'whatsapp' && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+              onClick={() => setSelectedMethod(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="relative max-w-md w-full mx-4"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <GlassCard className="p-6">
+                  {/* Close button */}
+                  <button
+                    onClick={() => setSelectedMethod(null)}
+                    className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-200 transition-colors"
+                  >
+                    ✕
+                  </button>
+
+                  <div className="text-center mb-6">
+                    <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Phone className="w-6 h-6 text-green-400" />
+                    </div>
+                    <h3 className="text-xl font-bold mb-2">
+                      Conectar con un Estratega Premium
+                    </h3>
+                    <p className="text-zinc-400 text-sm">
+                      Inicia una conversación personalizada para evaluar tu capacidad de capital y experiencia como founder.
+                    </p>
+                  </div>
+
+                  <WhatsAppFoundersForm />
+
+                  <p className="text-zinc-500 text-xs text-center mt-4">
+                    Iremos directamente a WhatsApp con tu mensaje preparado 🎯
+                  </p>
+                </GlassCard>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         </AnimatePresence>
       </div>
     </Suspense>
