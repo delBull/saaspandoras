@@ -71,6 +71,60 @@ const QuestionIcon = () => (
 import WhatsAppLeadForm from "@/components/WhatsAppLeadForm";
 import { cn } from "@/lib/utils";
 
+// Componente específico para Utility Protocol
+function WhatsAppUtilityLeadForm() {
+  const [loading, setLoading] = useState(false);
+
+  const handleStartChatBot = () => {
+    setLoading(true);
+
+    try {
+      // URL directa a WhatsApp con mensaje que activa el flujo utility
+      const message = encodeURIComponent("Estoy interesado en crear un utility protocol funcional");
+      const businessPhoneNumber = process.env.NEXT_PUBLIC_WHATSAPP_BUSINESS_PHONE;
+
+      if (!businessPhoneNumber) {
+        console.error('❌ Número de WhatsApp Business no configurado');
+        alert('Error: Número de WhatsApp no configurado. Contacta soporte.');
+        setLoading(false);
+        return;
+      }
+
+      const whatsappUrl = `https://wa.me/${businessPhoneNumber}?text=${message}`;
+
+      console.log("🔗 WhatsApp Utility URL:", whatsappUrl);
+
+      // Redirigir directamente a WhatsApp
+      window.location.href = whatsappUrl;
+    } catch (error) {
+      console.error("Error iniciando chatbot WhatsApp:", error);
+      alert("Error al abrir WhatsApp. Verifica tu conexión.");
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4 text-center">
+      <p className="text-zinc-400 text-sm mb-4">
+        Conecta con nuestro equipo de arquitectura para diseñar tu Protocolo de Utilidad Work-to-Earn (W2E).
+      </p>
+
+      <button
+        onClick={handleStartChatBot}
+        disabled={loading}
+        className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white py-4 text-lg font-bold rounded-lg transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-2"
+      >
+        <span className="text-2xl">🔧</span>
+        {loading ? "Iniciando..." : "🏗️ Consultoría Arquitectura W2E"}
+      </button>
+
+      <p className="text-zinc-500 text-xs">
+        Especializado en Loom Protocol • Análisis técnico • Dual-Treasury design
+      </p>
+    </div>
+  );
+}
+
 
 // --- CONFIGURACIÓN Y CONSTANTES ---
 const EMAIL_LINK = `mailto:arquitectura@pandoras.finance?subject=${encodeURIComponent(
@@ -422,22 +476,22 @@ export default function UtilityProtocolPage() {
                             </div>
                           </button>
 
-                          {/* Opción WhatsApp General */}
+                          {/* Opción WhatsApp Utility */}
                           <button
                             onClick={() => setSelectedMethod('whatsapp-general')}
-                            className="p-4 bg-gradient-to-r from-green-500/10 to-blue-500/10 border border-green-500/20 rounded-lg hover:border-green-400/40 transition-all duration-200 text-left group"
+                            className="p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg hover:border-blue-400/40 transition-all duration-200 text-left group"
                           >
                             <div className="flex items-center gap-3 mb-3">
-                              <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center group-hover:bg-green-500/30 transition-colors">
-                                <Phone className="w-5 h-5 text-green-400" />
+                              <div className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center group-hover:bg-blue-500/30 transition-colors">
+                                <Phone className="w-5 h-5 text-blue-400" />
                               </div>
-                              <h4 className="font-semibold text-green-400">WhatsApp</h4>
+                              <h4 className="font-semibold text-blue-400">Consultoría Arquitectura W2E</h4>
                             </div>
                             <p className="text-zinc-400 text-sm mb-3">
-                              Conversación rápida sobre tu proyecto con respuestas inmediatas via WhatsApp.
+                              Sesión especializada en Protocolos de Utilidad con análisis técnico detallado.
                             </p>
                             <div className="text-xs text-zinc-500">
-                              ✅ Rápido • ✅ Interactivo • ✅ Personalizado
+                              🔧 Loom Protocol • 📊 Dual-Treasury • 🎯 W2E Design
                             </div>
                           </button>
                         </div>
@@ -516,12 +570,12 @@ export default function UtilityProtocolPage() {
                             </p>
                           </div>
                         ) : (
-                          /* WhatsApp Lead Form Genérico */
+                          /* WhatsApp Lead Form Utility Específico */
                           <div className="space-y-4">
-                            <WhatsAppLeadForm />
+                            <WhatsAppUtilityLeadForm />
 
                             <p className="text-zinc-500 text-xs text-center">
-                              Te llevará a WhatsApp con instrucción para consulta general.
+                              Te llevará a WhatsApp con consultoría especializada en Arquitectura W2E.
                             </p>
                           </div>
                         )}

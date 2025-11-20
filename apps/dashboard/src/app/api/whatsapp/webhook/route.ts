@@ -5,10 +5,11 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { WHATSAPP, validateWhatsAppConfig } from '@/lib/whatsapp/config';
 import { upsertWhatsAppUser, getOrCreateActiveSession, switchSessionFlow } from '@/lib/whatsapp/multi-flow-db';
-import { handleEightQuestionsFlow } from '../../../api/whatsapp/webhook/handlers/eight-q';
-import { handleHighTicketFlow } from '../../../api/whatsapp/webhook/handlers/high-ticket';
-import { handleSupportFlow } from '../../../api/whatsapp/webhook/handlers/support';
-import { handleHumanAgentFlow } from '../../../api/whatsapp/webhook/handlers/human';
+import { handleEightQuestionsFlow } from './handlers/eight-q';
+import { handleHighTicketFlow } from './handlers/high-ticket';
+import { handleSupportFlow } from './handlers/support';
+import { handleHumanAgentFlow } from './handlers/human';
+import { handleUtilityFlow } from './handlers/utility';
 
 // Flow Handlers Map
 const FLOW_HANDLERS = {
@@ -16,12 +17,15 @@ const FLOW_HANDLERS = {
   high_ticket: handleHighTicketFlow,
   support: handleSupportFlow,
   human: handleHumanAgentFlow,
+  utility: handleUtilityFlow,
 } as const;
 
-// Flow Detection Keywords
+// Flow Detection Keywords (each keyword triggers flow switch)
 const FLOW_TRIGGERS = {
-  high_ticket: ['soy founder', 'high ticket', 'capital', 'inversor', 'invertir'],
+  high_ticket: ['soy founder', 'high ticket', 'capital', 'inversor', 'invertir', 'founder', 'founders', 'founders program', 'want founders'],
   support: ['ayuda', 'problema', 'ayudame', 'soporte', 'hablar con humano'],
+  eight_q: ['eight questions', '8 preguntas', 'cuestionario', 'filtro 8q', 'inicio', 'empezar', 'iniciar', 'start', 'comenzar'],
+  utility: ['utility protocol', 'protocolo utilidad', 'work to earn', 'w2e', 'loom protocol', 'arquitectura utilidad', 'protocolo funcional'],
   human: [], // Only switched by admin/system
 } as const;
 
@@ -47,8 +51,29 @@ function detectFlowChange(messageBody: string, currentFlow: string): string | nu
 }
 
 /**
- * Main Multi-Flow Router Handler
+ * Detect if first message from founders should force high_ticket flow
  */
+function shouldForceHighTicketFlow(messageBody: string, session: any): boolean {
+  // Only for brand new sessions (step 0) that haven't been assigned to high_ticket yet
+  if (session.currentStep !== 0 || session.flowType !== 'eight_q') {
+    return false;
+  }
+
+  const lowerBody = messageBody.toLowerCase();
+
+  // Force high_ticket if message contains founders keywords
+  const hasFoundersKeywords = FLOW_TRIGGERS.high_ticket.some(keyword =>
+    lowerBody.includes(keyword.toLowerCase())
+  );
+
+  if (hasFoundersKeywords) {
+    console.log('🎯 Founders message detected - forcing high_ticket flow');
+    return true;
+  }
+
+  return false;
+}
+
 async function handleMultiFlowMessage(message: any, userId: string, sessionId: string) {
   const messageBody = message.text?.body || '';
 
@@ -59,12 +84,22 @@ async function handleMultiFlowMessage(message: any, userId: string, sessionId: s
     return NextResponse.json({ error: 'Session error' }, { status: 500 });
   }
 
-  // Check for flow switch
+  // Force high_ticket flow for founders first messages
+  if (shouldForceHighTicketFlow(messageBody, session)) {
+    await switchSessionFlow(session.id, 'high_ticket');
+    console.log(`🚀 Founders user forced to high_ticket flow`);
+    return await handleHighTicketFlow(message, { ...session, flowType: 'high_ticket' });
+  }
+
+  // Check for flow switch (for existing conversations)
   const newFlowType = detectFlowChange(messageBody, session.flowType);
   if (newFlowType && newFlowType !== session.flowType) {
     await switchSessionFlow(session.id, newFlowType);
-    session.flowType = newFlowType;
     console.log(`✅ Switched to flow: ${newFlowType}`);
+    // Return updated session for consistent handling below
+    const updatedSession = { ...session, flowType: newFlowType };
+    const handler = FLOW_HANDLERS[newFlowType as keyof typeof FLOW_HANDLERS];
+    return await handler(message, updatedSession);
   }
 
   // Route to appropriate handler
