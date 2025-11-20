@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
     const emailHtml = await render(
       PandorasHighTicketEmail({
         name: name || 'Founder',
-        whatsappLink: `https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_CONTACT || '5213117348048'}?text=Quiero%20hablar%20sobre%20el%20Founders%20Program`,
+        whatsappLink: `https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_BUSINESS_PHONE}?text=${encodeURIComponent("Hola, soy founder y quiero aplicar al programa de Pandora's. Tengo capital disponible.")}`,
         source: source || 'founders-landing-modal'
       })
     );
