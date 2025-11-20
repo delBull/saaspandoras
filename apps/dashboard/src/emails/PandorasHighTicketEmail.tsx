@@ -20,9 +20,12 @@ interface PandorasHighTicketEmailProps {
   source?: string;
 }
 
+const DEFAULT_WHATSAPP_NUMBER = "5213221374392";
+const DEFAULT_FOUNDERS_MESSAGE = encodeURIComponent("Hola, soy founder y quiero aplicar al programa de Pandora's. Tengo capital disponible.");
+
 export default function PandorasHighTicketEmail({
   name = "Founder",
-  whatsappLink = "https://wa.me/5213220000000?text=Quiero%20hablar%20sobre%20el%20Founders%20Program",
+  whatsappLink = `https://wa.me/${DEFAULT_WHATSAPP_NUMBER}?text=${DEFAULT_FOUNDERS_MESSAGE}`,
   source = "founders-program",
 }: PandorasHighTicketEmailProps) {
   return (
@@ -122,7 +125,7 @@ export default function PandorasHighTicketEmail({
               </Text>
 
               <Link
-                href="https://pandoras.finance/apply"
+                href="https://dash.pandoras.finance/apply"
                 className="inline-block bg-yellow-500 text-black font-bold text-lg rounded-full px-8 py-4 no-underline"
                 style={{
                   backgroundColor: '#EAB308',
@@ -209,8 +212,7 @@ export default function PandorasHighTicketEmail({
 
 PandorasHighTicketEmail.PreviewProps = {
   name: "Founder",
-  whatsappLink:
-    "https://wa.me/5213220000000?text=Quiero%20hablar%20sobre%20el%20Founders%20Program",
+  whatsappLink: `https://wa.me/${DEFAULT_WHATSAPP_NUMBER}?text=${DEFAULT_FOUNDERS_MESSAGE}`,
   source: "founders-preview",
 };
 
