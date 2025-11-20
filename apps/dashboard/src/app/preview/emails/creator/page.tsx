@@ -2,8 +2,8 @@ import { Suspense } from 'react';
 import { render } from '@react-email/components';
 import PandorasCreatorEmail from '@/emails/creator-email';
 
-// Esta página es solo para desarrollo - permite preview del email template
-export default async function EmailPreviewPage() {
+// Esta página es solo para desarrollo - permite preview del email creator template
+export default async function CreatorEmailPreviewPage() {
   // Render the email to HTML
   const html = await render(
     PandorasCreatorEmail({
@@ -18,7 +18,7 @@ export default async function EmailPreviewPage() {
       <div className="max-w-4xl mx-auto">
         <header className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Email Template Preview
+            📧 Creator Email Preview
           </h1>
           <p className="text-gray-600">
             Preview del template de email "Creator Email" usado en /start
@@ -47,7 +47,7 @@ export default async function EmailPreviewPage() {
 
         <div className="mt-8 bg-white rounded-lg shadow-lg p-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">
-            📊 Información del Template
+            📊 Información del Template Creator
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -69,12 +69,24 @@ export default async function EmailPreviewPage() {
           </div>
         </div>
 
-        <div className="mt-8 text-center">
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
           <a
             href="http://localhost:3000/start"
-            className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="text-center inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            ← Volver a /start
+            📧 /start Original
+          </a>
+          <a
+            href="http://localhost:3000/preview/emails"
+            className="text-center inline-flex items-center justify-center px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+          >
+            📱 Email Root Preview
+          </a>
+          <a
+            href="http://localhost:3000/preview/emails/highticket"
+            className="text-center inline-flex items-center justify-center px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+          >
+            ♛ High Ticket Email
           </a>
         </div>
       </div>
