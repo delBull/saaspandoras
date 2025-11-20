@@ -4,7 +4,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { WHATSAPP, validateWhatsAppConfig } from '@/lib/whatsapp/config';
-import { upsertWhatsAppUser, getOrCreateActiveSession, switchSessionFlow } from '@/lib/whatsapp/multi-flow-db';
+import { upsertWhatsAppUser, getOrCreateActiveSession, switchSessionFlow } from '@/lib/whatsapp/preapply-db';
 import { handleEightQuestionsFlow } from './handlers/eight-q';
 import { handleHighTicketFlow } from './handlers/high-ticket';
 import { handleSupportFlow } from './handlers/support';
