@@ -1221,7 +1221,7 @@ await processBotMessage(phone, messageText);
 |----------|----------|-----------|
 | **Crear router principal** | `/api/whatsapp/route.ts` | ALTA |
 | **Implementar handlers flows** | `handlers/eight-q.ts` | ALTA |
-| **Helper functions DB** | `lib/whatsapp/multi-flow-db.ts` | ALTA |
+| **Helper functions DB** | `lib/whatsapp/preapply-db.ts` | ALTA |
 | **Switch dinámico** | `detectFlowChange()` | MEDIA |
 
 #### **🎯 FASE 3: WA LEADS UPGRADE (4 horas)**
