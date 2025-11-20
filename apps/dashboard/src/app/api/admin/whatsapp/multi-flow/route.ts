@@ -4,9 +4,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// Import database functions - ADD when multi-flow queries are ready
-// import { getAllMultiFlowLeads, getMultiFlowStats } from '@/lib/whatsapp/multi-flow-db';
-
 // Import legacy queries for now
 import { eq, sql, desc } from 'drizzle-orm';
 import { db } from '@/db';

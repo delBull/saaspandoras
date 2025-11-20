@@ -3,7 +3,7 @@
 
 import { NextResponse } from 'next/server';
 import type { WhatsAppSession } from '@/db/schema';
-import { logMessage, switchSessionFlow } from '@/lib/whatsapp/multi-flow-db';
+import { logMessage, switchSessionFlow } from '@/lib/whatsapp/preapply-db';
 
 interface WhatsAppMessage {
   from: string;
