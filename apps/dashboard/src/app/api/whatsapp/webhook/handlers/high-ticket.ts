@@ -31,7 +31,7 @@ export async function handleHighTicketFlow(message: WhatsAppMessage, session: Wh
     if (currentStep === 0) {
       const firstName = messageBody?.split(' ')[0] || 'Founder';
       const responseMessage = `Hola ${firstName}, gracias por escribir.
-Vi que vienes de la invitación Founders Select.
+Vi que vienes de la invitación Founders Inner Circle.
 Antes de conectar contigo personalmente, quiero entender algo rápido:
 
 ¿Cuál es el objetivo principal que quieres lograr con tu comunidad o plataforma este trimestre?`;
@@ -108,7 +108,7 @@ Una última cosa antes de pasarte con un estratega:
       if (!hasCapital && !wantUnderstanding) {
         // No capital - polite rejection
         const rejectionMessage = `Gracias por tu transparencia.
-En este momento el programa Founders Select solo trabaja con founders que ya cuentan con capital para desplegar el protocolo.
+En este momento el programa Founders Inner Circle solo trabaja con founders que ya cuentan con capital para desplegar el protocolo.
 Puedes aplicar más adelante cuando estés listo.`;
 
         await logMessage(session.id, 'outgoing', rejectionMessage, 'text');

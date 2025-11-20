@@ -83,7 +83,7 @@ last_updated: 2025-11-19
 ```typescript
 // Detección automática de flujo por keywords
 const FLOW_TRIGGERS = {
-  'high_ticket': ['soy founder', 'founders select', 'programa founders'],
+  'high_ticket': ['soy founder', 'founders inner circle', 'programa founders'],
   'support': ['ayuda', 'problema', 'hablar con humano', 'soporte'],
   'eight_q': DEFAULT_FLOW // Todos los demás users
 };
