@@ -139,8 +139,9 @@ export async function POST(request: NextRequest) {
 
 /**
  * Procesar mensaje usando el sistema multi-flow inteligente
+ * EXPORTADO para que preapply pueda redirigir aquí
  */
-async function processMultiFlowMessage(message: any): Promise<FlowResult> {
+export async function processMultiFlowMessage(message: any): Promise<FlowResult> {
   const userPhone = message.from;
   const messageText = message.text?.body?.trim();
 
