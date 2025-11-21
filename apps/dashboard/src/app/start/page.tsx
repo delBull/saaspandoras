@@ -37,6 +37,19 @@ function StartPageContent() {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<'email' | 'whatsapp' | null>(null);
 
+  // Función manejadora para WhatsApp directo
+  const handleWhatsAppDirect = () => {
+    window.open(`https://wa.me/5213221374392?text=${encodeURIComponent("Hola, soy creador interesado en lanzar protocolos de utilidad")}`, '_blank');
+    setIsSubscribed(true);
+    trackNewsletterSubscription('landing-start', 'phone');
+    trackEvent('whatsapp_eight_questions_start', 'direct', 'Landing Start', 1);
+  };
+
+  // Función manejadora para Email con modal
+  const handleEmailSelection = () => {
+    setSelectedMethod('email');
+  };
+
   // Google Analytics tracking
   useGoogleAnalytics();
   trackPageView('Landing Start Page');
@@ -115,7 +128,7 @@ function StartPageContent() {
     if (!email && !phone) return;
 
     try {
-      const response = await fetch('/api/newsletter-subscribe', {
+      const response = await fetch('/api/email/creator-welcome', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -626,10 +639,10 @@ function StartPageContent() {
                 <Mail className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-white mb-2">
-                Acceso Prioritario al Panel de Control
+                Acceso Prioritario a Tu Arquitectura de Utilidad
               </h3>
               <p className="text-zinc-400">
-                Solo los *builders* más rápidos acceden a las herramientas 'No-Code' primero. Obtén tu invitación prioritaria y la guía de implementación.
+                Antes de activar tus herramientas No-Code, necesitamos confirmar tu caso de uso y entregarte la guía técnica adecuada para tu Protocolo
               </p>
             </div>
 
@@ -639,13 +652,13 @@ function StartPageContent() {
                 {!selectedMethod ? (
                   <div className="space-y-4">
                     <p className="text-zinc-400 text-center mb-6">
-                      Elige tu vía de acceso:
+                      Selecciona cómo quieres continuar:
                     </p>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Opción Email */}
                       <button
-                        onClick={() => setSelectedMethod('email')}
+                        onClick={handleEmailSelection}
                         className="p-6 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg hover:border-blue-400/40 transition-all duration-200 text-left group"
                       >
                         <div className="flex items-center gap-3 mb-3">
@@ -655,31 +668,33 @@ function StartPageContent() {
                           <h4 className="font-semibold text-blue-400">Vía Email</h4>
                         </div>
                         <p className="text-zinc-400 text-sm mb-3">
-                          Recibe el *whitepaper* completo y el enlace de acceso anticipado.
+                          Recibe tu Dossier Técnico de Protocolo (Acceso Prioritario)
                         </p>
                         <div className="text-xs text-zinc-500">
-                          ✅ Enlace Directo • ✅ Documentación Completa
+                          ✅ Enlace Directo • ✅ Guía
                         </div>
                       </button>
 
-                      {/* Opción WhatsApp */}
-                      <button
-                        onClick={() => setSelectedMethod('whatsapp')}
-                        className="p-6 bg-gradient-to-r from-green-500/10 to-blue-500/10 border border-green-500/20 rounded-lg hover:border-green-400/40 transition-all duration-200 text-left group"
-                      >
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center group-hover:bg-green-500/30 transition-colors">
-                            <Phone className="w-5 h-5 text-green-400" />
+                      {/* Opción WhatsApp - Activado con flujo 8 preguntas */}
+                      <div className="relative">
+                        <button
+                          onClick={handleWhatsAppDirect}
+                          className="p-6 bg-gradient-to-r from-green-500/10 to-purple-500/10 border border-green-500/20 rounded-lg hover:border-green-400/40 transition-all duration-200 text-left group w-full"
+                        >
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center group-hover:bg-green-500/30 transition-colors">
+                              <Phone className="w-5 h-5 text-green-400" />
+                            </div>
+                            <h4 className="font-semibold text-green-400">Vía WhatsApp</h4>
                           </div>
-                          <h4 className="font-semibold text-green-400">Vía WhatsApp (Personal)</h4>
-                        </div>
-                        <p className="text-zinc-400 text-sm mb-3">
-                          Conversación personalizada para evaluar tu caso de uso y recibir una guía *a medida*.
-                        </p>
-                        <div className="text-xs text-zinc-500">
-                          ✅ Sesión 1:1 • ✅ Plan de Utilidad Rápido
-                        </div>
-                      </button>
+                          <p className="text-zinc-400 text-sm mb-3">
+                            Conversación personalizada para evaluar tu caso de uso con nuestro cuestionario de 8 preguntas.
+                          </p>
+                          <div className="text-xs text-zinc-500">
+                            ✅ Sesión 1:1 • ✅ 8 Preguntas Guiding
+                          </div>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -765,10 +780,14 @@ function StartPageContent() {
                         <p className="text-zinc-400 text-xs text-center">
                           Te llevaremos a WhatsApp con tu información preparada.
                         </p>
+
                         <Button
                           onClick={() => {
                             window.open(`https://wa.me/5213221374392?text=${encodeURIComponent("Hola, soy creador interesado en lanzar protocolos de utilidad. Mi nombre es: " + (name || "Anónimo"))}`, '_blank');
-                            handleSubscription();
+                            setIsSubscribed(true);
+                            trackNewsletterSubscription('landing-start', 'phone');
+                            trackEvent('whatsapp_eight_questions_start', 'direct', 'Landing Start', 1);
+                            alert('¡Excelente! Te llevo a WhatsApp para comenzar tu sesión de 8 preguntas personalizadas.');
                           }}
                           className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-500 hover:to-blue-500 text-white py-4 text-lg font-bold rounded-lg transition-all duration-300"
                         >
