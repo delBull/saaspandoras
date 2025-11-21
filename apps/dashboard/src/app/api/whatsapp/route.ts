@@ -34,6 +34,21 @@ interface FlowResult {
   error?: string;
 }
 
+/**
+ * Interfaz común para resultados de todos los flow handlers
+ */
+interface FlowResult {
+  handled: boolean;
+  flowType: string;
+  response?: string;
+  action?: string;
+  progress?: string;
+  status?: string;
+  isCompleted?: boolean;
+  projectCreated?: boolean;
+  error?: string;
+}
+
 // GET - Webhook Verification Endpoint
 export function GET(request: NextRequest) {
   const timestamp = new Date().toISOString();
