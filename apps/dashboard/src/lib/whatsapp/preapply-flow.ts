@@ -92,17 +92,28 @@ export function isPreapplyFlowTrigger(text: string): boolean {
 function detectFlowFromMessage(text: string): string {
   const lowerText = text.toLowerCase();
 
+  // Log para debug
+  console.log(`🔍 Analizando texto para keywords: "${text}"`);
+
   for (const [flowType, keywords] of Object.entries(FLOW_TRIGGERS)) {
     const hasKeyword = keywords.some(keyword =>
       lowerText.includes(keyword.toLowerCase())
     );
 
     if (hasKeyword) {
-      console.log(`🔄 Flow detected from keywords: ${flowType}`);
+      console.log(`🔄 Flow detected from keywords: ${flowType} (triggered by keyword in: ${keywords.join(', ')})`);
       return flowType;
     }
   }
 
+  // Si contiene palabras relacionadas con protocols o creación, ir a eight_q
+  const protocolKeywords = ['protocol', 'protocolo', 'crear', 'proyecto', 'desarrollar', 'lanzar', 'creación'];
+  if (protocolKeywords.some(keyword => lowerText.includes(keyword))) {
+    console.log(`🔄 Flow default to eight_q: contains protocol/crear keywords`);
+    return 'eight_q';
+  }
+
+  console.log(`🔄 Flow default to high_ticket: no specific keywords detected`);
   return 'high_ticket'; // Default flow ahora es high_ticket para founders
 }
 
@@ -145,15 +156,16 @@ export async function processPreapplyMessage(message: WhatsAppMessage): Promise<
 
       // Forzar el estado al flow detectado (diagnóstico adicional)
       if (session.flowType !== detectedFlow) {
-        await switchSessionFlow(session.id, detectedFlow);
-        console.log(`✅ Forzado cambio a ${detectedFlow} flow`);
+        // CAMBIO: En lugar de cambiar el flow directamente, que causa error de duplicate key,
+        // simplemente retornar la respuesta del flow detectado sin crear sesión duplicada
+        console.log(`✅ Cambio de flow solicitado: ${detectedFlow}`);
       }
 
       // Respuesta automática según el flow detectado
       const flowMessages: Record<string, string> = {
         high_ticket: `🎯 ¡Hola! Gracias por identificarte como Founder!
 
-Soy Pandoras AI y veo que estás interesado en nuestro programa de Founders con capital disponible. Me encantaría conocer mejor tu proyecto y cómo podemos apoyarte en tu journey emprendedor.
+Soy Pandoras AI y veo que estás interesado en nuestro programa de Founders con capital disponible. Me encantaría conocer mejor tu proyecto y cómo puedo apoyarte en tu journey emprendedor.
 
 Te enviaré información detallada sobre nuestro programa Founders y me pondré en contacto contigo por email también. ¿Te parece bien que nos sirva un poco más de información sobre tu idea?
 
