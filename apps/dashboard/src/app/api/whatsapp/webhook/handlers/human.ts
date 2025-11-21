@@ -1,9 +1,9 @@
 // HUMAN AGENT FLOW HANDLER
 // Maneja conversaciones con agentes humanos una vez escalada
 
-import { NextResponse } from 'next/server';
 import type { WhatsAppSession } from '@/db/schema';
 import { logMessage, updateSessionState } from '@/lib/whatsapp/preapply-db';
+import { notifyHumanAgent } from '@/lib/notifications';
 
 interface WhatsAppMessage {
   from: string;
@@ -42,6 +42,14 @@ export async function handleHumanAgentFlow(
     const messageBody = message.text?.body || '';
     await logMessage(session.id, 'incoming', messageBody, message.type || 'text');
 
+    // Send immediate notification to agents (async)
+    const notificationSent = await notifyHumanAgent(message.from, messageBody);
+    if (notificationSent) {
+      console.log(`🔔 Human agent notification sent for user ${message.from}`);
+    } else {
+      console.error(`❌ Failed to send human agent notification for user ${message.from}`);
+    }
+
     // In human flow, we just log everything and notify agents
     // The actual response will come from a human agent via admin panel
 
@@ -79,6 +87,6 @@ Mantente en línea, te responderemos pronto.`;
       flowType: 'human',
       error: 'Processing error',
       status: 'error'
-    };
+      }
   }
 }
