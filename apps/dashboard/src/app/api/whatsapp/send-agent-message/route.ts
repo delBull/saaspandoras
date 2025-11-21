@@ -42,10 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Log the outgoing agent message
-    await logMessage(sessionId, 'outgoing', message, 'text', {
-      agentId,
-      sent_via: 'agent_response'
-    });
+    await logMessage(sessionId, 'outgoing', message, 'text');
 
     // TODO: Get phone number from session/user lookup
     // For now, we'll need to get user phone from session
@@ -81,11 +78,21 @@ export async function POST(request: NextRequest) {
   }
 }
 
+interface HumanSession {
+  id: string;
+  userId: string;
+  userPhone: string;
+  lastMessage: string;
+  messageCount: number;
+  createdAt: string;
+  lastActivity: string;
+}
+
 /**
  * GET /api/whatsapp/send-agent-message_sessions
  * Returns active human-agent sessions for agents to respond
  */
-export async function GET(request: NextRequest) {
+export function GET(request: NextRequest) {
   try {
     const agentId = request.nextUrl.searchParams.get('agentId');
 
@@ -100,7 +107,7 @@ export async function GET(request: NextRequest) {
     // This should return active sessions where flow_type = 'human'
     // with recent messages, user info, etc.
 
-    const activeSessions = []; // TODO: Implement this
+    const activeSessions: HumanSession[] = []; // TODO: Implement this
 
     return NextResponse.json({
       success: true,

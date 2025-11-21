@@ -92,7 +92,7 @@ class NotificationService {
   /**
    * Send email notification (FREE tier available)
    */
-  private async sendEmail(text: string, urgent: boolean): Promise<boolean> {
+  private sendEmail(text: string, urgent: boolean): boolean {
     if (!this.config?.email) return true; // Skip if not configured
 
     try {
@@ -137,8 +137,8 @@ export function configureNotifications(config: NotificationConfig) {
   notificationService.configure(config);
 }
 
-// Auto-configure from environment
-const discordWebhook = process.env.DISCORD_WEBHOOK_URL;
+// Auto-configure from environment (support both naming variants)
+const discordWebhook = process.env.DISCORD_WEBHOOK_URL || process.env.DISCORD_WEBHOOK_UR;
 if (discordWebhook) {
   configureNotifications({
     discord: { webhookUrl: discordWebhook }
