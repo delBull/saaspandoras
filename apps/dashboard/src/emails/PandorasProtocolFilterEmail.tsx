@@ -69,10 +69,10 @@ export default function PandorasProtocolFilterEmail({
               <Row className="space-y-3 text-left">
                 <Column>
                   <Text className="text-gray-800 text-base leading-6 mb-1">
-                    🌟 **Impacto Real:** Participa en un protocolo que asegura que cada contribución de trabajo se entrelace con una recompensa verificable y automatizada.
+                    🌟 Impacto Real: Participa en un protocolo que asegura que cada contribución de trabajo se entrelace con una recompensa verificable y automatizada.
                   </Text>
                   <Text className="text-gray-800 text-base leading-6 mb-1">
-                    🏛️ **Asegura tu Lugar en el DAO:** Conviértete en un validador clave y ejerce influencia sobre el futuro del protocolo.
+                    🏛️ Asegura tu Lugar en el DAO: Conviértete en un validador clave y ejerce influencia sobre el futuro del protocolo.
                   </Text>
                 </Column>
               </Row>
