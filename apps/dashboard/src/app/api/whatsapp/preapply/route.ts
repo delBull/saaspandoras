@@ -66,8 +66,8 @@ export async function POST(request: NextRequest) {
     console.log('🔄 Redirigiendo mensaje PRE-APPLY al sistema MULTI-FLOW principal');
 
     try {
-      // Importar la función del sistema principal
-      const { processMultiFlowMessage } = await import('../route');
+      // Importar la función del sistema multi-flow
+      const { processMultiFlowMessage } = await import('@/lib/whatsapp/preapply-flow');
 
       // Procesar usando el sistema MULTI-FLOW
       const result = await processMultiFlowMessage({
