@@ -11,9 +11,25 @@ import {
   logMessage,
   closeSession,
   upsertWhatsAppUser,
-  switchSessionFlow
+  switchSessionFlow,
+  getActiveSession
 } from './preapply-db';
 import { sendWhatsAppMessage } from './client';
+
+/**
+ * Interfaz común para resultados de todos los flow handlers
+ */
+export interface FlowResult {
+  handled: boolean;
+  flowType: string;
+  response?: string;
+  action?: string;
+  progress?: string;
+  status?: string;
+  isCompleted?: boolean;
+  projectCreated?: boolean;
+  error?: string;
+}
 
 // Tipos para mensajes de WhatsApp
 interface WhatsAppMessage {
@@ -420,4 +436,310 @@ function getFormattedQuestion(step: number): string {
   }
 
   return formatted + '\n\nRespuesta:';
+}
+
+/**
+ * Procesar mensaje usando el sistema multi-flow inteligente
+ */
+export async function processMultiFlowMessage(message: any): Promise<FlowResult> {
+  const userPhone = message.from;
+  const messageText = message.text?.body?.trim();
+
+  try {
+    console.log(`🔄 Processing multi-flow for ${userPhone}: "${messageText?.substring(0, 50)}..."`);
+
+    // Paso 1: Determinar el flujo apropiado (inteligente)
+    const flowDecision = await determineFlowType(userPhone, messageText);
+
+    console.log(`🎯 Flow Decision: ${flowDecision.flowType} (reason: ${flowDecision.reason})`);
+
+    // Paso 2: Routing basado en el tipo de flujo determinado
+    switch (flowDecision.flowType) {
+      case 'human':
+        return await handleHumanFlow(userPhone, message, flowDecision.session || null);
+
+      case 'high_ticket':
+        return await handleHighTicketFlow(userPhone, message, flowDecision.session || null);
+
+      case 'support':
+        return await handleSupportFlow(userPhone, message, flowDecision.session || null);
+
+      case 'eight_q':
+      default:
+        return await handleEightQFlow(userPhone, message, flowDecision.session || null);
+    }
+
+  } catch (error) {
+    console.error('❌ Error en processMultiFlowMessage:', error);
+
+    // Fallback al sistema legacy si algo falla
+    try {
+      const { processIncomingMessage } = await import('./flow');
+      const fallbackResult = await processIncomingMessage(message);
+      return {
+        handled: true,
+        flowType: 'eight_q_fallback',
+        response: fallbackResult.nextQuestion || 'Error interno. Intentando legacy system...',
+        error: 'Multi-flow failed, using legacy',
+        status: 'fallback'
+      };
+    } catch (fallbackError) {
+      return {
+        handled: false,
+        error: 'Both multi-flow and legacy failed',
+        flowType: 'error',
+        status: 'critical_error'
+      };
+    }
+  }
+}
+
+/**
+ * Determinar el tipo de flujo basado en keywords y estado del usuario
+ */
+async function determineFlowType(userPhone: string, messageText: string) {
+  // Keywords para detectar cambio de flujo
+  const FLOW_KEYWORDS = {
+    high_ticket: ['soy founder', 'high ticket', 'capital', 'inversor', 'invertir', 'funding', 'levantar capital'],
+    support: ['ayuda', 'problema', 'ayudame', 'soporte', 'hablar con humano', 'no entiendo', 'no funciona'],
+    human: [] // Solo por escalación admin
+  };
+
+  // Detectar si el usuario quiere cambiar de flujo
+  const detectFlowChange = (text: string) => {
+    for (const [flowType, keywords] of Object.entries(FLOW_KEYWORDS)) {
+      if (keywords.some(keyword => text.toLowerCase().includes(keyword))) {
+        return flowType;
+      }
+    }
+    return null;
+  };
+
+  // Si hay keywords de cambio de flujo, intentar cambiar
+  const requestedFlow = detectFlowChange(messageText || '');
+  if (requestedFlow) {
+    console.log(`🔄 User requested flow change to: ${requestedFlow}`);
+
+    try {
+      const decision = await handlePreapplyFlowDecision(userPhone, requestedFlow);
+      if (decision.shouldUseMultiFlow && decision.session) {
+        return {
+          flowType: requestedFlow,
+          reason: 'keyword_detected',
+          session: decision.session
+        };
+      }
+    } catch (error) {
+      console.error('Error cambiando de flujo:', error);
+    }
+  }
+
+  // Si no hay cambio solicitado, mantener flujo actual o determinar nuevo
+  const currentSession = await getActiveSession(userPhone);
+
+  if (currentSession) {
+    // Usuario ya tiene un flujo activo
+    const flowType = currentSession.flowType;
+    console.log(`🔄 User has active ${flowType} session, continuing...`);
+    return {
+      flowType,
+      reason: 'existing_session',
+      session: currentSession
+    };
+  }
+
+  // Usuario nuevo - determinar flujo inicial
+  const isInitialTrigger = (text: string) => {
+    const lowerText = text.toLowerCase();
+    const protocolKeywords = ['protocolo', 'utilidad', 'crear', 'pandoras', 'proyecto'];
+    const creatorKeywords = ['soy', 'creador', 'quiere', 'hacer', 'lanzar'];
+
+    return protocolKeywords.some(k => lowerText.includes(k)) ||
+           creatorKeywords.some(k => lowerText.includes(k)) ||
+           lowerText.length > 10; // Mensajes más largos son intenciones serias
+  };
+
+  const initialFlow = isInitialTrigger(messageText || '') ? 'eight_q' : 'support';
+  console.log(`🆕 New user, starting with ${initialFlow} flow`);
+
+  // Crear sesión inicial
+  const decision = await handlePreapplyFlowDecision(userPhone, initialFlow);
+
+  return {
+    flowType: decision.shouldUseEightQ ? 'eight_q' : 'support',
+    reason: 'new_user_detection',
+    session: decision.session
+  };
+}
+
+/**
+ * Handler para flujo Eight-Q (formulario de 8 preguntas)
+ */
+async function handleEightQFlow(userPhone: string, message: any, session: any): Promise<FlowResult> {
+  console.log(`🔢 Processing Eight-Q flow for ${userPhone}`);
+
+  const { processIncomingMessage } = await import('./flow');
+  const result = await processIncomingMessage(message);
+
+  return {
+    handled: true,
+    flowType: 'eight_q',
+    response: result.nextQuestion,
+    isCompleted: result.isCompleted,
+    projectCreated: result.projectCreated,
+    action: result.isCompleted ? 'project_created' : 'question_sent',
+    progress: getProgressIndicator(session?.current_step || 0, 8),
+    status: result.isCompleted ? 'completed' : 'active'
+  };
+}
+
+/**
+ * Handler para flujo High-Ticket (founders/inversores)
+ */
+async function handleHighTicketFlow(userPhone: string, message: any, session: any): Promise<FlowResult> {
+  console.log(`💰 Processing High-Ticket flow for ${userPhone}`);
+
+  const messageBody = message.text?.body || '';
+
+  // Log del mensaje entrante
+  if (session?.id) {
+    await logMessage(session.id, 'incoming', messageBody, message.type || 'text');
+  }
+
+  // Respuesta premium para founders
+  const premiumResponse = `💎 ¡Excelente decisión! Eres un perfil perfecto para nuestro programa High-Ticket.
+
+Un asesor especializado te contactará personalmente en las próximas 24 horas para discutir tu visión y los términos de inversión.
+
+Mientras tanto:
+• Prepara tu pitch deck
+• Reúne métricas clave
+• Identifica tus milestones de crecimiento
+
+¿Hay algo específico que quisieras saber sobre el proceso de inversión?
+
+📞 Nuestro equipo de Founders: +52 132 213 7439
+📧 founders@pandoras.finance
+
+Mantente pendiente de tu email registrado.`;
+
+  // Log respuesta saliente
+  if (session?.id) {
+    await logMessage(session.id, 'outgoing', premiumResponse, 'text');
+    await updateSessionState(session.id, { currentStep: 1 });
+  }
+
+  return {
+    handled: true,
+    flowType: 'high_ticket',
+    response: premiumResponse,
+    action: 'premium_contact_initiated',
+    status: 'contacted'
+  };
+}
+
+/**
+ * Handler para flujo Support (soporte técnico)
+ */
+async function handleSupportFlow(userPhone: string, message: any, session: any): Promise<FlowResult> {
+  console.log(`🛠️ Processing Support flow for ${userPhone}`);
+
+  const messageBody = message.text?.body || '';
+
+  // Log del mensaje entrante
+  if (session?.id) {
+    await logMessage(session.id, 'incoming', messageBody, message.type || 'text');
+  }
+
+  // Respuesta automática del soporte
+  let supportResponse = '';
+
+  // Intentar detectar el tipo de problema
+  const lowerBody = messageBody.toLowerCase();
+
+  if (lowerBody.includes('no funciona') || lowerBody.includes('error')) {
+    supportResponse = `🔧 **Problema Técnico Detectado**
+
+Entiendo que estás teniendo un problema técnico. Vamos a solucionarlo:
+
+1. ¿En qué pantalla específicamente ocurre el error?
+2. ¿Qué estabas intentando hacer?
+3. ¿Aparece algún mensaje de error específico?
+
+Mientras tanto, intenta:
+• Refrescar la página (F5)
+• Limpiar caché del navegador
+• Intentar en una ventana incógnita
+
+Si el problema persiste, te conectaré con nuestro equipo técnico especializado.`;
+  } else if (lowerBody.includes('cuenta') || lowerBody.includes('login')) {
+    supportResponse = `🔐 **Soporte de Cuenta**
+
+Para ayudarte con problemas de cuenta:
+
+**¿Qué necesitas?**
+• ¿No puedes acceder a tu cuenta?
+• ¿Olvidaste tu contraseña?
+• ¿Problema con tu wallet?
+• ¿Error en la verificación KYC?
+
+Por favor indica el problema específico y te guío paso a paso.
+
+**Enlaces útiles:**
+• /login - Para iniciar sesión
+• /profile - Gestionar tu cuenta
+• /help - Centro de ayuda`;
+  } else {
+    supportResponse = `🆘 **Centro de Soporte Pandoras**
+
+Hola soy tu asistente de soporte automatizado. Estoy aquí para ayudarte.
+
+**¿Con quéarea necesitas ayuda?**
+• 🚀 **Crear Protocolo** - Problemas con el builder
+• 💰 **Finanzas** - Wallets, pagos, transacciones
+• 📊 **Gamificación** - Puntos, achievements, leaderboard
+• 👤 **Cuenta** - Login, perfil, configuración
+
+**Opciones rápidas:**
+Responde con el número correspondiente:
+1. Conectar con agente humano
+2. FAQ más frecuentes
+3. Status del sistema
+4. Volver al menú principal
+
+¿Qué necesitas hoy? 💬`;
+  }
+
+  // Log respuesta saliente
+  if (session?.id) {
+    await logMessage(session.id, 'outgoing', supportResponse, 'text');
+    await updateSessionState(session.id, { currentStep: (session.current_step || 0) + 1 });
+  }
+
+  return {
+    handled: true,
+    flowType: 'support',
+    response: supportResponse,
+    action: 'support_response_sent',
+    status: 'active'
+  };
+}
+
+/**
+ * Handler para flujo Human (escalado a agentes humanos)
+ */
+async function handleHumanFlow(userPhone: string, message: any, session: any): Promise<FlowResult> {
+  console.log(`👨‍💼 Processing Human flow for ${userPhone}`);
+
+  const { handleHumanAgentFlow } = await import('../../app/api/whatsapp/webhook/handlers/human');
+
+  return await handleHumanAgentFlow(message, session);
+}
+
+/**
+ * Generar indicador de progreso para flujos
+ */
+function getProgressIndicator(current: number, total: number): string {
+  if (current === 0) return 'Iniciando...';
+  return `${current}/${total}`;
 }

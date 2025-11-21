@@ -61,57 +61,42 @@ export async function POST(request: NextRequest) {
       body: message.text?.body?.substring(0, 50) + '...'
     });
 
-    // Procesar mensaje usando el flujo PRE-APPLY (8 preguntas filtradas)
-    const result = await processPreapplyMessage({
-      from: message.from,
-      type: message.type,
-      text: message.text,
-      timestamp: message.timestamp,
-      id: message.id,
-    });
+    // 🚨 TEMPORAL FIX: Redirigir el mensaje al sistema MULTI-FLOW principal
+    // Para evitar conflictos entre PRE-APPLY y MULTI-FLOW
+    console.log('🔄 Redirigiendo mensaje PRE-APPLY al sistema MULTI-FLOW principal');
 
-    console.log('🤖 Pre-Apply flow result:', result);
+    try {
+      // Importar la función del sistema multi-flow
+      const { processMultiFlowMessage } = await import('@/lib/whatsapp/preapply-flow');
 
-    // Si hay respuesta automática para enviar, hacerlo ahora
-    if (result.nextMessage && !result.error) {
-      const { sendWhatsAppMessage } = await import('@/lib/whatsapp/client');
+      // Procesar usando el sistema MULTI-FLOW
+      const result = await processMultiFlowMessage({
+        from: message.from,
+        type: message.type,
+        text: message.text,
+        timestamp: message.timestamp,
+        id: message.id,
+      });
 
-      // Enviar la respuesta por WhatsApp
-      const sendResult = await sendWhatsAppMessage(
-        message.from,  // número destino
-        result.nextMessage,  // texto de la respuesta
-        message.id  // responder al mensaje original
-      );
+      console.log('🤖 Multi-flow result (desde preapply):', result);
 
-      if (!sendResult.success) {
-        console.error('❌ Error enviando respuesta pre-apply:', sendResult.error);
-      } else {
-        console.log('✅ Respuesta pre-apply enviada:', sendResult.messageId);
-      }
+      // Los handlers del multi-flow ya envían las respuestas automáticamente
+      // Solo necesitamos confirmar recepción
+      return NextResponse.json({
+        received: true,
+        processed: true,
+        redirected_to_multi_flow: true,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('❌ Error redirigiendo a multi-flow:', error);
+
+      return NextResponse.json({
+        error: 'Error interno procesando mensaje (high_ticket)',
+        nextMessage: 'Hubo un error procesando tu mensaje. Inténtalo nuevamente por favor.'
+      }, { status: 500 });
     }
-
-    // Si el usuario completó, enviar notificación al admin
-    if (result.isCompleted && result.projectRedirect) {
-      console.log('🎉 User completed pre-apply flow - Admin notification pending');
-      // TODO: Aquí podrías agregar notificación al admin
-      // await notifyAdminsOfNewPreapplyLead(message.from);
-    }
-
-    // Responder con el resultado del procesamiento
-    return NextResponse.json({
-      received: true,
-      processed: true,
-      sentResponse: !!result.nextMessage,
-      flowType: 'preapply',
-      result: {
-        hasNextMessage: !!result.nextMessage,
-        isCompleted: result.isCompleted,
-        projectRedirect: result.projectRedirect,
-        error: result.error,
-        nextMessage: result.nextMessage?.substring(0, 100) + '...' // Truncar para logs
-      },
-      timestamp: new Date().toISOString()
-    });
 
   } catch (error) {
     console.error('❌ WhatsApp pre-apply webhook error:', error);
