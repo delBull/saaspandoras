@@ -339,6 +339,16 @@ export async function updatePreapplyLeadStatus(leadId: number, status: string): 
     console.error('Error en updatePreapplyLeadStatus:', error);
     return false;
   }
+
+  // Usar sistema legacy de 8 preguntas
+  const leadState = await getOrCreatePreapplyLead(userPhone);
+  if (!leadState) throw new Error(`Failed to create preapply lead for ${userPhone}`);
+
+  return {
+    shouldUseEightQ: true,
+    shouldUseMultiFlow: false,
+    leadState,
+  };
 }
 
 /**

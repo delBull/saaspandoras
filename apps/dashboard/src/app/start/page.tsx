@@ -681,7 +681,7 @@ function StartPageContent() {
                         className="p-6 bg-gradient-to-r from-green-500/10 to-purple-500/10 border border-green-500/20 rounded-lg hover:border-green-400/40 transition-all duration-200 text-left group"
                       >
                         <div className="flex items-center gap-3 mb-3">
-                          <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center group-hover:bg-green-500/30 transition-colors">
+                          <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center">
                             <Phone className="w-5 h-5 text-green-400" />
                           </div>
                           <h4 className="font-semibold text-green-400">Vía WhatsApp</h4>
@@ -692,7 +692,13 @@ function StartPageContent() {
                         <div className="text-xs text-zinc-500">
                           ✅ Sesión 1:1 • ✅ 8 Preguntas Guiding
                         </div>
-                      </button>
+                        {/* Overlay de coming soon */}
+                        <div className="absolute inset-0 bg-black/20 rounded-lg flex items-center justify-center">
+                          <span className="bg-green-600 text-white px-3 py-1 rounded-full text-xs font-medium">
+                            Próximamente
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ) : (
