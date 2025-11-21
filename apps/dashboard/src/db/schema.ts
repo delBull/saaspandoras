@@ -443,6 +443,7 @@ export const shortlinks = pgTable("shortlinks", {
 export const shortlinkEvents = pgTable("shortlink_events", {
   id: serial("id").primaryKey(),
   slug: varchar("slug", { length: 50 }).notNull(),              // 'w' para /w
+  domain: varchar("domain", { length: 100 }),                  // pandoras.finance, pbox.dev
   ip: varchar("ip", { length: 45 }),                           // IPv4/IPv6
   userAgent: text("user_agent"),                                // Navegador/device
   referer: text("referer"),                                     // URL de origen

@@ -6,6 +6,7 @@ import type { UserData } from "@/types/admin";
 import { UsersTable } from "./UsersTable";
 import WhatsAppLeadsTab from './WhatsAppLeadsTab';
 import ShortlinksSubTab from './ShortlinksSubTab';
+import NewsletterSubTab from './NewsletterSubTab';
 
 interface Swap {
   txHash: string;
@@ -145,14 +146,13 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
               </button>
               <button
                 onClick={() => setActiveMarketingSubTab('newsletter')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                   activeMarketingSubTab === 'newsletter'
                     ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
                     : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
                 }`}
-                disabled
               >
-                📧 Newsletter (Próximamente)
+                📧 Newsletter Analytics
               </button>
               <button
                 onClick={() => setActiveMarketingSubTab('campaigns')}
@@ -171,13 +171,7 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
           {/* Contenido dinámico según sub-tab activa */}
           {activeMarketingSubTab === 'wa-leads' && <WhatsAppLeadsTab />}
           {activeMarketingSubTab === 'shortlinks' && <ShortlinksSubTab />}
-          {activeMarketingSubTab === 'newsletter' && (
-            <div className="text-center py-12">
-              <div className="text-4xl mb-4">📧</div>
-              <h3 className="text-lg font-medium mb-2">Newsletter System</h3>
-              <p className="text-zinc-500">Sistema de newsletters próximamente...</p>
-            </div>
-          )}
+          {activeMarketingSubTab === 'newsletter' && <NewsletterSubTab />}
           {activeMarketingSubTab === 'campaigns' && (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">🎯</div>
