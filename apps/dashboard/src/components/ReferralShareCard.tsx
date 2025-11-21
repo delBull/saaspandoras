@@ -18,9 +18,19 @@ export function ReferralShareCard() {
   const account = useActiveAccount();
   const [showQR, setShowQR] = useState(false);
 
+  // Detectar si vino de un shortlink
+  const urlParams = new URLSearchParams(window.location.search);
+  const shortlinkSlug = urlParams.get('via_shortlink');
+  const shortlinkDomain = urlParams.get('via_domain') || window.location.hostname;
+
+  // Usar shortlink para compartir si está disponible, sino usar página actual
+  const shareBaseUrl = shortlinkSlug ?
+    `${window.location.protocol}//${shortlinkDomain}/${shortlinkSlug}` :
+    window.location.origin;
+
   // Generar enlace de referido
   const referralLink = account?.address ?
-    `${window.location.origin}/join?ref=${account.address}` : '';
+    `${shareBaseUrl}/join?ref=${account.address}` : '';
 
   // URL del QR code (usando API externa)
   const qrCodeUrl = referralLink ?
