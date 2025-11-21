@@ -39,7 +39,7 @@ function StartPageContent() {
 
   // Función manejadora para WhatsApp directo
   const handleWhatsAppDirect = () => {
-    window.open('https://wa.me/5213221374392?text=8%20preguntas', '_blank');
+    window.open(`https://wa.me/5213221374392?text=${encodeURIComponent("Hola, soy creador interesado en lanzar protocolos de utilidad")}`, '_blank');
     setIsSubscribed(true);
     trackNewsletterSubscription('landing-start', 'phone');
     trackEvent('whatsapp_eight_questions_start', 'direct', 'Landing Start', 1);
@@ -784,20 +784,19 @@ function StartPageContent() {
                         <p className="text-zinc-400 text-xs text-center">
                           Te llevaremos a WhatsApp con tu información preparada.
                         </p>
-                      <Button
-                        onClick={() => {
-                          // WhatsApp temporalmente deshabilitado
-                          // window.open(`https://wa.me/5213221374392?text=${encodeURIComponent("Hola, soy creador interesado en lanzar protocolos de utilidad. Mi nombre es: " + (name || "Anónimo"))}`, '_blank');
-                          setIsSubscribed(true);
-                          alert('WhatsApp contact temporarily disabled. Use email instead.');
-                          // WhatsApp no llama a handleSubscription() - solo contacta directamente
-                          // trackNewsletterSubscription('landing-start', 'phone'); // ← Cambiado de 'whatsapp' a 'phone'
-                          trackEvent('whatsapp_attempt_disabled', 'direct', 'Landing Start', 1);
-                        }}
-                        className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-500 hover:to-blue-500 text-white py-4 text-lg font-bold rounded-lg transition-all duration-300"
-                      >
-                        Continuar en WhatsApp
-                      </Button>
+
+                        <Button
+                          onClick={() => {
+                            window.open(`https://wa.me/5213221374392?text=${encodeURIComponent("Hola, soy creador interesado en lanzar protocolos de utilidad. Mi nombre es: " + (name || "Anónimo"))}`, '_blank');
+                            setIsSubscribed(true);
+                            trackNewsletterSubscription('landing-start', 'phone');
+                            trackEvent('whatsapp_eight_questions_start', 'direct', 'Landing Start', 1);
+                            alert('¡Excelente! Te llevo a WhatsApp para comenzar tu sesión de 8 preguntas personalizadas.');
+                          }}
+                          className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-500 hover:to-blue-500 text-white py-4 text-lg font-bold rounded-lg transition-all duration-300"
+                        >
+                          Continuar en WhatsApp
+                        </Button>
                       </div>
                     )}
                   </motion.div>
