@@ -39,6 +39,8 @@ async function handleShortlink(slug: string, searchParams: URLSearchParams, head
     // Extract tracking info from headers and search params
     const userAgent = headersData.get('user-agent') || '';
     const referer = headersData.get('referer') || '';
+    const host = headersData.get('host') || ''; // Get the domain (pandoras.finance or pbox.dev)
+    const isPboxDomain = host.includes('pbox.dev');
 
     // Get IP from various headers (Cloudflare, proxy, etc.)
     const cfIp = headersData.get('cf-connecting-ip');
@@ -79,6 +81,7 @@ async function handleShortlink(slug: string, searchParams: URLSearchParams, head
     // Track the event (async, don't wait for it)
     db.insert(shortlinkEvents).values({
       slug,
+      domain: host,
       ip,
       userAgent,
       referer,

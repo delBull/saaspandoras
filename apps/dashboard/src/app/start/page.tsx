@@ -37,6 +37,19 @@ function StartPageContent() {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<'email' | 'whatsapp' | null>(null);
 
+  // Función manejadora para WhatsApp directo
+  const handleWhatsAppDirect = () => {
+    window.open('https://wa.me/5213221374392?text=8%20preguntas', '_blank');
+    setIsSubscribed(true);
+    trackNewsletterSubscription('landing-start', 'phone');
+    trackEvent('whatsapp_eight_questions_start', 'direct', 'Landing Start', 1);
+  };
+
+  // Función manejadora para Email con modal
+  const handleEmailSelection = () => {
+    setSelectedMethod('email');
+  };
+
   // Google Analytics tracking
   useGoogleAnalytics();
   trackPageView('Landing Start Page');
@@ -645,7 +658,7 @@ function StartPageContent() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Opción Email */}
                       <button
-                        onClick={() => setSelectedMethod('email')}
+                        onClick={handleEmailSelection}
                         className="p-6 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg hover:border-blue-400/40 transition-all duration-200 text-left group"
                       >
                         <div className="flex items-center gap-3 mb-3">
@@ -662,27 +675,24 @@ function StartPageContent() {
                         </div>
                       </button>
 
-                      {/* Opción WhatsApp - TEMPORALMENTE DESHABILITADO */}
-                      <div className="relative p-6 bg-gradient-to-r from-green-500/10 to-purple-500/10 border border-green-500/20 rounded-lg text-left group blur-xs opacity-60 pointer-events-none">
+                      {/* Opción WhatsApp - Activado con flujo 8 preguntas */}
+                      <button
+                        onClick={handleWhatsAppDirect}
+                        className="p-6 bg-gradient-to-r from-green-500/10 to-purple-500/10 border border-green-500/20 rounded-lg hover:border-green-400/40 transition-all duration-200 text-left group"
+                      >
                         <div className="flex items-center gap-3 mb-3">
-                          <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center">
+                          <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center group-hover:bg-green-500/30 transition-colors">
                             <Phone className="w-5 h-5 text-green-400" />
                           </div>
                           <h4 className="font-semibold text-green-400">Vía WhatsApp</h4>
                         </div>
                         <p className="text-zinc-400 text-sm mb-3">
-                          Conversación personalizada para evaluar tu caso de uso y recibir una guía a medida.
+                          Conversación personalizada para evaluar tu caso de uso con nuestro cuestionario de 8 preguntas.
                         </p>
                         <div className="text-xs text-zinc-500">
-                          ✅ Sesión 1:1 • ✅ Plan de Utilidad
+                          ✅ Sesión 1:1 • ✅ 8 Preguntas Guiding
                         </div>
-                        {/* Overlay de coming soon */}
-                        <div className="absolute inset-0 bg-black/20 rounded-lg flex items-center justify-center">
-                          <span className="bg-green-600 text-white px-3 py-1 rounded-full text-xs font-medium">
-                            Próximamente
-                          </span>
-                        </div>
-                      </div>
+                      </button>
                     </div>
                   </div>
                 ) : (
