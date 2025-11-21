@@ -83,7 +83,10 @@ export default function ShortlinksSubTab() {
       const data = await response.json();
 
       if (response.ok) {
-        alert(`Enlace creado: /${data.data.slug}\n\nURL: ${window.location.origin}/${data.data.slug}`);
+        // Mostrar URLs tanto para pandoras.finance como pbox.dev
+        const pandorasUrl = `${window.location.origin.replace('pbox.dev', 'pandoras.finance')}/${data.data.slug}`;
+        const pboxUrl = `https://pbox.dev/${data.data.slug}`;
+        alert(`Enlace creado: /${data.data.slug}\n\nURLs disponibles:\n• Pandoras: ${pandorasUrl}\n• PBOX: ${pboxUrl}`);
         setFormData({ slug: '', destinationUrl: '', title: '', description: '' });
         setShowCreateForm(false);
         fetchShortlinks();
@@ -268,6 +271,12 @@ export default function ShortlinksSubTab() {
         <div className="p-4 border-b border-zinc-700">
           <h4 className="font-medium text-white">Shortlinks ({shortlinks.length})</h4>
           <p className="text-zinc-400 text-sm">Enlaces personalizados activos</p>
+          <div className="mt-2 flex items-center gap-2 text-xs text-zinc-500">
+            <span>💡 Disponibles en:</span>
+            <code className="bg-zinc-700/60 px-2 py-1 rounded text-green-400 font-mono">pandoras.finance</code>
+            <span>y</span>
+            <code className="bg-zinc-700/60 px-2 py-1 rounded text-blue-400 font-mono">pbox.dev</code>
+          </div>
         </div>
 
         {loading ? (

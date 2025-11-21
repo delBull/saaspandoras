@@ -314,6 +314,34 @@ export async function handlePreapplyFlowDecision(
 }
 
 /**
+ * Actualizar status de un lead de preapply
+ * Estados válidos: 'pending', 'approved', 'rejected', 'completed', 'on_hold'
+ */
+export async function updatePreapplyLeadStatus(leadId: number, status: string): Promise<boolean> {
+  try {
+    const validStatuses = ['pending', 'approved', 'rejected', 'completed', 'on_hold'];
+
+    if (!validStatuses.includes(status)) {
+      console.error(`Invalid status: ${status}. Valid statuses: ${validStatuses.join(', ')}`);
+      return false;
+    }
+
+    await sql`
+      UPDATE whatsapp_preapply_leads
+      SET status = ${status}, updated_at = now()
+      WHERE id = ${leadId}
+    `;
+
+    console.log(`✅ Updated preapply lead ${leadId} status to: ${status}`);
+    return true;
+
+  } catch (error) {
+    console.error('Error en updatePreapplyLeadStatus:', error);
+    return false;
+  }
+}
+
+/**
  * Obtener todas las respuestas de un lead
  */
 export async function getPreapplyAnswers(leadId: number): Promise<Record<WhatsAppQuestionId, any> | null> {
