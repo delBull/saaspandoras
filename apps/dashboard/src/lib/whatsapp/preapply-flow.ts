@@ -4,7 +4,14 @@ import {
   savePreapplyAnswer,
   advancePreapplyStep,
   markPreapplyCompleted,
-  getPreapplyAnswers
+  getPreapplyAnswers,
+  handlePreapplyFlowDecision,
+  getOrCreateActiveSession,
+  updateSessionState,
+  logMessage,
+  closeSession,
+  upsertWhatsAppUser,
+  switchSessionFlow
 } from './preapply-db';
 import { sendWhatsAppMessage } from './client';
 
@@ -24,7 +31,19 @@ interface ProcessingResult {
   isCompleted?: boolean;
   projectRedirect?: boolean;
   error?: string;
+  flowRedirect?: boolean;
 }
+
+/**
+ * Keywords que activan flows específicos
+ */
+const FLOW_TRIGGERS = {
+  high_ticket: ['soy founder', 'high ticket', 'capital', 'inversor', 'invertir', 'founder', 'founders', 'founders program', 'want founders'],
+  support: ['ayuda', 'problema', 'ayudame', 'soporte', 'hablar con humano'],
+  eight_q: ['eight questions', '8 preguntas', 'cuestionario', 'filtro 8q', 'inicio', 'empezar', 'iniciar', 'start', 'comenzar'],
+  utility: ['utility protocol', 'protocolo utilidad', 'work to earn', 'w2e', 'loom protocol', 'arquitectura utilidad', 'protocolo funcional'],
+  human: [], // Only switched by admin/system
+} as const;
 
 /**
  * Detectar si un mensaje inicia el flujo de 8 preguntas filtradas
@@ -52,7 +71,27 @@ export function isPreapplyFlowTrigger(text: string): boolean {
 }
 
 /**
- * Procesar mensaje entrante para el flujo pre-apply
+ * Detectar flow basado en keywords en el mensaje
+ */
+function detectFlowFromMessage(text: string): string {
+  const lowerText = text.toLowerCase();
+
+  for (const [flowType, keywords] of Object.entries(FLOW_TRIGGERS)) {
+    const hasKeyword = keywords.some(keyword =>
+      lowerText.includes(keyword.toLowerCase())
+    );
+
+    if (hasKeyword) {
+      console.log(`🔄 Flow detected from keywords: ${flowType}`);
+      return flowType;
+    }
+  }
+
+  return 'high_ticket'; // Default flow ahora es high_ticket para founders
+}
+
+/**
+ * Procesar mensaje entrante para el flujo pre-apply con detección de Founders
  */
 export async function processPreapplyMessage(message: WhatsAppMessage): Promise<ProcessingResult> {
   const userPhone = message.from;
@@ -64,7 +103,78 @@ export async function processPreapplyMessage(message: WhatsAppMessage): Promise<
 
   console.log(`🔔 Procesando mensaje PRE-APPLY de ${userPhone}: "${currentText.substring(0, 50)}..."`);
 
-  // 1. Obtener o crear estado del lead
+  // 🚨 PRIORIDAD: DETECCIÓN DE TODOS LOS FLOWS POR KEYWORDS
+  const detectedFlow = detectFlowFromMessage(currentText);
+  if (detectedFlow !== 'eight_q') {
+    console.log(`🔄 FLOW DETECTED: ${detectedFlow} - Redirigiendo a multi-flow`);
+
+    try {
+      // Crear usuario en multi-flow si no existe
+      const user = await upsertWhatsAppUser(userPhone);
+      if (!user) {
+        return {
+          error: 'Error inicializando sesión',
+          nextMessage: 'Error al inicializar tu proceso. Inténtalo nuevamente por favor.'
+        };
+      }
+
+      // Crear/obtener sesión del flow detectado
+      const session = await getOrCreateActiveSession(user.id, detectedFlow);
+      if (!session) {
+        return {
+          error: `Error creando sesión de ${detectedFlow}`,
+          nextMessage: 'Error iniciando proceso. Inténtalo nuevamente por favor.'
+        };
+      }
+
+      // Forzar el estado al flow detectado (diagnóstico adicional)
+      if (session.flowType !== detectedFlow) {
+        await switchSessionFlow(session.id, detectedFlow);
+        console.log(`✅ Forzado cambio a ${detectedFlow} flow`);
+      }
+
+      // Respuesta automática según el flow detectado
+      const flowMessages: Record<string, string> = {
+        high_ticket: `🎯 ¡Hola! Gracias por identificarte como Founder!
+
+Soy Pandoras AI y veo que estás interesado en nuestro programa de Founders con capital disponible. Me encantaría conocer mejor tu proyecto y cómo podemos apoyarte en tu journey emprendedor.
+
+Te enviaré información detallada sobre nuestro programa Founders y me pondré en contacto contigo por email también. ¿Te parece bien que nos sirva un poco más de información sobre tu idea?
+
+Responde este mensaje con más detalles sobre tu proyecto para continuar.`,
+
+        utility: `🚀 ¡Hola! Veo que estás interesado en nuestro Protocolo de Utilidad!
+
+Nuestra arquitectura W2E (Work-to-Earn) permite tokenizar valor real a través de NFTs funcionales. Es un sistema donde el trabajo genera recompensas directas y duraderas.
+
+¿Te gustaría que te cuente más sobre cómo funciona nuestro protocolo de utilidad?`,
+
+        support: `💬 ¡Hola! Gracias por contactarnos.
+
+Soy Pandoras AI y estoy aquí para Ayudar. ¿En qué puedo asistirte hoy? Mejórmne qué tipo de problema estás experimentando o qué necesitas saber.`,
+
+        human: `👨‍💼 Gracias por tu mensaje.
+
+He transferido tu conversación a uno de nuestros agentes humanos especializados. Te responderemos lo más pronto posible.
+
+Mientras tanto, ¿hay algo específico sobre lo que necesitarías información inmediata?`
+      };
+
+      return {
+        nextMessage: flowMessages[detectedFlow] || flowMessages.support,
+        flowRedirect: true, // Indicador de que se redirigió a multi-flow
+      };
+
+    } catch (error) {
+      console.error('❌ Error redirigiendo a multi-flow:', error);
+      return {
+        error: `Error interno procesando mensaje (${detectedFlow})`,
+        nextMessage: 'Hubo un error procesando tu mensaje. Inténtalo nuevamente por favor.'
+      };
+    }
+  }
+
+  // Continuar con lógica normal de pre-apply para otros casos...
   const leadState = await getOrCreatePreapplyLead(userPhone);
   if (!leadState) {
     return { error: 'Error inicializando el proceso de pre-apply' };
@@ -132,7 +242,7 @@ export async function processPreapplyMessage(message: WhatsAppMessage): Promise<
 
     if (updatedState.step >= 8) {
       // COMPLETADO - Marcar como completado
-      await markPreapplyCompleted(updatedState.id, 'pending');
+      await markPreapplyCompleted(updatedState.id);
 
       console.log(`🎉 Lead ${userPhone} completó las 8 preguntas!`);
 
