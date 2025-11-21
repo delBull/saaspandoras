@@ -74,7 +74,7 @@ function shouldForceHighTicketFlow(messageBody: string, session: any): boolean {
   return false;
 }
 
-async function handleMultiFlowMessage(message: any, userId: string, sessionId: string) {
+async function handleMultiFlowMessage(message: any, userId: string, sessionId: string): Promise<any> {
   const messageBody = message.text?.body || '';
 
   // Get current session
@@ -113,10 +113,24 @@ async function handleMultiFlowMessage(message: any, userId: string, sessionId: s
   try {
     const result = await handler(message, session);
     console.log(`✅ Flow ${session.flowType} handled successfully`);
-    return result;
+
+    // Handle different response types
+    if (result && (result as any).json) {
+      return result;
+    }
+
+    // Handle FlowResult objects
+    if (result && typeof result === 'object') {
+      return NextResponse.json(result);
+    }
+
+    // Fallback for unexpected types
+    console.warn(`⚠️ Unexpected handler result type:`, typeof result);
+    return NextResponse.json({ error: 'Handler returned invalid type' }, { status: 500 });
+
   } catch (error) {
     console.error(`❌ Error in flow handler ${session.flowType}:`, error);
-    return NextResponse.json({ error: 'Handler error' }, { status: 500 });
+    return NextResponse.json({ error: 'Handler error', details: String(error) }, { status: 500 });
   }
 }
 
