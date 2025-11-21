@@ -2,6 +2,37 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { WHATSAPP, validateWhatsAppConfig } from '@/lib/whatsapp/config';
 import { processIncomingMessage } from '@/lib/whatsapp/flow';
+import { processMultiFlowMessage } from '@/lib/whatsapp/preapply-flow';
+
+/**
+ * Interfaz común para resultados de todos los flow handlers
+ */
+interface FlowResult {
+  handled: boolean;
+  flowType: string;
+  response?: string;
+  action?: string;
+  progress?: string;
+  status?: string;
+  isCompleted?: boolean;
+  projectCreated?: boolean;
+  error?: string;
+}
+
+/**
+ * Interfaz común para resultados de todos los flow handlers
+ */
+interface FlowResult {
+  handled: boolean;
+  flowType: string;
+  response?: string;
+  action?: string;
+  progress?: string;
+  status?: string;
+  isCompleted?: boolean;
+  projectCreated?: boolean;
+  error?: string;
+}
 
 /**
  * Interfaz común para resultados de todos los flow handlers
@@ -137,61 +168,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/**
- * Procesar mensaje usando el sistema multi-flow inteligente
- */
-async function processMultiFlowMessage(message: any): Promise<FlowResult> {
-  const userPhone = message.from;
-  const messageText = message.text?.body?.trim();
 
-  try {
-    console.log(`🔄 Processing multi-flow for ${userPhone}: "${messageText?.substring(0, 50)}..."`);
-
-    // Paso 1: Determinar el flujo apropiado (inteligente)
-    const flowDecision = await determineFlowType(userPhone, messageText);
-
-    console.log(`🎯 Flow Decision: ${flowDecision.flowType} (reason: ${flowDecision.reason})`);
-
-    // Paso 2: Routing basado en el tipo de flujo determinado
-    switch (flowDecision.flowType) {
-      case 'human':
-        return await handleHumanFlow(userPhone, message, flowDecision.session || null);
-
-      case 'high_ticket':
-        return await handleHighTicketFlow(userPhone, message, flowDecision.session || null);
-
-      case 'support':
-        return await handleSupportFlow(userPhone, message, flowDecision.session || null);
-
-      case 'eight_q':
-      default:
-        return await handleEightQFlow(userPhone, message, flowDecision.session || null);
-    }
-
-  } catch (error) {
-    console.error('❌ Error en processMultiFlowMessage:', error);
-
-    // Fallback al sistema legacy si algo falla
-    try {
-      const { processIncomingMessage } = await import('@/lib/whatsapp/flow');
-      const fallbackResult = await processIncomingMessage(message);
-      return {
-        handled: true,
-        flowType: 'eight_q_fallback',
-        response: fallbackResult.nextQuestion || 'Error interno. Intentando legacy system...',
-        error: 'Multi-flow failed, using legacy',
-        status: 'fallback'
-      };
-    } catch (fallbackError) {
-      return {
-        handled: false,
-        error: 'Both multi-flow and legacy failed',
-        flowType: 'error',
-        status: 'critical_error'
-      };
-    }
-  }
-}
 
 /**
  * Determinar el tipo de flujo basado en keywords y estado del usuario
