@@ -197,7 +197,7 @@ export async function getOrCreateActiveSession(userId: string, flowType: string)
   `;
 
   // INSERT ATÓMICO: crear o reactivar sesión en una sola operación
-  const [session] = await sql`
+  const [row] = await sql`
     INSERT INTO whatsapp_sessions (id, user_id, flow_type, state, current_step, is_active, started_at, updated_at, status, created_at)
     VALUES (gen_random_uuid(), ${userId}, ${flowType}, '{}'::jsonb, 0, true, now(), now(), 'active', now())
     ON CONFLICT (user_id, flow_type)
@@ -223,6 +223,8 @@ export async function getOrCreateActiveSession(userId: string, flowType: string)
     isActive: row.is_active,
     startedAt: row.started_at,
     updatedAt: row.updated_at,
+    status: row.status,
+    createdAt: row.created_at,
   };
 
   return session;
@@ -233,6 +235,7 @@ export async function getOrCreateActiveSession(userId: string, flowType: string)
  * FIX: Ignorar sesiones corruptas con flow_type null/empty
  */
 export async function getActiveSession(userId: string): Promise<WhatsAppSession | null> {
+  const [row] = await sql`
   const [row] = await sql`
     SELECT * FROM whatsapp_sessions
     WHERE user_id = ${userId}
@@ -254,6 +257,8 @@ export async function getActiveSession(userId: string): Promise<WhatsAppSession 
     isActive: row.is_active,
     startedAt: row.started_at,
     updatedAt: row.updated_at,
+    status: row.status,
+    createdAt: row.created_at,
   };
 
   return session;
