@@ -239,7 +239,7 @@ export async function updateSessionState(
   if (updates.isActive !== undefined) setParts.push(`is_active = ${updates.isActive}`);
   if (updates.status !== undefined) setParts.push(`status = '${updates.status}'`);
 
-  await sql.unsafe(`UPDATE whatsapp_sessions SET ${setParts.join(', ')} WHERE id = ${sessionId}`);
+  await sql.unsafe(`UPDATE whatsapp_sessions SET ${setParts.join(', ')} WHERE id = '${sessionId}'`);
 }
 
 /**
