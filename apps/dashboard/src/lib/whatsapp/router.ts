@@ -196,10 +196,10 @@ export async function getOrCreateActiveSession(userId: string, flowType: string)
     WHERE user_id = ${userId} AND is_active = true AND flow_type != ${flowType}
   `;
 
-  // INSERT ATÓMICO: crear o reactivar sesión en una sola operación (PRESERVANDO PROGRESO)
-  const [row] = await sql`
-    INSERT INTO whatsapp_sessions (id, user_id, flow_type, state, current_step, is_active, started_at, updated_at)
-    VALUES (gen_random_uuid(), ${userId}, ${flowType}, '{}'::jsonb, 0, true, now(), now())
+  // INSERT ATÓMICO: crear o reactivar sesión en una sola operación
+  const [session] = await sql`
+    INSERT INTO whatsapp_sessions (user_id, flow_type, state, current_step, is_active, updated_at)
+    VALUES (${userId}, ${flowType}, '{}'::jsonb, 0, true, now(), now())
     ON CONFLICT (user_id, flow_type)
     DO UPDATE SET
       is_active = true,
