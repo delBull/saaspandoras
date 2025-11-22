@@ -39,7 +39,7 @@ export async function processIncomingMessage(message: WhatsAppMessage): Promise<
     const success = await startNewApplication(userPhone, currentText);
     if (success) {
       // Mensaje de bienvenida alentador
-      const welcomeMessage = "¡Genial decisión! 🚀 Vamos a crear tu protocolo de utilidad juntos en solo 5 minutos.\n\nResponde a las preguntas para construir algo increíble.\n\n";
+      const welcomeMessage = "¡Genial decisión! 🚀 Vamos a crear tu protocolo de utilidad.\n\nResponde a las preguntas para construir algo increíble.\n\n";
       const nextQuestion = getQuestionText(0);
       return { nextQuestion: welcomeMessage + nextQuestion };
     }
