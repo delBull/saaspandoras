@@ -48,6 +48,7 @@ interface ProcessingResult {
   projectRedirect?: boolean;
   error?: string;
   flowRedirect?: boolean;
+  isCommand?: boolean;
 }
 
 /**
@@ -132,12 +133,16 @@ export async function processPreapplyMessage(message: WhatsAppMessage): Promise<
 
   // 🚨 PRIORIDAD: DETECCIÓN DE TODOS LOS FLOWS POR KEYWORDS
   const detectedFlow = detectFlowFromMessage(currentText);
-  if (detectedFlow !== 'eight_q') {
-    console.log(`🔄 FLOW DETECTED: ${detectedFlow} - Respuesta directa del PRE-APPLY`);
+  const isCommand = currentText.startsWith('/');
 
-    // Respuesta automática según el flow detectado SIN CREAR SESIONES
-    const flowMessages: Record<string, string> = {
-      high_ticket: `🎯 ¡Hola! Gracias por identificarte como Founder!
+  // DIFERENCIAR: Commands simples vs mensajes que requieren flujo conversacional
+  if (detectedFlow !== 'eight_q') {
+    // Commands simples: respuesta directa sin sesión
+    if (isCommand) {
+      console.log(`🔄 COMMAND DETECTED: ${detectedFlow} - Respuesta directa sin sesión`);
+
+      const commandMessages: Record<string, string> = {
+        high_ticket: `🎯 ¡Hola! Gracias por identificarte como Founder!
 
 Soy Pandoras AI y veo que estás interesado en nuestro programa de Founders con capital disponible. Me encantaría conocer mejor tu proyecto y cómo puedo apoyarte en tu journey emprendedor.
 
@@ -145,27 +150,43 @@ Te enviaré información detallada sobre nuestro programa Founders y me pondré 
 
 Responde este mensaje con más detalles sobre tu proyecto para continuar.`,
 
-      utility: `🚀 ¡Hola! Veo que estás interesado en nuestro Protocolo de Utilidad!
+        utility: `🚀 ¡Hola! Este es el comando directo para información sobre Protocolos de Utilidad.
 
-Nuestra arquitectura W2E (Work-to-Earn) permite tokenizar valor real a través de NFTs funcionales. Es un sistema donde el trabajo genera recompensas directas y duraderas.
+Nuestra arquitectura W2E (Work-to-Earn) permite tokenizar valor real a través de NFTs funcionales. Es un sistema donde el trabajo genera recompensas directa y duraderas.
 
-¿Te gustaría que te cuente más sobre cómo funciona nuestro protocolo de utilidad?`,
+Si quieres CREAR un protocolo, escribe "crear utility protocol" para iniciar el formulario.`,
 
       support: `💬 ¡Hola! Gracias por contactarnos.
 
-Soy Pandoras AI y estoy aquí para Ayudar. ¿En qué puedo asistirte hoy? Mejórmne qué tipo de problema estás experimentando o qué necesitas saber.`,
+Soy Pandoras AI y estoy aquí para Ayudar. ¿En qué puedo asistirte hoy? Mejórmne qué tipo de problema está experimentando o qué necesita saber.`,
 
       human: `👨‍💼 Gracias por tu mensaje.
 
-He transferido tu conversación a uno de nuestros agentes humanos especializados. Te responderemos lo más pronto posible.
+He transferido tu conversación a uno de nuestros agentes humanos especializados. Te responderemos lo más pronto posible.`
+      };
 
-Mientras tanto, ¿hay algo específico sobre lo que necesitarías información inmediata?`
-    };
+      return {
+        nextMessage: commandMessages[detectedFlow] || commandMessages.support,
+        flowRedirect: true,
+        isCommand: true
+      };
+    }
 
-    return {
-      nextMessage: flowMessages[detectedFlow] || flowMessages.support,
-      flowRedirect: true, // Indicador de que se redirigió a multi-flow
-    };
+    // Mensajes naturales que indican INTENCIÓN DE CREAR: pasan a eight_q
+    else if (detectedFlow === 'high_ticket' || detectedFlow === 'utility') {
+      console.log(`🔄 INTENT DETECTED: ${detectedFlow} intent → Routing to conversational eight_q flow`);
+
+      // FORZAR: Crear automáticamente una sesión eight_q para el flujo conversacional
+      // Esto permite que continúe la conversación
+      const leadState = await getOrCreatePreapplyLead(userPhone);
+      if (leadState?.step === 0) {
+        await advancePreapplyStep(leadState.id); // Step 1: Acabo de detectar la intención
+      }
+
+      return {
+        projectRedirect: true, // Irá a eight_q que ya tiene sesión
+      };
+    }
   }
 
   // Continuar con lógica normal de pre-apply para otros casos...
@@ -209,7 +230,7 @@ Mientras tanto, ¿hay algo específico sobre lo que necesitarías información i
 
     // Extraer nombre/email de Q3 si corresponde
     let applicantName, applicantEmail;
-    if (currentQuestion && currentQuestion.id === 'roles') {
+    if (currentQuestion?.id === 'roles') {
       const extractResult = extractContactInfo(currentText);
       applicantName = extractResult.name;
       applicantEmail = extractResult.email;
@@ -476,46 +497,56 @@ export async function processMultiFlowMessage(message: any): Promise<FlowResult>
  * Determinar el tipo de flujo basado en keywords y estado del usuario
  */
 async function determineFlowType(userPhone: string, messageText: string) {
-  // 🚨 PRIORIDAD 1: SI YA HAY UNA SESIÓN ACTIVA, CONTINUARLA SIN CAMBIOS
-  const currentSession = await getActiveSession(userPhone);
-  if (currentSession) {
-    console.log(`🔄 User has active ${currentSession.flowType} session, continuing...`);
-    return {
-      flowType: currentSession.flowType,
-      reason: 'existing_session',
-      session: currentSession
-    };
+  // 1) Asegurarnos de que exista el registro de usuario y usar su id para sesiones
+  // Esto evita pasar phone cuando getActiveSession espera user_id
+  let user: any = null;
+  try {
+    user = await upsertWhatsAppUser(userPhone);
+  } catch (err) {
+    console.warn('Warning: cannot upsert user, continuing without user id', err);
   }
 
-  // PRIORIDAD 2: Solo intentar detectar keywords SI NO hay sesión activa
+  // 🚨 PRIORIDAD 1: SI HAY SESIÓN ACTIVA, CONTINUARLA
+  if (user?.id) {
+    const currentSession = await getActiveSession(user.id);
+    if (currentSession) {
+      console.log(`\n🔄\n User has active ${currentSession.flowType} session, continuing...`);
+      return {
+        flowType: currentSession.flowType,
+        reason: 'existing_session',
+        session: currentSession
+      };
+    }
+  }
+
+  // PRIORIDAD 2: Solo detectar keywords si no hay sesión activa
   const FLOW_KEYWORDS = {
     high_ticket: ['soy founder', 'high ticket', 'capital', 'inversor', 'invertir', 'funding', 'levantar capital'],
     support: ['ayuda', 'problema', 'ayudame', 'soporte', 'hablar con humano', 'no entiendo', 'no funciona'],
-    human: [] // Solo por escalación admin
+    human: []
   };
 
-  // Detectar si el usuario quiere cambiar de flujo (solo para usuarios NUEVOS)
   const detectFlowChange = (text: string) => {
     for (const [flowType, keywords] of Object.entries(FLOW_KEYWORDS)) {
-      if (keywords.some(keyword => text.toLowerCase().includes(keyword))) {
+      if (keywords.some(keyword => (text || '').toLowerCase().includes(keyword))) {
         return flowType;
       }
     }
     return null;
   };
 
-  // Si hay keywords de cambio de flujo para usuario NUEVO, iniciar nuevo flow
   const requestedFlow = detectFlowChange(messageText || '');
   if (requestedFlow) {
-    console.log(`🔄 New user requested flow: ${requestedFlow}`);
+    console.log(`\n🔄\n New user requested flow: ${requestedFlow}`);
 
     try {
       const decision = await handlePreapplyFlowDecision(userPhone, requestedFlow);
-      if (decision.shouldUseMultiFlow && decision.session) {
+      // Si el decision devuelve session o leadState, devolverlo
+      if (decision.shouldUseMultiFlow && (decision.session || decision.leadState)) {
         return {
           flowType: requestedFlow,
           reason: 'keyword_detected',
-          session: decision.session
+          session: decision.session || decision.leadState
         };
       }
     } catch (error) {
@@ -523,27 +554,27 @@ async function determineFlowType(userPhone: string, messageText: string) {
     }
   }
 
-  // Usuario nuevo - determinar flujo inicial
+  // Usuario nuevo - determinar flujo inicial (legacy heurística)
   const isInitialTrigger = (text: string) => {
-    const lowerText = text.toLowerCase();
+    const lowerText = (text || '').toLowerCase();
     const protocolKeywords = ['protocolo', 'utilidad', 'crear', 'pandoras', 'proyecto'];
     const creatorKeywords = ['soy', 'creador', 'quiere', 'hacer', 'lanzar'];
 
     return protocolKeywords.some(k => lowerText.includes(k)) ||
            creatorKeywords.some(k => lowerText.includes(k)) ||
-           lowerText.length > 10; // Mensajes más largos son intenciones serias
+           (lowerText.length > 10);
   };
 
   const initialFlow = isInitialTrigger(messageText || '') ? 'eight_q' : 'support';
-  console.log(`🆕 New user, starting with ${initialFlow} flow`);
+  console.log(`\n🆕\n New user, starting with ${initialFlow} flow`);
 
-  // Crear sesión inicial
   const decision = await handlePreapplyFlowDecision(userPhone, initialFlow);
 
+  // IMPORTANTE: si decision contiene leadState (legacy eight_q) lo pasamos como session
   return {
     flowType: decision.shouldUseEightQ ? 'eight_q' : 'support',
     reason: 'new_user_detection',
-    session: decision.session
+    session: decision.session || decision.leadState || null
   };
 }
 
