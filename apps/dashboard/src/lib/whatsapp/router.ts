@@ -223,8 +223,6 @@ export async function getOrCreateActiveSession(userId: string, flowType: string)
     isActive: row.is_active,
     startedAt: row.started_at,
     updatedAt: row.updated_at,
-    status: row.status,
-    createdAt: row.created_at,
   };
 
   return session;
@@ -257,8 +255,6 @@ export async function getActiveSession(userId: string): Promise<WhatsAppSession 
     isActive: row.is_active,
     startedAt: row.started_at,
     updatedAt: row.updated_at,
-    status: row.status,
-    createdAt: row.created_at,
   };
 
   return session;
