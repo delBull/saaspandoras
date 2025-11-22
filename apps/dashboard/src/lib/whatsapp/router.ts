@@ -223,8 +223,6 @@ export async function getOrCreateActiveSession(userId: string, flowType: string)
     isActive: row.is_active,
     startedAt: row.started_at,
     updatedAt: row.updated_at,
-    status: row.status,
-    createdAt: row.created_at,
   };
 
   return session;
@@ -256,8 +254,6 @@ export async function getActiveSession(userId: string): Promise<WhatsAppSession 
     isActive: row.is_active,
     startedAt: row.started_at,
     updatedAt: row.updated_at,
-    status: row.status,
-    createdAt: row.created_at,
   };
 
   return session;
@@ -272,14 +268,12 @@ export async function updateSessionState(
     state?: any;
     currentStep?: number;
     isActive?: boolean;
-    status?: string;
   }
 ): Promise<void> {
   const setParts = ['updated_at = now()'];
   if (updates.state !== undefined) setParts.push(`state = '${JSON.stringify(updates.state)}'::jsonb`);
   if (updates.currentStep !== undefined) setParts.push(`current_step = ${updates.currentStep}`);
   if (updates.isActive !== undefined) setParts.push(`is_active = ${updates.isActive}`);
-  if (updates.status !== undefined) setParts.push(`status = '${updates.status}'`);
 
   await sql.unsafe(`UPDATE whatsapp_sessions SET ${setParts.join(', ')} WHERE id = '${sessionId}'`);
 }
