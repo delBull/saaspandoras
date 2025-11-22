@@ -184,6 +184,11 @@ export async function upsertWhatsAppUser(phone: string, name?: string): Promise<
  * INSERT ... ON CONFLICT (user_id, flow_type) para evitar sesiones duplicadas
  */
 export async function getOrCreateActiveSession(userId: string, flowType: string): Promise<WhatsAppSession> {
+  // FIX: Validación inmediata para evitar flow_type vacío
+  if (!flowType) {
+    throw new Error(`Invalid flowType: ${flowType}`);
+  }
+
   // Primero: desactivar otras sesiones activas del usuario (mantener exclusividad)
   await sql`
     UPDATE whatsapp_sessions
@@ -192,11 +197,12 @@ export async function getOrCreateActiveSession(userId: string, flowType: string)
   `;
 
   // INSERT ATÓMICO: crear o reactivar sesión en una sola operación
-  const [session] = await sql`
+  const [row] = await sql`
     INSERT INTO whatsapp_sessions (id, user_id, flow_type, state, current_step, is_active, started_at, updated_at, status, created_at)
     VALUES (gen_random_uuid(), ${userId}, ${flowType}, '{}'::jsonb, 0, true, now(), now(), 'active', now())
     ON CONFLICT (user_id, flow_type)
     DO UPDATE SET
+      flow_type = EXCLUDED.flow_type,
       is_active = true,
       current_step = 0,
       state = '{}'::jsonb,
@@ -205,20 +211,52 @@ export async function getOrCreateActiveSession(userId: string, flowType: string)
     RETURNING *
   ` as any[];
 
-  if (!session) throw new Error(`Failed to create or reactivate session for user: ${userId}`);
+  if (!row) throw new Error(`Failed to create or reactivate session for user: ${userId}`);
+
+  // FIX: Map snake_case DB columns to camelCase JS properties
+  const session: WhatsAppSession = {
+    id: row.id,
+    userId: row.user_id,
+    flowType: row.flow_type,
+    state: row.state,
+    currentStep: row.current_step,
+    isActive: row.is_active,
+    startedAt: row.started_at,
+    updatedAt: row.updated_at,
+  };
+
   return session;
 }
 
 /**
  * GET ACTIVE SESSION - PARA CONTINUACIÓN DE FLOWS
+ * FIX: Ignorar sesiones corruptas con flow_type null/empty
  */
 export async function getActiveSession(userId: string): Promise<WhatsAppSession | null> {
-  const [session] = await sql`
+  const [row] = await sql`
     SELECT * FROM whatsapp_sessions
-    WHERE user_id = ${userId} AND is_active = true
+    WHERE user_id = ${userId}
+      AND is_active = true
+      AND flow_type IS NOT NULL
+      AND flow_type != ''
     LIMIT 1
   ` as any[];
-  return session || null;
+
+  if (!row) return null;
+
+  // FIX: Map snake_case DB columns to camelCase JS properties
+  const session: WhatsAppSession = {
+    id: row.id,
+    userId: row.user_id,
+    flowType: row.flow_type,
+    state: row.state,
+    currentStep: row.current_step,
+    isActive: row.is_active,
+    startedAt: row.started_at,
+    updatedAt: row.updated_at,
+  };
+
+  return session;
 }
 
 /**
@@ -230,14 +268,12 @@ export async function updateSessionState(
     state?: any;
     currentStep?: number;
     isActive?: boolean;
-    status?: string;
   }
 ): Promise<void> {
   const setParts = ['updated_at = now()'];
   if (updates.state !== undefined) setParts.push(`state = '${JSON.stringify(updates.state)}'::jsonb`);
   if (updates.currentStep !== undefined) setParts.push(`current_step = ${updates.currentStep}`);
   if (updates.isActive !== undefined) setParts.push(`is_active = ${updates.isActive}`);
-  if (updates.status !== undefined) setParts.push(`status = '${updates.status}'`);
 
   await sql.unsafe(`UPDATE whatsapp_sessions SET ${setParts.join(', ')} WHERE id = '${sessionId}'`);
 }
@@ -380,6 +416,17 @@ export async function routeMessage(payload: any): Promise<FlowResult> {
  */
 async function delegateToHandler(session: WhatsAppSession, payload: any): Promise<FlowResult> {
   const flowType = session.flowType;
+
+  // FIX: Protección contra sesiones con flowType undefined
+  if (!flowType) {
+    console.error("Invalid session with empty flowType. Forcing reset.");
+    return {
+      handled: true,
+      flowType: 'eight_q',
+      response: 'Vamos a reiniciar tu flujo para continuar correctamente.',
+      action: 'force_reset'
+    };
+  }
 
   // LOG INCOMING MESSAGE
   const messageText = payload.text?.body || '';
