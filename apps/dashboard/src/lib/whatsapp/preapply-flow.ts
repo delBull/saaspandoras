@@ -476,14 +476,25 @@ export async function processMultiFlowMessage(message: any): Promise<FlowResult>
  * Determinar el tipo de flujo basado en keywords y estado del usuario
  */
 async function determineFlowType(userPhone: string, messageText: string) {
-  // Keywords para detectar cambio de flujo
+  // 🚨 PRIORIDAD 1: SI YA HAY UNA SESIÓN ACTIVA, CONTINUARLA SIN CAMBIOS
+  const currentSession = await getActiveSession(userPhone);
+  if (currentSession) {
+    console.log(`🔄 User has active ${currentSession.flowType} session, continuing...`);
+    return {
+      flowType: currentSession.flowType,
+      reason: 'existing_session',
+      session: currentSession
+    };
+  }
+
+  // PRIORIDAD 2: Solo intentar detectar keywords SI NO hay sesión activa
   const FLOW_KEYWORDS = {
     high_ticket: ['soy founder', 'high ticket', 'capital', 'inversor', 'invertir', 'funding', 'levantar capital'],
     support: ['ayuda', 'problema', 'ayudame', 'soporte', 'hablar con humano', 'no entiendo', 'no funciona'],
     human: [] // Solo por escalación admin
   };
 
-  // Detectar si el usuario quiere cambiar de flujo
+  // Detectar si el usuario quiere cambiar de flujo (solo para usuarios NUEVOS)
   const detectFlowChange = (text: string) => {
     for (const [flowType, keywords] of Object.entries(FLOW_KEYWORDS)) {
       if (keywords.some(keyword => text.toLowerCase().includes(keyword))) {
@@ -493,10 +504,10 @@ async function determineFlowType(userPhone: string, messageText: string) {
     return null;
   };
 
-  // Si hay keywords de cambio de flujo, intentar cambiar
+  // Si hay keywords de cambio de flujo para usuario NUEVO, iniciar nuevo flow
   const requestedFlow = detectFlowChange(messageText || '');
   if (requestedFlow) {
-    console.log(`🔄 User requested flow change to: ${requestedFlow}`);
+    console.log(`🔄 New user requested flow: ${requestedFlow}`);
 
     try {
       const decision = await handlePreapplyFlowDecision(userPhone, requestedFlow);
@@ -508,22 +519,8 @@ async function determineFlowType(userPhone: string, messageText: string) {
         };
       }
     } catch (error) {
-      console.error('Error cambiando de flujo:', error);
+      console.error('Error creando nuevo flujo:', error);
     }
-  }
-
-  // Si no hay cambio solicitado, mantener flujo actual o determinar nuevo
-  const currentSession = await getActiveSession(userPhone);
-
-  if (currentSession) {
-    // Usuario ya tiene un flujo activo
-    const flowType = currentSession.flowType;
-    console.log(`🔄 User has active ${flowType} session, continuing...`);
-    return {
-      flowType,
-      reason: 'existing_session',
-      session: currentSession
-    };
   }
 
   // Usuario nuevo - determinar flujo inicial
