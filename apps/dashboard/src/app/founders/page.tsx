@@ -68,7 +68,7 @@ function Hero({ onMethodSelect }: { onMethodSelect: (method: 'email' | 'whatsapp
 
         <div className="max-w-3xl mx-auto mt-4">
           <TypewriterText
-            text="Solo 5 founders al año. Aceleración técnica, estrategia de lanzamiento y apoyo en capital selecto."
+            text="Solo 5 founders por semestre. Aceleración técnica, estrategia de lanzamiento y apoyo en capital selecto."
             delay={1}
             speed={50}
             className="text-lg text-zinc-300"
