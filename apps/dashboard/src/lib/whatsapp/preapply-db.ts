@@ -306,10 +306,19 @@ export async function handlePreapplyFlowDecision(
   const leadState = await getOrCreatePreapplyLead(userPhone);
   if (!leadState) throw new Error(`Failed to create preapply lead for ${userPhone}`);
 
+  // Asegurarse que exista whatsapp_users también (facilita getActiveSession future)
+  let user = null;
+  try {
+    user = await upsertWhatsAppUser(userPhone);
+  } catch (err) {
+    console.warn('No se pudo upsert user en handlePreapplyFlowDecision (eight_q)', err);
+  }
+
   return {
     shouldUseEightQ: true,
     shouldUseMultiFlow: false,
     leadState,
+    userId: user?.id
   };
 }
 

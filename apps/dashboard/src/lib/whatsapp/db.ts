@@ -65,7 +65,7 @@ export async function getOrCreateUserState(userPhone: string): Promise<WhatsAppS
 }
 
 /**
- * Crear nuevo estado para usuario según teléfono (solo si no existe)
+ * Crear nuevo estado para usuario según teléfono (maneja duplicados)
  */
 export async function createUserState(userPhone: string): Promise<WhatsAppState | null> {
   try {
@@ -89,13 +89,20 @@ export async function createUserState(userPhone: string): Promise<WhatsAppState 
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating WhatsApp user state:', error);
 
-    // Si ya existe, devolver el existente (UPSERT behavior)
-    if (error && typeof error === 'object' && 'code' in error && error.code === '23505') { // unique_violation
-      console.log(`⚡ Estado ya existía para ${userPhone}, retornando existente`);
-      return getUserState(userPhone);
+    // EVITAR ERROR DUPLICATE KEY: Si el estado ya existe, devolver el existente
+    if (error?.code === '23505' || error?.message?.includes('already exists')) {
+      console.warn(`⚡ Estado ya existía para ${userPhone}, retornando existente`);
+      const existing = await getUserState(userPhone);
+      if (existing) {
+        console.log(`✅ Recuperado estado existente para ${userPhone}`);
+        return existing;
+      } else {
+        console.error(`❌ Error crítico: Estado duplicado pero no se pudo recuperar existente para ${userPhone}`);
+        throw error; // Lanza el error si no puede recuperar
+      }
     }
 
     return null;
