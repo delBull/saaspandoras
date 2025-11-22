@@ -202,6 +202,7 @@ export async function getOrCreateActiveSession(userId: string, flowType: string)
     VALUES (gen_random_uuid(), ${userId}, ${flowType}, '{}'::jsonb, 0, true, now(), now(), 'active', now())
     ON CONFLICT (user_id, flow_type)
     DO UPDATE SET
+      flow_type = EXCLUDED.flow_type,
       is_active = true,
       current_step = 0,
       state = '{}'::jsonb,
