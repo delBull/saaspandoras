@@ -84,7 +84,7 @@ async function handleHighTicket(session: WhatsAppSession, payload: any): Promise
     await updateSessionState(session.id, { currentStep: 1 });
     return {
       handled: true, flowType: 'high_ticket',
-      response: `¡Hola! Vi que vienes de nuestros Founders.\n¿Cuál es el objetivo principal de tu comunidad este trimestre?`
+      response: `¡Hola! Vi que vienes de Founders Inner Circle.\n¿Cuál es el objetivo principal de la creación que te gustaría realizar?`
     };
   }
 
@@ -100,7 +100,7 @@ async function handleHighTicket(session: WhatsAppSession, payload: any): Promise
     await updateSessionState(session.id, { currentStep: 3, isActive: false });
     return {
       handled: true, flowType: 'high_ticket',
-      response: `Gracias. Completa aplicación Founders: https://pandoras.finance/apply`,
+      response: `Gracias. Completa aplicación Founders: https://dash.pandoras.finance/apply`,
       action: 'redirect_to_apply'
     };
   }
@@ -111,7 +111,7 @@ async function handleHighTicket(session: WhatsAppSession, payload: any): Promise
 function handleUtility(session: WhatsAppSession, payload: any): FlowResult {
   return {
     handled: true, flowType: 'utility',
-    response: `🚀 Protocolos de Utilidad en Pandora's\n\nPara crear uno, responde con detalles o escribe 'eight_q'`
+    response: `🚀 Protocolos de Utilidad en Pandora's\n\nPara crear uno, responde con detalles de lo que quieres lograr o escribe 'eight_q'`
   };
 }
 
@@ -196,17 +196,14 @@ export async function getOrCreateActiveSession(userId: string, flowType: string)
     WHERE user_id = ${userId} AND is_active = true AND flow_type != ${flowType}
   `;
 
-  // INSERT ATÓMICO: crear o reactivar sesión en una sola operación
+  // INSERT ATÓMICO: crear o reactivar sesión en una sola operación (PRESERVANDO PROGRESO)
   const [row] = await sql`
-    INSERT INTO whatsapp_sessions (id, user_id, flow_type, state, current_step, is_active, started_at, updated_at, status, created_at)
-    VALUES (gen_random_uuid(), ${userId}, ${flowType}, '{}'::jsonb, 0, true, now(), now(), 'active', now())
+    INSERT INTO whatsapp_sessions (id, user_id, flow_type, state, current_step, is_active, started_at, updated_at)
+    VALUES (gen_random_uuid(), ${userId}, ${flowType}, '{}'::jsonb, 0, true, now(), now())
     ON CONFLICT (user_id, flow_type)
     DO UPDATE SET
-      flow_type = EXCLUDED.flow_type,
       is_active = true,
-      current_step = 0,
-      state = '{}'::jsonb,
-      status = 'active',
+      flow_type = EXCLUDED.flow_type,
       updated_at = now()
     RETURNING *
   ` as any[];
