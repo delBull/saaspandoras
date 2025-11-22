@@ -133,37 +133,11 @@ export async function processPreapplyMessage(message: WhatsAppMessage): Promise<
   // 🚨 PRIORIDAD: DETECCIÓN DE TODOS LOS FLOWS POR KEYWORDS
   const detectedFlow = detectFlowFromMessage(currentText);
   if (detectedFlow !== 'eight_q') {
-    console.log(`🔄 FLOW DETECTED: ${detectedFlow} - Redirigiendo a multi-flow`);
+    console.log(`🔄 FLOW DETECTED: ${detectedFlow} - Respuesta directa del PRE-APPLY`);
 
-    try {
-      // Crear usuario en multi-flow si no existe
-      const user = await upsertWhatsAppUser(userPhone);
-      if (!user) {
-        return {
-          error: 'Error inicializando sesión',
-          nextMessage: 'Error al inicializar tu proceso. Inténtalo nuevamente por favor.'
-        };
-      }
-
-      // Crear/obtener sesión del flow detectado
-      const session = await getOrCreateActiveSession(user.id, detectedFlow);
-      if (!session) {
-        return {
-          error: `Error creando sesión de ${detectedFlow}`,
-          nextMessage: 'Error iniciando proceso. Inténtalo nuevamente por favor.'
-        };
-      }
-
-      // Forzar el estado al flow detectado (diagnóstico adicional)
-      if (session.flowType !== detectedFlow) {
-        // CAMBIO: En lugar de cambiar el flow directamente, que causa error de duplicate key,
-        // simplemente retornar la respuesta del flow detectado sin crear sesión duplicada
-        console.log(`✅ Cambio de flow solicitado: ${detectedFlow}`);
-      }
-
-      // Respuesta automática según el flow detectado
-      const flowMessages: Record<string, string> = {
-        high_ticket: `🎯 ¡Hola! Gracias por identificarte como Founder!
+    // Respuesta automática según el flow detectado SIN CREAR SESIONES
+    const flowMessages: Record<string, string> = {
+      high_ticket: `🎯 ¡Hola! Gracias por identificarte como Founder!
 
 Soy Pandoras AI y veo que estás interesado en nuestro programa de Founders con capital disponible. Me encantaría conocer mejor tu proyecto y cómo puedo apoyarte en tu journey emprendedor.
 
@@ -171,35 +145,27 @@ Te enviaré información detallada sobre nuestro programa Founders y me pondré 
 
 Responde este mensaje con más detalles sobre tu proyecto para continuar.`,
 
-        utility: `🚀 ¡Hola! Veo que estás interesado en nuestro Protocolo de Utilidad!
+      utility: `🚀 ¡Hola! Veo que estás interesado en nuestro Protocolo de Utilidad!
 
 Nuestra arquitectura W2E (Work-to-Earn) permite tokenizar valor real a través de NFTs funcionales. Es un sistema donde el trabajo genera recompensas directas y duraderas.
 
 ¿Te gustaría que te cuente más sobre cómo funciona nuestro protocolo de utilidad?`,
 
-        support: `💬 ¡Hola! Gracias por contactarnos.
+      support: `💬 ¡Hola! Gracias por contactarnos.
 
 Soy Pandoras AI y estoy aquí para Ayudar. ¿En qué puedo asistirte hoy? Mejórmne qué tipo de problema estás experimentando o qué necesitas saber.`,
 
-        human: `👨‍💼 Gracias por tu mensaje.
+      human: `👨‍💼 Gracias por tu mensaje.
 
 He transferido tu conversación a uno de nuestros agentes humanos especializados. Te responderemos lo más pronto posible.
 
 Mientras tanto, ¿hay algo específico sobre lo que necesitarías información inmediata?`
-      };
+    };
 
-      return {
-        nextMessage: flowMessages[detectedFlow] || flowMessages.support,
-        flowRedirect: true, // Indicador de que se redirigió a multi-flow
-      };
-
-    } catch (error) {
-      console.error('❌ Error redirigiendo a multi-flow:', error);
-      return {
-        error: `Error interno procesando mensaje (${detectedFlow})`,
-        nextMessage: 'Hubo un error procesando tu mensaje. Inténtalo nuevamente por favor.'
-      };
-    }
+    return {
+      nextMessage: flowMessages[detectedFlow] || flowMessages.support,
+      flowRedirect: true, // Indicador de que se redirigió a multi-flow
+    };
   }
 
   // Continuar con lógica normal de pre-apply para otros casos...
