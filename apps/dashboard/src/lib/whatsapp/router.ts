@@ -184,6 +184,11 @@ export async function upsertWhatsAppUser(phone: string, name?: string): Promise<
  * INSERT ... ON CONFLICT (user_id, flow_type) para evitar sesiones duplicadas
  */
 export async function getOrCreateActiveSession(userId: string, flowType: string): Promise<WhatsAppSession> {
+  // FIX: Validación inmediata para evitar flow_type vacío
+  if (!flowType) {
+    throw new Error(`Invalid flowType: ${flowType}`);
+  }
+
   // Primero: desactivar otras sesiones activas del usuario (mantener exclusividad)
   await sql`
     UPDATE whatsapp_sessions
@@ -197,6 +202,7 @@ export async function getOrCreateActiveSession(userId: string, flowType: string)
     VALUES (gen_random_uuid(), ${userId}, ${flowType}, '{}'::jsonb, 0, true, now(), now(), 'active', now())
     ON CONFLICT (user_id, flow_type)
     DO UPDATE SET
+      flow_type = EXCLUDED.flow_type,
       is_active = true,
       current_step = 0,
       state = '{}'::jsonb,
@@ -211,11 +217,15 @@ export async function getOrCreateActiveSession(userId: string, flowType: string)
 
 /**
  * GET ACTIVE SESSION - PARA CONTINUACIÓN DE FLOWS
+ * FIX: Ignorar sesiones corruptas con flow_type null/empty
  */
 export async function getActiveSession(userId: string): Promise<WhatsAppSession | null> {
   const [session] = await sql`
     SELECT * FROM whatsapp_sessions
-    WHERE user_id = ${userId} AND is_active = true
+    WHERE user_id = ${userId}
+      AND is_active = true
+      AND flow_type IS NOT NULL
+      AND flow_type != ''
     LIMIT 1
   ` as any[];
   return session || null;
@@ -380,6 +390,17 @@ export async function routeMessage(payload: any): Promise<FlowResult> {
  */
 async function delegateToHandler(session: WhatsAppSession, payload: any): Promise<FlowResult> {
   const flowType = session.flowType;
+
+  // FIX: Protección contra sesiones con flowType undefined
+  if (!flowType) {
+    console.error("Invalid session with empty flowType. Forcing reset.");
+    return {
+      handled: true,
+      flowType: 'eight_q',
+      response: 'Vamos a reiniciar tu flujo para continuar correctamente.',
+      action: 'force_reset'
+    };
+  }
 
   // LOG INCOMING MESSAGE
   const messageText = payload.text?.body || '';
