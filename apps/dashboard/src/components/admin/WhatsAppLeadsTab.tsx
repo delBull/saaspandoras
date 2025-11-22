@@ -38,6 +38,11 @@ interface MultiFlowStats {
     scheduled: number;
     contacted: number;
   };
+  utility: {
+    total: number;
+    pending: number;
+    approved: number;
+  };
   support: {
     total: number;
     escalated: number;
@@ -57,6 +62,7 @@ export default function WhatsAppLeadsTab() {
     active: 0,
     eight_q: { total: 0, pending: 0, approved: 0, completed: 0 },
     high_ticket: { total: 0, scheduled: 0, contacted: 0 },
+    utility: { total: 0, pending: 0, approved: 0 },
     support: { total: 0, escalated: 0, resolved: 0 },
     human: { total: 0, active: 0, resolved: 0 }
   });
@@ -98,6 +104,7 @@ export default function WhatsAppLeadsTab() {
             completed: fallbackData.completed || 0
           },
           high_ticket: { total: 0, scheduled: 0, contacted: 0 },
+          utility: { total: 0, pending: 0, approved: 0 },
           support: { total: 0, escalated: 0, resolved: 0 },
           human: { total: 0, active: 0, resolved: 0 }
         });
@@ -166,6 +173,7 @@ export default function WhatsAppLeadsTab() {
     switch (flowType) {
       case 'eight_q': return 'bg-cyan-500';
       case 'high_ticket': return 'bg-yellow-500';
+      case 'utility': return 'bg-green-500';
       case 'support': return 'bg-red-500';
       case 'human': return 'bg-blue-500';
       default: return 'bg-gray-500';
@@ -176,6 +184,7 @@ export default function WhatsAppLeadsTab() {
     switch (flowType) {
       case 'eight_q': return '🔢';
       case 'high_ticket': return '💎';
+      case 'utility': return '🚀';
       case 'support': return '🆘';
       case 'human': return '👨‍💼';
       default: return '💬';
@@ -352,6 +361,7 @@ export default function WhatsAppLeadsTab() {
               <option value="all">Todos Flujos</option>
               <option value="eight_q">8 Preguntas</option>
               <option value="high_ticket">High Ticket</option>
+              <option value="utility">Utility</option>
               <option value="support">Soporte</option>
               <option value="human">Agentes</option>
             </select>

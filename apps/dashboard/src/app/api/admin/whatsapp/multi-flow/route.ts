@@ -1,318 +1,131 @@
-// MULTI-FLOW WHATSAPP ADMIN API
-// Comprehensive endpoint for WhatsApp Multi-Flow Dashboard
-
+import { sql } from '@/lib/database';
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
 
-// Import legacy queries for now
-import { eq, sql, desc } from 'drizzle-orm';
-import { db } from '@/db';
-import { whatsappUsers, whatsappSessions, whatsappMessages, whatsappPreapplyLeads } from '@/db/schema';
-
-// Types for the response
-interface MultiFlowLead {
-  id: string;
-  user_phone: string;
-  flow_type: string;
-  priority_level: string;
-  status: string;
-  current_step: number;
-  applicant_name?: string;
-  applicant_email?: string;
-  last_message?: string;
-  session_started_at: string;
-  updated_at: string;
-  answers?: any;
-}
-
-interface FlowStats {
-  total: number;
-  active: number;
-  eight_q: {
-    total: number;
-    pending: number;
-    approved: number;
-    completed: number;
-  };
-  high_ticket: {
-    total: number;
-    scheduled: number;
-    contacted: number;
-  };
-  support: {
-    total: number;
-    escalated: number;
-    resolved: number;
-  };
-  human: {
-    total: number;
-    active: number;
-    resolved: number;
-  };
-}
-
-/**
- * Get comprehensive data for Multi-Flow Dashboard
- */
-async function getMultiFlowData(): Promise<{
-  leads: MultiFlowLead[];
-  stats: FlowStats;
-}> {
+export async function GET() {
   try {
-    // Get all active sessions with user data
-    const sessions = await db
-      .select({
-        session_id: whatsappSessions.id,
-        user_id: whatsappUsers.id,
-        phone: whatsappUsers.phone,
-        name: whatsappUsers.name,
-        priority: whatsappUsers.priorityLevel,
-        flow_type: whatsappSessions.flowType,
-        current_step: whatsappSessions.currentStep,
-        session_status: whatsappSessions.isActive,
-        session_started_at: whatsappSessions.startedAt,
-        updated_at: whatsappSessions.updatedAt,
-        // For now, we'll map these from different sources
-        status: sql<string>`COALESCE(NULL, 'pending')`, // Will be determined by flow logic
-        answers: whatsappSessions.state,
-      })
-      .from(whatsappSessions)
-      .innerJoin(whatsappUsers, eq(whatsappSessions.userId, whatsappUsers.id))
-      .where(eq(whatsappSessions.isActive, true))
-      .orderBy(desc(whatsappSessions.updatedAt))
-      .limit(1000); // Limit for performance
+    console.log('📊 Fetching multi-flow WhatsApp data...');
 
-    // Get legacy eight_q leads (for backwards compatibility)
-    const legacyLeads = await db
-      .select({
-        id: whatsappPreapplyLeads.id,
-        phone: whatsappPreapplyLeads.userPhone,
-        name: sql<string | null>`NULL`, // Legacy doesn't have names
-        priority: sql<string>`'normal'`, // Default priority
-        flow_type: sql<string>`'eight_q'`,
-        current_step: whatsappPreapplyLeads.step,
-        status: whatsappPreapplyLeads.status,
-        answers: whatsappPreapplyLeads.answers,
-        last_message: whatsappPreapplyLeads.updatedAt,
-        session_started_at: whatsappPreapplyLeads.createdAt,
-        updated_at: whatsappPreapplyLeads.updatedAt,
-        email: sql<string | null>`NULL`, // No email in legacy
-      })
-      .from(whatsappPreapplyLeads)
-      .orderBy(desc(whatsappPreapplyLeads.updatedAt))
-      .limit(1000);
+    // Get all active sessions with their latest messages and user info
+    const sessionsQuery = await sql`
+      SELECT
+        s.id,
+        s.user_id,
+        s.flow_type,
+        s.current_step,
+        s.state,
+        s.status,
+        s.is_active,
+        s.created_at as session_started_at,
+        s.updated_at,
 
-    // Get last message for each session
-    const sessionLastMessages = await db
-      .select({
-        sessionId: whatsappMessages.sessionId,
-        lastMessage: whatsappMessages.body,
-        timestamp: whatsappMessages.timestamp,
-      })
-      .from(whatsappMessages)
-      .where(sql`session_id IN (SELECT id FROM whatsapp_sessions WHERE is_active = true)
-                 OR session_id IN (SELECT CAST(id AS TEXT) FROM whatsapp_preapply_leads)`)
-      .orderBy(desc(whatsappMessages.timestamp));
+        -- User info
+        u.phone as user_phone,
+        u.name as applicant_name,
+        u.priority_level,
 
-    // Create a map of last messages by session/user
-    const lastMessageMap = new Map<string, string>();
-    sessionLastMessages.forEach(msg => {
-      if (msg.sessionId && !lastMessageMap.has(msg.sessionId)) {
-        lastMessageMap.set(msg.sessionId, msg.lastMessage || "Sin mensajes");
-      }
-    });
+        -- Latest message
+        m.body as last_message,
+        m.timestamp as last_message_at
 
-    // Combine and transform leads
-    const leads: MultiFlowLead[] = [
-      // New multi-flow sessions
-      ...sessions.map(session => ({
-        id: session.session_id,
-        user_phone: session.phone,
-        flow_type: session.flow_type,
-        priority_level: session.priority,
-        status: determineStatusByFlow(session.flow_type, session.current_step),
-        current_step: session.current_step,
-        applicant_name: session.name || undefined,
-        applicant_email: undefined, // Not collected in conversations yet
-        last_message: lastMessageMap.get(session.session_id) || "Sin mensajes",
-        session_started_at: session.session_started_at.toISOString(),
-        updated_at: session.updated_at.toISOString(),
-        answers: session.answers,
-      })),
+      FROM whatsapp_sessions s
+      JOIN whatsapp_users u ON s.user_id = u.id
+      LEFT JOIN LATERAL (
+        SELECT body, timestamp
+        FROM whatsapp_messages
+        WHERE session_id = s.id
+        ORDER BY timestamp DESC
+        LIMIT 1
+      ) m ON true
 
-      // Legacy eight_q leads (mapped to multi-flow format)
-      ...legacyLeads.map(lead => ({
-        id: lead.id.toString(),
-        user_phone: lead.phone,
-        flow_type: 'eight_q',
-        priority_level: lead.priority,
-        status: lead.status,
-        current_step: lead.current_step,
-        applicant_name: lead.name!,
-        applicant_email: lead.email!,
-        last_message: lastMessageMap.get(lead.id.toString()) || `Paso ${lead.current_step}/8`,
-        session_started_at: lead.session_started_at.toISOString(),
-        updated_at: lead.updated_at.toISOString(),
-        answers: lead.answers,
-      }))
-    ];
+      ORDER BY s.updated_at DESC
+    ` as any[];
 
-    // Calculate comprehensive stats
-    const stats = await calculateMultiFlowStats();
+    // Transform sessions into the expected format
+    const leads = sessionsQuery.map(session => ({
+      id: session.id,
+      user_phone: session.user_phone,
+      flow_type: session.flow_type,
+      priority_level: session.priority_level,
+      status: session.status,
+      current_step: session.current_step,
+      applicant_name: session.applicant_name || null,
+      applicant_email: null, // Not in new schema yet
+      last_message: session.last_message || null,
+      session_started_at: session.session_started_at,
+      updated_at: session.updated_at,
+    }));
 
-    return { leads, stats };
-  } catch (error) {
-    console.error('❌ Error fetching multi-flow data:', error);
-    throw error;
-  }
-}
+    // Calculate statistics
+    const stats = {
+      total: leads.length,
+      active: leads.filter(l => l.status === 'active' || l.status === 'pending').length,
 
-/**
- * Calculate comprehensive multi-flow statistics
- */
-async function calculateMultiFlowStats(): Promise<FlowStats> {
-  try {
-    // Get counts by flow type from active sessions
-    const flowCountsResult = await db
-      .select({
-        eight_q_count: sql<number>`COUNT(CASE WHEN flow_type = 'eight_q' THEN 1 END)`,
-        high_ticket_count: sql<number>`COUNT(CASE WHEN flow_type = 'high_ticket' THEN 1 END)`,
-        support_count: sql<number>`COUNT(CASE WHEN flow_type = 'support' THEN 1 END)`,
-        human_count: sql<number>`COUNT(CASE WHEN flow_type = 'human' THEN 1 END)`,
-        total: sql<number>`COUNT(*)`,
-      })
-      .from(whatsappSessions)
-      .where(eq(whatsappSessions.isActive, true));
-
-    const flowCounts = flowCountsResult[0] || {
-      eight_q_count: 0,
-      high_ticket_count: 0,
-      support_count: 0,
-      human_count: 0,
-      total: 0,
-    };
-
-    // Get legacy eight_q stats
-    const legacyStatsResult = await db
-      .select({
-        total: sql<number>`COUNT(*)`,
-        pending: sql<number>`COUNT(CASE WHEN status = 'pending' THEN 1 END)`,
-        approved: sql<number>`COUNT(CASE WHEN status = 'approved' THEN 1 END)`,
-        completed: sql<number>`COUNT(CASE WHEN status = 'completed' THEN 1 END)`,
-      })
-      .from(whatsappPreapplyLeads);
-
-    const legacyStats = legacyStatsResult[0] || {
-      total: 0,
-      pending: 0,
-      approved: 0,
-      completed: 0,
-    };
-
-    const stats: FlowStats = {
-      total: flowCounts.total + legacyStats.total,
-      active: flowCounts.total,
+      // Eight_q stats (protocol validation)
       eight_q: {
-        total: flowCounts.eight_q_count + legacyStats.total,
-        pending: legacyStats.pending,
-        approved: legacyStats.approved,
-        completed: legacyStats.completed,
+        total: leads.filter(l => l.flow_type === 'eight_q').length,
+        pending: leads.filter(l => l.flow_type === 'eight_q' && l.status === 'pending').length,
+        approved: leads.filter(l => l.flow_type === 'eight_q' && l.status === 'approved').length,
+        completed: leads.filter(l => l.flow_type === 'eight_q' && l.status === 'completed').length,
       },
+
+      // High_ticket stats (founders/investors)
       high_ticket: {
-        total: flowCounts.high_ticket_count,
-        scheduled: 0, // TODO: Add specific status tracking
-        contacted: 0, // TODO: Add specific status tracking
+        total: leads.filter(l => l.flow_type === 'high_ticket').length,
+        scheduled: leads.filter(l => l.flow_type === 'high_ticket' && l.status === 'scheduled').length,
+        contacted: leads.filter(l => l.flow_type === 'high_ticket' && (l.status === 'contacted' || l.status === 'completed')).length,
       },
+
+      // Utility stats (protocol creation)
+      utility: {
+        total: leads.filter(l => l.flow_type === 'utility').length,
+        pending: leads.filter(l => l.flow_type === 'utility' && l.status === 'pending').length,
+        approved: leads.filter(l => l.flow_type === 'utility' && l.status === 'approved').length,
+      },
+
+      // Support stats (technical support)
       support: {
-        total: flowCounts.support_count,
-        escalated: 0, // TODO: Add escalation tracking
-        resolved: 0, // TODO: Add resolution tracking
+        total: leads.filter(l => l.flow_type === 'support').length,
+        escalated: leads.filter(l => l.flow_type === 'support' && l.status === 'escalated').length,
+        resolved: leads.filter(l => l.flow_type === 'support' && l.status === 'resolved').length,
       },
+
+      // Human stats (human agents)
       human: {
-        total: flowCounts.human_count,
-        active: flowCounts.human_count, // All human flows are active
-        resolved: 0, // TODO: Add resolution tracking
+        total: leads.filter(l => l.flow_type === 'human').length,
+        active: leads.filter(l => l.flow_type === 'human' && l.status === 'active').length,
+        resolved: leads.filter(l => l.flow_type === 'human' && l.status === 'resolved').length,
       },
     };
 
-    return stats;
-  } catch (error) {
-    console.error('❌ Error calculating stats:', error);
-    return getDefaultStats();
-  }
-}
-
-/**
- * Determine status based on flow type and current step
- */
-function determineStatusByFlow(flowType: string, currentStep: number): string {
-  if (!flowType) return 'pending';
-
-  switch (flowType) {
-    case 'eight_q':
-      if (currentStep >= 8) return 'completed';
-      if (currentStep >= 6) return 'approved'; // Ready for final confirmation
-      return 'pending';
-
-    case 'high_ticket':
-      return currentStep === 0 ? 'pending' : 'scheduled';
-
-    case 'support':
-    case 'human':
-      return 'active'; // Human interactions are always active
-
-    default:
-      return 'pending';
-  }
-}
-
-/**
- * Get default stats when calculation fails
- */
-function getDefaultStats(): FlowStats {
-  return {
-    total: 0,
-    active: 0,
-    eight_q: { total: 0, pending: 0, approved: 0, completed: 0 },
-    high_ticket: { total: 0, scheduled: 0, contacted: 0 },
-    support: { total: 0, escalated: 0, resolved: 0 },
-    human: { total: 0, active: 0, resolved: 0 },
-  };
-}
-
-// ===================
-// API ENDPOINTS
-// ===================
-
-// GET - Multi-Flow Dashboard Data
-export async function GET(request: NextRequest) {
-  try {
-    console.log('📊 Fetching multi-flow dashboard data...');
-
-    const data = await getMultiFlowData();
-
-    console.log(`✅ Retrieved ${data.leads.length} leads and stats for ${data.stats.total} total conversations`);
+    console.log(`✅ Multi-flow data: ${leads.length} leads, ${stats.active} active conversations`);
 
     return NextResponse.json({
       success: true,
-      ...data,
+      leads,
+      stats,
       timestamp: new Date().toISOString(),
-      cached: false, // TODO: Add caching later
+      cached: false, // For future caching implementation
     });
 
   } catch (error) {
-    console.error('❌ Multi-flow API error:', error);
+    console.error('❌ Error fetching multi-flow data:', error);
     return NextResponse.json(
       {
-        error: 'Failed to fetch multi-flow data',
-        timestamp: new Date().toISOString()
+        success: false,
+        error: 'Failed to fetch multi-flow WhatsApp data',
+        leads: [],
+        stats: {
+          total: 0,
+          active: 0,
+          eight_q: { total: 0, pending: 0, approved: 0, completed: 0 },
+          high_ticket: { total: 0, scheduled: 0, contacted: 0 },
+          utility: { total: 0, pending: 0, approved: 0 },
+          support: { total: 0, escalated: 0, resolved: 0 },
+          human: { total: 0, active: 0, resolved: 0 },
+        },
+        timestamp: new Date().toISOString(),
       },
       { status: 500 }
     );
   }
 }
-
-// POST - Update lead status (future: move lead to different flow)
-// export async function POST(request: NextRequest) {
-//   // TODO: Add POST endpoint for actions if needed
-// }
