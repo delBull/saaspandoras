@@ -156,11 +156,11 @@ Nuestra arquitectura W2E (Work-to-Earn) permite tokenizar valor real a través d
 
 Si quieres CREAR un protocolo, escribe "crear utility protocol" para iniciar el formulario.`,
 
-        support: `💬 ¡Hola! Gracias por contactarnos.
+      support: `💬 ¡Hola! Gracias por contactarnos.
 
 Soy Pandoras AI y estoy aquí para Ayudar. ¿En qué puedo asistirte hoy? Mejórmne qué tipo de problema está experimentando o qué necesita saber.`,
 
-        human: `👨‍💼 Gracias por tu mensaje.
+      human: `👨‍💼 Gracias por tu mensaje.
 
 He transferido tu conversación a uno de nuestros agentes humanos especializados. Te responderemos lo más pronto posible.`
       };
