@@ -1,38 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { WHATSAPP, validateWhatsAppConfig } from '@/lib/whatsapp/config';
-import { processIncomingMessage } from '@/lib/whatsapp/flow';
-import { processMultiFlowMessage } from '@/lib/whatsapp/preapply-flow';
-
-/**
- * Interfaz común para resultados de todos los flow handlers
- */
-interface FlowResult {
-  handled: boolean;
-  flowType: string;
-  response?: string;
-  action?: string;
-  progress?: string;
-  status?: string;
-  isCompleted?: boolean;
-  projectCreated?: boolean;
-  error?: string;
-}
-
-/**
- * Interfaz común para resultados de todos los flow handlers
- */
-interface FlowResult {
-  handled: boolean;
-  flowType: string;
-  response?: string;
-  action?: string;
-  progress?: string;
-  status?: string;
-  isCompleted?: boolean;
-  projectCreated?: boolean;
-  error?: string;
-}
+import { routeMessage } from '@/lib/whatsapp/router';
 
 // GET - Webhook Verification Endpoint
 export function GET(request: NextRequest) {
@@ -92,14 +61,13 @@ export async function POST(request: NextRequest) {
       body: message.text?.body?.substring(0, 50) + '...'
     });
 
-    // DETERMINAR FLUJO Y PROCESAR CON EL SISTEMA MULTI-FLOW
-    const flowResult = await processMultiFlowMessage({
+    // PROCESAR CON EL NUEVO SISTEMA UNIFICADO
+    const flowResult = await routeMessage({
       from: message.from,
       type: message.type,
       text: message.text,
       timestamp: message.timestamp,
       id: message.id,
-      // Agregar otros campos si es necesario
     });
 
     console.log('🤖 Resultado del procesamiento multi-flow:', flowResult);
@@ -151,186 +119,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-
-
-// NOTA: Ahora usamos determineFlowType de preapply-flow.ts que tiene la lógica correcta
-
-/**
- * Handler para flujo Eight-Q (formulario de 8 preguntas)
- */
-async function handleEightQFlow(userPhone: string, message: any, session: any) {
-  console.log(`🔢 Processing Eight-Q flow for ${userPhone}`);
-
-  const { processIncomingMessage } = await import('@/lib/whatsapp/flow');
-  const result = await processIncomingMessage(message);
-
-  return {
-    handled: true,
-    flowType: 'eight_q',
-    response: result.nextQuestion,
-    isCompleted: result.isCompleted,
-    projectCreated: result.projectCreated,
-    action: result.isCompleted ? 'project_created' : 'question_sent',
-    progress: getProgressIndicator(session?.current_step || 0, 8),
-    status: result.isCompleted ? 'completed' : 'active'
-  };
-}
-
-/**
- * Handler para flujo High-Ticket (founders/inversores)
- */
-async function handleHighTicketFlow(userPhone: string, message: any, session: any) {
-  console.log(`💰 Processing High-Ticket flow for ${userPhone}`);
-
-  // Importar logMessage para guardar el mensaje
-  const { logMessage, updateSessionState, closeSession } = await import('@/lib/whatsapp/preapply-db');
-
-  const messageBody = message.text?.body || '';
-
-  // Log del mensaje entrante
-  if (session?.id) {
-    await logMessage(session.id, 'incoming', messageBody, message.type || 'text');
-  }
-
-  // Respuesta premium para founders
-  const premiumResponse = `💎 ¡Excelente decisión! Eres un perfil perfecto para nuestro programa High-Ticket.
-
-Un asesor especializado te contactará personalmente en las próximas 24 horas para discutir tu visión y los términos de inversión.
-
-Mientras tanto:
-• Prepara tu pitch deck
-• Reúne métricas clave
-• Identifica tus milestones de crecimiento
-
-¿Hay algo específico que quisieras saber sobre el proceso de inversión?
-
-📞 Nuestro equipo de Founders: +52 132 213 7439
-📧 founders@pandoras.finance
-
-Mantente pendiente de tu email registrado.`;
-
-  // Log respuesta saliente
-  if (session?.id) {
-    await logMessage(session.id, 'outgoing', premiumResponse, 'text');
-    await updateSessionState(session.id, { currentStep: 1 });
-  }
-
-  return {
-    handled: true,
-    flowType: 'high_ticket',
-    response: premiumResponse,
-    action: 'premium_contact_initiated',
-    status: 'contacted'
-  };
-}
-
-/**
- * Handler para flujo Support (soporte técnico)
- */
-async function handleSupportFlow(userPhone: string, message: any, session: any) {
-  console.log(`🛠️ Processing Support flow for ${userPhone}`);
-
-  // Importar logMessage para guardar el mensaje
-  const { logMessage, updateSessionState } = await import('@/lib/whatsapp/preapply-db');
-
-  const messageBody = message.text?.body || '';
-
-  // Log del mensaje entrante
-  if (session?.id) {
-    await logMessage(session.id, 'incoming', messageBody, message.type || 'text');
-  }
-
-  // Respuesta automática del soporte
-  let supportResponse = '';
-
-  // Intentar detectar el tipo de problema
-  const lowerBody = messageBody.toLowerCase();
-
-  if (lowerBody.includes('no funciona') || lowerBody.includes('error')) {
-    supportResponse = `🔧 **Problema Técnico Detectado**
-
-Entiendo que estás teniendo un problema técnico. Vamos a solucionarlo:
-
-1. ¿En qué pantalla específicamente ocurre el error?
-2. ¿Qué estabas intentando hacer?
-3. ¿Aparece algún mensaje de error específico?
-
-Mientras tanto, intenta:
-• Refrescar la página (F5)
-• Limpiar caché del navegador
-• Intentar en una ventana incógnita
-
-Si el problema persiste, te conectaré con nuestro equipo técnico especializado.`;
-  } else if (lowerBody.includes('cuenta') || lowerBody.includes('login')) {
-    supportResponse = `🔐 **Soporte de Cuenta**
-
-Para ayudarte con problemas de cuenta:
-
-**¿Qué necesitas?**
-• ¿No puedes acceder a tu cuenta?
-• ¿Olvidaste tu contraseña?
-• ¿Problema con tu wallet?
-• ¿Error en la verificación KYC?
-
-Por favor indica el problema específico y te guío paso a paso.
-
-**Enlaces útiles:**
-• /login - Para iniciar sesión
-• /profile - Gestionar tu cuenta
-• /help - Centro de ayuda`;
-  } else {
-    supportResponse = `🆘 **Centro de Soporte Pandoras**
-
-Hola soy tu asistente de soporte automatizado. Estoy aquí para ayudarte.
-
-**¿Con quéarea necesitas ayuda?**
-• 🚀 **Crear Protocolo** - Problemas con el builder
-• 💰 **Finanzas** - Wallets, pagos, transacciones
-• 📊 **Gamificación** - Puntos, achievements, leaderboard
-• 👤 **Cuenta** - Login, perfil, configuración
-
-**Opciones rápidas:**
-Responde con el número correspondiente:
-1. Conectar con agente humano
-2. FAQ más frecuentes
-3. Status del sistema
-4. Volver al menú principal
-
-¿Qué necesitas hoy? 💬`;
-  }
-
-  // Log respuesta saliente
-  if (session?.id) {
-    await logMessage(session.id, 'outgoing', supportResponse, 'text');
-    await updateSessionState(session.id, { currentStep: (session.current_step || 0) + 1 });
-  }
-
-  return {
-    handled: true,
-    flowType: 'support',
-    response: supportResponse,
-    action: 'support_response_sent',
-    status: 'active'
-  };
-}
-
-/**
- * Handler para flujo Human (escalado a agentes humanos)
- */
-async function handleHumanFlow(userPhone: string, message: any, session: any) {
-  console.log(`👨‍💼 Processing Human flow for ${userPhone}`);
-
-  const { handleHumanAgentFlow } = await import('./webhook/handlers/human');
-
-  return await handleHumanAgentFlow(message, session);
-}
-
-/**
- * Generar indicador de progreso para flujos
- */
-function getProgressIndicator(current: number, total: number): string {
-  if (current === 0) return 'Iniciando...';
-  return `${current}/${total}`;
 }

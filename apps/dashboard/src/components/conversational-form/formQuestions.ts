@@ -5,7 +5,7 @@ export const formQuestions: FormQuestion[] = [
   // SECCIÓN 1: La Identidad de tu Creación (7 preguntas)
   {
     id: 'title',
-    label: '¡Hola, Creador! ¿Cómo se llama esta nueva Creación (Protocolo de Utilidad)?',
+    label: '¿Cómo se llama esta nueva Creación (Protocolo de Utilidad)?',
     placeholder: 'Ej: Pandora\'s DAO o Acceso Total NFT',
     component: 'text-input',
     required: true,
