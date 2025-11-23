@@ -82,8 +82,55 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Endpoint para verificar estado del webhook
-export function GET() {
+// Endpoint para verificar estado del webhook y manejar verificación de Meta
+export function GET(request: NextRequest) {
+  const url = new URL(request.url);
+  const mode = url.searchParams.get('hub.mode');
+  const token = url.searchParams.get('hub.verify_token');
+  const challenge = url.searchParams.get('hub.challenge');
+
+  console.log('🔍 [SIMPLE-WHATSAPP] GET Request:', {
+    mode,
+    token: token ? '***' + token.slice(-4) : null,
+    challenge: challenge ? challenge.substring(0, 10) + '...' : null,
+    expectedToken: 'pandoras_whatsapp_verify_2025'
+  });
+
+  // Verificación de Meta/Facebook para WhatsApp Cloud API
+  if (mode === 'subscribe' && token) {
+    const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN || 'pandoras_whatsapp_verify_2025';
+    
+    console.log('🔑 [SIMPLE-WHATSAPP] Verificando token:', { received: token ? '***' + token.slice(-4) : null, expected: verifyToken });
+    
+    if (token === verifyToken) {
+      console.log('✅ [SIMPLE-WHATSAPP] Webhook verificado exitosamente por Meta');
+      
+      if (challenge) {
+        // Meta envía el challenge para verificar que somos un endpoint válido
+        console.log('🎯 [SIMPLE-WHATSAPP] Retornando challenge:', challenge);
+        return new Response(challenge, {
+          status: 200,
+          headers: {
+            'Content-Type': 'text/plain',
+          },
+        });
+      }
+      
+      return NextResponse.json({
+        status: 'verified',
+        message: 'Webhook verified successfully',
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      console.log('❌ [SIMPLE-WHATSAPP] Token de verificación inválido');
+      return NextResponse.json({
+        status: 'error',
+        message: 'Invalid verify token'
+      }, { status: 403 });
+    }
+  }
+
+  // Endpoint de estado para debugging (no verificación de Meta)
   return NextResponse.json({
     status: 'active',
     system: 'simple-whatsapp-router',
