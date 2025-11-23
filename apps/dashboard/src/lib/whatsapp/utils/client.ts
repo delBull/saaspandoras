@@ -1,4 +1,4 @@
-import { WHATSAPP } from './config';
+import { WHATSAPP } from '../config';
 
 /**
  * Enviar mensaje de texto a través de WhatsApp Cloud API
