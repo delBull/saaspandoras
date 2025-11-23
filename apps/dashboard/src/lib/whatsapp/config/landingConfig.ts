@@ -3,7 +3,7 @@
 // Mapeo específico de cada landing page a su flujo
 // =====================================================
 
-import type { FlowType } from './simpleRouter';
+import type { FlowType } from '../core/simpleRouter';
 
 // Configuración de cada landing page y su flujo correspondiente
 export const LANDING_FLOW_CONFIG = {
@@ -76,7 +76,11 @@ export function canUserAccessFlow(userPhone: string, requestedFlow: FlowType): P
 
 // Obtener configuración de landing por URL
 export function getLandingConfigByUrl(url: string) {
-  const path = url.split('?')[0].replace('/', '').replace('dashboard/', '') || 'start';
+  if (!url || typeof url !== 'string') {
+    return LANDING_FLOW_CONFIG.start;
+  }
+  
+  const path = url.split('?')[0]?.replace('/', '').replace('dashboard/', '') || 'start';
   
   // Mapear URLs a keys de configuración
   const urlMapping: Record<string, keyof typeof LANDING_FLOW_CONFIG> = {
@@ -90,7 +94,10 @@ export function getLandingConfigByUrl(url: string) {
   };
   
   const configKey = urlMapping[path] || 'start';
-  return LANDING_FLOW_CONFIG[configKey];
+  const config = LANDING_FLOW_CONFIG[configKey];
+  
+  // Fallback to start if config is undefined
+  return config || LANDING_FLOW_CONFIG.start;
 }
 
 // Mensajes específicos por landing para analytics
