@@ -97,14 +97,14 @@ async function handleShortlink(slug: string, searchParams: URLSearchParams, head
       console.error('Failed to track shortlink event:', error);
     });
 
-    // Redirect to destination with shortlink info for sharing
-    const destinationUrl = new URL(link.destinationUrl, 'http://localhost:3000');
+    // Redirect to destination URL with shortlink tracking parameters
+    const destinationUrl = new URL(link.destinationUrl);
 
     // Add shortlink info so the landing page knows it came from a shortlink
     destinationUrl.searchParams.set('via_shortlink', slug);
     destinationUrl.searchParams.set('via_domain', host);
 
-    const redirectUrl = destinationUrl.toString().replace('http://localhost:3000', '');
+    const redirectUrl = destinationUrl.toString();
 
     console.log(`🚀 Redirecting ${slug} to: ${redirectUrl}`);
     return { redirectTo: redirectUrl };
