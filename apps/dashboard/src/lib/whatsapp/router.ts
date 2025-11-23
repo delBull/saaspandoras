@@ -202,7 +202,6 @@ export async function getOrCreateActiveSession(userId: string, flowType: string)
     VALUES (gen_random_uuid(), ${userId}, ${flowType}, '{}'::jsonb, 0, true, now(), now())
     ON CONFLICT (user_id, flow_type)
     DO UPDATE SET
-      flow_type = EXCLUDED.flow_type,
       is_active = true,
       flow_type = EXCLUDED.flow_type,
       updated_at = now()
@@ -355,6 +354,13 @@ export async function routeMessage(payload: any): Promise<FlowResult> {
   const { from: phone, text, id: messageId } = payload;
   const messageText = text?.body?.trim() || '';
 
+  // Helper function for flow switching detection
+  const isFlowSwitchCommand = (text: string | undefined) => {
+    if (!text) return false;
+    const t = text.trim().toLowerCase();
+    return /^(eight_q|eightq|start|utility|high ?ticket|support|human)$/.test(t);
+  };
+
   try {
     console.log(`🔄 [ROUTER] Processing message from ${phone}: "${messageText.substring(0, 50)}..."`);
 
@@ -368,18 +374,35 @@ export async function routeMessage(payload: any): Promise<FlowResult> {
     const user = await upsertWhatsAppUser(phone, payload.contactName || null);
     console.log(`👤 [ROUTER] User ${phone} → ID: ${user.id}`);
 
-    // 3. PRIORIDAD ABSOLUTA: SESSION ACTIVA
-    const activeSession = await getActiveSession(user.id);
+    // 3. DETECTAR FLOW SOLICITADO
+    const requestedFlow = detectFlowType(payload, payload); // payload incluye landing params
+
+    // 4. OBTENER SESIÓN ACTIVA (PERMITIENDO CAMBIOS)
+    let activeSession = await getActiveSession(user.id);
+
+    // 5. FLOW SWITCHING: si hay sesión activa y comando explícito -> cambiar flujo
+    if (activeSession && isFlowSwitchCommand(messageText) && activeSession.flowType !== requestedFlow) {
+      console.log(`🔄 [ROUTER] Switching from ${activeSession.flowType} to ${requestedFlow} flow`);
+
+      await sql`
+        UPDATE whatsapp_sessions
+        SET flow_type = ${requestedFlow}, current_step = 0, state = '{}'::jsonb, updated_at = now()
+        WHERE id = ${activeSession.id}
+      `;
+
+      // Recargar sesión actualizada
+      activeSession = await getActiveSession(user.id);
+    }
+
+    // 6. CONTINUAR SESIÓN ACTIVA O CREAR NUEVA
     if (activeSession) {
       console.log(`🔄 [ROUTER] Continuing ${activeSession.flowType} session: ${activeSession.id}`);
       return await delegateToHandler(activeSession, payload);
     }
 
-    // 4. NO SESSION ACTIVA: DETECTAR FLOW NUEVO
-    const requestedFlow = detectFlowType(payload, payload); // payload incluye landing params
+    // 7. CREAR SESIÓN PARA PRIMER MENSAJE
     console.log(`🆕 [ROUTER] New ${requestedFlow} flow for user ${user.id}`);
 
-    // 5. CREAR SESSION (ATÓMICO - NO DUPLICADOS)
     const session = await getOrCreateActiveSession(user.id, requestedFlow);
 
     return await delegateToHandler(session, payload);
