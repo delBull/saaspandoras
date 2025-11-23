@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { getWhatsAppUrl } from "@/lib/whatsapp/config/landingConfig";
 
 export default function WhatsAppLeadForm() {
   const [loading, setLoading] = useState(false);
@@ -9,20 +10,10 @@ export default function WhatsAppLeadForm() {
     setLoading(true);
 
     try {
-      // URL directa a WhatsApp con mensaje "start" que activa el flujo pre-apply de 8 preguntas
-      const message = encodeURIComponent("start");
-      const businessPhoneNumber = process.env.NEXT_PUBLIC_WHATSAPP_BUSINESS_PHONE;
+      // Usar configuración específica para landing /start (eight_q flow)
+      const whatsappUrl = getWhatsAppUrl('start');
 
-      if (!businessPhoneNumber) {
-        console.error('❌ Número de WhatsApp Business no configurado');
-        alert('Error: Número de WhatsApp no configurado. Contacta soporte.');
-        setLoading(false);
-        return;
-      }
-
-      const whatsappUrl = `https://wa.me/${businessPhoneNumber}?text=${message}`;
-
-      console.log("🔗 WhatsApp URL:", whatsappUrl);
+      console.log("🔗 WhatsApp URL (8 Preguntas):", whatsappUrl);
 
       // Redirigir directamente a WhatsApp
       window.location.href = whatsappUrl;

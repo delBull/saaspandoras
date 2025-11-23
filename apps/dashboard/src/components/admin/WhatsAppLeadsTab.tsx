@@ -4,21 +4,21 @@ import { useState, useEffect } from "react";
 import { CheckCircle, XCircle, Clock, Users, MessageSquare, Download, Filter, RefreshCw } from "lucide-react";
 
 interface WhatsAppLead {
-  id: number;
+  id: string; // UUID en el nuevo sistema
   user_phone: string;
-  step: number;
+  current_step?: number; // Cambiado de step a current_step
   status: string;
-  answers: Record<string, any>;
-  applicant_name: string;
-  applicant_email: string;
+  applicant_name?: string; // Opcional en nuevo sistema
+  applicant_email?: string; // Opcional en nuevo sistema
   created_at: string;
   updated_at: string;
 
-  // Multi-Flow fields
+  // Multi-Flow fields (nuevo sistema)
   flow_type?: string;
   priority_level?: string;
   session_id?: string;
   last_message?: string;
+  session_started_at?: string; // Campo del nuevo sistema
 }
 
 interface MultiFlowStats {
@@ -70,7 +70,7 @@ export default function WhatsAppLeadsTab() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [flowFilter, setFlowFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
-  const [updatingLeadId, setUpdatingLeadId] = useState<number | null>(null);
+  const [updatingLeadId, setUpdatingLeadId] = useState<string | null>(null);
 
   const fetchLeads = async () => {
     try {
@@ -116,22 +116,24 @@ export default function WhatsAppLeadsTab() {
     }
   };
 
-  const updateLeadStatus = async (leadId: number, newStatus: string) => {
+  const updateLeadStatus = async (leadId: string, newStatus: string) => {
     try {
       setUpdatingLeadId(leadId);
-      const response = await fetch(`/api/admin/whatsapp-preapply/${leadId}/status`, {
+      const response = await fetch('/api/admin/whatsapp/multi-flow', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ leadId, status: newStatus }),
       });
 
       if (response.ok) {
         // Refresh leads data
         fetchLeads();
+        alert('Status actualizado correctamente');
       } else {
-        console.error('Failed to update lead status');
+        const errorData = await response.json();
+        console.error('Failed to update lead status:', errorData);
         alert('Error al actualizar el status del lead');
       }
     } catch (error) {
@@ -152,7 +154,7 @@ export default function WhatsAppLeadsTab() {
       lead.status,
       lead.flow_type || 'unknown',
       lead.priority_level || 'normal',
-      lead.step,
+      lead.current_step || 0,
       lead.last_message || '',
       new Date(lead.created_at).toLocaleString(),
       new Date(lead.updated_at).toLocaleString(),
@@ -462,10 +464,11 @@ export default function WhatsAppLeadsTab() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-zinc-300">
-                      {lead.flow_type === 'eight_q' ? `${lead.step}/8` :
-                       lead.flow_type === 'high_ticket' ? `${lead.step}/3` :
+                      {lead.flow_type === 'eight_q' ? `${(Number(lead.current_step) || 0) + 1}/8` :
+                       lead.flow_type === 'high_ticket' ? `${(Number(lead.current_step) || 0) + 1}/3` :
                        lead.flow_type === 'support' ? 'Escalado' :
                        lead.flow_type === 'human' ? 'Agente' :
+                       lead.flow_type === 'utility' ? 'Consultando' :
                        '-'}
                     </td>
                     <td className="px-4 py-3 text-zinc-400 max-w-xs truncate">
