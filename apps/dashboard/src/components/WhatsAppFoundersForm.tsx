@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { getWhatsAppUrl } from "@/lib/whatsapp/config/landingConfig";
 
 export default function WhatsAppFoundersForm() {
   const [loading, setLoading] = useState(false);
@@ -9,18 +10,8 @@ export default function WhatsAppFoundersForm() {
     setLoading(true);
 
     try {
-      // Mensaje que activa el high-ticket flow para founders
-      const message = encodeURIComponent("Hola, soy founder y quiero aplicar al programa Founders de Pandora's. Tengo capital disponible.");
-      const businessPhoneNumber = process.env.NEXT_PUBLIC_WHATSAPP_BUSINESS_PHONE;
-
-      if (!businessPhoneNumber) {
-        console.error('❌ Número de WhatsApp Business no configurado');
-        alert('Error: Número de WhatsApp no configurado. Contacta soporte.');
-        setLoading(false);
-        return;
-      }
-
-      const whatsappUrl = `https://wa.me/${businessPhoneNumber}?text=${message}`;
+      // Usar configuración específica para landing /founders (high_ticket flow)
+      const whatsappUrl = getWhatsAppUrl('founders');
 
       console.log("🔗 WhatsApp Founders URL:", whatsappUrl);
 
