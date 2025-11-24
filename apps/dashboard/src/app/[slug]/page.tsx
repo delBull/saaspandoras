@@ -175,9 +175,62 @@ export default async function ShortlinkPage({ params }: PageProps) {
     );
   }
 
-  // Redirect to destination URL
+  // Show redirect page that preserves shortlink URL
   if (result.redirectTo) {
-    redirect(result.redirectTo);
+    console.log(`🔄 Showing redirect page for ${slug} -> ${result.redirectTo}`);
+
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="max-w-md w-full space-y-4 p-8 bg-white">
+          <div className="text-center">
+            {/* Loader */}
+            <div className="mb-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            </div>
+
+            {/* Message */}
+            <h1 className="text-xl font-semibold text-gray-900 mb-2">
+              Redirigiendo...
+            </h1>
+            <p className="text-gray-600 text-sm mb-4">
+              Te estamos llevando a tu destino
+            </p>
+
+            {/* Shortlink display */}
+            <div className="bg-gray-50 border rounded-lg p-3 mb-4">
+              <p className="text-xs text-gray-500 mb-1">Shortlink:</p>
+              <code className="text-sm text-blue-600 font-mono">
+                {window?.location?.origin}/{slug}
+              </code>
+            </div>
+
+            {/* Manual redirect button */}
+            <div className="text-center">
+              <p className="text-xs text-gray-500 mb-2">
+                ¿No redirige automáticamente?
+              </p>
+              <a
+                href={result.redirectTo}
+                className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Continuar → {new URL(result.redirectTo).hostname}
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* Client-side redirect */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              setTimeout(function() {
+                window.location.href = "${result.redirectTo.replace(/"/g, '\\"')}";
+              }, 1000);
+            `,
+          }}
+        />
+      </div>
+    );
   }
 
   // Fallback error
