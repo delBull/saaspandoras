@@ -35,7 +35,7 @@ export default function PandorasProtocolFilterEmail({
   return (
     <Html>
       <Head />
-      <Preview>Desbloquea el Potencial: Únete a la Próxima Generación de Utilidad Web3 con Utility-Protocol.</Preview>
+      <Preview>Desbloquea el Potencial: Únete a la Próxima Generación de Utilidad Web3 con Utility Protocol.</Preview>
 
       <Tailwind>
         <Body className="bg-white font-sans text-gray-900">
@@ -45,7 +45,7 @@ export default function PandorasProtocolFilterEmail({
             {/* HEADER / INTRO */}
             <Section className="p-8 text-center">
               <Text className="font-bold tracking-tighter text-2xl m-0 mb-2">
-                Utility-Protocol
+                Utility Protocol
               </Text>
               <Text className="text-gray-600 text-xs uppercase tracking-wider">
                 Filtro de Viabilidad de Arquitectura
@@ -141,7 +141,7 @@ export default function PandorasProtocolFilterEmail({
               </Text>
 
               <Text className="text-gray-700 text-sm leading-6 mt-4">
-                ¡Te esperamos en Utility-Protocol!
+                ¡Te esperamos!
               </Text>
             </Section>
 

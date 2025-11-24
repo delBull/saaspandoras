@@ -98,18 +98,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Debug logging before render
+    console.log('📧 Starting email render for creator-welcome:', {
+      email,
+      name: name || 'Futuro Creador',
+      source: source || 'landing-start'
+    });
+
     // Render email template y await porque devuelve Promise
-    const emailHtml = await render(
-      PandorasWelcomeEmail({
-        email: email,
-        name: name || 'Futuro Creador',
-        source: source || 'landing-start'
-      })
-    );
+    let emailHtml: string;
+    try {
+      emailHtml = await render(
+        PandorasWelcomeEmail({
+          email: email,
+          name: name || 'Futuro Creador',
+          source: source || 'landing-start'
+        })
+      );
+      console.log('📧 Creator email render successful, HTML length:', emailHtml.length);
+      console.log('📧 Email HTML preview:', emailHtml.substring(0, 200));
+    } catch (renderError) {
+      console.error('❌ Failed to render creator welcome email template:', renderError);
+      throw new Error('Email template rendering failed');
+    }
+
+    // Validate HTML isn't empty
+    if (!emailHtml || emailHtml.length < 100) {
+      console.error('❌ Creator welcome email HTML is empty or too short:', emailHtml);
+      throw new Error('Email template rendered to empty content');
+    }
 
     // Send email
     const subject = "¡Tu viaje comienza ahora! - Pandora's Finance";
-    await sendEmail(email, subject, emailHtml);
+    const sendResult = await sendEmail(email, subject, emailHtml);
+
+    console.log('📧 Creator email send result:', sendResult);
+
+    if (!sendResult.success) {
+      throw new Error('Email send failed');
+    }
 
     console.log(`✅ Creator welcome email sent to ${email} from ${source}`);
 

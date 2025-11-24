@@ -39,8 +39,14 @@ export async function PATCH(request: Request) {
   }
 }
 
-export async function GET() {
+// TEMPORAL: Agregar auth check para confirmar que funciona
+export async function GET(request: Request) {
   try {
+    // Verificar que se puede acceder a headers
+    const headersList = request.headers;
+    console.log('📊 Headers in WhatsApp admin API:', Object.fromEntries(headersList.entries()));
+
+    // El resto del código...
     console.log('📊 Fetching simplified WhatsApp data...');
 
     // Usar el nuevo sistema simplificado para estadísticas
