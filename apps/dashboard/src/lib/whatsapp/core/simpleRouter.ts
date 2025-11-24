@@ -37,24 +37,77 @@ export type FlowType = 'utility' | 'high_ticket' | 'eight_q' | 'support' | 'huma
  * HANDLERS SIMPLES PARA CADA FLUJO
  */
 
-// Utility Protocol Flow (Landing: utility-protocol)
-function handleUtilityFlow(message: string): FlowResult {
+// Utility Protocol Flow (Landing: utility-protocol) - NOW WITH PROGRESSION
+function handleUtilityFlow(message: string, step = 0): FlowResult {
   const text = message.toLowerCase().trim();
-  
-  // Respuestas informativas
-  if (text.includes('ayuda') || text.includes('help')) {
+
+  // Step 0: Initial introduction and project details request
+  if (step === 0) {
     return {
       handled: true,
       flowType: 'utility',
-      response: `🚀 **Protocolos de Utilidad en Pandora's**\n\nPara crear uno, responde con detalles de lo que quieres lograr:\n\n• ¿Qué tipo de utilidad quieres crear?\n• ¿Cuál es tu audiencia objetivo?\n• ¿Tienes alguna idea específica?`
+      response: `🏗️ **Consultoría Arquitectura W2E - Pandora's**\n\nHola! Soy tu asesor especializado en protocolos de utilidad.\n\nPara darte una consultoría personalizada, por favor responde:\n\n• ¿Qué tipo de utilidad quieres implementar?\n• ¿Para qué problema es tu solución?\n• ¿Cuál es tu público objetivo?\n\n💡 **Comandos disponibles:** 📝 'eight_q', 🎯 'founders', 🆘 'support'`
     };
   }
-  
-  // Respuesta genérica de inicio
+
+  // Step 1: Project details collection and validation
+  if (step === 1) {
+    const hasProjectDetails = (msg: string) => {
+      const words = msg.split(' ').length;
+      const hasKeywords = ['protocolo', 'token', 'blockchain', 'w2e', 'utility', 'nft', 'dao', 'defi', 'web3', 'crypto'].some(kw => msg.toLowerCase().includes(kw));
+      return words > 10 && hasKeywords;
+    };
+
+    if (hasProjectDetails(text)) {
+      return {
+        handled: true,
+        flowType: 'utility',
+        response: `✅ **Perfecto! Recibí tu idea inicial**\n\nAhora necesito más detalles técnicos:\n\n• Plataforma de desarrollo (Ethereum, Solana, etc.)\n• Mecánicas principales de tu protocolo\n• Modelo de tokenomics básico\n• Recursos disponibles para desarrollo\n\n_Responde con estos detalles para continuar la consultoría_`,
+        action: 'details_collected'
+      };
+    } else {
+      return {
+        handled: true,
+        flowType: 'utility',
+        response: `📝 **Necesito más detalles sobre tu proyecto**\n\nPor favor comparte:\n• ¿Qué problema resuelve tu protocolo?\n• ¿Para quién es tu solución?\n• ¿Qué hace exactamente?\n\nMientras más específico seas, mejor puedo asesorarte.`,
+        action: 'more_details_needed'
+      };
+    }
+  }
+
+  // Step 2: Technical details and consultancy options
+  if (step === 2) {
+    return {
+      handled: true,
+      flowType: 'utility',
+      response: `🔧 **¡Excelente progreso! Tu idea suena sólida**\n\n📋 **Próximo paso:** Arquitectura y viabilidad\n\nTe ofrezco las siguientes opciones:\n\n1️⃣ **Análisis completo** - Arquitectura detallada ($499)\n2️⃣ **Plan de implementación** - Roadmap técnico ($299)\n3️⃣ **Consultoría financiera** - Modelo tokenomics ($399)\n\n_Escribe "finalizar" para completar tu aplicación_`
+    };
+  }
+
+  // Step 3: Lead generation and completion
+  if (step === 3 || text.toLowerCase().includes('finalizar')) {
+    return {
+      handled: true,
+      flowType: 'utility',
+      response: `🎯 **¡Perfecto! Hemos completado tu evaluación**\n\nTu caso ha sido registrado y marcado como **ALTA PRIORIDAD**.\n\nUn arquitecto especializado te contactará en las próximas 24h para:\n\n• Revisar tu idea en detalle\n• Desarrollar la especificación técnica\n• Estimar costos y timeline\n\n📧 **Confirmación enviada a tu email**\n🔗 **Dashboard:** dash.pandoras.finance`,
+      isCompleted: true,
+      action: 'lead_generated'
+    };
+  }
+
+  // Default response for ongoing conversations (show current step status)
+  const stepMessages = {
+    0: 'recopilando idea inicial',
+    1: 'recopilando detalles técnicos',
+    2: 'evaluando viabilidad',
+    3: 'generando lead'
+  };
+
   return {
     handled: true,
     flowType: 'utility',
-    response: `🏗️ **Consultoría Arquitectura W2E**\n\nEstoy aquí para ayudarte a diseñar tu Protocolo de Utilidad.\n\nComparte detalles sobre tu proyecto y te daré orientación específica sobre arquitectura, tokenomics y viabilidad.\n\n💡 **Tip:** Mientras más específico seas, mejor puedo ayudarte.`
+    response: `🎯 **Tu consultoría Utility Protocol está en progreso** (${stepMessages[step as keyof typeof stepMessages] || 'procesando'})\n\nContinua respondiendo o escribe:\n• "continuar" - próximo paso\n• "start" - cambiar a flujo 8 preguntas\n• "founders" - programa founders\n• "support" - soporte técnico`,
+    action: 'ongoing_consultation'
   };
 }
 
@@ -77,7 +130,7 @@ function handleHighTicketFlow(message: string, step = 0): FlowResult {
     return {
       handled: true,
       flowType: 'high_ticket',
-      response: `👑 **Programa Founders Inner Circle**\n\nEste canal es para founders con capital disponible.\n\nSi tienes un proyecto y capacidad de inversión, cuéntame:\n\n• ¿Cuál es tu proyecto?\n• ¿Qué capital disponible tienes?\n• ¿Cuál es tu experiencia?`
+      response: `� **Programa Founders Inner Circle**\n\nEste canal es para founders con capital disponible.\n\nSi tienes un proyecto y capacidad de inversión, cuéntame:\n\n• ¿Cuál es tu proyecto?\n• ¿Qué capital disponible tienes?\n• ¿Cuál es tu experiencia?`
     };
   }
   
@@ -107,7 +160,7 @@ function handleEightQFlow(message: string, step = 0): FlowResult {
     return {
       handled: true,
       flowType: 'eight_q',
-      response: `🔍 **Mecanismos:** ✅ Moderación verificable, tareas cuantificables. Guía: pndrs.link/mechanic-guide`
+      response: `�🔍 **Mecanismos:** ✅ Moderación verificable, tareas cuantificables. Guía: pndrs.link/mechanic-guide`
     };
   }
   
@@ -344,35 +397,97 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
       
       // Procesar respuesta en el flujo existente
       let result: FlowResult;
-      switch (existingFlow) {
-        case 'utility':
-          result = handleUtilityFlow(messageText);
-          break;
-        case 'high_ticket':
-          result = handleHighTicketFlow(messageText, currentState.step);
-          if (result.action === 'next_question') {
-            await updateFlowStep(phone, currentState.step + 1);
-          }
-          break;
-        case 'eight_q':
-          result = handleEightQFlow(messageText, currentState.step);
-          if (result.action === 'next_question') {
-            await updateFlowStep(phone, currentState.step + 1);
-          }
-          break;
-        case 'support':
-          result = handleSupportFlow(messageText);
-          break;
-        case 'human':
-          result = handleHumanFlow();
-          break;
-        default:
-          result = {
-            handled: true,
-            flowType: existingFlow,
-            response: 'Flujo no reconocido. Reinicia enviando "start".',
-            action: 'unknown_flow'
-          };
+
+      // CHECK FOR FLOW SWITCHING COMMANDS FIRST
+      const flowSwitchCommands = {
+        'eight_q': 'eight_q',
+        'eightq': 'eight_q',
+        'start': 'eight_q',
+        'utility': 'utility',
+        'founders': 'high_ticket',
+        'high_ticket': 'high_ticket',
+        'support': 'support',
+        'human': 'human'
+      };
+
+      const requestedSwitch = Object.keys(flowSwitchCommands).find(cmd =>
+        messageText.toLowerCase().trim().includes(cmd)
+      );
+
+      // If user wants to switch flows, do it immediately
+      if (requestedSwitch && flowSwitchCommands[requestedSwitch as keyof typeof flowSwitchCommands] !== existingFlow) {
+        const newFlow = flowSwitchCommands[requestedSwitch as keyof typeof flowSwitchCommands];
+        console.log(`🔄 [FLOW-SWITCH] Usuario ${phone} cambiando de ${existingFlow} a ${newFlow}`);
+
+        // Update session to new flow
+        await sql`
+          UPDATE whatsapp_sessions s
+          SET flow_type = ${newFlow}, current_step = 0, state = '{}'::jsonb, updated_at = now()
+          FROM whatsapp_users u
+          WHERE s.user_id = u.id
+            AND u.phone = ${phone}
+            AND s.is_active = true
+        `;
+
+        // Handle the message with the new flow
+        switch (newFlow) {
+          case 'utility':
+            result = handleUtilityFlow(messageText, 0);
+            break;
+          case 'high_ticket':
+            result = handleHighTicketFlow(messageText, 0);
+            break;
+          case 'eight_q':
+            result = handleEightQFlow(messageText, 0);
+            break;
+          case 'support':
+            result = handleSupportFlow(messageText);
+            break;
+          case 'human':
+            result = handleHumanFlow();
+            break;
+          default:
+            result = handleEightQFlow(messageText, 0);
+        }
+
+        result.response = `🔄 **Cambiando a ${newFlow.replace('_', ' ').toUpperCase()}**\n\n${result.response || ''}`;
+      } else {
+        // PROCESS EXISTING FLOW NORMALLY
+        switch (existingFlow) {
+          case 'utility':
+            result = handleUtilityFlow(messageText, currentState.step);
+            if (result.action === 'details_collected') {
+              await updateFlowStep(phone, 2); // Skip to consultancy options
+            } else if (result.action === 'lead_generated') {
+              await updateFlowStep(phone, 4); // Mark as completed
+            }
+            break;
+          case 'high_ticket':
+            result = handleHighTicketFlow(messageText, currentState.step);
+            if (result.action === 'next_question') {
+              await updateFlowStep(phone, currentState.step + 1);
+            }
+            break;
+          case 'eight_q':
+            result = handleEightQFlow(messageText, currentState.step);
+            if (result.action === 'next_question') {
+              await updateFlowStep(phone, currentState.step + 1);
+            }
+            break;
+          case 'support':
+            result = handleSupportFlow(messageText);
+            break;
+          case 'human':
+            result = handleHumanFlow();
+            break;
+          default:
+            result = {
+              handled: true,
+              flowType: existingFlow,
+              response: 'Flujo no reconocido. Reinicia enviando "start".',
+              action: 'unknown_flow'
+            };
+        }
       }
       
       // Log mensaje de entrada
