@@ -56,8 +56,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // Debug logging for admin visibility
-    console.log(`🔍 [WA-LEADS] Admin ${session.userId} accessing WA leads globally`);
+    // Debug logging for admin visibility - ALL ADMINS SEE ALL WA LEADS
+    console.log(`🔍 [WA-LEADS] Admin ${session.userId} accessing ALL WA leads globally`);
 
     // El resto del código...
     console.log('📊 Fetching simplified WhatsApp data...');

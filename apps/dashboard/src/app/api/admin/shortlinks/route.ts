@@ -24,8 +24,8 @@ export async function GET(req: NextRequest) {
     const includeInactive = searchParams.get("include_inactive") === "true";
     const showAllShortlinks = searchParams.get("show_all") === "true";
 
-    // Log for debugging admin visibility issue
-    console.log(`🔍 [SHORTLINKS] Admin ${session.userId} accessing shortlinks (show_all: ${showAllShortlinks})`);
+    // Log for debugging admin visibility issue - ALL ADMINS SEE ALL DATA
+    console.log(`🔍 [SHORTLINKS] Admin ${session.userId} accessing ALL shortlinks globally (show_all: ${showAllShortlinks})`);
 
     // Build query
     const conditions = [];
