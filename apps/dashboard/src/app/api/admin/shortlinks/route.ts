@@ -22,6 +22,10 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const includeInactive = searchParams.get("include_inactive") === "true";
+    const showAllShortlinks = searchParams.get("show_all") === "true";
+
+    // Log for debugging admin visibility issue
+    console.log(`🔍 [SHORTLINKS] Admin ${session.userId} accessing shortlinks (show_all: ${showAllShortlinks})`);
 
     // Build query
     const conditions = [];
