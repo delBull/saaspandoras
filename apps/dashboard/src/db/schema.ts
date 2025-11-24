@@ -543,6 +543,40 @@ export type WhatsAppMessage = typeof whatsappMessages.$inferSelect;
 export type WhatsAppApplicationState = typeof whatsappApplicationStates.$inferSelect;
 export type WhatsAppPreapplyLead = typeof whatsappPreapplyLeads.$inferSelect;
 
+// --- EMAIL METRICS TABLES ---
+
+// Tabla para almacenar métricas de envío de emails desde Resend webhooks
+export const emailMetrics = pgTable("email_metrics", {
+  id: serial("id").primaryKey(),
+  emailId: varchar("email_id", { length: 255 }).unique().notNull(),
+  type: varchar("type", { length: 50 }).default('unknown').notNull(), // creator_welcome, founders, utility, etc.
+  status: varchar("status", { length: 50 }).default('unknown').notNull(), // sent, delivered, opened, clicked, bounced, etc.
+  recipient: varchar("recipient", { length: 255 }),
+  emailSubject: text("email_subject"),
+  clickedUrl: text("clicked_url"), // URL que se clickeó
+  deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+  openedAt: timestamp("opened_at", { withTimezone: true }),
+  clickedAt: timestamp("clicked_at", { withTimezone: true }),
+  bouncedAt: timestamp("bounced_at", { withTimezone: true }),
+  complaintAt: timestamp("complaint_at", { withTimezone: true }),
+  userAgent: text("user_agent"), // Para analytics de opened
+  ipAddress: varchar("ip_address", { length: 45 }), // IPv4/IPv6 para tracking
+  metadata: jsonb("metadata").default({}), // Datos extras del webhook
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// Indexes para consultas eficientes
+export const emailMetricsIndexes = {
+  emailIdIndex: { columns: ["email_id"], name: "email_metrics_email_id_idx" },
+  typeStatusIndex: { columns: ["type", "status"], name: "email_metrics_type_status_idx" },
+  statusIndex: { columns: ["status"], name: "email_metrics_status_idx" },
+  recipientIndex: { columns: ["recipient"], name: "email_metrics_recipient_idx" },
+  createdAtIndex: { columns: ["created_at"], name: "email_metrics_created_at_idx" },
+};
+
 // Shortlinks Types
 export type ShortlinkEvent = typeof shortlinkEvents.$inferSelect;
 export type Shortlink = typeof shortlinks.$inferSelect;
+
+// Email Metrics Types
