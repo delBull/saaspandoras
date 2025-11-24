@@ -45,10 +45,40 @@ export async function POST(request: NextRequest) {
 
     // 1. Verify webhook signature using Resend HMAC SHA256 format
     // Based on: https://resend.com/docs/dashboard/webhooks/verify-webhooks-requests
+
+    // Log all headers to debug what Resend is sending
+    console.log('📧 [WEBHOOK-HEADERS] All incoming headers:');
+    for (const [key, value] of request.headers.entries()) {
+      console.log(`  ${key}: ${value}`);
+    }
+
+    // Check for both possible header formats
     if (WEBHOOK_SECRET) {
-      const signature = request.headers.get('resend-signature');
-      const timestamp = request.headers.get('resend-timestamp');
-      const webhookId = request.headers.get('resend-webhook-id');
+      // Try Resend v1 format first (most common)
+      let signature = request.headers.get('resend-signature');
+      let timestamp = request.headers.get('resend-timestamp');
+      let webhookId = request.headers.get('resend-webhook-id');
+
+      // If not found, try alternative formats
+      if (!signature) {
+        signature = request.headers.get('X-Resend-Signature') || request.headers.get('x-resend-signature');
+      }
+      if (!timestamp) {
+        timestamp = request.headers.get('X-Resend-Signature-Timestamp') || request.headers.get('resend-timestamp');
+      }
+      if (!webhookId) {
+        webhookId = request.headers.get('X-Resend-Webhook-Id') || request.headers.get('resend-webhook-id');
+      }
+
+      console.log(`📧 [WEBHOOK-HEADERS] Extracted:`, {
+        hasSignature: !!signature,
+        hasTimestamp: !!timestamp,
+        hasWebhookId: !!webhookId,
+        signaturePreview: signature?.substring(0, 20) + '...',
+        timestamp,
+        webhookId,
+        WEBHOOK_SECRET: WEBHOOK_SECRET ? '***configured***' : 'not configured'
+      });
 
       if (!signature || !timestamp || !webhookId) {
         console.error('❌ Missing required webhook signature headers');
@@ -117,6 +147,41 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       error: 'Webhook processing failed',
       message: error.message
+    }, { status: 500 });
+  }
+}
+
+// GET endpoint for webhook debugging
+export function GET() {
+  try {
+    const headersList = {
+      'WEBHOOK_SECRET_CONFIGURED': !!WEBHOOK_SECRET,
+      'WEBHOOK_SECRET_VALUE': WEBHOOK_SECRET ? '**configured**' : '**not configured**',
+      'INSTRUCTIONS': 'POST to this endpoint to see webhook debugging logs',
+      'EXPECTED_HEADERS': [
+        'resend-signature',
+        'resend-timestamp',
+        'resend-webhook-id'
+      ],
+      'ALTERNATIVE_HEADERS': [
+        'X-Resend-Signature',
+        'X-Resend-Signature-Timestamp',
+        'X-Resend-Webhook-Id'
+      ]
+    };
+
+    return NextResponse.json({
+      status: 'webhook_debug_endpoint',
+      message: 'Use POST method to test webhook with your headers',
+      configured: !!WEBHOOK_SECRET,
+      last_check: new Date().toISOString(),
+      ...headersList
+    });
+
+  } catch (error) {
+    console.error('Error in webhook debug GET:', error);
+    return NextResponse.json({
+      error: 'Debug endpoint failed'
     }, { status: 500 });
   }
 }
