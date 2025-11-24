@@ -26,14 +26,14 @@ async function handleShortlink(slug: string, searchParams: URLSearchParams, head
 
     if (!shortlink.length) {
       console.log(`❌ Shortlink not found: ${slug}`);
-      return { error: 'not_found' as const };
+      throw new Error('not_found');
     }
 
     const link = shortlink[0];
 
     if (!link?.isActive) {
       console.log(`⏳ Shortlink not found or inactive: ${slug}`);
-      return { error: 'not_found' as const };
+      throw new Error('not_found');
     }
 
     // Extract tracking info from headers and search params
@@ -107,11 +107,12 @@ async function handleShortlink(slug: string, searchParams: URLSearchParams, head
     const redirectUrl = destinationUrl.toString();
 
     console.log(`🚀 Redirecting ${slug} to: ${redirectUrl}`);
-    return { redirectTo: redirectUrl };
+    redirect(redirectUrl);
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Shortlink handling error:', error);
-    return { error: 'server_error' };
+    // Re-throw errors to be handled by the page component
+    throw error;
   }
 }
 
@@ -141,15 +142,35 @@ export default async function ShortlinkPage({ params }: PageProps) {
   }
 
   // Get search params and headers for tracking
-  const url = new URL(`${protocol}://${host}/${slug}`);
-  // In real implementation, you'd get search params from the request
+  // Since this is a server component, we need access to URL search params
+  // Unfortunately Next.js doesn't directly provide search params to dynamic routes
+  // For now, we'll use empty search params and implement proper solution later
   const searchParams = new URLSearchParams();
 
-  const result = await handleShortlink(slug, searchParams, headersData);
+  try {
+    // Call handleShortlink - this will redirect if successful or throw error if not
+    await handleShortlink(slug, searchParams, headersData);
 
-  if (result.error) {
-    if (result.error === 'not_found') {
-      // Return a 404 page for not found links
+    // If we reach this point, handleShortlink should have redirected
+    // This is a fallback in case something goes wrong
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full space-y-4 p-8 bg-white rounded-lg shadow-lg">
+          <div className="text-center">
+            <h1 className="text-xl font-bold text-blue-600 mb-2">¡Éxito!</h1>
+            <p className="text-gray-600">
+              Redirigiendo desde <code className="bg-gray-100 px-2 py-1 rounded">/{slug}</code>...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+
+  } catch (error: any) {
+    // Handle different types of errors from handleShortlink
+    const errorType = error.message || 'server_error';
+
+    if (errorType === 'not_found') {
       console.log(`📭 Shortlink page not found: ${slug}`);
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -164,7 +185,9 @@ export default async function ShortlinkPage({ params }: PageProps) {
         </div>
       );
     }
+
     // For other errors, show error page
+    console.log(`❌ Shortlink page error: ${slug} - ${errorType}`);
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="max-w-md w-full space-y-4 p-8 bg-white rounded-lg shadow-lg">
@@ -178,76 +201,4 @@ export default async function ShortlinkPage({ params }: PageProps) {
       </div>
     );
   }
-
-  // Show redirect page that preserves shortlink URL
-  if (result.redirectTo) {
-    console.log(`🔄 Showing redirect page for ${slug} -> ${result.redirectTo}`);
-
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="max-w-md w-full space-y-4 p-8 bg-white">
-          <div className="text-center">
-            {/* Loader */}
-            <div className="mb-4">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            </div>
-
-            {/* Message */}
-            <h1 className="text-xl font-semibold text-gray-900 mb-2">
-              Redirigiendo...
-            </h1>
-            <p className="text-gray-600 text-sm mb-4">
-              Te estamos llevando a tu destino
-            </p>
-
-            {/* Shortlink display */}
-            <div className="bg-gray-50 border rounded-lg p-3 mb-4">
-              <p className="text-xs text-gray-500 mb-1">Shortlink:</p>
-              <code className="text-sm text-blue-600 font-mono">
-                {protocol}://{host}/{slug}
-              </code>
-            </div>
-
-            {/* Manual redirect button */}
-            <div className="text-center">
-              <p className="text-xs text-gray-500 mb-2">
-                ¿No redirige automáticamente?
-              </p>
-              <a
-                href={result.redirectTo}
-                className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Continuar → {new URL(result.redirectTo).hostname}
-              </a>
-            </div>
-          </div>
-        </div>
-
-        {/* Client-side redirect */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              setTimeout(function() {
-                window.location.href = "${result.redirectTo.replace(/"/g, '\\"')}";
-              }, 1000);
-            `,
-          }}
-        />
-      </div>
-    );
-  }
-
-  // Fallback error
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-4 p-8 bg-white rounded-lg shadow-lg">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-2">Error de configuración</h1>
-          <p className="text-gray-600">
-            No se pudo redirigir desde <code className="bg-gray-100 px-2 py-1 rounded">/{slug}</code>.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
 }

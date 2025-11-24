@@ -172,10 +172,22 @@ function handleEightQFlow(message: string, step = 0): FlowResult {
     };
   }
   
-  // Si es una respuesta de pregunta
+  // Si es una respuesta de pregunta (validar que tenga contenido significativo)
   if (text && step < QUESTIONS.length && !text.includes('info_')) {
+    // Validar respuesta mínima (al menos 5 caracteres y no solo números/simbolos)
+    const isValidResponse = text.length >= 5 && /[a-zA-ZáéíóúñÁÉÍÓÚÑ]/.test(text);
+
+    if (!isValidResponse) {
+      return {
+        handled: true,
+        flowType: 'eight_q',
+        response: `📝 **Respuesta muy corta o inválida**\n\nPor favor proporciona una respuesta más detallada a:\n\n**Pregunta ${step + 1}:**\n${QUESTIONS[step]}`,
+        action: 'invalid_response'
+      };
+    }
+
     const nextStep = step + 1;
-    
+
     if (nextStep < QUESTIONS.length) {
       return {
         handled: true,
@@ -188,7 +200,7 @@ function handleEightQFlow(message: string, step = 0): FlowResult {
       return {
         handled: true,
         flowType: 'eight_q',
-        response: `🎉 **¡Perfecto! Filtro Completado**\n\nTus respuestas han sido registradas. Completa tu aplicación formal:\n\n🔗 **https://dash.pandoras.finance/apply**\n\n📧 Un estratega revisará tu caso en 24-48h.`,
+        response: `🎉 **¡Perfecto! Filtro Completado**\n\nTus respuestas han sido registradas. Completa tu aplicación formal:\n\n🔗 **https://dash.pandoras.finance/apply**\n\n📧 Un estratega revisará tu caso en 24-48h.\n\n💡 **Comandos adicionales:**\n• "utility" - Consultoría de protocolos\n• "founders" - Programa founders\n• "support" - Soporte técnico`,
         isCompleted: true,
         action: 'redirect_to_apply'
       };
@@ -462,6 +474,11 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
               await updateFlowStep(phone, 2); // Skip to consultancy options
             } else if (result.action === 'lead_generated') {
               await updateFlowStep(phone, 4); // Mark as completed
+              console.log(`🎯 [UTILITY] Lead generated for user ${phone}`);
+            } else if (messageText.toLowerCase().includes('continuar')) {
+              const nextStep = Math.min(currentState.step + 1, 3);
+              await updateFlowStep(phone, nextStep);
+              result = handleUtilityFlow(messageText, nextStep);
             }
             break;
           case 'high_ticket':
@@ -474,9 +491,15 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
             console.log(`🔍 [EIGHT_Q] Processing message for step ${currentState.step}: "${messageText}"`);
             result = handleEightQFlow(messageText, currentState.step);
             console.log(`📈 [EIGHT_Q] Result: action=${result.action}, progress=${result.progress}`);
+
             if (result.action === 'next_question') {
-              console.log(`📊 [EIGHT_Q] Updating step from ${currentState.step} to ${currentState.step + 1}`);
-              await updateFlowStep(phone, currentState.step + 1);
+              const nextStep = currentState.step + 1;
+              console.log(`📊 [EIGHT_Q] Updating step from ${currentState.step} to ${nextStep}`);
+              await updateFlowStep(phone, nextStep);
+            } else if (result.isCompleted) {
+              console.log(`🎯 [EIGHT_Q] Flow completed for user ${phone}, deactivating session`);
+              // Optional: Mark session as completed but don't deactivate yet
+              await updateFlowStep(phone, 8); // Mark as completed
             }
             break;
           case 'support':
