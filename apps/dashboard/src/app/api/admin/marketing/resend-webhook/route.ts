@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { sql } from '@/lib/database';
 
 // Resend Webhook Security
 const WEBHOOK_SECRET = process.env.RESEND_WEBHOOK_SECRET;
@@ -40,31 +41,48 @@ interface ResendWebhookEvent {
  */
 export async function POST(request: NextRequest) {
   try {
-    // 1. Verify webhook signature (if secret is provided)
-    if (WEBHOOK_SECRET) {
-      const signature = request.headers.get('X-Resend-Signature')!;
-      const timestamp = request.headers.get('X-Resend-Signature-Timestamp')!;
-      const body = await request.text();
+    const body = await request.text();
 
-      if (!signature || !timestamp) {
-        console.warn('⚠️ Missing webhook signature headers');
-        return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
+    // 1. Verify webhook signature using Resend HMAC SHA256 format
+    // Based on: https://resend.com/docs/dashboard/webhooks/verify-webhooks-requests
+    if (WEBHOOK_SECRET) {
+      const signature = request.headers.get('resend-signature');
+      const timestamp = request.headers.get('resend-timestamp');
+      const webhookId = request.headers.get('resend-webhook-id');
+
+      if (!signature || !timestamp || !webhookId) {
+        console.error('❌ Missing required webhook signature headers');
+        return NextResponse.json({ error: 'Missing webhook headers' }, { status: 400 });
       }
 
-      // Verify signature (implement if needed)
-      // const expectedSignature = crypto.createHmac('sha256', WEBHOOK_SECRET)
-      //   .update(`${timestamp}.${body}`)
-      //   .digest('hex');
+      // Create the signed content
+      const signedContent = `${webhookId}.${timestamp}.${body}`;
 
-      // if (!crypto.timingSafeEqual(Buffer.from(signature, 'hex'), Buffer.from(expectedSignature, 'hex'))) {
-      //   console.warn('⚠️ Invalid webhook signature');
-      //   return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
-      // }
+      // Create HMAC SHA256 signature
+      const hmac = crypto.createHmac('sha256', WEBHOOK_SECRET);
+      hmac.update(signedContent, 'utf8');
+      const computedSignature = hmac.digest('base64');
+
+      // Compare signatures
+      const isValid = crypto.timingSafeEqual(
+        Buffer.from(computedSignature),
+        Buffer.from(signature)
+      );
+
+      if (!isValid) {
+        console.error('❌ Invalid webhook signature');
+        console.log('🔐 Expected:', computedSignature);
+        console.log('🔐 Received:', signature);
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+      }
+
+      console.log('✅ Webhook signature verified successfully');
+    } else {
+      console.warn('⚠️ RESEND_WEBHOOK_SECRET not configured - accepting without verification');
     }
 
     // 2. Parse webhook payload
-    const rawBody = await request.text();
-    const payload: ResendWebhookEvent = JSON.parse(rawBody);
+    const payload: ResendWebhookEvent = JSON.parse(body);
 
     console.log(`📧 Webhook Event: ${String(payload.type)} for email ${payload.data.email_id}`);
 
@@ -106,19 +124,31 @@ export async function POST(request: NextRequest) {
 /**
  * Handle email delivered events
  */
-function handleEmailDelivered(event: ResendWebhookEvent) {
+async function handleEmailDelivered(event: ResendWebhookEvent) {
   try {
-    const { email_id, to, subject, created_at } = event.data;
+    const { email_id, to, subject, tags } = event.data;
+    const recipient: string = (to && to.length > 0) ? to[0] || '' : '';
+    const audienceTag: string = tags?.find(tag => tag.name === 'audience')?.value || 'unknown';
+    const emailSubject: string = subject || '';
+    const metadata: string = JSON.stringify(event);
 
-    console.log(`✅ Email delivered: ${email_id} to ${to.join(', ')}`);
+    console.log(`✅ Email delivered: ${email_id} to ${recipient}`);
 
-    // TODO: Store in database for metrics
-    // - Update email status to 'delivered'
-    // - Record delivery timestamp
-    // - Update delivery counts
-
-    // For now, just log the event
-    // You would typically have a database table to track email events
+    await sql`
+      INSERT INTO email_metrics (
+        email_id, type, status, recipient, email_subject,
+        delivered_at, metadata
+      )
+      VALUES (
+        ${email_id}, ${audienceTag}, 'delivered', ${recipient}, ${emailSubject},
+        NOW(), ${metadata}
+      )
+      ON CONFLICT (email_id)
+      DO UPDATE SET
+        status = 'delivered',
+        delivered_at = NOW(),
+        updated_at = NOW()
+    `;
 
   } catch (error) {
     console.error('Error handling email delivered:', error);
@@ -128,16 +158,25 @@ function handleEmailDelivered(event: ResendWebhookEvent) {
 /**
  * Handle email opened events
  */
-function handleEmailOpened(event: ResendWebhookEvent) {
+async function handleEmailOpened(event: ResendWebhookEvent) {
   try {
     const { email_id, to, user_agent, ip } = event.data;
+    const recipient: string = to ? to[0] || '' : '';
 
-    console.log(`👁️ Email opened: ${email_id} by ${to[0]} from ${ip}`);
+    console.log(`👁️ Email opened: ${email_id} by ${recipient} from ${ip}`);
 
-    // TODO: Store in database
-    // - Record open timestamp
-    // - Track unique opens vs total opens
-    // - Store user agent and IP for analytics
+    await sql`
+      INSERT INTO email_metrics (email_id, type, status, recipient, opened_at, user_agent, ip_address, metadata)
+      VALUES (
+        ${email_id}, 'unknown', 'opened', ${recipient},
+        NOW(), NULL, NULL, ${JSON.stringify(event)}
+      )
+      ON CONFLICT (email_id)
+      DO UPDATE SET
+        status = COALESCE(email_metrics.status, 'opened'),
+        opened_at = NOW(),
+        updated_at = NOW()
+    `;
 
   } catch (error) {
     console.error('Error handling email opened:', error);
@@ -147,16 +186,27 @@ function handleEmailOpened(event: ResendWebhookEvent) {
 /**
  * Handle email clicked events
  */
-function handleEmailClicked(event: ResendWebhookEvent) {
+async function handleEmailClicked(event: ResendWebhookEvent) {
   try {
-    const { email_id, to, url, link, ip } = event.data;
+    const { email_id, to, url, link } = event.data;
+    const recipient: string = to ? to[0] || '' : '';
+    const clickedUrl: string = url || link || '';
 
-    console.log(`👆 Email clicked: ${email_id} - ${url} by ${to[0]}`);
+    console.log(`👆 Email clicked: ${email_id} - ${clickedUrl} by ${recipient}`);
 
-    // TODO: Store in database
-    // - Record click timestamp and URL
-    // - Track click-through rates
-    // - Store referrer information
+    await sql`
+      INSERT INTO email_metrics (email_id, type, status, recipient, clicked_url, clicked_at, metadata)
+      VALUES (
+        ${email_id}, 'unknown', 'clicked', ${recipient},
+        ${clickedUrl}, NOW(), ${JSON.stringify(event)}
+      )
+      ON CONFLICT (email_id)
+      DO UPDATE SET
+        status = COALESCE(email_metrics.status, 'clicked'),
+        clicked_url = COALESCE(${clickedUrl}, email_metrics.clicked_url),
+        clicked_at = NOW(),
+        updated_at = NOW()
+    `;
 
   } catch (error) {
     console.error('Error handling email clicked:', error);
@@ -166,16 +216,25 @@ function handleEmailClicked(event: ResendWebhookEvent) {
 /**
  * Handle email bounced events
  */
-function handleEmailBounced(event: ResendWebhookEvent) {
+async function handleEmailBounced(event: ResendWebhookEvent) {
   try {
-    const { email_id, to, bounce_type, bounce_code, error_message } = event.data;
+    const { email_id, to } = event.data;
+    const recipient: string = to ? to[0] || '' : '';
 
-    console.log(`❌ Email bounced: ${email_id} to ${to[0]} - ${bounce_type}`);
+    console.log(`❌ Email bounced: ${email_id} to ${recipient}`);
 
-    // TODO: Store in database
-    // - Mark email as bounced
-    // - Store bounce type and reason
-    // - Update bounce rate metrics
+    await sql`
+      INSERT INTO email_metrics (email_id, type, status, recipient, bounced_at, metadata)
+      VALUES (
+        ${email_id}, 'unknown', 'bounced', ${recipient},
+        NOW(), ${JSON.stringify(event)}
+      )
+      ON CONFLICT (email_id)
+      DO UPDATE SET
+        status = 'bounced',
+        bounced_at = NOW(),
+        updated_at = NOW()
+    `;
 
   } catch (error) {
     console.error('Error handling email bounced:', error);
@@ -185,16 +244,27 @@ function handleEmailBounced(event: ResendWebhookEvent) {
 /**
  * Handle email complaint events (marked as spam)
  */
-function handleEmailComplained(event: ResendWebhookEvent) {
+async function handleEmailComplained(event: ResendWebhookEvent) {
   try {
     const { email_id, to } = event.data;
+    const recipient: string = (to && to.length > 0) ? to[0] || '' : '';
 
-    console.log(`🚨 Email complaint: ${email_id} marked as spam by ${to[0]}`);
+    console.log(`🚨 Email complaint: ${email_id} marked as spam by ${recipient}`);
 
-    // TODO: Store in database
-    // - Record spam complaints
-    // - Update sender reputation metrics
-    // - Flag recipient for suppression
+    const metadata = JSON.stringify(event);
+
+    await sql`
+      INSERT INTO email_metrics (email_id, type, status, recipient, complaint_at, metadata)
+      VALUES (
+        ${email_id}, 'unknown', 'complained', ${recipient},
+        NOW(), ${metadata}
+      )
+      ON CONFLICT (email_id)
+      DO UPDATE SET
+        status = 'complained',
+        complaint_at = NOW(),
+        updated_at = NOW()
+    `;
 
   } catch (error) {
     console.error('Error handling email complaint:', error);
@@ -204,13 +274,27 @@ function handleEmailComplained(event: ResendWebhookEvent) {
 /**
  * Handle email marked as spam
  */
-function handleEmailSpam(event: ResendWebhookEvent) {
+async function handleEmailSpam(event: ResendWebhookEvent) {
   try {
     const { email_id, to } = event.data;
+    const recipient: string = to ? to[0] || '' : '';
 
-    console.log(`🚫 Email marked as spam: ${email_id} by ${to[0]}`);
+    console.log(`🚫 Email marked as spam: ${email_id} by ${recipient}`);
 
-    // Similar to complaint handling
+    const metadata = JSON.stringify(event);
+
+    await sql`
+      INSERT INTO email_metrics (email_id, type, status, recipient, complaint_at, metadata)
+      VALUES (
+        ${email_id}, 'unknown', 'spam', ${recipient},
+        NOW(), ${metadata}
+      )
+      ON CONFLICT (email_id)
+      DO UPDATE SET
+        status = COALESCE(email_metrics.status, 'spam'),
+        complaint_at = NOW(),
+        updated_at = NOW()
+    `;
 
   } catch (error) {
     console.error('Error handling email spam:', error);
