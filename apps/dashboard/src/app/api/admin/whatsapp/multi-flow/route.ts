@@ -1,12 +1,20 @@
 import { sql } from '@/lib/database';
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 import { getSimpleFlowStats } from '@/lib/whatsapp/core/simpleRouter';
+import { getAuth, isAdmin } from '@/lib/auth';
 
 // PATCH endpoint para actualizar status de leads
 export async function PATCH(request: Request) {
   try {
+    // Admin auth check
+    const { session } = await getAuth(await headers());
+    if (!session?.userId || !await isAdmin(session.userId)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
     const { leadId, status } = await request.json();
-    
+
     if (!leadId || !status) {
       return NextResponse.json({ error: 'leadId y status son requeridos' }, { status: 400 });
     }
@@ -39,12 +47,17 @@ export async function PATCH(request: Request) {
   }
 }
 
-// TEMPORAL: Agregar auth check para confirmar que funciona
+// IMPORTANT: ALL ADMINS SHOULD SEE ALL WA LEADS globally
 export async function GET(request: Request) {
   try {
-    // Verificar que se puede acceder a headers
-    const headersList = request.headers;
-    console.log('📊 Headers in WhatsApp admin API:', Object.fromEntries(headersList.entries()));
+    // Admin auth check - TUDOS los admins ven TODOS los leads
+    const { session } = await getAuth(await headers());
+    if (!session?.userId || !await isAdmin(session.userId)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
+    // Debug logging for admin visibility
+    console.log(`🔍 [WA-LEADS] Admin ${session.userId} accessing WA leads globally`);
 
     // El resto del código...
     console.log('📊 Fetching simplified WhatsApp data...');
