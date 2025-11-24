@@ -118,6 +118,11 @@ async function handleShortlink(slug: string, searchParams: URLSearchParams, head
 export default async function ShortlinkPage({ params }: PageProps) {
   const { slug } = await params;
 
+  // Get host from headers for server-side URL construction
+  const headersData = await headers();
+  const host = headersData.get('host') || 'pandoras.finance';
+  const protocol = host.includes('localhost') || host.includes('pbox.dev') ? 'http' : 'https';
+
   // Handle reserved slugs (you can add more)
   if (['admin', 'api', 'dashboard', '_next', 'w'].includes(slug)) {
     console.log(`⏭️ Skipping reserved slug: ${slug}`);
@@ -136,8 +141,7 @@ export default async function ShortlinkPage({ params }: PageProps) {
   }
 
   // Get search params and headers for tracking
-  const headersData = await headers();
-  const url = new URL(`http://localhost:3000/${slug}`);
+  const url = new URL(`${protocol}://${host}/${slug}`);
   // In real implementation, you'd get search params from the request
   const searchParams = new URLSearchParams();
 
@@ -200,7 +204,7 @@ export default async function ShortlinkPage({ params }: PageProps) {
             <div className="bg-gray-50 border rounded-lg p-3 mb-4">
               <p className="text-xs text-gray-500 mb-1">Shortlink:</p>
               <code className="text-sm text-blue-600 font-mono">
-                {window?.location?.origin}/{slug}
+                {protocol}://{host}/{slug}
               </code>
             </div>
 
