@@ -383,7 +383,7 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
       
       // Obtener estado actual
       const currentState = await getCurrentFlowState(phone);
-      
+
       if (!currentState) {
         // Error: usuario tiene flujo pero no estado
         console.error(`❌ [SIMPLE-ROUTER] Inconsistencia: usuario ${phone} tiene flujo pero no estado`);
@@ -394,6 +394,8 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
           action: 'error_reset'
         };
       }
+
+      console.log(`📊 [FLOW-STATE] Usuario ${phone}: flow=${existingFlow}, currentStep=${currentState.step}`);
       
       // Procesar respuesta en el flujo existente
       let result: FlowResult;
@@ -469,8 +471,11 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
             }
             break;
           case 'eight_q':
+            console.log(`🔍 [EIGHT_Q] Processing message for step ${currentState.step}: "${messageText}"`);
             result = handleEightQFlow(messageText, currentState.step);
+            console.log(`📈 [EIGHT_Q] Result: action=${result.action}, progress=${result.progress}`);
             if (result.action === 'next_question') {
+              console.log(`📊 [EIGHT_Q] Updating step from ${currentState.step} to ${currentState.step + 1}`);
               await updateFlowStep(phone, currentState.step + 1);
             }
             break;
