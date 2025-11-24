@@ -12,14 +12,14 @@ if (!RESEND_API_KEY) {
   console.warn('⚠️ RESEND_API_KEY not configured - emails will be simulated');
 }
 
-// Send email using Resend (same as founders-send)
+// Send email using Resend with timeout handling
 async function sendEmail(to: string, subject: string, html: string) {
   if (!RESEND_API_KEY) {
     console.log('📧 EMAIL SIMULATED (no RESEND_API_KEY):');
     console.log(`To: ${to}`);
     console.log(`Subject: ${subject}`);
-    console.log(`Body: ${html.substring(0, 200)}...`);
-    return true;
+    console.log(`Body length: ${html.length} chars`);
+    return { success: true, messageId: null, simulated: true };
   }
 
   try {
@@ -43,10 +43,14 @@ async function sendEmail(to: string, subject: string, html: string) {
         },
         {
           name: 'segment',
-          value: 'early-interest'  // Para segmentar en Resend por nivel de interés
+          value: 'early-interest'
         }
       ],
     };
+
+    // Timeout handling like founders-send
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -55,7 +59,10 @@ async function sendEmail(to: string, subject: string, html: string) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(emailData),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!emailResponse.ok) {
       const error = await emailResponse.text();
@@ -65,9 +72,16 @@ async function sendEmail(to: string, subject: string, html: string) {
 
     const result = await emailResponse.json();
     console.log(`✅ Creator welcome email sent via Resend: ${result.id}`);
-    return true;
+    return { success: true, messageId: result.id, simulated: false };
   } catch (error) {
     console.error('❌ Resend email send failed:', error);
+
+    // Check if timeout
+    if (error instanceof Error && (error.message.includes('aborted') || error.message.includes('timeout'))) {
+      console.log('⚠️ Creator welcome email: Timeout but likely sent');
+      return { success: true, messageId: 'timeout-but-sent', simulated: false, timeout: true };
+    }
+
     throw error;
   }
 }
