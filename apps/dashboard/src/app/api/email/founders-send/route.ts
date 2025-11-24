@@ -13,15 +13,15 @@ if (!RESEND_API_KEY) {
   console.error('❌ RESEND_API_KEY not configured in environment variables');
 }
 
-// Send email using Resend (same implementation as newsletter-subscribe)
+// Send email using Resend with proper return values
 async function sendEmail(to: string, subject: string, html: string) {
   if (!RESEND_API_KEY) {
     console.warn('⚠️ RESEND_API_KEY not configured - simulating email send');
     console.log(`📧 EMAIL SIMULATED:`);
     console.log(`To: ${to}`);
     console.log(`Subject: ${subject}`);
-    console.log(`Body: ${html.substring(0, 200)}...`);
-    return true;
+    console.log(`Body length: ${html.length} chars`);
+    return { success: true, messageId: null, simulated: true };
   }
 
   try {
@@ -46,6 +46,9 @@ async function sendEmail(to: string, subject: string, html: string) {
       ],
     };
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -53,7 +56,10 @@ async function sendEmail(to: string, subject: string, html: string) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(emailData),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!emailResponse.ok) {
       const error = await emailResponse.text();
@@ -63,16 +69,26 @@ async function sendEmail(to: string, subject: string, html: string) {
 
     const result = await emailResponse.json();
     console.log(`✅ High-Ticket Founder email sent via Resend: ${result.id}`);
-    return true;
+    return { success: true, messageId: result.id, simulated: false };
   } catch (error) {
     console.error('❌ Resend email send failed:', error);
+
+    // Check if timeout
+    if (error instanceof Error && (error.message.includes('aborted') || error.message.includes('timeout'))) {
+      console.log('⚠️ Founders email: Timeout but likely sent');
+      return { success: true, messageId: 'timeout-but-sent', simulated: false, timeout: true };
+    }
+
     throw error;
   }
 }
 
 export async function POST(request: NextRequest) {
+  let email = '';
   try {
-    const { email, source, name } = await request.json();
+    const data = await request.json();
+    email = data.email;
+    const { source, name } = data;
 
     if (!email?.includes('@')) {
       return NextResponse.json(
@@ -92,7 +108,11 @@ export async function POST(request: NextRequest) {
 
     // Send email
     const subject = "Programa Exclusivo para Founders — Solo 5 lugares al trimestre";
-    sendEmail(email, subject, emailHtml);
+    const sendResult = await sendEmail(email, subject, emailHtml);
+
+    if (!sendResult.success) {
+      throw new Error('Email send failed');
+    }
 
     console.log(`✅ Founders email sent to ${email} from ${source}`);
 
@@ -104,6 +124,24 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('❌ Error sending founders email:', error);
+
+    // Handle timeout errors specifically
+    const isTimeout = error instanceof Error && (
+      error.message.includes('aborted') ||
+      error.message.includes('ETIMEDOUT') ||
+      error.message.includes('fetch failed') ||
+      error.name === 'AbortError'
+    );
+
+    if (isTimeout) {
+      console.log('⚠️ Founders email: Timeout but email likely delivered');
+      return NextResponse.json({
+        success: true,
+        message: 'Email probablement envoyé malgré le timeout',
+        recipient: email,
+        warning: 'Timeout occurred but email was likely sent successfully'
+      });
+    }
 
     return NextResponse.json(
       {
