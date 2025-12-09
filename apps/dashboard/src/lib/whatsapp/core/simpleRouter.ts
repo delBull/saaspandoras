@@ -54,8 +54,7 @@ function handleUtilityFlow(message: string, step = 0): FlowResult {
   if (step === 1) {
     const hasProjectDetails = (msg: string) => {
       const words = msg.split(' ').length;
-      const hasKeywords = ['protocolo', 'token', 'blockchain', 'w2e', 'utility', 'nft', 'dao', 'defi', 'web3', 'crypto'].some(kw => msg.toLowerCase().includes(kw));
-      return words > 10 && hasKeywords;
+      return words >= 3; // Relaxed: allow simpler descriptions
     };
 
     if (hasProjectDetails(text)) {
@@ -69,7 +68,7 @@ function handleUtilityFlow(message: string, step = 0): FlowResult {
       return {
         handled: true,
         flowType: 'utility',
-        response: `📝 **Necesito más detalles sobre tu proyecto**\n\nPor favor comparte:\n• ¿Qué problema resuelve tu protocolo?\n• ¿Para quién es tu solución?\n• ¿Qué hace exactamente?\n\nMientras más específico seas, mejor puedo asesorarte.`,
+        response: `📝 **Gracias por la información parcial**\n\nPara darte una mejor asesoría, ¿podrías detallar un poco más?\n• Objetivo principal\n• Tecnología (si ya la definiste)\n\n_Puedes escribir "continuar" si prefieres avanzar ahora._`,
         action: 'more_details_needed'
       };
     }
@@ -114,7 +113,7 @@ function handleUtilityFlow(message: string, step = 0): FlowResult {
 // High Ticket Founders Flow (Landing: founders)
 function handleHighTicketFlow(message: string, step = 0): FlowResult {
   const text = message.toLowerCase().trim();
-  
+
   if (text.includes('cancelar') || text.includes('stop')) {
     return {
       handled: true,
@@ -122,10 +121,10 @@ function handleHighTicketFlow(message: string, step = 0): FlowResult {
       response: `Operación cancelada. Si cambias de opinión, envía "founders" para reiniciar.`
     };
   }
-  
+
   // Detectar si es una respuesta adecuada
   const hasRelevantKeywords = text.includes('capital') || text.includes('inversión') || text.includes('founder') || text.includes('proyecto');
-  
+
   if (!hasRelevantKeywords && step === 0) {
     return {
       handled: true,
@@ -133,7 +132,7 @@ function handleHighTicketFlow(message: string, step = 0): FlowResult {
       response: `� **Programa Founders Inner Circle**\n\nEste canal es para founders con capital disponible.\n\nSi tienes un proyecto y capacidad de inversión, cuéntame:\n\n• ¿Cuál es tu proyecto?\n• ¿Qué capital disponible tienes?\n• ¿Cuál es tu experiencia?`
     };
   }
-  
+
   return {
     handled: true,
     flowType: 'high_ticket',
@@ -153,9 +152,9 @@ function handleEightQFlow(message: string, step = 0): FlowResult {
     "¿Tu proyecto ya cuenta con comunidad o audiencia?",
     "¿Cuál es tu fecha estimada para lanzar la primera versión de tu Protocolo?"
   ];
-  
+
   const text = message.toLowerCase().trim();
-  
+
   if (text.includes('info_mecanismo')) {
     return {
       handled: true,
@@ -163,7 +162,7 @@ function handleEightQFlow(message: string, step = 0): FlowResult {
       response: `�🔍 **Mecanismos:** ✅ Moderación verificable, tareas cuantificables. Guía: pndrs.link/mechanic-guide`
     };
   }
-  
+
   if (text.includes('info_flujo')) {
     return {
       handled: true,
@@ -171,7 +170,7 @@ function handleEightQFlow(message: string, step = 0): FlowResult {
       response: `🌊 **Flujos:** Usuario llega → completar misiones → ganar recompensas. Guía: pndrs.link/flow-guide`
     };
   }
-  
+
   // Si es una respuesta de pregunta (validar que tenga contenido significativo)
   if (text && step < QUESTIONS.length && !text.includes('info_')) {
     // Validar respuesta mínima (al menos 5 caracteres y no solo números/simbolos)
@@ -206,7 +205,7 @@ function handleEightQFlow(message: string, step = 0): FlowResult {
       };
     }
   }
-  
+
   // Primera pregunta
   return {
     handled: true,
@@ -220,7 +219,7 @@ function handleEightQFlow(message: string, step = 0): FlowResult {
 // Support Flow
 function handleSupportFlow(message: string): FlowResult {
   const text = message.toLowerCase().trim();
-  
+
   if (text.includes('problema técnico') || text.includes('error') || text.includes('bug')) {
     return {
       handled: true,
@@ -229,7 +228,7 @@ function handleSupportFlow(message: string): FlowResult {
       action: 'technical_issue'
     };
   }
-  
+
   if (text.includes('protocolo') || text.includes('duda')) {
     return {
       handled: true,
@@ -237,7 +236,7 @@ function handleSupportFlow(message: string): FlowResult {
       response: `📚 **Soporte de Protocolo**\n\nTu pregunta ha sido escalada a nuestro equipo técnico.\n\nRespuesta estimada: 2-4 horas.\n\n📞 **Urgente:** Llama a +52 1 332 213 7498`
     };
   }
-  
+
   return {
     handled: true,
     flowType: 'support',
@@ -269,7 +268,7 @@ async function getExistingFlow(phone: string): Promise<FlowType | null> {
       AND s.is_active = true
     LIMIT 1
   ` as any[];
-  
+
   return row?.flow_type || null;
 }
 
@@ -282,12 +281,12 @@ async function assignFlow(phone: string, flowType: FlowType, name?: string): Pro
     ON CONFLICT (phone)
     DO NOTHING
   `;
-  
+
   // Obtener user_id
   const [user] = await sql`
     SELECT id FROM whatsapp_users WHERE phone = ${phone}
   ` as any[];
-  
+
   if (user) {
     // Crear sesión activa para este flujo
     await sql`
@@ -309,7 +308,7 @@ async function getCurrentFlowState(phone: string): Promise<{ flowType: FlowType;
       AND s.is_active = true
     LIMIT 1
   ` as any[];
-  
+
   return row ? { flowType: row.flow_type as FlowType, step: row.current_step || 0 } : null;
 }
 
@@ -336,26 +335,32 @@ function detectFlowFromLanding(payload: any, messageText?: string): FlowType {
       return payload.flowFromLanding as FlowType;
     }
   }
-  
+
   // Prioridad 2: Keywords del mensaje (solo si no tiene flujo asignado)
   const text = (messageText || '').toLowerCase();
-  
+
+  // SPECIFIC FLOWS - HIGH PRIORITY
+  if (text.includes('8 preguntas') || text.includes('evaluación') || text.includes('evaluacion') || text.match(/iniciar.*evaluaci[óo]n/)) {
+    return 'eight_q';
+  }
+
   if (text.includes('soporte') || text.includes('ayuda') || text.includes('problema')) {
     return 'support';
   }
-  
+
   if (text.includes('humano') || text.includes('agente') || text.includes('persona')) {
     return 'human';
   }
-  
+
   if (text.includes('founder') || text.includes('capital') || text.includes('inversión')) {
     return 'high_ticket';
   }
-  
-  if (text.includes('protocolo') || text.includes('utilidad') || text.includes('crear')) {
+
+  // GENERIC FLOWS - LOW PRIORITY
+  if (text.includes('protocolo') || text.includes('utilidad') || text.includes('crear') || text.includes('utility')) {
     return 'utility';
   }
-  
+
   // Default para nuevos usuarios: eight_q
   return 'eight_q';
 }
@@ -366,33 +371,33 @@ function detectFlowFromLanding(payload: any, messageText?: string): FlowType {
 export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
   const { from: phone, text, id: messageId } = payload;
   const messageText = text?.body?.trim() || '';
-  
+
   try {
     console.log(`🔄 [SIMPLE-ROUTER] Mensaje de ${phone}: "${messageText.substring(0, 50)}..."`);
-    
+
     // 1. IDEMPOTENCY: Verificar si ya procesamos este mensaje
     const [existingMessage] = await sql`
       SELECT 1 FROM whatsapp_messages 
       WHERE incoming_wamid = ${messageId}
       LIMIT 1
     ` as any[];
-    
+
     if (existingMessage) {
       console.log(`⚡ [SIMPLE-ROUTER] Mensaje duplicado ${messageId} ignorado`);
       return { handled: true, flowType: 'duplicate', action: 'ignored' };
     }
-    
+
     // 2. VERIFICAR FLUJO EXISTENTE
     const existingFlow = await getExistingFlow(phone);
-    
+
     if (existingFlow) {
       console.log(`🔄 [SIMPLE-ROUTER] Usuario ${phone} ya tiene flujo: ${existingFlow}`);
-      
+
       // Solo procesar si es un mensaje válido
       if (!messageText) {
         return { handled: true, flowType: existingFlow, action: 'no_text' };
       }
-      
+
       // Obtener estado actual
       const currentState = await getCurrentFlowState(phone);
 
@@ -408,7 +413,7 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
       }
 
       console.log(`📊 [FLOW-STATE] Usuario ${phone}: flow=${existingFlow}, currentStep=${currentState.step}`);
-      
+
       // Procesar respuesta en el flujo existente
       let result: FlowResult;
 
@@ -517,7 +522,7 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
             };
         }
       }
-      
+
       // Log mensaje de entrada
       await sql`
         INSERT INTO whatsapp_messages (session_id, direction, body, message_type, incoming_wamid, timestamp)
@@ -527,7 +532,7 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
         WHERE u.phone = ${phone} AND s.is_active = true
         LIMIT 1
       `;
-      
+
       // Log respuesta si existe
       if (result.response) {
         await sql`
@@ -539,17 +544,17 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
           LIMIT 1
         `;
       }
-      
+
       return result;
     }
-    
+
     // 3. NUEVO USUARIO: Asignar flujo basado en landing
     const detectedFlow = detectFlowFromLanding(payload, messageText);
-    console.log(`🆕 [SIMPLE-ROUTER] Nuevo usuario ${phone} → flujo: ${detectedFlow}`);
-    
+    console.log(`🆕 [SIMPLE-ROUTER] Nuevo usuario ${phone} → Asignando flujo: "${detectedFlow}" (Basado en keywords/landing)`);
+
     // Asignar flujo
     await assignFlow(phone, detectedFlow, payload.contactName || null);
-    
+
     // Procesar mensaje inicial
     let result: FlowResult;
     switch (detectedFlow) {
@@ -572,7 +577,7 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
         result = handleEightQFlow(messageText, 0);
         result.flowType = 'eight_q';
     }
-    
+
     // Log inicial
     await sql`
       INSERT INTO whatsapp_messages (session_id, direction, body, message_type, incoming_wamid, timestamp)
@@ -582,7 +587,7 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
       WHERE u.phone = ${phone} AND s.is_active = true
       LIMIT 1
     `;
-    
+
     if (result.response) {
       await sql`
         INSERT INTO whatsapp_messages (session_id, direction, body, message_type, timestamp)
@@ -593,12 +598,12 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
         LIMIT 1
       `;
     }
-    
+
     return result;
-    
+
   } catch (error) {
     console.error('❌ [SIMPLE-ROUTER] Error crítico:', error);
-    
+
     return {
       handled: true,
       flowType: 'error',
@@ -625,7 +630,7 @@ export async function getSimpleFlowStats() {
       GROUP BY flow_type
       ORDER BY total_sessions DESC
     ` as any[];
-    
+
     return stats;
   } catch (error) {
     console.error('Error obteniendo estadísticas simples:', error);

@@ -12,7 +12,7 @@ export const LANDING_FLOW_CONFIG = {
     flowType: 'eight_q' as FlowType,
     name: 'Evaluación 8 Preguntas',
     description: 'Filtro de viabilidad para protocolos de utilidad',
-    message: 'Hola, quiero evaluar mi protocolo de utilidad',
+    message: 'Hola, quiero iniciar mi evaluación de 8 preguntas',
     color: 'blue',
     icon: '📋'
   },
