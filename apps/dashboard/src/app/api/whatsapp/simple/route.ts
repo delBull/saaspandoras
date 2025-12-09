@@ -6,7 +6,7 @@ import { sendWhatsAppMessage } from '@/lib/whatsapp/utils/client';
 export async function POST(request: NextRequest) {
   try {
     console.log('📱 [SIMPLE-WHATSAPP] Webhook recibido');
-    
+
     const payload = await request.json();
     console.log('📦 [SIMPLE-WHATSAPP] Payload completo:', JSON.stringify(payload, null, 2));
 
@@ -37,8 +37,8 @@ export async function POST(request: NextRequest) {
       type: message.type || 'text',
       text: message.text ? { body: message.text.body } : undefined,
       contactName: message.contact?.name?.formatted_name || null,
-      // Agregar información de landing si existe en el contexto
-      flowFromLanding: request.headers.get('x-landing-flow') || null
+      // Landing header removal: x-landing-flow is not supported by Meta webhooks
+      flowFromLanding: null
     };
 
     // Procesar mensaje con el router simplificado
@@ -49,18 +49,18 @@ export async function POST(request: NextRequest) {
     // Enviar respuesta si existe
     if (result.response && result.handled) {
       console.log(`📤 [SIMPLE-WHATSAPP] Enviando respuesta a ${phone}`);
-      
+
       const sendResult = await sendWhatsAppMessage(phone, result.response, messageId);
-      
+
       if (!sendResult.success) {
         console.error('❌ [SIMPLE-WHATSAPP] Error enviando mensaje:', sendResult.error);
-        return NextResponse.json({ 
-          status: 'error', 
+        return NextResponse.json({
+          status: 'error',
           error: sendResult.error,
-          original_result: result 
+          original_result: result
         }, { status: 500 });
       }
-      
+
       console.log('✅ [SIMPLE-WHATSAPP] Mensaje enviado exitosamente');
     }
 
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('❌ [SIMPLE-WHATSAPP] Error crítico en webhook:', error);
-    
+
     return NextResponse.json({
       status: 'error',
       error: error instanceof Error ? error.message : 'Error desconocido',
@@ -99,12 +99,12 @@ export function GET(request: NextRequest) {
   // Verificación de Meta/Facebook para WhatsApp Cloud API
   if (mode === 'subscribe' && token) {
     const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN || 'pandoras_whatsapp_verify_2025';
-    
+
     console.log('🔑 [SIMPLE-WHATSAPP] Verificando token:', { received: token ? '***' + token.slice(-4) : null, expected: verifyToken });
-    
+
     if (token === verifyToken) {
       console.log('✅ [SIMPLE-WHATSAPP] Webhook verificado exitosamente por Meta');
-      
+
       if (challenge) {
         // Meta envía el challenge para verificar que somos un endpoint válido
         console.log('🎯 [SIMPLE-WHATSAPP] Retornando challenge:', challenge);
@@ -115,7 +115,7 @@ export function GET(request: NextRequest) {
           },
         });
       }
-      
+
       return NextResponse.json({
         status: 'verified',
         message: 'Webhook verified successfully',
@@ -138,7 +138,7 @@ export function GET(request: NextRequest) {
     timestamp: new Date().toISOString(),
     flows: [
       'utility',
-      'high_ticket', 
+      'high_ticket',
       'eight_q',
       'support',
       'human'
