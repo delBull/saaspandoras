@@ -68,7 +68,7 @@ function handleUtilityFlow(message: string, step = 0): FlowResult {
       return {
         handled: true,
         flowType: 'utility',
-        response: `📝 **Gracias por la información parcial**\n\nPara darte una mejor asesoría, ¿podrías detallar un poco más?\n• Objetivo principal\n• Tecnología (si ya la definiste)\n\n_Puedes escribir "continuar" si prefieres avanzar ahora._`,
+        response: `📝 **Gracias por la información parcial**\n\nPara darte una mejor asesoría, ¿podrías detallar un poco más?\n• Objetivo principal\n• Tecnología (si ya la definiste)\n\n💡 _Tip: Usa al menos 3 palabras para describir tu proyecto._\n\n_Puedes escribir "continuar" si prefieres avanzar ahora._`,
         action: 'more_details_needed'
       };
     }
@@ -111,6 +111,7 @@ function handleUtilityFlow(message: string, step = 0): FlowResult {
 }
 
 // High Ticket Founders Flow (Landing: founders)
+// High Ticket Founders Flow (Landing: founders)
 function handleHighTicketFlow(message: string, step = 0): FlowResult {
   const text = message.toLowerCase().trim();
 
@@ -122,33 +123,72 @@ function handleHighTicketFlow(message: string, step = 0): FlowResult {
     };
   }
 
-  // Detectar si es una respuesta adecuada
-  const hasRelevantKeywords = text.includes('capital') || text.includes('inversión') || text.includes('founder') || text.includes('proyecto');
-
-  if (!hasRelevantKeywords && step === 0) {
+  // Step 0: Initial contact (Welcome & Ask Project)
+  if (step === 0) {
     return {
       handled: true,
       flowType: 'high_ticket',
-      response: `� **Programa Founders Inner Circle**\n\nEste canal es para founders con capital disponible.\n\nSi tienes un proyecto y capacidad de inversión, cuéntame:\n\n• ¿Cuál es tu proyecto?\n• ¿Qué capital disponible tienes?\n• ¿Cuál es tu experiencia?`
+      response: `💎 **Programa Founders Inner Circle**\n\nBienvenido. Este canal es exclusivo para founders con capital listo para desplegar.\n\nPara validar tu perfil, por favor descríbeme brevemente tu proyecto:\n\n• ¿De qué trata?\n• ¿En qué etapa está actualmente?`
+    };
+  }
+
+  // Step 1: Project received, Ask Capital
+  if (step === 1) {
+    // Validation: Response should be meaningful (at least 3 chars)
+    if (text.length < 3) {
+      return {
+        handled: true,
+        flowType: 'high_ticket',
+        response: `📉 **Respuesta demasiado corta.**\n\nPor favor indica tu rango de capital (ej. "$50k", "Opción 1").\n\n¿Cuál es tu rango de inversión inmediata?\n1️⃣ $10k - $50k\n2️⃣ $50k - $100k\n3️⃣ +$100k\n\n💡 _Tip: Escribe el número o el monto._`,
+        action: 'invalid_response'
+      };
+    }
+
+    return {
+      handled: true,
+      flowType: 'high_ticket',
+      response: `📉 **Entendido. Hablemos de capacidad.**\n\n¿Cuál es tu rango de capital disponible para inversión inmediata?\n\n1️⃣ $10k - $50k\n2️⃣ $50k - $100k\n3️⃣ +$100k\n\n_Tu respuesta es confidencial._`,
+      action: 'next_question'
+    };
+  }
+
+  // Step 2: Capital received, Ask Timeline
+  if (step === 2) {
+    return {
+      handled: true,
+      flowType: 'high_ticket',
+      response: `⏳ **Último paso:**\n\n¿Cuándo tienes planeado lanzar tu operación?\n\n• "Este mes"\n• "Próximos 3 meses"\n• "Solo explorando"\n\n💡 _Tip: Sé honesto, esto nos ayuda a priorizarte._`,
+      action: 'next_question'
+    };
+  }
+
+  // Step 3: Completion
+  if (step >= 3) {
+    return {
+      handled: true,
+      flowType: 'high_ticket',
+      response: `✅ **Solicitud Completada - Founders Program**\n\nTu perfil ha sido elevado a **Prioridad Alta**.\n\nUn estratega senior analizará tu caso y te contactará en las próximas 24 horas para agendar una sesión privada.\n\n📧 Mientras tanto, puedes preparar tu deck o documentación adicional.`,
+      isCompleted: true,
+      action: 'flow_completed'
     };
   }
 
   return {
     handled: true,
     flowType: 'high_ticket',
-    response: `✅ **Solicitud Recibida - Founders Program**\n\nPerfecto, tu solicitud está registrada. Un estratega especializado te contactará en las próximas 24-48 horas.\n\n📧 Mientras tanto, puedes completar tu aplicación en: https://dash.pandoras.finance/apply\n\n💰 **Nota:** Los founders con capital disponible y roadmap claro tienen prioridad.`
+    response: `Continuemos con tu aplicación... (Paso ${step})`
   };
 }
 
 // Eight Questions Flow (Landing: start)
 function handleEightQFlow(message: string, step = 0): FlowResult {
   const QUESTIONS = [
-    "¿Cuál es la acción verificable que realiza el usuario dentro de tu Creación?",
-    "Explica cómo interactúa un usuario final con tu Protocolo paso a paso.",
-    "¿Quién administrará tu Protocolo dentro de Pandora?",
-    "¿En qué etapa está actualmente tu Protocolo?",
+    "¿Cuál es la acción verificable que realiza el usuario dentro de tu Creación? (💡 _Tip: Ej. 'Publicar un artículo', 'Hacer check-in'_)",
+    "Explica cómo interactúa un usuario final con tu Protocolo paso a paso. (💡 _Tip: Usa lista de pasos_)",
+    "¿Quién administrará tu Protocolo dentro de Pandora? (💡 _Tip: Tú, un equipo, o una DAO_)",
+    "¿En qué etapa está actualmente tu Protocolo? (💡 _Tip: Idea, Prototipo, Live_)",
     "¿Cuál es tu objetivo al lanzar tu Protocolo dentro de Pandora?",
-    "¿Con cuántas personas cuenta tu proyecto actualmente?",
+    "¿Con cuántas personas cuenta tu proyecto actualmente? (💡 _Tip: Puedes poner solo el número_)",
     "¿Tu proyecto ya cuenta con comunidad o audiencia?",
     "¿Cuál es tu fecha estimada para lanzar la primera versión de tu Protocolo?"
   ];
@@ -173,14 +213,16 @@ function handleEightQFlow(message: string, step = 0): FlowResult {
 
   // Si es una respuesta de pregunta (validar que tenga contenido significativo)
   if (text && step < QUESTIONS.length && !text.includes('info_')) {
-    // Validar respuesta mínima (al menos 5 caracteres y no solo números/simbolos)
-    const isValidResponse = text.length >= 5 && /[a-zA-ZáéíóúñÁÉÍÓÚÑ]/.test(text);
+    // Validar respuesta: permitir números (ej. "5", "10") o texto con longitud mínima
+    const isNumeric = /^\d+$/.test(text.replace(/\s/g, ''));
+    const isValidText = text.length >= 5 && /[a-zA-ZáéíóúñÁÉÍÓÚÑ]/.test(text);
+    const isValidResponse = isNumeric || isValidText;
 
     if (!isValidResponse) {
       return {
         handled: true,
         flowType: 'eight_q',
-        response: `📝 **Respuesta muy corta o inválida**\n\nPor favor proporciona una respuesta más detallada a:\n\n**Pregunta ${step + 1}:**\n${QUESTIONS[step]}`,
+        response: `📝 **Respuesta muy corta o inválida**\n\nPor favor proporciona una respuesta más detallada a:\n\n**Pregunta ${step + 1}:**\n${QUESTIONS[step]}\n\n💡 _Tip: Tu respuesta debe tener al menos 5 letras y ser clara._`,
         action: 'invalid_response'
       };
     }
@@ -430,7 +472,7 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
       };
 
       const requestedSwitch = Object.keys(flowSwitchCommands).find(cmd =>
-        messageText.toLowerCase().trim().includes(cmd)
+        messageText.toLowerCase().trim() === cmd
       );
 
       // If user wants to switch flows, do it immediately
@@ -495,8 +537,14 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
             break;
           case 'high_ticket':
             result = handleHighTicketFlow(messageText, currentState.step);
-            if (result.action === 'next_question') {
-              await updateFlowStep(phone, currentState.step + 1);
+
+            // Only advance if input was valid (next_question)
+            if (result.action === 'next_question' && currentState.step < 3) {
+              const nextStep = currentState.step + 1;
+              await updateFlowStep(phone, nextStep);
+            }
+            if (result.isCompleted) {
+              await updateFlowStep(phone, 3); // Mark as max step
             }
             break;
           case 'eight_q':
