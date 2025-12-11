@@ -4,7 +4,8 @@
 interface NotificationConfig {
   // Discord (FREE!)
   discord?: {
-    webhookUrl: string;
+    webhookUrl: string; // Default/Support channel
+    applyWebhookUrl?: string; // Dedicated Applications channel
   };
   // Email (FREE tier available)
   email?: {
@@ -41,6 +42,26 @@ class NotificationService {
   }
 
   /**
+   * Send notification for new project application
+   */
+  async notifyNewApplication(projectData: any): Promise<boolean> {
+    const notificationText = `
+🎉 NUEVA APLICACIÓN RECIBIDA
+
+🚀 Proyecto: ${projectData.title}
+👤 Founder: ${projectData.applicantName || 'N/A'}
+💰 Capital: ${projectData.targetAmount}
+⏰ Timestamp: ${new Date().toISOString()}
+
+🔗 Ver en Dashboard: /admin/projects/${projectData.slug}
+`.trim();
+
+    // Send to Discord with Green color (not urgent) to the APPS channel
+    const appWebhook = this.config?.discord?.applyWebhookUrl;
+    return await this.sendDiscord(notificationText, false, 5763719, appWebhook); // Green color
+  }
+
+  /**
    * Send to all configured providers
    */
   private async sendToAllProviders(text: string, urgent = false): Promise<boolean> {
@@ -58,18 +79,19 @@ class NotificationService {
   /**
    * Send Discord notification (100% FREE!)
    */
-  private async sendDiscord(text: string, urgent: boolean): Promise<boolean> {
-    if (!this.config?.discord) return true; // Skip if not configured
+  private async sendDiscord(text: string, urgent: boolean, color?: number, targetWebhook?: string): Promise<boolean> {
+    const webhookToUse = targetWebhook || this.config?.discord?.webhookUrl;
+    if (!webhookToUse) return true; // Skip if no webhook configured
 
     try {
-      const response = await fetch(this.config.discord.webhookUrl, {
+      const response = await fetch(webhookToUse, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           embeds: [{
-            title: urgent ? '🚨 AGENTE HUMANO REQUERIDO' : '🤖 Conversación Humana',
+            title: urgent ? '🚨 AGENTE HUMANO REQUERIDO' : '🤖 Notificación del Sistema',
             description: text,
-            color: urgent ? 16711680 : 3447003, // Red or blue
+            color: color || (urgent ? 16711680 : 3447003), // Custom or Red/Blue
             timestamp: new Date().toISOString()
           }],
           username: 'Pandoras Bot'
@@ -133,15 +155,24 @@ export async function notifyHumanAgent(userPhone: string, messageBody: string): 
   return await notificationService.notifyHumanAgent(userPhone, messageBody);
 }
 
+export async function notifyNewApplication(projectData: any): Promise<boolean> {
+  return await notificationService.notifyNewApplication(projectData);
+}
+
 export function configureNotifications(config: NotificationConfig) {
   notificationService.configure(config);
 }
 
 // Auto-configure from environment (support both naming variants)
 const discordWebhook = process.env.DISCORD_WEBHOOK_URL || process.env.DISCORD_WEBHOOK_UR;
-if (discordWebhook) {
+const discordApplyWebhook = process.env.DISCORD_APPLY_WEBHOOK_URL || "https://discord.com/api/webhooks/1448752441838272622/r2rdM6ch5ajcrf0nZOuzFuUOSEYYJqo3l4j2W9cIxkAAAX-Hlf4Gy8R-XE0m6djm7mUv";
+
+if (discordWebhook || discordApplyWebhook) {
   configureNotifications({
-    discord: { webhookUrl: discordWebhook }
+    discord: {
+      webhookUrl: discordWebhook || '',
+      applyWebhookUrl: discordApplyWebhook
+    }
   });
-  console.log('🚀 Notification service auto-configured with Discord');
+  console.log('🚀 Notification service auto-configured with Discord (Dual Channels)');
 }

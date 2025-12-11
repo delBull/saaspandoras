@@ -59,7 +59,7 @@ export async function POST(request: Request) {
         linkedinUrl: parsedData.data.linkedinUrl ?? null,
 
         // --- Sección 3: ¡LA CLAVE! Híbrido de Números y Strings ---
-        
+
         // Campos DECIMAL (decimal, numeric) -> van como STRING
         targetAmount: parsedData.data.targetAmount.toString(), // Convertir a string
         totalValuationUsd: parsedData.data.totalValuationUsd?.toString() ?? null, // Convertir a string
@@ -123,8 +123,18 @@ export async function POST(request: Request) {
         console.log(`🎯 Gamification event tracked: project_application_submitted for ${applicantWalletAddress}`);
       } catch (gamificationError) {
         console.warn('⚠️ Failed to track gamification event:', gamificationError);
-        // Don't fail the project creation if gamification tracking fails
       }
+    }
+
+    // 🔔 DISCORD NOTIFICATION
+    try {
+      const { notifyNewApplication } = await import("@/lib/notifications");
+      if (newProject) {
+        await notifyNewApplication(newProject);
+        console.log(`🔔 Notification sent for project: ${newProject.title}`);
+      }
+    } catch (notificationError) {
+      console.warn('⚠️ Failed to send notification:', notificationError);
     }
 
     return NextResponse.json(newProject, { status: 201 });

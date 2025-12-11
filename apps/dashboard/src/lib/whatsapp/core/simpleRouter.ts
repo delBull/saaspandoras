@@ -6,6 +6,7 @@
 
 import { sql } from "@/lib/database";
 import type { WhatsAppUser, WhatsAppSession } from "@/db/schema";
+import { notifyHumanAgent } from "@/lib/notifications";
 
 /**
  * INTERFACES SIMPLIFICADAS
@@ -287,7 +288,10 @@ function handleSupportFlow(message: string): FlowResult {
 }
 
 // Human Flow
-function handleHumanFlow(): FlowResult {
+async function handleHumanFlow(phone: string, message: string = ''): Promise<FlowResult> {
+  // Send notification to Discord/Email
+  await notifyHumanAgent(phone, message || 'Usuario solicita hablar con humano');
+
   return {
     handled: true,
     flowType: 'human',
@@ -412,6 +416,7 @@ function detectFlowFromLanding(payload: any, messageText?: string): FlowType {
  */
 export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
   const { from: phone, text, id: messageId } = payload;
+  const messageType = 'text';
   const messageText = text?.body?.trim() || '';
 
   try {
@@ -460,6 +465,15 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
       let result: FlowResult;
 
       // CHECK FOR FLOW SWITCHING COMMANDS FIRST
+      // Define deep link messages that should trigger a switch
+      const deepLinkMessages = {
+        'hola, soy founder y quiero aplicar al programa founders de pandora\'s. tengo capital disponible.': 'high_ticket',
+        'hola, quiero iniciar mi evaluación de 8 preguntas': 'eight_q',
+        'estoy interesado en crear un utility protocol funcional': 'utility',
+        'necesito ayuda técnica con mi proyecto': 'support',
+        'quiero hablar con un agente humano': 'human'
+      };
+
       const flowSwitchCommands = {
         'eight_q': 'eight_q',
         'eightq': 'eight_q',
@@ -471,9 +485,18 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
         'human': 'human'
       };
 
-      const requestedSwitch = Object.keys(flowSwitchCommands).find(cmd =>
-        messageText.toLowerCase().trim() === cmd
-      );
+      const lowerText = messageText.toLowerCase().trim();
+
+      // Check for deep links exact match first
+      let requestedSwitch = deepLinkMessages[lowerText as keyof typeof deepLinkMessages];
+
+      // Then check for short commands exact match
+      if (!requestedSwitch) {
+        const foundCommand = Object.keys(flowSwitchCommands).find(cmd => lowerText === cmd);
+        if (foundCommand) {
+          requestedSwitch = flowSwitchCommands[foundCommand as keyof typeof flowSwitchCommands];
+        }
+      }
 
       // If user wants to switch flows, do it immediately
       if (requestedSwitch && flowSwitchCommands[requestedSwitch as keyof typeof flowSwitchCommands] !== existingFlow) {
@@ -512,7 +535,7 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
             result = handleSupportFlow(messageText);
             break;
           case 'human':
-            result = handleHumanFlow();
+            result = await handleHumanFlow(phone, messageText);
             break;
           default:
             result = handleEightQFlow(messageText, 0);
@@ -566,7 +589,7 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
             result = handleSupportFlow(messageText);
             break;
           case 'human':
-            result = handleHumanFlow();
+            result = await handleHumanFlow(phone, messageText);
             break;
           default:
             result = {
@@ -626,7 +649,7 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
         result = handleSupportFlow(messageText);
         break;
       case 'human':
-        result = handleHumanFlow();
+        result = await handleHumanFlow(phone, messageText);
         break;
       default:
         result = handleEightQFlow(messageText, 0);
