@@ -47,6 +47,8 @@ export enum EventType {
   PROJECT_APPLICATION_SUBMITTED = 'project_application_submitted',
   PROJECT_APPLICATION_APPROVED = 'project_application_approved',
   PROJECT_APPLICATION_REJECTED = 'project_application_rejected',
+  PROTOCOL_DEPLOYED = 'protocol_deployed',
+  SALE_CERTIFIED = 'sale_certified',
 
   // Investment Events
   INVESTMENT_MADE = 'investment_made',

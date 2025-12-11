@@ -416,6 +416,7 @@ function detectFlowFromLanding(payload: any, messageText?: string): FlowType {
  */
 export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
   const { from: phone, text, id: messageId } = payload;
+  const messageType = 'text';
   const messageText = text?.body?.trim() || '';
 
   try {
