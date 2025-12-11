@@ -438,14 +438,21 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
         const newFlow = flowSwitchCommands[requestedSwitch as keyof typeof flowSwitchCommands];
         console.log(`🔄 [FLOW-SWITCH] Usuario ${phone} cambiando de ${existingFlow} a ${newFlow}`);
 
-        // Update session to new flow
+        // 1. Desactivar sesión actual evitando colisiones
         await sql`
-          UPDATE whatsapp_sessions s
-          SET flow_type = ${newFlow}, current_step = 0, state = '{}'::jsonb, updated_at = now()
-          FROM whatsapp_users u
-          WHERE s.user_id = u.id
-            AND u.phone = ${phone}
-            AND s.is_active = true
+          UPDATE whatsapp_sessions 
+          SET is_active = false, updated_at = now()
+          WHERE user_id = (SELECT id FROM whatsapp_users WHERE phone = ${phone})
+            AND is_active = true
+        `;
+
+        // 2. Activar/Crear sesión del nuevo flujo
+        await sql`
+          INSERT INTO whatsapp_sessions (user_id, flow_type, state, current_step, is_active)
+          SELECT id, ${newFlow}, '{}'::jsonb, 0, true
+          FROM whatsapp_users WHERE phone = ${phone}
+          ON CONFLICT (user_id, flow_type)
+          DO UPDATE SET is_active = true, current_step = 0, state = '{}'::jsonb, updated_at = now()
         `;
 
         // Handle the message with the new flow
