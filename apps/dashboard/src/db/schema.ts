@@ -89,7 +89,7 @@ export const businessCategoryEnum = pgEnum("business_category", [
 
 export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
-  
+
   // Sección 1: Identidad del Proyecto
   title: varchar("title", { length: 256 }).notNull(),
   slug: varchar("slug", { length: 256 }).notNull().unique(),
@@ -99,7 +99,7 @@ export const projects = pgTable("projects", {
   description: text("description").notNull(), // Descripción larga
   businessCategory: businessCategoryEnum("business_category").default("other"), // Categoría de negocio
   videoPitch: varchar("video_pitch", { length: 512 }), // Enlace video pitch
-  
+
   // Sección 2: Enlaces Externos y Comunidad
   website: varchar("website", { length: 512 }),
   whitepaperUrl: varchar("whitepaper_url", { length: 512 }), // Prospecto de inversión
@@ -107,7 +107,7 @@ export const projects = pgTable("projects", {
   discordUrl: varchar("discord_url", { length: 512 }),
   telegramUrl: varchar("telegram_url", { length: 512 }),
   linkedinUrl: varchar("linkedin_url", { length: 512 }),
-  
+
   // Sección 3: Detalles de la Oferta (Tokenomics)
   targetAmount: decimal("target_amount", { precision: 18, scale: 2 }).notNull().default("0.00"),
   totalValuationUsd: decimal("total_valuation_usd", { precision: 18, scale: 2 }), // Valuación total
@@ -132,25 +132,34 @@ export const projects = pgTable("projects", {
   tieredAccessDetails: text("tiered_access_details"),
   discountedFeesEnabled: boolean("discounted_fees_enabled").default(false),
   discountedFeesDetails: text("discounted_fees_details"),
-  
+
   // Sección 4: Equipo y Transparencia
   teamMembers: jsonb("team_members"), // Array de {name, position, linkedin}
   advisors: jsonb("advisors"), // Array de asesores
   tokenDistribution: jsonb("token_distribution"), // Distribución % tokens
   contractAddress: varchar("contract_address", { length: 42 }), // Dirección contrato
   treasuryAddress: varchar("treasury_address", { length: 42 }), // Tesorería
-  
+
+  // Sección 4.1: SCaaS Architecture (W2E Contracts)
+  licenseContractAddress: varchar("license_contract_address", { length: 42 }),
+  utilityContractAddress: varchar("utility_contract_address", { length: 42 }),
+  loomContractAddress: varchar("loom_contract_address", { length: 42 }),
+  governorContractAddress: varchar("governor_contract_address", { length: 42 }),
+  chainId: integer("chain_id"),
+  deploymentStatus: varchar("deployment_status", { length: 50 }).default('pending'),
+  w2eConfig: jsonb("w2e_config").default({}),
+
   // Sección 5: Seguridad y Auditoría
   legalStatus: text("legal_status"), // Estatus legal del activo
   valuationDocumentUrl: text("valuation_document_url"),
   fiduciaryEntity: varchar("fiduciary_entity", { length: 256 }),
   dueDiligenceReportUrl: text("due_diligence_report_url"),
-  
+
   // Sección 6: Parámetros del Token
   isMintable: boolean("is_mintable").default(false),
   isMutable: boolean("is_mutable").default(false),
   updateAuthorityAddress: varchar("update_authority_address", { length: 42 }),
-  
+
   // Sección 7: Contacto del Solicitante (Interno)
   applicantName: varchar("applicant_name", { length: 256 }),
   applicantPosition: varchar("applicant_position", { length: 256 }),
@@ -162,7 +171,7 @@ export const projects = pgTable("projects", {
   // Campos adicionales
   integrationDetails: text("integration_details"), // Detalles de integraciones
   legalEntityHelp: boolean("legal_entity_help").default(false), // Necesita ayuda con entidad legal
-  
+
   // Campos existentes (mantener compatibilidad)
   imageUrl: text("image_url"),
   socials: jsonb("socials"), // Mantener para compatibilidad
@@ -186,6 +195,8 @@ export const projectsIndexes = {
 export const eventTypeEnum = pgEnum("event_type", [
   "project_application_submitted",
   "project_application_approved",
+  "protocol_deployed",
+  "sale_certified",
   "investment_made",
   "user_registered",
   "daily_login",
