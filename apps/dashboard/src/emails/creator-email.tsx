@@ -22,7 +22,7 @@ interface PandorasWelcomeEmailProps {
 }
 
 // Valores por defecto
-const DEFAULT_EIGHT_Q_MESSAGE = encodeURIComponent("8 preguntas");
+const DEFAULT_EIGHT_Q_MESSAGE = encodeURIComponent("Hola, quiero iniciar mi evaluación de 8 preguntas");
 const DEFAULT_WHATSAPP_LINK = `https://wa.me/5213221374392?text=${DEFAULT_EIGHT_Q_MESSAGE}`;
 
 export default function PandorasWelcomeEmail({
