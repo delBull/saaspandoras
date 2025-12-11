@@ -45,7 +45,7 @@
     "mime": "^3.0.0",
     "motion": "^12.23.12",
     "negotiator": "0.6.3",
-    "next": "15.5.4",
+    "next": "15.5.7",
     "next-auth": "^4.24.11",
     "next-themes": "0.2.1",
     "posthog-js": "1.105.0",
