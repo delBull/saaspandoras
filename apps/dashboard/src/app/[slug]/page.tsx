@@ -170,6 +170,10 @@ export default async function ShortlinkPage({ params }: PageProps) {
     // Handle different types of errors from handleShortlink
     const errorType = error.message || 'server_error';
 
+    if (error.message === 'NEXT_REDIRECT' || error?.digest?.startsWith('NEXT_REDIRECT')) {
+      throw error;
+    }
+
     if (errorType === 'not_found') {
       console.log(`📭 Shortlink page not found: ${slug}`);
       return (
