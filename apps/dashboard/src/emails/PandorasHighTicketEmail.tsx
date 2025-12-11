@@ -21,7 +21,7 @@ interface PandorasHighTicketEmailProps {
 }
 
 const DEFAULT_WHATSAPP_NUMBER = "5213221374392";
-const DEFAULT_FOUNDERS_MESSAGE = encodeURIComponent("Hola, soy founder y quiero aplicar al programa de Pandora's. Tengo capital disponible.");
+const DEFAULT_FOUNDERS_MESSAGE = encodeURIComponent("Hola, soy founder y quiero aplicar al programa Founders de Pandora's. Tengo capital disponible.");
 
 export default function PandorasHighTicketEmail({
   name = "Founder",
@@ -80,9 +80,9 @@ export default function PandorasHighTicketEmail({
               <Row className="space-y-4 text-left">
                 <Column>
                   <Text className="text-gray-800 text-base leading-6 mb-3">
-                    ✅ Tienes un producto web con al menos 100 usuarios activos<br/>
-                    ✅ Cuentas con capital para cubrir desarrollo ($5,000-13,000)<br/>
-                    ✅ Estás preparado para invertir tiempo en una transición Web3<br/>
+                    ✅ Tienes un producto web con al menos 100 usuarios activos<br />
+                    ✅ Cuentas con capital para cubrir desarrollo ($5,000-13,000)<br />
+                    ✅ Estás preparado para invertir tiempo en una transición Web3<br />
                     ✅ Entiendes que el éxito va más allá de smart contracts
                   </Text>
                 </Column>
@@ -102,11 +102,11 @@ export default function PandorasHighTicketEmail({
               <Row className="text-left space-y-3">
                 <Column>
                   <Text className="text-gray-700 leading-6">
-                    <strong>Diagnóstico técnico inicial:</strong> Evaluación detallada de tu producto, comunidad y análisis técnico (2-3 días).<br/><br/>
+                    <strong>Diagnóstico técnico inicial:</strong> Evaluación detallada de tu producto, comunidad y análisis técnico (2-3 días).<br /><br />
 
-                    <strong>Arquitectura a medida:</strong> Diseño de 3-5 protocolos de utilidad básicos + tokenomics preliminares.<br/><br/>
+                    <strong>Arquitectura a medida:</strong> Diseño de 3-5 protocolos de utilidad básicos + tokenomics preliminares.<br /><br />
 
-                    <strong>Desarrollo acelerado:</strong> Deployment en nuestra plataforma ModularFactory + plantillas pre-auditadas.<br/><br/>
+                    <strong>Desarrollo acelerado:</strong> Deployment en nuestra plataforma ModularFactory + plantillas pre-auditadas.<br /><br />
 
                     <strong>Apoyo post-lanzamiento:</strong> 30 días de soporte técnico + consejos para community building.
                   </Text>
