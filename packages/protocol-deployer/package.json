@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "SCaaS Protocol Deployer - Thirdweb Engine Integration",
   "main": "dist/index.js",
-  "types": "dist/index.ts",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "node scripts/fix-ethers.js && tsc",
     "dev": "tsc --watch",

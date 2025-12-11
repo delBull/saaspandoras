@@ -10,7 +10,7 @@ interface ProjectTableViewProps {
   setExpandedProject: (id: string | null) => void;
   actionsDropdown: string | null;
   setActionsDropdown: (id: string | null) => void;
-  setActionsDropdownPosition: (position: {top: number, left: number} | null) => void;
+  setActionsDropdownPosition: (position: { top: number, left: number } | null) => void;
   isFeatured: (id: number) => boolean;
   toggleFeatured: (id: number) => Promise<void>;
   setStatusDropdown: (id: string | null) => void;
@@ -62,16 +62,15 @@ export function ProjectTableView({
                   <div className="relative">
                     <button
                       onClick={() => setStatusDropdown(statusDropdown === p.id ? null : p.id)}
-                      className={`px-2 py-1 rounded text-xs font-semibold cursor-pointer transition-all ${
-                        p.status === "pending" ? "bg-yellow-600 hover:bg-yellow-700" :
+                      className={`px-2 py-1 rounded text-xs font-semibold cursor-pointer transition-all ${p.status === "pending" ? "bg-yellow-600 hover:bg-yellow-700" :
                         p.status === "approved" ? "bg-blue-600 hover:bg-blue-700" :
-                        p.status === "live" ? "bg-green-600 hover:bg-green-700" :
-                        p.status === "completed" ? "bg-emerald-600 hover:bg-emerald-700" :
-                        "bg-red-600 hover:bg-red-700"
-                      } text-white flex items-center gap-1`}
+                          p.status === "live" ? "bg-green-600 hover:bg-green-700" :
+                            p.status === "completed" ? "bg-emerald-600 hover:bg-emerald-700" :
+                              "bg-red-600 hover:bg-red-700"
+                        } text-white flex items-center gap-1`}
                     >
                       <span>{p.status}</span>
-                      <svg className="w-3 h-3 transition-transform" style={{transform: statusDropdown === p.id ? 'rotate(180deg)' : 'rotate(0deg)'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3 h-3 transition-transform" style={{ transform: statusDropdown === p.id ? 'rotate(180deg)' : 'rotate(0deg)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                     </button>
@@ -133,13 +132,12 @@ export function ProjectTableView({
                     }
 
                     return (
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        source === "whatsapp"
-                          ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                          : source === "web"
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${source === "whatsapp"
+                        ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                        : source === "web"
                           ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
                           : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
-                      }`}>
+                        }`}>
                         {source === "whatsapp" ? "📱 WhatsApp" : source === "web" ? "🌐 Web" : "❓ Desconocido"}
                       </span>
                     );
@@ -163,11 +161,10 @@ export function ProjectTableView({
                           console.error('🔧 Admin: Error updating featured status:', error);
                         }
                       }}
-                      className={`px-3 py-1.5 rounded text-xs font-medium transition-all duration-200 ${
-                        isFeatured(Number(p.id))
-                          ? 'bg-lime-500 hover:bg-lime-600 text-black shadow-lg ring-2 ring-lime-400/30'
-                          : 'bg-zinc-700 hover:bg-zinc-600 text-gray-300 hover:text-white border border-zinc-600 hover:border-zinc-500'
-                      }`}
+                      className={`px-3 py-1.5 rounded text-xs font-medium transition-all duration-200 ${isFeatured(Number(p.id))
+                        ? 'bg-lime-500 hover:bg-lime-600 text-black shadow-lg ring-2 ring-lime-400/30'
+                        : 'bg-zinc-700 hover:bg-zinc-600 text-gray-300 hover:text-white border border-zinc-600 hover:border-zinc-500'
+                        }`}
                     >
                       {isFeatured(Number(p.id)) ? '✓ Featured' : '☆ Feature'}
                     </button>
@@ -212,7 +209,7 @@ export function ProjectTableView({
                       <span>Acciones</span>
                       <svg
                         className="w-3 h-3 transition-transform"
-                        style={{transform: actionsDropdown === p.id ? 'rotate(180deg)' : 'rotate(0deg)'}}
+                        style={{ transform: actionsDropdown === p.id ? 'rotate(180deg)' : 'rotate(0deg)' }}
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -366,6 +363,57 @@ export function ProjectTableView({
                         </div>
                       </div>
 
+                      {/* Información del Protocolo (SCaaS) */}
+                      {(p.deploymentStatus || p.licenseContractAddress) && (
+                        <div className="border-t border-zinc-700 pt-4 mt-4">
+                          <h4 className="font-semibold text-indigo-400 text-sm flex items-center gap-2 mb-3">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                            </svg>
+                            Información del Protocolo (SCaaS)
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs font-mono">
+                            <div>
+                              <span className="text-gray-400 block mb-1">Status:</span>
+                              <span className={`px-2 py-0.5 rounded ${p.deploymentStatus === 'deployed' ? 'bg-indigo-900 text-indigo-300 border border-indigo-700' :
+                                p.deploymentStatus === 'pending' ? 'bg-amber-900 text-amber-300 border border-amber-700' :
+                                  'bg-zinc-700 text-gray-400'
+                                }`}>
+                                {p.deploymentStatus || 'N/A'}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-gray-400 block mb-1">Chain ID:</span>
+                              <span className="text-white">{p.chainId || 'N/A'}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-400 block mb-1">License Contract:</span>
+                              <span className="text-white break-all" title={p.licenseContractAddress || ''}>
+                                {p.licenseContractAddress ? `${p.licenseContractAddress.substring(0, 8)}...${p.licenseContractAddress.substring(36)}` : 'N/A'}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-gray-400 block mb-1">Utility Contract:</span>
+                              <span className="text-white break-all" title={p.utilityContractAddress || ''}>
+                                {p.utilityContractAddress ? `${p.utilityContractAddress.substring(0, 8)}...${p.utilityContractAddress.substring(36)}` : 'N/A'}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-gray-400 block mb-1">Loom Contract:</span>
+                              <span className="text-white break-all" title={p.loomContractAddress || ''}>
+                                {p.loomContractAddress ? `${p.loomContractAddress.substring(0, 8)}...${p.loomContractAddress.substring(36)}` : 'N/A'}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-gray-400 block mb-1">Governor Contract:</span>
+                              <span className="text-white break-all" title={p.governorContractAddress || ''}>
+                                {p.governorContractAddress ? `${p.governorContractAddress.substring(0, 8)}...${p.governorContractAddress.substring(36)}` : 'N/A'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Información adicional */}
                       <div className="border-t border-zinc-700 pt-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -397,6 +445,6 @@ export function ProjectTableView({
           ))}
         </tbody>
       </table>
-    </div>
+    </div >
   );
 }
