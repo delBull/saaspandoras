@@ -35,6 +35,12 @@
       ],
       "@saasfly/api": [
         "../../packages/api/src"
+      ],
+      "@pandoras/protocol-deployer": [
+        "../../packages/protocol-deployer/src"
+      ],
+      "@pandoras/protocol-deployer/*": [
+        "../../packages/protocol-deployer/src/*"
       ]
     }
   },

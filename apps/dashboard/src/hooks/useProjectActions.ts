@@ -109,11 +109,10 @@ export function useProjectActions({ setActionsLoading, walletAddress, refreshCal
     const newStatus = 'rejected';
     const statusText = 'rechazado';
 
-    const confirmMessage = `¿${statusText} el proyecto "${projectTitle}"?\n\n${
-      rejectionType
+    const confirmMessage = `¿${statusText} el proyecto "${projectTitle}"?\n\n${rejectionType
         ? 'El solicitante tendrá que aplicar nuevamente.'
         : 'El solicitante podrá completar la información faltante.'
-    }`;
+      }`;
 
     if (!window.confirm(confirmMessage)) return;
 
@@ -256,11 +255,109 @@ export function useProjectActions({ setActionsLoading, walletAddress, refreshCal
     }
   };
 
+  // Function to deploy protocol
+  const deployProtocol = async (projectId: string, projectTitle: string, projectSlug: string | undefined) => {
+    if (!projectSlug) {
+      toast.error('Error: El proyecto no tiene un slug válido.');
+      return;
+    }
+
+    const confirmMessage = `¿Estás seguro de desplegar el protocolo para "${projectTitle}"?\n\nEsta acción ejecutará transacciones on-chain y es irreversible.`;
+    if (!window.confirm(confirmMessage)) return;
+
+    if (!walletAddress) {
+      alert('Error: No se pudo obtener la dirección de tu wallet. Conecta tu wallet primero.');
+      return;
+    }
+
+    const actionKey = `deploy-${projectId}`;
+    setActionsLoading((prev) => ({ ...prev, [actionKey]: true }));
+
+    try {
+      const response = await fetch(`/api/admin/deploy-protocol/${projectSlug}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-thirdweb-address': walletAddress,
+          'x-wallet-address': walletAddress,
+          'x-user-address': walletAddress,
+        },
+      });
+
+      if (response.ok) {
+        toast.success('Protocolo desplegado exitosamente 🚀');
+        // Refresh data instead of reloading page
+        if (refreshCallback) {
+          await refreshCallback();
+        }
+      } else {
+        const errorText = await response.text().catch(() => 'Error desconocido');
+        console.error('Error response:', response.status, errorText);
+        toast.error(`Error al desplegar protocolo: ${response.status} - ${errorText}`);
+      }
+    } catch (error) {
+      alert('Error de conexión');
+      console.error('Error deploying protocol:', error);
+    } finally {
+      setActionsLoading((prev) => ({ ...prev, [actionKey]: false }));
+    }
+  };
+
+  // Function to certify sale
+  const certifySale = async (projectId: string, projectTitle: string, projectSlug: string | undefined) => {
+    if (!projectSlug) {
+      toast.error('Error: El proyecto no tiene un slug válido.');
+      return;
+    }
+
+    const confirmMessage = `¿Certificar la venta del proyecto "${projectTitle}"?\n\nEsto marcará el proyecto como COMPLETED y simulará el éxito de la recaudación.`;
+    if (!window.confirm(confirmMessage)) return;
+
+    if (!walletAddress) {
+      alert('Error: No se pudo obtener la dirección de tu wallet. Conecta tu wallet primero.');
+      return;
+    }
+
+    const actionKey = `certify-${projectId}`;
+    setActionsLoading((prev) => ({ ...prev, [actionKey]: true }));
+
+    try {
+      const response = await fetch(`/api/admin/certify-sale/${projectSlug}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-thirdweb-address': walletAddress,
+          'x-wallet-address': walletAddress,
+          'x-user-address': walletAddress,
+        },
+      });
+
+      if (response.ok) {
+        toast.success('Venta certificada exitosamente 🏆');
+        // Refresh data instead of reloading page
+        if (refreshCallback) {
+          await refreshCallback();
+        }
+      } else {
+        const errorText = await response.text().catch(() => 'Error desconocido');
+        console.error('Error response:', response.status, errorText);
+        toast.error(`Error al certificar venta: ${response.status} - ${errorText}`);
+      }
+    } catch (error) {
+      alert('Error de conexión');
+      console.error('Error certifying sale:', error);
+    } finally {
+      setActionsLoading((prev) => ({ ...prev, [actionKey]: false }));
+    }
+  };
+
   return {
     deleteProject,
     approveProject,
     rejectProject,
     changeProjectStatus,
     transferProject,
+    deployProtocol,
+    certifySale,
   };
 }
