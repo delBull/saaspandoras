@@ -67,13 +67,28 @@ export async function deployW2EProtocol(
   const privateKey = process.env.PANDORA_ORACLE_PRIVATE_KEY || process.env.PRIVATE_KEY;
   if (!privateKey) throw new Error("Private Key not found in environment (PANDORA_ORACLE_PRIVATE_KEY)");
 
-  const provider = new ethers.JsonRpcProvider(rpcUrl);
+  // Hybrid Provider
+  let provider;
+  if ((ethers as any).providers && (ethers as any).providers.JsonRpcProvider) {
+    provider = new (ethers as any).providers.JsonRpcProvider(rpcUrl);
+  } else {
+    provider = new (ethers as any).JsonRpcProvider(rpcUrl);
+  }
+
   const wallet = new ethers.Wallet(privateKey, provider);
 
   console.log(`📡 Conectado a ${network} con wallet: ${wallet.address}`);
 
+  // Helpers for v5/v6 compatibility
+  const utils = (ethers as any).utils || ethers;
+  // v5 has utils.parseEther, v6 has ethers.parseEther
+  // But wait, v6 ethers object has parseEther. v5 descriptors are in utils.
+  const parseEther = (val: string) => utils.parseEther ? utils.parseEther(val) : (ethers as any).parseEther(val);
+  const isAddress = (val: string) => utils.isAddress ? utils.isAddress(val) : (ethers as any).isAddress(val);
+  const getContractAddr = (opts: any) => utils.getContractAddress ? utils.getContractAddress(opts) : (ethers as any).getCreateAddress(opts);
+
   // 2. Validate Config & Env
-  const isValidAddress = (addr: string | undefined): boolean => addr != null && ethers.isAddress(addr);
+  const isValidAddress = (addr: string | undefined): boolean => addr != null && isAddress(addr);
 
   // Load and validate specific addresses
   let rootTreasury = process.env.ROOT_TREASURY_ADDRESS;
@@ -97,17 +112,10 @@ export async function deployW2EProtocol(
   if (!rootTreasury) throw new Error("ROOT_TREASURY_ADDRESS missing and no fallback available");
 
   // 3. Address Prediction for Circular Dependencies
-  // Order: License (N), Utility (N+1), Loom (N+2), Treasury (N+3), Governor (N+4)
-  // Dependency Graph:
-  // - License -> Treasury
-  // - Loom -> License, Utility, Treasury
-  // - Treasury -> Governor
-  // - Governor -> License, Loom
-
-  const currentNonce = await wallet.getNonce();
+  const currentNonce = await ((wallet as any).getTransactionCount ? (wallet as any).getTransactionCount() : (wallet as any).getNonce());
   console.log(`🔢 Current Nonce: ${currentNonce}`);
 
-  const predictAddr = (nonce: number) => ethers.getCreateAddress({ from: wallet.address, nonce });
+  const predictAddr = (nonce: number) => getContractAddr({ from: wallet.address, nonce });
 
   const addrLicense = predictAddr(currentNonce);
   const addrUtility = predictAddr(currentNonce + 1);
@@ -130,6 +138,17 @@ export async function deployW2EProtocol(
   const TreasuryFactory = new ethers.ContractFactory(PBOXProtocolTreasuryArtifact.abi, PBOXProtocolTreasuryArtifact.bytecode, wallet);
   const GovernorFactory = new ethers.ContractFactory(W2EGovernorArtifact.abi, W2EGovernorArtifact.bytecode, wallet);
 
+  // Helper to wait for deployment
+  const waitForDeploy = async (contract: any) => {
+    if (contract.deployed) {
+      await contract.deployed(); // v5
+      return contract.address;
+    } else {
+      await contract.waitForDeployment(); // v6
+      return await contract.getAddress();
+    }
+  };
+
   // 5. Execute Deployments
 
   // --- A. W2E License (Nonce N) ---
@@ -138,13 +157,12 @@ export async function deployW2EProtocol(
     config.licenseToken.name,
     config.licenseToken.symbol,
     config.maxLicenses,
-    ethers.parseEther(config.licenseToken.price || "0.1"),
+    parseEther(config.licenseToken.price || "0.1"),
     oracleAddress,
     addrTreasury, // Circular resolved
     wallet.address // Initial Owner
   );
-  await license.waitForDeployment();
-  const licenseAddress = await license.getAddress();
+  const licenseAddress = await waitForDeploy(license);
   console.log(`✅ License Deployed: ${licenseAddress}`);
 
   // --- B. W2E Utility (Nonce N+1) ---
@@ -157,8 +175,7 @@ export async function deployW2EProtocol(
     feeRecipient,
     wallet.address
   );
-  await utility.waitForDeployment();
-  const utilityAddress = await utility.getAddress();
+  const utilityAddress = await waitForDeploy(utility);
   console.log(`✅ Utility Deployed: ${utilityAddress}`);
 
   // --- C. W2E Loom (Nonce N+2) ---
@@ -180,8 +197,7 @@ export async function deployW2EProtocol(
     config.phiFundSplitPct || 20,
     wallet.address
   );
-  await loom.waitForDeployment();
-  const loomAddress = await loom.getAddress();
+  const loomAddress = await waitForDeploy(loom);
   console.log(`✅ Loom Deployed: ${loomAddress}`);
 
   // --- D. PBOX Protocol Treasury (Nonce N+3) ---
@@ -201,14 +217,13 @@ export async function deployW2EProtocol(
     addrGovernor, // Circular resolved
     Math.min(2, chestSigners.length), // Required Pandora Confirmations
     2, // Required DAO Confirmations
-    ethers.parseEther("5.0"), // Emergency Threshold
+    parseEther("5.0"), // Emergency Threshold
     30, // Emergency Inactivity Days
-    ethers.parseEther("0.1"), // Direct Operation Limit
-    ethers.parseEther("1.0"), // Daily Spending Limit
+    parseEther("0.1"), // Direct Operation Limit
+    parseEther("1.0"), // Daily Spending Limit
     wallet.address
   );
-  await treasury.waitForDeployment();
-  const treasuryAddress = await treasury.getAddress();
+  const treasuryAddress = await waitForDeploy(treasury);
   console.log(`✅ Treasury Deployed: ${treasuryAddress}`);
 
   // --- E. W2E Governor (Nonce N+4) ---
@@ -222,8 +237,7 @@ export async function deployW2EProtocol(
     3600, // Execution delay
     wallet.address
   );
-  await governor.waitForDeployment();
-  const governorAddress = await governor.getAddress();
+  const governorAddress = await waitForDeploy(governor);
   console.log(`✅ Governor Deployed: ${governorAddress}`);
 
   // 6. Post-Deployment Setup (Wiring)
@@ -273,7 +287,7 @@ export async function deployW2EProtocol(
     loomAddress: loomAddress,
     governorAddress: governorAddress,
     timelockAddress: "0x0000000000000000000000000000000000000000", // No standalone Timelock for now
-    deploymentTxHash: loom.deploymentTransaction()?.hash || "",
+    deploymentTxHash: (loom as any).deployTransaction?.hash || (loom.deploymentTransaction()?.hash) || "",
     network: network,
     chainId: Number((await provider.getNetwork()).chainId)
   };

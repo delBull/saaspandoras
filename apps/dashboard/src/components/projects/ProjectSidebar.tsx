@@ -27,9 +27,16 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
     address: project.licenseContractAddress
   }) : undefined;
 
+  // Fallback to prevent hook crash if contract is undefined (even if disabled)
+  const dummyContract = getContract({
+    client,
+    chain: defineChain(chainId),
+    address: "0x0000000000000000000000000000000000000000"
+  });
+
   // 2. Read Balance (Check if user holds Access NFT)
   const { data: licenseBalance } = useReadContract({
-    contract: licenseContract!,
+    contract: licenseContract || dummyContract,
     queryOptions: { enabled: !!account && !!licenseContract },
     method: "function balanceOf(address) view returns (uint256)",
     params: [account?.address || "0x0000000000000000000000000000000000000000"]
@@ -45,28 +52,72 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
     <div className="hidden lg:block absolute right-0 top-0 w-72 h-full">
       {/* Non-sticky section - Investment & Creator cards */}
       <div className="space-y-6 mb-6">
-        {/* Investment Card */}
-        <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
-          <div className="text-center mb-6">
-            <div className="text-3xl font-bold text-white mb-2">
-              ${raisedAmount.toLocaleString()}
+        {/* Access / Investment Card */}
+        <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6 relative overflow-hidden group">
+          {/* Access Card Background (Optional visual flair) */}
+          {project.w2eConfig?.accessCardImage && (
+            <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={project.w2eConfig.accessCardImage} alt="" className="w-full h-full object-cover blur-sm" />
             </div>
+          )}
 
-            <div className="w-full bg-zinc-800 rounded-full h-3 mb-4">
-              <div
-                className="bg-lime-400 h-full rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(raisedPercentage, 100)}%` }}
-              ></div>
-            </div>
+          <div className="text-center mb-6 relative z-10">
+            {project.w2eConfig?.accessCardImage ? (
+              <div className="mb-4 flex flex-col items-center">
+                <div className="w-32 h-32 rounded-lg overflow-hidden border-2 border-lime-400/50 shadow-[0_0_20px_rgba(163,230,53,0.3)] mb-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={project.w2eConfig.accessCardImage} alt="Access NFT" className="w-full h-full object-cover" />
+                </div>
+                <h3 className="text-lime-400 font-bold text-sm tracking-wider uppercase">Access Card</h3>
+              </div>
+            ) : (
+              <div className="text-3xl font-bold text-white mb-2">
+                ${raisedAmount.toLocaleString()}
+              </div>
+            )}
+
+            {!project.w2eConfig?.accessCardImage && (
+              <div className="w-full bg-zinc-800 rounded-full h-3 mb-4">
+                <div
+                  className="bg-lime-400 h-full rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(raisedPercentage, 100)}%` }}
+                ></div>
+              </div>
+            )}
 
             <div className="flex justify-between text-sm mb-6">
               <span className="text-gray-400">Meta: {targetAmount.toLocaleString()} tokens</span>
-              <span className="text-gray-400">30 días restantes</span>
+              <span className="text-gray-400">Status: {project.deploymentStatus === 'deployed' ? '🟢 En Vivo' : '🟡 Espera'}</span>
             </div>
 
-            <button className="w-full bg-lime-400 hover:bg-lime-500 text-black font-bold py-3 px-6 rounded-lg transition-colors mb-4">
-              ACCESO
-            </button>
+            {hasAccess ? (
+              <div className="w-full bg-zinc-800/80 border border-lime-500/50 text-lime-400 font-bold py-3 px-6 rounded-lg mb-4 flex items-center justify-center gap-2">
+                <Unlock className="w-5 h-5" />
+                Acceso Verificado
+              </div>
+            ) : (
+              <button
+                className={`w-full font-bold py-3 px-6 rounded-lg transition-colors mb-4 flex items-center justify-center gap-2
+                   ${(project as any).deploymentStatus === 'deployed'
+                    ? 'bg-lime-400 hover:bg-lime-500 text-black shadow-[0_0_15px_rgba(163,230,53,0.4)]'
+                    : 'bg-zinc-700 text-gray-500 cursor-not-allowed border border-zinc-600'
+                  }`}
+                disabled={(project as any).deploymentStatus !== 'deployed'}
+              >
+                {(project as any).deploymentStatus === 'deployed' ? (
+                  <>
+                    <Ticket className="w-5 h-5" />
+                    Adquirir Acceso
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-5 h-5" />
+                    Próximamente
+                  </>
+                )}
+              </button>
+            )}
 
             <div className="flex justify-center gap-3 mb-4">
               <button className="p-2 text-gray-400 hover:text-white transition-colors">
@@ -87,7 +138,9 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
             </div>
 
             <div className="text-xs text-gray-400">
-              Todo o nada. Esta creación solo será activada si alcanza su meta antes de la fecha límite.
+              {(project as any).deploymentStatus === 'deployed'
+                ? "El acceso desbloquea utilidades exclusivas del protocolo."
+                : "Esta creación solo será activada si alcanza su meta antes de la fecha límite."}
             </div>
           </div>
         </div>

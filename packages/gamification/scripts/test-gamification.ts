@@ -87,6 +87,22 @@ async function runTests() {
     if (spamDiff <= 10) console.log("   ✅ PASS: Spam filtered (Max 1 login counted).");
     else console.log(`   ⚠️ WARNING: Gained ${spamDiff} points from spam.`);
 
+    // 4. Achievement Verification
+    console.log("\nChecking Achievements...");
+    const profileData = await fetchAPI(`/profile/${TEST_WALLET}`);
+    const achievements = profileData?.profile?.achievements || [];
+
+    if (achievements.length > 0) {
+        console.log("   🏆 Unlocked Achievements:");
+        achievements.forEach((a: any) => {
+            if (a.isUnlocked || a.isCompleted) {
+                console.log(`      - ${a.name}: ${a.description} (${a.pointsReward} pts)`);
+            }
+        });
+    } else {
+        console.log("   ⚠️ No achievements found.");
+    }
+
     console.log("\n🏁 Done.");
 }
 

@@ -31,6 +31,9 @@ export interface ProjectData {
   contract_address?: string | null;
   licenseContractAddress?: string | null;
   treasury_address?: string | null;
+  treasuryContractAddress?: string | null;
+  governorContractAddress?: string | null;
+  deploymentStatus?: 'pending' | 'deployed' | 'failed' | null;
   legal_status?: string | null;
   valuation_document_url?: string | null;
   fiduciary_entity?: string | null;
