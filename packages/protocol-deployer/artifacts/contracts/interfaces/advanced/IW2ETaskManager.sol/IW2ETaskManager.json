@@ -1,0 +1,419 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "IW2ETaskManager",
+  "sourceName": "contracts/interfaces/advanced/IW2ETaskManager.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "taskId",
+          "type": "uint256"
+        }
+      ],
+      "name": "canFinalizeTask",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "rewardAmount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "internalType": "uint8",
+          "name": "priority",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint16",
+          "name": "complexityScore",
+          "type": "uint16"
+        }
+      ],
+      "name": "createEmergencyTask",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "taskId",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address payable",
+          "name": "recipient",
+          "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "internalType": "uint8",
+          "name": "priority",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint16",
+          "name": "complexityScore",
+          "type": "uint16"
+        }
+      ],
+      "name": "createFundingTask",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "taskId",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "rewardAmount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "requiredStake",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "internalType": "uint8",
+          "name": "priority",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint16",
+          "name": "complexityScore",
+          "type": "uint16"
+        }
+      ],
+      "name": "createValidationTask",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "taskId",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "expireTasks",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "taskId",
+          "type": "uint256"
+        }
+      ],
+      "name": "finalizeTask",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getGovernanceParams",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "minQuorumPercentage",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "votingPeriodSeconds",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "emergencyQuorumPct",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "taskId",
+          "type": "uint256"
+        }
+      ],
+      "name": "getTask",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "id",
+              "type": "uint256"
+            },
+            {
+              "internalType": "enum IW2ETaskManager.TaskType",
+              "name": "taskType",
+              "type": "uint8"
+            },
+            {
+              "internalType": "address",
+              "name": "creator",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "rewardAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "requiredStake",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "startTime",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "endTime",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "approvalVotes",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "rejectionVotes",
+              "type": "uint256"
+            },
+            {
+              "internalType": "enum IW2ETaskManager.TaskStatus",
+              "name": "status",
+              "type": "uint8"
+            },
+            {
+              "internalType": "address payable",
+              "name": "fundingRecipient",
+              "type": "address"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "offChainProof",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint8",
+              "name": "priority",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint16",
+              "name": "complexityScore",
+              "type": "uint16"
+            },
+            {
+              "internalType": "uint32",
+              "name": "estimatedDuration",
+              "type": "uint32"
+            },
+            {
+              "internalType": "bool",
+              "name": "executed",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct IW2ETaskManager.W2ETask",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getTaskMetrics",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "totalTasks",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "activeTasks",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "pendingTasks",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "completedTasks",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "taskId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "voter",
+          "type": "address"
+        }
+      ],
+      "name": "getVote",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "bool",
+              "name": "hasVoted",
+              "type": "bool"
+            },
+            {
+              "internalType": "bool",
+              "name": "support",
+              "type": "bool"
+            },
+            {
+              "internalType": "uint256",
+              "name": "stakeAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint32",
+              "name": "voteWeight",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint256",
+              "name": "voteTime",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct IW2ETaskManager.VoteInfo",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "licenseNFT",
+      "outputs": [
+        {
+          "internalType": "contract IW2ELicense",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "newQuorum",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "newVotingPeriod",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "newEmergencyQuorum",
+          "type": "uint256"
+        }
+      ],
+      "name": "updateGovernanceParams",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "taskId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "support",
+          "type": "bool"
+        }
+      ],
+      "name": "voteOnTask",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

@@ -29,7 +29,11 @@ export interface ProjectData {
   advisors?: string | null;
   token_distribution?: string | null;
   contract_address?: string | null;
+  licenseContractAddress?: string | null;
   treasury_address?: string | null;
+  treasuryContractAddress?: string | null;
+  governorContractAddress?: string | null;
+  deploymentStatus?: 'pending' | 'deployed' | 'failed' | null;
   legal_status?: string | null;
   valuation_document_url?: string | null;
   fiduciary_entity?: string | null;
@@ -58,8 +62,10 @@ export interface ProjectData {
   socials?: string | null;
   raised_amount?: string | number | null;
   returns_paid?: string | number | null;
+  chainId?: number | null;
   status: string;
   featured?: boolean | null;
   featured_button_text?: string | null;
   created_at?: string | Date | null;
+  w2eConfig?: any; // Stores DeploymentConfig (phases, tokenomics, etc.)
 }

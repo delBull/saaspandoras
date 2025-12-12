@@ -111,6 +111,7 @@ export async function GET(
         "advisors",
         "token_distribution",
         "contract_address",
+        "license_contract_address" as "licenseContractAddress",
         "treasury_address",
         "legal_status",
         "valuation_document_url",
@@ -119,6 +120,7 @@ export async function GET(
         "is_mintable",
         "is_mutable",
         "update_authority_address",
+        "chain_id" as "chainId",
         "applicant_name",
         "applicant_position",
         "applicant_email",
@@ -140,6 +142,7 @@ export async function GET(
         "returns_paid",
         "featured",
         "featured_button_text",
+        "w2e_config" as "w2eConfig",
         "created_at"
       FROM "projects"
       WHERE "slug" = ${slug}

@@ -30,6 +30,9 @@ export interface UserGamificationProfile {
   // Timestamps
   createdAt: Date;
   updatedAt: Date;
+
+  // Optional expanded data
+  achievements?: any[]; // Avoiding circular dep complexity for now, or using specific type if available
 }
 
 export interface UserLevel {

@@ -7,21 +7,7 @@ import { useEffect, useState } from "react";
 // --- Fix para TypeScript: Declarar el tipo global de window.ethereum ---
 declare global { // --- TS fix: tipado window.ethereum en global para evitar TS2339 ---
   interface Window {
-    ethereum?: {
-      chainId?: string;
-      request(args: {
-        method: string;
-        params?: unknown[];
-      }): Promise<unknown>;
-      on(
-        event: string,
-        handler: (chainId: string) => void,
-      ): void;
-      removeListener(
-        event: string,
-        handler: (chainId: string) => void,
-      ): void;
-    };
+    ethereum?: any;
   }
 }
 

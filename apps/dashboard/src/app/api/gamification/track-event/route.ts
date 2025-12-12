@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import { gamificationEngine, EventType } from '@pandoras/gamification';
+import { EventType } from '@pandoras/gamification';
+import { GamificationService } from '@/lib/gamification/service';
 
 export async function POST(request: Request) {
   try {
     const requestHeaders = await headers();
     const headerWallet = requestHeaders.get('x-thirdweb-address') ??
-                        requestHeaders.get('x-wallet-address') ??
-                        requestHeaders.get('x-user-address');
+      requestHeaders.get('x-wallet-address') ??
+      requestHeaders.get('x-user-address');
 
     if (!headerWallet) {
       return NextResponse.json({ error: 'Wallet address required' }, { status: 401 });
@@ -24,7 +25,8 @@ export async function POST(request: Request) {
     }
 
     // Trackear evento
-    const result = await gamificationEngine.trackEvent(userId, eventType, {
+    // Trackear evento usando el servicio que conecta a la BD
+    const result = await GamificationService.trackEvent(userId, eventType, {
       ...metadata,
       walletAddress: headerWallet,
       timestamp: new Date().toISOString()

@@ -6,7 +6,7 @@ import { getAuth } from "@/lib/auth"; // Fixed auth import
 import { headers } from "next/headers";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants"; // Fixed constant import
 import { deployW2EProtocol } from "@pandoras/protocol-deployer";
-import type { W2EConfig } from "@pandoras/protocol-deployer/dist/types";
+import type { W2EConfig } from "@pandoras/protocol-deployer";
 import { trackGamificationEvent } from "@/lib/gamification/service";
 
 // Force Node.js runtime for database interactions
@@ -14,8 +14,9 @@ export const runtime = "nodejs";
 
 export async function POST(
     req: Request,
-    { params }: { params: { slug: string } }
+    { params }: { params: Promise<{ slug: string }> }
 ) {
+    const { slug } = await params;
     try {
         // 1. Auth & Admin Check
         const headersObj = await headers();
@@ -31,7 +32,7 @@ export async function POST(
             return NextResponse.json({ error: "Forbidden: Super Admin access required" }, { status: 403 });
         }
 
-        const { slug } = params;
+
 
         const project = await db.query.projects.findFirst({
             where: eq(projects.slug, slug),
@@ -54,6 +55,15 @@ export async function POST(
         const isProduction = process.env.NODE_ENV === 'production';
         const network = isProduction ? 'base' : 'sepolia';
 
+        // Parse Request Body for optional Config
+        let reqConfig: any = null;
+        try {
+            const body = await req.json();
+            reqConfig = body.config;
+        } catch (e) {
+            // Body might be empty, ignore
+        }
+
         // Mapping project data to W2EConfig
         const config: W2EConfig = {
             // General Protocol
@@ -65,17 +75,17 @@ export async function POST(
                 name: `Licencia ${project.title}`,
                 symbol: "VHORA", // Using standard symbol or custom if needed
                 maxSupply: project.totalTokens || 1000,
-                price: project.tokenPriceUsd ? project.tokenPriceUsd.toString() : "0",
+                price: reqConfig?.tokenomics?.price ? reqConfig.tokenomics.price.toString() : (project.tokenPriceUsd ? project.tokenPriceUsd.toString() : "0"),
             },
             utilityToken: {
                 name: `${project.title} Utility`,
                 symbol: "PHI", // Standard utility symbol
-                initialSupply: 0, // Minted via W2E
+                initialSupply: reqConfig?.tokenomics?.initialSupply || 0, // Minted via W2E
                 feePercentage: 100, // 1% (basis points usually 100 = 1%)
             },
 
             // Governance
-            quorumPercentage: 4, // 4%
+            quorumPercentage: reqConfig?.tokenomics?.votingPowerMultiplier ? Math.min(Math.max(reqConfig.tokenomics.votingPowerMultiplier, 1), 100) : 4, // Map multiplier to quorum? Or just use default.
             votingDelaySeconds: 0,
             votingPeriodHours: 24, // 1 day
             executionDelayHours: 24, // 1 day timelock
@@ -109,6 +119,14 @@ export async function POST(
 
         console.log("✅ Deployment Result:", result);
 
+        // Prepare Extended Config for DB (includes UI-specific fields not used by deployer)
+        const extendedConfig = {
+            ...config,
+            phases: reqConfig?.phases || [],
+            tokenomics: reqConfig?.tokenomics || {}, // Store raw tokenomics from UI
+            accessCardImage: reqConfig?.accessCardImage
+        };
+
         // 5. Update Database
         await db.update(projects)
             .set({
@@ -118,7 +136,7 @@ export async function POST(
                 governorContractAddress: result.governorAddress,
                 chainId: result.chainId,
                 deploymentStatus: 'deployed',
-                w2eConfig: config,
+                w2eConfig: extendedConfig,
             })
             .where(eq(projects.slug, slug));
 
