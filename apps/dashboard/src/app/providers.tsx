@@ -1,7 +1,7 @@
 "use client";
 
 import "./globals.css";
-import { Toaster } from "sonner";
+import { Toaster, toast } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThirdwebProvider, AutoConnect, useActiveAccount } from "thirdweb/react";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
@@ -29,6 +29,10 @@ function GamificationWrapper({ children }: { children: React.ReactNode }) {
       userId={userId}
       showHUD={true}
       hudPosition="top-right"
+      onLevelUp={(level) => toast.success(`¡Nivel ${level} Alcanzado! 🎉`, {
+        description: "Has desbloqueado nuevas capacidades en la plataforma.",
+        duration: 5000,
+      })}
     >
       {children}
     </GamificationProvider>
