@@ -288,7 +288,7 @@ function handleSupportFlow(message: string): FlowResult {
 }
 
 // Human Flow
-async function handleHumanFlow(phone: string, message: string = ''): Promise<FlowResult> {
+async function handleHumanFlow(phone: string, message = ''): Promise<FlowResult> {
   // Send notification to Discord/Email
   await notifyHumanAgent(phone, message || 'Usuario solicita hablar con humano');
 
