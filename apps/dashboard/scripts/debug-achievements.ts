@@ -28,7 +28,12 @@ async function main() {
         process.exit(0);
     }
 
-    const userId = user[0].id; // varchar
+    const userData = user[0];
+    if (!userData) {
+        console.log('❌ User not found (empty array).');
+        process.exit(0);
+    }
+    const userId = userData.id; // varchar
     console.log(`   User ID: ${userId}`);
 
     const userAchs = await db

@@ -11,7 +11,7 @@ import {
     ClipboardDocumentIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-import { useContract, useBalance } from "@thirdweb-dev/react"; // Assuming v4/v5
+// import { useContract, useBalance } from "@thirdweb-dev/react"; // Removed: Package not installed
 // If using v5 (current trend in repo), imports might differ. 
 // Repo uses "@thirdweb-dev/react" (v4-ish) or "thirdweb/react" (v5).
 // Let's assume compat or check other files. 
@@ -69,8 +69,8 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id as any)}
                         className={`flex items-center gap-2 px-4 py-3 rounded-t-lg transition-all relative ${activeTab === tab.id
-                                ? 'text-white bg-zinc-900 border-b-2 border-purple-500'
-                                : 'text-gray-400 hover:text-white hover:bg-zinc-900/50'
+                            ? 'text-white bg-zinc-900 border-b-2 border-purple-500'
+                            : 'text-gray-400 hover:text-white hover:bg-zinc-900/50'
                             }`}
                     >
                         <tab.icon className="w-5 h-5" />

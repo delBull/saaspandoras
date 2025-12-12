@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, ReactNode, useRef, useEffect } from 'react';
 import { useGamification } from '../hooks';
 import { GamificationHUD } from './GamificationHUD';
 import {
@@ -41,6 +41,7 @@ interface GamificationProviderProps {
   hudPosition?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
   autoRefresh?: boolean;
   refreshInterval?: number;
+  onLevelUp?: (level: number) => void;
 }
 
 export function GamificationProvider({
@@ -49,13 +50,32 @@ export function GamificationProvider({
   showHUD = true,
   hudPosition = 'top-right',
   autoRefresh = true,
-  refreshInterval = 30000
+  refreshInterval = 30000,
+  onLevelUp
 }: GamificationProviderProps) {
   const gamification = useGamification({
     userId,
     autoRefresh,
     refreshInterval
   });
+
+  // Track level changes for notifications
+  const prevLevelRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!gamification.profile) return;
+
+    const currentLevel = gamification.profile.currentLevel;
+
+    // Only trigger if we have a previous level (not first load) and level increased
+    if (prevLevelRef.current !== null && prevLevelRef.current < currentLevel) {
+      if (onLevelUp) {
+        onLevelUp(currentLevel);
+      }
+    }
+
+    prevLevelRef.current = currentLevel;
+  }, [gamification.profile?.currentLevel, onLevelUp]);
 
   // Crear el contexto value con propiedades computadas adicionales
   const contextValue: GamificationContextType = {
