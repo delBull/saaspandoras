@@ -426,6 +426,61 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
       icon: Shield,
       content: (
         <div className="space-y-8 mb-8">
+          {/* Contratos Inteligentes (SCaaS) - Nueva sección destacada */}
+          {(project.licenseContractAddress || project.governorContractAddress || project.treasuryContractAddress) && (
+            <SectionCard title="Contratos Inteligentes del Protocolo" icon={Code}>
+              <div className="space-y-3">
+                {project.licenseContractAddress && (
+                  <div className="flex justify-between items-center p-3 bg-zinc-800/50 rounded-lg">
+                    <div>
+                      <p className="text-white font-medium text-sm">Licencia de Acceso (NFT)</p>
+                      <p className="text-zinc-500 text-xs font-mono break-all">{project.licenseContractAddress}</p>
+                    </div>
+                    <a href={`https://sepolia.etherscan.io/address/${project.licenseContractAddress}`} target="_blank" rel="noopener noreferrer" className="text-lime-400 hover:text-lime-300">
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  </div>
+                )}
+                {project.governorContractAddress && (
+                  <div className="flex justify-between items-center p-3 bg-zinc-800/50 rounded-lg">
+                    <div>
+                      <p className="text-white font-medium text-sm">Gobernador (DAO)</p>
+                      <p className="text-zinc-500 text-xs font-mono break-all">{project.governorContractAddress}</p>
+                    </div>
+                    <a href={`https://sepolia.etherscan.io/address/${project.governorContractAddress}`} target="_blank" rel="noopener noreferrer" className="text-lime-400 hover:text-lime-300">
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  </div>
+                )}
+                {project.treasuryContractAddress && (
+                  <div className="flex justify-between items-center p-3 bg-zinc-800/50 rounded-lg">
+                    <div>
+                      <p className="text-white font-medium text-sm">Tesorería Comunitaria</p>
+                      <p className="text-zinc-500 text-xs font-mono break-all">{project.treasuryContractAddress}</p>
+                    </div>
+                    <a href={`https://sepolia.etherscan.io/address/${project.treasuryContractAddress}`} target="_blank" rel="noopener noreferrer" className="text-lime-400 hover:text-lime-300">
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  </div>
+                )}
+                {project.contract_address && !project.licenseContractAddress && (
+                  <div className="flex justify-between items-center p-3 bg-zinc-800/50 rounded-lg">
+                    <div>
+                      <p className="text-white font-medium text-sm">Contrato Principal</p>
+                      <p className="text-zinc-500 text-xs font-mono break-all">{project.contract_address}</p>
+                    </div>
+                    <a href={`https://sepolia.etherscan.io/address/${project.contract_address}`} target="_blank" rel="noopener noreferrer" className="text-lime-400 hover:text-lime-300">
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  </div>
+                )}
+                <p className="text-xs text-zinc-500 mt-2">
+                  *Estos contratos garantizan la transparencia y la gobernanza autónoma del protocolo en la red {project.chainId === 11155111 ? 'Sepolia' : project.chainId || 'Ethereum'}.
+                </p>
+              </div>
+            </SectionCard>
+          )}
+
           {/* Estatus Legal - Nueva clave */}
           <SectionCard title="Estatus Legal y Jurisdicción" icon={Briefcase}>
             <p className="text-zinc-300 whitespace-pre-line">{project.legal_status ?? 'No especificado'}</p>

@@ -586,7 +586,7 @@ export default function ProfileProjectsPage() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Link href={`/projects/${(project as any).slug || project.id}`}>
+                    <Link href={`/projects/${project.slug || project.id}`}>
                       <button className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition-colors">
                         Ver
                       </button>
@@ -664,14 +664,14 @@ export default function ProfileProjectsPage() {
 
                   {/* Action Buttons - Both Edit and View */}
                   <div className="flex gap-2">
-                    <Link href={`/projects/${(project as any).slug || project.id}`} className="flex-1">
+                    <Link href={`/projects/${project.slug || project.id}`} className="flex-1">
                       <Button size="sm" variant="outline" className="w-full bg-blue-600 hover:bg-blue-700 border-blue-600 hover:border-blue-700">
                         <EyeIcon className="w-4 h-4 mr-2" />
                         Ver
                       </Button>
                     </Link>
 
-                    {(project as any).deploymentStatus === 'deployed' && (
+                    {project.deploymentStatus === 'deployed' && (
                       <Link href={`/profile/projects/${project.id}/manage`} className="flex-1">
                         <Button size="sm" variant="outline" className="w-full bg-purple-600 hover:bg-purple-700 border-purple-600 hover:border-purple-700 text-white">
                           <BuildingLibraryIcon className="w-4 h-4 mr-2" />
