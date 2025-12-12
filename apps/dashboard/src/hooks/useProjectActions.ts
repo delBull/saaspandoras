@@ -1,5 +1,6 @@
 import { toast } from 'sonner';
 import type { ProjectStatus } from '@/types/admin';
+import type { DeploymentConfig } from '@/types/deployment';
 
 interface ProjectActionsProps {
   setActionsLoading: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
@@ -110,8 +111,8 @@ export function useProjectActions({ setActionsLoading, walletAddress, refreshCal
     const statusText = 'rechazado';
 
     const confirmMessage = `¿${statusText} el proyecto "${projectTitle}"?\n\n${rejectionType
-        ? 'El solicitante tendrá que aplicar nuevamente.'
-        : 'El solicitante podrá completar la información faltante.'
+      ? 'El solicitante tendrá que aplicar nuevamente.'
+      : 'El solicitante podrá completar la información faltante.'
       }`;
 
     if (!window.confirm(confirmMessage)) return;
@@ -255,15 +256,23 @@ export function useProjectActions({ setActionsLoading, walletAddress, refreshCal
     }
   };
 
+  // ... (existing imports)
+
+  // ...
+
   // Function to deploy protocol
-  const deployProtocol = async (projectId: string, projectTitle: string, projectSlug: string | undefined) => {
+  const deployProtocol = async (projectId: string, projectTitle: string, projectSlug: string | undefined, config?: DeploymentConfig) => {
     if (!projectSlug) {
       toast.error('Error: El proyecto no tiene un slug válido.');
       return;
     }
 
-    const confirmMessage = `¿Estás seguro de desplegar el protocolo para "${projectTitle}"?\n\nEsta acción ejecutará transacciones on-chain y es irreversible.`;
-    if (!window.confirm(confirmMessage)) return;
+    // If config is provided, we assume confirmation happened in the modal. 
+    // If not, we show the legacy confirmation (though UI should prevent this).
+    if (!config) {
+      const confirmMessage = `¿Estás seguro de desplegar el protocolo para "${projectTitle}" sin configuración personalizada?\n\nEsta acción ejecutará transacciones on-chain y es irreversible.`;
+      if (!window.confirm(confirmMessage)) return;
+    }
 
     if (!walletAddress) {
       alert('Error: No se pudo obtener la dirección de tu wallet. Conecta tu wallet primero.');
@@ -282,6 +291,7 @@ export function useProjectActions({ setActionsLoading, walletAddress, refreshCal
           'x-wallet-address': walletAddress,
           'x-user-address': walletAddress,
         },
+        body: JSON.stringify({ config }),
       });
 
       if (response.ok) {
