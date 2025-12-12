@@ -73,12 +73,40 @@ export class GamificationEngine {
   ): Promise<GamificationEvent> {
     console.log(`📊 GamificationEngine: Tracking event ${eventType} for user ${userId}`);
 
+    // Ensure profile exists
+    let profile = await this.dbService.getUserProfile(userId);
+    if (!profile) {
+      console.log(`👤 Creating new profile for ${userId}`);
+      profile = await this.dbService.createUserProfile({
+        id: `user_${Date.now()}`,
+        userId,
+        walletAddress: userId,
+        totalPoints: 0,
+        currentLevel: 1,
+        pointsToNextLevel: 100,
+        levelProgress: 0,
+        projectsApplied: 0,
+        projectsApproved: 0,
+        totalInvested: 0,
+        communityContributions: 0,
+        currentStreak: 0,
+        longestStreak: 0,
+        lastActivityDate: new Date(),
+        totalActiveDays: 1,
+        referralsCount: 0,
+        communityRank: 0,
+        reputationScore: 0,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+    }
+
     const event: GamificationEvent = {
       id: `event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       userId,
       type: eventType,
       category: this.getEventCategory(eventType),
-      points: this.getEventPoints(eventType),
+      points: this.getEventPoints(eventType) || (metadata?.completionBonus as number) || 0,
       metadata,
       createdAt: new Date()
     };
@@ -92,6 +120,9 @@ export class GamificationEngine {
         this.getPointsCategory(eventType)
       );
     }
+
+    // Persist event in DB (if DatabaseService stores events)
+    await this.dbService.trackEvent(userId, eventType, metadata);
 
     return event;
   }
@@ -165,9 +196,6 @@ export class GamificationEngine {
     return categoryMap[eventType] || EventCategory.SPECIAL;
   }
 
-  /**
-   * Get points for an event type
-   */
   private getEventPoints(eventType: EventType): number {
     const pointsMap: Record<string, number> = {
       [EventType.PROJECT_APPLICATION_SUBMITTED]: 50,
@@ -175,6 +203,8 @@ export class GamificationEngine {
       [EventType.INVESTMENT_MADE]: 25,
       [EventType.DAILY_LOGIN]: 10,
       [EventType.USER_REGISTERED]: 20,
+      [EventType.COURSE_COMPLETED]: 100,
+      [EventType.PROTOCOL_DEPLOYED]: 500,
     };
 
     return pointsMap[eventType] || 0;

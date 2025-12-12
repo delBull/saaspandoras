@@ -235,8 +235,8 @@ export class GamificationService {
       return {
         id: `event_${Date.now()}_${walletAddress}`,
         userId: walletAddress,
-        type: 'daily_login' as any,
-        category: 'daily' as any,
+        type: eventType as any,
+        category: this.getEventCategory(eventType) as any,
         points,
         metadata: metadata as any,
         createdAt: new Date()
@@ -378,7 +378,7 @@ export class GamificationService {
       // Contar achievements desbloqueados excluyendo "Primer Login"
       const unlockedAchievementsExcludingLogin = userAchievementRecords.filter(
         (ua: { achievementId: number; isUnlocked: boolean }) => ua.isUnlocked &&
-             (!primerLoginAchievement || ua.achievementId !== primerLoginAchievement.id)
+          (!primerLoginAchievement || ua.achievementId !== primerLoginAchievement.id)
       ).length;
 
       const hasCompletedOnboarding = (user?.kycCompleted ?? false) && user?.kycLevel === 'basic';
@@ -387,7 +387,7 @@ export class GamificationService {
 
       // Si ya tenía estos valores, no actualizar
       if (referral.referredCompletedOnboarding === hasCompletedOnboarding &&
-          referral.referredFirstProject === hasFirstProject) {
+        referral.referredFirstProject === hasFirstProject) {
         return;
       }
 
@@ -463,8 +463,8 @@ export class GamificationService {
           completedOnboarding: referral.referredCompletedOnboarding,
           completedFirstProject: referral.referredFirstProject,
           completionType: referral.referredCompletedOnboarding && referral.referredFirstProject ? 'all' :
-                         referral.referredCompletedOnboarding ? 'onboarding_only' :
-                         referral.referredFirstProject ? 'project_only' : 'achievement_only'
+            referral.referredCompletedOnboarding ? 'onboarding_only' :
+              referral.referredFirstProject ? 'project_only' : 'achievement_only'
         }
       );
 
@@ -701,149 +701,152 @@ export class GamificationService {
   static getEngine(): GamificationEngine {
     return GamificationService.engine;
   }
-// static getDatabaseService(): DatabaseService { // Commented out - using direct DB access instead
-//   return GamificationService.dbService;
-// }
+  // static getDatabaseService(): DatabaseService { // Commented out - using direct DB access instead
+  //   return GamificationService.dbService;
+  // }
 
-/**
- * Get event points based on event type
- */
-private static getEventPoints(eventType: string): number {
-  // Map frontend "DAILY_LOGIN" to database "daily_login"
-  const normalizedEventType = eventType === 'DAILY_LOGIN' ? 'daily_login' : eventType;
+  /**
+   * Get event points based on event type
+   */
+  private static getEventPoints(eventType: string): number {
+    // Map frontend "DAILY_LOGIN" to database "daily_login"
+    const normalizedEventType = eventType === 'DAILY_LOGIN' ? 'daily_login' : eventType;
 
-  const pointsMap: Record<string, number> = {
-    'project_application_submitted': 50,
-    'project_application_approved': 100,
-    'investment_made': 25,
-    'daily_login': 10,
-    'user_registered': 20,
-    'referral_made': 200,
-    'referral_completed': 100, // Bonus adicional cuando referido completa onboarding + proyecto
-    'COURSE_STARTED': 10,
-    'COURSE_COMPLETED': 100
-  };
+    const pointsMap: Record<string, number> = {
+      'project_application_submitted': 50,
+      'project_application_approved': 100,
+      'investment_made': 25,
+      'daily_login': 10,
+      'user_registered': 20,
+      'referral_made': 200,
+      'referral_completed': 100, // Bonus adicional cuando referido completa onboarding + proyecto
+      'course_started': 10,
+      'course_completed': 100,
+      'protocol_deployed': 500,
+      'COURSE_STARTED': 10,  // Keep for backward compat
+      'COURSE_COMPLETED': 100 // Keep for backward compat
+    };
 
-  return pointsMap[normalizedEventType] ?? 0;
-}
-
-/**
- * Get event category from event type
- */
-private static getEventCategory(eventType: string): string {
-  // Map frontend "DAILY_LOGIN" to database "daily_login"
-  const normalizedEventType = eventType === 'DAILY_LOGIN' ? 'daily_login' : eventType;
-
-  const categoryMap: Record<string, string> = {
-    'project_application_submitted': 'projects',
-    'project_application_approved': 'projects',
-    'investment_made': 'investments',
-    'user_registered': 'community',
-    'daily_login': 'daily'
-  };
-
-  return categoryMap[normalizedEventType] ?? 'special';
-}
-
-/**
- * Get points category from event type
- */
-private static getPointsCategory(eventType: string): string {
-  // Map frontend "DAILY_LOGIN" to database "daily_login"
-  const normalizedEventType = eventType === 'DAILY_LOGIN' ? 'daily_login' : eventType;
-
-  const categoryMap: Record<string, string> = {
-    'project_application_submitted': 'project_application',
-    'project_application_approved': 'project_application',
-    'investment_made': 'investment',
-    'daily_login': 'daily_login'
-  };
-
-  return categoryMap[normalizedEventType] ?? 'special_event';
-}
-
-/**
- * Award points to database
- */
-private static async awardPointsToDb(
-  userId: string,
-  points: number,
-  reason: string,
-  category: string,
-  metadata?: Record<string, unknown>
-): Promise<void> {
-  try {
-    // For demo purposes, use the userId as string to match User table structure
-
-    // Insert points record
-    await db.insert(userPoints).values({
-      userId: userId,
-      points,
-      reason,
-      category: category as any,
-      metadata,
-      createdAt: new Date()
-    });
-
-    // Update user profile
-    await this.updateUserProfilePoints(userId, points);
-  } catch (error) {
-    console.error(`❌ Error awarding points to database for user ${userId}:`, error);
-    throw error;
+    return pointsMap[normalizedEventType] ?? 0;
   }
-}
 
-/**
- * Update user profile points in database
- */
-private static async updateUserProfilePoints(userId: string, pointsToAdd: number): Promise<void> {
-  try {
-    console.log(`💾 Updating profile points for user ${userId}: +${pointsToAdd} points`);
+  /**
+   * Get event category from event type
+   */
+  private static getEventCategory(eventType: string): string {
+    // Map frontend "DAILY_LOGIN" to database "daily_login"
+    const normalizedEventType = eventType === 'DAILY_LOGIN' ? 'daily_login' : eventType;
 
-    // For demo purposes, use the userId as string to match User table structure
+    const categoryMap: Record<string, string> = {
+      'project_application_submitted': 'projects',
+      'project_application_approved': 'projects',
+      'investment_made': 'investments',
+      'user_registered': 'community',
+      'daily_login': 'daily'
+    };
 
-    // Get current profile
-    const currentProfile = await db
-      .select()
-      .from(gamificationProfiles)
-      .where(eq(gamificationProfiles.userId, userId))
-      .limit(1);
-
-    if (!currentProfile[0]) {
-      console.error(`❌ Profile not found for user ${userId}`);
-      throw new Error('Profile not found');
-    }
-
-    const oldLevel = currentProfile[0].currentLevel;
-    const newTotalPoints = currentProfile[0].totalPoints + pointsToAdd;
-    const newLevel = Math.floor(newTotalPoints / 100) + 1;
-    const newLevelProgress = newTotalPoints % 100;
-
-    console.log(`📊 Profile update: ${currentProfile[0].totalPoints} → ${newTotalPoints} points, Level ${oldLevel} → ${newLevel}`);
-
-    // Update profile
-    await db
-      .update(gamificationProfiles)
-      .set({
-        totalPoints: newTotalPoints,
-        currentLevel: newLevel,
-        levelProgress: newLevelProgress,
-        pointsToNextLevel: 100 - newLevelProgress,
-        updatedAt: new Date()
-      })
-      .where(eq(gamificationProfiles.userId, userId));
-
-    console.log(`✅ Profile updated successfully for user ${userId}`);
-
-    // Check for level up
-    if (newLevel > oldLevel) {
-      console.log(`🎉 LEVEL UP! User ${userId} reached level ${newLevel}!`);
-    }
-  } catch (error) {
-    console.error(`❌ Error updating profile points for user ${userId}:`, error);
-    throw error;
+    return categoryMap[normalizedEventType] ?? 'special';
   }
-}
+
+  /**
+   * Get points category from event type
+   */
+  private static getPointsCategory(eventType: string): string {
+    // Map frontend "DAILY_LOGIN" to database "daily_login"
+    const normalizedEventType = eventType === 'DAILY_LOGIN' ? 'daily_login' : eventType;
+
+    const categoryMap: Record<string, string> = {
+      'project_application_submitted': 'project_application',
+      'project_application_approved': 'project_application',
+      'investment_made': 'investment',
+      'daily_login': 'daily_login'
+    };
+
+    return categoryMap[normalizedEventType] ?? 'special_event';
+  }
+
+  /**
+   * Award points to database
+   */
+  private static async awardPointsToDb(
+    userId: string,
+    points: number,
+    reason: string,
+    category: string,
+    metadata?: Record<string, unknown>
+  ): Promise<void> {
+    try {
+      // For demo purposes, use the userId as string to match User table structure
+
+      // Insert points record
+      await db.insert(userPoints).values({
+        userId: userId,
+        points,
+        reason,
+        category: category as any,
+        metadata,
+        createdAt: new Date()
+      });
+
+      // Update user profile
+      await this.updateUserProfilePoints(userId, points);
+    } catch (error) {
+      console.error(`❌ Error awarding points to database for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update user profile points in database
+   */
+  private static async updateUserProfilePoints(userId: string, pointsToAdd: number): Promise<void> {
+    try {
+      console.log(`💾 Updating profile points for user ${userId}: +${pointsToAdd} points`);
+
+      // For demo purposes, use the userId as string to match User table structure
+
+      // Get current profile
+      const currentProfile = await db
+        .select()
+        .from(gamificationProfiles)
+        .where(eq(gamificationProfiles.userId, userId))
+        .limit(1);
+
+      if (!currentProfile[0]) {
+        console.error(`❌ Profile not found for user ${userId}`);
+        throw new Error('Profile not found');
+      }
+
+      const oldLevel = currentProfile[0].currentLevel;
+      const newTotalPoints = currentProfile[0].totalPoints + pointsToAdd;
+      const newLevel = Math.floor(newTotalPoints / 100) + 1;
+      const newLevelProgress = newTotalPoints % 100;
+
+      console.log(`📊 Profile update: ${currentProfile[0].totalPoints} → ${newTotalPoints} points, Level ${oldLevel} → ${newLevel}`);
+
+      // Update profile
+      await db
+        .update(gamificationProfiles)
+        .set({
+          totalPoints: newTotalPoints,
+          currentLevel: newLevel,
+          levelProgress: newLevelProgress,
+          pointsToNextLevel: 100 - newLevelProgress,
+          updatedAt: new Date()
+        })
+        .where(eq(gamificationProfiles.userId, userId));
+
+      console.log(`✅ Profile updated successfully for user ${userId}`);
+
+      // Check for level up
+      if (newLevel > oldLevel) {
+        console.log(`🎉 LEVEL UP! User ${userId} reached level ${newLevel}!`);
+      }
+    } catch (error) {
+      console.error(`❌ Error updating profile points for user ${userId}:`, error);
+      throw error;
+    }
+  }
 
   /**
    * Check and unlock achievements based on user progress and events
@@ -1244,9 +1247,9 @@ private static async updateUserProfilePoints(userId: string, pointsToAdd: number
 // Export individual functions for API routes AND frontend usage
 export const getUserGamificationProfile = async (userId: string) => GamificationService.getUserProfile(userId);
 export const trackGamificationEvent = async (userId: string, eventType: string, metadata?: Record<string, unknown>) =>
-GamificationService.trackEvent(userId, eventType, metadata);
+  GamificationService.trackEvent(userId, eventType, metadata);
 export const awardGamificationPoints = async (userId: string, points: number, reason: string, category: string, metadata?: Record<string, unknown>) =>
-GamificationService.awardPoints(userId, points, reason, category, metadata);
+  GamificationService.awardPoints(userId, points, reason, category, metadata);
 export const getGamificationLeaderboard = async (type: string, limit?: number) => GamificationService.getLeaderboard(type, limit);
 export const getUserGamificationAchievements = async (userId: string) => GamificationService.getUserAchievements(userId);
 export const getAvailableGamificationRewards = async (userId: string) => GamificationService.getAvailableRewards(userId);

@@ -15,6 +15,7 @@ import {
   CurrencyDollarIcon,
   CheckCircleIcon,
   EyeIcon,
+  BuildingLibraryIcon,
 } from '@heroicons/react/24/outline';
 import type { UserData, Project } from '@/types/admin';
 import { useActiveAccount } from 'thirdweb/react';
@@ -237,10 +238,10 @@ export default function ProfileProjectsPage() {
 
                   // More robust matching - handle different formats and edge cases
                   const matches = projectWallet === userWallet ||
-                                 projectWallet === userWallet.replace('0x', '') ||
-                                 (projectWallet && userWallet && projectWallet.endsWith(userWallet.slice(-8))) ||
-                                 // Also check if wallet ends with last 10 characters (more flexible)
-                                 (projectWallet && userWallet && projectWallet.endsWith(userWallet.slice(-10)));
+                    projectWallet === userWallet.replace('0x', '') ||
+                    (projectWallet && userWallet && projectWallet.endsWith(userWallet.slice(-8))) ||
+                    // Also check if wallet ends with last 10 characters (more flexible)
+                    (projectWallet && userWallet && projectWallet.endsWith(userWallet.slice(-10)));
 
                   if (process.env.NODE_ENV === 'development') {
                     console.log('🔄 FALLBACK PROJECT FILTER:', {
@@ -562,25 +563,24 @@ export default function ProfileProjectsPage() {
               {userProjects.map((project) => (
                 <div key={project.id} className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors">
                   <div className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full ${
-                      project.status === 'live' ? 'bg-green-500' :
+                    <div className={`w-3 h-3 rounded-full ${project.status === 'live' ? 'bg-green-500' :
                       project.status === 'approved' ? 'bg-blue-500' :
-                      project.status === 'pending' ? 'bg-yellow-500' :
-                      project.status === 'completed' ? 'bg-emerald-500' :
-                      project.status === 'rejected' ? 'bg-red-500' :
-                      'bg-gray-500'
-                    }`}></div>
+                        project.status === 'pending' ? 'bg-yellow-500' :
+                          project.status === 'completed' ? 'bg-emerald-500' :
+                            project.status === 'rejected' ? 'bg-red-500' :
+                              'bg-gray-500'
+                      }`}></div>
                     <div>
                       <div className="text-white text-sm font-medium">{project.title}</div>
                       <div className="text-gray-400 text-xs">
                         Estado: {
                           project.status === 'live' ? '🏃‍♂️ Activo' :
-                          project.status === 'approved' ? '✅ Aprobado' :
-                          project.status === 'pending' ? '⏳ En Revisión' :
-                          project.status === 'completed' ? '🏁 Completado' :
-                          project.status === 'rejected' ? '❌ Rechazado' :
-                          project.status === 'draft' ? '📝 Borrador' :
-                          project.status
+                            project.status === 'approved' ? '✅ Aprobado' :
+                              project.status === 'pending' ? '⏳ En Revisión' :
+                                project.status === 'completed' ? '🏁 Completado' :
+                                  project.status === 'rejected' ? '❌ Rechazado' :
+                                    project.status === 'draft' ? '📝 Borrador' :
+                                      project.status
                         }
                       </div>
                     </div>
@@ -618,22 +618,21 @@ export default function ProfileProjectsPage() {
                     <div className="flex-1 min-w-0">
                       <CardTitle className="text-lg text-white mb-1 truncate">{project.title}</CardTitle>
                       <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${
-                          project.status === 'live' ? 'bg-green-500' :
+                        <div className={`w-2 h-2 rounded-full ${project.status === 'live' ? 'bg-green-500' :
                           project.status === 'approved' ? 'bg-blue-500' :
-                          project.status === 'pending' ? 'bg-yellow-500' :
-                          project.status === 'completed' ? 'bg-emerald-500' :
-                          project.status === 'rejected' ? 'bg-red-500' :
-                          'bg-gray-500'
-                        }`}></div>
+                            project.status === 'pending' ? 'bg-yellow-500' :
+                              project.status === 'completed' ? 'bg-emerald-500' :
+                                project.status === 'rejected' ? 'bg-red-500' :
+                                  'bg-gray-500'
+                          }`}></div>
                         <span className="text-sm text-gray-400">
                           {project.status === 'live' ? 'Activo' :
-                           project.status === 'approved' ? 'Aprobado' :
-                           project.status === 'pending' ? 'En Revisión' :
-                           project.status === 'completed' ? 'Completado' :
-                           project.status === 'rejected' ? 'Rechazado' :
-                           project.status === 'draft' ? 'Borrador' :
-                           project.status}
+                            project.status === 'approved' ? 'Aprobado' :
+                              project.status === 'pending' ? 'En Revisión' :
+                                project.status === 'completed' ? 'Completado' :
+                                  project.status === 'rejected' ? 'Rechazado' :
+                                    project.status === 'draft' ? 'Borrador' :
+                                      project.status}
                         </span>
                       </div>
                     </div>
@@ -671,6 +670,15 @@ export default function ProfileProjectsPage() {
                         Ver
                       </Button>
                     </Link>
+
+                    {(project as any).deploymentStatus === 'deployed' && (
+                      <Link href={`/profile/projects/${project.id}/manage`} className="flex-1">
+                        <Button size="sm" variant="outline" className="w-full bg-purple-600 hover:bg-purple-700 border-purple-600 hover:border-purple-700 text-white">
+                          <BuildingLibraryIcon className="w-4 h-4 mr-2" />
+                          Gestionar DAO
+                        </Button>
+                      </Link>
+                    )}
 
                     {project.status !== 'live' && project.status !== 'completed' && (
                       <Link href={`/profile/projects/${project.id}/edit`} className="flex-1">

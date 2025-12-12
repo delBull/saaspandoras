@@ -742,8 +742,8 @@ export default function AdminDashboardPage() {
                   <button
                     onClick={() => setViewMode('table')}
                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'table'
-                        ? 'bg-lime-500 text-black'
-                        : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600'
+                      ? 'bg-lime-500 text-black'
+                      : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600'
                       }`}
                   >
                     📊 Tabla
@@ -751,8 +751,8 @@ export default function AdminDashboardPage() {
                   <button
                     onClick={() => setViewMode('cards')}
                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'cards'
-                        ? 'bg-lime-500 text-black'
-                        : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600'
+                      ? 'bg-lime-500 text-black'
+                      : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600'
                       }`}
                   >
                     🃏 Cards
@@ -795,8 +795,8 @@ export default function AdminDashboardPage() {
                 <button
                   onClick={() => setStatusFilter('all')}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${statusFilter === 'all'
-                      ? 'bg-lime-500 text-black shadow-lg'
-                      : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600 hover:text-white'
+                    ? 'bg-lime-500 text-black shadow-lg'
+                    : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600 hover:text-white'
                     }`}
                 >
                   Todos ({projects.length})
@@ -807,14 +807,14 @@ export default function AdminDashboardPage() {
                       key={status}
                       onClick={() => setStatusFilter(status)}
                       className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${statusFilter === status
-                          ? 'bg-lime-500 text-black shadow-lg'
-                          : `${status === 'pending' ? 'text-yellow-300 bg-yellow-500/10 border border-yellow-500/20 hover:bg-yellow-500/20' :
-                            status === 'approved' ? 'text-blue-300 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20' :
-                              status === 'live' ? 'text-green-300 bg-green-500/10 border border-green-500/20 hover:bg-green-500/20' :
-                                status === 'completed' ? 'text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20' :
-                                  status === 'draft' ? 'text-purple-300 bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20' :
-                                    'text-red-300 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20'
-                          } bg-zinc-700 hover:bg-zinc-600`
+                        ? 'bg-lime-500 text-black shadow-lg'
+                        : `${status === 'pending' ? 'text-yellow-300 bg-yellow-500/10 border border-yellow-500/20 hover:bg-yellow-500/20' :
+                          status === 'approved' ? 'text-blue-300 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20' :
+                            status === 'live' ? 'text-green-300 bg-green-500/10 border border-green-500/20 hover:bg-green-500/20' :
+                              status === 'completed' ? 'text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20' :
+                                status === 'draft' ? 'text-purple-300 bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20' :
+                                  'text-red-300 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20'
+                        } bg-zinc-700 hover:bg-zinc-600`
                         }`}
                     >
                       {status?.charAt(0)?.toUpperCase() + status?.slice(1) || status} ({count})
@@ -905,6 +905,8 @@ export default function AdminDashboardPage() {
               toggleFeatured={toggleFeatured}
               setStatusDropdown={setStatusDropdown}
               statusDropdown={statusDropdown}
+              onDeployProtocol={deployProtocol}
+              actionsLoading={actionsLoading}
             />
           )}
         </div>
@@ -962,7 +964,7 @@ export default function AdminDashboardPage() {
                     }}
                     disabled={actionsLoading[`change-status-${statusDropdown}`]}
                     className={`w-full text-left px-4 py-3 text-sm hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between ${currentProject?.status === statusOption ? 'font-bold bg-zinc-800 text-white' :
-                        'text-gray-300 hover:text-white'
+                      'text-gray-300 hover:text-white'
                       }`}
                     role="menuitem"
                     type="button"
@@ -1018,27 +1020,7 @@ export default function AdminDashboardPage() {
                 // Show if project is approved/live but NOT deployed yet
                 // checking status !== 'pending' && status !== 'rejected' implicit in approval flow?
                 // Actually, let's allow it for approved/live projects.
-                if (['approved', 'live'].includes(currentProject.status) && currentProject.deploymentStatus !== 'deployed') {
-                  actions.push(
-                    <button
-                      key="deploy"
-                      onClick={async () => {
-                        await deployProtocol(currentProject.id, currentProject.title, currentProject.slug);
-                        setActionsDropdown(null);
-                      }}
-                      disabled={actionsLoading[`deploy-${currentProject.id}`]}
-                      className={`w-full text-left px-4 py-3 text-sm hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between text-indigo-400 hover:text-indigo-300 font-semibold`}
-                      role="menuitem"
-                      type="button"
-                      tabIndex={0}
-                    >
-                      <span>BS 🚀 Desplegar Protocolo</span>
-                      {actionsLoading[`deploy-${currentProject.id}`] && (
-                        <div className="w-2 h-2 border border-current border-t-transparent rounded-full animate-spin"></div>
-                      )}
-                    </button>
-                  );
-                }
+
 
                 // 2. Certify Sale button
                 // Show ONLY if deployed AND not completed
