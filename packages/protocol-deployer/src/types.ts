@@ -57,6 +57,7 @@ export interface W2EDeploymentResult {
   phiAddress: string;         // PHI token contract address
   loomAddress: string;        // VHLoom logic contract address
   governorAddress: string;    // DAO Governor contract address
+  treasuryAddress: string;    // Protocol Treasury contract address
   timelockAddress: string;    // Timelock contract address
   deploymentTxHash: string;   // Deployment transaction hash
   network: string;           // Target network

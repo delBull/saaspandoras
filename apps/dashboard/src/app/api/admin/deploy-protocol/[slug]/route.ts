@@ -127,7 +127,8 @@ export async function POST(
             ...config,
             phases: reqConfig?.phases || [],
             tokenomics: reqConfig?.tokenomics || {}, // Store raw tokenomics from UI
-            accessCardImage: reqConfig?.accessCardImage
+            accessCardImage: reqConfig?.accessCardImage,
+            timelockAddress: result.timelockAddress // Store timelock in config since we lack a column
         };
 
         // 5. Update Database
@@ -137,6 +138,7 @@ export async function POST(
                 utilityContractAddress: result.phiAddress,
                 loomContractAddress: result.loomAddress,
                 governorContractAddress: result.governorAddress,
+                treasuryContractAddress: result.treasuryAddress,
                 chainId: result.chainId,
                 deploymentStatus: 'deployed',
                 w2eConfig: extendedConfig,

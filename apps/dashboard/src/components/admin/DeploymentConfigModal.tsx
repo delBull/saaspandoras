@@ -24,6 +24,14 @@ export function DeploymentConfigModal({
     const [tokenomics, setTokenomics] = useState<TokenomicsConfig>(DEFAULT_TOKENOMICS);
     const [accessCardImage, setAccessCardImage] = useState<string>('');
 
+    // Economic Schedule (Basis Points)
+    const [economicSchedule, setEconomicSchedule] = useState({
+        phase1APY: 500,  // 5%
+        phase2APY: 1000, // 10%
+        phase3APY: 2000, // 20%
+        royaltyBPS: 500  // 5% (Fixed max)
+    });
+
     if (!isOpen) return null;
 
     // --- Dynamic Phase Logic ---
@@ -74,6 +82,10 @@ export function DeploymentConfigModal({
         setTokenomics(prev => ({ ...prev, [field]: value }));
     };
 
+    const handleEconomicChange = (field: string, value: number) => {
+        setEconomicSchedule(prev => ({ ...prev, [field]: value }));
+    };
+
     // --- Computed Stats ---
     const totalPhaseAllocation = phases.reduce((sum, p) => sum + (p.tokenAllocation || 0), 0);
     const totalReserveAllocation = tokenomics.reserveSupply || 0;
@@ -87,7 +99,10 @@ export function DeploymentConfigModal({
                 ...tokenomics,
                 initialSupply: totalComputedSupply
             },
-            accessCardImage: accessCardImage || undefined
+            accessCardImage: accessCardImage || undefined,
+            w2eConfig: { // Pass schedule as custom config
+                ...economicSchedule
+            }
         });
     };
 
@@ -116,7 +131,7 @@ export function DeploymentConfigModal({
                             </h3>
 
                             <div className="bg-zinc-800/30 p-4 rounded-xl border border-zinc-700/50">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> {/* Removed Price column, now 2 cols */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                                     {/* Supply Calculation */}
                                     <div className="space-y-4">
@@ -198,6 +213,64 @@ export function DeploymentConfigModal({
                             </div>
                         </div>
 
+                        {/* Section 1.5: Economic Schedule (Pact) */}
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-semibold text-purple-300 flex items-center gap-2">
+                                <span className="w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center text-sm">P</span>
+                                Cronograma Económico (Pacto W2E)
+                            </h3>
+                            <div className="bg-zinc-800/30 p-4 rounded-xl border border-zinc-700/50">
+                                <div className="grid grid-cols-3 gap-4">
+                                    {/* Phase 1 */}
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-400 mb-1">Fase 1 APY (Base)</label>
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="number"
+                                                value={economicSchedule.phase1APY}
+                                                onChange={(e) => handleEconomicChange('phase1APY', Number(e.target.value))}
+                                                className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-white text-sm"
+                                            />
+                                            <span className="text-xs text-gray-500">BPS</span>
+                                        </div>
+                                        <p className="text-[10px] text-green-400 mt-1">{(economicSchedule.phase1APY / 100).toFixed(1)}%</p>
+                                    </div>
+                                    {/* Phase 2 */}
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-400 mb-1">Fase 2 APY (Scale)</label>
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="number"
+                                                value={economicSchedule.phase2APY}
+                                                onChange={(e) => handleEconomicChange('phase2APY', Number(e.target.value))}
+                                                className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-white text-sm"
+                                            />
+                                            <span className="text-xs text-gray-500">BPS</span>
+                                        </div>
+                                        <p className="text-[10px] text-green-400 mt-1">{(economicSchedule.phase2APY / 100).toFixed(1)}%</p>
+                                    </div>
+                                    {/* Phase 3 */}
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-400 mb-1">Fase 3 APY (Mature)</label>
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="number"
+                                                value={economicSchedule.phase3APY}
+                                                onChange={(e) => handleEconomicChange('phase3APY', Number(e.target.value))}
+                                                className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-white text-sm"
+                                            />
+                                            <span className="text-xs text-gray-500">BPS</span>
+                                        </div>
+                                        <p className="text-[10px] text-green-400 mt-1">{(economicSchedule.phase3APY / 100).toFixed(1)}%</p>
+                                    </div>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-3 flex items-center gap-1">
+                                    <InformationCircleIcon className="w-3 h-3" />
+                                    Estos valores son inmutables para el cliente y solo modificables por la Autoridad Pandora.
+                                </p>
+                            </div>
+                        </div>
+
                         {/* Section 2: Phases (Dynamic) */}
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
@@ -211,7 +284,7 @@ export function DeploymentConfigModal({
                             </div>
 
                             <div className="space-y-4">
-                                {phases.map((phase, index) => (
+                                {phases.map((phase) => (
                                     <div key={phase.id} className="p-4 bg-zinc-800/30 rounded-xl border border-zinc-700 hover:border-indigo-500/30 transition-colors">
                                         <div className="flex justify-between items-start mb-4">
                                             <div className="flex-1 mr-4">
@@ -252,12 +325,30 @@ export function DeploymentConfigModal({
                                             {/* Limit */}
                                             <div>
                                                 <label className="text-xs text-gray-500 block mb-1">Límite ({phase.type === 'time' ? 'Días' : 'USD'})</label>
-                                                <input
-                                                    type="number"
-                                                    value={phase.limit}
-                                                    onChange={(e) => handlePhaseChange(phase.id, 'limit', Number(e.target.value))}
-                                                    className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-sm text-white"
-                                                />
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-xs text-gray-400 mb-1">Tipo</label>
+                                                        <select
+                                                            value={phase.type}
+                                                            onChange={(e) => handlePhaseChange(phase.id, 'type', e.target.value)}
+                                                            className="w-full bg-zinc-800 border border-zinc-700 rounded p-2 text-white text-sm focus:ring-2 focus:ring-lime-500/50 outline-none transition-all"
+                                                        >
+                                                            <option value="time">Tiempo (Días)</option>
+                                                            <option value="amount">Monto (USD/Tokens)</option>
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs text-gray-400 mb-1">
+                                                            {phase.type === 'time' ? 'Duración (Días)' : 'Meta (Cantidad)'}
+                                                        </label>
+                                                        <input
+                                                            type="number"
+                                                            value={phase.limit}
+                                                            onChange={(e) => handlePhaseChange(phase.id, 'limit', Number(e.target.value))}
+                                                            className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-sm text-white"
+                                                        />
+                                                    </div>
+                                                </div>
                                             </div>
 
                                             {/* Allocation */}
@@ -282,6 +373,41 @@ export function DeploymentConfigModal({
                                                     onChange={(e) => handlePhaseChange(phase.id, 'tokenPrice', Number(e.target.value))}
                                                     className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-sm text-white"
                                                 />
+                                            </div>
+
+                                            {/* NEW: Date & Soft Cap (Full Width) */}
+                                            <div className="col-span-full grid grid-cols-2 gap-4 border-t border-zinc-700/30 pt-4 mt-2">
+                                                <div>
+                                                    <label className="block text-xs text-gray-400 mb-1">Fecha Inicio</label>
+                                                    <input
+                                                        type="date"
+                                                        value={phase.startDate || ''}
+                                                        onChange={(e) => handlePhaseChange(phase.id, 'startDate', e.target.value)}
+                                                        className="w-full bg-zinc-900 border border-zinc-700 rounded p-2 text-white text-sm focus:border-indigo-500 outline-none transition-colors"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-gray-400 mb-1">Fecha Fin</label>
+                                                    <input
+                                                        type="date"
+                                                        value={phase.endDate || ''}
+                                                        onChange={(e) => handlePhaseChange(phase.id, 'endDate', e.target.value)}
+                                                        className="w-full bg-zinc-900 border border-zinc-700 rounded p-2 text-white text-sm focus:border-indigo-500 outline-none transition-colors"
+                                                    />
+                                                </div>
+                                                <div className="col-span-full flex items-center gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        id={`softcap-${phase.id}`}
+                                                        checked={phase.isSoftCap || false}
+                                                        onChange={(e) => handlePhaseChange(phase.id, 'isSoftCap', e.target.checked)}
+                                                        className="w-4 h-4 rounded border-zinc-600 text-indigo-500 focus:ring-indigo-500/50 bg-zinc-800"
+                                                    />
+                                                    <label htmlFor={`softcap-${phase.id}`} className="text-sm text-gray-300 select-none cursor-pointer">
+                                                        Habilitar "All or Nothing" (Soft Cap)
+                                                        <span className="block text-xs text-gray-500">Si no se alcanza la meta, se devuelven los fondos.</span>
+                                                    </label>
+                                                </div>
                                             </div>
                                         </div>
 
@@ -377,6 +503,6 @@ export function DeploymentConfigModal({
                     </button>
                 </div>
             </div>
-        </div >
+        </div>
     );
 }

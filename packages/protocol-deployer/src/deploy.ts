@@ -157,7 +157,7 @@ export async function deployW2EProtocol(
     config.licenseToken.name,
     config.licenseToken.symbol,
     config.maxLicenses,
-    parseEther(config.licenseToken.price || "0.1"),
+    parseEther("0"), // Always Free Access Card
     oracleAddress,
     addrTreasury, // Circular resolved
     wallet.address // Initial Owner
@@ -246,12 +246,44 @@ export async function deployW2EProtocol(
   // Set Loom address in Utility to allow minting
   try {
     // Ethers v6 contract interaction
-    // cast to any to avoid strict typecheck on generated methods
     const tx = await (utility as any).setW2ELoomAddress(loomAddress);
     await tx.wait();
     console.log("  - Utility linked to Loom");
+
+    // Configure Economic Schedule (Pact) if provided
+    if ((config as any).w2eConfig) {
+      console.log("  - Configuring Economic Schedule (Pact)...");
+      const w2e = (config as any).w2eConfig;
+
+      // Phase 1
+      if (w2e.phase1APY) {
+        const tx1 = await (utility as any).setPhaseSchedule(1, w2e.phase1APY);
+        await tx1.wait();
+        console.log(`    > Phase 1 APY set to ${(w2e.phase1APY / 100)}%`);
+      }
+      // Phase 2
+      if (w2e.phase2APY) {
+        const tx2 = await (utility as any).setPhaseSchedule(2, w2e.phase2APY);
+        await tx2.wait();
+        console.log(`    > Phase 2 APY set to ${(w2e.phase2APY / 100)}%`);
+      }
+      // Phase 3
+      if (w2e.phase3APY) {
+        const tx3 = await (utility as any).setPhaseSchedule(3, w2e.phase3APY);
+        await tx3.wait();
+        console.log(`    > Phase 3 APY set to ${(w2e.phase3APY / 100)}%`);
+      }
+
+      // Royalties
+      if (w2e.royaltyBPS) {
+        const txR = await (license as any).setRoyaltyInfo(addrTreasury, w2e.royaltyBPS);
+        await txR.wait();
+        console.log(`    > Royalties set to ${(w2e.royaltyBPS / 100)}%`);
+      }
+    }
+
   } catch (e) {
-    console.error("  ⚠️ Failed to link Utility to Loom:", e);
+    console.error("  ⚠️ Failed to configure post-deployment settings:", e);
   }
 
   // 7. Transfer Ownership to Governor (DAO Control)
@@ -286,6 +318,7 @@ export async function deployW2EProtocol(
     phiAddress: utilityAddress,
     loomAddress: loomAddress,
     governorAddress: governorAddress,
+    treasuryAddress: treasuryAddress,
     timelockAddress: "0x0000000000000000000000000000000000000000", // No standalone Timelock for now
     deploymentTxHash: (loom as any).deployTransaction?.hash || (loom.deploymentTransaction()?.hash) || "",
     network: network,

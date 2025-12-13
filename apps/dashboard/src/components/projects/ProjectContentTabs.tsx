@@ -198,9 +198,6 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
           {project.fund_usage && (
             <SectionCard title="Mecánica del Protocolo" icon={Puzzle}>
               <p className="text-zinc-300 whitespace-pre-line">{project.fund_usage}</p>
-              <p className="mt-4 text-sm text-zinc-400">
-                *Regla fundamental de valor para holders del Artefacto.
-              </p>
             </SectionCard>
           )}
 
@@ -208,9 +205,6 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
           {project.lockup_period && (
             <SectionCard title="Utilidad Continua" icon={Star}>
               <p className="text-zinc-300 whitespace-pre-line">{project.lockup_period}</p>
-              <p className="mt-4 text-sm text-zinc-400">
-                *Plan para mantener valor a largo plazo.
-              </p>
             </SectionCard>
           )}
 
@@ -231,29 +225,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
             </SectionCard>
           )}
 
-          {/* Fases de Venta (Deployment Config) */}
-          {project.w2eConfig?.phases && project.w2eConfig.phases.length > 0 && (
-            <SectionCard title="Fases de Venta Activas" icon={Crown}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {project.w2eConfig.phases.map((phase: any) => (
-                  <div key={phase.id} className={`p-4 rounded-lg border ${phase.isActive ? 'bg-lime-500/10 border-lime-500/30' : 'bg-zinc-800/50 border-zinc-700/50 opacity-60'}`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold text-white">{phase.name}</h4>
-                      {phase.isActive && <span className="px-2 py-0.5 rounded text-xs bg-lime-500/20 text-lime-400 border border-lime-500/30">Activa</span>}
-                    </div>
-                    <div className="text-sm text-zinc-400 space-y-1">
-                      <p>
-                        <span className="text-zinc-500">Condición:</span> {phase.type === 'time' ? 'Tiempo Limitado' : 'Monto Objetivo'}
-                      </p>
-                      <p>
-                        <span className="text-zinc-500">Límite:</span> {phase.limit} {phase.type === 'time' ? 'Días' : 'USD'}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </SectionCard>
-          )}
+
 
           {/* Estructura de Recompensa Recurrente */}
           <SectionCard title="Estructura de Recompensa Recurrente" icon={Star}>
@@ -332,17 +304,22 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
       content: (
         <div className="space-y-8 mb-8">
           {/* Meta de Adopción - Nueva clave */}
-          {project.target_amount && (
-            <SectionCard title="Meta de Adopción" icon={Globe}>
-              <p className="text-zinc-300">
-                <span className="font-semibold text-lime-400 text-lg">${project.target_amount.toLocaleString()}</span>
-                <span className="text-zinc-400 ml-2">USD objetivo</span>
-              </p>
-              <p className="mt-4 text-sm text-zinc-400">
-                *Monto necesario para lanzar esta Creación de utilidad.
-              </p>
-            </SectionCard>
-          )}
+          {/* Meta de Adopción - Dynamic from Config or Target */}
+          {(() => {
+            const tokenomics = project.w2eConfig?.tokenomics;
+            const target = tokenomics?.initialSupply ?
+              (Number(tokenomics.initialSupply) * Number(tokenomics.price || 0)) :
+              Number(project.target_amount || 0);
+
+            return target > 0 && (
+              <SectionCard title="Meta de Adopción" icon={Globe}>
+                <p className="text-zinc-300">
+                  <span className="font-semibold text-lime-400 text-lg">${target.toLocaleString()}</span>
+                  <span className="text-zinc-400 ml-2">USD objetivo</span>
+                </p>
+              </SectionCard>
+            );
+          })()}
 
           {/* Modelo de Monetización - Nueva clave */}
           {project.monetizationModel && (
@@ -364,22 +341,57 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
             </SectionCard>
           )}
 
-          {/* Parámetros del Artefacto */}
-          <SectionCard title="Parámetros del Artefacto" icon={Code}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-zinc-300"><span className="font-semibold text-white">Tipo:</span> {project.token_type ?? 'ERC-721'}</p>
+          {/* Parámetros del Artefacto (Dynamic Phases) */}
+          <SectionCard title="Parámetros del Artefacto (Fases)" icon={Code}>
+            {project.w2eConfig?.phases && project.w2eConfig.phases.length > 0 ? (
+              <div className="space-y-4">
+                {project.w2eConfig.phases.map((phase: any, index: number) => (
+                  <div key={index} className="bg-zinc-800/50 p-4 rounded-lg border border-zinc-700/50">
+                    <h4 className="font-bold text-white mb-2 flex items-center justify-between">
+                      <span>{phase.name}</span>
+                      <span className="text-xs px-2 py-0.5 bg-zinc-700 rounded text-gray-300 uppercase">{phase.type === 'time' ? 'Tiempo' : 'Monto'}</span>
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      {/* Token Price (Property: tokenPrice) */}
+                      <div>
+                        <span className="text-zinc-500 block text-xs">Precio Token</span>
+                        <span className="text-lime-400 font-mono">${phase.tokenPrice ?? '0.00'}</span>
+                      </div>
+                      {/* Limit (Context sensitive) */}
+                      <div>
+                        <span className="text-zinc-500 block text-xs">Límite ({phase.type === 'time' ? 'Días' : 'USD'})</span>
+                        <span className="text-white font-mono">{Number(phase.limit).toLocaleString()} {phase.type === 'time' ? 'd' : '$'}</span>
+                      </div>
+                      {/* Allocation (Property: tokenAllocation) */}
+                      <div>
+                        <span className="text-zinc-500 block text-xs">Asignación</span>
+                        <span className="text-white font-mono">{phase.tokenAllocation ? Number(phase.tokenAllocation).toLocaleString() : '∞'}</span>
+                      </div>
+                      {/* Status */}
+                      <div>
+                        <span className="text-zinc-500 block text-xs">Estado</span>
+                        <span className={phase.isActive ? "text-lime-400" : "text-zinc-500"}>{phase.isActive ? 'Activo' : 'Inactivo'}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div>
-                <p className="text-zinc-300"><span className="font-semibold text-white">Supply Total:</span> {project.total_tokens ? project.total_tokens.toLocaleString() : 'No especificado'}</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-zinc-300"><span className="font-semibold text-white">Tipo:</span> {project.token_type ?? 'ERC-721'}</p>
+                </div>
+                <div>
+                  <p className="text-zinc-300"><span className="font-semibold text-white">Supply Total:</span> {project.total_tokens ? project.total_tokens.toLocaleString() : 'No especificado'}</p>
+                </div>
+                <div>
+                  <p className="text-zinc-300"><span className="font-semibold text-white">Para Venta:</span> {project.tokens_offered ? project.tokens_offered.toLocaleString() : 'No especificado'}</p>
+                </div>
+                <div>
+                  <p className="text-zinc-300"><span className="font-semibold text-white">Precio:</span> {project.token_price_usd ? `$${Number(project.token_price_usd) % 1 === 0 ? Number(project.token_price_usd).toFixed(0) : Number(project.token_price_usd).toFixed(2)}` : 'No especificado'}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-zinc-300"><span className="font-semibold text-white">Para Venta:</span> {project.tokens_offered ? project.tokens_offered.toLocaleString() : 'No especificado'}</p>
-              </div>
-              <div>
-                <p className="text-zinc-300"><span className="font-semibold text-white">Precio:</span> {project.token_price_usd ? `$${Number(project.token_price_usd) % 1 === 0 ? Number(project.token_price_usd).toFixed(0) : Number(project.token_price_usd).toFixed(2)}` : 'No especificado'}</p>
-              </div>
-            </div>
+            )}
           </SectionCard>
 
           {/* Estructura de Recompensa Recurrente */}
@@ -389,9 +401,6 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
             ) : (
               <p className="text-zinc-400">No especificada</p>
             )}
-            <p className="mt-4 text-sm text-zinc-400">
-              *Sistema de recompensas continuas para mantener la utilidad.
-            </p>
           </SectionCard>
 
           {/* Governance Tokenomics (Deployment Config) */}
@@ -411,9 +420,6 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                   <p className="text-xl font-mono text-white">{project.w2eConfig.tokenomics.votingPowerMultiplier}x</p>
                 </div>
               </div>
-              <p className="mt-4 text-sm text-zinc-500">
-                *Estos valores están configurados en los contratos inteligentes desplegados.
-              </p>
             </SectionCard>
           )}
         </div>
@@ -427,9 +433,11 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
       content: (
         <div className="space-y-8 mb-8">
           {/* Contratos Inteligentes (SCaaS) - Nueva sección destacada */}
-          {(project.licenseContractAddress || project.governorContractAddress || project.treasuryContractAddress) && (
+          {/* Contratos Inteligentes (SCaaS) - Nueva sección destacada */}
+          {(project.licenseContractAddress || project.utilityContractAddress || project.loomContractAddress) && (
             <SectionCard title="Contratos Inteligentes del Protocolo" icon={Code}>
               <div className="space-y-3">
+                {/* 1. Licencia (Acceso) */}
                 {project.licenseContractAddress && (
                   <div className="flex justify-between items-center p-3 bg-zinc-800/50 rounded-lg">
                     <div>
@@ -441,6 +449,34 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                     </a>
                   </div>
                 )}
+
+                {/* 2. Utility Token */}
+                {project.utilityContractAddress && (
+                  <div className="flex justify-between items-center p-3 bg-zinc-800/50 rounded-lg">
+                    <div>
+                      <p className="text-white font-medium text-sm">Token de Utilidad (ERC-20)</p>
+                      <p className="text-zinc-500 text-xs font-mono break-all">{project.utilityContractAddress}</p>
+                    </div>
+                    <a href={`https://sepolia.etherscan.io/address/${project.utilityContractAddress}`} target="_blank" rel="noopener noreferrer" className="text-lime-400 hover:text-lime-300">
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  </div>
+                )}
+
+                {/* 3. Loom (Lógica Central) */}
+                {project.loomContractAddress && (
+                  <div className="flex justify-between items-center p-3 bg-zinc-800/50 rounded-lg">
+                    <div>
+                      <p className="text-white font-medium text-sm">W2E Loom (Lógica Central)</p>
+                      <p className="text-zinc-500 text-xs font-mono break-all">{project.loomContractAddress}</p>
+                    </div>
+                    <a href={`https://sepolia.etherscan.io/address/${project.loomContractAddress}`} target="_blank" rel="noopener noreferrer" className="text-lime-400 hover:text-lime-300">
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  </div>
+                )}
+
+                {/* 4. Gobernador (DAO) */}
                 {project.governorContractAddress && (
                   <div className="flex justify-between items-center p-3 bg-zinc-800/50 rounded-lg">
                     <div>
@@ -452,6 +488,8 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                     </a>
                   </div>
                 )}
+
+                {/* 5. Tesorería */}
                 {project.treasuryContractAddress && (
                   <div className="flex justify-between items-center p-3 bg-zinc-800/50 rounded-lg">
                     <div>
@@ -463,10 +501,24 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                     </a>
                   </div>
                 )}
-                {project.contract_address && !project.licenseContractAddress && (
+
+                {/* 6. Timelock */}
+                {project.w2eConfig?.timelockAddress && project.w2eConfig.timelockAddress !== "0x0000000000000000000000000000000000000000" && (
                   <div className="flex justify-between items-center p-3 bg-zinc-800/50 rounded-lg">
                     <div>
-                      <p className="text-white font-medium text-sm">Contrato Principal</p>
+                      <p className="text-white font-medium text-sm">Timelock (Seguridad)</p>
+                      <p className="text-zinc-500 text-xs font-mono break-all">{project.w2eConfig.timelockAddress}</p>
+                    </div>
+                    <a href={`https://sepolia.etherscan.io/address/${project.w2eConfig.timelockAddress}`} target="_blank" rel="noopener noreferrer" className="text-lime-400 hover:text-lime-300">
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  </div>
+                )}
+
+                {project.contract_address && !project.licenseContractAddress && !project.loomContractAddress && (
+                  <div className="flex justify-between items-center p-3 bg-zinc-800/50 rounded-lg">
+                    <div>
+                      <p className="text-white font-medium text-sm">Contrato Principal (Legacy)</p>
                       <p className="text-zinc-500 text-xs font-mono break-all">{project.contract_address}</p>
                     </div>
                     <a href={`https://sepolia.etherscan.io/address/${project.contract_address}`} target="_blank" rel="noopener noreferrer" className="text-lime-400 hover:text-lime-300">
@@ -474,9 +526,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                     </a>
                   </div>
                 )}
-                <p className="text-xs text-zinc-500 mt-2">
-                  *Estos contratos garantizan la transparencia y la gobernanza autónoma del protocolo en la red {project.chainId === 11155111 ? 'Sepolia' : project.chainId || 'Ethereum'}.
-                </p>
+
               </div>
             </SectionCard>
           )}
@@ -484,9 +534,6 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
           {/* Estatus Legal - Nueva clave */}
           <SectionCard title="Estatus Legal y Jurisdicción" icon={Briefcase}>
             <p className="text-zinc-300 whitespace-pre-line">{project.legal_status ?? 'No especificado'}</p>
-            <p className="mt-4 text-sm text-zinc-400">
-              *Información legal para demostrar la legitimidad de la entidad.
-            </p>
           </SectionCard>
 
           {/* Entidad Fiduciaria (desde ProjectDetails) */}

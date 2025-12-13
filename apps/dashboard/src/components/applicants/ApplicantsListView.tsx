@@ -66,20 +66,19 @@ export function ApplicantsListView({ projects, variant = 'approved' }: Applicant
                     </div>
 
                     {/* Status Badge */}
-                    <div className={`px-3 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
-                      project.status === 'live'
-                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-400/30'
-                        : project.status === 'approved'
+                    <div className={`px-3 py-1 rounded-full text-xs font-medium flex-shrink-0 ${project.status === 'live'
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-400/30'
+                      : project.status === 'approved'
                         ? 'bg-blue-500/20 text-blue-400 border border-blue-400/30'
                         : project.status === 'pending'
-                        ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-400/30'
-                        : 'bg-gray-500/20 text-gray-400 border border-gray-400/30'
-                    }`}>
+                          ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-400/30'
+                          : 'bg-gray-500/20 text-gray-400 border border-gray-400/30'
+                      }`}>
                       {project.status === 'live' ? 'Activo' :
-                       project.status === 'approved' ? 'Aprobado' :
-                       project.status === 'pending' ? 'Pendiente' :
-                       project.status === 'completed' ? 'Completado' :
-                       project.status === 'rejected' ? 'Rechazado' : 'Borrador'}
+                        project.status === 'approved' ? 'Aprobado' :
+                          project.status === 'pending' ? 'Pendiente' :
+                            project.status === 'completed' ? 'Completado' :
+                              project.status === 'rejected' ? 'Rechazado' : 'Borrador'}
                     </div>
                   </div>
 
@@ -105,6 +104,19 @@ export function ApplicantsListView({ projects, variant = 'approved' }: Applicant
                         {project.status}
                       </span>
                     </div>
+
+                    {/* Dynamic Price/Phase */}
+                    {(() => {
+                      const config = (project as any).w2eConfig;
+                      const activePhase = config?.phases?.find((p: any) => p.isActive);
+                      const price = activePhase?.tokenPrice ?? config?.tokenomics?.price;
+                      return price ? (
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="font-semibold text-lime-400 font-mono">${price}</span>
+                          <span className="text-xs text-gray-500">{activePhase?.name ?? 'Token Price'}</span>
+                        </div>
+                      ) : null;
+                    })()}
                   </div>
 
                   {/* Action Button */}

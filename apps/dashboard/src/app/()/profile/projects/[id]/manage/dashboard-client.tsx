@@ -11,73 +11,52 @@ import {
     ClipboardDocumentIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-// import { useContract, useBalance } from "@thirdweb-dev/react"; // Removed: Package not installed
-// If using v5 (current trend in repo), imports might differ. 
-// Repo uses "@thirdweb-dev/react" (v4-ish) or "thirdweb/react" (v5).
-// Let's assume compat or check other files. 
-// `ProjectSidebar.tsx` imports from `lucide-react`, standard React.
-// `useProjectActions` uses `fetch` so no thirdweb hooks visible there immediately.
-// I'll stick to standard React for UI and basic Web3 hooks if I can context switch.
-// Safest is to display addresses and link to Explorer first, then upgrade to hook.
-// But user requested "Founder Experience". I'll try to read balance.
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import DaoWizard from '@/components/admin/DaoWizard';
+
+// ... (existing imports)
 
 interface ProjectFounderDashboardProps {
     project: any; // Type strictly later
 }
 
 export default function ProjectFounderDashboard({ project }: ProjectFounderDashboardProps) {
+    const router = useRouter();
     const [activeTab, setActiveTab] = useState<'overview' | 'treasury' | 'governance' | 'settings'>('overview');
+    const [isLoadingPhase, setIsLoadingPhase] = useState<string | null>(null);
 
     // Safe Config Access
     const config = project.w2eConfig || {};
     const treasuryAddress = config.treasuryAddress || project.treasury_address;
     const governorAddress = config.governorAddress || project.governorContractAddress;
 
-    // Tabs Configuration
-    const tabs = [
-        { id: 'overview', label: 'Resumen', icon: DocumentTextIcon },
-        { id: 'treasury', label: 'Tesorería', icon: CurrencyDollarIcon },
-        { id: 'governance', label: 'DAO & Votación', icon: BuildingLibraryIcon },
-        { id: 'settings', label: 'Configuración', icon: Cog6ToothIcon },
-    ];
+    const handleTogglePhase = async (phaseId: string, currentStatus: boolean) => {
+        try {
+            setIsLoadingPhase(phaseId);
+            const response = await fetch(`/api/projects/${project.id}/phases`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phaseId, isActive: !currentStatus }),
+            });
+
+            if (!response.ok) throw new Error('Failed to update phase');
+
+            toast.success(currentStatus ? 'Fase pausada' : 'Fase activada');
+            router.refresh();
+        } catch (error) {
+            toast.error('Error al actualizar la fase');
+            console.error(error);
+        } finally {
+            setIsLoadingPhase(null);
+        }
+    };
+
+    // ... (tabs config)
 
     return (
         <div className="max-w-7xl mx-auto">
-            {/* Header */}
-            <div className="flex items-center gap-4 mb-8">
-                <Link href="/profile/projects" className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 transition-colors">
-                    <ArrowLeftIcon className="w-5 h-5 text-gray-400" />
-                </Link>
-                <div>
-                    <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400">
-                        {project.title}
-                    </h1>
-                    <div className="flex items-center gap-2 mt-1">
-                        <span className={`px-2 py-0.5 rounded text-xs border ${project.status === 'live' ? 'border-green-500/30 text-green-400 bg-green-500/10' : 'border-zinc-700 text-gray-400'
-                            }`}>
-                            {project.status === 'live' ? 'En Vivo' : project.status}
-                        </span>
-                        <span className="text-zinc-500 text-sm">• Founder Dashboard</span>
-                    </div>
-                </div>
-            </div>
-
-            {/* Navigation Tabs */}
-            <div className="flex gap-2 mb-8 border-b border-zinc-800 pb-1 overflow-x-auto">
-                {tabs.map((tab) => (
-                    <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id as any)}
-                        className={`flex items-center gap-2 px-4 py-3 rounded-t-lg transition-all relative ${activeTab === tab.id
-                            ? 'text-white bg-zinc-900 border-b-2 border-purple-500'
-                            : 'text-gray-400 hover:text-white hover:bg-zinc-900/50'
-                            }`}
-                    >
-                        <tab.icon className="w-5 h-5" />
-                        <span className="font-medium">{tab.label}</span>
-                    </button>
-                ))}
-            </div>
+            {/* ... (Header & Nav) ... */}
 
             {/* Content Area */}
             <div className="min-h-[400px]">
@@ -89,7 +68,14 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
                         exit={{ opacity: 0, y: -10 }}
                         transition={{ duration: 0.2 }}
                     >
-                        {activeTab === 'overview' && <OverviewTab project={project} config={config} />}
+                        {activeTab === 'overview' && (
+                            <OverviewTab
+                                project={project}
+                                config={config}
+                                onTogglePhase={handleTogglePhase}
+                                loadingPhase={isLoadingPhase}
+                            />
+                        )}
                         {activeTab === 'treasury' && <TreasuryTab address={treasuryAddress} />}
                         {activeTab === 'governance' && <GovernanceTab address={governorAddress} project={project} />}
                         {activeTab === 'settings' && <SettingsTab project={project} />}
@@ -101,7 +87,12 @@ export default function ProjectFounderDashboard({ project }: ProjectFounderDashb
 }
 
 // Sub-components
-function OverviewTab({ project, config }: { project: any, config: any }) {
+function OverviewTab({ project, config, onTogglePhase, loadingPhase }: {
+    project: any,
+    config: any,
+    onTogglePhase: (id: string, status: boolean) => void,
+    loadingPhase: string | null
+}) {
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="col-span-2 space-y-6">
@@ -122,15 +113,30 @@ function OverviewTab({ project, config }: { project: any, config: any }) {
                 <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
                     <h3 className="text-xl font-bold text-white mb-4">Fases de Venta Activas</h3>
                     <div className="space-y-3">
-                        {config.phases?.length > 0 ? config.phases.map((phase: any, i: number) => (
-                            <div key={i} className="flex justify-between items-center p-3 bg-zinc-800/50 rounded border border-zinc-700">
+                        {config.phases?.length > 0 ? config.phases.map((phase: any) => (
+                            <div key={phase.id} className="flex justify-between items-center p-3 bg-zinc-800/50 rounded border border-zinc-700">
                                 <div>
-                                    <p className="font-medium text-white">{phase.name}</p>
-                                    <p className="text-xs text-gray-400">{phase.type === 'time' ? `${phase.limit} días` : `$${phase.limit} USD`}</p>
+                                    <p className="font-medium text-white flex items-center gap-2">
+                                        {phase.name}
+                                        {phase.isSoftCap && <span className="text-[10px] bg-blue-900/50 text-blue-400 px-1.5 rounded border border-blue-500/20">Soft Cap</span>}
+                                    </p>
+                                    <p className="text-xs text-gray-400">{phase.type === 'time' ? `${phase.limit} días` : `$${phase.limit} USD`} • {phase.tokenPrice ? `$${phase.tokenPrice}` : 'N/A'}</p>
                                 </div>
-                                <span className={`px-2 py-1 rounded text-xs ${phase.isActive ? 'bg-green-500/20 text-green-400' : 'bg-zinc-700 text-gray-500'}`}>
-                                    {phase.isActive ? 'Activa' : 'Inactiva'}
-                                </span>
+                                <div className="flex items-center gap-3">
+                                    <span className={`px-2 py-1 rounded text-xs ${phase.isActive ? 'bg-green-500/20 text-green-400' : 'bg-zinc-700 text-gray-500'}`}>
+                                        {phase.isActive ? 'Activa' : 'Inactiva'}
+                                    </span>
+                                    <button
+                                        onClick={() => onTogglePhase(phase.id, phase.isActive)}
+                                        disabled={loadingPhase === phase.id}
+                                        className={`px-3 py-1 rounded text-xs font-bold transition-all ${phase.isActive
+                                            ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/30'
+                                            : 'bg-green-500/10 text-green-400 hover:bg-green-500/20 border border-green-500/30'
+                                            }`}
+                                    >
+                                        {loadingPhase === phase.id ? '...' : (phase.isActive ? 'Detener' : 'Iniciar')}
+                                    </button>
+                                </div>
                             </div>
                         )) : (
                             <p className="text-gray-500 italic">No hay fases configuradas.</p>
@@ -214,6 +220,8 @@ function TreasuryTab({ address }: { address?: string }) {
 }
 
 function GovernanceTab({ address, project }: { address?: string, project: any }) {
+    const [showWizard, setShowWizard] = useState(false);
+
     if (!address) return (
         <div className="p-12 text-center bg-zinc-900 rounded-xl border border-zinc-800 text-gray-500">
             No hay contrato de Gobernanza activo.
@@ -230,10 +238,27 @@ function GovernanceTab({ address, project }: { address?: string, project: any })
                             Gestionada por el token <strong>{project.w2eConfig?.utilityToken?.symbol || 'TOKEN'}</strong>
                         </p>
                     </div>
-                    <button className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors">
-                        Nueva Propuesta
+                    <button
+                        onClick={() => setShowWizard(!showWizard)}
+                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${showWizard ? 'bg-zinc-700 hover:bg-zinc-600 text-white' : 'bg-purple-600 hover:bg-purple-700 text-white'}`}
+                    >
+                        {showWizard ? 'Cancelar / Cerrar' : 'Administrar DAO'}
                     </button>
                 </div>
+
+                {/* DAO Wizard Expansion */}
+                <AnimatePresence>
+                    {showWizard && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden mb-8"
+                        >
+                            <DaoWizard project={project} governorAddress={address} />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {/* Stats */}
                 <div className="grid grid-cols-3 gap-4 mb-6 text-center">

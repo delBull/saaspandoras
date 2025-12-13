@@ -13,7 +13,12 @@ export interface Project {
   businessCategory: string;
   coverPhotoUrl?: string | null;
   targetAmount?: string | number | null;
+
   raisedAmount?: string | number | null;
+  contractAddress?: string;
+  utilityContractAddress?: string;
+  governorContractAddress?: string;
+  w2eConfig?: any;
 }
 
 export interface ApplicantsData {
