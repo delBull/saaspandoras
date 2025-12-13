@@ -46,8 +46,11 @@ export async function POST(
             return NextResponse.json({ error: "Project already deployed" }, { status: 400 });
         }
 
-        if (!project.treasuryAddress) {
-            return NextResponse.json({ error: "Project Treasury Address is missing" }, { status: 400 });
+        // Use Treasury Address or fallback to Applicant Wallet (Founder)
+        const treasuryAddress = project.treasuryAddress || project.applicantWalletAddress;
+
+        if (!treasuryAddress) {
+            return NextResponse.json({ error: "Project Treasury Address is missing (Advisor/Founder Wallet required)" }, { status: 400 });
         }
 
         // 2. Prepare Configuration
@@ -85,11 +88,11 @@ export async function POST(
             },
 
             // Governance
-            quorumPercentage: reqConfig?.tokenomics?.votingPowerMultiplier ? Math.min(Math.max(reqConfig.tokenomics.votingPowerMultiplier, 1), 100) : 4, // Map multiplier to quorum? Or just use default.
+            quorumPercentage: reqConfig?.tokenomics?.votingPowerMultiplier ? Math.min(Math.max(reqConfig.tokenomics.votingPowerMultiplier, 10), 100) : 10, // Must be >= 10
             votingDelaySeconds: 0,
             votingPeriodHours: 24, // 1 day
             executionDelayHours: 24, // 1 day timelock
-            emergencyPeriodHours: 72, // 3 days
+            emergencyPeriodHours: 168, // 7 days (Minimum required by contract)
             emergencyQuorumPct: 10,
 
             // Economics
@@ -97,10 +100,10 @@ export async function POST(
             stakingRewardRate: "1000000000000000", // 0.001 tokens/sec placeholder
             phiFundSplitPct: 10,
             maxLicenses: project.totalTokens || 1000,
-            treasurySigners: [project.treasuryAddress],
+            treasurySigners: [treasuryAddress],
 
             // Capital Distribution
-            creatorWallet: project.treasuryAddress,
+            creatorWallet: treasuryAddress,
             creatorPayoutPct: 50, // 50% release
             targetAmount: project.targetAmount ? project.targetAmount.toString() : "0",
             payoutWindowSeconds: 60 * 60 * 24 * 7, // 7 days

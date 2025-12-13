@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import type { Project } from '@/types/admin';
 import { DeploymentConfigModal } from './admin/DeploymentConfigModal';
+import DeploymentProgressModal from './admin/DeploymentProgressModal';
 import type { DeploymentConfig } from '@/types/deployment';
 
 interface ProjectTableViewProps {
@@ -38,6 +39,11 @@ export function ProjectTableView({
   const [isConfigModalOpen, setIsConfigModalOpen] = React.useState(false);
   const [selectedProjectForDeployment, setSelectedProjectForDeployment] = React.useState<{ id: string, title: string, slug: string } | null>(null);
 
+  // Deployment Progress State
+  const [deploymentStatus, setDeploymentStatus] = React.useState<'idle' | 'deploying' | 'success' | 'error'>('idle');
+  const [deploymentError, setDeploymentError] = React.useState<string | undefined>(undefined);
+  const [isProgressModalOpen, setIsProgressModalOpen] = React.useState(false);
+
   const handleDeployClick = (id: string, title: string, slug: string) => {
     setSelectedProjectForDeployment({ id, title, slug });
     setIsConfigModalOpen(true);
@@ -45,15 +51,26 @@ export function ProjectTableView({
 
   const handleConfigConfirm = async (config: DeploymentConfig) => {
     if (selectedProjectForDeployment && onDeployProtocol) {
-      // Close modal first/during? Maybe keep open? Close for now.
       setIsConfigModalOpen(false);
-      await onDeployProtocol(
-        selectedProjectForDeployment.id,
-        selectedProjectForDeployment.title,
-        selectedProjectForDeployment.slug,
-        config
-      );
-      setSelectedProjectForDeployment(null);
+
+      // Start Progress Modal
+      setDeploymentStatus('deploying');
+      setDeploymentError(undefined);
+      setIsProgressModalOpen(true);
+
+      try {
+        await onDeployProtocol(
+          selectedProjectForDeployment.id,
+          selectedProjectForDeployment.title,
+          selectedProjectForDeployment.slug,
+          config
+        );
+        setDeploymentStatus('success');
+      } catch (err) {
+        setDeploymentStatus('error');
+        setDeploymentError(err instanceof Error ? err.message : 'Error desconocido al desplegar');
+      }
+      // Note: We don't close modal automatically on success/error to let user see the result
     }
   };
 
@@ -506,7 +523,21 @@ export function ProjectTableView({
         onClose={() => setIsConfigModalOpen(false)}
         onConfirm={handleConfigConfirm}
         projectTitle={selectedProjectForDeployment?.title || ''}
-        isLoading={selectedProjectForDeployment ? actionsLoading?.[selectedProjectForDeployment.id] : false}
+        isLoading={false} // Loading handled by Progress Modal now
+      />
+
+      {/* Visual Deployment Progress Modal */}
+      <DeploymentProgressModal
+        isOpen={isProgressModalOpen}
+        onClose={() => {
+          setIsProgressModalOpen(false);
+          if (deploymentStatus === 'success') {
+            setSelectedProjectForDeployment(null);
+          }
+        }}
+        status={deploymentStatus}
+        error={deploymentError}
+        projectTitle={selectedProjectForDeployment?.title || ''}
       />
     </>
   );
