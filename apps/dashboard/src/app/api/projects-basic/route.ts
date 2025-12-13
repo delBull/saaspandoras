@@ -16,9 +16,9 @@ interface ProjectQueryResult {
   businessCategory?: string;
   coverPhotoUrl?: string | null;
   targetAmount?: string | number | null;
-
   raisedAmount?: string | number | null;
   contractAddress?: string | null;
+  licenseContractAddress?: string | null;
   utilityContractAddress?: string | null;
   governorContractAddress?: string | null;
   w2eConfig?: any;
@@ -37,6 +37,7 @@ interface FormattedProject {
   targetAmount: string | null;
   raisedAmount: string;
   contractAddress?: string;
+  licenseContractAddress?: string;
   utilityContractAddress?: string;
   governorContractAddress?: string;
   w2eConfig?: any;
@@ -62,6 +63,7 @@ export async function GET() {
           "raised_amount" as "raisedAmount",
           "business_category" as "businessCategory",
           "contract_address" as "contractAddress",
+          "license_contract_address" as "licenseContractAddress",
           "utility_contract_address" as "utilityContractAddress",
           "governor_contract_address" as "governorContractAddress",
           "w2e_config" as "w2eConfig"
@@ -86,6 +88,7 @@ export async function GET() {
           targetAmount: project.targetAmount ? String(project.targetAmount) : null,
           raisedAmount: project.raisedAmount ? String(project.raisedAmount) : '0',
           contractAddress: project.contractAddress ? String(project.contractAddress) : undefined,
+          licenseContractAddress: project.licenseContractAddress ? String(project.licenseContractAddress) : undefined,
           utilityContractAddress: project.utilityContractAddress ? String(project.utilityContractAddress) : undefined,
           governorContractAddress: project.governorContractAddress ? String(project.governorContractAddress) : undefined,
           w2eConfig: project.w2eConfig ?? {}

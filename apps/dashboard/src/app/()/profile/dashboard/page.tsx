@@ -300,8 +300,8 @@ export default function PandoriansDashboardPage() {
 
       {/* Key Metrics */}
       <div className={`grid gap-6 ${profile.role === 'applicant'
-          ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
-          : 'grid-cols-1 md:grid-cols-3'
+        ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
+        : 'grid-cols-1 md:grid-cols-3'
         }`}>
         <Card>
           <CardContent className="p-6">
@@ -380,7 +380,7 @@ export default function PandoriansDashboardPage() {
               {recentActivity.map((activity, index) => (
                 <div key={index} className="flex items-start space-x-4 p-3 rounded-lg bg-zinc-800/50">
                   <div className={`w-2 h-2 rounded-full mt-2 ${activity.type === 'achievement' ? 'bg-yellow-500' :
-                      activity.type === 'login' ? 'bg-blue-500' : 'bg-lime-500'
+                    activity.type === 'login' ? 'bg-blue-500' : 'bg-lime-500'
                     }`}></div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white">{activity.title}</p>

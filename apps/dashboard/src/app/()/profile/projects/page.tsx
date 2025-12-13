@@ -16,6 +16,8 @@ import {
   CheckCircleIcon,
   EyeIcon,
   BuildingLibraryIcon,
+  ClipboardDocumentIcon,
+  KeyIcon
 } from '@heroicons/react/24/outline';
 import type { UserData, Project } from '@/types/admin';
 import { useActiveAccount } from 'thirdweb/react';
@@ -571,8 +573,20 @@ export default function ProfileProjectsPage() {
                               'bg-gray-500'
                       }`}></div>
                     <div>
-                      <div className="text-white text-sm font-medium">{project.title}</div>
-                      <div className="text-gray-400 text-xs">
+                      <div className="flex items-center gap-2">
+                        <div className="text-white text-sm font-medium">{project.title}</div>
+                        {/* Copy Wallet Helper */}
+                        {project.applicantWalletAddress && (
+                          <button
+                            onClick={() => navigator.clipboard.writeText(project.applicantWalletAddress || "")}
+                            className="text-zinc-600 hover:text-zinc-400 transition-colors"
+                            title={`Copiar Wallet: ${project.applicantWalletAddress}`}
+                          >
+                            <KeyIcon className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                      <div className="text-gray-400 text-xs text-left">
                         Estado: {
                           project.status === 'live' ? '🏃‍♂️ Activo' :
                             project.status === 'approved' ? '✅ Aprobado' :

@@ -1,20 +1,47 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ArtifactPurchaseModal from "@/components/modals/ArtifactPurchaseModal";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
-  Puzzle,
+  FileText,
   Shield,
+  Users,
+  Globe,
+  Twitter,
+  Linkedin,
+  Github,
+  Award,
+  ExternalLink,
+  Wallet,
+  Building,
+  Scale,
+  Ticket,
+  Clock,
+  Zap,
+  Lock,
+  MessageCircle,
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  MapPin,
+  Mail,
+  Phone,
+  User,
+  CheckCircle,
+  Copy,
+  Puzzle,
   Code,
   Crown,
   Briefcase,
   Star,
-  ExternalLink,
-  Globe,
   LayoutGrid,
-  ArrowRight
+  ArrowRight,
+  PlayCircle,
+  DollarSign
 } from "lucide-react";
+import { UserGovernanceList } from "../user/UserGovernanceList";
 import type { ProjectData } from "@/app/()/projects/types";
 import SectionCard from "./SectionCard";
 
@@ -33,6 +60,15 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
   const [activeTab, setActiveTab] = useState("strategy");
   const [selectedPhase, setSelectedPhase] = useState<any>(null);
   const [isArtifactModalOpen, setIsArtifactModalOpen] = useState(false);
+
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab');
+
+  useEffect(() => {
+    if (tabParam && ['campaign', 'utility', 'strategy', 'compliance'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
 
   // Función para mostrar el video (ya no utilizada)
   const _showVideo = () => {
@@ -56,113 +92,9 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
             </p>
           </SectionCard>
 
-          {(() => {
-            // Acceso seguro a propiedades opcionales
-            const projectObj = project as unknown as Record<string, unknown>;
-            const hasLinks = projectObj.website_url || projectObj.whitepaper_url || projectObj.twitter_url || projectObj.discord_url || projectObj.telegram_url || projectObj.video_pitch;
 
-            return hasLinks ? (
-              <SectionCard title="Enlaces y Recursos" icon={ExternalLink}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Website */}
-                  {typeof projectObj.website_url === 'string' && projectObj.website_url && (
-                    <a
-                      href={projectObj.website_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group"
-                    >
-                      <Globe className="w-5 h-5 text-lime-400 group-hover:text-lime-300" />
-                      <div>
-                        <p className="text-white font-medium">Sitio Web</p>
-                        <p className="text-zinc-400 text-sm">Visitar website oficial</p>
-                      </div>
-                    </a>
-                  )}
+          {/* Links removed from here, now displayed globally below */}
 
-                  {/* Whitepaper/Litepaper */}
-                  {typeof projectObj.whitepaper_url === 'string' && projectObj.whitepaper_url && (
-                    <a
-                      href={projectObj.whitepaper_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group"
-                    >
-                      <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/file-text.svg" className="w-5 h-5 text-lime-400 group-hover:text-lime-300" alt="Whitepaper" />
-                      <div>
-                        <p className="text-white font-medium">Whitepaper</p>
-                        <p className="text-zinc-400 text-sm">Documentación técnica</p>
-                      </div>
-                    </a>
-                  )}
-
-                  {/* Twitter */}
-                  {typeof projectObj.twitter_url === 'string' && projectObj.twitter_url && (
-                    <a
-                      href={projectObj.twitter_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group"
-                    >
-                      <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/twitter.svg" className="w-5 h-5 text-lime-400 group-hover:text-lime-300" alt="Twitter" />
-                      <div>
-                        <p className="text-white font-medium">Twitter</p>
-                        <p className="text-zinc-400 text-sm">Síguenos en Twitter</p>
-                      </div>
-                    </a>
-                  )}
-
-                  {/* Discord */}
-                  {typeof projectObj.discord_url === 'string' && projectObj.discord_url && (
-                    <a
-                      href={projectObj.discord_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group"
-                    >
-                      <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/message-circle.svg" className="w-5 h-5 text-lime-400 group-hover:text-lime-300" alt="Discord" />
-                      <div>
-                        <p className="text-white font-medium">Discord</p>
-                        <p className="text-zinc-400 text-sm">Únete a la comunidad</p>
-                      </div>
-                    </a>
-                  )}
-
-                  {/* Telegram */}
-                  {typeof projectObj.telegram_url === 'string' && projectObj.telegram_url && (
-                    <a
-                      href={projectObj.telegram_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group"
-                    >
-                      <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/send.svg" className="w-5 h-5 text-lime-400 group-hover:text-lime-300" alt="Telegram" />
-                      <div>
-                        <p className="text-white font-medium">Telegram</p>
-                        <p className="text-zinc-400 text-sm">Canal oficial</p>
-                      </div>
-                    </a>
-                  )}
-
-                  {/* Video Pitch - si existe */}
-                  {typeof projectObj.video_pitch === 'string' && projectObj.video_pitch && (
-                    <a
-                      href={projectObj.video_pitch}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group"
-                    >
-                      <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/play-circle.svg" className="w-5 h-5 text-lime-400 group-hover:text-lime-300" alt="Video" />
-                      <div>
-                        <p className="text-white font-medium">Video Pitch</p>
-                        <p className="text-zinc-400 text-sm">Ver presentación del proyecto</p>
-                      </div>
-                    </a>
-                  )}
-                </div>
-              </SectionCard>
-            ) : null;
-          })()}
         </div>
       ),
     },
@@ -400,85 +332,44 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
       icon: Shield,
       content: (
         <div className="space-y-8 mb-8">
+          {/* Governance Events & Signals */}
+          <UserGovernanceList projectIds={[Number(project.id)]} />
+
           {/* Contratos Inteligentes (SCaaS) */}
-          {(project.licenseContractAddress || project.utilityContractAddress || project.loomContractAddress) && (
+          {(project.licenseContractAddress || project.utilityContractAddress || project.loomContractAddress || project.governorContractAddress || project.treasuryContractAddress || (project.w2eConfig?.timelockAddress && project.w2eConfig.timelockAddress !== "0x0000000000000000000000000000000000000000")) && (
             <SectionCard title="Contratos Inteligentes del Protocolo" icon={Code}>
               <div className="space-y-3">
-                {/* 1. Licencia (Acceso) */}
-                {project.licenseContractAddress && (
-                  <div className="flex justify-between items-center p-3 bg-zinc-800/50 rounded-lg">
-                    <div>
-                      <p className="text-white font-medium text-sm">Licencia de Acceso (NFT)</p>
-                      <p className="text-zinc-500 text-xs font-mono break-all">{project.licenseContractAddress}</p>
+                {/* Helper for Contract Item */}
+                {[
+                  { label: "Licencia de Acceso (NFT)", address: project.licenseContractAddress, type: "License" },
+                  { label: "Token de Utilidad (ERC-20)", address: project.utilityContractAddress, type: "Utility" },
+                  { label: "W2E Loom (Lógica Central)", address: project.loomContractAddress, type: "Loom" },
+                  { label: "Gobernador (DAO)", address: project.governorContractAddress, type: "Governor" },
+                  { label: "Tesorería Comunitaria", address: project.treasuryContractAddress, type: "Treasury" },
+                  { label: "Timelock (Seguridad)", address: project.w2eConfig?.timelockAddress, type: "Timelock" }
+                ]
+                  .filter(item => item.address && item.address !== "0x0000000000000000000000000000000000000000")
+                  .map((item, idx) => (
+                    <div key={idx} className="flex justify-between items-center p-3 bg-zinc-800/50 rounded-lg group hover:bg-zinc-800/80 transition-colors">
+                      <div className="overflow-hidden flex-1 mr-4">
+                        <p className="text-white font-medium text-sm">{item.label}</p>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(item.address || "");
+                            // Optionally toast
+                          }}
+                          className="text-zinc-500 text-xs font-mono break-all hover:text-lime-400 text-left transition-colors flex items-center gap-1 w-full"
+                          title="Click to Copy"
+                        >
+                          <span className="truncate">{item.address}</span>
+                          <Copy className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                        </button>
+                      </div>
+                      <a href={`https://sepolia.etherscan.io/address/${item.address}`} target="_blank" rel="noopener noreferrer" className="text-lime-400 hover:text-lime-300 flex-shrink-0">
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
                     </div>
-                    <a href={`https://sepolia.etherscan.io/address/${project.licenseContractAddress}`} target="_blank" rel="noopener noreferrer" className="text-lime-400 hover:text-lime-300">
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                  </div>
-                )}
-
-                {/* 2. Utility Token */}
-                {project.utilityContractAddress && (
-                  <div className="flex justify-between items-center p-3 bg-zinc-800/50 rounded-lg">
-                    <div>
-                      <p className="text-white font-medium text-sm">Token de Utilidad (ERC-20)</p>
-                      <p className="text-zinc-500 text-xs font-mono break-all">{project.utilityContractAddress}</p>
-                    </div>
-                    <a href={`https://sepolia.etherscan.io/address/${project.utilityContractAddress}`} target="_blank" rel="noopener noreferrer" className="text-lime-400 hover:text-lime-300">
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                  </div>
-                )}
-
-                {/* 3. Loom (Lógica Central) */}
-                {project.loomContractAddress && (
-                  <div className="flex justify-between items-center p-3 bg-zinc-800/50 rounded-lg">
-                    <div>
-                      <p className="text-white font-medium text-sm">W2E Loom (Lógica Central)</p>
-                      <p className="text-zinc-500 text-xs font-mono break-all">{project.loomContractAddress}</p>
-                    </div>
-                    <a href={`https://sepolia.etherscan.io/address/${project.loomContractAddress}`} target="_blank" rel="noopener noreferrer" className="text-lime-400 hover:text-lime-300">
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                  </div>
-                )}
-                {/* 4. Gobernador (DAO) */}
-                {project.governorContractAddress && (
-                  <div className="flex justify-between items-center p-3 bg-zinc-800/50 rounded-lg">
-                    <div>
-                      <p className="text-white font-medium text-sm">Gobernador (DAO)</p>
-                      <p className="text-zinc-500 text-xs font-mono break-all">{project.governorContractAddress}</p>
-                    </div>
-                    <a href={`https://sepolia.etherscan.io/address/${project.governorContractAddress}`} target="_blank" rel="noopener noreferrer" className="text-lime-400 hover:text-lime-300">
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                  </div>
-                )}
-
-                {/* 5. Tesorería */}
-                {project.treasuryContractAddress && (
-                  <div className="flex justify-between items-center p-3 bg-zinc-800/50 rounded-lg">
-                    <div>
-                      <p className="text-white font-medium text-sm">Tesorería Comunitaria</p>
-                      <p className="text-zinc-500 text-xs font-mono break-all">{project.treasuryContractAddress}</p>
-                    </div>
-                    <a href={`https://sepolia.etherscan.io/address/${project.treasuryContractAddress}`} target="_blank" rel="noopener noreferrer" className="text-lime-400 hover:text-lime-300">
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                  </div>
-                )}
-                {/* 6. Timelock */}
-                {project.w2eConfig?.timelockAddress && project.w2eConfig.timelockAddress !== "0x0000000000000000000000000000000000000000" && (
-                  <div className="flex justify-between items-center p-3 bg-zinc-800/50 rounded-lg">
-                    <div>
-                      <p className="text-white font-medium text-sm">Timelock (Seguridad)</p>
-                      <p className="text-zinc-500 text-xs font-mono break-all">{project.w2eConfig.timelockAddress}</p>
-                    </div>
-                    <a href={`https://sepolia.etherscan.io/address/${project.w2eConfig.timelockAddress}`} target="_blank" rel="noopener noreferrer" className="text-lime-400 hover:text-lime-300">
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                  </div>
-                )}
+                  ))}
               </div>
             </SectionCard>
           )}
@@ -565,22 +456,149 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
             onClick={() => setActiveTab(tab.id)}
             className={`
                 px-4 py-3 text-sm md:text-md font-semibold flex items-center gap-2 transition-colors duration-200
+                border-b-2 whitespace-nowrap
                 ${activeTab === tab.id
-                ? 'text-lime-400 border-b-2 border-lime-400'
-                : 'text-zinc-400 hover:text-white hover:border-b-2 hover:border-zinc-500'
+                ? "border-lime-400 text-lime-400"
+                : "border-transparent text-zinc-400 hover:text-zinc-200 hover:border-zinc-600"
               }
               `}
           >
-            <tab.icon className="w-5 h-5" />
+            <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? "text-lime-400" : "text-zinc-400"}`} />
             {tab.label}
           </button>
         ))}
       </div>
 
-      {/* Contenido Activo */}
-      <div>
+      {/* Contenido del Tab Activo */}
+      <div className="min-h-[400px]">
         {activeContent}
+      </div>
+
+      {/* SECCIÓN PERSISTENTE: Enlaces y Recursos (Visible siempre debajo de los tabs) */}
+      <div className="mt-12 border-t border-zinc-700/50 pt-8">
+        {(() => {
+          // Acceso seguro a propiedades opcionales
+          const projectObj = project as unknown as Record<string, unknown>;
+          const hasLinks = projectObj.website_url || projectObj.whitepaper_url || projectObj.twitter_url || projectObj.discord_url || projectObj.telegram_url || projectObj.video_pitch;
+
+          return hasLinks ? (
+            <SectionCard title="Enlaces y Recursos" icon={ExternalLink}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Website */}
+                {typeof projectObj.website_url === 'string' && projectObj.website_url && (
+                  <a
+                    href={projectObj.website_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group"
+                  >
+                    <Globe className="w-5 h-5 text-lime-400 group-hover:text-lime-300" />
+                    <div>
+                      <p className="text-white font-medium">Sitio Web</p>
+                      <p className="text-zinc-400 text-sm">Visitar website oficial</p>
+                    </div>
+                  </a>
+                )}
+
+                {/* Whitepaper/Litepaper */}
+                {typeof projectObj.whitepaper_url === 'string' && projectObj.whitepaper_url && (
+                  <a
+                    href={projectObj.whitepaper_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group"
+                  >
+                    <FileText className="w-5 h-5 text-lime-400 group-hover:text-lime-300" />
+                    <div>
+                      <p className="text-white font-medium">Whitepaper</p>
+                      <p className="text-zinc-400 text-sm">Documentación técnica</p>
+                    </div>
+                  </a>
+                )}
+
+                {/* DAO Access */}
+                {projectObj.deploymentStatus === 'deployed' && (
+                  <Link
+                    href={`/projects/${projectObj.slug}/dao`}
+                    className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group cursor-pointer"
+                  >
+                    <Shield className="w-5 h-5 text-lime-400 group-hover:text-lime-300" />
+                    <div>
+                      <p className="text-white font-medium">Panel de Gobernanza (DAO)</p>
+                      <p className="text-zinc-400 text-sm">Votación y propuestas del protocolo</p>
+                    </div>
+                  </Link>
+                )}
+
+                {/* Twitter */}
+                {typeof projectObj.twitter_url === 'string' && projectObj.twitter_url && (
+                  <a
+                    href={projectObj.twitter_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group"
+                  >
+                    <Twitter className="w-5 h-5 text-lime-400 group-hover:text-lime-300" />
+                    <div>
+                      <p className="text-white font-medium">Twitter</p>
+                      <p className="text-zinc-400 text-sm">Síguenos en Twitter</p>
+                    </div>
+                  </a>
+                )}
+
+                {/* Discord */}
+                {typeof projectObj.discord_url === 'string' && projectObj.discord_url && (
+                  <a
+                    href={projectObj.discord_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group"
+                  >
+                    <MessageCircle className="w-5 h-5 text-lime-400 group-hover:text-lime-300" />
+                    <div>
+                      <p className="text-white font-medium">Discord</p>
+                      <p className="text-zinc-400 text-sm">Únete a la comunidad</p>
+                    </div>
+                  </a>
+                )}
+
+                {/* Telegram */}
+                {typeof projectObj.telegram_url === 'string' && projectObj.telegram_url && (
+                  <a
+                    href={projectObj.telegram_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group"
+                  >
+                    <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/send.svg" className="w-5 h-5 text-lime-400 group-hover:text-lime-300 filter invert-0 dark:invert" alt="Telegram" />
+                    <div>
+                      <p className="text-white font-medium">Telegram</p>
+                      <p className="text-zinc-400 text-sm">Canal oficial</p>
+                    </div>
+                  </a>
+                )}
+
+                {/* Video Pitch */}
+                {typeof projectObj.video_pitch === 'string' && projectObj.video_pitch && (
+                  <a
+                    href={projectObj.video_pitch}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group"
+                  >
+                    <PlayCircle className="w-5 h-5 text-lime-400 group-hover:text-lime-300" />
+                    <div>
+                      <p className="text-white font-medium">Video Pitch</p>
+                      <p className="text-zinc-400 text-sm">Ver presentación del proyecto</p>
+                    </div>
+                  </a>
+                )}
+              </div>
+            </SectionCard>
+          ) : null;
+        })()}
       </div>
     </div>
   );
 }
+
