@@ -73,7 +73,9 @@ export default function AccessCardPurchaseModal({ isOpen, onClose, project, lice
                                 <div>
                                     <div className="flex items-center gap-2">
                                         <h2 className="text-xl font-bold text-white">Access Card</h2>
-                                        <span className="bg-lime-500/20 text-lime-400 text-xs font-bold px-2 py-0.5 rounded-full border border-lime-500/30">GRATIS</span>
+                                        <span className="bg-lime-500/20 text-lime-400 text-xs font-bold px-2 py-0.5 rounded-full border border-lime-500/30">
+                                            {mintPrice && Number(mintPrice) > 0 ? `${Number(mintPrice) / 1e18} ETH` : 'GRATIS'}
+                                        </span>
                                     </div>
                                     <p className="text-lime-400 text-xs font-medium uppercase tracking-wider">{project.title}</p>
                                 </div>
@@ -119,7 +121,10 @@ export default function AccessCardPurchaseModal({ isOpen, onClose, project, lice
                                             className="!w-full !bg-lime-400 hover:!bg-lime-500 !text-black !font-bold !py-4 !rounded-xl !shadow-lg !shadow-lime-500/20"
                                         >
                                             <span className="flex items-center gap-2 text-base">
-                                                Confirmar Adquisición <ArrowRight className="w-4 h-4" />
+                                                {mintPrice && Number(mintPrice) > 0
+                                                    ? `Pagar ${Number(mintPrice) / 1e18} ETH`
+                                                    : "Obtener Gratis"}
+                                                <ArrowRight className="w-4 h-4" />
                                             </span>
                                         </TransactionButton>
                                     ) : (
@@ -141,7 +146,26 @@ export default function AccessCardPurchaseModal({ isOpen, onClose, project, lice
                                     </motion.div>
                                     <h3 className="text-2xl font-bold text-white mb-2">¡Bienvenido a Bordo!</h3>
                                     <p className="text-gray-400 mb-6">Tu Access Card ha sido emitida exitosamente.</p>
-                                    <div className="animate-pulse text-xs text-lime-500 uppercase tracking-widest">Redirigiendo...</div>
+                                    <div className="bg-zinc-800/50 rounded-xl p-4 mb-6 text-left space-y-3 border border-zinc-700/50">
+                                        <h4 className="text-sm font-bold text-white uppercase tracking-wider">Próximos Pasos:</h4>
+                                        <ul className="space-y-2 text-sm text-gray-300">
+                                            <li className="flex items-start gap-2">
+                                                <span className="text-lime-400 font-bold">1.</span>
+                                                <span>Adquiere <strong>Artefactos (Tokens)</strong> en la pestaña de Estrategia para tener poder de voto.</span>
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <span className="text-lime-400 font-bold">2.</span>
+                                                <span>Accede a tu <strong>Panel de Control</strong> para gestionar tus activos.</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+
+                                    <button
+                                        onClick={onClose}
+                                        className="w-full bg-lime-400 hover:bg-lime-500 text-black font-bold py-3 rounded-xl transition-colors"
+                                    >
+                                        Continuar
+                                    </button>
                                 </div>
                             )}
                         </div>

@@ -198,7 +198,7 @@ export function MyProtocolsView() {
         <div className="space-y-8">
             <div className="flex justify-between items-end">
                 <div>
-                    <h1 className="text-3xl font-bold text-white mb-2">Mis Protocolos</h1>
+                    <h1 className="text-3xl font-bold text-white mb-2">Mis Accesos</h1>
                     <p className="text-gray-400">Gestiona tus activos y participa en la gobernanza de tus inversiones.</p>
                 </div>
                 <div className="text-right">

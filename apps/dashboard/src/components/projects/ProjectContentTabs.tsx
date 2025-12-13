@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from "react";
+import ArtifactPurchaseModal from "@/components/modals/ArtifactPurchaseModal";
+import Link from "next/link";
 import {
   Puzzle,
   Shield,
@@ -9,14 +11,13 @@ import {
   Briefcase,
   Star,
   ExternalLink,
-  Globe
+  Globe,
+  LayoutGrid,
+  ArrowRight
 } from "lucide-react";
 import type { ProjectData } from "@/app/()/projects/types";
 import SectionCard from "./SectionCard";
 
-// Función removida ya que no se usa en las nuevas tabs
-
-// --- CONTENIDO DINÁMICO POR TABS (MECÁNICA, SOSTENIBILIDAD, TRANSPARENCIA) ---
 interface Tab {
   id: string;
   label: string;
@@ -29,6 +30,10 @@ interface ProjectContentTabsProps {
 }
 
 export default function ProjectContentTabs({ project }: ProjectContentTabsProps) {
+  const [activeTab, setActiveTab] = useState("strategy");
+  const [selectedPhase, setSelectedPhase] = useState<any>(null);
+  const [isArtifactModalOpen, setIsArtifactModalOpen] = useState(false);
+
   // Función para mostrar el video (ya no utilizada)
   const _showVideo = () => {
     const videoRef = (window as any).projectVideoRef;
@@ -36,8 +41,6 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
       videoRef.showVideo();
     }
   };
-
-  // Variable removida ya que no se usa en las nuevas tabs
 
   const tabs: Tab[] = [
     // --- TAB 0: CAMPAÑA (LA PRESENTACIÓN) ---
@@ -85,9 +88,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                       rel="noopener noreferrer"
                       className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group"
                     >
-                      <svg className="w-5 h-5 text-lime-400 group-hover:text-lime-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                      </svg>
+                      <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/file-text.svg" className="w-5 h-5 text-lime-400 group-hover:text-lime-300" alt="Whitepaper" />
                       <div>
                         <p className="text-white font-medium">Whitepaper</p>
                         <p className="text-zinc-400 text-sm">Documentación técnica</p>
@@ -103,9 +104,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                       rel="noopener noreferrer"
                       className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group"
                     >
-                      <svg className="w-5 h-5 text-lime-400 group-hover:text-lime-300" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                      </svg>
+                      <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/twitter.svg" className="w-5 h-5 text-lime-400 group-hover:text-lime-300" alt="Twitter" />
                       <div>
                         <p className="text-white font-medium">Twitter</p>
                         <p className="text-zinc-400 text-sm">Síguenos en Twitter</p>
@@ -121,9 +120,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                       rel="noopener noreferrer"
                       className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group"
                     >
-                      <svg className="w-5 h-5 text-lime-400 group-hover:text-lime-300" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419-.0189 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z" />
-                      </svg>
+                      <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/message-circle.svg" className="w-5 h-5 text-lime-400 group-hover:text-lime-300" alt="Discord" />
                       <div>
                         <p className="text-white font-medium">Discord</p>
                         <p className="text-zinc-400 text-sm">Únete a la comunidad</p>
@@ -139,9 +136,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                       rel="noopener noreferrer"
                       className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group"
                     >
-                      <svg className="w-5 h-5 text-lime-400 group-hover:text-lime-300" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
-                      </svg>
+                      <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/send.svg" className="w-5 h-5 text-lime-400 group-hover:text-lime-300" alt="Telegram" />
                       <div>
                         <p className="text-white font-medium">Telegram</p>
                         <p className="text-zinc-400 text-sm">Canal oficial</p>
@@ -157,9 +152,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                       rel="noopener noreferrer"
                       className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group"
                     >
-                      <svg className="w-5 h-5 text-lime-400 group-hover:text-lime-300" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z" />
-                      </svg>
+                      <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/play-circle.svg" className="w-5 h-5 text-lime-400 group-hover:text-lime-300" alt="Video" />
                       <div>
                         <p className="text-white font-medium">Video Pitch</p>
                         <p className="text-zinc-400 text-sm">Ver presentación del proyecto</p>
@@ -215,17 +208,67 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
             </SectionCard>
           )}
 
-          {/* Plan de Integraciones - Nueva clave */}
-          {project.integrationPlan && (
-            <SectionCard title="Plan de Integraciones" icon={Code}>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                <span className="text-green-400 text-sm font-medium">Planea integraciones con otras plataformas</span>
+          {/* Active Phases (Formerly Ofertas) */}
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <LayoutGrid className="w-5 h-5 text-lime-400" />
+              <h3 className="text-lg font-bold text-white">Artefactos (Fases)</h3>
+            </div>
+            {project.w2eConfig?.phases && project.w2eConfig.phases.length > 0 ? (
+              <div className="space-y-4">
+                {project.w2eConfig.phases.map((phase: any, index: number) => (
+                  <div
+                    key={index}
+                    onClick={() => {
+                      setSelectedPhase(phase);
+                      setIsArtifactModalOpen(true);
+                    }}
+                    className="bg-zinc-800/50 p-4 rounded-lg border border-zinc-700/50 hover:border-lime-500/50 cursor-pointer transition-all hover:bg-zinc-800 group"
+                  >
+                    <h4 className="font-bold text-white mb-2 flex items-center justify-between group-hover:text-lime-400 transition-colors">
+                      <div className="flex items-center gap-2">
+                        <span>{phase.name}</span>
+                        <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all text-lime-400" />
+                      </div>
+                      <span className="text-xs px-2 py-0.5 bg-zinc-700 rounded text-gray-300 uppercase">{phase.type === 'time' ? 'Tiempo' : 'Monto'}</span>
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      {/* Token Price (Property: tokenPrice) */}
+                      <div>
+                        <span className="text-zinc-500 block text-xs">Precio Token</span>
+                        <span className="text-lime-400 font-mono">${phase.tokenPrice ?? '0.00'}</span>
+                      </div>
+                      {/* Limit (Context sensitive) */}
+                      <div>
+                        <span className="text-zinc-500 block text-xs">Límite ({phase.type === 'time' ? 'Días' : 'USD'})</span>
+                        <span className="text-white font-mono">{Number(phase.limit).toLocaleString()} {phase.type === 'time' ? 'd' : '$'}</span>
+                      </div>
+                      {/* Allocation (Property: tokenAllocation) */}
+                      <div>
+                        <span className="text-zinc-500 block text-xs">Asignación</span>
+                        <span className="text-white font-mono">{phase.tokenAllocation ? Number(phase.tokenAllocation).toLocaleString() : '∞'}</span>
+                      </div>
+                      {/* Status */}
+                      <div>
+                        <span className="text-zinc-500 block text-xs">Estado</span>
+                        <span className={phase.isActive ? "text-lime-400" : "text-zinc-500"}>{phase.isActive ? 'Activo' : 'Inactivo'}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </SectionCard>
-          )}
+            ) : (
+              <p className="text-zinc-400">No hay fases de artefactos definidas.</p>
+            )}
+          </div>
 
-
+          <ArtifactPurchaseModal
+            isOpen={isArtifactModalOpen}
+            onClose={() => setIsArtifactModalOpen(false)}
+            project={project}
+            utilityContract={{ address: project.utilityContractAddress }}
+            phase={selectedPhase}
+          />
 
           {/* Estructura de Recompensa Recurrente */}
           <SectionCard title="Estructura de Recompensa Recurrente" icon={Star}>
@@ -240,49 +283,24 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
 
               if (rewardsData) {
                 // Formato JSON: mostrar estructura detallada
-                const rewardsList = [];
-                if (rewardsData.stakingRewardsEnabled) {
-                  rewardsList.push({
-                    type: 'Staking Rewards',
-                    details: rewardsData.stakingRewardsDetails || 'Habilitado'
-                  });
-                }
-                if (rewardsData.revenueSharingEnabled) {
-                  rewardsList.push({
-                    type: 'Revenue Sharing',
-                    details: rewardsData.revenueSharingDetails || 'Habilitado'
-                  });
-                }
-                if (rewardsData.workToEarnEnabled) {
-                  rewardsList.push({
-                    type: 'Work-to-Earn',
-                    details: rewardsData.workToEarnDetails || 'Habilitado'
-                  });
-                }
-                if (rewardsData.tieredAccessEnabled) {
-                  rewardsList.push({
-                    type: 'Tiered Access',
-                    details: rewardsData.tieredAccessDetails || 'Habilitado'
-                  });
-                }
-                if (rewardsData.discountedFeesEnabled) {
-                  rewardsList.push({
-                    type: 'Discounted Fees',
-                    details: rewardsData.discountedFeesDetails || 'Habilitado'
-                  });
-                }
-
-                return rewardsList.length > 0 ? (
+                return (
                   <div className="space-y-3">
-                    {rewardsList.map((reward, index) => (
-                      <div key={index} className="p-3 bg-zinc-700/50 rounded-lg">
-                        <p className="font-semibold text-white text-sm">{reward.type}</p>
-                        <p className="text-zinc-300 text-sm mt-1">{reward.details}</p>
-                      </div>
-                    ))}
+                    {/* ... (Implement specific reward type rendering if needed, for now just basic check) ... */}
+                    {Object.entries(rewardsData).map(([key, value]) => {
+                      if (key.includes('Enabled') && value === true) {
+                        const detailKey = key.replace('Enabled', 'Details');
+                        // @ts-ignore
+                        const detailValue = rewardsData[detailKey];
+                        return (
+                          <div key={key} className="p-3 bg-zinc-700/50 rounded-lg">
+                            <p className="font-semibold text-white text-sm">{key.replace('Enabled', '')}</p>
+                            <p className="text-zinc-300 text-sm mt-1">{detailValue}</p>
+                          </div>
+                        )
+                      }
+                      return null;
+                    })}
                   </div>
-                ) : (
-                  <p className="text-zinc-400">No hay recompensas recurrentes activas definidas.</p>
                 );
               } else if (project.recurring_rewards) {
                 // Formato string simple (legacy)
@@ -303,7 +321,6 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
       icon: Shield,
       content: (
         <div className="space-y-8 mb-8">
-          {/* Meta de Adopción - Nueva clave */}
           {/* Meta de Adopción - Dynamic from Config or Target */}
           {(() => {
             const tokenomics = project.w2eConfig?.tokenomics;
@@ -341,58 +358,9 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
             </SectionCard>
           )}
 
-          {/* Parámetros del Artefacto (Dynamic Phases) */}
-          <SectionCard title="Parámetros del Artefacto (Fases)" icon={Code}>
-            {project.w2eConfig?.phases && project.w2eConfig.phases.length > 0 ? (
-              <div className="space-y-4">
-                {project.w2eConfig.phases.map((phase: any, index: number) => (
-                  <div key={index} className="bg-zinc-800/50 p-4 rounded-lg border border-zinc-700/50">
-                    <h4 className="font-bold text-white mb-2 flex items-center justify-between">
-                      <span>{phase.name}</span>
-                      <span className="text-xs px-2 py-0.5 bg-zinc-700 rounded text-gray-300 uppercase">{phase.type === 'time' ? 'Tiempo' : 'Monto'}</span>
-                    </h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      {/* Token Price (Property: tokenPrice) */}
-                      <div>
-                        <span className="text-zinc-500 block text-xs">Precio Token</span>
-                        <span className="text-lime-400 font-mono">${phase.tokenPrice ?? '0.00'}</span>
-                      </div>
-                      {/* Limit (Context sensitive) */}
-                      <div>
-                        <span className="text-zinc-500 block text-xs">Límite ({phase.type === 'time' ? 'Días' : 'USD'})</span>
-                        <span className="text-white font-mono">{Number(phase.limit).toLocaleString()} {phase.type === 'time' ? 'd' : '$'}</span>
-                      </div>
-                      {/* Allocation (Property: tokenAllocation) */}
-                      <div>
-                        <span className="text-zinc-500 block text-xs">Asignación</span>
-                        <span className="text-white font-mono">{phase.tokenAllocation ? Number(phase.tokenAllocation).toLocaleString() : '∞'}</span>
-                      </div>
-                      {/* Status */}
-                      <div>
-                        <span className="text-zinc-500 block text-xs">Estado</span>
-                        <span className={phase.isActive ? "text-lime-400" : "text-zinc-500"}>{phase.isActive ? 'Activo' : 'Inactivo'}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-zinc-300"><span className="font-semibold text-white">Tipo:</span> {project.token_type ?? 'ERC-721'}</p>
-                </div>
-                <div>
-                  <p className="text-zinc-300"><span className="font-semibold text-white">Supply Total:</span> {project.total_tokens ? project.total_tokens.toLocaleString() : 'No especificado'}</p>
-                </div>
-                <div>
-                  <p className="text-zinc-300"><span className="font-semibold text-white">Para Venta:</span> {project.tokens_offered ? project.tokens_offered.toLocaleString() : 'No especificado'}</p>
-                </div>
-                <div>
-                  <p className="text-zinc-300"><span className="font-semibold text-white">Precio:</span> {project.token_price_usd ? `$${Number(project.token_price_usd) % 1 === 0 ? Number(project.token_price_usd).toFixed(0) : Number(project.token_price_usd).toFixed(2)}` : 'No especificado'}</p>
-                </div>
-              </div>
-            )}
-          </SectionCard>
+          {/* Parámetros del Artefacto (Fases) - READ ONLY duplicate view if desired or separate */}
+          {/* Skipping full phase list here to avoid redundancy with Utility tab, or keeping concise */}
+
 
           {/* Estructura de Recompensa Recurrente */}
           <SectionCard title="Estructura de Recompensa Recurrente" icon={Star}>
@@ -432,8 +400,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
       icon: Shield,
       content: (
         <div className="space-y-8 mb-8">
-          {/* Contratos Inteligentes (SCaaS) - Nueva sección destacada */}
-          {/* Contratos Inteligentes (SCaaS) - Nueva sección destacada */}
+          {/* Contratos Inteligentes (SCaaS) */}
           {(project.licenseContractAddress || project.utilityContractAddress || project.loomContractAddress) && (
             <SectionCard title="Contratos Inteligentes del Protocolo" icon={Code}>
               <div className="space-y-3">
@@ -475,7 +442,6 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                     </a>
                   </div>
                 )}
-
                 {/* 4. Gobernador (DAO) */}
                 {project.governorContractAddress && (
                   <div className="flex justify-between items-center p-3 bg-zinc-800/50 rounded-lg">
@@ -501,7 +467,6 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                     </a>
                   </div>
                 )}
-
                 {/* 6. Timelock */}
                 {project.w2eConfig?.timelockAddress && project.w2eConfig.timelockAddress !== "0x0000000000000000000000000000000000000000" && (
                   <div className="flex justify-between items-center p-3 bg-zinc-800/50 rounded-lg">
@@ -514,19 +479,6 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                     </a>
                   </div>
                 )}
-
-                {project.contract_address && !project.licenseContractAddress && !project.loomContractAddress && (
-                  <div className="flex justify-between items-center p-3 bg-zinc-800/50 rounded-lg">
-                    <div>
-                      <p className="text-white font-medium text-sm">Contrato Principal (Legacy)</p>
-                      <p className="text-zinc-500 text-xs font-mono break-all">{project.contract_address}</p>
-                    </div>
-                    <a href={`https://sepolia.etherscan.io/address/${project.contract_address}`} target="_blank" rel="noopener noreferrer" className="text-lime-400 hover:text-lime-300">
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                  </div>
-                )}
-
               </div>
             </SectionCard>
           )}
@@ -600,7 +552,6 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
     },
   ];
 
-  const [activeTab, setActiveTab] = useState(tabs?.[0]?.id ?? 'utility');
   const activeTabData = tabs.find(t => t.id === activeTab);
   const activeContent = activeTabData?.content;
 
@@ -613,12 +564,12 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`
-              px-4 py-3 text-sm md:text-md font-semibold flex items-center gap-2 transition-colors duration-200
-              ${activeTab === tab.id
+                px-4 py-3 text-sm md:text-md font-semibold flex items-center gap-2 transition-colors duration-200
+                ${activeTab === tab.id
                 ? 'text-lime-400 border-b-2 border-lime-400'
                 : 'text-zinc-400 hover:text-white hover:border-b-2 hover:border-zinc-500'
               }
-            `}
+              `}
           >
             <tab.icon className="w-5 h-5" />
             {tab.label}
