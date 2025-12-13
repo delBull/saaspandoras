@@ -27,95 +27,105 @@ export async function GET(_request: Request, { params }: RouteParams) {
 
   // Check if user is admin using either userId or address
   const userIsAdmin = await isAdmin(session?.userId) ||
-                     await isAdmin(session?.address);
+    await isAdmin(session?.address);
 
   if (!userIsAdmin) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
   }
 
   const { id } = await params;
-  const projectId = Number(id);
 
-  if (isNaN(projectId)) {
-    return NextResponse.json({ message: "ID de proyecto inválido" }, { status: 400 });
-  }
+  // Try to parse as ID, if fails, treat as slug
+  const projectId = Number(id);
+  const isId = !isNaN(projectId);
 
   try {
-    console.log('🔍 GET: Fetching project with ID:', projectId);
+    console.log(`🔍 GET: Fetching project with ${isId ? 'ID' : 'Slug'}:`, id);
 
-    // Obtener el proyecto específico
-    const project = await db.query.projects.findFirst({
-      where: eq(projectsSchema.id, projectId),
-      columns: {
-        // Basic info
-        id: true,
-        title: true,
-        description: true,
-        slug: true,
-        tagline: true,
-        businessCategory: true,
-        targetAmount: true,
-        status: true,
-        createdAt: true,
+    let project;
 
-        // URLs and links
-        website: true,
-        whitepaperUrl: true,
-        twitterUrl: true,
-        discordUrl: true,
-        telegramUrl: true,
-        linkedinUrl: true,
-        logoUrl: true,
-        coverPhotoUrl: true,
-        videoPitch: true,
+    // Column selection object (reused)
+    const columns = {
+      // Basic info
+      id: true,
+      title: true,
+      description: true,
+      slug: true,
+      tagline: true,
+      businessCategory: true,
+      targetAmount: true,
+      status: true,
+      createdAt: true,
 
-        // Due diligence
-        valuationDocumentUrl: true,
-        dueDiligenceReportUrl: true,
-        legalStatus: true,
-        fiduciaryEntity: true,
+      // URLs and links
+      website: true,
+      whitepaperUrl: true,
+      twitterUrl: true,
+      discordUrl: true,
+      telegramUrl: true,
+      linkedinUrl: true,
+      logoUrl: true,
+      coverPhotoUrl: true,
+      videoPitch: true,
 
-        // Applicant info
-        applicantName: true,
-        applicantEmail: true,
-        applicantPhone: true,
-        applicantWalletAddress: true,
+      // Due diligence
+      valuationDocumentUrl: true,
+      dueDiligenceReportUrl: true,
+      legalStatus: true,
+      fiduciaryEntity: true,
 
-        // Featured status
-        featured: true,
-        featuredButtonText: true,
+      // Applicant info
+      applicantName: true,
+      applicantEmail: true,
+      applicantPhone: true,
+      applicantWalletAddress: true,
 
-        // Financial info
-        totalValuationUsd: true,
-        tokenPriceUsd: true,
-        totalTokens: true,
-        tokensOffered: true,
-        tokenType: true,
-        estimatedApy: true,
-        yieldSource: true,
-        lockupPeriod: true,
-        fundUsage: true,
+      // Featured status
+      featured: true,
+      featuredButtonText: true,
 
-        // Team and distribution
-        teamMembers: true,
-        advisors: true,
-        tokenDistribution: true,
-        contractAddress: true,
-        treasuryAddress: true,
+      // Financial info
+      totalValuationUsd: true,
+      tokenPriceUsd: true,
+      totalTokens: true,
+      tokensOffered: true,
+      tokenType: true,
+      estimatedApy: true,
+      yieldSource: true,
+      lockupPeriod: true,
+      fundUsage: true,
 
-        // Technical
-        isMintable: true,
-        isMutable: true,
-        updateAuthorityAddress: true,
-        applicantPosition: true,
-        verificationAgreement: true,
+      // Team and distribution
+      teamMembers: true,
+      advisors: true,
+      tokenDistribution: true,
+      contractAddress: true,
+      treasuryAddress: true,
 
-        // Note: Additional fields from extended schema are not currently defined in the database schema
-      }
-    });
+      // Technical
+      isMintable: true,
+      isMutable: true,
+      updateAuthorityAddress: true,
+      applicantPosition: true,
+      verificationAgreement: true,
+
+      // Note: Additional fields from extended schema are not currently defined in the database schema
+    };
+
+    if (isId) {
+      project = await db.query.projects.findFirst({
+        where: eq(projectsSchema.id, projectId),
+        columns: columns
+      });
+    } else {
+      project = await db.query.projects.findFirst({
+        where: eq(projectsSchema.slug, id),
+        columns: columns
+      });
+    }
 
     if (!project) {
-      console.log('🔍 GET: Project not found:', projectId);
+      console.log('🔍 GET: Project not found:', id);
       return NextResponse.json({ message: "Proyecto no encontrado" }, { status: 404 });
     }
 
@@ -135,7 +145,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
   // Check if user is admin using either userId or address
   const userIsAdmin = await isAdmin(session?.userId) ||
-                     await isAdmin(session?.address);
+    await isAdmin(session?.address);
 
   if (!userIsAdmin) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
@@ -264,7 +274,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
   // Check if user is admin using either userId or address
   const userIsAdmin = await isAdmin(session?.userId) ||
-                     await isAdmin(session?.address);
+    await isAdmin(session?.address);
 
   if (!userIsAdmin) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
@@ -406,7 +416,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
 
   // Check if user is admin using either userId or address
   const userIsAdmin = await isAdmin(session?.userId) ||
-                     await isAdmin(session?.address);
+    await isAdmin(session?.address);
 
   if (!userIsAdmin) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });

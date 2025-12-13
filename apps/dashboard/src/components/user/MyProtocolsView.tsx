@@ -4,13 +4,21 @@ import React, { useState, useEffect } from "react";
 import { useApplicantsDataBasic, type Project } from "@/hooks/applicants/useApplicantsDataBasic";
 import { useActiveAccount } from "thirdweb/react";
 import { getContract, readContract, defineChain } from "thirdweb";
-import { sepolia } from "thirdweb/chains"; // TODO: multichain support
+import { DEFAULT_NETWORK } from "@/config/networks"; // Use global default network
+import { sepolia } from "thirdweb/chains"; // Import Sepolia explicitly for dev/test
 import { client } from "@/lib/thirdweb-client";
-// import { Artifacts } from "@pandoras/protocol-deployer"; // Not strictly needed if using standard readContract
 import { Loader2, FolderIcon, ArrowRightIcon, CoinsIcon, CreditCardIcon, VoteIcon } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { UserGovernanceList } from "./UserGovernanceList";
+
+// Helper for timeout
+const readContractWithTimeout = async (params: any, timeoutMs = 5000) => {
+    return Promise.race([
+        readContract(params),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), timeoutMs))
+    ]);
+};
 
 interface ProjectWithStats extends Project {
     hasActiveProposals?: boolean;
@@ -23,16 +31,19 @@ export function MyProtocolsView() {
     const [loadingMembership, setLoadingMembership] = useState(true);
 
     useEffect(() => {
+        let isMounted = true;
+
         const checkMembership = async () => {
             // If not connected or loading, wait
             if (!account || loadingProjects) {
-                if (!loadingProjects && !account) setLoadingMembership(false);
+                if (!loadingProjects && !account && isMounted) setLoadingMembership(false);
                 return;
             }
 
-            setLoadingMembership(true);
+            if (isMounted) setLoadingMembership(true);
             const myProjects: ProjectWithStats[] = [];
-            const chain = defineChain(sepolia.id); // Assuming Sepolia for now
+            // Force Sepolia for testing/dev if contracts are there, otherwise fallback to default
+            const chain = sepolia;
 
             console.log("🔍 Checking membership for wallet:", account.address);
 
@@ -42,22 +53,29 @@ export function MyProtocolsView() {
                 let hasActiveProposals = false;
 
                 // 1. Check License Balance (Priority)
-                if (project.contractAddress) {
+                // Use licenseContractAddress if available (new architecture), otherwise fallback to contractAddress (legacy)
+                const licenseAddr = project.licenseContractAddress || project.contractAddress;
+
+                if (licenseAddr) {
                     try {
                         const licenseContract = getContract({
                             client,
                             chain,
-                            address: project.contractAddress,
+                            address: licenseAddr,
                         });
-                        const balance = await readContract({
+                        console.log(`[${project.slug}] Checking License at ${licenseAddr}`);
+                        const balance = await readContractWithTimeout({
                             contract: licenseContract,
                             method: "function balanceOf(address) view returns (uint256)",
                             params: [account.address]
-                        });
+                        }) as bigint;
+                        console.log(`[${project.slug}] License Balance:`, balance.toString());
                         if (balance > 0n) isMember = true;
                     } catch (e) {
-                        // console.warn(`Failed to check license for ${project.slug}`);
+                        console.error(`[${project.slug}] Failed to check license:`, e);
                     }
+                } else {
+                    console.warn(`[${project.slug}] No License Contract Address`);
                 }
 
                 // 2. Check Utility Balance (Secondary)
@@ -69,14 +87,16 @@ export function MyProtocolsView() {
                             chain,
                             address: utilityAddr
                         });
-                        const balance = await readContract({
+                        console.log(`[${project.slug}] Checking Utility at ${utilityAddr}`);
+                        const balance = await readContractWithTimeout({
                             contract: utilityContract,
                             method: "function balanceOf(address) view returns (uint256)",
                             params: [account.address]
-                        });
+                        }) as bigint;
+                        console.log(`[${project.slug}] Utility Balance:`, balance.toString());
                         if (balance > 0n) isMember = true;
                     } catch (e) {
-                        // console.warn(`Failed to check utility for ${project.slug}`);
+                        console.error(`[${project.slug}] Failed to check utility:`, e);
                     }
                 }
 
@@ -91,14 +111,13 @@ export function MyProtocolsView() {
                             address: governorAddr
                         });
 
-                        // Get proposal count - try standard OZ function
-                        // We use a try-catch block for reading count as it might vary by implementation
+                        // Get proposal count
                         let proposalCount = 0n;
                         try {
-                            proposalCount = await readContract({
+                            proposalCount = await readContractWithTimeout({
                                 contract: governorContract,
                                 method: "function proposalCount() view returns (uint256)"
-                            });
+                            }) as bigint;
                         } catch {
                             // ignore
                         }
@@ -109,16 +128,15 @@ export function MyProtocolsView() {
                             for (let i = 0; i < numProposalsToCheck; i++) {
                                 const proposalId = proposalCount - 1n - BigInt(i); // Get the latest proposal IDs
                                 try {
-                                    const proposalState = await readContract({
+                                    const proposalState = await readContractWithTimeout({
                                         contract: governorContract,
                                         method: "function state(uint256 proposalId) view returns (uint8)",
                                         params: [proposalId]
                                     });
                                     // OpenZeppelin Governor state enum: 1 is Active
-                                    // Pending(0), Active(1), Canceled(2), Defeated(3), Succeeded(4), Queued(5), Expired(6), Executed(7)
-                                    if (proposalState === 1) {
+                                    if (Number(proposalState) === 1) {
                                         hasActiveProposals = true;
-                                        break; // Found an active proposal, no need to check further
+                                        break;
                                     }
                                 } catch {
                                     // ignore specific proposal error
@@ -135,11 +153,17 @@ export function MyProtocolsView() {
                 }
             }));
 
-            setMemberProjects(myProjects);
-            setLoadingMembership(false);
+            if (isMounted) {
+                setMemberProjects(myProjects);
+                setLoadingMembership(false);
+            }
         };
 
         checkMembership();
+
+        return () => {
+            isMounted = false;
+        };
     }, [account, approvedProjects, loadingProjects]);
 
 
@@ -160,7 +184,7 @@ export function MyProtocolsView() {
 
     if (loadingProjects || loadingMembership) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+            <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] min-h-[400px] space-y-4">
                 <Loader2 className="w-10 h-10 animate-spin text-lime-500" />
                 <p className="text-gray-400 animate-pulse">Buscando tus activos en la blockchain...</p>
             </div>
@@ -169,7 +193,7 @@ export function MyProtocolsView() {
 
     if (memberProjects.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8 space-y-8">
+            <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] min-h-[500px] text-center p-8 space-y-8">
                 <div className="bg-zinc-800/30 p-8 rounded-full border border-zinc-700/50 relative">
                     <FolderIcon className="w-16 h-16 text-gray-600" />
                     <div className="absolute top-0 right-0 p-2 bg-zinc-900 rounded-full border border-zinc-700">
@@ -195,14 +219,16 @@ export function MyProtocolsView() {
 
     // --- Content State ---
     return (
-        <div className="space-y-8">
-            <div className="flex justify-between items-end">
+        <div className="space-y-8 pt-32 px-4 md:px-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-white mb-2">Mis Accesos</h1>
-                    <p className="text-gray-400">Gestiona tus activos y participa en la gobernanza de tus inversiones.</p>
+                    <h1 className="text-4xl font-bold text-white mb-2">Mis Accesos</h1>
+                    <p className="text-zinc-400 max-w-2xl">
+                        Gestiona tus activos, verifica tus Access Cards y participa en las decisiones de gobernanza de los protocolos donde eres miembro.
+                    </p>
                 </div>
-                <div className="text-right">
-                    <p className="text-sm text-gray-500">Participación Total</p>
+                <div className="text-right bg-zinc-800/50 p-4 rounded-xl border border-zinc-700/50">
+                    <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Participación Total</p>
                     <p className="text-2xl font-mono text-lime-400">{memberProjects.length} Protocolos</p>
                 </div>
             </div>
@@ -212,7 +238,7 @@ export function MyProtocolsView() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {memberProjects.map((project) => (
-                    <Link key={project.id} href={`/projects/${project.slug}`}>
+                    <Link key={project.id} href={`/projects/${project.slug}/dao`}>
                         <motion.div
                             whileHover={{ y: -5 }}
                             className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden hover:border-lime-500/30 transition-colors group h-full flex flex-col"

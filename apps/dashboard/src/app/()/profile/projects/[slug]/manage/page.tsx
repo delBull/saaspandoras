@@ -5,12 +5,12 @@ import { eq } from "drizzle-orm";
 // import { ProjectFounderDashboard } from "@/components/founders/ProjectFounderDashboard"; // Will create this next
 import ProjectFounderDashboard from "./dashboard-client"; // Local co-location for now
 
-export default async function ManageProjectPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;
+export default async function ManageProjectPage({ params }: { params: Promise<{ slug: string }> }) {
+    const { slug } = await params;
 
-    // Fetch Project
+    // Fetch Project by Slug
     const project = await db.query.projects.findFirst({
-        where: eq(projects.id, parseInt(id)),
+        where: eq(projects.slug, slug),
     });
 
     if (!project) {

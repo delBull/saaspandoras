@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import type { DeploymentConfig, UtilityPhase, TokenomicsConfig } from '@/types/deployment';
 import { DEFAULT_PHASES, DEFAULT_TOKENOMICS } from '@/types/deployment';
-import { TrashIcon, PlusIcon, PhotoIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
+import { TrashIcon, PlusIcon, PhotoIcon, InformationCircleIcon, ClipboardDocumentIcon } from '@heroicons/react/24/outline';
 
 interface DeploymentConfigModalProps {
     isOpen: boolean;

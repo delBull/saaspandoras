@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Coins, ArrowRight, Wallet, CheckCircle } from 'lucide-react';
 import { useActiveAccount, TransactionButton, useReadContract } from "thirdweb/react";
-import { prepareContractCall } from "thirdweb";
+import { prepareContractCall, prepareTransaction, defineChain } from "thirdweb";
+import { client } from "@/lib/thirdweb-client";
 import { toast } from "sonner";
 import Link from 'next/link';
 
@@ -101,25 +102,51 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
 
                                 {/* Action */}
                                 {account ? (
-                                    <TransactionButton
-                                        transaction={() =>
-                                            prepareContractCall({
-                                                contract: utilityContract as any,
-                                                method: "function buy(uint256 amount) payable", // Standard assumption, will verify
-                                                params: [BigInt(amount)], // Usually amount of tokens or amount of wei? Typically buy(amount) implies amount of tokens OR buy() payable calculates from msg.value
-                                                // If it's a phase sale, it might be buy(phaseId, amount) or just buy()
-                                                // For now, assuming buy(amount) payable.
-                                                // IMPORTANT: Value calculation:
-                                                value: BigInt(totalCost * 1e18), // Assuming price is in ETH and we send full value
-                                            })
-                                        }
-                                        theme="dark"
-                                        onTransactionConfirmed={handleSuccess}
-                                        onError={(error) => toast.error(`Error: ${error.message}`)}
-                                        className="!w-full !bg-lime-400 hover:!bg-lime-500 !text-black !font-bold !py-4 !rounded-xl"
-                                    >
-                                        Adquirir Ahora
-                                    </TransactionButton>
+                                    // Check if Treasury is Configured
+                                    (!project.treasuryContractAddress || project.treasuryContractAddress === "0x0000000000000000000000000000000000000000") ? (
+                                        <div className="text-center">
+                                            <button disabled className="w-full bg-red-500/10 text-red-400 font-bold py-4 rounded-xl border border-red-500/20 cursor-not-allowed flex items-center justify-center gap-2">
+                                                <span className="text-xl">⚠️</span> Configuración Incompleta
+                                            </button>
+                                            <p className="text-xs text-red-400/80 mt-2">
+                                                El proyecto no tiene una Tesorería configurada para recibir fondos.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <TransactionButton
+                                            transaction={async () => {
+                                                // HYBRID FLOW:
+                                                // 1. User sends ETH/USDC to Project Treasury.
+                                                // 2. Oracle (Server) detects deposit and calls 'mint' on Utility Token via W2ELoom or directly if authorized.
+                                                // Since 'buy' doesn't exist on the ERC20 contract, we simulate the "Purchase" by sending funds to the Treasury.
+
+                                                // Actual Logic for Demo:
+                                                // Scale down: 1 USD displayed = 0.001 ETH for safety in testnet.
+                                                const ethAmountToPay = totalCost * 0.001;
+                                                const weiAmount = BigInt(Math.floor(ethAmountToPay * 1e18));
+
+                                                // Prepare the Native Token Transfer (ETH)
+                                                return prepareTransaction({
+                                                    to: project.treasuryContractAddress,
+                                                    value: weiAmount,
+                                                    chain: defineChain(11155111), // Sepolia
+                                                    client: client
+                                                });
+                                            }}
+                                            theme="dark"
+                                            onTransactionConfirmed={(tx) => {
+                                                console.log("Transaction confirmed:", tx);
+                                                handleSuccess();
+                                            }}
+                                            onError={(error) => {
+                                                console.error("Purchase failed", error);
+                                                toast.error(`Error: ${error.message}`);
+                                            }}
+                                            className="!w-full !bg-lime-400 hover:!bg-lime-500 !text-black !font-bold !py-4 !rounded-xl"
+                                        >
+                                            Adquirir Ahora ({(totalCost * 0.001).toFixed(4)} ETH)
+                                        </TransactionButton>
+                                    )
                                 ) : (
                                     <button disabled className="w-full bg-zinc-700 text-gray-400 font-bold py-4 rounded-xl">
                                         Conecta tu Wallet
@@ -143,7 +170,7 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                                 </p>
 
                                 <div className="space-y-3">
-                                    <Link href={`/projects/${project.slug}/transparency?tab=governance`} onClick={onClose} className="block w-full bg-lime-400 hover:bg-lime-500 text-black font-bold py-3 rounded-xl transition-colors">
+                                    <Link href={`/projects/${project.slug}/dao`} onClick={onClose} className="block w-full bg-lime-400 hover:bg-lime-500 text-black font-bold py-3 rounded-xl transition-colors">
                                         Ir al Panel de Participación (DAO)
                                     </Link>
                                     <button onClick={onClose} className="block w-full bg-zinc-800 hover:bg-zinc-700 text-white font-medium py-3 rounded-xl transition-colors">
@@ -154,7 +181,7 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                         )}
                     </div>
                 </motion.div>
-            </div>
-        </AnimatePresence>
+            </div >
+        </AnimatePresence >
     );
 }

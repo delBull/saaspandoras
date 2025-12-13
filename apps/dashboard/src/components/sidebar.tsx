@@ -358,14 +358,7 @@ export function Sidebar({
         ),
         disabled: false,
       },
-      {
-        label: "Mis Protocolos",
-        href: "/my-protocols",
-        icon: (
-          <FolderIcon className="h-5 w-5 shrink-0 text-gray-400" />
-        ),
-        disabled: false,
-      },
+
       {
         label: "Wallet",
         href: "wallet-pro",
