@@ -4,14 +4,17 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "erc721a/contracts/ERC721A.sol";
+import "@openzeppelin/contracts/token/common/ERC2981.sol";
 
 /**
  * @title W2ELicense - Licencia de Acceso W2E
  * @notice Contrato ERC-721A para licencias de acceso al sistema Work-to-Earn
  * @dev Otorga derechos de participación en validación, votación y recompensas
  */
-contract W2ELicense is ERC721A, Ownable {
+contract W2ELicense is ERC721A, Ownable, ERC2981 {
     // ========== ESTADO DEL CONTRATO ==========
+    
+    // ... (Existing state variables) ...
 
     /// @notice Dirección autorizada para mintear licencias (backend de Pandora)
     address public pandoraOracle;
@@ -41,6 +44,7 @@ contract W2ELicense is ERC721A, Ownable {
     event OracleUpdated(address indexed oldOracle, address indexed newOracle);
     event TreasuryUpdated(address indexed oldTreasury, address indexed newTreasury);
     event LicensePriceUpdated(uint256 indexed oldPrice, uint256 indexed newPrice);
+    event RoyaltyUpdated(address indexed receiver, uint96 feeNumerator);
 
     // ========== CONSTRUCTOR ==========
 
@@ -63,7 +67,7 @@ contract W2ELicense is ERC721A, Ownable {
         address initialOwner
     ) ERC721A(name, symbol) Ownable() {
         require(_maxSupply > 0, "W2E: Max supply must be positive");
-        require(_licensePrice > 0, "W2E: License price must be positive");
+        // require(_licensePrice > 0, "W2E: License price must be positive"); // COMENTADO: Permitir precio 0 (Free)
         require(_pandoraOracle != address(0), "W2E: Invalid oracle address");
         require(_treasuryAddress != address(0), "W2E: Invalid treasury address");
 
@@ -75,7 +79,40 @@ contract W2ELicense is ERC721A, Ownable {
         // Inicializar fase 1 con el supply máximo total
         phaseId = 1;
         phaseMaxSupply[1] = _maxSupply;
+
+        // Configurar Royalty por defecto (5% a la tesorería)
+        _setDefaultRoyalty(_treasuryAddress, 500);
     }
+
+    // ... (Existing modifiers and mint functions) ...
+
+    // ========== FUNCIONES DE ADMINISTRACIÓN ==========
+
+    /**
+     * @notice Actualiza la configuración de Royalties (ERC2981)
+     * @param receiver Dirección que recibe los royalties
+     * @param feeNumerator Porcentaje en basis points (ej: 500 = 5%)
+     */
+    function setRoyaltyInfo(address receiver, uint96 feeNumerator) external onlyOwner {
+        _setDefaultRoyalty(receiver, feeNumerator);
+        emit RoyaltyUpdated(receiver, feeNumerator);
+    }
+
+    // ... (Existing setPandoraOracle, setTreasuryAddress, setLicensePrice) ...
+
+    /**
+     * @dev Override supportsInterface para resolver conflictos de herencia
+     */
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override(ERC721A, ERC2981)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
+    }
+    
+    // ... (Rest of existing functions) ...
 
     // ========== MODIFICADORES ==========
 

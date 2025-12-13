@@ -8,6 +8,9 @@ export interface UtilityPhase {
     tokenAllocation?: number; // New: Tokens allocated to this phase
     tokenPrice?: number; // New: Price per token in this phase
     image?: string; // New: Artifact image (DataURI or URL)
+    startDate?: string; // ISO Date string
+    endDate?: string; // ISO Date string
+    isSoftCap?: boolean; // If true, funds are returned if target not met ("All or Nothing")
 }
 
 export interface TokenomicsConfig {
@@ -22,6 +25,12 @@ export interface DeploymentConfig {
     tokenomics: TokenomicsConfig;
     accessCardImage?: string; // URL or CID
     accessCardSupply?: number; // Optional supply limit for Access Cards
+    w2eConfig?: { // New: Economic Schedule Limits
+        phase1APY: number;
+        phase2APY: number;
+        phase3APY: number;
+        royaltyBPS: number;
+    };
 }
 
 export const DEFAULT_PHASES: UtilityPhase[] = [

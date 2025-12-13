@@ -13,6 +13,7 @@ export interface Project {
   coverPhotoUrl?: string | null;
   targetAmount?: string | number | null;
   raisedAmount?: string | number | null;
+  w2eConfig?: any;
 }
 
 export interface ApplicantsData {
