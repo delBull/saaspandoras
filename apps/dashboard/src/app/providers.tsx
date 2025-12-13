@@ -55,6 +55,10 @@ export function Providers({
           "facebook",
         ],
       },
+      executionMode: {
+        mode: "EIP7702",
+        sponsorGas: true, // ⚡ Gasless transactions enabled
+      },
     }),
     createWallet("io.metamask"),
     createWallet("com.coinbase.wallet"),
