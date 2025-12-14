@@ -34,10 +34,10 @@ export default function PandorasProtocolFilterEmail({
 }: PandorasProtocolFilterEmailProps) {
   return (
     <Html>
-      <Head />
-      <Preview>Desbloquea el Potencial: Únete a la Próxima Generación de Utilidad Web3 con Utility Protocol.</Preview>
-
       <Tailwind>
+        <Head />
+        <Preview>Desbloquea el Potencial: Únete a la Próxima Generación de Utilidad Web3 con Utility Protocol.</Preview>
+
         <Body className="bg-white font-sans text-gray-900">
 
           <Container className="mx-auto w-full max-w-[600px] p-0">

@@ -235,12 +235,14 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                 <Ticket className="w-5 h-5 text-amber-400" /> Tarjeta de Acceso
               </h3>
               <div className="rounded-lg overflow-hidden border border-zinc-700/50 aspect-square relative group">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={project.w2eConfig.accessCardImage}
-                  alt="Access Card"
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
+                <div className="relative w-full h-full">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={project.w2eConfig.accessCardImage}
+                    alt="Access Card"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
                   <p className="text-white font-medium text-sm">NFT de Acceso Oficial</p>
                 </div>
@@ -284,6 +286,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                       {/* Phase Image (Rich UI) */}
                       {phase.image && (
                         <div className="h-32 w-full relative overflow-hidden">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={phase.image} alt={phase.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                           <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 to-transparent opacity-90" />
                           {/* Overlay Badge */}
