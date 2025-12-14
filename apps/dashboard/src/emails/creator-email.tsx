@@ -31,11 +31,12 @@ export default function PandorasWelcomeEmail({
   source = 'creator-onboarding',
   whatsappLink = DEFAULT_WHATSAPP_LINK,
 }: PandorasWelcomeEmailProps) {
+  const previewText = "Tu acceso al Dossier Técnico de Protocolos – Pandora's";
   return (
     <Html>
-      <Head />
-      <Preview>Tu acceso al Dossier Técnico de Protocolos – Pandora's</Preview>
       <Tailwind>
+        <Head />
+        <Preview>{previewText}</Preview>
         <Body className="bg-white font-sans">
           <Container className="mx-auto w-full max-w-[600px] p-0">
 

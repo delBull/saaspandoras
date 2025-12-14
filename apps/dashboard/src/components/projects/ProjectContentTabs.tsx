@@ -270,6 +270,8 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
             )}
           </div>
 
+
+
           <ArtifactPurchaseModal
             isOpen={isArtifactModalOpen}
             onClose={() => setIsArtifactModalOpen(false)}
@@ -669,6 +671,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                     rel="noopener noreferrer"
                     className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group"
                   >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/send.svg" className="w-5 h-5 text-lime-400 group-hover:text-lime-300 filter invert-0 dark:invert" alt="Telegram" />
                     <div>
                       <p className="text-white font-medium">Telegram</p>
