@@ -23,9 +23,9 @@ export default function PandorasSimpleWelcomeEmail({
 }: PandorasSimpleWelcomeEmailProps) {
   return (
     <Html>
-      <Head />
-      <Preview>¡Bienvenido, Futuro Creador! - La Evolución del Creador ya comenzó</Preview>
       <Tailwind>
+        <Head />
+        <Preview>¡Bienvenido, Futuro Creador! - La Evolución del Creador ya comenzó</Preview>
         <Body className="bg-white font-sans">
           <Container className="mx-auto w-full max-w-[600px] p-0">
             <Section className="p-8">
