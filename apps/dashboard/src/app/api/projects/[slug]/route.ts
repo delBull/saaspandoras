@@ -128,6 +128,7 @@ export async function GET(
         "is_mintable",
         "is_mutable",
         "update_authority_address",
+        "chain_id" as "chainId",
         "applicant_name",
         "applicant_position",
         "applicant_email",

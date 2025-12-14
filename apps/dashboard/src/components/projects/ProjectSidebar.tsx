@@ -185,6 +185,9 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                   : "Esta creación solo será activada si alcanza su meta antes de la fecha límite."}
               </div>
             </div>
+            <p className="mt-3 text-xs text-zinc-400 text-center">
+              Este NFT otorga acceso a la utilidad del protocolo.
+            </p>
           </div>
 
           {/* Project Creator Card */}
