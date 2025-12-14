@@ -61,7 +61,7 @@ export function DeploymentConfigModal({
     };
 
     // --- File Handling (Client-Side Preview) ---
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, target: 'accessCard' | string) => {
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, target: string) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
@@ -136,9 +136,9 @@ export function DeploymentConfigModal({
                                     {/* Supply Calculation */}
                                     <div className="space-y-4">
                                         <div className="group relative">
-                                            <label className="block text-xs font-medium text-gray-400 mb-1 flex items-center gap-1">
+                                            <div className="block text-xs font-medium text-gray-400 mb-1 flex items-center gap-1">
                                                 Suministro Total (Calculado) <InformationCircleIcon className="w-3 h-3" />
-                                            </label>
+                                            </div>
                                             <div className="w-full bg-zinc-900/50 border border-zinc-700 rounded px-3 py-2 text-white font-mono text-lg flex justify-between items-center">
                                                 <span>{totalComputedSupply.toLocaleString()}</span>
                                                 <span className="text-xs text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded">AUTO</span>
@@ -149,10 +149,11 @@ export function DeploymentConfigModal({
                                         </div>
 
                                         <div className="group relative">
-                                            <label className="block text-xs font-medium text-gray-400 mb-1 flex items-center gap-1">
+                                            <label htmlFor="reserveSupply" className="block text-xs font-medium text-gray-400 mb-1 flex items-center gap-1">
                                                 Reserva / Team Allocation <InformationCircleIcon className="w-3 h-3" />
                                             </label>
                                             <input
+                                                id="reserveSupply"
                                                 type="number"
                                                 value={tokenomics.reserveSupply || 0}
                                                 onChange={(e) => handleTokenomicsChange('reserveSupply', Number(e.target.value))}
@@ -168,10 +169,11 @@ export function DeploymentConfigModal({
                                     {/* Governance */}
                                     <div className="space-y-4">
                                         <div className="group relative">
-                                            <label className="block text-xs font-medium text-gray-400 mb-1 flex items-center gap-1">
+                                            <label htmlFor="votingPower" className="block text-xs font-medium text-gray-400 mb-1 flex items-center gap-1">
                                                 Poder de Voto <InformationCircleIcon className="w-3 h-3" />
                                             </label>
                                             <input
+                                                id="votingPower"
                                                 type="number"
                                                 min="1"
                                                 value={tokenomics.votingPowerMultiplier}
@@ -223,9 +225,10 @@ export function DeploymentConfigModal({
                                 <div className="grid grid-cols-3 gap-4">
                                     {/* Phase 1 */}
                                     <div>
-                                        <label className="block text-xs font-medium text-gray-400 mb-1">Fase 1 APY (Base)</label>
+                                        <label htmlFor="phase1APY" className="block text-xs font-medium text-gray-400 mb-1">Fase 1 APY (Base)</label>
                                         <div className="flex items-center gap-2">
                                             <input
+                                                id="phase1APY"
                                                 type="number"
                                                 value={economicSchedule.phase1APY}
                                                 onChange={(e) => handleEconomicChange('phase1APY', Number(e.target.value))}
@@ -237,9 +240,10 @@ export function DeploymentConfigModal({
                                     </div>
                                     {/* Phase 2 */}
                                     <div>
-                                        <label className="block text-xs font-medium text-gray-400 mb-1">Fase 2 APY (Scale)</label>
+                                        <label htmlFor="phase2APY" className="block text-xs font-medium text-gray-400 mb-1">Fase 2 APY (Scale)</label>
                                         <div className="flex items-center gap-2">
                                             <input
+                                                id="phase2APY"
                                                 type="number"
                                                 value={economicSchedule.phase2APY}
                                                 onChange={(e) => handleEconomicChange('phase2APY', Number(e.target.value))}
@@ -251,9 +255,10 @@ export function DeploymentConfigModal({
                                     </div>
                                     {/* Phase 3 */}
                                     <div>
-                                        <label className="block text-xs font-medium text-gray-400 mb-1">Fase 3 APY (Mature)</label>
+                                        <label htmlFor="phase3APY" className="block text-xs font-medium text-gray-400 mb-1">Fase 3 APY (Mature)</label>
                                         <div className="flex items-center gap-2">
                                             <input
+                                                id="phase3APY"
                                                 type="number"
                                                 value={economicSchedule.phase3APY}
                                                 onChange={(e) => handleEconomicChange('phase3APY', Number(e.target.value))}
@@ -311,8 +316,9 @@ export function DeploymentConfigModal({
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                             {/* Logic Type */}
                                             <div>
-                                                <label className="text-xs text-gray-500 block mb-1">Regla de Cierre</label>
+                                                <label htmlFor={`phase-rule-${phase.id}`} className="text-xs text-gray-500 block mb-1">Regla de Cierre</label>
                                                 <select
+                                                    id={`phase-rule-${phase.id}`}
                                                     value={phase.type}
                                                     onChange={(e) => handlePhaseChange(phase.id, 'type', e.target.value)}
                                                     className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-sm text-gray-300"
@@ -327,8 +333,9 @@ export function DeploymentConfigModal({
                                                 <label className="text-xs text-gray-500 block mb-1">Límite ({phase.type === 'time' ? 'Días' : 'USD'})</label>
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
-                                                        <label className="block text-xs text-gray-400 mb-1">Tipo</label>
+                                                        <label htmlFor={`phase-limit-type-${phase.id}`} className="block text-xs text-gray-400 mb-1">Tipo</label>
                                                         <select
+                                                            id={`phase-limit-type-${phase.id}`}
                                                             value={phase.type}
                                                             onChange={(e) => handlePhaseChange(phase.id, 'type', e.target.value)}
                                                             className="w-full bg-zinc-800 border border-zinc-700 rounded p-2 text-white text-sm focus:ring-2 focus:ring-lime-500/50 outline-none transition-all"
@@ -338,10 +345,11 @@ export function DeploymentConfigModal({
                                                         </select>
                                                     </div>
                                                     <div>
-                                                        <label className="block text-xs text-gray-400 mb-1">
+                                                        <label htmlFor={`phase-limit-${phase.id}`} className="block text-xs text-gray-400 mb-1">
                                                             {phase.type === 'time' ? 'Duración (Días)' : 'Meta (Cantidad)'}
                                                         </label>
                                                         <input
+                                                            id={`phase-limit-${phase.id}`}
                                                             type="number"
                                                             value={phase.limit}
                                                             onChange={(e) => handlePhaseChange(phase.id, 'limit', Number(e.target.value))}
@@ -353,8 +361,9 @@ export function DeploymentConfigModal({
 
                                             {/* Allocation */}
                                             <div>
-                                                <label className="text-xs text-gray-500 block mb-1">Tokens Asignados</label>
+                                                <label htmlFor={`phase-allocation-${phase.id}`} className="text-xs text-gray-500 block mb-1">Tokens Asignados</label>
                                                 <input
+                                                    id={`phase-allocation-${phase.id}`}
                                                     type="number"
                                                     value={phase.tokenAllocation || 0}
                                                     onChange={(e) => handlePhaseChange(phase.id, 'tokenAllocation', Number(e.target.value))}
@@ -365,8 +374,9 @@ export function DeploymentConfigModal({
 
                                             {/* Price */}
                                             <div>
-                                                <label className="text-xs text-gray-500 block mb-1">Precio Fase (USD)</label>
+                                                <label htmlFor={`phase-price-${phase.id}`} className="text-xs text-gray-500 block mb-1">Precio Fase (USD)</label>
                                                 <input
+                                                    id={`phase-price-${phase.id}`}
                                                     type="number"
                                                     step="0.000001"
                                                     value={phase.tokenPrice || tokenomics.price}
@@ -378,8 +388,9 @@ export function DeploymentConfigModal({
                                             {/* NEW: Date & Soft Cap (Full Width) */}
                                             <div className="col-span-full grid grid-cols-2 gap-4 border-t border-zinc-700/30 pt-4 mt-2">
                                                 <div>
-                                                    <label className="block text-xs text-gray-400 mb-1">Fecha Inicio</label>
+                                                    <label htmlFor={`phase-start-${phase.id}`} className="block text-xs text-gray-400 mb-1">Fecha Inicio</label>
                                                     <input
+                                                        id={`phase-start-${phase.id}`}
                                                         type="date"
                                                         value={phase.startDate || ''}
                                                         onChange={(e) => handlePhaseChange(phase.id, 'startDate', e.target.value)}
@@ -387,8 +398,9 @@ export function DeploymentConfigModal({
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label className="block text-xs text-gray-400 mb-1">Fecha Fin</label>
+                                                    <label htmlFor={`phase-end-${phase.id}`} className="block text-xs text-gray-400 mb-1">Fecha Fin</label>
                                                     <input
+                                                        id={`phase-end-${phase.id}`}
                                                         type="date"
                                                         value={phase.endDate || ''}
                                                         onChange={(e) => handlePhaseChange(phase.id, 'endDate', e.target.value)}

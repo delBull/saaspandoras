@@ -73,6 +73,7 @@ export function UserGovernanceList({ projectIds }: { projectIds: number[] }) {
                                     <a
                                         href={event.externalLink}
                                         target="_blank"
+                                        rel="noreferrer"
                                         className="hover:text-lime-400 flex items-center gap-1 transition-colors"
                                         onClick={() => {
                                             // Track click as interest/vote intent

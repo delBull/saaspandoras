@@ -124,11 +124,11 @@ export default function DaoWizard({ project, governorAddress, onClose }: DaoWiza
         console.log("Proposing mechanics change:", mechanics);
     };
 
-    const handleSubmitRules = async (e: React.FormEvent) => {
+    const handleSubmitRules = (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
         // Simulate contract write
-        await new Promise(r => setTimeout(r, 1500));
+        new Promise(r => setTimeout(r, 1500));
         setIsLoading(false);
         // In real app: call contract.setGovernanceRules(rules.quorum, rules.votingPeriod * 3600, ...)
     };

@@ -105,7 +105,7 @@ export async function deployW2EProtocol(
   if (!rootTreasury) throw new Error("ROOT_TREASURY_ADDRESS missing and no fallback available");
 
   // 3. Address Prediction for Circular Dependencies
-  const currentNonce = await ((wallet as any).getTransactionCount ? (wallet as any).getTransactionCount() : (wallet as any).getNonce());
+  const currentNonce = await wallet.getNonce();
   console.log(`🔢 Current Nonce: ${currentNonce}`);
 
   const predictAddr = (nonce: number) => getContractAddr({ from: wallet.address, nonce });
@@ -235,7 +235,7 @@ export async function deployW2EProtocol(
   try {
     // Ethers v6 contract interaction
     const tx = await (utility as any).setW2ELoomAddress(loomAddress);
-    await tx.wait(); // v6 still returns a TransactionResponse with .wait()
+    await tx.wait();
     console.log("  - Utility linked to Loom");
 
     // Configure Economic Schedule (Pact) if provided
