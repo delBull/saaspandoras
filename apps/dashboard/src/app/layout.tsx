@@ -9,6 +9,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
 
+  console.log("🖥️ [RootLayout] Rendering Started at " + new Date().toISOString());
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} bg-gradient-to-b from-zinc-950 to-black text-white`}>

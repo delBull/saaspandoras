@@ -335,6 +335,11 @@ export default function DashboardPage() {
     []
   );
 
+  // Add console.log to track renders (remove in production)
+  console.log('🖥️ [DashboardPage] Rendering - Account:', account?.address ? 'Connected' : 'None', 'Time:', new Date().toISOString());
+
+  // --- DEBUG: Temporarily disabled to check if RPC hang is the cause ---
+  /*
   const { data: poolStats, isLoading: isLoadingPool } = useReadContract({
     contract: contract,
     method: "getUserStats",
@@ -346,10 +351,12 @@ export default function DashboardPage() {
 
   const ethAmount = poolStats ? Number(poolStats[0]) / 1e18 : 0;
   const usdcAmount = poolStats ? Number(poolStats[1]) / 1e6 : 0;
-  // const totalInvestmentValue = usdcAmount + (ethAmount * 3000);
-
-  // Add console.log to track renders (remove in production)
-  console.log('DashboardPage render - account:', account?.address?.substring(0, 8));
+  */
+  // Mock values for internal testing
+  const ethAmount = 0;
+  const usdcAmount = 0;
+  const isLoadingPool = false;
+  // ---------------------------------------------------------------------
 
   return (
     <div className="pb-20 md:pb-6">
