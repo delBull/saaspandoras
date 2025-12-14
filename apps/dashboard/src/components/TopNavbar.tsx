@@ -10,13 +10,15 @@ import {
   ChartBarIcon,
   FolderIcon,
   BookOpenIcon,
+  WalletIcon,
+  TicketIcon,
 } from "@heroicons/react/24/outline";
 import { useActiveAccount } from "thirdweb/react";
 import { ethereum } from "thirdweb/chains";
 import { WalletBalance, NetworkSelector, ConnectWalletButton } from "@/components/wallet";
 import { SUPPORTED_NETWORKS } from "@/config/networks";
 import { usePathname } from "next/navigation";
-import { WalletIcon } from "@heroicons/react/24/outline";
+import { PendingRewardsNotification } from "@/components/PendingRewardsNotification";
 
 interface TopNavbarProps {
   wallet?: string;
@@ -219,14 +221,22 @@ export function TopNavbar({
 
 
 
+
+
+  // Ensure component only renders after mount to avoid hydration mismatch/early flash
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
-    <div className="absolute w-full z-40 md:block hidden pt-4">
-      <div className={`bg-gradient-to-r from-purple-950/0 to-black/0 transition-all duration-500 ${
-        isApplicantsPage ? (panelCollapsed ? 'mr-8 lg:mr-12' : 'mr-[240px] lg:mr-[270px]') : ''
-      }`}>
-        <div className={`px-4 ${
-          isApplicantsPage ? '' : 'max-w-7xl mx-auto'
+    <div className={`absolute w-full z-40 md:block hidden pt-4 transition-opacity duration-700 ${mounted ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+      <PendingRewardsNotification />
+      <div className={`bg-gradient-to-r from-purple-950/0 to-black/0 transition-all duration-500 ${isApplicantsPage ? (panelCollapsed ? 'mr-8 lg:mr-12' : 'mr-[240px] lg:mr-[270px]') : ''
         }`}>
+        <div className={`px-4 ${isApplicantsPage ? '' : 'max-w-7xl mx-auto'
+          }`}>
           <div className="flex items-center">
             {/* Right side - Profile and other items - Always pushed to the right */}
             <div className="flex items-center gap-4 ml-auto">
@@ -273,104 +283,103 @@ export function TopNavbar({
             exit={{ opacity: 0, y: 10 }}
             className="absolute top-full right-4 mt-2 w-80 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 topnav-profile-dropdown"
           >
-              <div className="p-3 space-y-2">
-                {/* Wallet Copy Section - FIRST PRIORITY */}
-                <button
-                  className="w-full flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors group"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const fullAddress = account?.address ?? userName ?? walletProp ?? '';
-                    void copyWalletAddress(fullAddress);
-                  }}
-                  title={`${account?.address ?? userName ?? walletProp ?? ''} - Click to copy wallet`}
-                >
-                  <span className="font-mono text-xs text-gray-400 flex-shrink-0">
-                    C:\USER\
-                  </span>
-                  <span
-                    className={`truncate font-mono text-xs transition-colors ${
-                      copyAnimation ? 'text-green-400' : 'text-lime-400 group-hover:text-lime-300'
+            <div className="p-3 space-y-2">
+              {/* Wallet Copy Section - FIRST PRIORITY */}
+              <button
+                className="w-full flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors group"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const fullAddress = account?.address ?? userName ?? walletProp ?? '';
+                  void copyWalletAddress(fullAddress);
+                }}
+                title={`${account?.address ?? userName ?? walletProp ?? ''} - Click to copy wallet`}
+              >
+                <span className="font-mono text-xs text-gray-400 flex-shrink-0">
+                  C:\USER\
+                </span>
+                <span
+                  className={`truncate font-mono text-xs transition-colors ${copyAnimation ? 'text-green-400' : 'text-lime-400 group-hover:text-lime-300'
                     }`}
-                  >
-                    {account?.address ? account.address.substring(0, 8) + '...' + account.address.substring(36, 42) : '...'}
-                  </span>
-                  <motion.div
-                    animate={{ scale: copyAnimation ? [1, 1.2, 1] : 1 }}
-                    transition={{ duration: 0.3 }}
-                    className="flex-shrink-0"
-                  >
-                    {copyAnimation ? (
-                      <svg className="w-3 h-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    ) : (
-                      <svg className="w-3 h-3 text-gray-500 group-hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                    )}
-                  </motion.div>
-                </button>
+                >
+                  {account?.address ? account.address.substring(0, 8) + '...' + account.address.substring(36, 42) : '...'}
+                </span>
+                <motion.div
+                  animate={{ scale: copyAnimation ? [1, 1.2, 1] : 1 }}
+                  transition={{ duration: 0.3 }}
+                  className="flex-shrink-0"
+                >
+                  {copyAnimation ? (
+                    <svg className="w-3 h-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <svg className="w-3 h-3 text-gray-500 group-hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  )}
+                </motion.div>
+              </button>
 
-                {/* Network & Balance Section - SECOND PRIORITY */}
-                <div className="p-2 rounded hidden">
-                  <div className="text-white text-sm mb-1">Red & Balance</div>
-                  <div className="space-y-1">
-                    <NetworkSelector
+              {/* Network & Balance Section - SECOND PRIORITY */}
+              <div className="p-2 rounded hidden">
+                <div className="text-white text-sm mb-1">Red & Balance</div>
+                <div className="space-y-1">
+                  <NetworkSelector
+                    selectedChain={selectedChain}
+                    onChainChange={(chain) => setSelectedChain(chain)}
+                    supportedNetworks={SUPPORTED_NETWORKS}
+                  />
+                  {account && (
+                    <WalletBalance
                       selectedChain={selectedChain}
-                      onChainChange={(chain) => setSelectedChain(chain)}
+                      accountAddress={account?.address}
                       supportedNetworks={SUPPORTED_NETWORKS}
                     />
-                    {account && (
-                      <WalletBalance
-                        selectedChain={selectedChain}
-                        accountAddress={account?.address}
-                        supportedNetworks={SUPPORTED_NETWORKS}
-                      />
-                    )}
-                  </div>
+                  )}
                 </div>
+              </div>
 
-                <div className="border-t border-zinc-700 my-2"></div>
+              <div className="border-t border-zinc-700 my-2"></div>
 
-                {/* Navigation Items - REMAINING PRIORITIES */}
-                <Link
-                  href="/profile/dashboard"
-                  onClick={() => setProfileDropdown(false)}
-                  className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
-                >
-                  <ChartBarIcon className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <div className="text-white text-sm">Dashboard</div>
-                    <div className="text-gray-400 text-xs">Métricas y gestión</div>
-                  </div>
-                </Link>
+              {/* Navigation Items - REMAINING PRIORITIES */}
+              <Link
+                href="/profile/dashboard"
+                onClick={() => setProfileDropdown(false)}
+                className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
+              >
+                <ChartBarIcon className="w-5 h-5 text-gray-400" />
+                <div>
+                  <div className="text-white text-sm">Dashboard</div>
+                  <div className="text-gray-400 text-xs">Métricas y gestión</div>
+                </div>
+              </Link>
 
-                <Link
-                  href="/profile/achievements"
-                  onClick={() => setProfileDropdown(false)}
-                  className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
-                >
-                  <TrophyIcon className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <div className="text-white text-sm">Gamificación</div>
-                    <div className="text-gray-400 text-xs">Logros y objetivos</div>
-                  </div>
-                </Link>
+              <Link
+                href="/profile/achievements"
+                onClick={() => setProfileDropdown(false)}
+                className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
+              >
+                <TrophyIcon className="w-5 h-5 text-gray-400" />
+                <div>
+                  <div className="text-white text-sm">Gamificación</div>
+                  <div className="text-gray-400 text-xs">Logros y objetivos</div>
+                </div>
+              </Link>
 
-                <Link
-                  href="/education"
-                  onClick={() => setProfileDropdown(false)}
-                  className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
-                >
-                  <BookOpenIcon className="w-5 h-5 text-lime-300" />
-                  <div>
-                    <div className="text-white text-sm">Aprende y Gana</div>
-                    <div className="text-gray-400 text-xs">Cursos Web3 con rewards (+toknes)</div>
-                  </div>
-                </Link>
+              <Link
+                href="/education"
+                onClick={() => setProfileDropdown(false)}
+                className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
+              >
+                <BookOpenIcon className="w-5 h-5 text-lime-300" />
+                <div>
+                  <div className="text-white text-sm">Aprende y Gana</div>
+                  <div className="text-gray-400 text-xs">Cursos Web3 con rewards (+toknes)</div>
+                </div>
+              </Link>
 
-                {(adminStatus.verified ? (adminStatus.isAdmin || adminStatus.isSuperAdmin) : (isAdminProp ?? isSuperAdminProp) ??
-                  (userProfile?.role === 'applicant' && (userProfile?.projectCount ?? 0) > 0)) && (
+              {(adminStatus.verified ? (adminStatus.isAdmin || adminStatus.isSuperAdmin) : (isAdminProp ?? isSuperAdminProp) ??
+                (userProfile?.role === 'applicant' && (userProfile?.projectCount ?? 0) > 0)) && (
                   <Link
                     href="/profile/projects"
                     onClick={() => setProfileDropdown(false)}
@@ -386,28 +395,41 @@ export function TopNavbar({
                   </Link>
                 )}
 
-                <Link
-                  href="/profile"
-                  onClick={() => setProfileDropdown(false)}
-                  className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
-                >
-                  <UserIcon className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <div className="text-white text-sm">Configuración</div>
-                    <div className="text-gray-400 text-xs">Información personal</div>
-                  </div>
-                </Link>
-
-                <div className="border-t border-zinc-700 my-2"></div>
-
-                {/* Connect/Disconnect Button */}
-                <div className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full">
-                  <WalletIcon className="w-5 h-5 text-gray-400 md:block" />
-                  <ConnectWalletButton
-                    className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full"
-                  />
+              {/* Mis Accesos (Participante) */}
+              <Link
+                href="/my-protocols"
+                onClick={() => setProfileDropdown(false)}
+                className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
+              >
+                <TicketIcon className="w-5 h-5 text-gray-400" />
+                <div>
+                  <div className="text-white text-sm">Mis Accesos</div>
+                  <div className="text-gray-400 text-xs">Artefactos y DAO</div>
                 </div>
+              </Link>
+
+              <Link
+                href="/profile"
+                onClick={() => setProfileDropdown(false)}
+                className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
+              >
+                <UserIcon className="w-5 h-5 text-gray-400" />
+                <div>
+                  <div className="text-white text-sm">Configuración</div>
+                  <div className="text-gray-400 text-xs">Información personal</div>
+                </div>
+              </Link>
+
+              <div className="border-t border-zinc-700 my-2"></div>
+
+              {/* Connect/Disconnect Button */}
+              <div className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full">
+                <WalletIcon className="w-5 h-5 text-gray-400 md:block" />
+                <ConnectWalletButton
+                  className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full"
+                />
               </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

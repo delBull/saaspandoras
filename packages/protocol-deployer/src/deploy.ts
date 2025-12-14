@@ -28,7 +28,7 @@ envPaths.forEach(p => {
 
 /**
  * Despliega un protocolo W2E completo en la red especificada (Sepolia/Base)
- * utilizando ethers.js v6 y gestionando las dependencias circulares mediante predicción de direcciones.
+ * utilizando ethers.js v5 (compatible con Thirdweb SDK v4).
  */
 export async function deployW2EProtocol(
   projectSlug: string,
@@ -37,7 +37,11 @@ export async function deployW2EProtocol(
 ): Promise<W2EDeploymentResult> {
   console.log(`🚀 Iniciando despliegue REAL W2E para ${projectSlug} en ${network}`);
 
-  // 1. Setup Provider & Wallet
+  if (!process.env.THIRDWEB_SECRET_KEY) {
+    console.warn("⚠️ THIRDWEB_SECRET_KEY missing. Deployment might fail if using Thirdweb infrastructure.");
+  }
+
+  // 1. Setup Provider & Wallet (Ethers v5)
   // Priority: Secret Key (Backend) > Public RPC. Client ID is for frontend only.
   const SECRET_KEY = process.env.THIRDWEB_SECRET_KEY;
 
@@ -67,25 +71,27 @@ export async function deployW2EProtocol(
   const privateKey = process.env.PANDORA_ORACLE_PRIVATE_KEY || process.env.PRIVATE_KEY;
   if (!privateKey) throw new Error("Private Key not found in environment (PANDORA_ORACLE_PRIVATE_KEY)");
 
-  // Hybrid Provider
-  let provider;
-  if ((ethers as any).providers && (ethers as any).providers.JsonRpcProvider) {
-    provider = new (ethers as any).providers.JsonRpcProvider(rpcUrl);
-  } else {
-    provider = new (ethers as any).JsonRpcProvider(rpcUrl);
-  }
+  // --- Universal Ethers Shim (v5/v6 Compatibility) ---
+  // This handles the discrepancy between Local (v6) and Vercel/CI (v5) environments
+  const eth = ethers as any;
+  const isV6 = !!eth.JsonRpcProvider;
 
-  const wallet = new ethers.Wallet(privateKey, provider);
+  console.log(`🔧 Ethers Compatibility Mode: ${isV6 ? 'v6' : 'v5'}`);
+
+  const JsonRpcProvider = isV6 ? eth.JsonRpcProvider : eth.providers.JsonRpcProvider;
+  const Wallet = eth.Wallet;
+  const ContractFactory = eth.ContractFactory;
+
+  // Utils
+  const parseEther = isV6 ? eth.parseEther : eth.utils.parseEther;
+  const isAddress = isV6 ? eth.isAddress : eth.utils.isAddress;
+  const getCreateAddress = isV6 ? eth.getCreateAddress : eth.utils.getContractAddress;
+
+  // Implementation
+  const provider = new JsonRpcProvider(rpcUrl);
+  const wallet = new Wallet(privateKey, provider);
 
   console.log(`📡 Conectado a ${network} con wallet: ${wallet.address}`);
-
-  // Helpers for v5/v6 compatibility
-  const utils = (ethers as any).utils || ethers;
-  // v5 has utils.parseEther, v6 has ethers.parseEther
-  // But wait, v6 ethers object has parseEther. v5 descriptors are in utils.
-  const parseEther = (val: string) => utils.parseEther ? utils.parseEther(val) : (ethers as any).parseEther(val);
-  const isAddress = (val: string) => utils.isAddress ? utils.isAddress(val) : (ethers as any).isAddress(val);
-  const getContractAddr = (opts: any) => utils.getContractAddress ? utils.getContractAddress(opts) : (ethers as any).getCreateAddress(opts);
 
   // 2. Validate Config & Env
   const isValidAddress = (addr: string | undefined): boolean => addr != null && isAddress(addr);
@@ -111,11 +117,12 @@ export async function deployW2EProtocol(
 
   if (!rootTreasury) throw new Error("ROOT_TREASURY_ADDRESS missing and no fallback available");
 
-  // 3. Address Prediction for Circular Dependencies
-  const currentNonce = await ((wallet as any).getTransactionCount ? (wallet as any).getTransactionCount() : (wallet as any).getNonce());
+  // 3. Address Prediction for Circular Dependencies (v5)
+  // v6 uses getNonce(), v5 uses getTransactionCount()
+  const currentNonce = await (wallet.getNonce ? wallet.getNonce() : wallet.getTransactionCount());
   console.log(`🔢 Current Nonce: ${currentNonce}`);
 
-  const predictAddr = (nonce: number) => getContractAddr({ from: wallet.address, nonce });
+  const predictAddr = (nonce: number) => getCreateAddress({ from: wallet.address, nonce });
 
   const addrLicense = predictAddr(currentNonce);
   const addrUtility = predictAddr(currentNonce + 1);
@@ -132,20 +139,22 @@ export async function deployW2EProtocol(
   });
 
   // 4. Contract Factories
-  const LicenseFactory = new ethers.ContractFactory(W2ELicenseArtifact.abi, W2ELicenseArtifact.bytecode, wallet);
-  const UtilityFactory = new ethers.ContractFactory(W2EUtilityArtifact.abi, W2EUtilityArtifact.bytecode, wallet);
-  const LoomFactory = new ethers.ContractFactory(W2ELoomArtifact.abi, W2ELoomArtifact.bytecode, wallet);
-  const TreasuryFactory = new ethers.ContractFactory(PBOXProtocolTreasuryArtifact.abi, PBOXProtocolTreasuryArtifact.bytecode, wallet);
-  const GovernorFactory = new ethers.ContractFactory(W2EGovernorArtifact.abi, W2EGovernorArtifact.bytecode, wallet);
+  const LicenseFactory = new ContractFactory(W2ELicenseArtifact.abi, W2ELicenseArtifact.bytecode, wallet);
+  const UtilityFactory = new ContractFactory(W2EUtilityArtifact.abi, W2EUtilityArtifact.bytecode, wallet);
+  const LoomFactory = new ContractFactory(W2ELoomArtifact.abi, W2ELoomArtifact.bytecode, wallet);
+  const TreasuryFactory = new ContractFactory(PBOXProtocolTreasuryArtifact.abi, PBOXProtocolTreasuryArtifact.bytecode, wallet);
+  const GovernorFactory = new ContractFactory(W2EGovernorArtifact.abi, W2EGovernorArtifact.bytecode, wallet);
 
-  // Helper to wait for deployment
+  // Helper to wait for deployment (Universal)
   const waitForDeploy = async (contract: any) => {
-    if (contract.deployed) {
-      await contract.deployed(); // v5
-      return contract.address;
-    } else {
-      await contract.waitForDeployment(); // v6
+    if (contract.waitForDeployment) {
+      // v6
+      await contract.waitForDeployment();
       return await contract.getAddress();
+    } else {
+      // v5
+      await contract.deployed();
+      return contract.address;
     }
   };
 
@@ -157,7 +166,7 @@ export async function deployW2EProtocol(
     config.licenseToken.name,
     config.licenseToken.symbol,
     config.maxLicenses,
-    parseEther(config.licenseToken.price || "0.1"),
+    parseEther("0"), // Always Free Access Card
     oracleAddress,
     addrTreasury, // Circular resolved
     wallet.address // Initial Owner
@@ -206,9 +215,9 @@ export async function deployW2EProtocol(
   // Ensure we have unique signers for the Treasury
   const chestSigners = (config.treasurySigners && config.treasurySigners.length >= 2)
     ? config.treasurySigners
-    : [wallet.address, ethers.Wallet.createRandom().address]; // Fallback for dev
+    : [wallet.address, Wallet.createRandom().address]; // Fallback for dev
 
-  const daoSigners = [wallet.address, ethers.Wallet.createRandom().address, ethers.Wallet.createRandom().address]; // Mock DAO signers for now if not provided
+  const daoSigners = [wallet.address, Wallet.createRandom().address, Wallet.createRandom().address]; // Mock DAO signers for now if not provided
 
   const treasury = await TreasuryFactory.deploy(
     chestSigners,
@@ -245,13 +254,45 @@ export async function deployW2EProtocol(
 
   // Set Loom address in Utility to allow minting
   try {
-    // Ethers v6 contract interaction
-    // cast to any to avoid strict typecheck on generated methods
+    // Ethers v5 contract interaction
     const tx = await (utility as any).setW2ELoomAddress(loomAddress);
     await tx.wait();
     console.log("  - Utility linked to Loom");
+
+    // Configure Economic Schedule (Pact) if provided
+    if ((config as any).w2eConfig) {
+      console.log("  - Configuring Economic Schedule (Pact)...");
+      const w2e = (config as any).w2eConfig;
+
+      // Phase 1
+      if (w2e.phase1APY) {
+        const tx1 = await (utility as any).setPhaseSchedule(1, w2e.phase1APY);
+        await tx1.wait();
+        console.log(`    > Phase 1 APY set to ${(w2e.phase1APY / 100)}%`);
+      }
+      // Phase 2
+      if (w2e.phase2APY) {
+        const tx2 = await (utility as any).setPhaseSchedule(2, w2e.phase2APY);
+        await tx2.wait();
+        console.log(`    > Phase 2 APY set to ${(w2e.phase2APY / 100)}%`);
+      }
+      // Phase 3
+      if (w2e.phase3APY) {
+        const tx3 = await (utility as any).setPhaseSchedule(3, w2e.phase3APY);
+        await tx3.wait();
+        console.log(`    > Phase 3 APY set to ${(w2e.phase3APY / 100)}%`);
+      }
+
+      // Royalties
+      if (w2e.royaltyBPS) {
+        const txR = await (license as any).setRoyaltyInfo(addrTreasury, w2e.royaltyBPS);
+        await txR.wait();
+        console.log(`    > Royalties set to ${(w2e.royaltyBPS / 100)}%`);
+      }
+    }
+
   } catch (e) {
-    console.error("  ⚠️ Failed to link Utility to Loom:", e);
+    console.error("  ⚠️ Failed to configure post-deployment settings:", e);
   }
 
   // 7. Transfer Ownership to Governor (DAO Control)
@@ -286,8 +327,9 @@ export async function deployW2EProtocol(
     phiAddress: utilityAddress,
     loomAddress: loomAddress,
     governorAddress: governorAddress,
+    treasuryAddress: treasuryAddress,
     timelockAddress: "0x0000000000000000000000000000000000000000", // No standalone Timelock for now
-    deploymentTxHash: (loom as any).deployTransaction?.hash || (loom.deploymentTransaction()?.hash) || "",
+    deploymentTxHash: (loom as any).deploymentTransaction?.()?.hash || (loom as any).deployTransaction?.hash || "",
     network: network,
     chainId: Number((await provider.getNetwork()).chainId)
   };

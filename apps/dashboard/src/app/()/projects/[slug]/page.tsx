@@ -1,7 +1,7 @@
 'use client';
 
 import { notFound } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import type { ProjectData } from "../types";
 import ProjectVideoSection, { type ProjectVideoSectionRef } from "../../../../components/projects/ProjectVideoSection";
 import ProjectNavigationHeader from "../../../../components/projects/ProjectNavigationHeader";
@@ -93,7 +93,9 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
             <ProjectVideoSection ref={videoRef} project={project} />
 
             {/* New Utility-Focused Content Tabs */}
-            <ProjectContentTabs project={project} />
+            <Suspense fallback={<div className="h-96 animate-pulse bg-zinc-800/20 rounded-xl" />}>
+              <ProjectContentTabs project={project} />
+            </Suspense>
 
             {/* Additional Dynamic Sections */}
             <ProjectDetails project={project} />

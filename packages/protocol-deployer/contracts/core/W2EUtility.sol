@@ -30,10 +30,19 @@ contract W2EUtility is ERC20, Ownable, ERC20Pausable, ReentrancyGuard {
     uint256 public constant MAX_FEE_BPS = 1000; // Máximo 10%
     uint256 public constant DEFAULT_FEE_BPS = 50; // 0.5% por defecto
     uint256 public constant MIN_LOCK_PERIOD = 1 days; // Periodo mínimo de lock
-    uint256 public constant DEFAULT_APY_BPS = 500; // 5% APY por defecto
+    uint256 public constant MIN_LOCK_PERIOD = 1 days; // Periodo mínimo de lock
+    
+    /// @notice Authority Address (Pandora) for Economic Schedule
+    address public authority;
 
-    /// @notice Número de decimales del token
-    uint8 private _decimals;
+    /// @notice Current Phase ID for APY calculation
+    uint256 public currentPhase = 1;
+
+    /// @notice Mapping of Phase ID -> Staking APY (Basis Points)
+    mapping(uint256 => uint256) public phaseAPY;
+
+    // ...
+
 
     /// @notice Monto total quemado (para métricas deflacionarias)
     uint256 public totalBurned;
@@ -87,6 +96,14 @@ contract W2EUtility is ERC20, Ownable, ERC20Pausable, ReentrancyGuard {
         _decimals = initialDecimals;
         transactionFee = _transactionFee;
         feeRecipient = _feeRecipient;
+
+        // Set Authority to deployer initially (Pandora)
+        authority = msg.sender;
+        
+        // Define default schedule (can be updated by Authority)
+        phaseAPY[1] = 500; // Phase 1: 5%
+        phaseAPY[2] = 1000; // Phase 2: 10%
+        phaseAPY[3] = 2000; // Phase 3: 20%
     }
 
     // ========== MODIFICADORES ==========
@@ -260,7 +277,11 @@ contract W2EUtility is ERC20, Ownable, ERC20Pausable, ReentrancyGuard {
         if (!userStake.active) return 0;
 
         uint256 timeStaked = block.timestamp - userStake.startTime;
-        uint256 baseReward = (userStake.amount * timeStaked * 5) / (365 days * 100); // 5% APY
+        uint256 currentAPY = phaseAPY[currentPhase];
+        // If APY is 0 (not set or set to 0), fallback to 0 reward
+        if (currentAPY == 0 && currentPhase == 1) currentAPY = 500; // Fallback default for Phase 1
+        
+        uint256 baseReward = (userStake.amount * timeStaked * currentAPY) / (365 days * 10000); // APY en BPS
 
         return baseReward;
     }
@@ -367,6 +388,47 @@ contract W2EUtility is ERC20, Ownable, ERC20Pausable, ReentrancyGuard {
 
     /// @notice Evento para cambios de fee
     event FeeUpdated(uint256 indexed oldFee, uint256 indexed newFee);
+
+    /**
+     * @notice Updates the Phase Schedule (Authority Only)
+     * @param phaseId Phase ID to update
+     * @param apy New APY in basis points
+     */
+    function setPhaseSchedule(uint256 phaseId, uint256 apy) external {
+        require(msg.sender == authority, "W2E: Only Authority");
+        require(apy <= 5000, "W2E: APY exceeds 50%"); // Hard Limit 50%
+        phaseAPY[phaseId] = apy;
+        emit PhaseScheduleUpdated(phaseId, apy);
+    }
+
+    /**
+     * @notice Advances the protocol to a new phase (Updates APY)
+     * @dev Callable by Owner or W2ELoom
+     */
+    function updatePhase(uint256 newPhase) external {
+        require(msg.sender == owner() || msg.sender == w2eLoomAddress, "W2E: Unauthorized");
+        require(newPhase > currentPhase, "W2E: New phase must be greater");
+        
+        uint256 oldPhase = currentPhase;
+        currentPhase = newPhase;
+        
+        emit PhaseUpdated(oldPhase, newPhase, phaseAPY[newPhase]);
+    }
+
+    /**
+     * @notice Transfer authority role
+     */
+    function transferAuthority(address newAuthority) external {
+        require(msg.sender == authority, "W2E: Only Authority");
+        require(newAuthority != address(0), "W2E: Invalid address");
+        authority = newAuthority;
+    }
+
+    /// @notice Event for Schedule Updates
+    event PhaseScheduleUpdated(uint256 indexed phaseId, uint256 apy);
+    
+    /// @notice Event for Phase Transition
+    event PhaseUpdated(uint256 indexed oldPhase, uint256 indexed newPhase, uint256 newAPY);
 
     // ========== FUNCIONES DE PAUSA/UNPAUSA ==========
 

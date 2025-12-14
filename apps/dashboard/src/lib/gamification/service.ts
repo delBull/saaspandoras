@@ -108,6 +108,8 @@ export class GamificationService {
     }
   }
 
+
+
   /**
    * Create new user profile in database
    */
@@ -755,6 +757,12 @@ export class GamificationService {
       'course_started': 10,
       'course_completed': 100,
       'protocol_deployed': 500,
+      // New Event Points
+      'dao_activated': 250,
+      'artifact_purchased': 50,
+      'staking_deposit': 20,
+      'proposal_vote': 10,
+      'rewards_claimed': 5,
       'COURSE_STARTED': 10,  // Keep for backward compat
       'COURSE_COMPLETED': 100 // Keep for backward compat
     };
@@ -927,6 +935,36 @@ export class GamificationService {
         console.log(`🎉 Unlocked "Promotor de Comunidad" achievement for referrer ${userId}`);
       }
 
+      // 🎯 DAO: Achievement por activación de DAO
+      if (eventType === 'dao_activated') {
+        await this.unlockAchievement(userId, 'Pionero DAO');
+        console.log(`🎉 Unlocked "Pionero DAO" achievement for user ${userId}`);
+      }
+
+      // 🎯 ARTIFACTS: Achievement por compra de artefacto
+      if (eventType === 'artifact_purchased') {
+        await this.unlockAchievement(userId, 'Coleccionista Novato');
+        console.log(`🎉 Unlocked "Coleccionista Novato" achievement for user ${userId}`);
+      }
+
+      // 🎯 STAKING: Achievement por depósito
+      if (eventType === 'staking_deposit') {
+        await this.unlockAchievement(userId, 'Iniciación DeFi');
+        console.log(`🎉 Unlocked "Iniciación DeFi" achievement for user ${userId}`);
+      }
+
+      // 🎯 VOTING: Achievement por votar
+      if (eventType === 'proposal_vote') {
+        await this.unlockAchievement(userId, 'Voz Activa');
+        console.log(`🎉 Unlocked "Voz Activa" achievement for user ${userId}`);
+      }
+
+      // 🎯 REWARDS: Achievement por reclamar recompensas
+      if (eventType === 'rewards_claimed') {
+        await this.unlockAchievement(userId, 'Cazador de Rendimiento');
+        console.log(`🎉 Unlocked "Cazador de Rendimiento" achievement for user ${userId}`);
+      }
+
       // 🎯 NUEVOS: MAPPINGS PARA CURSOS
       if (eventType === 'COURSE_STARTED' || eventType === 'course_started') {
         await this.unlockAchievement(userId, 'Curso Iniciado');
@@ -1018,7 +1056,7 @@ export class GamificationService {
           type: "creator" as any,
           required_points: 100,
           required_level: 1,
-          required_events: JSON.stringify([]),
+          required_events: JSON.stringify(["project_application_started"]), // Fixed typo
           points_reward: 0,
           badge_url: "/badges/applicant.png",
           is_active: true,
@@ -1060,7 +1098,7 @@ export class GamificationService {
           type: "community_builder" as any,
           required_points: 0,
           required_level: 1,
-          required_events: JSON.stringify([]),
+          required_events: JSON.stringify(["referral_made_5"]), // Placeholder
           points_reward: 1000,
           badge_url: "/badges/recruiter.png",
           is_active: true,
@@ -1123,8 +1161,126 @@ export class GamificationService {
           is_active: true,
           is_secret: false,
           created_at: new Date()
+        },
+      ];
+
+      const newAchievements = [
+        // --- NEW USER REQUESTED ACHIEVEMENTS ---
+        {
+          name: "Pionero DAO",
+          description: "Has activado el sistema de Gobernanza Descentralizada",
+          icon: "🏛️",
+          type: "dao_pioneer" as any,
+          required_points: 0,
+          required_level: 2,
+          required_events: JSON.stringify(["dao_activated"]),
+          points_reward: 500,
+          badge_url: "/badges/dao-pioneer.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
+        },
+        {
+          name: "Coleccionista Novato",
+          description: "Adquiere tu primer Artefacto",
+          icon: "🏺",
+          type: "artifact_collector" as any,
+          required_points: 0,
+          required_level: 1,
+          required_events: JSON.stringify(["artifact_purchased"]),
+          points_reward: 50,
+          badge_url: "/badges/collector-1.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
+        },
+        {
+          name: "Coleccionista Entusiasta",
+          description: "Posees 3 Artefactos de la comunidad",
+          icon: "🏺",
+          type: "artifact_collector" as any,
+          required_points: 0,
+          required_level: 1,
+          required_events: JSON.stringify(["artifact_purchased_3"]),
+          points_reward: 150,
+          badge_url: "/badges/collector-3.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
+        },
+        {
+          name: "Coleccionista Experto",
+          description: "Posees 5 Artefactos de la comunidad",
+          icon: "🏺",
+          type: "artifact_collector" as any,
+          required_points: 0,
+          required_level: 1,
+          required_events: JSON.stringify(["artifact_purchased_5"]),
+          points_reward: 300,
+          badge_url: "/badges/collector-5.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
+        },
+        {
+          name: "Ballena de Artefactos",
+          description: "Posees 10 o más Artefactos. ¡Eres una leyenda!",
+          icon: "🐋",
+          type: "artifact_collector" as any,
+          required_points: 0,
+          required_level: 1,
+          required_events: JSON.stringify(["artifact_purchased_10"]),
+          points_reward: 1000,
+          badge_url: "/badges/collector-whale.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
+        },
+        {
+          name: "Iniciación DeFi",
+          description: "Tu primer depósito en Staking",
+          icon: "🥩",
+          type: "defi_starter" as any,
+          required_points: 0,
+          required_level: 1,
+          required_events: JSON.stringify(["staking_deposit"]),
+          points_reward: 100,
+          badge_url: "/badges/defi-starter.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
+        },
+        {
+          name: "Voz Activa",
+          description: "Tu primera participación en una votación del DAO",
+          icon: "🗳️",
+          type: "governor" as any,
+          required_points: 0,
+          required_level: 1,
+          required_events: JSON.stringify(["proposal_vote"]),
+          points_reward: 50,
+          badge_url: "/badges/governor.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
+        },
+        {
+          name: "Cazador de Rendimiento",
+          description: "Tu primer reclamo de recompensas",
+          icon: "💰",
+          type: "yield_hunter" as any,
+          required_points: 0,
+          required_level: 1,
+          required_events: JSON.stringify(["rewards_claimed"]),
+          points_reward: 75,
+          badge_url: "/badges/yield-hunter.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
         }
       ];
+
+      const mergedBasicAchievements = [...basicAchievements, ...newAchievements];
 
       // First import and convert TOKENIZATION_ACHIEVEMENTS from package
       // (Dynamic import to avoid build issues if package is not available)
@@ -1149,7 +1305,7 @@ export class GamificationService {
         }));
 
         // Merge with dashboard achievements
-        const allAchievements = [...basicAchievements, ...packageAchievements];
+        const allAchievements = [...mergedBasicAchievements, ...packageAchievements];
         console.log(`🏆 Total achievements to initialize: ${allAchievements.length}`);
 
         // Only insert if not exists (by name)

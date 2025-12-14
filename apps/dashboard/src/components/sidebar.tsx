@@ -285,7 +285,7 @@ export function Sidebar({
   // The final isAdmin status - Trust server props when API verification fails or is pending
   const isSuperAdminWallet = account?.address?.toLowerCase() === SUPER_ADMIN_WALLET;
   const isAdmin = (adminStatus.verified && (adminStatus.isAdmin || adminStatus.isSuperAdmin || isSuperAdminWallet)) ||
-                  (!adminStatus.verified && (isAdminProp || isSuperAdminProp || isSuperAdminWallet));
+    (!adminStatus.verified && (isAdminProp || isSuperAdminProp || isSuperAdminWallet));
 
   // Use centralized network configuration
   const supportedNetworks = SUPPORTED_NETWORKS;
@@ -358,6 +358,7 @@ export function Sidebar({
         ),
         disabled: false,
       },
+
       {
         label: "Wallet",
         href: "wallet-pro",
@@ -366,8 +367,8 @@ export function Sidebar({
         ),
         disabled: false,
       },
-            {
-        label: "Feed", 
+      {
+        label: "Feed",
         type: "path",
         href: "#",
         icon: (
@@ -379,16 +380,16 @@ export function Sidebar({
       // Enlace solo visible para admin
       ...(isAdmin
         ? [
-            {
-              label: "Admin Dash",
-              href: "/admin/dashboard",
-              icon: (
-                <ChartPieIcon className="h-5 w-5 shrink-0 text-lime-400" />
-              ),
-              disabled: false,
-              admin: true,
-            },
-          ]
+          {
+            label: "Admin Dash",
+            href: "/admin/dashboard",
+            icon: (
+              <ChartPieIcon className="h-5 w-5 shrink-0 text-lime-400" />
+            ),
+            disabled: false,
+            admin: true,
+          },
+        ]
         : []),
     ],
     [isAdmin]
@@ -413,22 +414,22 @@ export function Sidebar({
           <div className="absolute top-12 left-0 right-0 flex justify-center items-center h-8">
             <AnimatePresence initial={false}>
               {open ? (
-                  <motion.div
-                    key="logo-largo"
-                    initial="hidden"
-                    animate="visible"
-                    exit="hidden"
-                    variants={logoVariants}
-                    transition={{ type: "tween", ease: "easeInOut", duration: 0.2 }}
-                  >
-                    <Image
-                      src="/images/logo_finance.png"
-                      width={160}
-                      height={40}
-                      alt="Logo Finance"
-                      priority
-                      style={{ width: "auto", height: "auto" }}
-                    />
+                <motion.div
+                  key="logo-largo"
+                  initial="hidden"
+                  animate="visible"
+                  exit="hidden"
+                  variants={logoVariants}
+                  transition={{ type: "tween", ease: "easeInOut", duration: 0.2 }}
+                >
+                  <Image
+                    src="/images/logo_finance.png"
+                    width={160}
+                    height={40}
+                    alt="Logo Finance"
+                    priority
+                    style={{ width: "auto", height: "auto" }}
+                  />
                 </motion.div>
               ) : (
                 <motion.div
@@ -508,13 +509,13 @@ export function Sidebar({
                   className="hidden flex-shrink-0 relative hover:bg-zinc-700/30 p-1 rounded transition-colors"
                   title="Menú de perfil"
                 >
-                        <Image
-                          src={userProfile?.image ?? '/images/avatars/onlybox2.png'}
-                          alt="Profile Avatar"
-                          width={32}
-                          height={32}
-                          className="w-8 h-8 rounded-full border border-lime-400"
-                        />
+                  <Image
+                    src={userProfile?.image ?? '/images/avatars/onlybox2.png'}
+                    alt="Profile Avatar"
+                    width={32}
+                    height={32}
+                    className="w-8 h-8 rounded-full border border-lime-400"
+                  />
                 </button>
 
                 {/* Wallet display - copiar al hacer click */}
@@ -537,13 +538,12 @@ export function Sidebar({
                       {open ? "C:\\USER\\" : ""}
                     </span>
                     <span
-                      className={`truncate font-mono text-xs transition-colors ${
-                        copyAnimation ? 'text-green-400' : 'text-lime-400 group-hover:text-lime-300'
-                      }`}
+                      className={`truncate font-mono text-xs transition-colors ${copyAnimation ? 'text-green-400' : 'text-lime-400 group-hover:text-lime-300'
+                        }`}
                     >
                       {isClient
                         ? (account?.address ?? walletProp ?? userName ?? "...").substring(0, 8) + '...' + (account?.address ?? walletProp ?? userName ?? "...").substring(36, 42)
-                        : "..." }
+                        : "..."}
                     </span>
                     {/* Copy icon with animation */}
                     <motion.div
@@ -667,7 +667,7 @@ export function Sidebar({
                           ? "cursor-not-allowed opacity-60"
                           : "hover:bg-gray-800/50 hover:text-white",
                         link.admin &&
-                          "font-bold text-lime-400 hover:bg-lime-900/50 hover:text-lime-300"
+                        "font-bold text-lime-400 hover:bg-lime-900/50 hover:text-lime-300"
                       )}
                       onClick={(e) => link.disabled && e.preventDefault()}
                     >
@@ -693,7 +693,7 @@ export function Sidebar({
                       ? "cursor-not-allowed opacity-60"
                       : "hover:bg-gray-800/50 hover:text-white",
                     link.admin &&
-                      "font-bold text-lime-400 hover:bg-lime-900/50 hover:text-lime-300"
+                    "font-bold text-lime-400 hover:bg-lime-900/50 hover:text-lime-300"
                   )}
                   onClick={(e) => link.disabled && e.preventDefault()}
                 >
@@ -965,13 +965,12 @@ export function Sidebar({
                             C:\USER\
                           </span>
                           <span
-                            className={`truncate font-mono text-xs transition-colors ${
-                              copyAnimation ? 'text-green-400' : 'text-lime-400 group-hover:text-lime-300'
-                            }`}
+                            className={`truncate font-mono text-xs transition-colors ${copyAnimation ? 'text-green-400' : 'text-lime-400 group-hover:text-lime-300'
+                              }`}
                           >
                             {isClient
                               ? (account?.address ?? walletProp ?? userName ?? "...").substring(0, 8) + '...' + (account?.address ?? walletProp ?? userName ?? "...").substring(36, 42)
-                              : "..." }
+                              : "..."}
                           </span>
                           {/* Copy icon with animation */}
                           <motion.div
@@ -1031,24 +1030,24 @@ export function Sidebar({
                               </Link>
                             ))}
 
-                        <div className="border-t border-zinc-700 my-2"></div>
+                            <div className="border-t border-zinc-700 my-2"></div>
 
-                        {/* Thirdweb ConnectButton - Maneja automáticamente conectar vs gestionar */}
-                        <div className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full">
-                          <ConnectWalletButton
-                            className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full"
-                            onConnect={() => {
-                              // Don't close dropdown on connect - let user stay in dropdown
-                              console.log('🔗 Mobile wallet connected - keeping dropdown open');
-                              setMobileOpen(false); // Still close mobile sidebar
-                            }}
-                            onDisconnect={() => {
-                              // Don't close dropdown on disconnect - let user stay in dropdown
-                              console.log('🔌 Mobile wallet disconnected - keeping dropdown open');
-                              setMobileOpen(false); // Still close mobile sidebar
-                            }}
-                          />
-                        </div>
+                            {/* Thirdweb ConnectButton - Maneja automáticamente conectar vs gestionar */}
+                            <div className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full">
+                              <ConnectWalletButton
+                                className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full"
+                                onConnect={() => {
+                                  // Don't close dropdown on connect - let user stay in dropdown
+                                  console.log('🔗 Mobile wallet connected - keeping dropdown open');
+                                  setMobileOpen(false); // Still close mobile sidebar
+                                }}
+                                onDisconnect={() => {
+                                  // Don't close dropdown on disconnect - let user stay in dropdown
+                                  console.log('🔌 Mobile wallet disconnected - keeping dropdown open');
+                                  setMobileOpen(false); // Still close mobile sidebar
+                                }}
+                              />
+                            </div>
                           </div>
                         </motion.div>
                       )}
@@ -1088,7 +1087,7 @@ export function Sidebar({
                           ? "cursor-not-allowed opacity-60"
                           : "hover:bg-gray-800/50 hover:text-white",
                         link.admin &&
-                          "font-bold text-lime-400 hover:bg-lime-900/50 hover:text-lime-300"
+                        "font-bold text-lime-400 hover:bg-lime-900/50 hover:text-lime-300"
                       )}
                       onClick={(e) => {
                         if (link.disabled) e.preventDefault();
