@@ -177,6 +177,9 @@ export const projects = pgTable("projects", {
   socials: jsonb("socials"), // Mantener para compatibilidad
   raisedAmount: decimal("raised_amount", { precision: 18, scale: 2 }).default("0.00"),
   returnsPaid: decimal("returns_paid", { precision: 18, scale: 2 }).default("0.00"),
+  // Deployment & Contracts (Refs above)
+
+
   // --- AJUSTE 2: Estado por defecto corregido a 'draft' ---
   status: projectStatusEnum("status").default("draft").notNull(),
 
@@ -209,7 +212,12 @@ export const eventTypeEnum = pgEnum("event_type", [
   "streak_milestone",
   "beta_access",
   "feature_unlock",
-  "milestone_reached"
+  "milestone_reached",
+  "dao_activated",
+  "artifact_purchased",
+  "staking_deposit",
+  "proposal_vote",
+  "rewards_claimed"
 ]);
 
 export const eventCategoryEnum = pgEnum("event_category", [
@@ -236,7 +244,12 @@ export const achievementTypeEnum = pgEnum("achievement_type", [
   "tokenization_expert",
   "early_adopter",
   "high_roller",
-  "creator"
+  "creator",
+  "dao_pioneer",
+  "artifact_collector",
+  "defi_starter",
+  "governor",
+  "yield_hunter"
 ]);
 
 export const rewardTypeEnum = pgEnum("reward_type", [
@@ -553,6 +566,38 @@ export type WhatsAppMessage = typeof whatsappMessages.$inferSelect;
 // WhatsApp Legacy Types - MANTENER EXISTENTES
 export type WhatsAppApplicationState = typeof whatsappApplicationStates.$inferSelect;
 export type WhatsAppPreapplyLead = typeof whatsappPreapplyLeads.$inferSelect;
+
+
+
+// --- GOVERNANCE CALENDAR TABLES ---
+
+export const governanceEventTypeEnum = pgEnum("governance_event_type", [
+  "on_chain_proposal", // Propuesta oficial on-chain
+  "off_chain_signal",  // Señalización off-chain (Snapshot, etc.)
+  "meeting",           // Reunión de gobernanza/AMA
+  "update"             // Actualización de protocolo
+]);
+
+export const governanceEventStatusEnum = pgEnum("governance_event_status", [
+  "scheduled", // Programado futuro
+  "active",    // Actualmente activo
+  "completed", // Finalizado
+  "cancelled"  // Cancelado
+]);
+
+export const governanceEvents = pgTable("governance_events", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  startDate: timestamp("start_date", { withTimezone: true }).notNull(),
+  endDate: timestamp("end_date", { withTimezone: true }),
+  type: governanceEventTypeEnum("type").default("on_chain_proposal").notNull(),
+  status: governanceEventStatusEnum("status").default("scheduled").notNull(),
+  externalLink: text("external_link"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
 
 // --- EMAIL METRICS TABLES ---
 

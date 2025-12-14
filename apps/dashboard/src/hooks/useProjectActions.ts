@@ -295,7 +295,7 @@ export function useProjectActions({ setActionsLoading, walletAddress, refreshCal
       });
 
       if (response.ok) {
-        toast.success('Protocolo desplegado exitosamente 🚀');
+        // toast.success('Protocolo desplegado exitosamente 🚀'); // Handled by Modal now
         // Refresh data instead of reloading page
         if (refreshCallback) {
           await refreshCallback();
@@ -303,11 +303,13 @@ export function useProjectActions({ setActionsLoading, walletAddress, refreshCal
       } else {
         const errorText = await response.text().catch(() => 'Error desconocido');
         console.error('Error response:', response.status, errorText);
-        toast.error(`Error al desplegar protocolo: ${response.status} - ${errorText}`);
+        // toast.error(`Error al desplegar protocolo: ${response.status} - ${errorText}`);
+        throw new Error(errorText || `Error ${response.status}`);
       }
     } catch (error) {
-      alert('Error de conexión');
+      // alert('Error de conexión');
       console.error('Error deploying protocol:', error);
+      throw error; // Re-throw to let the UI Modal handle the error state
     } finally {
       setActionsLoading((prev) => ({ ...prev, [actionKey]: false }));
     }

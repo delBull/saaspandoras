@@ -17,6 +17,11 @@ interface ProjectQueryResult {
   coverPhotoUrl?: string | null;
   targetAmount?: string | number | null;
   raisedAmount?: string | number | null;
+  contractAddress?: string | null;
+  licenseContractAddress?: string | null;
+  utilityContractAddress?: string | null;
+  governorContractAddress?: string | null;
+  w2eConfig?: any;
 }
 
 // Type for formatted project response
@@ -31,6 +36,11 @@ interface FormattedProject {
   coverPhotoUrl: string;
   targetAmount: string | null;
   raisedAmount: string;
+  contractAddress?: string;
+  licenseContractAddress?: string;
+  utilityContractAddress?: string;
+  governorContractAddress?: string;
+  w2eConfig?: any;
 }
 
 export async function GET() {
@@ -51,7 +61,12 @@ export async function GET() {
           "cover_photo_url" as "coverPhotoUrl",
           "target_amount" as "targetAmount",
           "raised_amount" as "raisedAmount",
-          "business_category" as "businessCategory"
+          "business_category" as "businessCategory",
+          "contract_address" as "contractAddress",
+          "license_contract_address" as "licenseContractAddress",
+          "utility_contract_address" as "utilityContractAddress",
+          "governor_contract_address" as "governorContractAddress",
+          "w2e_config" as "w2eConfig"
         FROM "projects"
         ORDER BY "created_at" DESC
       `);
@@ -71,7 +86,12 @@ export async function GET() {
           createdAt: project.createdAt,
           coverPhotoUrl: project.coverPhotoUrl ?? '/images/default-project.jpg',
           targetAmount: project.targetAmount ? String(project.targetAmount) : null,
-          raisedAmount: project.raisedAmount ? String(project.raisedAmount) : '0'
+          raisedAmount: project.raisedAmount ? String(project.raisedAmount) : '0',
+          contractAddress: project.contractAddress ? String(project.contractAddress) : undefined,
+          licenseContractAddress: project.licenseContractAddress ? String(project.licenseContractAddress) : undefined,
+          utilityContractAddress: project.utilityContractAddress ? String(project.utilityContractAddress) : undefined,
+          governorContractAddress: project.governorContractAddress ? String(project.governorContractAddress) : undefined,
+          w2eConfig: project.w2eConfig ?? {}
         }));
 
         console.log('📊 Basic API: Returning real projects from database');

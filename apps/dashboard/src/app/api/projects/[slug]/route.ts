@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { db } from "~/db";
 import { sql } from "drizzle-orm";
 
+export const dynamic = 'force-dynamic';
+
 // Type for project data - Updated with new optimized fields
 interface ProjectData {
   id: number | string;
@@ -111,8 +113,14 @@ export async function GET(
         "advisors",
         "token_distribution",
         "contract_address",
+        "contract_address" as "contractAddress",
         "license_contract_address" as "licenseContractAddress",
-        "treasury_address",
+        "utility_contract_address" as "utilityContractAddress",
+        "governor_contract_address" as "governorContractAddress",
+        "treasury_contract_address" as "treasuryContractAddress",
+        "loom_contract_address" as "loomContractAddress",
+        "deployment_status" as "deploymentStatus",
+        "chain_id" as "chainId",
         "legal_status",
         "valuation_document_url",
         "fiduciary_entity",

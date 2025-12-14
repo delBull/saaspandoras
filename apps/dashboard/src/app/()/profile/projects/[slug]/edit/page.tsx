@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { MultiStepForm } from '@/app/()/admin/projects/[id]/edit/multi-step-form';
+import { EnhancedMultiStepForm } from '@/components/apply/EnhancedMultiStepForm';
 import { useActiveAccount } from 'thirdweb/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { toast } from 'sonner';
 
 // Basic project interface for filtering
@@ -20,16 +20,13 @@ export default function EditProjectPage() {
 
   const account = useActiveAccount();
   const router = useRouter();
-
-  // Get project ID from URL
-  const projectId = typeof window !== 'undefined'
-    ? window.location.pathname.split('/')[3] // /profile/projects/[id]/edit → [id] is at index 3
-    : null;
+  const params = useParams(); // Use Next.js hook
+  const slug = params?.slug as string;
 
   useEffect(() => {
-    if (!projectId) {
-      setError('ID del proyecto no encontrado');
-      setLoading(false);
+    if (!slug) {
+      // setError('Slug del proyecto no encontrado');
+      // setLoading(false);
       return;
     }
 
@@ -57,13 +54,15 @@ export default function EditProjectPage() {
         }
 
         const projects = await response.json() as BasicProject[];
-        const project = projects.find((p: BasicProject) => p.id === Number(projectId));
+        // Find by Slug now
+        const project = projects.find((p: BasicProject) => p.slug === slug);
 
         if (!project) {
           throw new Error('Proyecto no encontrado');
         }
 
         setProjectData(project);
+        // Also set ID for API calls if needed, assuming component handles it
       } catch (err) {
         console.error('Error al cargar proyecto:', err);
         setError(err instanceof Error ? err.message : 'Error desconocido');
@@ -74,7 +73,7 @@ export default function EditProjectPage() {
     };
 
     void fetchProject();
-  }, [projectId, account?.address, router]);
+  }, [slug, account?.address, router]);
 
   if (loading) {
     return (
@@ -132,11 +131,12 @@ export default function EditProjectPage() {
           </div>
 
           <div className="bg-zinc-900/50 rounded-xl p-6 border border-zinc-800">
-            <MultiStepForm
+            <EnhancedMultiStepForm
               project={projectData}
               isEdit={!!projectData}
               isPublic={true}
-              apiEndpoint={projectData ? `/api/admin/projects/${projectId}` : "/api/admin/projects"}
+              // Use projectData.id for the update endpoint
+              apiEndpoint={projectData ? `/api/admin/projects/${(projectData as BasicProject).id}` : "/api/admin/projects"}
             />
           </div>
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { MultiStepForm } from "@/app/()/admin/projects/[id]/edit/multi-step-form";
+import { MultiStepForm } from "@/app/()/admin/projects/[slug]/edit/multi-step-form";
 
 interface ApplicationFormWrapperProps {
   isAdminMode: boolean;

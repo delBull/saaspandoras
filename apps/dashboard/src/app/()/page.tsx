@@ -30,13 +30,13 @@ function MobileHeader({ userName, walletAddress, profile }: { userName: string |
     <div className="flex md:hidden items-center justify-between w-full mt-5 ml-5">
       <div className="flex items-center gap-2">
         <div className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden">
-           <Image
-             src={profile?.image ?? '/images/avatars/onlybox2.png'}
-             width={24}
-             height={24}
-             alt="User Avatar"
-             className="w-full h-full object-cover"
-           />
+          <Image
+            src={profile?.image ?? '/images/avatars/onlybox2.png'}
+            width={24}
+            height={24}
+            alt="User Avatar"
+            className="w-full h-full object-cover"
+          />
         </div>
         <span className="font-mono text-sm font-semibold text-white">
           {userName ?? (walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : "Not Connected")}
@@ -64,7 +64,7 @@ function ActionButton({ icon, label, disabled = false, href }: { icon: React.Rea
   const content = <>{icon}</>;
   return (
     <div className="flex flex-col items-center">
-      {href && !disabled ? ( <Link href={href} className={commonClasses}>{content}</Link> ) : ( <button disabled={disabled} className={commonClasses}>{content}</button> )}
+      {href && !disabled ? (<Link href={href} className={commonClasses}>{content}</Link>) : (<button disabled={disabled} className={commonClasses}>{content}</button>)}
       <span className="text-xs font-semibold text-gray-300 text-center">{label}</span>
     </div>
   );
@@ -128,7 +128,7 @@ function BannersSection() {
     dragFree: false,
     containScroll: 'trimSnaps'
   });
-  const [featuredProjects, setFeaturedProjects] = useState<{id: string; title: string; subtitle: string; actionText: string; imageUrl?: string; projectSlug: string}[]>([]);
+  const [featuredProjects, setFeaturedProjects] = useState<{ id: string; title: string; subtitle: string; actionText: string; imageUrl?: string; projectSlug: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [canScrollPrev, setCanScrollPrev] = useState(false);
   const [canScrollNext, setCanScrollNext] = useState(false);
@@ -298,7 +298,7 @@ function BannersSection() {
 
 function SecondaryTabs({ activeTab, setActiveTab }: { activeTab: string, setActiveTab: (tab: string) => void }) {
   const tabs = ["Accesos", "Artefactos"];
-  return ( <div className="flex items-center gap-4"> {tabs.map(tab => ( <button key={tab} onClick={() => setActiveTab(tab)} className={`pb-2 text-sm font-bold transition-colors ${activeTab === tab ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}> {tab} </button> ))} </div> );
+  return (<div className="flex items-center gap-4"> {tabs.map(tab => (<button key={tab} onClick={() => setActiveTab(tab)} className={`pb-2 text-sm font-bold transition-colors ${activeTab === tab ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}> {tab} </button>))} </div>);
 }
 
 function TypewriterText({ text, className, delay = 0 }: { text: string; className?: string; delay?: number }) {
@@ -363,15 +363,15 @@ export default function DashboardPage() {
         />
       </div>
       <div className="grid grid-cols-4 my-6 md:hidden">
-        <ActionButton icon={<QrCodeIcon className="w-8 h-8 text-gray-300"/>} label="Depositar" disabled />
-        <ActionButton href="/wallet-pro" icon={<ArrowPathIcon className="w-8 h-8 text-gray-300"/>} label="Wallet" />
-        <ActionButton href="/applicants" icon={<UserGroupIcon className="w-8 h-8 text-gray-300"/>} label="Protocolos" />
-        <ActionButton icon={<BanknotesIcon className="w-8 h-8 text-gray-300"/>} label="Recompensas" disabled />
+        <ActionButton icon={<QrCodeIcon className="w-8 h-8 text-gray-300" />} label="Depositar" disabled />
+        <ActionButton href="/wallet-pro" icon={<ArrowPathIcon className="w-8 h-8 text-gray-300" />} label="Wallet" />
+        <ActionButton href="/applicants" icon={<UserGroupIcon className="w-8 h-8 text-gray-300" />} label="Protocolos" />
+        <ActionButton icon={<BanknotesIcon className="w-8 h-8 text-gray-300" />} label="Recompensas" disabled />
       </div>
       <BannersSection />
       <div className="mt-8 flex flex-col gap-8">
         <div className="flex flex-col gap-2">
-          <h3 className="text-base font-bold text-gray-400 px-4">Gobernanza</h3>
+          <h3 className="text-base font-bold text-gray-400 px-4">Gobernanza Pandora's</h3>
           <div className="flex flex-col gap-1 p-2 rounded-lg bg-zinc-900">
             <PandorasPoolRows ethAmount={ethAmount} usdcAmount={usdcAmount} isLoading={isLoadingPool} />
           </div>
@@ -381,8 +381,8 @@ export default function DashboardPage() {
             <SecondaryTabs activeTab={secondaryTab} setActiveTab={setSecondaryTab} />
           </div>
           <div className="p-2">
-            {secondaryTab === "Accesos" && ( <div className="p-8 text-center text-gray-500 rounded-lg bg-zinc-900"> <LockClosedIcon className="w-10 h-10 mx-auto mb-2" /> <p className="font-bold">Llaves de Acceso</p> <p className="text-sm">Tus NFTs de acceso se listarán aquí.</p> </div> )}
-            {secondaryTab === "Artefactos" && ( <div className="p-8 text-center text-gray-500 rounded-lg bg-zinc-900"> <Squares2X2Icon className="w-10 h-10 mx-auto mb-2" /> <p className="font-bold">Artefactos</p> <p className="text-sm">Tus artefactos de aportación.</p> </div> )}
+            {secondaryTab === "Accesos" && (<div className="p-8 text-center text-gray-500 rounded-lg bg-zinc-900"> <LockClosedIcon className="w-10 h-10 mx-auto mb-2" /> <p className="font-bold">Llaves de Acceso</p> <p className="text-sm">Tus NFTs de acceso se listarán aquí.</p> </div>)}
+            {secondaryTab === "Artefactos" && (<div className="p-8 text-center text-gray-500 rounded-lg bg-zinc-900"> <Squares2X2Icon className="w-10 h-10 mx-auto mb-2" /> <p className="font-bold">Artefactos</p> <p className="text-sm">Tus artefactos de aportación.</p> </div>)}
           </div>
         </div>
       </div>
