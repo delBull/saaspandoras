@@ -16,7 +16,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 interface RouteParams {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }
 
 interface Project {
@@ -41,8 +41,8 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     console.log('🔄 TRANSFER: Step 2 - Extracting wallet address');
     const walletAddress = requestHeaders.get('x-thirdweb-address') ??
-                         requestHeaders.get('x-wallet-address') ??
-                         requestHeaders.get('x-user-address');
+      requestHeaders.get('x-wallet-address') ??
+      requestHeaders.get('x-user-address');
 
     console.log('🔄 TRANSFER: Step 3 - Checking admin status');
     const userIsAdmin = await isAdmin(walletAddress);
@@ -55,8 +55,8 @@ export async function POST(request: Request, { params }: RouteParams) {
     }
 
     console.log('🔄 TRANSFER: Step 5 - Getting params');
-    const { id } = await params;
-    const projectId = Number(id);
+    const { slug } = await params;
+    const projectId = Number(slug);
 
     if (isNaN(projectId)) {
       return NextResponse.json({ message: "ID de proyecto inválido" }, { status: 400 });

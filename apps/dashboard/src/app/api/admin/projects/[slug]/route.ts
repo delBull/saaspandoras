@@ -19,7 +19,7 @@ import slugify from "slugify";
 import { sanitizeLogData, validateRequestBody } from "@/lib/security-utils";
 
 interface RouteParams {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }
 
 export async function GET(_request: Request, { params }: RouteParams) {
@@ -33,14 +33,14 @@ export async function GET(_request: Request, { params }: RouteParams) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
   }
 
-  const { id } = await params;
+  const { slug } = await params;
 
   // Try to parse as ID, if fails, treat as slug
-  const projectId = Number(id);
+  const projectId = Number(slug);
   const isId = !isNaN(projectId);
 
   try {
-    console.log(`🔍 GET: Fetching project with ${isId ? 'ID' : 'Slug'}:`, id);
+    console.log(`🔍 GET: Fetching project with ${isId ? 'ID' : 'Slug'}:`, slug);
 
     let project;
 
@@ -119,17 +119,17 @@ export async function GET(_request: Request, { params }: RouteParams) {
       });
     } else {
       project = await db.query.projects.findFirst({
-        where: eq(projectsSchema.slug, id),
+        where: eq(projectsSchema.slug, slug), // Use slug here
         columns: columns
       });
     }
 
     if (!project) {
-      console.log('🔍 GET: Project not found:', id);
+      console.log('🔍 GET: Project not found:', slug);
       return NextResponse.json({ message: "Proyecto no encontrado" }, { status: 404 });
     }
 
-    console.log('🔍 GET: Project found:', project.title);
+    console.log('🔍 GET: Project found:', (project as any).title);
     return NextResponse.json(project);
   } catch (error) {
     console.error("🔍 GET: Error al obtener el proyecto:", error);
@@ -151,8 +151,8 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
   }
 
-  const { id } = await params;
-  const projectId = Number(id);
+  const { slug } = await params;
+  const projectId = Number(slug);
 
   if (isNaN(projectId)) {
     return NextResponse.json({ message: "ID de proyecto inválido" }, { status: 400 });
@@ -280,8 +280,8 @@ export async function PUT(request: Request, { params }: RouteParams) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
   }
 
-  const { id } = await params;
-  const projectId = Number(id);
+  const { slug } = await params;
+  const projectId = Number(slug);
 
   if (isNaN(projectId)) {
     return NextResponse.json({ message: "ID de proyecto inválido" }, { status: 400 });
@@ -422,8 +422,8 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
   }
 
-  const { id } = await params;
-  const projectId = Number(id);
+  const { slug } = await params;
+  const projectId = Number(slug);
 
   if (isNaN(projectId)) {
     return NextResponse.json({ message: "ID de proyecto inválido" }, { status: 400 });

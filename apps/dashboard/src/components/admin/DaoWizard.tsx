@@ -448,7 +448,7 @@ export default function DaoWizard({ project, governorAddress, onClose }: DaoWiza
 
                                     {/* Real Governance Button */}
                                     <TransactionButton
-                                        transaction={async () => {
+                                        transaction={() => {
                                             // 1. Encode "setPhaseSchedule(1, newAPY)"
                                             const callData = encodeFunctionData({
                                                 abi: Artifacts.W2EUtility.abi as any,
