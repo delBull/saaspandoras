@@ -18,6 +18,7 @@ import { ethereum } from "thirdweb/chains";
 import { WalletBalance, NetworkSelector, ConnectWalletButton } from "@/components/wallet";
 import { SUPPORTED_NETWORKS } from "@/config/networks";
 import { usePathname } from "next/navigation";
+import { PendingRewardsNotification } from "@/components/PendingRewardsNotification";
 
 interface TopNavbarProps {
   wallet?: string;
@@ -220,8 +221,18 @@ export function TopNavbar({
 
 
 
+
+
+  // Ensure component only renders after mount to avoid hydration mismatch/early flash
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
-    <div className="absolute w-full z-40 md:block hidden pt-4">
+    <div className={`absolute w-full z-40 md:block hidden pt-4 transition-opacity duration-700 ${mounted ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+      <PendingRewardsNotification />
       <div className={`bg-gradient-to-r from-purple-950/0 to-black/0 transition-all duration-500 ${isApplicantsPage ? (panelCollapsed ? 'mr-8 lg:mr-12' : 'mr-[240px] lg:mr-[270px]') : ''
         }`}>
         <div className={`px-4 ${isApplicantsPage ? '' : 'max-w-7xl mx-auto'

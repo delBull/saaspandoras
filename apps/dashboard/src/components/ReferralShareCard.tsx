@@ -101,7 +101,7 @@ export function ReferralShareCard() {
               🎁 Compartir & Ganar
             </CardTitle>
             <CardDescription>
-              Invita amigos y gana <span className="text-cyan-400 font-semibold">+200 puntos</span> por cada uno que se una
+              Invita amigos y gana <span className="text-cyan-400 font-semibold">+200 tokens</span> por cada uno que se una
             </CardDescription>
           </div>
         </CardHeader>

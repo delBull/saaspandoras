@@ -67,25 +67,18 @@ export async function deployW2EProtocol(
   const privateKey = process.env.PANDORA_ORACLE_PRIVATE_KEY || process.env.PRIVATE_KEY;
   if (!privateKey) throw new Error("Private Key not found in environment (PANDORA_ORACLE_PRIVATE_KEY)");
 
-  // Hybrid Provider
-  let provider;
-  if ((ethers as any).providers && (ethers as any).providers.JsonRpcProvider) {
-    provider = new (ethers as any).providers.JsonRpcProvider(rpcUrl);
-  } else {
-    provider = new (ethers as any).JsonRpcProvider(rpcUrl);
-  }
+  // Ethers v6 Implementation
+  const provider = new ethers.JsonRpcProvider(rpcUrl);
 
   const wallet = new ethers.Wallet(privateKey, provider);
 
   console.log(`📡 Conectado a ${network} con wallet: ${wallet.address}`);
 
-  // Helpers for v5/v6 compatibility
-  const utils = (ethers as any).utils || ethers;
-  // v5 has utils.parseEther, v6 has ethers.parseEther
-  // But wait, v6 ethers object has parseEther. v5 descriptors are in utils.
-  const parseEther = (val: string) => utils.parseEther ? utils.parseEther(val) : (ethers as any).parseEther(val);
-  const isAddress = (val: string) => utils.isAddress ? utils.isAddress(val) : (ethers as any).isAddress(val);
-  const getContractAddr = (opts: any) => utils.getContractAddress ? utils.getContractAddress(opts) : (ethers as any).getCreateAddress(opts);
+  // Ethers v6 Utils (Top Level)
+  const { parseEther, isAddress, getCreateAddress } = ethers;
+
+  // v6 cleanup
+  const getContractAddr = getCreateAddress;
 
   // 2. Validate Config & Env
   const isValidAddress = (addr: string | undefined): boolean => addr != null && isAddress(addr);
@@ -138,15 +131,10 @@ export async function deployW2EProtocol(
   const TreasuryFactory = new ethers.ContractFactory(PBOXProtocolTreasuryArtifact.abi, PBOXProtocolTreasuryArtifact.bytecode, wallet);
   const GovernorFactory = new ethers.ContractFactory(W2EGovernorArtifact.abi, W2EGovernorArtifact.bytecode, wallet);
 
-  // Helper to wait for deployment
+  // Helper to wait for deployment (v6)
   const waitForDeploy = async (contract: any) => {
-    if (contract.deployed) {
-      await contract.deployed(); // v5
-      return contract.address;
-    } else {
-      await contract.waitForDeployment(); // v6
-      return await contract.getAddress();
-    }
+    await contract.waitForDeployment();
+    return await contract.getAddress();
   };
 
   // 5. Execute Deployments
@@ -247,7 +235,7 @@ export async function deployW2EProtocol(
   try {
     // Ethers v6 contract interaction
     const tx = await (utility as any).setW2ELoomAddress(loomAddress);
-    await tx.wait();
+    await tx.wait(); // v6 still returns a TransactionResponse with .wait()
     console.log("  - Utility linked to Loom");
 
     // Configure Economic Schedule (Pact) if provided
@@ -320,7 +308,7 @@ export async function deployW2EProtocol(
     governorAddress: governorAddress,
     treasuryAddress: treasuryAddress,
     timelockAddress: "0x0000000000000000000000000000000000000000", // No standalone Timelock for now
-    deploymentTxHash: (loom as any).deployTransaction?.hash || (loom.deploymentTransaction()?.hash) || "",
+    deploymentTxHash: (loom as any).deploymentTransaction()?.hash || "",
     network: network,
     chainId: Number((await provider.getNetwork()).chainId)
   };

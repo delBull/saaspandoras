@@ -60,6 +60,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
   const [activeTab, setActiveTab] = useState("strategy");
   const [selectedPhase, setSelectedPhase] = useState<any>(null);
   const [isArtifactModalOpen, setIsArtifactModalOpen] = useState(false);
+  const [showHistorical, setShowHistorical] = useState(false);
 
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab');
@@ -147,47 +148,122 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
               <h3 className="text-lg font-bold text-white">Artefactos (Fases)</h3>
             </div>
             {project.w2eConfig?.phases && project.w2eConfig.phases.length > 0 ? (
-              <div className="space-y-4">
-                {project.w2eConfig.phases.map((phase: any, index: number) => (
-                  <div
-                    key={index}
-                    onClick={() => {
-                      setSelectedPhase(phase);
-                      setIsArtifactModalOpen(true);
-                    }}
-                    className="bg-zinc-800/50 p-4 rounded-lg border border-zinc-700/50 hover:border-lime-500/50 cursor-pointer transition-all hover:bg-zinc-800 group"
-                  >
-                    <h4 className="font-bold text-white mb-2 flex items-center justify-between group-hover:text-lime-400 transition-colors">
-                      <div className="flex items-center gap-2">
-                        <span>{phase.name}</span>
-                        <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all text-lime-400" />
+              <div className="space-y-6">
+                {/* Fases Activas */}
+                <div className="space-y-4">
+                  {project.w2eConfig.phases
+                    .filter((p: any) => p.isActive)
+                    .map((phase: any, index: number) => (
+                      <div
+                        key={`active-${index}`}
+                        onClick={() => {
+                          setSelectedPhase(phase);
+                          setIsArtifactModalOpen(true);
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            setSelectedPhase(phase);
+                            setIsArtifactModalOpen(true);
+                          }
+                        }}
+                        className="bg-zinc-800/50 p-4 rounded-lg border border-zinc-700/50 hover:border-lime-500/50 cursor-pointer transition-all hover:bg-zinc-800 group"
+                      >
+                        <h4 className="font-bold text-white mb-2 flex items-center justify-between group-hover:text-lime-400 transition-colors">
+                          <div className="flex items-center gap-2">
+                            <span>{phase.name}</span>
+                            <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all text-lime-400" />
+                          </div>
+                          <span className="text-xs px-2 py-0.5 bg-zinc-700 rounded text-gray-300 uppercase">{phase.type === 'time' ? 'Tiempo' : 'Monto'}</span>
+                        </h4>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                          {/* Token Price (Property: tokenPrice) */}
+                          <div>
+                            <span className="text-zinc-500 block text-xs">Precio Token</span>
+                            <span className="text-lime-400 font-mono">${phase.tokenPrice ?? '0.00'}</span>
+                          </div>
+                          {/* Limit (Context sensitive) */}
+                          <div>
+                            <span className="text-zinc-500 block text-xs">Límite ({phase.type === 'time' ? 'Días' : 'USD'})</span>
+                            <span className="text-white font-mono">{Number(phase.limit).toLocaleString()} {phase.type === 'time' ? 'd' : '$'}</span>
+                          </div>
+                          {/* Allocation (Property: tokenAllocation) */}
+                          <div>
+                            <span className="text-zinc-500 block text-xs">Asignación</span>
+                            <span className="text-white font-mono">{phase.tokenAllocation ? Number(phase.tokenAllocation).toLocaleString() : '∞'}</span>
+                          </div>
+                          {/* Status */}
+                          <div>
+                            <span className="text-zinc-500 block text-xs">Estado</span>
+                            <span className="text-lime-400">Activo</span>
+                          </div>
+                        </div>
                       </div>
-                      <span className="text-xs px-2 py-0.5 bg-zinc-700 rounded text-gray-300 uppercase">{phase.type === 'time' ? 'Tiempo' : 'Monto'}</span>
-                    </h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      {/* Token Price (Property: tokenPrice) */}
-                      <div>
-                        <span className="text-zinc-500 block text-xs">Precio Token</span>
-                        <span className="text-lime-400 font-mono">${phase.tokenPrice ?? '0.00'}</span>
-                      </div>
-                      {/* Limit (Context sensitive) */}
-                      <div>
-                        <span className="text-zinc-500 block text-xs">Límite ({phase.type === 'time' ? 'Días' : 'USD'})</span>
-                        <span className="text-white font-mono">{Number(phase.limit).toLocaleString()} {phase.type === 'time' ? 'd' : '$'}</span>
-                      </div>
-                      {/* Allocation (Property: tokenAllocation) */}
-                      <div>
-                        <span className="text-zinc-500 block text-xs">Asignación</span>
-                        <span className="text-white font-mono">{phase.tokenAllocation ? Number(phase.tokenAllocation).toLocaleString() : '∞'}</span>
-                      </div>
-                      {/* Status */}
-                      <div>
-                        <span className="text-zinc-500 block text-xs">Estado</span>
-                        <span className={phase.isActive ? "text-lime-400" : "text-zinc-500"}>{phase.isActive ? 'Activo' : 'Inactivo'}</span>
-                      </div>
-                    </div>
+                    ))}
+
+                  {project.w2eConfig.phases.filter((p: any) => p.isActive).length === 0 && (
+                    <p className="text-zinc-400 italic text-sm">No hay fases activas en este momento.</p>
+                  )}
+                </div>
+
+                {/* Botón Historial */}
+                {project.w2eConfig.phases.some((p: any) => !p.isActive) && (
+                  <div className="pt-4 border-t border-zinc-800">
+                    <button
+                      onClick={() => setShowHistorical(!showHistorical)}
+                      className="flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-300 transition-colors mx-auto"
+                    >
+                      <Clock className="w-4 h-4" />
+                      {showHistorical ? 'Ocultar Fases Finalizadas' : 'Ver Historial de Fases'}
+                      {showHistorical ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </button>
                   </div>
-                ))}
+                )}
+
+                {/* Fases Históricas (Inactivas) */}
+                {showHistorical && (
+                  <div className="space-y-4 opacity-75 grayscale hover:grayscale-0 transition-all duration-500">
+                    {project.w2eConfig.phases
+                      .filter((p: any) => !p.isActive)
+                      .map((phase: any, index: number) => (
+                        <div
+                          key={`historical-${index}`}
+                          className="bg-zinc-900/50 p-4 rounded-lg border border-zinc-800 cursor-not-allowed group"
+                        >
+                          <h4 className="font-bold text-zinc-400 mb-2 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span>{phase.name}</span>
+                              <span className="text-xs text-zinc-600 bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800">FINALIZADA</span>
+                            </div>
+                            <span className="text-xs px-2 py-0.5 bg-zinc-800 rounded text-zinc-500 uppercase">{phase.type === 'time' ? 'Tiempo' : 'Monto'}</span>
+                          </h4>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm opacity-60">
+                            {/* Token Price (Property: tokenPrice) */}
+                            <div>
+                              <span className="text-zinc-600 block text-xs">Precio Token</span>
+                              <span className="text-zinc-400 font-mono">${phase.tokenPrice ?? '0.00'}</span>
+                            </div>
+                            {/* Limit (Context sensitive) */}
+                            <div>
+                              <span className="text-zinc-600 block text-xs">Límite ({phase.type === 'time' ? 'Días' : 'USD'})</span>
+                              <span className="text-zinc-400 font-mono">{Number(phase.limit).toLocaleString()} {phase.type === 'time' ? 'd' : '$'}</span>
+                            </div>
+                            {/* Allocation (Property: tokenAllocation) */}
+                            <div>
+                              <span className="text-zinc-600 block text-xs">Asignación</span>
+                              <span className="text-zinc-400 font-mono">{phase.tokenAllocation ? Number(phase.tokenAllocation).toLocaleString() : '∞'}</span>
+                            </div>
+                            {/* Status */}
+                            <div>
+                              <span className="text-zinc-600 block text-xs">Motivo Cierre</span>
+                              <span className="text-red-900/50 text-xs px-1 rounded bg-red-900/20">Expirada</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
               </div>
             ) : (
               <p className="text-zinc-400">No hay fases de artefactos definidas.</p>
@@ -221,7 +297,6 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                     {Object.entries(rewardsData).map(([key, value]) => {
                       if (key.includes('Enabled') && value === true) {
                         const detailKey = key.replace('Enabled', 'Details');
-                        // @ts-ignore
                         const detailValue = rewardsData[detailKey];
                         return (
                           <div key={key} className="p-3 bg-zinc-700/50 rounded-lg">
