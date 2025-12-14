@@ -1,4 +1,4 @@
-import * as ethers from "ethers";
+import { JsonRpcProvider, Wallet, ContractFactory, parseEther, isAddress, getCreateAddress } from "ethers";
 import * as dotenv from "dotenv";
 import type { W2EConfig, W2EDeploymentResult, DeploymentValidation, NetworkType } from "./types";
 
@@ -68,15 +68,13 @@ export async function deployW2EProtocol(
   if (!privateKey) throw new Error("Private Key not found in environment (PANDORA_ORACLE_PRIVATE_KEY)");
 
   // Ethers v6 Implementation
-  const provider = new ethers.JsonRpcProvider(rpcUrl);
+  const provider = new JsonRpcProvider(rpcUrl);
 
-  const wallet = new ethers.Wallet(privateKey, provider);
+  const wallet = new Wallet(privateKey, provider);
 
   console.log(`📡 Conectado a ${network} con wallet: ${wallet.address}`);
 
   // Ethers v6 Utils (Top Level)
-  const { parseEther, isAddress, getCreateAddress } = ethers;
-
   // v6 cleanup
   const getContractAddr = getCreateAddress;
 
@@ -125,11 +123,11 @@ export async function deployW2EProtocol(
   });
 
   // 4. Contract Factories
-  const LicenseFactory = new ethers.ContractFactory(W2ELicenseArtifact.abi, W2ELicenseArtifact.bytecode, wallet);
-  const UtilityFactory = new ethers.ContractFactory(W2EUtilityArtifact.abi, W2EUtilityArtifact.bytecode, wallet);
-  const LoomFactory = new ethers.ContractFactory(W2ELoomArtifact.abi, W2ELoomArtifact.bytecode, wallet);
-  const TreasuryFactory = new ethers.ContractFactory(PBOXProtocolTreasuryArtifact.abi, PBOXProtocolTreasuryArtifact.bytecode, wallet);
-  const GovernorFactory = new ethers.ContractFactory(W2EGovernorArtifact.abi, W2EGovernorArtifact.bytecode, wallet);
+  const LicenseFactory = new ContractFactory(W2ELicenseArtifact.abi, W2ELicenseArtifact.bytecode, wallet);
+  const UtilityFactory = new ContractFactory(W2EUtilityArtifact.abi, W2EUtilityArtifact.bytecode, wallet);
+  const LoomFactory = new ContractFactory(W2ELoomArtifact.abi, W2ELoomArtifact.bytecode, wallet);
+  const TreasuryFactory = new ContractFactory(PBOXProtocolTreasuryArtifact.abi, PBOXProtocolTreasuryArtifact.bytecode, wallet);
+  const GovernorFactory = new ContractFactory(W2EGovernorArtifact.abi, W2EGovernorArtifact.bytecode, wallet);
 
   // Helper to wait for deployment (v6)
   const waitForDeploy = async (contract: any) => {
@@ -194,9 +192,9 @@ export async function deployW2EProtocol(
   // Ensure we have unique signers for the Treasury
   const chestSigners = (config.treasurySigners && config.treasurySigners.length >= 2)
     ? config.treasurySigners
-    : [wallet.address, ethers.Wallet.createRandom().address]; // Fallback for dev
+    : [wallet.address, Wallet.createRandom().address]; // Fallback for dev
 
-  const daoSigners = [wallet.address, ethers.Wallet.createRandom().address, ethers.Wallet.createRandom().address]; // Mock DAO signers for now if not provided
+  const daoSigners = [wallet.address, Wallet.createRandom().address, Wallet.createRandom().address]; // Mock DAO signers for now if not provided
 
   const treasury = await TreasuryFactory.deploy(
     chestSigners,
@@ -233,7 +231,7 @@ export async function deployW2EProtocol(
 
   // Set Loom address in Utility to allow minting
   try {
-    // Ethers v6 contract interaction
+    // Ethers v5 contract interaction
     const tx = await (utility as any).setW2ELoomAddress(loomAddress);
     await tx.wait();
     console.log("  - Utility linked to Loom");

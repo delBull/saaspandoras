@@ -14,12 +14,15 @@ interface FeaturedUpdateRequest {
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     console.log('🔧 Featured API: Starting PATCH request');
-    const { id } = await params;
-    console.log('🔧 Featured API: Project ID:', id);
+    const { slug } = await params;
+    console.log('🔧 Featured API: Project slug:', slug);
+
+    // Try to parse slug as ID first (for numeric slugs) or use directly
+    const projectId = parseInt(slug);
 
     const body = await request.json() as FeaturedUpdateRequest;
     console.log('🔧 Featured API: Request body:', body);
@@ -40,7 +43,7 @@ export async function PATCH(
     const updatedProject = await db
       .update(projects)
       .set(updateData)
-      .where(eq(projects.id, parseInt(id)))
+      .where(eq(projects.id, projectId))
       .returning();
 
     console.log('🔧 Featured API: Update result:', updatedProject);
