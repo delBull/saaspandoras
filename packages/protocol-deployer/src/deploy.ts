@@ -1,4 +1,4 @@
-import { JsonRpcProvider, Wallet, ContractFactory, parseEther, isAddress, getCreateAddress } from "ethers";
+import * as ethers from "ethers";
 import * as dotenv from "dotenv";
 import type { W2EConfig, W2EDeploymentResult, DeploymentValidation, NetworkType } from "./types";
 
@@ -28,7 +28,7 @@ envPaths.forEach(p => {
 
 /**
  * Despliega un protocolo W2E completo en la red especificada (Sepolia/Base)
- * utilizando ethers.js v6 y gestionando las dependencias circulares mediante predicción de direcciones.
+ * utilizando ethers.js v5 (compatible con Thirdweb SDK v4).
  */
 export async function deployW2EProtocol(
   projectSlug: string,
@@ -37,7 +37,11 @@ export async function deployW2EProtocol(
 ): Promise<W2EDeploymentResult> {
   console.log(`🚀 Iniciando despliegue REAL W2E para ${projectSlug} en ${network}`);
 
-  // 1. Setup Provider & Wallet
+  if (!process.env.THIRDWEB_SECRET_KEY) {
+    console.warn("⚠️ THIRDWEB_SECRET_KEY missing. Deployment might fail if using Thirdweb infrastructure.");
+  }
+
+  // 1. Setup Provider & Wallet (Ethers v5)
   // Priority: Secret Key (Backend) > Public RPC. Client ID is for frontend only.
   const SECRET_KEY = process.env.THIRDWEB_SECRET_KEY;
 
@@ -67,16 +71,27 @@ export async function deployW2EProtocol(
   const privateKey = process.env.PANDORA_ORACLE_PRIVATE_KEY || process.env.PRIVATE_KEY;
   if (!privateKey) throw new Error("Private Key not found in environment (PANDORA_ORACLE_PRIVATE_KEY)");
 
-  // Ethers v6 Implementation
-  const provider = new JsonRpcProvider(rpcUrl);
+  // --- Universal Ethers Shim (v5/v6 Compatibility) ---
+  // This handles the discrepancy between Local (v6) and Vercel/CI (v5) environments
+  const eth = ethers as any;
+  const isV6 = !!eth.JsonRpcProvider;
 
+  console.log(`🔧 Ethers Compatibility Mode: ${isV6 ? 'v6' : 'v5'}`);
+
+  const JsonRpcProvider = isV6 ? eth.JsonRpcProvider : eth.providers.JsonRpcProvider;
+  const Wallet = eth.Wallet;
+  const ContractFactory = eth.ContractFactory;
+
+  // Utils
+  const parseEther = isV6 ? eth.parseEther : eth.utils.parseEther;
+  const isAddress = isV6 ? eth.isAddress : eth.utils.isAddress;
+  const getCreateAddress = isV6 ? eth.getCreateAddress : eth.utils.getContractAddress;
+
+  // Implementation
+  const provider = new JsonRpcProvider(rpcUrl);
   const wallet = new Wallet(privateKey, provider);
 
   console.log(`📡 Conectado a ${network} con wallet: ${wallet.address}`);
-
-  // Ethers v6 Utils (Top Level)
-  // v6 cleanup
-  const getContractAddr = getCreateAddress;
 
   // 2. Validate Config & Env
   const isValidAddress = (addr: string | undefined): boolean => addr != null && isAddress(addr);
@@ -102,11 +117,12 @@ export async function deployW2EProtocol(
 
   if (!rootTreasury) throw new Error("ROOT_TREASURY_ADDRESS missing and no fallback available");
 
-  // 3. Address Prediction for Circular Dependencies
-  const currentNonce = await wallet.getNonce();
+  // 3. Address Prediction for Circular Dependencies (v5)
+  // v6 uses getNonce(), v5 uses getTransactionCount()
+  const currentNonce = await (wallet.getNonce ? wallet.getNonce() : wallet.getTransactionCount());
   console.log(`🔢 Current Nonce: ${currentNonce}`);
 
-  const predictAddr = (nonce: number) => getContractAddr({ from: wallet.address, nonce });
+  const predictAddr = (nonce: number) => getCreateAddress({ from: wallet.address, nonce });
 
   const addrLicense = predictAddr(currentNonce);
   const addrUtility = predictAddr(currentNonce + 1);
@@ -129,10 +145,17 @@ export async function deployW2EProtocol(
   const TreasuryFactory = new ContractFactory(PBOXProtocolTreasuryArtifact.abi, PBOXProtocolTreasuryArtifact.bytecode, wallet);
   const GovernorFactory = new ContractFactory(W2EGovernorArtifact.abi, W2EGovernorArtifact.bytecode, wallet);
 
-  // Helper to wait for deployment (v6)
+  // Helper to wait for deployment (Universal)
   const waitForDeploy = async (contract: any) => {
-    await contract.waitForDeployment();
-    return await contract.getAddress();
+    if (contract.waitForDeployment) {
+      // v6
+      await contract.waitForDeployment();
+      return await contract.getAddress();
+    } else {
+      // v5
+      await contract.deployed();
+      return contract.address;
+    }
   };
 
   // 5. Execute Deployments
@@ -306,7 +329,7 @@ export async function deployW2EProtocol(
     governorAddress: governorAddress,
     treasuryAddress: treasuryAddress,
     timelockAddress: "0x0000000000000000000000000000000000000000", // No standalone Timelock for now
-    deploymentTxHash: (loom as any).deploymentTransaction()?.hash || "",
+    deploymentTxHash: (loom as any).deploymentTransaction?.()?.hash || (loom as any).deployTransaction?.hash || "",
     network: network,
     chainId: Number((await provider.getNetwork()).chainId)
   };
