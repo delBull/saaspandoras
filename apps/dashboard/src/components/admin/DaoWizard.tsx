@@ -89,12 +89,11 @@ export default function DaoWizard({ project, governorAddress, onClose }: DaoWiza
 
 
     // 2. Proposal Logic for Mechanics
-    const handleProposeMechanics = async () => {
+    const handleProposeMechanics = () => {
         // Example: Update Phase 1 APY (Assuming modifying Schedule for Phase 1)
         // Note: Real logic would likely propose a batch or specific phase update.
         // But Phase Schedule is per-phase. Let's say we want to update Phase 1.
 
-        // Encode "setPhaseSchedule(1, newAPY)"
         // Encode "setPhaseSchedule(1, newAPY)"
         const callData = encodeFunctionData({
             abi: Artifacts.W2EUtility.abi as any,
@@ -218,8 +217,9 @@ export default function DaoWizard({ project, governorAddress, onClose }: DaoWiza
                         >
                             <form onSubmit={handleCreateProposal} className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">Título de la Propuesta</label>
+                                    <label htmlFor="proposal-title" className="block text-sm font-medium text-gray-400 mb-1">Título de la Propuesta</label>
                                     <input
+                                        id="proposal-title"
                                         type="text"
                                         placeholder="Ej: Aumentar recompensas de staking"
                                         className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-purple-500 outline-none"
@@ -228,8 +228,9 @@ export default function DaoWizard({ project, governorAddress, onClose }: DaoWiza
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">Descripción</label>
+                                    <label htmlFor="proposal-desc" className="block text-sm font-medium text-gray-400 mb-1">Descripción</label>
                                     <textarea
+                                        id="proposal-desc"
                                         placeholder="Detalla los cambios propuestos..."
                                         rows={4}
                                         className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-purple-500 outline-none"
@@ -239,8 +240,9 @@ export default function DaoWizard({ project, governorAddress, onClose }: DaoWiza
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-1">Contrato Objetivo (Opcional)</label>
+                                        <label htmlFor="proposal-target" className="block text-sm font-medium text-gray-400 mb-1">Contrato Objetivo (Opcional)</label>
                                         <input
+                                            id="proposal-target"
                                             type="text"
                                             placeholder="0x..."
                                             className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-3 text-white font-mono text-xs focus:ring-2 focus:ring-purple-500 outline-none"
@@ -249,8 +251,9 @@ export default function DaoWizard({ project, governorAddress, onClose }: DaoWiza
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-1">Valor ETH (Wei)</label>
+                                        <label htmlFor="proposal-value" className="block text-sm font-medium text-gray-400 mb-1">Valor ETH (Wei)</label>
                                         <input
+                                            id="proposal-value"
                                             type="number"
                                             placeholder="0"
                                             className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-3 text-white font-mono text-xs focus:ring-2 focus:ring-purple-500 outline-none"

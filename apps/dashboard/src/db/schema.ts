@@ -212,7 +212,12 @@ export const eventTypeEnum = pgEnum("event_type", [
   "streak_milestone",
   "beta_access",
   "feature_unlock",
-  "milestone_reached"
+  "milestone_reached",
+  "dao_activated",
+  "artifact_purchased",
+  "staking_deposit",
+  "proposal_vote",
+  "rewards_claimed"
 ]);
 
 export const eventCategoryEnum = pgEnum("event_category", [
@@ -239,7 +244,12 @@ export const achievementTypeEnum = pgEnum("achievement_type", [
   "tokenization_expert",
   "early_adopter",
   "high_roller",
-  "creator"
+  "creator",
+  "dao_pioneer",
+  "artifact_collector",
+  "defi_starter",
+  "governor",
+  "yield_hunter"
 ]);
 
 export const rewardTypeEnum = pgEnum("reward_type", [

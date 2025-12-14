@@ -25,9 +25,29 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
     const price = phase?.tokenPrice || 0;
     const totalCost = Number(amount) * Number(price);
 
-    const handleSuccess = () => {
+    const handleSuccess = async () => {
+        // Track Gamification Event
+        try {
+            await fetch('/api/gamification/track-event', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    eventType: 'artifact_purchased',
+                    metadata: {
+                        amount: amount,
+                        price: price,
+                        project: project.slug,
+                        phase: phase.name
+                    }
+                })
+            });
+        } catch (e) {
+            console.error("Failed to track gamification event", e);
+        }
+
         setStep('success');
         toast.success("¡Artefactos adquiridos exitosamente!");
+        // Trigger generic confetti or sound if available (later)
     };
 
     if (!isOpen) return null;

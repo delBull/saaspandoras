@@ -70,8 +70,27 @@ export function UserGovernanceList({ projectIds }: { projectIds: number[] }) {
                                     {format(new Date(event.startDate), 'MMM d, HH:mm')}
                                 </span>
                                 {event.externalLink && (
-                                    <a href={event.externalLink} target="_blank" className="hover:text-lime-400 flex items-center gap-1 transition-colors">
-                                        <LinkIcon className="w-3 h-3" /> Info
+                                    <a
+                                        href={event.externalLink}
+                                        target="_blank"
+                                        className="hover:text-lime-400 flex items-center gap-1 transition-colors"
+                                        onClick={() => {
+                                            // Track click as interest/vote intent
+                                            fetch('/api/gamification/track-event', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                    eventType: 'proposal_vote',
+                                                    metadata: {
+                                                        proposalId: event.id,
+                                                        title: event.title,
+                                                        projectId: event.projectId
+                                                    }
+                                                })
+                                            }).catch(console.error);
+                                        }}
+                                    >
+                                        <LinkIcon className="w-3 h-3" /> Info/Votar
                                     </a>
                                 )}
                             </div>

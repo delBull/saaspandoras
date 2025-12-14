@@ -7,6 +7,7 @@ import { useReadContract } from "thirdweb/react";
 import { getContract, defineChain } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { config } from "@/config";
+import { toast } from "sonner";
 
 interface DAODashboardProps {
     project: any;
@@ -260,6 +261,31 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                                 Editar Parámetros
                             </button>
                         </div>
+                    </div>
+
+                    {/* Gamificación DAO */}
+                    <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl hover:border-lime-500/30 transition-colors">
+                        <h4 className="font-bold text-white mb-4">Incentivos & Gamificación</h4>
+                        <p className="text-sm text-zinc-400 mb-4">
+                            Activa el sistema de logros para recompensar a tu comunidad por su participación.
+                        </p>
+                        <button
+                            onClick={() => {
+                                fetch('/api/gamification/track-event', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        eventType: 'dao_activated',
+                                        metadata: { project: project?.slug || project?.id }
+                                    })
+                                })
+                                    .then(() => toast.success("¡Sistema de Gamificación Activado!", { description: "Has desbloqueado el logro 'Pionero DAO'." }))
+                                    .catch(e => console.error(e));
+                            }}
+                            className="w-full py-2 bg-purple-900/20 text-purple-400 border border-purple-500/30 hover:bg-purple-900/30 rounded-lg text-sm transition-colors font-bold"
+                        >
+                            Activar Sistema de Logros
+                        </button>
                     </div>
 
                     {/* Gestion de Tesoreria */}
