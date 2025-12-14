@@ -278,6 +278,30 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
             phase={selectedPhase}
           />
 
+          {/* Fases de Venta (Deployment Config) */}
+          {project.w2eConfig?.phases && project.w2eConfig.phases.length > 0 && (
+            <SectionCard title="Fases de Venta Activas" icon={Crown}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {project.w2eConfig.phases.map((phase: any) => (
+                  <div key={phase.id} className={`p-4 rounded-lg border ${phase.isActive ? 'bg-lime-500/10 border-lime-500/30' : 'bg-zinc-800/50 border-zinc-700/50 opacity-60'}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-semibold text-white">{phase.name}</h4>
+                      {phase.isActive && <span className="px-2 py-0.5 rounded text-xs bg-lime-500/20 text-lime-400 border border-lime-500/30">Activa</span>}
+                    </div>
+                    <div className="text-sm text-zinc-400 space-y-1">
+                      <p>
+                        <span className="text-zinc-500">Condición:</span> {phase.type === 'time' ? 'Tiempo Limitado' : 'Monto Objetivo'}
+                      </p>
+                      <p>
+                        <span className="text-zinc-500">Límite:</span> {phase.limit} {phase.type === 'time' ? 'Días' : 'USD'}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </SectionCard>
+          )}
+
           {/* Estructura de Recompensa Recurrente */}
           <SectionCard title="Estructura de Recompensa Recurrente" icon={Star}>
             {(() => {
