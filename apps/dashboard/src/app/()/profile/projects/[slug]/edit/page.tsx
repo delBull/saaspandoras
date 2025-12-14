@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { MultiStepForm } from '@/app/()/admin/projects/[id]/edit/multi-step-form';
+import { EnhancedMultiStepForm } from '@/components/apply/EnhancedMultiStepForm';
 import { useActiveAccount } from 'thirdweb/react';
 import { useRouter, useParams } from 'next/navigation';
 import { toast } from 'sonner';
@@ -73,7 +73,7 @@ export default function EditProjectPage() {
     };
 
     void fetchProject();
-  }, [projectId, account?.address, router]);
+  }, [slug, account?.address, router]);
 
   if (loading) {
     return (
@@ -131,7 +131,7 @@ export default function EditProjectPage() {
           </div>
 
           <div className="bg-zinc-900/50 rounded-xl p-6 border border-zinc-800">
-            <MultiStepForm
+            <EnhancedMultiStepForm
               project={projectData}
               isEdit={!!projectData}
               isPublic={true}

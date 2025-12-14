@@ -86,7 +86,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
       icon: Star,
       content: (
         <div className="space-y-8 mb-8">
-          <SectionCard title="Descripción del Proyecto" icon={Star}>
+          <SectionCard title="Descripción del Protocolo" icon={Star}>
             <p className="text-zinc-300 whitespace-pre-line text-lg leading-relaxed">
               {project.description ?? 'No hay descripción disponible para este proyecto.'}
             </p>

@@ -138,7 +138,7 @@ export async function POST(
                 utilityContractAddress: result.phiAddress,
                 loomContractAddress: result.loomAddress,
                 governorContractAddress: result.governorAddress,
-                treasuryContractAddress: result.treasuryAddress,
+                treasuryAddress: result.treasuryAddress,
                 chainId: result.chainId,
                 deploymentStatus: 'deployed',
                 w2eConfig: extendedConfig,
