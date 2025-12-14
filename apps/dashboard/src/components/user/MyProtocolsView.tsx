@@ -245,7 +245,10 @@ export function MyProtocolsView() {
                             {/* Header Image */}
                             <div className="h-32 bg-zinc-800 relative">
                                 {project.coverPhotoUrl ? (
-                                    <img src={project.coverPhotoUrl} alt={project.title} className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity" />
+                                    <>
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img src={project.coverPhotoUrl} alt={project.title} className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity" />
+                                    </>
                                 ) : (
                                     <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900" />
                                 )}
@@ -265,6 +268,14 @@ export function MyProtocolsView() {
                                             VOTE
                                         </span>
                                     )}
+                                    <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-black/20 border border-white/5 group-hover:border-blue-500/30 transition-colors">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img
+                                            src={(project as any).logoUrl || '/placeholder-logo.png'}
+                                            alt={project.title}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
