@@ -4,8 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useApplicantsDataBasic, type Project } from "@/hooks/applicants/useApplicantsDataBasic";
 import { useActiveAccount } from "thirdweb/react";
 import { getContract, readContract, defineChain } from "thirdweb";
-import { DEFAULT_NETWORK } from "@/config/networks"; // Use global default network
-import { sepolia } from "thirdweb/chains"; // Import Sepolia explicitly for dev/test
+import { config } from "@/config"; // Use global config
 import { client } from "@/lib/thirdweb-client";
 import { Loader2, FolderIcon, ArrowRightIcon, CoinsIcon, CreditCardIcon, VoteIcon } from "lucide-react";
 import Link from "next/link";
@@ -42,8 +41,8 @@ export function MyProtocolsView() {
 
             if (isMounted) setLoadingMembership(true);
             const myProjects: ProjectWithStats[] = [];
-            // Force Sepolia for testing/dev if contracts are there, otherwise fallback to default
-            const chain = sepolia;
+            // Use dynamic chain from config
+            const chain = config.chain;
 
             console.log("🔍 Checking membership for wallet:", account.address);
 

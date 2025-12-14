@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { useReadContract } from "thirdweb/react";
 import { getContract, defineChain } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
-import { sepolia } from "thirdweb/chains";
+import { config } from "@/config";
 
 interface DAODashboardProps {
     project: any;
@@ -20,7 +20,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
     // 1. Treasury Balance
     const treasuryContract = project.treasuryContractAddress ? getContract({
         client,
-        chain: sepolia, // Force sepolia for now as per project config
+        chain: config.chain, // Dynamic chain from config (Base/Sepolia)
         address: project.treasuryContractAddress,
     }) : undefined;
 
