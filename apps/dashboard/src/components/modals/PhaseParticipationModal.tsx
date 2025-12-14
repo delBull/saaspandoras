@@ -103,9 +103,10 @@ export default function PhaseParticipationModal({ isOpen, onClose, phase, projec
 
                                     {/* Input */}
                                     <div className="space-y-2">
-                                        <label className="text-sm text-gray-400">Cantidad de Tokens a Adquirir</label>
+                                        <label htmlFor="token-amount" className="text-sm text-gray-400">Cantidad de Tokens a Adquirir</label>
                                         <div className="relative">
                                             <input
+                                                id="token-amount"
                                                 type="number"
                                                 min="1"
                                                 value={amount}

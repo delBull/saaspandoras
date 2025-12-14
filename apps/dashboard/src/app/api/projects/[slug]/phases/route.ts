@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { db } from "~/db";
 import { projects } from "~/db/schema";
 import { eq } from "drizzle-orm";
@@ -39,7 +39,7 @@ export async function PATCH(
         // Wait, the update at the end uses ID. We should use project.id from the found project.
 
         const config = project.w2eConfig as any;
-        if (!config || !config.phases) {
+        if (!config?.phases) {
             return NextResponse.json({ error: "No phases found in config" }, { status: 404 });
         }
 

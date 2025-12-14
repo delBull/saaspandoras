@@ -104,35 +104,36 @@ export function GovernanceCalendar({ projectId, readOnly = false }: { projectId:
                 <div className="bg-zinc-900 border border-zinc-700 p-6 rounded-xl animate-in fade-in slide-in-from-top-4">
                     <h4 className="font-bold text-white mb-4">Create New Event</h4>
                     <form onSubmit={handleCreate} className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs text-gray-400 mb-1">Title</label>
-                                <input
-                                    required
-                                    className="w-full bg-black border border-zinc-800 rounded-lg px-4 py-2 text-white focus:border-lime-500 outline-none"
-                                    value={formData.title}
-                                    onChange={e => setFormData({ ...formData, title: e.target.value })}
-                                    placeholder="e.g. Q3 Budget Vote"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs text-gray-400 mb-1">Type</label>
-                                <select
-                                    className="w-full bg-black border border-zinc-800 rounded-lg px-4 py-2 text-white focus:border-lime-500 outline-none"
-                                    value={formData.type}
-                                    onChange={e => setFormData({ ...formData, type: e.target.value })}
-                                >
-                                    <option value="on_chain_proposal">On-Chain Proposal</option>
-                                    <option value="off_chain_signal">Off-Chain Signal</option>
-                                    <option value="meeting">Meeting / AMA</option>
-                                    <option value="update">Update Announcement</option>
-                                </select>
-                            </div>
+                        <div>
+                            <label htmlFor="event-title" className="block text-xs text-gray-400 mb-1">Title</label>
+                            <input
+                                id="event-title"
+                                required
+                                className="w-full bg-black border border-zinc-800 rounded-lg px-4 py-2 text-white focus:border-lime-500 outline-none"
+                                value={formData.title}
+                                onChange={e => setFormData({ ...formData, title: e.target.value })}
+                                placeholder="e.g. Q3 Budget Vote"
+                            />
+                        </div>
+                        <div>
+                            <label htmlFor="event-type" className="block text-xs text-gray-400 mb-1">Type</label>
+                            <select
+                                id="event-type"
+                                className="w-full bg-black border border-zinc-800 rounded-lg px-4 py-2 text-white focus:border-lime-500 outline-none"
+                                value={formData.type}
+                                onChange={e => setFormData({ ...formData, type: e.target.value })}
+                            >
+                                <option value="on_chain_proposal">On-Chain Proposal</option>
+                                <option value="off_chain_signal">Off-Chain Signal</option>
+                                <option value="meeting">Meeting / AMA</option>
+                                <option value="update">Update Announcement</option>
+                            </select>
                         </div>
 
                         <div>
-                            <label className="block text-xs text-gray-400 mb-1">Start Date</label>
+                            <label htmlFor="event-date" className="block text-xs text-gray-400 mb-1">Start Date</label>
                             <input
+                                id="event-date"
                                 required
                                 type="datetime-local"
                                 className="w-full bg-black border border-zinc-800 rounded-lg px-4 py-2 text-white focus:border-lime-500 outline-none"
@@ -142,12 +143,13 @@ export function GovernanceCalendar({ projectId, readOnly = false }: { projectId:
                         </div>
 
                         <div>
-                            <label className="block text-xs text-gray-400 mb-1">External Link (Optional)</label>
+                            <label htmlFor="event-link" className="block text-xs text-gray-400 mb-1">External Link (Optional)</label>
                             <div className="flex bg-black border border-zinc-800 rounded-lg overflow-hidden focus-within:border-lime-500">
                                 <div className="p-2 bg-zinc-900 border-r border-zinc-800">
                                     <LinkIcon className="w-5 h-5 text-gray-500" />
                                 </div>
                                 <input
+                                    id="event-link"
                                     className="w-full bg-transparent px-4 py-2 text-white outline-none"
                                     value={formData.externalLink}
                                     onChange={e => setFormData({ ...formData, externalLink: e.target.value })}
@@ -173,8 +175,9 @@ export function GovernanceCalendar({ projectId, readOnly = false }: { projectId:
                             </button>
                         </div>
                     </form>
-                </div>
-            )}
+                </div >
+            )
+            }
 
             {/* List */}
             <div className="space-y-3">
@@ -191,7 +194,7 @@ export function GovernanceCalendar({ projectId, readOnly = false }: { projectId:
                                 <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
                                     <span>{format(new Date(event.startDate), 'MMM d, yyyy @ HH:mm')}</span>
                                     {event.externalLink && (
-                                        <a href={event.externalLink} target="_blank" className="hover:text-lime-400 flex items-center gap-1">
+                                        <a href={event.externalLink} target="_blank" rel="noreferrer" className="hover:text-lime-400 flex items-center gap-1">
                                             <LinkIcon className="w-3 h-3" /> Link
                                         </a>
                                     )}
@@ -208,6 +211,6 @@ export function GovernanceCalendar({ projectId, readOnly = false }: { projectId:
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 }

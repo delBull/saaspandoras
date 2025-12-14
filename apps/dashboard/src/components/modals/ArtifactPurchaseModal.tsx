@@ -92,9 +92,10 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                             <div className="space-y-6">
                                 {/* Amount Input */}
                                 <div className="space-y-2">
-                                    <label className="text-sm text-gray-400">Cantidad de Artefactos (Tokens)</label>
+                                    <label htmlFor="artifact-amount" className="text-sm text-gray-400">Cantidad de Artefactos (Tokens)</label>
                                     <div className="relative">
                                         <input
+                                            id="artifact-amount"
                                             type="number"
                                             value={amount}
                                             onChange={(e) => setAmount(e.target.value)}
@@ -134,7 +135,7 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                                         </div>
                                     ) : (
                                         <TransactionButton
-                                            transaction={async () => {
+                                            transaction={() => {
                                                 // HYBRID FLOW:
                                                 // 1. User sends ETH/USDC to Project Treasury.
                                                 // 2. Oracle (Server) detects deposit and calls 'mint' on Utility Token via W2ELoom or directly if authorized.
