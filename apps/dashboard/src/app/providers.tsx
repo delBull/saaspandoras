@@ -87,11 +87,13 @@ export function Providers({
             }
           }}
         />
-        {/* 🎮 INTEGRAR GAMIFICATION WRAPPER */}
+        {/* 🎮 INTEGRAR GAMIFICATION WRAPPER - TEMPORARILY DISABLED FOR DEBUGGING
         <GamificationWrapper>
           {children}
         </GamificationWrapper>
-        <UserSyncWrapper />
+        */}
+        {children}
+        {/* <UserSyncWrapper /> */}
         <Toaster
           theme="dark"
           richColors
