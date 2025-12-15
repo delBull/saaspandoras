@@ -211,7 +211,7 @@ export function GovernanceParticipationModal({ isOpen, onClose }: GovernancePart
 
                                 {/* Currency Tabs */}
                                 <div className="space-y-2">
-                                    <label className="text-xs font-medium text-gray-400 uppercase ml-1">Selecciona Activo</label>
+                                    <span className="text-xs font-medium text-gray-400 uppercase ml-1">Selecciona Activo</span>
                                     <div className="grid grid-cols-2 p-1 bg-zinc-900 rounded-xl border border-zinc-800">
                                         <button
                                             onClick={() => setCurrency("ETH")}
