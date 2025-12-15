@@ -498,8 +498,19 @@ export default function GovernancePage() {
 
             {/* Manage Modal */}
             {isManageOpen && (
-                <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setIsManageOpen(false)}>
-                    <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-zinc-950 border border-zinc-800 rounded-xl p-6 space-y-6" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                <div
+                    className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+                    onClick={() => setIsManageOpen(false)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === 'Escape' || e.key === 'Enter') setIsManageOpen(false); }}
+                >
+                    <div
+                        className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-zinc-950 border border-zinc-800 rounded-xl p-6 space-y-6"
+                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                        role="dialog"
+                        aria-modal="true"
+                    >
                         <div className="flex justify-between">
                             <h2 className="text-xl font-bold">Admin Settings & Data</h2>
                             <button onClick={() => setIsManageOpen(false)}><X className="w-5 h-5" /></button>

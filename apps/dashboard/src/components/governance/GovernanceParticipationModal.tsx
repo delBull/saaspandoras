@@ -238,12 +238,13 @@ export function GovernanceParticipationModal({ isOpen, onClose }: GovernancePart
 
                                 {/* Amount Input */}
                                 <div className="space-y-3">
-                                    <label className="text-xs font-medium text-gray-400 uppercase flex justify-between ml-1">
+                                    <label htmlFor="deposit-amount" className="text-xs font-medium text-gray-400 uppercase flex justify-between ml-1">
                                         <span>Cantidad a Depositar</span>
                                         <span className="text-xs text-gray-500">Disponible: {walletBalance ? parseFloat(walletBalance.displayValue).toFixed(4) : "0.00"} {currency}</span>
                                     </label>
                                     <div className="relative group">
                                         <input
+                                            id="deposit-amount"
                                             type="number"
                                             placeholder="0.0"
                                             value={amount}
