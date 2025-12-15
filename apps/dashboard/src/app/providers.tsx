@@ -66,6 +66,7 @@ export function Providers({
   ];
 
   return (
+    /*
     <ThemeProvider
       attribute="class"
       defaultTheme="dark"
@@ -91,9 +92,9 @@ export function Providers({
         <GamificationWrapper>
           {children}
         </GamificationWrapper>
-        */}
+        * /}
         {children}
-        {/* <UserSyncWrapper /> */}
+        {/* <UserSyncWrapper /> * /}
         <Toaster
           theme="dark"
           richColors
@@ -101,5 +102,11 @@ export function Providers({
         />
       </ThirdwebProvider>
     </ThemeProvider>
+    */
+    <>
+      {console.log("⚠️ [Providers] ALL PROVIDERS DISABLED FOR DEBUGGING")}
+      {children}
+      <Toaster theme="dark" richColors position="top-center" />
+    </>
   );
 }
