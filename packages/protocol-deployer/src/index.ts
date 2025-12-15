@@ -2,7 +2,15 @@
 export { deployW2EProtocol, default as deployW2EProtocolDefault } from './deploy';
 
 // Exportar configuraciones
-export { PANDORA_ORACLE_CONFIG, pandoraOracleWallet } from './config/oracle';
+export { PANDORA_ORACLE_CONFIG, getPandoraOracleWallet } from './config/oracle';
+
+import { getPandoraOracleWallet } from './config/oracle';
+import type { Account } from 'thirdweb/wallets';
+
+// Deprecated: Accessing this triggers side effects. Use getPandoraOracleWallet() instead.
+export const pandoraOracleWallet = new Proxy({}, {
+  get: (_target, prop) => (getPandoraOracleWallet() as any)[prop]
+}) as Account;
 
 // Exportar cliente Thirdweb
 export { client } from './thirdweb-client';

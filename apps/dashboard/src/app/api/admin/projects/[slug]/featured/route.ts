@@ -4,9 +4,6 @@ import { db } from '~/db';
 import { eq } from 'drizzle-orm';
 import { projects } from '~/db/schema';
 
-console.log('🔧 Featured API: Schema imported successfully');
-console.log('🔧 Featured API: Projects table fields:', Object.keys(projects));
-
 interface FeaturedUpdateRequest {
   featured?: boolean;
   featuredButtonText?: string;

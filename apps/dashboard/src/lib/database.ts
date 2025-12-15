@@ -4,32 +4,51 @@ import postgres from "postgres";
 // This prevents "too many clients" errors by reusing connections
 // Connection pool configuration for better performance
 // This prevents "too many clients" errors by reusing connections
-const connectionString = process.env.DATABASE_URL || "";
+// Lazy initialization to prevent global side effects during build/import
+let sqlInstance: ReturnType<typeof postgres> | undefined;
 
-if (!process.env.DATABASE_URL) {
-  console.warn("⚠️ Warning: DATABASE_URL is not set. Database features will fail.");
-} else {
-  console.log("✅ Database initialized with connection string length:", process.env.DATABASE_URL.length);
+function getSql() {
+  if (!sqlInstance) {
+    const connectionString = process.env.DATABASE_URL || "";
+
+    // Determine if we are in a production-like environment
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    if (!connectionString) {
+      console.warn("⚠️ Warning: DATABASE_URL is not set. Database features will fail.");
+    } else {
+      console.log("🔌 Lazy Initializing Database Connection... Length:", connectionString.length);
+    }
+
+    sqlInstance = postgres(connectionString, {
+      max: 10,
+      idle_timeout: 20,
+      connect_timeout: 10,
+      prepare: false,
+      ssl: isProduction ? 'require' : false,
+      debug: (connection, query, params) => {
+        if (process.env.DEBUG_DB === 'true') {
+          console.log('SQL:', query);
+        }
+      }
+    });
+  }
+  return sqlInstance;
 }
 
-// Determine if we are in a production-like environment (staging or prod)
-const isProduction = process.env.NODE_ENV === 'production';
-
-// Create a connection pool with SSL support for production only
-export const sql = postgres(connectionString, {
-  max: 10, // Maximum 10 connections in pool
-  idle_timeout: 20, // Close idle connections after 20 seconds
-  connect_timeout: 10, // Connection timeout 10 seconds
-  prepare: false, // Disable prepared statements for compatibility
-  ssl: isProduction ? 'require' : false, // SSL en producción (staging y main)
-  debug: (connection, query, params) => {
-    if (process.env.DEBUG_DB === 'true') {
-      console.log('SQL:', query);
-    }
+// Proxy to forward calls to the lazy instance
+// eslint-disable-next-line @typescript-eslint/no-empty-function
+export const sql = new Proxy(() => { }, {
+  get(_target, prop) {
+    return (getSql() as any)[prop];
+  },
+  apply(_target, _thisArg, args) {
+    const instance = getSql();
+    if (!instance) throw new Error("Database initialization failed");
+    return (instance as any)(...args);
   }
-});
+}) as unknown as ReturnType<typeof postgres>;
 
-// Export for use in other files
 export default sql;
 
 // Health check function
