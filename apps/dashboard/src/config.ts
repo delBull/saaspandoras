@@ -1,4 +1,4 @@
-import { base, sepolia } from "thirdweb/chains";
+import { base, sepolia, baseSepolia } from "thirdweb/chains";
 
 // --- 1. Lee todas las variables de entorno necesarias ---
 // Detectar rama para fallback inteligente (Vercel expose these)
@@ -11,6 +11,8 @@ const defaultChain = isStaging ? 'sepolia' : 'base';
 const chainName = process.env.NEXT_PUBLIC_CHAIN_NAME || defaultChain;
 const nftContractAddress = process.env.NEXT_PUBLIC_NFT_CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000";
 const poolContractAddress = process.env.NEXT_PUBLIC_POOL_CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000";
+const GOV_ADDRESS_PROD = process.env.NEXT_PUBLIC_GOVERNANCE_CONTRACT_ADDRESS || "0x4122D7A6F11286B881F8332D8c27deBcC922B2fA";
+const GOV_ADDRESS_SEPOLIA = process.env.NEXT_PUBLIC_GOVERNANCE_CONTRACT_ADDRESS || "0x4986Bf684007a759A8ecE3F93Eb64C0284fD787f"; // Deployed to Base Sepolia
 
 // --- 2. Valida que las variables de entorno existan (Log instead of throw) ---
 if (!process.env.NEXT_PUBLIC_CHAIN_NAME) {
@@ -22,7 +24,8 @@ if (!process.env.NEXT_PUBLIC_POOL_CONTRACT_ADDRESS) console.warn("⚠️ Warning
 // --- 3. Define un mapa de las cadenas que tu dApp soporta de forma segura ---
 const supportedChains = {
   base: base,
-  sepolia: sepolia,
+  sepolia: sepolia, // Standard Ethereum Sepolia (Testnet)
+  "base-sepolia": baseSepolia, // Base Sepolia (L2 Testnet)
 } as const;
 
 // Se crea un tipo basado en las claves del objeto anterior ('base' | 'sepolia')
@@ -35,9 +38,17 @@ if (!supportedChains[chainName as SupportedChainName]) {
   console.error(`❌ Error: Invalid chain "${chainName}". Defaulting to base.`);
 }
 
+// Logic for governance address & chain (Cross-chain setup)
+// If App is on Sepolia (ETH), Governance is on Base Sepolia
+// If App is on Base (Mainnet), Governance is on Base
+const governanceContractAddress = activeChainObject.id === base.id ? GOV_ADDRESS_PROD : GOV_ADDRESS_SEPOLIA;
+const governanceChain = activeChainObject.id === base.id ? base : baseSepolia;
+
 // --- 5. Exporta la configuración final con tipos 100% seguros ---
 export const config = {
   chain: activeChainObject,
   nftContractAddress: nftContractAddress,
   poolContractAddress: poolContractAddress,
+  governanceContractAddress: governanceContractAddress,
+  governanceChain: governanceChain,
 };

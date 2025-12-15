@@ -31,6 +31,33 @@ export async function GET() {
 
     console.log(`🎯 Featured API: Found ${featuredProjects.length} featured projects`);
 
+    // --- FALLBACK LOGIC IF DB IS EMPTY (Restoring Hardcoded Behavior) ---
+    if (featuredProjects.length === 0) {
+      console.log('⚠️ No featured projects in DB, returning hardcoded fallback.');
+      return NextResponse.json([
+        {
+          id: 9991,
+          title: "Pandora's Hub",
+          description: "La infraestructura descentralizada para el acceso digital soberano.",
+          slug: "pandoras-protocol",
+          coverPhotoUrl: "/images/dhub3.png",
+          logoUrl: "/images/logo.png",
+          featured: true,
+          status: "approved"
+        },
+        {
+          id: 9992,
+          title: "BlockBunny",
+          description: "Ecosistema de gamificación y recompensas.",
+          slug: "blockbunny",
+          coverPhotoUrl: "/images/blockbunny.jpg",
+          logoUrl: "/images/logo.png",
+          featured: true,
+          status: "approved"
+        }
+      ]);
+    }
+
     return NextResponse.json(featuredProjects);
   } catch (error) {
     console.error('❌ Featured API Error:', error);
@@ -46,7 +73,7 @@ export async function POST(request: Request) {
   try {
     const { session } = await getAuth(await headers());
     const userIsAdmin = session?.address?.toLowerCase() === process.env.SUPER_ADMIN_WALLET?.toLowerCase() ||
-                       process.env.ADMIN_WALLETS?.split(',').includes(session?.address?.toLowerCase() ?? '');
+      process.env.ADMIN_WALLETS?.split(',').includes(session?.address?.toLowerCase() ?? '');
 
     if (!userIsAdmin) {
       return NextResponse.json({ message: "No autorizado" }, { status: 403 });

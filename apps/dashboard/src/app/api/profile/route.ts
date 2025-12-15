@@ -29,8 +29,8 @@ export async function GET(request: Request) {
     // First try to get wallet from header (same as admin API)
     // Try multiple header names in case Vercel filters some
     const headerWallet = requestHeaders.get('x-thirdweb-address') ??
-                        requestHeaders.get('x-wallet-address') ??
-                        requestHeaders.get('x-user-address');
+      requestHeaders.get('x-wallet-address') ??
+      requestHeaders.get('x-user-address');
 
     if (headerWallet) {
       walletAddress = headerWallet.toLowerCase().trim(); // Ensure lowercase and trim
@@ -114,7 +114,7 @@ export async function GET(request: Request) {
       projectCount: projects?.length,
       role,
       systemProjectsManaged,
-      hasPandorasKey: true,
+      hasPandorasKey: false, // Default to false, client verifies
     });
   } catch (error) {
     console.error("💥 [Profile API] CRITICAL ERROR:", {
@@ -162,8 +162,8 @@ export async function POST(request: Request) {
 
     // Try multiple header names in case Vercel filters some
     const headerWallet = requestHeaders.get('x-thirdweb-address') ??
-                        requestHeaders.get('x-wallet-address') ??
-                        requestHeaders.get('x-user-address');
+      requestHeaders.get('x-wallet-address') ??
+      requestHeaders.get('x-user-address');
 
     const { session } = await getAuth(requestHeaders);
     if (!session?.userId && !headerWallet) {
@@ -213,14 +213,14 @@ export async function POST(request: Request) {
           "kycLevel" = ${profileData.kycLevel ?? "N/A"},
           "kycCompleted" = ${profileData.kycCompleted ?? false},
           "kycData" = ${JSON.stringify({
-            fullName: profileData.fullName ?? null,
-            phoneNumber: profileData.phoneNumber ?? null,
-            dateOfBirth: profileData.dateOfBirth ?? null,
-            occupation: profileData.occupation ?? null,
-            taxId: profileData.taxId ?? null,
-            nationality: profileData.nationality ?? null,
-            address: profileData.address ?? null,
-          })}
+      fullName: profileData.fullName ?? null,
+      phoneNumber: profileData.phoneNumber ?? null,
+      dateOfBirth: profileData.dateOfBirth ?? null,
+      occupation: profileData.occupation ?? null,
+      taxId: profileData.taxId ?? null,
+      nationality: profileData.nationality ?? null,
+      address: profileData.address ?? null,
+    })}
       WHERE LOWER("walletAddress") = LOWER(${walletAddress})
     `;
 

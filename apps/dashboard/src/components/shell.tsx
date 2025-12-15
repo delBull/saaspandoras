@@ -58,9 +58,7 @@ export function DashboardShell({
             {description && <p className="mt-2 text-gray-400">{description}</p>}
           </div>
         )}
-        <NFTGate>
-          <div className="max-w-7xl mx-auto">{children}</div>
-        </NFTGate>
+        <div className="max-w-7xl mx-auto h-full flex flex-col">{children}</div>
       </main>
     </div>
   );
