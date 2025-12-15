@@ -5,14 +5,17 @@ import { base, sepolia, baseSepolia } from "thirdweb/chains";
 const branchName = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF || process.env.VERCEL_GIT_COMMIT_REF || 'main';
 const isStaging = branchName === 'staging';
 
-// Default chain based on branch
-const defaultChain = isStaging ? 'sepolia' : 'base';
+// Default chain based on branch or environment
+// In local development or staging, default to 'sepolia'. In production, 'base'.
+const defaultChain = (isStaging || process.env.NODE_ENV === 'development') ? 'sepolia' : 'base';
 
-const chainName = process.env.NEXT_PUBLIC_CHAIN_NAME || defaultChain;
+// FORCE 'sepolia' in development to avoid .env.local mismatches causing cross-chain errors
+const chainName = process.env.NODE_ENV === 'development' ? 'sepolia' : (process.env.NEXT_PUBLIC_CHAIN_NAME || defaultChain);
 const nftContractAddress = process.env.NEXT_PUBLIC_NFT_CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000";
 const poolContractAddress = process.env.NEXT_PUBLIC_POOL_CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000";
 const GOV_ADDRESS_PROD = process.env.NEXT_PUBLIC_GOVERNANCE_CONTRACT_ADDRESS || "0x4122D7A6F11286B881F8332D8c27deBcC922B2fA";
-const GOV_ADDRESS_SEPOLIA = process.env.NEXT_PUBLIC_GOVERNANCE_CONTRACT_ADDRESS || "0x4986Bf684007a759A8ecE3F93Eb64C0284fD787f"; // Deployed to Base Sepolia
+// Do NOT use the generic env var for Sepolia, as it likely contains the Prod address in local .env files
+const GOV_ADDRESS_SEPOLIA = "0x88812b1862ab510f488b1c89e3a1e69bdcc32290"; // Deployed to Sepolia Ethereum
 
 // --- 2. Valida que las variables de entorno existan (Log instead of throw) ---
 if (!process.env.NEXT_PUBLIC_CHAIN_NAME) {
@@ -39,10 +42,10 @@ if (!supportedChains[chainName as SupportedChainName]) {
 }
 
 // Logic for governance address & chain (Cross-chain setup)
-// If App is on Sepolia (ETH), Governance is on Base Sepolia
+// If App is on Sepolia (ETH), Governance is ALSO on Sepolia (ETH) now.
 // If App is on Base (Mainnet), Governance is on Base
 const governanceContractAddress = activeChainObject.id === base.id ? GOV_ADDRESS_PROD : GOV_ADDRESS_SEPOLIA;
-const governanceChain = activeChainObject.id === base.id ? base : baseSepolia;
+const governanceChain = activeChainObject.id === base.id ? base : sepolia;
 
 // --- 5. Exporta la configuración final con tipos 100% seguros ---
 export const config = {

@@ -78,31 +78,45 @@ export function NotificationsPanel({ hasAccess }: { hasAccess: boolean }) {
                     items.map((item) => (
                         <div
                             key={item.id}
-                            onClick={item.onClick}
-                            className={`p-3 rounded-xl border ${item.bgClass} flex flex-col gap-2 transition-all duration-300 hover:bg-zinc-800/80 group relative cursor-pointer hover:scale-[1.02] active:scale-[0.98]`}
+                            className={`relative rounded-xl border ${item.bgClass} transition-all duration-300 hover:bg-zinc-800/80 group hover:scale-[1.02] active:scale-[0.98]`}
                         >
+                            {/* Dismiss Button - Outside the main click handler */}
                             <button
                                 onClick={(e) => dismiss(item.id, e)}
-                                className="absolute top-2 right-2 text-gray-600 hover:text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-white/10 rounded-full z-10"
+                                className="absolute top-2 right-2 text-gray-600 hover:text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-white/10 rounded-full z-20"
+                                aria-label="Dismiss notification"
                             >
                                 <XMarkIcon className="w-3 h-3" />
                             </button>
 
-                            <div className="flex items-start gap-3">
-                                <div className="p-2 bg-black/40 rounded-lg shrink-0">
-                                    {item.icon}
+                            {/* Main Clickable Content */}
+                            <div
+                                onClick={item.onClick}
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        item.onClick();
+                                    }
+                                }}
+                                className="p-3 flex flex-col gap-2 w-full h-full outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-zinc-900 focus:ring-white/20 rounded-xl"
+                            >
+                                <div className="flex items-start gap-3">
+                                    <div className="p-2 bg-black/40 rounded-lg shrink-0">
+                                        {item.icon}
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-bold text-gray-200 leading-tight mb-1 group-hover:text-white transition-colors pr-6">{item.title}</h4>
+                                        <p className="text-xs text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors">{item.description}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h4 className="text-sm font-bold text-gray-200 leading-tight mb-1 group-hover:text-white transition-colors">{item.title}</h4>
-                                    <p className="text-xs text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors">{item.description}</p>
-                                </div>
-                            </div>
 
-                            {item.actionText && (
-                                <button className="self-end text-[10px] font-bold uppercase tracking-wider text-white/70 group-hover:text-white bg-white/5 group-hover:bg-white/10 px-3 py-1.5 rounded-md transition-colors border border-white/5 group-hover:border-white/20">
-                                    {item.actionText}
-                                </button>
-                            )}
+                                {item.actionText && (
+                                    <span className="self-end text-[10px] font-bold uppercase tracking-wider text-white/70 group-hover:text-white bg-white/5 group-hover:bg-white/10 px-3 py-1.5 rounded-md transition-colors border border-white/5 group-hover:border-white/20">
+                                        {item.actionText}
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     ))
                 ) : (

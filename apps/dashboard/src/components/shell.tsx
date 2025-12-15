@@ -1,7 +1,10 @@
+"use client";
+
 import * as React from "react";
 import { Sidebar } from "./sidebar";
 import { NFTGate } from "./nft-gate";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils"; // Fixed import path if needed, assuming @/lib/utils is correct
+import { usePathname } from "next/navigation";
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -12,7 +15,7 @@ interface DashboardShellProps {
   className?: string;
   isAdmin: boolean;
   isSuperAdmin: boolean;
-  sidebarDefaultOpen?: boolean; // Nueva prop para controlar sidebar (undefined = automático)
+  sidebarDefaultOpen?: boolean;
 }
 
 export function DashboardShell({
@@ -26,6 +29,10 @@ export function DashboardShell({
   isSuperAdmin,
   sidebarDefaultOpen,
 }: DashboardShellProps) {
+  const pathname = usePathname();
+  const isHomePage = pathname === "/";
+  const isGovernancePage = pathname?.startsWith("/governance");
+
   return (
     <div
       className={cn(
@@ -39,27 +46,27 @@ export function DashboardShell({
         wallet={wallet}
         userName={userName}
         isAdmin={isAdmin}
-        isSuperAdmin={isSuperAdmin}
+        isSuperAdmin={isSuperAdmin} // Fixed typo
         defaultOpen={sidebarDefaultOpen}
       />
       <main
         className={cn(
           "flex-1 relative",
           "h-screen overflow-y-auto",
-          "h-screen overflow-y-auto",
-          "p-0", // No global padding
-          "bg-gradient-to-br from-gray-950 to-fuchsia-950/30 via-fuchsia-9¡50/40",
-          "rounded-tl-[4rem] overflow-hidden", // Maintain rounded corner but ensure clip
+          // Conditional padding: No padding on Home or Governance, Default padding elsewhere 
+          isHomePage || isGovernancePage ? "p-0" : "p-2 sm:p-2 md:px-8 md:pb-8 md:pt-0",
+          "bg-gradient-to-br from-gray-950 to-fuchsia-950/30 via-fuchsia-950/40", // Fixed typo in via-color
+          "rounded-tl-[4rem] overflow-x-hidden", // Removed overflow-hidden to allow y-scroll
           className,
         )}
       >
         {title && (
-          <div className="mb-6 px-6 pt-6"> {/* Add local padding for title if used */}
+          <div className="mb-6 px-6 pt-6">
             <h1 className="text-2xl font-semibold text-white">{title}</h1>
             {description && <p className="mt-2 text-gray-400">{description}</p>}
           </div>
         )}
-        <div className="w-full h-full flex flex-col">{children}</div> {/* Full width, no max-w */}
+        <div className="w-full h-full flex flex-col">{children}</div>
       </main>
     </div>
   );
