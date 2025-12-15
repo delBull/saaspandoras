@@ -1,36 +1,43 @@
 "use client";
 
-// import "./globals.css";
-// import { Toaster, toast } from "sonner";
+import "./globals.css";
+import { Toaster, toast } from "sonner";
+import { ThemeProvider } from "@/components/theme-provider";
+import { ThirdwebProvider, AutoConnect, useActiveAccount } from "thirdweb/react";
+import { inAppWallet, createWallet } from "thirdweb/wallets";
+import { client } from "@/lib/thirdweb-client";
+import { useThirdwebUserSync } from "@/hooks/useThirdwebUserSync";
+// 🎮 IMPORTAR GAMIFICATION PROVIDER
+import { GamificationProvider } from "@pandoras/gamification";
 
-// function UserSyncWrapper() {
-//   useThirdwebUserSync();
-//   return null;
-// }
+function UserSyncWrapper() {
+  useThirdwebUserSync();
+  return null;
+}
 
 // 🎮 COMPONENTE PARA INTEGRAR GAMIFICACIÓN
-// function GamificationWrapper({ children }: { children: React.ReactNode }) {
-//   // Hook para obtener el userId del contexto de autenticación
-//   const account = useActiveAccount();
-//   const userId = account?.address;
-//
-//   // Solo mostrar gamificación si hay usuario logueado
-//   if (!userId) return <>{children}</>;
-//
-//   return (
-//     <GamificationProvider
-//       userId={userId}
-//       showHUD={true}
-//       hudPosition="top-right"
-//       onLevelUp={(level) => toast.success(`¡Nivel ${level} Alcanzado! 🎉`, {
-//         description: "Has desbloqueado nuevas capacidades en la plataforma.",
-//         duration: 5000,
-//       })}
-//     >
-//       {children}
-//     </GamificationProvider>
-//   );
-// }
+function GamificationWrapper({ children }: { children: React.ReactNode }) {
+  // Hook para obtener el userId del contexto de autenticación
+  const account = useActiveAccount();
+  const userId = account?.address;
+
+  // Solo mostrar gamificación si hay usuario logueado
+  if (!userId) return <>{children}</>;
+
+  return (
+    <GamificationProvider
+      userId={userId}
+      showHUD={true}
+      hudPosition="top-right"
+      onLevelUp={(level) => toast.success(`¡Nivel ${level} Alcanzado! 🎉`, {
+        description: "Has desbloqueado nuevas capacidades en la plataforma.",
+        duration: 5000,
+      })}
+    >
+      {children}
+    </GamificationProvider>
+  );
+}
 
 export function Providers({
   children,
@@ -38,7 +45,6 @@ export function Providers({
   children: React.ReactNode;
 }) {
   // Configuración de wallets para AutoConnect
-  /*
   const wallets = [
     inAppWallet({
       auth: {
@@ -58,10 +64,8 @@ export function Providers({
     createWallet("com.coinbase.wallet"),
     createWallet("me.rainbow"),
   ];
-  */
 
   return (
-    /*
     <ThemeProvider
       attribute="class"
       defaultTheme="dark"
@@ -83,13 +87,11 @@ export function Providers({
             }
           }}
         />
-        {/* 🎮 INTEGRAR GAMIFICATION WRAPPER - TEMPORARILY DISABLED FOR DEBUGGING
+        {/* 🎮 INTEGRAR GAMIFICATION WRAPPER */}
         <GamificationWrapper>
           {children}
         </GamificationWrapper>
-        * /}
-        {children}
-        {/* <UserSyncWrapper /> * /}
+        {/* <UserSyncWrapper /> */}
         <Toaster
           theme="dark"
           richColors
@@ -97,10 +99,5 @@ export function Providers({
         />
       </ThirdwebProvider>
     </ThemeProvider>
-    */
-    <>
-      {console.log("⚠️ [Providers] ALL PROVIDERS DISABLED FOR DEBUGGING")}
-      {children}
-    </>
   );
 }
