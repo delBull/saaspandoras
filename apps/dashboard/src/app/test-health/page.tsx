@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 export default function TestHealthPage() {
+    console.log("🏥 [TestHealth] Component Rendering...");
     return (
         <div className="p-10 text-white">
             <h1 className="text-3xl font-bold text-green-500">System Status: ONLINE</h1>

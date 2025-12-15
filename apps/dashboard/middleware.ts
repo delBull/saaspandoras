@@ -9,8 +9,8 @@ const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-             request.headers.get('x-real-ip') ||
-             'anonymous';
+    request.headers.get('x-real-ip') ||
+    'anonymous';
   const now = Date.now();
 
   // Rate limiting configuration per endpoint
@@ -138,6 +138,7 @@ export const config = {
 
     // Exclude health checks from rate limiting
     '!/api/health',
+    '!/test-health',
     '!/favicon.ico',
   ],
 };
