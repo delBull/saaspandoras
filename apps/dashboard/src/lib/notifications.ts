@@ -23,6 +23,10 @@ class NotificationService {
     console.log('🔔 Notification service configured');
   }
 
+  get isConfigured(): boolean {
+    return !!this.config;
+  }
+
   /**
    * Send notification for human agent needed
    */
@@ -171,8 +175,7 @@ const discordApplyWebhook = process.env.DISCORD_APPLY_WEBHOOK_URL || "https://di
 export function ensureNotificationServiceConfigured() {
   if (discordWebhook || discordApplyWebhook) {
     // Check if already configured to avoid spamming logs
-    // @ts-ignore
-    if (notificationService.config) return;
+    if (notificationService.isConfigured) return;
 
     configureNotifications({
       discord: {

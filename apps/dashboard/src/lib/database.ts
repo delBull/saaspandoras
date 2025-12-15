@@ -45,7 +45,6 @@ export const sql = new Proxy(() => { }, {
   apply(_target, _thisArg, args) {
     const instance = getSql();
     if (!instance) throw new Error("Database initialization failed");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (instance as any)(...args);
   }
 }) as unknown as ReturnType<typeof postgres>;
