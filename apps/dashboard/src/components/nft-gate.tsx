@@ -22,6 +22,7 @@ import { InformationCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 export function NFTGate({ children }: { children: React.ReactNode }) {
   const account = useActiveAccount();
+
   const { mutate: sendTransaction } = useSendTransaction();
   const { toast } = useToast();
 
@@ -49,10 +50,10 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
     abi: PANDORAS_KEY_ABI,
   });
 
-  const { data: hasKey, isLoading: isLoadingKey, refetch } = useReadContract({
+  const { data: hasKey, isLoading: isLoadingKey, refetch, error } = useReadContract({
     contract,
     method: "isGateHolder",
-    params: account ? [account.address] : [ "0x0000000000000000000000000000000000000000" ],
+    params: account ? [account.address] : ["0x0000000000000000000000000000000000000000"],
     queryOptions: { enabled: !!account },
   });
 
@@ -79,23 +80,23 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
 
     // Enviamos la transacción y manejamos éxito/error.
     sendTransaction(transaction, {
-        onSuccess: () => {
-          setGateStatus("success");
-          setShowSuccessAnimation(true);
+      onSuccess: () => {
+        setGateStatus("success");
+        setShowSuccessAnimation(true);
 
-          // Forzar refresh después del minteo exitoso para verificar el estado
-          setTimeout(() => {
-            void refetch();
-          }, 2000); // Esperar para que se indexe en blockchain
-        },
+        // Forzar refresh después del minteo exitoso para verificar el estado
+        setTimeout(() => {
+          void refetch();
+        }, 2000); // Esperar para que se indexe en blockchain
+      },
       onError: (error) => {
         console.error("Fallo al mintear Pandora's Key", error);
 
         // Mejor manejo de errores basado en el mensaje específico
         const errorMessage = error instanceof Error ? error.message : String(error);
         if (errorMessage.includes("Max per wallet reached") ||
-            errorMessage.includes("exceeds max per wallet") ||
-            errorMessage.includes("already minted")) {
+          errorMessage.includes("exceeds max per wallet") ||
+          errorMessage.includes("already minted")) {
           // Si ya tiene la llave, refrescamos la verificación
           toast({
             title: "Ya tienes tu llave",
@@ -132,7 +133,7 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
       return;
     }
   }, [account, hasKey, isLoadingKey]);
-  
+
   useEffect(() => {
     // Este efecto resetea el bloqueo de "proceso iniciado" si el usuario cambia de cuenta.
     hasStartedProcessing.current = false;
@@ -225,16 +226,16 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
 
   if (isLoadingKey && gateStatus !== 'success' && !hasStartedProcessing.current) {
     return (
-        <div className="flex items-center justify-center h-full">
-            <Loader2 className="w-12 h-12 animate-spin" />
-        </div>
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="w-12 h-12 animate-spin" />
+      </div>
     );
   }
 
   if (gateStatus === "success" && showSuccessAnimation) {
     return <SuccessNFTCard onAnimationComplete={() => {
       setShowSuccessAnimation(false);
-      setGateStatus("has_key"); 
+      setGateStatus("has_key");
       hasStartedProcessing.current = false;
     }} />;
   }
@@ -242,7 +243,7 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
   if (hasKey === true || gateStatus === "alreadyOwned" || gateStatus === "has_key") {
     return <>{children}</>;
   }
-  
+
   if (gateStatus !== "idle" && gateStatus !== "success" && gateStatus !== "has_key") {
     return (
       <MintingProgressModal
@@ -306,6 +307,35 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  // Fallback para estado indefinido o error en lectura
+  if (!isLoadingKey && hasKey === undefined) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error("NFTGate Error:", {
+        error,
+        contractAddress: config.nftContractAddress,
+        chainId: config.chain.id,
+        chainName: config.chain.name,
+        account: account?.address
+      });
+    }
+
+    return (
+      <div className="flex flex-col items-center justify-center h-full min-h-[50vh] space-y-4">
+        <p className="text-red-400">Error verificando acceso</p>
+        {/* Helper para debugging en dev/staging */}
+        <p className="text-xs text-red-500/50 max-w-xs text-center">
+          {error instanceof Error ? error.message.slice(0, 100) : String(error).slice(0, 100)}
+        </p>
+        <button
+          onClick={() => refetch()}
+          className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors border border-zinc-600"
+        >
+          Reintentar
+        </button>
       </div>
     );
   }

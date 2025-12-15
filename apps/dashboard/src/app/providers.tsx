@@ -1,6 +1,5 @@
 "use client";
 
-import "./globals.css";
 import { Toaster, toast } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThirdwebProvider, AutoConnect, useActiveAccount } from "thirdweb/react";

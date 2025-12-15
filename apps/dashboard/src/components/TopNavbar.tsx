@@ -395,18 +395,20 @@ export function TopNavbar({
                   </Link>
                 )}
 
-              {/* Mis Accesos (Participante) */}
-              <Link
-                href="/my-protocols"
-                onClick={() => setProfileDropdown(false)}
-                className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
-              >
-                <TicketIcon className="w-5 h-5 text-gray-400" />
-                <div>
-                  <div className="text-white text-sm">Mis Accesos</div>
-                  <div className="text-gray-400 text-xs">Artefactos y DAO</div>
-                </div>
-              </Link>
+              {/* Mis Accesos (Participante) - Sólo mostrar si es admin por ahora, o si tiene accesos confirmados */}
+              {(adminStatus.isAdmin || adminStatus.isSuperAdmin) && (
+                <Link
+                  href="/my-protocols"
+                  onClick={() => setProfileDropdown(false)}
+                  className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
+                >
+                  <TicketIcon className="w-5 h-5 text-gray-400" />
+                  <div>
+                    <div className="text-white text-sm">Mis Accesos</div>
+                    <div className="text-gray-400 text-xs">Artefactos y DAO</div>
+                  </div>
+                </Link>
+              )}
 
               <Link
                 href="/profile"

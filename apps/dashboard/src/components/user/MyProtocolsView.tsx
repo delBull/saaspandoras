@@ -41,8 +41,8 @@ export function MyProtocolsView() {
 
             if (isMounted) setLoadingMembership(true);
             const myProjects: ProjectWithStats[] = [];
-            // Use dynamic chain from config
-            const chain = config.chain;
+            // Use governance chain for assets/voting (Base Sepolia in testnet)
+            const chain = config.governanceChain;
 
             console.log("🔍 Checking membership for wallet:", account.address);
 

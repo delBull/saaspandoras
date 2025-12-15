@@ -33,12 +33,12 @@ export function usePersistedAccount() {
           // Para social logins, permitir shouldReconnect pero marcarlos específicamente
           const walletTypeStr = String(parsed.walletType);
           const isSocialWallet = walletTypeStr.includes('inApp') ||
-                                walletTypeStr.includes('inAppWallet') ||
-                                walletTypeStr === 'email' ||
-                                walletTypeStr === 'google' ||
-                                walletTypeStr === 'apple' ||
-                                walletTypeStr === 'facebook' ||
-                                walletTypeStr.includes('social');
+            walletTypeStr.includes('inAppWallet') ||
+            walletTypeStr === 'email' ||
+            walletTypeStr === 'google' ||
+            walletTypeStr === 'apple' ||
+            walletTypeStr === 'facebook' ||
+            walletTypeStr.includes('social');
 
           if (isSocialWallet) {
             // Para social logins, mantener shouldReconnect pero marcar como social
@@ -66,12 +66,12 @@ export function usePersistedAccount() {
     if (account?.address && activeWallet && typeof window !== "undefined") {
       const walletTypeStr = String(activeWallet.id);
       const isSocial = walletTypeStr.includes('inApp') ||
-                      walletTypeStr.includes('inAppWallet') ||
-                      walletTypeStr === 'email' ||
-                      walletTypeStr === 'google' ||
-                      walletTypeStr === 'apple' ||
-                      walletTypeStr === 'facebook' ||
-                      walletTypeStr.includes('social');
+        walletTypeStr.includes('inAppWallet') ||
+        walletTypeStr === 'email' ||
+        walletTypeStr === 'google' ||
+        walletTypeStr === 'apple' ||
+        walletTypeStr === 'facebook' ||
+        walletTypeStr.includes('social');
 
       const data: SavedSession = {
         address: account.address,
@@ -144,24 +144,31 @@ export function usePersistedAccount() {
             'x-wallet-address': session.address,
           }
         })
-        .then(async (response) => {
-          if (response.ok) {
-            const sessionData = await response.json() as { address?: string; hasSession?: boolean };
-            if (sessionData.hasSession && sessionData.address && sessionData.address === session.address) {
-              console.log("✅ Sesión social válida encontrada en servidor");
+          .then(async (response) => {
+            if (response.ok) {
+              const sessionData = await response.json() as { address?: string; hasSession?: boolean };
+              if (sessionData.hasSession && sessionData.address && sessionData.address === session.address) {
+                console.log("✅ Sesión social válida encontrada en servidor");
 
-              // Reconectar usando el mismo tipo de wallet
-              void connect(async () => {
-                const wallet = createWallet(session.walletType);
-                await wallet.connect({ client });
-                return wallet;
-              }).catch((err) => {
-                console.warn("⚠️ Error reconectando social login:", err);
-                // Marcar como no reconectar después de error
+                // Reconectar usando el mismo tipo de wallet
+                void connect(async () => {
+                  const wallet = createWallet(session.walletType);
+                  await wallet.connect({ client });
+                  return wallet;
+                }).catch((err) => {
+                  console.warn("⚠️ Error reconectando social login:", err);
+                  // Marcar como no reconectar después de error
+                  const correctedSession = { ...session, shouldReconnect: false };
+                  localStorage.setItem("wallet-session", JSON.stringify(correctedSession));
+                  setSession(correctedSession);
+                });
+              } else {
+                console.log("❌ No hay sesión social válida en servidor");
+                // Marcar como no reconectar
                 const correctedSession = { ...session, shouldReconnect: false };
                 localStorage.setItem("wallet-session", JSON.stringify(correctedSession));
                 setSession(correctedSession);
-              });
+              }
             } else {
               console.log("❌ No hay sesión social válida en servidor");
               // Marcar como no reconectar
@@ -169,21 +176,14 @@ export function usePersistedAccount() {
               localStorage.setItem("wallet-session", JSON.stringify(correctedSession));
               setSession(correctedSession);
             }
-          } else {
-            console.log("❌ No hay sesión social válida en servidor");
-            // Marcar como no reconectar
+          })
+          .catch((err) => {
+            console.warn("⚠️ Error verificando sesión social en servidor:", err);
+            // Marcar como no reconectar después de error
             const correctedSession = { ...session, shouldReconnect: false };
             localStorage.setItem("wallet-session", JSON.stringify(correctedSession));
             setSession(correctedSession);
-          }
-        })
-        .catch((err) => {
-          console.warn("⚠️ Error verificando sesión social en servidor:", err);
-          // Marcar como no reconectar después de error
-          const correctedSession = { ...session, shouldReconnect: false };
-          localStorage.setItem("wallet-session", JSON.stringify(correctedSession));
-          setSession(correctedSession);
-        });
+          });
 
         return;
       }
@@ -217,10 +217,14 @@ export function usePersistedAccount() {
       }).catch((err: unknown) => {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
 
-        // Manejo especial para errores de MetaMask solicitud ya pendiente
+        // Manejo especial para errores comunes de conexión
         const isRequestPending = errorMessage.includes('already pending') ||
           errorMessage.includes('Request of type') ||
           (typeof err === 'object' && err !== null && 'code' in err && typeof (err as { code: unknown }).code === 'number' && (err as { code: number }).code === -32002);
+
+        const isNoAccounts = errorMessage.includes('no accounts available') ||
+          errorMessage.includes('User rejected') ||
+          errorMessage.includes('User denied');
 
         if (isRequestPending) {
           // Para este error específico, NO deshabilitamos la reconexión automática
@@ -229,11 +233,18 @@ export function usePersistedAccount() {
           return;
         }
 
-        if (process.env.NODE_ENV === 'development') {
-          console.warn("⚠️ Error reconectando wallet injected, deshabilitando reconexión automática:", errorMessage);
+        if (isNoAccounts) {
+          // Normal behavior if wallet is locked or user cancels. Don't warn.
+          if (process.env.NODE_ENV === 'development') {
+            console.log("ℹ️ Reconexión cancelada o fallida (normal):", errorMessage);
+          }
+        } else {
+          if (process.env.NODE_ENV === 'development') {
+            console.warn("⚠️ Error reconectando wallet injected, deshabilitando reconexión automática:", errorMessage);
+          }
         }
 
-        // Marcar que no se debe reconectar automáticamente después de errores graves
+        // Marcar que no se debe reconectar automáticamente después de errores
         if (typeof window !== "undefined") {
           const correctedSession = { ...session, shouldReconnect: false };
           localStorage.setItem("wallet-session", JSON.stringify(correctedSession));

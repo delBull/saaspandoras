@@ -135,52 +135,78 @@ export function DashboardClientWrapper({
     <TokenPriceProvider>
       <TermsModalProvider>
 
-        <DashboardShell
-          wallet={account?.address}
-          userName={userName ?? undefined}
-          isAdmin={isAdmin}
-          isSuperAdmin={isSuperAdmin}
-          sidebarDefaultOpen={pathname === '/applicants' ? false : undefined}
-        >
-          {/* Top Navbar with Profile - Superior derecha - OK */}
-          <div className="relative md:block hidden">
-            <TopNavbar
-              wallet={account?.address}
-              userName={userName ?? undefined}
-              isAdmin={isAdmin}
-              isSuperAdmin={isSuperAdmin}
-            />
-          </div>
+        <AutoLoginGate serverSession={serverSession}>
+          <DashboardShell
+            wallet={account?.address}
+            userName={userName ?? undefined}
+            isAdmin={isAdmin}
+            isSuperAdmin={isSuperAdmin}
+            sidebarDefaultOpen={pathname === '/applicants' ? false : undefined}
+          >
+            {/* Top Navbar with Profile - Superior derecha - OK */}
+            <div className="relative md:block hidden">
+              <TopNavbar
+                wallet={account?.address}
+                userName={userName ?? undefined}
+                isAdmin={isAdmin}
+                isSuperAdmin={isSuperAdmin}
+              />
+            </div>
 
-          <AutoLoginGate serverSession={serverSession}>
-           <NFTGate>
-             <AnimatePresence mode="wait">
-               <motion.div
-                 key={pathname}
-                 initial={{ y: 20, opacity: 0 }}
-                 animate={{ y: 0, opacity: 1 }}
-                 exit={{ y: -20, opacity: 0 }}
-                 transition={{ duration: 0.3, ease: "easeInOut" }}
-                 className="pb-4 md:pb-0"
-               >
-                 {/* SOLO MOSTRAR CHILDREN SI NO ESTÁ EN LOADING GLOBAL */}
-                 {!isLoadingUserData && (
-                   <Suspense
-                     fallback={
-                       <div className="p-8 animate-pulse space-y-4 pb-20 md:pb-0">
-                         <div className="h-8 w-1/3 rounded bg-fuchsia-950" />
-                         <div className="h-64 w-full rounded bg-fuchsia-950" />
-                       </div>
-                     }
-                   >
-                     {children}
-                   </Suspense>
-                 )}
-               </motion.div>
-             </AnimatePresence>
-           </NFTGate>
-          </AutoLoginGate>
-        </DashboardShell>
+            {/* Admin Bypass: Admins skip NFT Gate check only if wallet is connected */}
+            {(isAdmin || isSuperAdmin) && account?.address ? (
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={pathname}
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: -20, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="pb-4 md:pb-0 h-full"
+                >
+                  {!isLoadingUserData && (
+                    <Suspense
+                      fallback={
+                        <div className="flex flex-col items-center justify-center w-full h-[calc(100vh-100px)] p-8 animate-pulse space-y-6">
+                          <div className="h-8 w-64 rounded bg-zinc-800/50" />
+                          <div className="h-64 w-full max-w-4xl rounded-2xl bg-zinc-800/30 border border-zinc-800" />
+                        </div>
+                      }
+                    >
+                      {children}
+                    </Suspense>
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            ) : (
+              <NFTGate>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={pathname}
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: -20, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="pb-4 md:pb-0 h-full"
+                  >
+                    {!isLoadingUserData && (
+                      <Suspense
+                        fallback={
+                          <div className="flex flex-col items-center justify-center w-full h-[calc(100vh-100px)] p-8 animate-pulse space-y-6">
+                            <div className="h-8 w-64 rounded bg-zinc-800/50" />
+                            <div className="h-64 w-full max-w-4xl rounded-2xl bg-zinc-800/30 border border-zinc-800" />
+                          </div>
+                        }
+                      >
+                        {children}
+                      </Suspense>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+              </NFTGate>
+            )}
+          </DashboardShell>
+        </AutoLoginGate>
 
         {/* Mobile Navigation Menu - Fijo al bottom pero solo si no está cargando */}
         {!isLoadingUserData && <MobileNavMenu profile={profile} />}
@@ -260,37 +286,37 @@ function RewardModalManager() {
   useEffect(() => {
     // 🎮 REAL GAMIFICATION LOGIC - Check for first login reward
     if (account?.address) {
-          // Check if this specific modal was already shown (prevent double modal bug)
-          const modalShownKey = `pandoras_welcome_modal_shown_${account.address}`;
-          const modalAlreadyShown = localStorage.getItem(modalShownKey);
+      // Check if this specific modal was already shown (prevent double modal bug)
+      const modalShownKey = `pandoras_welcome_modal_shown_${account.address}`;
+      const modalAlreadyShown = localStorage.getItem(modalShownKey);
 
-          // Show welcome modal only once per user, with anti-double-modal protection
-          if (!modalAlreadyShown) {
-            console.log('🎉 Showing welcome modal for first-time user:', account.address);
+      // Show welcome modal only once per user, with anti-double-modal protection
+      if (!modalAlreadyShown) {
+        console.log('🎉 Showing welcome modal for first-time user:', account.address);
 
-            const welcomeReward: Reward = {
-              type: 'achievement',
-              title: '¡Bienvenido a Pandoras!',
-              description: 'Has conectado exitosamente tu wallet y recibido 10 puntos de gamificación',
-              tokens: 10,
-              icon: '🎉',
-              rarity: 'common'
-            };
+        const welcomeReward: Reward = {
+          type: 'achievement',
+          title: '¡Bienvenido a Pandoras!',
+          description: 'Has conectado exitosamente tu wallet y recibido 10 puntos de gamificación',
+          tokens: 10,
+          icon: '🎉',
+          rarity: 'common'
+        };
 
-            // Anti-double-modal: Mark as shown BEFORE showing modal
-            localStorage.setItem(modalShownKey, 'true');
-            console.log('🔒 Modal marked as shown in localStorage immediately');
+        // Anti-double-modal: Mark as shown BEFORE showing modal
+        localStorage.setItem(modalShownKey, 'true');
+        console.log('🔒 Modal marked as shown in localStorage immediately');
 
-            // Show modal with slight delay for better UX
-            setTimeout(() => {
-              setCurrentReward(welcomeReward);
-              setShowRewardModal(true);
-            }, 2000); // Increased delay for better UX
+        // Show modal with slight delay for better UX
+        setTimeout(() => {
+          setCurrentReward(welcomeReward);
+          setShowRewardModal(true);
+        }, 2000); // Increased delay for better UX
 
-          } else {
-            // 🎉 CHECK FOR REFERRAL REWARDS - Show modal when user has successful referrals
-            void checkForReferralRewards();
-          }
+      } else {
+        // 🎉 CHECK FOR REFERRAL REWARDS - Show modal when user has successful referrals
+        void checkForReferralRewards();
+      }
     }
   }, [account?.address, checkForReferralRewards]);
 
