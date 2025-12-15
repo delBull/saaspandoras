@@ -1,14 +1,7 @@
 "use client";
 
-import "./globals.css";
-import { Toaster, toast } from "sonner";
-// import { ThemeProvider } from "@/components/theme-provider";
-// import { ThirdwebProvider, AutoConnect, useActiveAccount } from "thirdweb/react";
-// import { inAppWallet, createWallet } from "thirdweb/wallets";
-// import { client } from "@/lib/thirdweb-client";
-// import { useThirdwebUserSync } from "@/hooks/useThirdwebUserSync";
-// 🎮 IMPORTAR GAMIFICATION PROVIDER
-// import { GamificationProvider } from "@pandoras/gamification";
+// import "./globals.css";
+// import { Toaster, toast } from "sonner";
 
 // function UserSyncWrapper() {
 //   useThirdwebUserSync();
@@ -108,7 +101,6 @@ export function Providers({
     <>
       {console.log("⚠️ [Providers] ALL PROVIDERS DISABLED FOR DEBUGGING")}
       {children}
-      <Toaster theme="dark" richColors position="top-center" />
     </>
   );
 }
