@@ -235,16 +235,19 @@ export function usePersistedAccount() {
 
         if (isNoAccounts) {
           // Normal behavior if wallet is locked or user cancels. Don't warn.
+          // IMPORTANT: Do NOT disable shouldReconnect here. If it's a transient issue (e.g. chain switch),
+          // we want to keep the session alive so the user can just click "Connect" or we can retry later.
           if (process.env.NODE_ENV === 'development') {
             console.log("ℹ️ Reconexión cancelada o fallida (normal):", errorMessage);
           }
+          return; // Exit early, preserving session state
         } else {
           if (process.env.NODE_ENV === 'development') {
             console.warn("⚠️ Error reconectando wallet injected, deshabilitando reconexión automática:", errorMessage);
           }
         }
 
-        // Marcar que no se debe reconectar automáticamente después de errores
+        // Marcar que no se debe reconectar automáticamente después de errores CRITICOS (no "no accounts")
         if (typeof window !== "undefined") {
           const correctedSession = { ...session, shouldReconnect: false };
           localStorage.setItem("wallet-session", JSON.stringify(correctedSession));

@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { db } from "~/db";
 import { sql, eq, and, desc, inArray } from "drizzle-orm";
 import { projects } from "~/db/schema";
-import { DeploymentConfig } from "~/types/deployment";
+import type { DeploymentConfig } from "~/types/deployment";
 
 export const dynamic = 'force-dynamic';
 
@@ -65,7 +65,7 @@ export async function GET() {
 
             // --- Process Artifacts (Phases) ---
             const config = project.w2eConfig as DeploymentConfig;
-            if (config && config.phases) {
+            if (config?.phases) { // Use optional chain // Use optional chain
                 for (const phase of config.phases) {
                     if (phase.isActive) {
                         artifacts.push({

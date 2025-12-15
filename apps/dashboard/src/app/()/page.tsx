@@ -15,6 +15,7 @@ import { client } from "@/lib/thirdweb-client";
 import { base } from "thirdweb/chains";
 import { createWallet } from "thirdweb/wallets";
 import { NotificationsPanel } from "@/components/dashboard/notifications-panel";
+import { GovernanceParticipationModal } from "@/components/governance/GovernanceParticipationModal";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -174,15 +175,8 @@ function FeaturedCarousel({ projects }: { projects: any[] }) {
   );
 }
 
-function GovernanceSection() {
-  // Contract Interaction Setup
-  const contract = getContract({
-    client,
-    chain: config.chain,
-    address: config.governanceContractAddress,
-    abi: PANDORAS_GOVERNANCE_ABI as any
-  });
-
+function GovernanceSection({ onParticipate }: { onParticipate: () => void }) {
+  // Contract Interaction Setup removed from here as it moved to Modal (or unused for the trigger button)
   const isSepolia = config.chain.id !== base.id; // Any testnet/sepolia
 
   return (
@@ -213,44 +207,13 @@ function GovernanceSection() {
             </div>
 
             <div className="mt-2">
-              <TransactionButton
-                transaction={() => {
-                  // 50 USDC (assuming 6 decimals) or 0.001 ETH for Testnet
-                  if (isSepolia) {
-                    // Use depositETH for Sepolia as requested
-                    const amount = 1000000000000000n; // 0.001 ETH
-                    return prepareContractCall({
-                      contract,
-                      method: "depositETH",
-                      params: [],
-                      value: amount
-                    });
-                  } else {
-                    // Use depositUSDC for Mainnet
-                    const amount = 50n * 1000000n; // 50 USDC
-                    return prepareContractCall({
-                      contract,
-                      method: "depositUSDC",
-                      params: [amount],
-                    });
-                  }
-                }}
-                onTransactionSent={(tx) => {
-                  console.log("Transaction sent", tx);
-                }}
-                onTransactionConfirmed={(tx) => {
-                  console.log("Transaction confirmed", tx);
-                  alert("¡Participación Confirmada!");
-                }}
-                onError={(error) => {
-                  console.error("Transaction error", error);
-                  alert("Error en la transacción: " + (error instanceof Error ? error.message : "Desconocido"));
-                }}
-                theme="dark"
-                className="!w-full !bg-purple-600 hover:!bg-purple-500 !text-white !font-bold !rounded-lg"
+              <button
+                onClick={onParticipate}
+                className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg py-3 px-4 transition-all shadow-lg shadow-purple-900/20 flex items-center justify-center gap-2"
               >
+                <ShieldCheckIcon className="w-5 h-5" />
                 {isSepolia ? 'Participar (0.001 ETH)' : 'Participar (50 USDC)'}
-              </TransactionButton>
+              </button>
               <p className="text-[10px] text-center text-gray-500 mt-2 uppercase tracking-wide">
                 {isSepolia ? 'Red Base Sepolia • ETH' : 'Red Base • Min 50 USDC'}
               </p>
@@ -389,6 +352,7 @@ function AccessArtifactsSection({ accessCards, artifacts }: { accessCards: any[]
 export default function DashboardPage() {
   const { account } = usePersistedAccount();
   const { profile } = useProfile();
+  const [isGovernanceModalOpen, setIsGovernanceModalOpen] = useState(false);
 
   // Hoist data fetching here to prevent layout shift/empty states
   const [homeData, setHomeData] = useState<{
@@ -474,7 +438,7 @@ export default function DashboardPage() {
       )}
 
       {/* Governance Section */}
-      <GovernanceSection />
+      <GovernanceSection onParticipate={() => setIsGovernanceModalOpen(true)} />
 
       {/* Access & Artifacts Tabs Section */}
       {homeData.loading ? (
@@ -485,6 +449,12 @@ export default function DashboardPage() {
       ) : (
         <AccessArtifactsSection accessCards={homeData.accessCards} artifacts={homeData.artifacts} />
       )}
+
+      {/* Governance Participation Modal */}
+      <GovernanceParticipationModal
+        isOpen={isGovernanceModalOpen}
+        onClose={() => setIsGovernanceModalOpen(false)}
+      />
 
     </div>
   );

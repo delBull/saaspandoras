@@ -17,6 +17,7 @@ import {
   ChartBarIcon,
   FolderIcon,
   ViewfinderCircleIcon,
+  BuildingLibraryIcon,
 } from "@heroicons/react/24/outline";
 import { cn } from "@/lib/utils";
 import { useActiveAccount, useDisconnect, useActiveWallet } from "thirdweb/react";
@@ -361,9 +362,17 @@ export function Sidebar({
 
       {
         label: "Wallet",
-        href: "wallet-pro",
+        href: "/wallet-pro",
         icon: (
           <BanknotesIcon className="h-5 w-5 shrink-0 text-gray-400" />
+        ),
+        disabled: false,
+      },
+      {
+        label: "Gobernanza",
+        href: "/governance",
+        icon: (
+          <BuildingLibraryIcon className="h-5 w-5 shrink-0 text-gray-400" />
         ),
         disabled: false,
       },
@@ -455,7 +464,7 @@ export function Sidebar({
 
         <button
           onClick={handleToggleSidebar}
-          className="absolute -right-3 top-1/2 z-50 flex h-20 w-5 -translate-y-1/2 items-center justify-center rounded-md border-2 border-l-0 border-gray-800 bg-zinc-900 font-mono text-gray-400 transition-colors duration-200 hover:text-white"
+          className="absolute -right-3 top-1/2 z-[50] flex h-20 w-5 -translate-y-1/2 items-center justify-center rounded-md border-2 border-l-0 border-gray-800 bg-zinc-900 font-mono text-gray-400 transition-colors duration-200 hover:text-white"
         >
           {open ? (
             <ChevronLeftIcon className="h-4 w-4" />
@@ -464,280 +473,215 @@ export function Sidebar({
           )}
         </button>
 
-        <div className="mt-6 mx-2">
-          {/* --- ESTADO NO CONECTADO --- */}
-          {isClient && !account ? (
-            <div className="w-full rounded-lg border border-gray-700 bg-gray-800/50 p-2 flex flex-col items-center gap-2">
-              <div className="flex items-center space-x-1 w-full">
-                <motion.span
-                  animate={{ width: open ? "auto" : "2rem" }}
-                  className="overflow-hidden whitespace-nowrap font-mono text-xs text-gray-400 flex-shrink-0"
-                >
-                  {open ? "C:\\PANDORAS\\" : "C:\\"}
-                </motion.span>
-                <motion.span
-                  animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0 }}
-                  className="truncate font-mono text-xs text-red-500 min-w-0"
-                >
-                  Not Connected
-                </motion.span>
-              </div>
-            </div>
-          ) : open ? (
-            // --- ESTADO CONECTADO - TODO DENTRO DEL RECUADRO CON COLOR ---
-            <div className="w-full rounded-lg border border-gray-700 bg-gray-800/50 p-2 relative">
-              <div className="flex items-center space-x-2">
-                {/* Avatar (clickeable para dropdown) */}
-                <button
-                  onClick={(e) => {
-                    e.preventDefault(); // Prevent default behavior
-                    e.stopPropagation(); // Prevent event bubbling
-
-                    // Immediately toggle the dropdown
-                    const isOpening = !profileDropdown;
-                    setProfileDropdown(!profileDropdown);
-
-                    // If opening the dropdown, record the timestamp
-                    if (isOpening) {
-                      setDropdownOpenedAt(Date.now());
-                    }
-                  }}
-                  onMouseDown={(e) => {
-                    e.preventDefault(); // Prevent default mousedown behavior
-                    e.stopPropagation(); // Prevent mousedown propagation
-                  }}
-                  className="hidden flex-shrink-0 relative hover:bg-zinc-700/30 p-1 rounded transition-colors"
-                  title="Menú de perfil"
-                >
-                  <Image
-                    src={userProfile?.image ?? '/images/avatars/onlybox2.png'}
-                    alt="Profile Avatar"
-                    width={32}
-                    height={32}
-                    className="w-8 h-8 rounded-full border border-lime-400"
-                  />
-                </button>
-
-                {/* Wallet display - copiar al hacer click */}
-                <motion.div
-                  animate={{ opacity: open ? 1 : 0 }}
-                  className="flex-1 flex items-center gap-2"
-                >
-                  <button
-                    className="flex items-center gap-2 cursor-pointer hover:bg-zinc-800/30 rounded px-2 py-1 transition-colors group w-full text-left"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const fullAddress = account?.address ?? userName ?? walletProp ?? '';
-                      void copyWalletAddress(fullAddress);
-                    }}
-                    title={`${account?.address ?? userName ?? walletProp ?? ''} - Click to copy entire wallet address`}
-                  >
-                    <span
-                      className="overflow-hidden whitespace-nowrap font-mono text-xs text-gray-400 flex-shrink-0"
-                    >
-                      {open ? "C:\\USER\\" : ""}
-                    </span>
-                    <span
-                      className={`truncate font-mono text-xs transition-colors ${copyAnimation ? 'text-green-400' : 'text-lime-400 group-hover:text-lime-300'
-                        }`}
-                    >
-                      {isClient
-                        ? (account?.address ?? walletProp ?? userName ?? "...").substring(0, 8) + '...' + (account?.address ?? walletProp ?? userName ?? "...").substring(36, 42)
-                        : "..."}
-                    </span>
-                    {/* Copy icon with animation */}
-                    <motion.div
-                      animate={{
-                        scale: copyAnimation ? [1, 1.2, 1] : 1,
-                        color: copyAnimation ? '#10b981' : undefined
-                      }}
-                      transition={{ duration: 0.3 }}
-                      className="flex-shrink-0"
-                    >
-                      {copyAnimation ? (
-                        <svg
-                          className="w-3 h-3 text-green-400"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      ) : (
-                        <svg
-                          className="w-3 h-3 text-gray-500 group-hover:text-gray-300 transition-colors"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                      )}
-                    </motion.div>
-                  </button>
-                </motion.div>
-              </div>
-
-              {/* Profile Dropdown - Fixed width to prevent compression */}
-              <AnimatePresence>
-                {profileDropdown && (
-                  <>
-                    {/* Invisible overlay to position dropdown fixed to viewport */}
-                    <div className="fixed inset-0 z-50 pointer-events-none">
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        className="absolute left-4 top-[152px] w-80 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 pointer-events-auto profile-dropdown-content"
-                      >
-                        <div className="p-3 space-y-2">
-                          {getProfileDropdownItems().map((item) => (
-                            <Link
-                              key={item.href}
-                              href={item.href}
-                              onClick={item.onClick}
-                              className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
-                            >
-                              {item.icon}
-                              <div>
-                                <div className="text-white text-sm">{item.label}</div>
-                                <div className="text-gray-400 text-xs">{item.description}</div>
-                              </div>
-                            </Link>
-                          ))}
-
-                          <div className="border-t border-zinc-700 my-2"></div>
-
-                          {/* Thirdweb ConnectButton - Maneja automáticamente conectar vs gestionar */}
-                          <div className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full">
-                            <ConnectWalletButton
-                              className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full"
-                              onConnect={() => {
-                                // Don't close dropdown on connect - let user stay in dropdown
-                                console.log('🔗 Wallet connected - keeping dropdown open');
-                              }}
-                              onDisconnect={() => {
-                                // Don't close dropdown on disconnect - let user stay in dropdown
-                                console.log('🔌 Wallet disconnected - keeping dropdown open');
-                              }}
-                            />
-                          </div>
-
-
-                        </div>
-                      </motion.div>
-                    </div>
-                  </>
-                )}
-              </AnimatePresence>
-
-              {/* Multi-Chain Wallet Interface - Only show when sidebar is expanded */}
-              {isClient && account && open && (
-                <div className="mt-3 space-y-2">
-                  {/* Network Selector */}
-                  <NetworkSelector
-                    selectedChain={selectedChain}
-                    onChainChange={(chain) => setSelectedChain(chain)}
-                    supportedNetworks={supportedNetworks}
-                  />
-
-                  {/* Wallet Balances */}
-                  <WalletBalance
-                    selectedChain={selectedChain}
-                    accountAddress={account?.address}
-                    supportedNetworks={supportedNetworks}
-                  />
-                </div>
-              )}
-            </div>
-          ) : null}
-        </div>
-
-        <nav className="mt-4 flex flex-1 flex-col justify-between">
-          <div className="flex flex-col gap-0">
-            {links.map((link) => (
-              !open ? (
-                <Tooltip.Root key={link.label}>
-                  <Tooltip.Trigger asChild>
-                    <Link
-                      href={link.href}
-                      className={cn(
-                        "relative flex items-center rounded-lg py-5 font-light text-gray-400 transition-all duration-200 border-b border-gray-800 w-full justify-center",
-                        link.disabled
-                          ? "cursor-not-allowed opacity-60"
-                          : "hover:bg-gray-800/50 hover:text-white",
-                        link.admin &&
-                        "font-bold text-lime-400 hover:bg-lime-900/50 hover:text-lime-300"
-                      )}
-                      onClick={(e) => link.disabled && e.preventDefault()}
-                    >
-                      {link.icon}
-                    </Link>
-                  </Tooltip.Trigger>
-                  <Tooltip.Portal>
-                    <Tooltip.Content
-                      className="z-50 rounded-md bg-zinc-900 ml-20 px-3 py-1.5 text-xs text-white shadow-md border border-zinc-700"
-                      sideOffset={3}
-                    >
-                      {link.label}
-                    </Tooltip.Content>
-                  </Tooltip.Portal>
-                </Tooltip.Root>
-              ) : (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  className={cn(
-                    "relative flex items-center rounded-lg py-5 font-light text-gray-400 transition-all duration-200 border-b border-gray-800 px-4",
-                    link.disabled
-                      ? "cursor-not-allowed opacity-60"
-                      : "hover:bg-gray-800/50 hover:text-white",
-                    link.admin &&
-                    "font-bold text-lime-400 hover:bg-lime-900/50 hover:text-lime-300"
-                  )}
-                  onClick={(e) => link.disabled && e.preventDefault()}
-                >
-                  {link.icon}
+        <div className="flex-1 flex flex-col w-full overflow-hidden">
+          <div className="mt-6 mx-2">
+            {/* --- ESTADO NO CONECTADO --- */}
+            {isClient && !account ? (
+              <div className="w-full rounded-lg border border-gray-700 bg-gray-800/50 p-2 flex flex-col items-center gap-2">
+                <div className="flex items-center space-x-1 w-full">
                   <motion.span
-                    animate={{
-                      opacity: open ? 1 : 0,
-                      width: open ? "auto" : 0,
-                      marginLeft: open ? "0.75rem" : "0",
-                    }}
-                    className="whitespace-nowrap"
+                    animate={{ width: open ? "auto" : "2rem" }}
+                    className="overflow-hidden whitespace-nowrap font-mono text-xs text-gray-400 flex-shrink-0"
                   >
-                    {link.label}
+                    {open ? "C:\\PANDORAS\\" : "C:\\"}
                   </motion.span>
-                  {link.comingSoon && open && (
-                    <motion.span
-                      animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0 }}
-                      className="ml-auto text-xs text-gray-500 italic"
+                  <motion.span
+                    animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0 }}
+                    className="truncate font-mono text-xs text-red-500 min-w-0"
+                  >
+                    Not Connected
+                  </motion.span>
+                </div>
+              </div>
+            ) : open ? (
+              // --- ESTADO CONECTADO - TODO DENTRO DEL RECUADRO CON COLOR ---
+              <div className="w-full rounded-lg border border-gray-700 bg-gray-800/50 p-2 relative">
+                <div className="flex items-center space-x-2">
+                  {/* Avatar (clickeable para dropdown) */}
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault(); // Prevent default behavior
+                      e.stopPropagation(); // Prevent event bubbling
+
+                      // Immediately toggle the dropdown
+                      const isOpening = !profileDropdown;
+                      setProfileDropdown(!profileDropdown);
+
+                      // If opening the dropdown, record the timestamp
+                      if (isOpening) {
+                        setDropdownOpenedAt(Date.now());
+                      }
+                    }}
+                    onMouseDown={(e) => {
+                      e.preventDefault(); // Prevent default mousedown behavior
+                      e.stopPropagation(); // Prevent mousedown propagation
+                    }}
+                    className="hidden flex-shrink-0 relative hover:bg-zinc-700/30 p-1 rounded transition-colors"
+                    title="Menú de perfil"
+                  >
+                    <Image
+                      src={userProfile?.image ?? '/images/avatars/onlybox2.png'}
+                      alt="Profile Avatar"
+                      width={32}
+                      height={32}
+                      className="w-8 h-8 rounded-full border border-lime-400"
+                    />
+                  </button>
+
+                  {/* Wallet display - copiar al hacer click */}
+                  <motion.div
+                    animate={{ opacity: open ? 1 : 0 }}
+                    className="flex-1 flex items-center gap-2"
+                  >
+                    <button
+                      className="flex items-center gap-2 cursor-pointer hover:bg-zinc-800/30 rounded px-2 py-1 transition-colors group w-full text-left"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const fullAddress = account?.address ?? userName ?? walletProp ?? '';
+                        void copyWalletAddress(fullAddress);
+                      }}
+                      title={`${account?.address ?? userName ?? walletProp ?? ''} - Click to copy entire wallet address`}
                     >
-                      coming soon
-                    </motion.span>
+                      <span
+                        className="overflow-hidden whitespace-nowrap font-mono text-xs text-gray-400 flex-shrink-0"
+                      >
+                        {open ? "C:\\USER\\" : ""}
+                      </span>
+                      <span
+                        className={`truncate font-mono text-xs transition-colors ${copyAnimation ? 'text-green-400' : 'text-lime-400 group-hover:text-lime-300'
+                          }`}
+                      >
+                        {isClient
+                          ? (account?.address ?? walletProp ?? userName ?? "...").substring(0, 8) + '...' + (account?.address ?? walletProp ?? userName ?? "...").substring(36, 42)
+                          : "..."}
+                      </span>
+                      {/* Copy icon with animation */}
+                      <motion.div
+                        animate={{
+                          scale: copyAnimation ? [1, 1.2, 1] : 1,
+                          color: copyAnimation ? '#10b981' : undefined
+                        }}
+                        transition={{ duration: 0.3 }}
+                        className="flex-shrink-0"
+                      >
+                        {copyAnimation ? (
+                          <svg
+                            className="w-3 h-3 text-green-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : (
+                          <svg
+                            className="w-3 h-3 text-gray-500 group-hover:text-gray-300 transition-colors"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                        )}
+                      </motion.div>
+                    </button>
+                  </motion.div>
+                </div>
+
+                {/* Profile Dropdown - Fixed width to prevent compression */}
+                <AnimatePresence>
+                  {profileDropdown && (
+                    <>
+                      {/* Invisible overlay to position dropdown fixed to viewport */}
+                      <div className="fixed inset-0 z-50 pointer-events-none">
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 10 }}
+                          className="absolute left-4 top-[152px] w-80 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 pointer-events-auto profile-dropdown-content"
+                        >
+                          <div className="p-3 space-y-2">
+                            {getProfileDropdownItems().map((item) => (
+                              <Link
+                                key={item.href}
+                                href={item.href}
+                                onClick={item.onClick}
+                                className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors"
+                              >
+                                {item.icon}
+                                <div>
+                                  <div className="text-white text-sm">{item.label}</div>
+                                  <div className="text-gray-400 text-xs">{item.description}</div>
+                                </div>
+                              </Link>
+                            ))}
+
+                            <div className="border-t border-zinc-700 my-2"></div>
+
+                            {/* Thirdweb ConnectButton - Maneja automáticamente conectar vs gestionar */}
+                            <div className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full">
+                              <ConnectWalletButton
+                                className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full"
+                                onConnect={() => {
+                                  // Don't close dropdown on connect - let user stay in dropdown
+                                  console.log('🔗 Wallet connected - keeping dropdown open');
+                                }}
+                                onDisconnect={() => {
+                                  // Don't close dropdown on disconnect - let user stay in dropdown
+                                  console.log('🔌 Wallet disconnected - keeping dropdown open');
+                                }}
+                              />
+                            </div>
+
+
+                          </div>
+                        </motion.div>
+                      </div>
+                    </>
                   )}
-                </Link>
-              )
-            ))}
+                </AnimatePresence>
+
+                {/* Multi-Chain Wallet Interface - Only show when sidebar is expanded */}
+                {isClient && account && open && (
+                  <div className="mt-3 space-y-2">
+                    {/* Network Selector */}
+                    <NetworkSelector
+                      selectedChain={selectedChain}
+                      onChainChange={(chain) => setSelectedChain(chain)}
+                      supportedNetworks={supportedNetworks}
+                    />
+
+                    {/* Wallet Balances */}
+                    <WalletBalance
+                      selectedChain={selectedChain}
+                      accountAddress={account?.address}
+                      supportedNetworks={supportedNetworks}
+                    />
+                  </div>
+                )}
+              </div>
+            ) : null}
           </div>
 
-          <div className="mb-4 flex flex-col gap-2">
-            {/* Show "Desatar tu Creación" button only when CONNECTED */}
-            {isClient && account && (
-              <div
-                className={cn(
-                  "border-t border-gray-800 pt-2",
-                  !open && "mx-auto w-full"
-                )}
-              >
-                {!open ? (
-                  <Tooltip.Root>
+          <nav className="mt-4 flex flex-1 flex-col justify-between">
+            <div className="flex flex-col gap-0">
+              {links.map((link) => (
+                !open ? (
+                  <Tooltip.Root key={link.label}>
                     <Tooltip.Trigger asChild>
                       <Link
-                        href="/apply"
-                        className="relative flex w-full items-center rounded-lg py-2 transition-all duration-200 text-gray-400 hover:bg-purple-800/20 justify-center"
+                        href={link.href}
+                        className={cn(
+                          "relative flex items-center rounded-lg py-3 font-light text-gray-400 transition-all duration-200 border-b border-gray-800 w-full justify-center",
+                          link.disabled
+                            ? "cursor-not-allowed opacity-60"
+                            : "hover:bg-gray-800/50 hover:text-white",
+                          link.admin &&
+                          "font-bold text-lime-400 hover:bg-lime-900/50 hover:text-lime-300"
+                        )}
+                        onClick={(e) => link.disabled && e.preventDefault()}
                       >
-                        <ShieldCheckIcon className="h-4 w-4 shrink-0" />
+                        {link.icon}
                       </Link>
                     </Tooltip.Trigger>
                     <Tooltip.Portal>
@@ -745,65 +689,25 @@ export function Sidebar({
                         className="z-50 rounded-md bg-zinc-900 ml-20 px-3 py-1.5 text-xs text-white shadow-md border border-zinc-700"
                         sideOffset={3}
                       >
-                        Desatar tu Creación
+                        {link.label}
                       </Tooltip.Content>
                     </Tooltip.Portal>
                   </Tooltip.Root>
                 ) : (
                   <Link
-                    href="/apply"
-                    className="relative flex w-full items-center rounded-lg py-2 transition-all duration-200 text-gray-400 hover:bg-purple-800/20 px-4"
+                    key={link.label}
+                    href={link.href}
+                    className={cn(
+                      "relative flex items-center rounded-lg py-3 font-light text-gray-400 transition-all duration-200 border-b border-gray-800 px-4",
+                      link.disabled
+                        ? "cursor-not-allowed opacity-60"
+                        : "hover:bg-gray-800/50 hover:text-white",
+                      link.admin &&
+                      "font-bold text-lime-400 hover:bg-lime-900/50 hover:text-lime-300"
+                    )}
+                    onClick={(e) => link.disabled && e.preventDefault()}
                   >
-                    <ShieldCheckIcon className="h-4 w-4 shrink-0" />
-                    <motion.span
-                      animate={{
-                        opacity: open ? 1 : 0,
-                        width: open ? "auto" : 0,
-                        marginLeft: open ? "0.75rem" : "0",
-                      }}
-                      className="whitespace-nowrap text-xs italic"
-                    >
-                      {open ? "Desatar tu Creación" : "🔗"}
-                    </motion.span>
-                  </Link>
-                )}
-              </div>
-            )}
-
-            {isClient && account && (
-              <div
-                className={cn(
-                  "border-t border-gray-800 pt-2",
-                  !open && "mx-auto w-full"
-                )}
-              >
-                {!open ? (
-                  <Tooltip.Root>
-                    <Tooltip.Trigger asChild>
-                      <button
-                        onClick={() => wallet && disconnect(wallet)}
-                        disabled={!wallet}
-                        className="relative flex w-full items-center rounded-lg py-2 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white disabled:opacity-50 justify-center"
-                      >
-                        <ArrowLeftOnRectangleIcon className="h-5 w-5 shrink-0" />
-                      </button>
-                    </Tooltip.Trigger>
-                    <Tooltip.Portal>
-                      <Tooltip.Content
-                        className="z-50 rounded-md bg-zinc-900 ml-20 px-3 py-1.5 text-xs text-white shadow-md border border-zinc-700"
-                        sideOffset={3}
-                      >
-                        Desconectar Wallet
-                      </Tooltip.Content>
-                    </Tooltip.Portal>
-                  </Tooltip.Root>
-                ) : (
-                  <button
-                    onClick={() => wallet && disconnect(wallet)}
-                    disabled={!wallet}
-                    className="relative flex w-full items-center rounded-lg py-2 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white disabled:opacity-50 px-4"
-                  >
-                    <ArrowLeftOnRectangleIcon className="h-5 w-5 shrink-0" />
+                    {link.icon}
                     <motion.span
                       animate={{
                         opacity: open ? 1 : 0,
@@ -812,54 +716,161 @@ export function Sidebar({
                       }}
                       className="whitespace-nowrap"
                     >
-                      Desconectar
+                      {link.label}
                     </motion.span>
-                  </button>
-                )}
-              </div>
-            )}
-            {isClient && isAdmin && (
-              <div
-                className={cn(
-                  "border-t border-gray-800 pt-2",
-                  !open && "mx-auto w-full"
-                )}
-              >
-                {!open ? (
-                  <Tooltip.Root>
-                    <Tooltip.Trigger asChild>
-                      <span className="relative flex items-center rounded-lg py-2 text-red-700 transition-all duration-200 cursor-not-allowed opacity-50 w-full justify-center">
-                        <ShieldCheckIcon className="h-5 w-5 shrink-0" />
-                      </span>
-                    </Tooltip.Trigger>
-                    <Tooltip.Portal>
-                      <Tooltip.Content
-                        className="z-50 rounded-md bg-zinc-900 ml-20 px-3 py-1.5 text-xs text-white shadow-md border border-zinc-700"
-                        sideOffset={3}
+                    {link.comingSoon && open && (
+                      <motion.span
+                        animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0 }}
+                        className="ml-auto text-xs text-gray-500 italic"
                       >
-                        Panel de Administración
-                      </Tooltip.Content>
-                    </Tooltip.Portal>
-                  </Tooltip.Root>
-                ) : (
-                  <span className="relative flex items-center rounded-lg py-2 text-red-700 transition-all duration-200 cursor-not-allowed opacity-50 px-4">
-                    <ShieldCheckIcon className="h-5 w-5 shrink-0" />
-                    <motion.span
-                      animate={{
-                        opacity: open ? 1 : 0,
-                        width: open ? "auto" : 0,
-                        marginLeft: open ? "0.75rem" : "0",
-                      }}
-                      className="whitespace-nowrap font-bold"
+                        coming soon
+                      </motion.span>
+                    )}
+                  </Link>
+                )
+              ))}
+            </div>
+
+            <div className="mb-4 flex flex-col gap-2">
+              {/* Show "Desatar tu Creación" button only when CONNECTED */}
+              {isClient && account && (
+                <div
+                  className={cn(
+                    "border-t border-gray-800 pt-2",
+                    !open && "mx-auto w-full"
+                  )}
+                >
+                  {!open ? (
+                    <Tooltip.Root>
+                      <Tooltip.Trigger asChild>
+                        <Link
+                          href="/apply"
+                          className="relative flex w-full items-center rounded-lg py-2 transition-all duration-200 text-gray-400 hover:bg-purple-800/20 justify-center"
+                        >
+                          <ShieldCheckIcon className="h-4 w-4 shrink-0" />
+                        </Link>
+                      </Tooltip.Trigger>
+                      <Tooltip.Portal>
+                        <Tooltip.Content
+                          className="z-50 rounded-md bg-zinc-900 ml-20 px-3 py-1.5 text-xs text-white shadow-md border border-zinc-700"
+                          sideOffset={3}
+                        >
+                          Desatar tu Creación
+                        </Tooltip.Content>
+                      </Tooltip.Portal>
+                    </Tooltip.Root>
+                  ) : (
+                    <Link
+                      href="/apply"
+                      className="relative flex w-full items-center rounded-lg py-2 transition-all duration-200 text-gray-400 hover:bg-purple-800/20 px-4"
                     >
-                      Admin
-                    </motion.span>
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-        </nav>
+                      <ShieldCheckIcon className="h-4 w-4 shrink-0" />
+                      <motion.span
+                        animate={{
+                          opacity: open ? 1 : 0,
+                          width: open ? "auto" : 0,
+                          marginLeft: open ? "0.75rem" : "0",
+                        }}
+                        className="whitespace-nowrap text-xs italic"
+                      >
+                        {open ? "Desatar tu Creación" : "🔗"}
+                      </motion.span>
+                    </Link>
+                  )}
+                </div>
+              )}
+
+              {isClient && account && (
+                <div
+                  className={cn(
+                    "border-t border-gray-800 pt-2",
+                    !open && "mx-auto w-full"
+                  )}
+                >
+                  {!open ? (
+                    <Tooltip.Root>
+                      <Tooltip.Trigger asChild>
+                        <button
+                          onClick={() => wallet && disconnect(wallet)}
+                          disabled={!wallet}
+                          className="relative flex w-full items-center rounded-lg py-2 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white disabled:opacity-50 justify-center"
+                        >
+                          <ArrowLeftOnRectangleIcon className="h-5 w-5 shrink-0" />
+                        </button>
+                      </Tooltip.Trigger>
+                      <Tooltip.Portal>
+                        <Tooltip.Content
+                          className="z-50 rounded-md bg-zinc-900 ml-20 px-3 py-1.5 text-xs text-white shadow-md border border-zinc-700"
+                          sideOffset={3}
+                        >
+                          Desconectar Wallet
+                        </Tooltip.Content>
+                      </Tooltip.Portal>
+                    </Tooltip.Root>
+                  ) : (
+                    <button
+                      onClick={() => wallet && disconnect(wallet)}
+                      disabled={!wallet}
+                      className="relative flex w-full items-center rounded-lg py-2 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white disabled:opacity-50 px-4"
+                    >
+                      <ArrowLeftOnRectangleIcon className="h-5 w-5 shrink-0" />
+                      <motion.span
+                        animate={{
+                          opacity: open ? 1 : 0,
+                          width: open ? "auto" : 0,
+                          marginLeft: open ? "0.75rem" : "0",
+                        }}
+                        className="whitespace-nowrap"
+                      >
+                        Desconectar
+                      </motion.span>
+                    </button>
+                  )}
+                </div>
+              )}
+              {isClient && isAdmin && (
+                <div
+                  className={cn(
+                    "border-t border-gray-800 pt-2",
+                    !open && "mx-auto w-full"
+                  )}
+                >
+                  {!open ? (
+                    <Tooltip.Root>
+                      <Tooltip.Trigger asChild>
+                        <span className="relative flex items-center rounded-lg py-2 text-red-700 transition-all duration-200 cursor-not-allowed opacity-50 w-full justify-center">
+                          <ShieldCheckIcon className="h-5 w-5 shrink-0" />
+                        </span>
+                      </Tooltip.Trigger>
+                      <Tooltip.Portal>
+                        <Tooltip.Content
+                          className="z-50 rounded-md bg-zinc-900 ml-20 px-3 py-1.5 text-xs text-white shadow-md border border-zinc-700"
+                          sideOffset={3}
+                        >
+                          Panel de Administración
+                        </Tooltip.Content>
+                      </Tooltip.Portal>
+                    </Tooltip.Root>
+                  ) : (
+                    <span className="relative flex items-center rounded-lg py-2 text-red-700 transition-all duration-200 cursor-not-allowed opacity-50 px-4">
+                      <ShieldCheckIcon className="h-5 w-5 shrink-0" />
+                      <motion.span
+                        animate={{
+                          opacity: open ? 1 : 0,
+                          width: open ? "auto" : 0,
+                          marginLeft: open ? "0.75rem" : "0",
+                        }}
+                        className="whitespace-nowrap font-bold"
+                      >
+                        Admin
+                      </motion.span>
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          </nav>
+        </div>
       </motion.div>
 
       {/* --- BOTÓN MOBILE --- */}
