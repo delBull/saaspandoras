@@ -9,8 +9,19 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
     try {
-        // 1. Fetch 'live' or 'approved' projects
-        const allProjects = await db.select({
+        // 1. Fetch Featured Projects (Allow 'approved' or 'live', even if not deployed yet, for marketing)
+        const featuredProjectsRaw = await db.select({
+            id: projects.id,
+            title: projects.title,
+            description: projects.description,
+            slug: projects.slug,
+            coverPhotoUrl: projects.coverPhotoUrl,
+            logoUrl: projects.logoUrl,
+            featured: projects.featured
+        }).from(projects).where(and(eq(projects.featured, true), inArray(projects.status, ['approved', 'live', 'completed'])));
+
+        // 2. Fetch Strictly LIVE & DEPLOYED projects for Access/Artifacts
+        const liveProjects = await db.select({
             id: projects.id,
             title: projects.title,
             description: projects.description,
@@ -20,26 +31,24 @@ export async function GET() {
             w2eConfig: projects.w2eConfig,
             contractAddress: projects.contractAddress,
             licenseContractAddress: projects.licenseContractAddress,
-            featured: projects.featured, // Include featured
-            status: projects.status
-        }).from(projects).where(inArray(projects.status, ['live', 'approved']));
+            status: projects.status,
+            deploymentStatus: projects.deploymentStatus
+        }).from(projects).where(and(eq(projects.status, 'live'), eq(projects.deploymentStatus, 'deployed')));
 
-        // 2. Filter Featured Projects
-        const featuredProjects = allProjects
-            .filter(p => p.featured === true)
-            .map(p => ({
-                id: String(p.id),
-                title: p.title,
-                subtitle: p.description || "Proyecto Destacado",
-                actionText: "Dime más",
-                imageUrl: p.coverPhotoUrl || p.logoUrl || "/images/default-project.jpg",
-                projectSlug: p.slug
-            }));
+        // Map Featured
+        const featuredProjects = featuredProjectsRaw.map(p => ({
+            id: String(p.id),
+            title: p.title,
+            subtitle: p.description || "Proyecto Destacado",
+            actionText: "Dime más",
+            imageUrl: p.coverPhotoUrl || p.logoUrl || "/images/default-project.jpg",
+            projectSlug: p.slug
+        }));
 
         const accessCards = [];
         const artifacts = [];
 
-        for (const project of allProjects) {
+        for (const project of liveProjects) {
             // --- Process Access Cards ---
             // Every project has an Access Card (License)
             accessCards.push({

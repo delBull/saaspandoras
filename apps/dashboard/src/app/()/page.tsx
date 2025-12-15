@@ -9,11 +9,12 @@ import { config } from "@/config";
 import { getContract, prepareContractCall } from "thirdweb";
 import { PANDORAS_GOVERNANCE_ABI } from "@/lib/governance-abi";
 import { PANDORAS_POOL_ABI } from "@/lib/pandoras-pool-abi"; // Keeping for compatibility if needed
-import { UserGroupIcon, ArrowPathIcon, BanknotesIcon, LockClosedIcon, Squares2X2Icon, ShieldCheckIcon, ChevronRightIcon, ChevronLeftIcon } from "@heroicons/react/24/outline";
+import { UserGroupIcon, ArrowPathIcon, BanknotesIcon, LockClosedIcon, Squares2X2Icon, ShieldCheckIcon, ChevronRightIcon, ChevronLeftIcon, CurrencyDollarIcon, RocketLaunchIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
 import { client } from "@/lib/thirdweb-client";
 import { base } from "thirdweb/chains";
 import { createWallet } from "thirdweb/wallets";
+import { NotificationsPanel } from "@/components/dashboard/notifications-panel";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -109,8 +110,8 @@ function FeaturedCarousel({ projects }: { projects: any[] }) {
   };
 
   return (
-    <div className="relative px-5 mt-6 mb-8 w-full md:max-w-4xl">
-      <div className="relative aspect-[16/10] md:aspect-[21/9] rounded-2xl overflow-hidden group cursor-pointer border border-white/10 shadow-2xl shadow-purple-900/20">
+    <div className="relative w-full h-full">
+      <div className="relative h-full w-full rounded-2xl overflow-hidden group cursor-pointer border border-white/10 shadow-2xl shadow-purple-900/20 aspect-[16/10] md:aspect-auto">
         {/* Background Image */}
         <Image
           src={currentProject.imageUrl || currentProject.coverPhotoUrl}
@@ -127,7 +128,7 @@ function FeaturedCarousel({ projects }: { projects: any[] }) {
             <span className="px-2 py-1 bg-white/10 backdrop-blur-md rounded text-[10px] uppercase font-bold text-white tracking-widest border border-white/20">
               Destacado
             </span>
-            <h3 className="text-2xl md:text-4xl font-bold text-white leading-tight drop-shadow-lg">{currentProject.title}</h3>
+            <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white leading-tight drop-shadow-lg">{currentProject.title}</h3>
             <p className="text-sm md:text-base text-gray-200 line-clamp-2 max-w-[90%] opacity-90 drop-shadow-md mb-4">{currentProject.subtitle || currentProject.description}</p>
 
             <Link
@@ -186,7 +187,7 @@ function GovernanceSection() {
 
   return (
     <div className="flex flex-col gap-4 px-5">
-      <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest pl-1">Gobernanza Pandora's</h3>
+      <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest pl-1">Gobernanza Pandora&#39;s</h3>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Governance Participation Card */}
@@ -206,7 +207,7 @@ function GovernanceSection() {
             <div>
               <h4 className="text-xl font-bold text-white mb-1">Participación Gobernanza</h4>
               <p className="text-sm text-gray-400 leading-relaxed">
-                Adquiere participación en la gobernanza de Pandora's.
+                Adquiere participación en la gobernanza de Pandora&#39;s.
                 Los fondos impulsan el crecimiento de la plataforma.
               </p>
             </div>
@@ -256,6 +257,38 @@ function GovernanceSection() {
             </div>
           </div>
         </div>
+
+        {/* PBOX Coming Soon Card - NEW */}
+        <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5 relative overflow-hidden group flex flex-col justify-between">
+          <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/10 to-transparent group-hover:from-indigo-900/20 transition-all duration-500" />
+
+          <div className="relative z-10 flex flex-col gap-4">
+            <div className="flex justify-between items-start">
+              <div className="p-3 bg-indigo-500/20 rounded-lg">
+                <RocketLaunchIcon className="w-8 h-8 text-indigo-400" />
+              </div>
+              <span className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs font-bold rounded-full uppercase border border-blue-500/30 animate-pulse">
+                Coming Soon
+              </span>
+            </div>
+
+            <div>
+              <h4 className="text-xl font-bold text-white mb-1">PBOX Governance Token</h4>
+              <p className="text-sm text-gray-400 leading-relaxed">
+                El token principal de gobernanza del ecosistema. Público y transferible.
+              </p>
+              <div className="mt-3 flex items-center gap-2">
+                <span className="text-xs bg-zinc-800 px-2 py-1 rounded border border-white/5 text-gray-300">ICO Loading...</span>
+                <span className="text-xs bg-zinc-800 px-2 py-1 rounded border border-white/5 text-gray-300">ERC-20</span>
+              </div>
+            </div>
+
+            <button disabled className="w-full bg-zinc-800 text-gray-500 cursor-not-allowed py-2 px-4 rounded-lg font-bold text-sm mt-2 border border-white/5">
+              Próximamente
+            </button>
+          </div>
+        </div>
+
       </div>
     </div>
   );
@@ -314,7 +347,7 @@ function AccessArtifactsSection({ accessCards, artifacts }: { accessCards: any[]
   const list = activeTab === 'access' ? accessCards : artifacts;
 
   return (
-    <div className="mt-8 px-5 pb-24">
+    <div id="access-section" className="mt-8 px-5 pb-24">
       {/* Tabs Header */}
       <div className="flex items-center gap-8 border-b border-zinc-800 mb-6">
         <button
@@ -415,14 +448,29 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Dynamic Featured Carousel */}
+      {/* Dynamic Featured Carousel + Notifications Grid */}
       {homeData.loading ? (
         // Skeleton logic for Banner
-        <div className="relative px-5 mt-6 mb-8 w-full md:max-w-4xl">
-          <div className="aspect-[16/10] md:aspect-[21/9] rounded-2xl bg-zinc-900 animate-pulse border border-zinc-800" />
+        <div className="relative px-5 mt-6 mb-8 w-full md:max-w-7xl">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div className="lg:col-span-3 aspect-[16/10] md:aspect-[21/9] rounded-2xl bg-zinc-900 animate-pulse border border-zinc-800" />
+            <div className="hidden lg:block lg:col-span-1 rounded-2xl bg-zinc-900 animate-pulse border border-zinc-800" />
+          </div>
         </div>
       ) : (
-        <FeaturedCarousel projects={homeData.featuredProjects} />
+        <div className="px-5 mt-6 mb-8 w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-auto lg:h-[450px]">
+            {/* Carousel takes 3/4 width on Large screens */}
+            <div className="lg:col-span-3 h-[300px] lg:h-full">
+              <FeaturedCarousel projects={homeData.featuredProjects} />
+            </div>
+
+            {/* Notifications Panel takes 1/4 width on Large screens */}
+            <div className="lg:col-span-1 h-[300px] lg:h-full">
+              <NotificationsPanel hasAccess={homeData.accessCards.length > 0} />
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Governance Section */}
