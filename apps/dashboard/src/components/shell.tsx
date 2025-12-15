@@ -46,19 +46,20 @@ export function DashboardShell({
         className={cn(
           "flex-1 relative",
           "h-screen overflow-y-auto",
-          "p-2 sm:p-2 md:px-8 md:pb-8 md:pt-0",
+          "h-screen overflow-y-auto",
+          "p-0", // No global padding
           "bg-gradient-to-br from-gray-950 to-fuchsia-950/30 via-fuchsia-9¡50/40",
-          "rounded-tl-[4rem]",
+          "rounded-tl-[4rem] overflow-hidden", // Maintain rounded corner but ensure clip
           className,
         )}
       >
         {title && (
-          <div className="mb-6">
+          <div className="mb-6 px-6 pt-6"> {/* Add local padding for title if used */}
             <h1 className="text-2xl font-semibold text-white">{title}</h1>
             {description && <p className="mt-2 text-gray-400">{description}</p>}
           </div>
         )}
-        <div className="max-w-7xl mx-auto h-full flex flex-col">{children}</div>
+        <div className="w-full h-full flex flex-col">{children}</div> {/* Full width, no max-w */}
       </main>
     </div>
   );
