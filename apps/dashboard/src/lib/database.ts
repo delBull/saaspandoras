@@ -37,13 +37,16 @@ function getSql() {
 }
 
 // Proxy to forward calls to the lazy instance
+// eslint-disable-next-line @typescript-eslint/no-empty-function
 export const sql = new Proxy(() => { }, {
   get(_target, prop) {
     return (getSql() as any)[prop];
   },
   apply(_target, _thisArg, args) {
+    const instance = getSql();
+    if (!instance) throw new Error("Database initialization failed");
     // @ts-ignore
-    return getSql()(...args);
+    return instance(...args);
   }
 }) as unknown as ReturnType<typeof postgres>;
 
