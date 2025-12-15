@@ -138,7 +138,6 @@ export const config = {
 
     // Exclude health checks from rate limiting
     '!/api/health',
-    '!/test-health',
     '!/favicon.ico',
   ],
 };
