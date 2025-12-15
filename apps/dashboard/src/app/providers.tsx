@@ -91,7 +91,7 @@ export function Providers({
         <GamificationWrapper>
           {children}
         </GamificationWrapper>
-        <UserSyncWrapper />
+        {/* <UserSyncWrapper /> */}
         <Toaster
           theme="dark"
           richColors

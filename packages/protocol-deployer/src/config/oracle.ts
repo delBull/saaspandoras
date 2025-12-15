@@ -18,32 +18,39 @@ export const PANDORA_ORACLE_CONFIG = {
 };
 
 // Validar configuración
-if (!PANDORA_ORACLE_CONFIG.privateKey) {
-  console.warn('⚠️ PANDORA_ORACLE_PRIVATE_KEY no está configurada. Usando dummy para build.');
-}
+// Crear wallet del oráculo (Lazy)
+export const getPandoraOracleWallet = () => {
+  // Validar configuración solo al llamar
+  if (!PANDORA_ORACLE_CONFIG.privateKey) {
+    console.warn('⚠️ PANDORA_ORACLE_PRIVATE_KEY no está configurada. Usando dummy para build.');
+  }
 
-if (!PANDORA_ORACLE_CONFIG.address) {
-  console.warn('⚠️ PANDORA_ORACLE_ADDRESS no está configurada.');
-}
+  if (!PANDORA_ORACLE_CONFIG.address) {
+    console.warn('⚠️ PANDORA_ORACLE_ADDRESS no está configurada.');
+  }
 
-// Crear cliente Thirdweb para el oráculo
-const oracleClient = createThirdwebClient({
-  clientId: process.env.THIRDWEB_CLIENT_ID || "8a0dde1c971805259575cea5cb737530"
-});
+  const safePrivateKey = PANDORA_ORACLE_CONFIG.privateKey || "0x0000000000000000000000000000000000000000000000000000000000000001";
 
-// Dummy key for build context if missing
-const safePrivateKey = PANDORA_ORACLE_CONFIG.privateKey || "0x0000000000000000000000000000000000000000000000000000000000000001";
+  // Crear cliente Thirdweb para el oráculo
+  const oracleClient = createThirdwebClient({
+    clientId: process.env.THIRDWEB_CLIENT_ID || "8a0dde1c971805259575cea5cb737530"
+  });
 
-// Crear wallet del oráculo
-export const pandoraOracleWallet = privateKeyToAccount({
-  privateKey: safePrivateKey,
-  client: oracleClient
-});
+  const wallet = privateKeyToAccount({
+    privateKey: safePrivateKey,
+    client: oracleClient
+  });
 
-// Verificar que la dirección coincide (solo si tenemos config real)
-if (PANDORA_ORACLE_CONFIG.privateKey && PANDORA_ORACLE_CONFIG.address &&
-  pandoraOracleWallet.address.toLowerCase() !== PANDORA_ORACLE_CONFIG.address.toLowerCase()) {
-  console.warn('⚠️ La dirección derivada de la private key no coincide con PANDORA_ORACLE_ADDRESS');
-}
+  // Verificar que la dirección coincide
+  if (PANDORA_ORACLE_CONFIG.privateKey && PANDORA_ORACLE_CONFIG.address &&
+    wallet.address.toLowerCase() !== PANDORA_ORACLE_CONFIG.address.toLowerCase()) {
+    console.warn('⚠️ La dirección derivada de la private key no coincide con PANDORA_ORACLE_ADDRESS');
+  }
+
+  return wallet;
+};
+
+
+// La validación se realiza dentro de getPandoraOracleWallet cuando sea necesario
 
 export default PANDORA_ORACLE_CONFIG;
