@@ -505,6 +505,7 @@ export default function GovernancePage() {
                     tabIndex={0}
                     onKeyDown={(e) => { if (e.key === 'Escape' || e.key === 'Enter') setIsManageOpen(false); }}
                 >
+                    {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
                     <div
                         className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-zinc-950 border border-zinc-800 rounded-xl p-6 space-y-6"
                         onClick={(e: React.MouseEvent) => e.stopPropagation()}
