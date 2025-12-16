@@ -160,179 +160,163 @@ export async function deployW2EProtocol(
 
   // 5. Execute Deployments
 
-  // --- A. W2E License (Nonce N) ---
-  console.log("📄 Deploying License...");
-  const license = await LicenseFactory.deploy(
-    config.licenseToken.name,
-    config.licenseToken.symbol,
-    config.maxLicenses,
-    parseEther("0"), // Always Free Access Card
-    oracleAddress,
-    addrTreasury, // Circular resolved
-    wallet.address // Initial Owner
-  );
-  const licenseAddress = await waitForDeploy(license);
-  console.log(`✅ License Deployed: ${licenseAddress}`);
+  // 5. Execute Deployments (PARALLEL v2)
+  console.log("🚀 Launching PARALLEL deployment of 5 contracts...");
 
-  // --- B. W2E Utility (Nonce N+1) ---
-  console.log("🎫 Deploying Utility...");
-  const utility = await UtilityFactory.deploy(
-    config.utilityToken.name,
-    config.utilityToken.symbol,
-    18, // Decimals
-    config.utilityToken.feePercentage || 50, // 0.5% default
-    feeRecipient,
-    wallet.address
-  );
-  const utilityAddress = await waitForDeploy(utility);
-  console.log(`✅ Utility Deployed: ${utilityAddress}`);
+  // Override options generator
+  const getOverrides = (nonce: number) => ({
+    nonce,
+    gasLimit: 3000000 // Safer gas limit for parallel deployment
+  });
 
-  // --- C. W2E Loom (Nonce N+2) ---
-  console.log("🧵 Deploying Loom...");
-  const loom = await LoomFactory.deploy(
-    licenseAddress,
-    utilityAddress,
-    rootTreasury,
-    addrTreasury, // Circular resolved
-    oracleAddress,
-    feeRecipient,
-    config.creatorWallet,
-    config.creatorPayoutPct || 80,
-    config.quorumPercentage || 10,
-    (config.votingPeriodHours || 168) * 3600, // Seconds
-    (config.emergencyPeriodHours || 360) * 3600, // Seconds
-    config.emergencyQuorumPct || 20,
-    config.stakingRewardRate || "1585489599",
-    config.phiFundSplitPct || 20,
-    wallet.address
-  );
-  const loomAddress = await waitForDeploy(loom);
-  console.log(`✅ Loom Deployed: ${loomAddress}`);
-
-  // --- D. PBOX Protocol Treasury (Nonce N+3) ---
-  console.log("🏛️ Deploying Protocol Treasury...");
-
-  // Ensure we have unique signers for the Treasury
-  const chestSigners = (config.treasurySigners && config.treasurySigners.length >= 2)
-    ? config.treasurySigners
-    : [wallet.address, Wallet.createRandom().address]; // Fallback for dev
-
-  const daoSigners = [wallet.address, Wallet.createRandom().address, Wallet.createRandom().address]; // Mock DAO signers for now if not provided
-
-  const treasury = await TreasuryFactory.deploy(
-    chestSigners,
-    daoSigners,
-    oracleAddress,
-    addrGovernor, // Circular resolved
-    Math.min(2, chestSigners.length), // Required Pandora Confirmations
-    2, // Required DAO Confirmations
-    parseEther("5.0"), // Emergency Threshold
-    30, // Emergency Inactivity Days
-    parseEther("0.1"), // Direct Operation Limit
-    parseEther("1.0"), // Daily Spending Limit
-    wallet.address
-  );
-  const treasuryAddress = await waitForDeploy(treasury);
-  console.log(`✅ Treasury Deployed: ${treasuryAddress}`);
-
-  // --- E. W2E Governor (Nonce N+4) ---
-  console.log("⚖️ Deploying Governor...");
-  const governor = await GovernorFactory.deploy(
-    licenseAddress,
-    loomAddress,
-    config.quorumPercentage || 10,
-    100, // Voting delay seconds
-    (config.votingPeriodHours || 168) * 3600,
-    3600, // Execution delay
-    wallet.address
-  );
-  const governorAddress = await waitForDeploy(governor);
-  console.log(`✅ Governor Deployed: ${governorAddress}`);
-
-  // 6. Post-Deployment Setup (Wiring)
-  console.log("🔌 Wiring contracts...");
-
-  // Set Loom address in Utility to allow minting
   try {
-    // Ethers v5 contract interaction
-    const tx = await (utility as any).setW2ELoomAddress(loomAddress);
-    await tx.wait();
-    console.log("  - Utility linked to Loom");
+    const deployPromises = [
+      // A. W2E License (Nonce N)
+      LicenseFactory.deploy(
+        config.licenseToken.name,
+        config.licenseToken.symbol,
+        config.maxLicenses,
+        parseEther("0"), // Always Free Access Card
+        oracleAddress,
+        addrTreasury, // Circular resolved
+        wallet.address, // Initial Owner
+        getOverrides(currentNonce)
+      ),
+      // B. W2E Utility (Nonce N+1)
+      UtilityFactory.deploy(
+        config.utilityToken.name,
+        config.utilityToken.symbol,
+        18,
+        config.utilityToken.feePercentage || 50,
+        feeRecipient,
+        wallet.address,
+        getOverrides(currentNonce + 1)
+      ),
+      // C. W2E Loom (Nonce N+2)
+      LoomFactory.deploy(
+        addrLicense, // Predicted
+        addrUtility, // Predicted
+        rootTreasury,
+        addrTreasury, // Predicted
+        oracleAddress,
+        feeRecipient,
+        config.creatorWallet,
+        config.creatorPayoutPct || 80,
+        config.quorumPercentage || 10,
+        (config.votingPeriodHours || 168) * 3600,
+        (config.emergencyPeriodHours || 360) * 3600,
+        config.emergencyQuorumPct || 20,
+        config.stakingRewardRate || "1585489599",
+        config.phiFundSplitPct || 20,
+        wallet.address,
+        getOverrides(currentNonce + 2)
+      ),
+      // D. PBOX Protocol Treasury (Nonce N+3)
+      TreasuryFactory.deploy(
+        // Ensure unique signers
+        (config.treasurySigners && config.treasurySigners.length >= 2) ? config.treasurySigners : [wallet.address, Wallet.createRandom().address],
+        [wallet.address, Wallet.createRandom().address, Wallet.createRandom().address], // Mock DAO signers
+        oracleAddress,
+        addrGovernor, // Predicted
+        Math.min(2, (config.treasurySigners?.length || 2)),
+        2,
+        parseEther("5.0"),
+        30,
+        parseEther("0.1"),
+        parseEther("1.0"),
+        wallet.address,
+        getOverrides(currentNonce + 3)
+      ),
+      // E. W2E Governor (Nonce N+4)
+      GovernorFactory.deploy(
+        addrLicense, // Predicted
+        addrLoom, // Predicted
+        config.quorumPercentage || 10,
+        100,
+        (config.votingPeriodHours || 168) * 3600,
+        3600,
+        wallet.address,
+        getOverrides(currentNonce + 4)
+      )
+    ];
 
-    // Configure Economic Schedule (Pact) if provided
+    // Wait for all deployments to be sent to mempool
+    const contracts = await Promise.all(deployPromises);
+    const [license, utility, loom, treasury, governor] = contracts;
+
+    console.log("⏳ Waiting for confirmations (Parallel)...");
+
+    // Wait for all to be mined
+    await Promise.all([
+      waitForDeploy(license),
+      waitForDeploy(utility),
+      waitForDeploy(loom),
+      waitForDeploy(treasury),
+      waitForDeploy(governor)
+    ]);
+
+    const licenseAddress = await license.getAddress ? license.getAddress() : license.address;
+    const utilityAddress = await utility.getAddress ? utility.getAddress() : utility.address;
+    const loomAddress = await loom.getAddress ? loom.getAddress() : loom.address;
+    const treasuryAddress = await treasury.getAddress ? treasury.getAddress() : treasury.address;
+    const governorAddress = await governor.getAddress ? governor.getAddress() : governor.address;
+
+    console.log("✅ All contracts deployed successfully!");
+    console.log({ licenseAddress, utilityAddress, loomAddress, treasuryAddress, governorAddress });
+
+    // 6. Post-Deployment Setup (Wiring - PARALLEL)
+    console.log("🔌 Wiring contracts (Parallel)...");
+
+    // Recalculate nonce baseline for wiring
+    const wiringStartNonce = currentNonce + 5;
+    let wiringIndex = 0;
+    const wiringPromises: Promise<any>[] = [];
+
+    // Helper for wiring tx
+    const pushWiringTx = (promise: Promise<any>) => {
+      wiringPromises.push(promise);
+      wiringIndex++;
+    };
+
+    // a. Set Loom in Utility
+    pushWiringTx((utility as any).setW2ELoomAddress(loomAddress, getOverrides(wiringStartNonce + wiringIndex)));
+
+    // b. Transfer Ownerships to Governor
+    pushWiringTx((license as any).transferOwnership(governorAddress, getOverrides(wiringStartNonce + wiringIndex))); // +1 from prev
+    pushWiringTx((utility as any).transferOwnership(governorAddress, getOverrides(wiringStartNonce + wiringIndex))); // +2
+    pushWiringTx((loom as any).transferOwnership(governorAddress, getOverrides(wiringStartNonce + wiringIndex)));    // +3
+    pushWiringTx((treasury as any).transferOwnership(governorAddress, getOverrides(wiringStartNonce + wiringIndex))); // +4
+
+    // Config Optional
     if ((config as any).w2eConfig) {
-      console.log("  - Configuring Economic Schedule (Pact)...");
       const w2e = (config as any).w2eConfig;
-
-      // Phase 1
-      if (w2e.phase1APY) {
-        const tx1 = await (utility as any).setPhaseSchedule(1, w2e.phase1APY);
-        await tx1.wait();
-        console.log(`    > Phase 1 APY set to ${(w2e.phase1APY / 100)}%`);
-      }
-      // Phase 2
-      if (w2e.phase2APY) {
-        const tx2 = await (utility as any).setPhaseSchedule(2, w2e.phase2APY);
-        await tx2.wait();
-        console.log(`    > Phase 2 APY set to ${(w2e.phase2APY / 100)}%`);
-      }
-      // Phase 3
-      if (w2e.phase3APY) {
-        const tx3 = await (utility as any).setPhaseSchedule(3, w2e.phase3APY);
-        await tx3.wait();
-        console.log(`    > Phase 3 APY set to ${(w2e.phase3APY / 100)}%`);
-      }
-
-      // Royalties
-      if (w2e.royaltyBPS) {
-        const txR = await (license as any).setRoyaltyInfo(addrTreasury, w2e.royaltyBPS);
-        await txR.wait();
-        console.log(`    > Royalties set to ${(w2e.royaltyBPS / 100)}%`);
-      }
+      if (w2e.phase1APY) pushWiringTx((utility as any).setPhaseSchedule(1, w2e.phase1APY, getOverrides(wiringStartNonce + wiringIndex)));
+      if (w2e.phase2APY) pushWiringTx((utility as any).setPhaseSchedule(2, w2e.phase2APY, getOverrides(wiringStartNonce + wiringIndex)));
+      if (w2e.phase3APY) pushWiringTx((utility as any).setPhaseSchedule(3, w2e.phase3APY, getOverrides(wiringStartNonce + wiringIndex)));
+      if (w2e.royaltyBPS) pushWiringTx((license as any).setRoyaltyInfo(addrTreasury, w2e.royaltyBPS, getOverrides(wiringStartNonce + wiringIndex)));
     }
 
-  } catch (e) {
-    console.error("  ⚠️ Failed to configure post-deployment settings:", e);
-  }
+    console.log(`🚀 Sending ${wiringPromises.length} wiring transactions...`);
+    const txs = await Promise.all(wiringPromises);
+    await Promise.all(txs.map(tx => tx.wait()));
+    console.log("✅ All wiring complete!");
 
-  // 7. Transfer Ownership to Governor (DAO Control)
-  console.log("🔐 Transferring ownership to Governor...");
-  try {
-    // License
-    const tx1 = await (license as any).transferOwnership(governorAddress);
-    await tx1.wait();
-    console.log("  - License ownership transferred");
-
-    // Utility
-    const tx2 = await (utility as any).transferOwnership(governorAddress);
-    await tx2.wait();
-    console.log("  - Utility ownership transferred");
-
-    // Loom
-    const tx3 = await (loom as any).transferOwnership(governorAddress);
-    await tx3.wait();
-    console.log("  - Loom ownership transferred");
-
-    // Treasury
-    const tx4 = await (treasury as any).transferOwnership(governorAddress);
-    await tx4.wait();
-    console.log("  - Treasury ownership transferred");
+    return {
+      licenseAddress,
+      phiAddress: utilityAddress,
+      loomAddress,
+      governorAddress,
+      treasuryAddress,
+      timelockAddress: "0x0000000000000000000000000000000000000000",
+      deploymentTxHash: (loom as any).deploymentTransaction?.()?.hash || (loom as any).deployTransaction?.hash || "",
+      network: network,
+      chainId: Number((await provider.getNetwork()).chainId)
+    };
 
   } catch (e) {
-    console.error("  ⚠️ Failed to transfer ownership to Governor (Manual handover required):", e);
+    console.error("❌ PARALLEL DEPLOYMENT FAILED:", e);
+    throw e;
   }
-
-  return {
-    licenseAddress: licenseAddress,
-    phiAddress: utilityAddress,
-    loomAddress: loomAddress,
-    governorAddress: governorAddress,
-    treasuryAddress: treasuryAddress,
-    timelockAddress: "0x0000000000000000000000000000000000000000", // No standalone Timelock for now
-    deploymentTxHash: (loom as any).deploymentTransaction?.()?.hash || (loom as any).deployTransaction?.hash || "",
-    network: network,
-    chainId: Number((await provider.getNetwork()).chainId)
-  };
 }
 
 // Helper validation (kept simple)

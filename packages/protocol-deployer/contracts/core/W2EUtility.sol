@@ -30,7 +30,6 @@ contract W2EUtility is ERC20, Ownable, ERC20Pausable, ReentrancyGuard {
     uint256 public constant MAX_FEE_BPS = 1000; // Máximo 10%
     uint256 public constant DEFAULT_FEE_BPS = 50; // 0.5% por defecto
     uint256 public constant MIN_LOCK_PERIOD = 1 days; // Periodo mínimo de lock
-    uint256 public constant MIN_LOCK_PERIOD = 1 days; // Periodo mínimo de lock
     
     /// @notice Authority Address (Pandora) for Economic Schedule
     address public authority;
@@ -46,6 +45,9 @@ contract W2EUtility is ERC20, Ownable, ERC20Pausable, ReentrancyGuard {
 
     /// @notice Monto total quemado (para métricas deflacionarias)
     uint256 public totalBurned;
+
+    /// @notice Decimales del token (customizable)
+    uint8 private _decimals;
 
     // ========== ESTRUCTURAS DE STAKING ==========
 

@@ -78,7 +78,7 @@ export async function POST(
                 name: `Licencia ${project.title}`,
                 symbol: "VHORA", // Using standard symbol or custom if needed
                 maxSupply: project.totalTokens || 1000,
-                price: reqConfig?.tokenomics?.price ? reqConfig.tokenomics.price.toString() : (project.tokenPriceUsd ? project.tokenPriceUsd.toString() : "0"),
+                price: "0", // Access Cards (Licenses) are always FREE. Revenue comes from Token Sales, not Access.
             },
             utilityToken: {
                 name: `${project.title} Utility`,

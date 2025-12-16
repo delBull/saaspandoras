@@ -1,9 +1,13 @@
 "use client";
 
 import { UserGovernanceList } from "../user/UserGovernanceList";
-import { VoteIcon, WalletIcon, TrendingUpIcon, ActivityIcon, ArrowUpRightIcon, HelpCircleIcon, SettingsIcon, LockIcon } from "lucide-react";
+import { ManageActivities } from "./ManageActivities";
+import { ActivitiesList } from "./ActivitiesList";
+import { DAOMetrics } from "./DAOMetrics";
+import { DAOChat } from "./DAOChat";
+import { VoteIcon, Wallet, WalletIcon, TrendingUpIcon, ActivityIcon, ArrowUpRightIcon, HelpCircleIcon, SettingsIcon, LockIcon, ListTodoIcon, TrophyIcon, UsersIcon, InfoIcon } from "lucide-react";
 import { motion } from "framer-motion";
-import { useReadContract } from "thirdweb/react";
+import { useReadContract, useWalletBalance } from "thirdweb/react";
 import { getContract, defineChain } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { config } from "@/config";
@@ -16,19 +20,30 @@ interface DAODashboardProps {
 }
 
 export function DAODashboard({ project, activeView, isOwner = false }: DAODashboardProps) {
+    // Robust Chain ID handling
+    const rawChainId = Number((project as any).chainId);
+    const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
 
     // --- Hooks for Real Data ---
     // 1. Treasury Balance
-    const treasuryContract = project.treasuryContractAddress ? getContract({
+    const { data: treasuryBalance } = useWalletBalance({
         client,
-        chain: config.chain, // Dynamic chain from config (Base/Sepolia)
-        address: project.treasuryContractAddress,
-    }) : undefined;
+        chain: defineChain(safeChainId),
+        address: project.treasuryAddress || project.treasuryContractAddress || "",
+    });
 
-    // Use a generic balance read or assume native (for now assuming native ETH/POL balance of the treasury address would be via provider, 
-    // but here we can check if it has a `balanceOf` if it's a DAO treasury wrapper, or just show placeholder if complex.
-    // For simplicity/speed, I'll keep the mock but add the TODO for real integration or use a basic hook if I verify the ABI.
-    // Actually, let's just show the address if we can't read balance easily without ABI.
+    const formattedBalance = treasuryBalance ?
+        Number(treasuryBalance.displayValue).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
+        : "$0.00";
+
+    const treasuryAddress = project.treasuryAddress || project.treasuryContractAddress;
+
+    // 2. Real Data Hooks
+    const licenseContract = project.licenseContractAddress ? getContract({
+        client,
+        chain: defineChain(safeChainId),
+        address: project.licenseContractAddress,
+    }) : undefined;
 
     // -- Sub-Views --
 
@@ -36,35 +51,41 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
         <div className="space-y-8">
             {/* Key Metrics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <WalletIcon className="w-24 h-24 text-lime-500" />
+                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+                    <div className="flex items-center gap-3 mb-2">
+                        <Wallet className="w-5 h-5 text-lime-400" />
+                        <h3 className="text-zinc-400 text-sm font-medium">Tesorería</h3>
                     </div>
-                    <p className="text-zinc-400 text-sm font-medium mb-1">Tesorería del Protocolo</p>
-                    <h3 className="text-3xl font-bold text-white font-mono">
-                        {project.treasuryContractAddress ? (
-                            <span className="text-xl break-all line-clamp-1" title={project.treasuryContractAddress}>
-                                {project.treasuryContractAddress.slice(0, 6)}...{project.treasuryContractAddress.slice(-4)}
-                            </span>
-                        ) : "$0.00"}
-                    </h3>
-                    <div className="mt-4 flex items-center text-xs text-lime-400">
+                    <div className="text-3xl font-bold text-white font-mono mb-2">
+                        {formattedBalance}
+                    </div>
+                    {treasuryAddress ? (
+                        <span className="text-xs text-zinc-500 break-all line-clamp-1 hover:text-zinc-300 transition-colors cursor-help" title={treasuryAddress}>
+                            {treasuryAddress.slice(0, 6)}...{treasuryAddress.slice(-4)}
+                        </span>
+                    ) : null}
+                    <div className="mt-2 flex items-center text-xs text-lime-400">
                         <TrendingUpIcon className="w-3 h-3 mr-1" />
                         Disponible (On-Chain)
                     </div>
                 </div>
 
-                <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <VoteIcon className="w-24 h-24 text-purple-500" />
+                {/* DAO Members Metric */}
+                {licenseContract ? (
+                    <DAOMetrics licenseContract={licenseContract} />
+                ) : (
+                    <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <VoteIcon className="w-24 h-24 text-zinc-700" />
+                        </div>
+                        <p className="text-zinc-400 text-sm font-medium mb-1">Miembros del DAO</p>
+                        <h3 className="text-3xl font-bold text-white font-mono">--</h3>
+                        <div className="mt-4 flex items-center text-xs text-zinc-600">
+                            <ActivityIcon className="w-3 h-3 mr-1" />
+                            Holders de Access Cards
+                        </div>
                     </div>
-                    <p className="text-zinc-400 text-sm font-medium mb-1">Propuestas Activas</p>
-                    <h3 className="text-3xl font-bold text-white font-mono">--</h3>
-                    <div className="mt-4 flex items-center text-xs text-purple-400">
-                        <ActivityIcon className="w-3 h-3 mr-1" />
-                        Ver votaciones
-                    </div>
-                </div>
+                )}
 
                 <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -80,9 +101,15 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
             </div>
 
             {/* Recent Activity / Governance List */}
-            <div>
-                <h3 className="text-xl font-bold text-white mb-6">Actividad de Gobernanza</h3>
-                <UserGovernanceList projectIds={[Number(project.id)]} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div>
+                    <h3 className="text-xl font-bold text-white mb-6">Nuevas Tareas (Recompensas)</h3>
+                    <ActivitiesList projectId={Number(project.id)} compact limit={3} />
+                </div>
+                <div>
+                    <h3 className="text-xl font-bold text-white mb-6">Actividad de Gobernanza</h3>
+                    <UserGovernanceList projectIds={[Number(project.id)]} />
+                </div>
             </div>
         </div>
     );
@@ -216,18 +243,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                 </div>
             </div>
 
-            {/* Support Footer */}
-            <div className="mt-8 p-6 bg-zinc-800/30 rounded-xl border border-zinc-800 flex flex-col md:flex-row justify-between items-center gap-4">
-                <div>
-                    <h5 className="font-bold text-white">¿Necesitas más ayuda?</h5>
-                    <p className="text-zinc-400 text-sm">Contacta directamente al equipo administrativo del protocolo.</p>
-                </div>
-                {project.applicant_email && (
-                    <a href={`mailto:${project.applicant_email}`} className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-lg transition-colors border border-zinc-700">
-                        Contactar Soporte
-                    </a>
-                )}
-            </div>
+            {/* Support Footer REMOVED as per request */}
         </div>
     );
 
@@ -244,7 +260,13 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                     </div>
                 </div>
 
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Activity Management (New) */}
+                    <div className="col-span-1 md:col-span-2">
+                        <ManageActivities projectId={Number(project.id)} />
+                    </div>
+
                     {/* Configuración General */}
                     <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl hover:border-lime-500/30 transition-colors">
                         <h4 className="font-bold text-white mb-4">Configuración General</h4>
@@ -311,6 +333,26 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
         );
     };
 
+    const ActivitiesView = () => (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center mb-6">
+                <div>
+                    <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                        <ListTodoIcon className="w-6 h-6 text-lime-400" />
+                        Actividades & Recompensas
+                    </h3>
+                    <p className="text-zinc-400 mt-1">Completa tareas para ganar recompensas y reputación en el DAO.</p>
+                </div>
+                <div className="bg-zinc-800 px-4 py-2 rounded-lg border border-zinc-700 flex items-center gap-2">
+                    <TrophyIcon className="w-4 h-4 text-yellow-400" />
+                    <span className="text-sm text-zinc-300">Mis Puntos: <span className="text-white font-bold font-mono">0</span></span>
+                </div>
+            </div>
+
+            <ActivitiesList projectId={Number(project.id)} />
+        </div>
+    );
+
     // -- Main Render --
     return (
         <div className="flex-1 p-6 md:p-12 min-h-screen">
@@ -321,6 +363,8 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                 transition={{ duration: 0.2 }}
             >
                 {activeView === 'overview' && <OverviewView />}
+                {activeView === 'activities' && <ActivitiesView />}
+                {activeView === 'chat' && <DAOChat project={project} />}
                 {activeView === 'staking' && <StakingView />}
                 {activeView === 'proposals' && <ProposalsView />}
                 {activeView === 'info' && <InfoView />}
@@ -337,5 +381,4 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
     );
 }
 
-// Icon for Members View placeholder
-import { UsersIcon } from "lucide-react";
+

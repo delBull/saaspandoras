@@ -43,7 +43,32 @@ import {
 } from "lucide-react";
 import { UserGovernanceList } from "../user/UserGovernanceList";
 import type { ProjectData } from "@/app/()/projects/types";
+import { getContract, defineChain } from "thirdweb";
+import { useReadContract, useWalletBalance } from "thirdweb/react";
+import { client } from "@/lib/thirdweb-client";
+import { config } from "@/config";
+
+// Format Helper
+const formatCurrency = (amount: number | string) => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(Number(amount));
+};
 import SectionCard from "./SectionCard";
+
+function ArtifactsStats({ licenseContract }: { licenseContract: any }) {
+  const { data: artifactsMinted } = useReadContract({
+    contract: licenseContract,
+    method: "function totalSupply() view returns (uint256)",
+    params: []
+  });
+  return (
+    <>{artifactsMinted ? artifactsMinted.toString() : "0"}</>
+  );
+}
 
 interface Tab {
   id: string;
@@ -61,6 +86,119 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
   const [selectedPhase, setSelectedPhase] = useState<any>(null);
   const [isArtifactModalOpen, setIsArtifactModalOpen] = useState(false);
   const [showHistorical, setShowHistorical] = useState(false);
+
+  // Robust Chain ID handling
+  const rawChainId = Number((project as any).chainId);
+  const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
+
+  console.log("DEBUG: ProjectContentTabs", {
+    title: project.title,
+    chainId: project.chainId || "MISSING",
+    safeChainId,
+    treasuryAddress: project.treasuryAddress,
+    treasuryContractAddress: (project as any).treasuryContractAddress,
+    rawChainId
+  });
+
+  // --- REAL TIME DATA HOOKS ---
+  const licenseContract = project.licenseContractAddress ? getContract({
+    client,
+    chain: defineChain(safeChainId),
+    address: project.licenseContractAddress,
+  }) : undefined;
+
+  const { data: treasuryBalance } = useWalletBalance({
+    client,
+    chain: defineChain(safeChainId),
+    address: project.treasuryAddress || "",
+  });
+
+  const fundsRaised = treasuryBalance ? Number(treasuryBalance.displayValue) : 0;
+  const targetAmount = Number(project.target_amount) || 100000;
+  const progressPercent = Math.min((fundsRaised / targetAmount) * 100, 100);
+
+  // Fallback contract to fix TS error when licenseContract is undefined
+  const dummyContract = getContract({
+    client,
+    chain: defineChain(safeChainId),
+    address: "0x0000000000000000000000000000000000000000"
+  });
+
+  // Read Total Supply (for Free Mint progress)
+  const { data: totalSupplyBN } = useReadContract({
+    contract: licenseContract || dummyContract,
+    queryOptions: { enabled: !!licenseContract },
+    method: "function totalSupply() view returns (uint256)",
+    params: []
+  });
+  const totalSupply = totalSupplyBN ? Number(totalSupplyBN) : 0;
+
+  // --- Calculate Phase Stats ---
+  const allPhases = project.w2eConfig?.phases || [];
+
+  // We need to track BOTH USD accumulation and Token accumulation because phases might mix free/paid? 
+  // For simplicity, let's assume if price is 0, we track tokens. If price > 0, we track USD.
+  // Actually, simplest is to track "Sold Tokens" for everything?
+  // But legacy logic tracks USD.
+
+  let accumulatedUSD = 0;
+  let accumulatedTokens = 0;
+
+  const phasesWithStats = allPhases.map((phase: any) => {
+    const price = Number(phase.tokenPrice || 0);
+    const allocation = Number(phase.tokenAllocation || 0); // Tokens
+
+    const stats = {
+      cap: 0,
+      raised: 0,
+      percent: 0,
+      participants: 0,
+      metric: 'USD'
+    };
+
+    if (price === 0) {
+      // Free Mint -> Track by Tokens
+      stats.metric = 'Tokens';
+      stats.cap = allocation; // Cap in Tokens
+      // Determine raised tokens for this phase
+      const phaseStart = accumulatedTokens;
+      const currentPhaseRaisedTokens = Math.max(0, Math.min(allocation, totalSupply - phaseStart));
+
+      stats.raised = currentPhaseRaisedTokens;
+      stats.percent = allocation > 0 ? (currentPhaseRaisedTokens / allocation) * 100 : 0;
+      stats.participants = currentPhaseRaisedTokens; // 1 token = 1 participant usually
+
+      accumulatedTokens += allocation;
+    } else {
+      // Paid Mint -> Track by USD
+      stats.metric = 'USD';
+      let phaseCapUSD = 0;
+      if (phase.type === 'amount') {
+        phaseCapUSD = Number(phase.limit);
+      } else {
+        phaseCapUSD = allocation * price;
+      }
+      stats.cap = phaseCapUSD;
+
+      const phaseStart = accumulatedUSD;
+      const currentPhaseRaisedUSD = Math.max(0, Math.min(phaseCapUSD, fundsRaised - phaseStart));
+
+      stats.raised = currentPhaseRaisedUSD;
+      stats.percent = phaseCapUSD > 0 ? (currentPhaseRaisedUSD / phaseCapUSD) * 100 : 0;
+      // Estimate participants
+      stats.participants = price > 0 ? Math.floor(currentPhaseRaisedUSD / price) : 0;
+
+      accumulatedUSD += phaseCapUSD;
+    }
+
+    return {
+      ...phase,
+      stats
+    };
+  });
+
+  const activePhasesWithStats = phasesWithStats.filter((p: any) => p.isActive);
+  const historicalPhasesWithStats = phasesWithStats.filter((p: any) => !p.isActive);
 
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab');
@@ -151,8 +289,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
               <div className="space-y-6">
                 {/* Fases Activas */}
                 <div className="space-y-4">
-                  {project.w2eConfig.phases
-                    .filter((p: any) => p.isActive)
+                  {activePhasesWithStats
                     .map((phase: any, index: number) => (
                       <div
                         key={`active-${index}`}
@@ -177,16 +314,51 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                           </div>
                           <span className="text-xs px-2 py-0.5 bg-zinc-700 rounded text-gray-300 uppercase">{phase.type === 'time' ? 'Tiempo' : 'Monto'}</span>
                         </h4>
+
+                        {/* --- REAL DATA PROGRESS BAR (PHASE SPECIFIC) --- */}
+                        <div className="mb-4 bg-zinc-900/50 rounded-lg p-3 border border-zinc-800">
+                          <div className="flex justify-between items-end mb-1">
+                            <span className="text-xs text-zinc-400">Progreso Fase</span>
+                            <span className="text-lime-400 font-mono text-sm font-bold">
+                              {phase.stats.metric === 'Tokens' ?
+                                `${phase.stats.raised.toLocaleString()} / ${phase.stats.cap.toLocaleString()} Tokens` :
+                                `${formatCurrency(phase.stats.raised)} / ${formatCurrency(phase.stats.cap)}`
+                              }
+                            </span>
+                          </div>
+                          <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden mb-2">
+                            <div
+                              className="bg-lime-500 h-full rounded-full transition-all duration-1000"
+                              style={{ width: `${phase.stats.percent}%` }}
+                            />
+                          </div>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-zinc-500">
+                              Faltan: <span className="text-zinc-300">
+                                {phase.stats.metric === 'Tokens' ?
+                                  `${Math.max(0, phase.stats.cap - phase.stats.raised).toLocaleString()} Tokens` :
+                                  formatCurrency(Math.max(0, phase.stats.cap - phase.stats.raised))
+                                }
+                              </span>
+                            </span>
+                            <span className="px-2 py-0.5 bg-lime-900/30 text-lime-400 rounded-full border border-lime-500/20">
+                              {phase.stats.participants.toLocaleString()} Partic.
+                            </span>
+                          </div>
+                        </div>
+
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                           {/* Token Price (Property: tokenPrice) */}
                           <div>
                             <span className="text-zinc-500 block text-xs">Precio Token</span>
-                            <span className="text-lime-400 font-mono">${phase.tokenPrice ?? '0.00'}</span>
+                            <span className="text-lime-400 font-mono">
+                              {Number(phase.tokenPrice) === 0 ? 'GRATIS' : `$${phase.tokenPrice}`}
+                            </span>
                           </div>
                           {/* Limit (Context sensitive) */}
                           <div>
-                            <span className="text-zinc-500 block text-xs">Límite ({phase.type === 'time' ? 'Días' : 'USD'})</span>
-                            <span className="text-white font-mono">{Number(phase.limit).toLocaleString()} {phase.type === 'time' ? 'd' : '$'}</span>
+                            <span className="text-zinc-500 block text-xs">Límite ({phase.type === 'time' ? 'Días' : (phase.stats.metric === 'Tokens' ? 'Tokens' : 'USD')})</span>
+                            <span className="text-white font-mono">{Number(phase.limit).toLocaleString()} {phase.type === 'time' ? 'd' : (phase.stats.metric === 'Tokens' ? 'T' : '$')}</span>
                           </div>
                           {/* Allocation (Property: tokenAllocation) */}
                           <div>
@@ -224,8 +396,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                 {/* Fases Históricas (Inactivas) */}
                 {showHistorical && (
                   <div className="space-y-4 opacity-75 grayscale hover:grayscale-0 transition-all duration-500">
-                    {project.w2eConfig.phases
-                      .filter((p: any) => !p.isActive)
+                    {historicalPhasesWithStats
                       .map((phase: any, index: number) => (
                         <div
                           key={`historical-${index}`}
@@ -268,7 +439,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
             ) : (
               <p className="text-zinc-400">No hay fases de artefactos definidas.</p>
             )}
-          </div>
+          </div >
 
 
 
@@ -281,28 +452,30 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
           />
 
           {/* Fases de Venta (Deployment Config) */}
-          {project.w2eConfig?.phases && project.w2eConfig.phases.length > 0 && (
-            <SectionCard title="Fases de Venta Activas" icon={Crown}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {project.w2eConfig.phases.map((phase: any) => (
-                  <div key={phase.id} className={`p-4 rounded-lg border ${phase.isActive ? 'bg-lime-500/10 border-lime-500/30' : 'bg-zinc-800/50 border-zinc-700/50 opacity-60'}`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold text-white">{phase.name}</h4>
-                      {phase.isActive && <span className="px-2 py-0.5 rounded text-xs bg-lime-500/20 text-lime-400 border border-lime-500/30">Activa</span>}
+          {
+            project.w2eConfig?.phases && project.w2eConfig.phases.length > 0 && (
+              <SectionCard title="Fases de Venta Activas" icon={Crown}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {project.w2eConfig.phases.map((phase: any) => (
+                    <div key={phase.id} className={`p-4 rounded-lg border ${phase.isActive ? 'bg-lime-500/10 border-lime-500/30' : 'bg-zinc-800/50 border-zinc-700/50 opacity-60'}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-semibold text-white">{phase.name}</h4>
+                        {phase.isActive && <span className="px-2 py-0.5 rounded text-xs bg-lime-500/20 text-lime-400 border border-lime-500/30">Activa</span>}
+                      </div>
+                      <div className="text-sm text-zinc-400 space-y-1">
+                        <p>
+                          <span className="text-zinc-500">Condición:</span> {phase.type === 'time' ? 'Tiempo Limitado' : 'Monto Objetivo'}
+                        </p>
+                        <p>
+                          <span className="text-zinc-500">Límite:</span> {phase.limit} {phase.type === 'time' ? 'Días' : 'USD'}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-sm text-zinc-400 space-y-1">
-                      <p>
-                        <span className="text-zinc-500">Condición:</span> {phase.type === 'time' ? 'Tiempo Limitado' : 'Monto Objetivo'}
-                      </p>
-                      <p>
-                        <span className="text-zinc-500">Límite:</span> {phase.limit} {phase.type === 'time' ? 'Días' : 'USD'}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </SectionCard>
-          )}
+                  ))}
+                </div>
+              </SectionCard>
+            )
+          }
 
           {/* Estructura de Recompensa Recurrente */}
           <SectionCard title="Estructura de Recompensa Recurrente" icon={Star}>
@@ -344,7 +517,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
               }
             })()}
           </SectionCard>
-        </div>
+        </div >
       ),
     },
     // --- TAB 2: ESTRATEGIA Y SOSTENIBILIDAD (EL PLAN DE NEGOCIO) ---
@@ -437,7 +610,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
           <UserGovernanceList projectIds={[Number(project.id)]} />
 
           {/* Contratos Inteligentes (SCaaS) */}
-          {(project.licenseContractAddress || project.utilityContractAddress || project.loomContractAddress || project.governorContractAddress || project.treasuryContractAddress || (project.w2eConfig?.timelockAddress && project.w2eConfig.timelockAddress !== "0x0000000000000000000000000000000000000000")) && (
+          {(project.licenseContractAddress || project.utilityContractAddress || project.loomContractAddress || project.governorContractAddress || project.treasuryAddress || (project.w2eConfig?.timelockAddress && project.w2eConfig.timelockAddress !== "0x0000000000000000000000000000000000000000")) && (
             <SectionCard title="Contratos Inteligentes del Protocolo" icon={Code}>
               <div className="space-y-3">
                 {/* Helper for Contract Item */}
@@ -446,7 +619,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                   { label: "Token de Utilidad (ERC-20)", address: project.utilityContractAddress, type: "Utility" },
                   { label: "W2E Loom (Lógica Central)", address: project.loomContractAddress, type: "Loom" },
                   { label: "Gobernador (DAO)", address: project.governorContractAddress, type: "Governor" },
-                  { label: "Tesorería Comunitaria", address: project.treasuryContractAddress, type: "Treasury" },
+                  { label: "Tesorería Comunitaria", address: project.treasuryAddress, type: "Treasury" },
                   { label: "Timelock (Seguridad)", address: project.w2eConfig?.timelockAddress, type: "Timelock" }
                 ]
                   .filter(item => item.address && item.address !== "0x0000000000000000000000000000000000000000")

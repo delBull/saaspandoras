@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Ticket, ShieldCheck, ArrowRight } from 'lucide-react';
 import { useActiveAccount, TransactionButton, useReadContract } from "thirdweb/react";
-import { prepareContractCall, ContractOptions } from "thirdweb";
+import { prepareContractCall, ContractOptions, getContract, defineChain } from "thirdweb";
+import { client } from "@/lib/thirdweb-client";
 import { toast } from "sonner";
 
 interface AccessCardPurchaseModalProps {
@@ -18,20 +19,25 @@ export default function AccessCardPurchaseModal({ isOpen, onClose, project, lice
     const account = useActiveAccount();
     const [step, setStep] = useState<'review' | 'processing' | 'success'>('review');
 
+    // Fallback contract to prevent hook crash when licenseContract is undefined
+    const dummyContract = getContract({
+        client,
+        chain: defineChain(11155111),
+        address: "0x0000000000000000000000000000000000000000"
+    });
+
     // Read Price from Contract to ensure accuracy
     const { data: mintPrice } = useReadContract({
-        contract: licenseContract,
-        method: "function getPrice(uint256 quantity) view returns (uint256)",
-        params: [BigInt(1)]
+        contract: licenseContract || dummyContract,
+        method: "function licensePrice() view returns (uint256)",
+        params: [],
+        queryOptions: { enabled: !!licenseContract }
     });
 
     const handleSuccess = () => {
         setStep('success');
         toast.success("¡Access Card obtenida exitosamente!");
-        setTimeout(() => {
-            onClose();
-            window.location.reload();
-        }, 2000);
+        // Removed auto-close timeout to allow user to read next steps
     };
 
     return (
@@ -112,7 +118,9 @@ export default function AccessCardPurchaseModal({ isOpen, onClose, project, lice
                                                     contract: licenseContract as any,
                                                     method: "function mintWithPayment(uint256 quantity) payable",
                                                     params: [BigInt(1)],
-                                                    value: mintPrice ? BigInt(mintPrice) : (project.w2eConfig?.tokenomics?.price ? BigInt(project.w2eConfig.tokenomics.price * 1e18) : BigInt(0)), // Fallback to config or 0
+                                                    // CRITICAL FIX: If mintPrice (on-chain) is not read, DEFAULT TO 0 (FREE).
+                                                    // Do NOT fallback to tokenomics.price, as that is for the ERC20 token, not the Access Card.
+                                                    value: mintPrice ? BigInt(mintPrice) : BigInt(0),
                                                 })
                                             }
                                             theme="dark"
@@ -129,7 +137,7 @@ export default function AccessCardPurchaseModal({ isOpen, onClose, project, lice
                                         </TransactionButton>
                                     ) : (
                                         <button disabled className="w-full bg-zinc-700 text-gray-400 font-bold py-4 rounded-xl cursor-not-allowed">
-                                            Conecta tu Wallet
+                                            {licenseContract ? "Conecta tu Wallet" : "Contrato No Disponible"}
                                         </button>
                                     )}
                                 </div>
