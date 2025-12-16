@@ -117,46 +117,84 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
   const targetAmount = Number(project.target_amount) || 100000;
   const progressPercent = Math.min((fundsRaised / targetAmount) * 100, 100);
 
+  // Fallback contract to fix TS error when licenseContract is undefined
+  const dummyContract = getContract({
+    client,
+    chain: defineChain(safeChainId),
+    address: "0x0000000000000000000000000000000000000000"
+  });
+
+  // Read Total Supply (for Free Mint progress)
+  const { data: totalSupplyBN } = useReadContract({
+    contract: licenseContract || dummyContract,
+    queryOptions: { enabled: !!licenseContract },
+    method: "function totalSupply() view returns (uint256)",
+    params: []
+  });
+  const totalSupply = totalSupplyBN ? Number(totalSupplyBN) : 0;
+
   // --- Calculate Phase Stats ---
-  // Sort phases? Assuming order in array is correct order.
   const allPhases = project.w2eConfig?.phases || [];
-  let accumulatedLimit = 0;
+
+  // We need to track BOTH USD accumulation and Token accumulation because phases might mix free/paid? 
+  // For simplicity, let's assume if price is 0, we track tokens. If price > 0, we track USD.
+  // Actually, simplest is to track "Sold Tokens" for everything?
+  // But legacy logic tracks USD.
+
+  let accumulatedUSD = 0;
+  let accumulatedTokens = 0;
 
   const phasesWithStats = allPhases.map((phase: any) => {
-    // Determine Phase Cap (USD)
     const price = Number(phase.tokenPrice || 0);
-    const allocation = Number(phase.tokenAllocation || 0);
+    const allocation = Number(phase.tokenAllocation || 0); // Tokens
 
-    // If type is amount, limit is the USD amount. If time, limit is days, so we use allocation * price as cap.
-    // If allocation is 0/unlimited, this logic breaks, but we assume capped phases for progress bars.
-    let phaseCap = 0;
-    if (phase.type === 'amount') {
-      phaseCap = Number(phase.limit);
-    } else {
-      phaseCap = allocation * price;
-    }
-
-    // Calculate raised in this phase
-    // fundsRaised is total. 
-    // This phase starts at accumulatedLimit and ends at accumulatedLimit + phaseCap.
-    const phaseStart = accumulatedLimit;
-    const phaseEnd = accumulatedLimit + phaseCap;
-
-    const raisedInPhase = Math.max(0, Math.min(phaseCap, fundsRaised - phaseStart));
-    const percentInPhase = phaseCap > 0 ? (raisedInPhase / phaseCap) * 100 : 0;
-
-    const result = {
-      ...phase,
-      stats: {
-        cap: phaseCap,
-        raised: raisedInPhase,
-        percent: percentInPhase,
-        participants: price > 0 ? Math.floor(raisedInPhase / price) : 0
-      }
+    const stats = {
+      cap: 0,
+      raised: 0,
+      percent: 0,
+      participants: 0,
+      metric: 'USD'
     };
 
-    accumulatedLimit += phaseCap;
-    return result;
+    if (price === 0) {
+      // Free Mint -> Track by Tokens
+      stats.metric = 'Tokens';
+      stats.cap = allocation; // Cap in Tokens
+      // Determine raised tokens for this phase
+      const phaseStart = accumulatedTokens;
+      const currentPhaseRaisedTokens = Math.max(0, Math.min(allocation, totalSupply - phaseStart));
+
+      stats.raised = currentPhaseRaisedTokens;
+      stats.percent = allocation > 0 ? (currentPhaseRaisedTokens / allocation) * 100 : 0;
+      stats.participants = currentPhaseRaisedTokens; // 1 token = 1 participant usually
+
+      accumulatedTokens += allocation;
+    } else {
+      // Paid Mint -> Track by USD
+      stats.metric = 'USD';
+      let phaseCapUSD = 0;
+      if (phase.type === 'amount') {
+        phaseCapUSD = Number(phase.limit);
+      } else {
+        phaseCapUSD = allocation * price;
+      }
+      stats.cap = phaseCapUSD;
+
+      const phaseStart = accumulatedUSD;
+      const currentPhaseRaisedUSD = Math.max(0, Math.min(phaseCapUSD, fundsRaised - phaseStart));
+
+      stats.raised = currentPhaseRaisedUSD;
+      stats.percent = phaseCapUSD > 0 ? (currentPhaseRaisedUSD / phaseCapUSD) * 100 : 0;
+      // Estimate participants
+      stats.participants = price > 0 ? Math.floor(currentPhaseRaisedUSD / price) : 0;
+
+      accumulatedUSD += phaseCapUSD;
+    }
+
+    return {
+      ...phase,
+      stats
+    };
   });
 
   const activePhasesWithStats = phasesWithStats.filter((p: any) => p.isActive);
@@ -282,7 +320,10 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                           <div className="flex justify-between items-end mb-1">
                             <span className="text-xs text-zinc-400">Progreso Fase</span>
                             <span className="text-lime-400 font-mono text-sm font-bold">
-                              {formatCurrency(phase.stats.raised)} / {formatCurrency(phase.stats.cap)}
+                              {phase.stats.metric === 'Tokens' ?
+                                `${phase.stats.raised.toLocaleString()} / ${phase.stats.cap.toLocaleString()} Tokens` :
+                                `${formatCurrency(phase.stats.raised)} / ${formatCurrency(phase.stats.cap)}`
+                              }
                             </span>
                           </div>
                           <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden mb-2">
@@ -293,10 +334,15 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                           </div>
                           <div className="flex justify-between items-center text-xs">
                             <span className="text-zinc-500">
-                              Faltan: <span className="text-zinc-300">{formatCurrency(Math.max(0, phase.stats.cap - phase.stats.raised))}</span>
+                              Faltan: <span className="text-zinc-300">
+                                {phase.stats.metric === 'Tokens' ?
+                                  `${Math.max(0, phase.stats.cap - phase.stats.raised).toLocaleString()} Tokens` :
+                                  formatCurrency(Math.max(0, phase.stats.cap - phase.stats.raised))
+                                }
+                              </span>
                             </span>
                             <span className="px-2 py-0.5 bg-lime-900/30 text-lime-400 rounded-full border border-lime-500/20">
-                              {phase.stats.participants.toLocaleString()} Est. Partic.
+                              {phase.stats.participants.toLocaleString()} Partic.
                             </span>
                           </div>
                         </div>
@@ -305,12 +351,14 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                           {/* Token Price (Property: tokenPrice) */}
                           <div>
                             <span className="text-zinc-500 block text-xs">Precio Token</span>
-                            <span className="text-lime-400 font-mono">${phase.tokenPrice ?? '0.00'}</span>
+                            <span className="text-lime-400 font-mono">
+                              {Number(phase.tokenPrice) === 0 ? 'GRATIS' : `$${phase.tokenPrice}`}
+                            </span>
                           </div>
                           {/* Limit (Context sensitive) */}
                           <div>
-                            <span className="text-zinc-500 block text-xs">Límite ({phase.type === 'time' ? 'Días' : 'USD'})</span>
-                            <span className="text-white font-mono">{Number(phase.limit).toLocaleString()} {phase.type === 'time' ? 'd' : '$'}</span>
+                            <span className="text-zinc-500 block text-xs">Límite ({phase.type === 'time' ? 'Días' : (phase.stats.metric === 'Tokens' ? 'Tokens' : 'USD')})</span>
+                            <span className="text-white font-mono">{Number(phase.limit).toLocaleString()} {phase.type === 'time' ? 'd' : (phase.stats.metric === 'Tokens' ? 'T' : '$')}</span>
                           </div>
                           {/* Allocation (Property: tokenAllocation) */}
                           <div>

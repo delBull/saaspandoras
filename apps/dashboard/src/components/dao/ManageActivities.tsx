@@ -53,8 +53,9 @@ export function ManageActivities({ projectId }: ManageActivitiesProps) {
 
             <form onSubmit={handleCreate} className="space-y-4">
                 <div>
-                    <label className="block text-sm text-zinc-400 mb-1">Título</label>
+                    <label htmlFor="activity-title" className="block text-sm text-zinc-400 mb-1">Título</label>
                     <input
+                        id="activity-title"
                         className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white focus:ring-2 focus:ring-lime-500 outline-none"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
@@ -64,8 +65,9 @@ export function ManageActivities({ projectId }: ManageActivitiesProps) {
                 </div>
 
                 <div>
-                    <label className="block text-sm text-zinc-400 mb-1">Descripción</label>
+                    <label htmlFor="activity-desc" className="block text-sm text-zinc-400 mb-1">Descripción</label>
                     <textarea
+                        id="activity-desc"
                         className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white focus:ring-2 focus:ring-lime-500 outline-none"
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
@@ -76,8 +78,9 @@ export function ManageActivities({ projectId }: ManageActivitiesProps) {
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm text-zinc-400 mb-1">Recompensa</label>
+                        <label htmlFor="activity-reward" className="block text-sm text-zinc-400 mb-1">Recompensa</label>
                         <input
+                            id="activity-reward"
                             type="number"
                             className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white outline-none"
                             value={rewardAmount}
@@ -85,8 +88,9 @@ export function ManageActivities({ projectId }: ManageActivitiesProps) {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm text-zinc-400 mb-1">Token</label>
+                        <label htmlFor="activity-token" className="block text-sm text-zinc-400 mb-1">Token</label>
                         <select
+                            id="activity-token"
                             className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white outline-none"
                             value={rewardToken}
                             onChange={(e) => setRewardToken(e.target.value)}

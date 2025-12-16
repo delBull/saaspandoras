@@ -26,19 +26,6 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
   const rawChainId = Number(project.chainId);
   const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111; // Default Sepolia
 
-  // --- Real Data Hook ---
-  const { data: treasuryBalance } = useWalletBalance({
-    client,
-    chain: defineChain(safeChainId),
-    address: project.treasuryAddress || "",
-  });
-
-  const dbRaised = Number(project.raised_amount ?? 0);
-  const raisedAmount = treasuryBalance ? Number(treasuryBalance.displayValue) : dbRaised;
-  const progressPercent = Math.min((raisedAmount / targetAmount) * 100, 100);
-
-  // Fallack for visual (deprecated logic replacement)
-  const raisedPercentage = progressPercent;
 
   // --- Access Gating Logic ---
   const account = useActiveAccount();
@@ -74,6 +61,39 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
 
   const hasAccess = licenseBalance ? Number(licenseBalance) > 0 : false;
   // For verification: If we are the creator, maybe bypass? No, stricter is better.
+
+  // --- Real Data Hooks (Moved Down) ---
+  const { data: treasuryBalance } = useWalletBalance({
+    client,
+    chain: defineChain(safeChainId),
+    address: project.treasuryAddress || "",
+  });
+
+  const { data: totalSupply } = useReadContract({
+    contract: licenseContract || dummyContract, // Safe now
+    queryOptions: { enabled: !!licenseContract },
+    method: "function totalSupply() view returns (uint256)",
+    params: []
+  });
+
+  const dbRaised = Number(project.raised_amount ?? 0);
+  const raisedAmount = treasuryBalance ? Number(treasuryBalance.displayValue) : dbRaised;
+
+  // Calculate Progress Logic
+  const price = Number(project.w2eConfig?.licenseToken?.price ?? 0);
+  const maxSupply = Number(project.w2eConfig?.licenseToken?.maxSupply ?? 0);
+
+  // Financial Progress
+  const financialProgress = targetAmount > 0 ? Math.min((raisedAmount / targetAmount) * 100, 100) : 0;
+
+  // Token Progress (For Free Mints)
+  const currentSupply = totalSupply ? Number(totalSupply) : 0;
+  const tokenProgress = maxSupply > 0 ? Math.min((currentSupply / maxSupply) * 100, 100) : 0;
+
+  // Effective Progress (Use Token Progress if Price is 0 or it's higher)
+  const progressPercent = price === 0 ? tokenProgress : Math.max(financialProgress, tokenProgress);
+
+  const raisedPercentage = progressPercent;
 
   // Debug log (remove in prod)
   // console.log("Gating Check:", { user: account?.address, hasAccess, balance: licenseBalance?.toString() });
@@ -114,7 +134,11 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                 </div>
               ) : (
                 <div className="text-3xl font-bold text-white mb-2">
-                  ${raisedAmount.toLocaleString()}
+                  {price === 0 ? (
+                    <span>{currentSupply} / {maxSupply > 0 ? maxSupply.toLocaleString() : '∞'}</span>
+                  ) : (
+                    <span>${raisedAmount.toLocaleString()}</span>
+                  )}
                 </div>
               )}
 
