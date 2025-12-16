@@ -9,7 +9,7 @@ import { TransactionButton } from "thirdweb/react";
 import { prepareContractCall, getContract, toWei } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { config } from "@/config";
-import { PANDORAS_GOVERNANCE_ABI } from "@/lib/governance-abi";
+import { governanceABI } from "@/lib/governance-abi";
 import { base, baseSepolia } from "thirdweb/chains";
 import { approve, allowance } from "thirdweb/extensions/erc20";
 import Confetti from "react-confetti";
@@ -63,7 +63,7 @@ export function GovernanceParticipationModal({ isOpen, onClose }: GovernancePart
         client,
         chain: targetChain, // Fix: Use governanceChain (Base Sepolia)
         address: config.governanceContractAddress,
-        abi: PANDORAS_GOVERNANCE_ABI as any
+        abi: governanceABI as any
     });
 
     // USDC Contract (Hardcoded for Base Mainnet or Sepolia Mock if exists)
@@ -304,7 +304,11 @@ export function GovernanceParticipationModal({ isOpen, onClose }: GovernancePart
                                     currency === 'USDC' && !isApproved ? (
                                         <TransactionButton
                                             transaction={() => {
-                                                if (!amount || parseFloat(amount) <= 0) throw new Error("Monto inválido");
+                                                console.log("Transaction Start - Amount:", amount);
+                                                if (!amount || parseFloat(amount) <= 0) {
+                                                    toast.error("Por favor, ingresa un monto válido mayor a 0.");
+                                                    throw new Error("Monto inválido"); // Still throw to stop tx, but toast first
+                                                }
                                                 const val = BigInt(Math.floor(parseFloat(amount) * 1e6));
                                                 return approve({
                                                     contract: usdcContract,
@@ -324,7 +328,11 @@ export function GovernanceParticipationModal({ isOpen, onClose }: GovernancePart
                                     ) : (
                                         <TransactionButton
                                             transaction={() => {
-                                                if (!amount || parseFloat(amount) <= 0) throw new Error("Monto inválido");
+                                                console.log("Transaction Start - Amount:", amount);
+                                                if (!amount || parseFloat(amount) <= 0) {
+                                                    toast.error("Por favor, ingresa un monto válido mayor a 0.");
+                                                    throw new Error("Monto inválido");
+                                                }
 
                                                 if (currency === 'ETH') {
                                                     const val = BigInt(Math.floor(parseFloat(amount) * 1e18)); // Wei
@@ -346,8 +354,11 @@ export function GovernanceParticipationModal({ isOpen, onClose }: GovernancePart
                                             onTransactionSent={() => toast.info("Firmando transacción...")}
                                             onTransactionConfirmed={handleSuccess}
                                             onError={(e) => {
-                                                console.error(e);
-                                                toast.error("Error en la transacción. Revisa la consola.");
+                                                console.error("Transaction Error:", e);
+                                                // Don't show generic error if it was our validation error
+                                                if (e.message !== "Monto inválido") {
+                                                    toast.error("Error en la transacción. Revisa la consola.");
+                                                }
                                             }}
                                             theme="dark"
                                             className={`!w-full !font-bold !rounded-xl !py-6 !text-lg shadow-lg ${currency === 'USDC'
@@ -363,8 +374,7 @@ export function GovernanceParticipationModal({ isOpen, onClose }: GovernancePart
                         </motion.div>
                     </motion.div>
                 </>
-            )
-            }
-        </AnimatePresence >
+            )}
+        </AnimatePresence>
     );
 }

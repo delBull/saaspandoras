@@ -41,14 +41,12 @@ function useTokenPrices(): TokenPriceState {
       try {
         console.log('🔄 Fetching token prices from CoinGecko API...');
 
-        // Using CoinGecko API (free tier) for real-time prices
-        // Note: Using 'polygon-ecosystem-token' for POL (new native token)
-        // Fallback to 'matic-network' for backward compatibility
+        // Using local API Proxy to avoid CORS issues
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
 
         const response = await fetch(
-          'https://api.coingecko.com/api/v3/simple/price?ids=ethereum,polygon-ecosystem-token,matic-network,arbitrum,usd-coin,tether&vs_currencies=usd',
+          '/api/prices',
           {
             signal: controller.signal,
             headers: {

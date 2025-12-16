@@ -32,9 +32,7 @@ export function GovernanceProposalModal({ isOpen, onClose, onSubmit }: Governanc
             <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[500px]">
                 <DialogHeader className="flex flex-row items-center justify-between">
                     <DialogTitle className="text-xl font-bold">Crear Nueva Propuesta</DialogTitle>
-                    <button onClick={onClose} className="text-zinc-500 hover:text-white">
-                        <X className="w-5 h-5" />
-                    </button>
+
                 </DialogHeader>
 
                 <div className="space-y-4 py-4">
