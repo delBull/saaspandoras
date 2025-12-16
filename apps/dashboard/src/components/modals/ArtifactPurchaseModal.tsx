@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Coins, ArrowRight, Wallet, CheckCircle } from 'lucide-react';
+import { X, Coins, ArrowRight, Wallet, CheckCircle, Loader2 } from 'lucide-react';
 import { useActiveAccount, TransactionButton, useReadContract } from "thirdweb/react";
 import { prepareContractCall, prepareTransaction, defineChain } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
@@ -19,10 +19,11 @@ interface ArtifactPurchaseModalProps {
 
 export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilityContract, phase }: ArtifactPurchaseModalProps) {
     const account = useActiveAccount();
-    const [step, setStep] = useState<'review' | 'success'>('review');
+    const [step, setStep] = useState<'review' | 'processing' | 'success'>('review');
     const [amount, setAmount] = useState<string>("1000"); // Default amount
 
     const price = phase?.tokenPrice || 0;
+
     const totalCost = Number(amount) * Number(price);
 
     const handleSuccess = async () => {
@@ -124,7 +125,7 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                                 {/* Action */}
                                 {account ? (
                                     // Check if Treasury is Configured
-                                    (!project.treasuryContractAddress || project.treasuryContractAddress === "0x0000000000000000000000000000000000000000") ? (
+                                    (!project.treasuryAddress || project.treasuryAddress === "0x0000000000000000000000000000000000000000") ? (
                                         <div className="text-center">
                                             <button disabled className="w-full bg-red-500/10 text-red-400 font-bold py-4 rounded-xl border border-red-500/20 cursor-not-allowed flex items-center justify-center gap-2">
                                                 <span className="text-xl">⚠️</span> Configuración Incompleta
@@ -148,11 +149,14 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
 
                                                 // Prepare the Native Token Transfer (ETH)
                                                 return prepareTransaction({
-                                                    to: project.treasuryContractAddress,
+                                                    to: project.treasuryAddress,
                                                     value: weiAmount,
                                                     chain: defineChain(11155111), // Sepolia
                                                     client: client
                                                 });
+                                            }}
+                                            onTransactionSent={() => {
+                                                setStep('processing');
                                             }}
                                             theme="dark"
                                             onTransactionConfirmed={(tx) => {
@@ -173,6 +177,22 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                                         Conecta tu Wallet
                                     </button>
                                 )}
+                            </div>
+                        )}
+                        {step === 'processing' && (
+                            <div className="text-center py-8 space-y-4">
+                                <motion.div
+                                    animate={{ rotate: 360 }}
+                                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                                    className="w-16 h-16 border-4 border-lime-500/30 border-t-lime-500 rounded-full mx-auto"
+                                />
+                                <div>
+                                    <h3 className="text-xl font-bold text-white">Procesando Adquisición...</h3>
+                                    <p className="text-sm text-zinc-400 mt-1">Confirmando transacción en la blockchain.</p>
+                                </div>
+                                <div className="max-w-xs mx-auto bg-zinc-800/50 rounded-lg p-3 text-xs text-zinc-500 font-mono border border-zinc-800">
+                                    Por favor no cierres esta ventana.
+                                </div>
                             </div>
                         )}
 

@@ -30,8 +30,9 @@ export interface ProjectData {
   token_distribution?: string | null;
   contract_address?: string | null;
   licenseContractAddress?: string | null;
-  treasury_address?: string | null;
-  treasuryContractAddress?: string | null;
+  treasuryAddress?: string | null;
+  treasury_address?: string | null; // Legacy snake_case
+  treasuryContractAddress?: string | null; // Deprecated
   governorContractAddress?: string | null;
   utilityContractAddress?: string | null;
   loomContractAddress?: string | null;

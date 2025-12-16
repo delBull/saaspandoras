@@ -37,10 +37,7 @@ export default function AccessCardPurchaseModal({ isOpen, onClose, project, lice
     const handleSuccess = () => {
         setStep('success');
         toast.success("¡Access Card obtenida exitosamente!");
-        setTimeout(() => {
-            onClose();
-            window.location.reload();
-        }, 2000);
+        // Removed auto-close timeout to allow user to read next steps
     };
 
     return (
