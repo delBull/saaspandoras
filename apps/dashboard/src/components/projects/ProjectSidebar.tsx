@@ -28,19 +28,27 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
 
   // --- Access Gating Logic ---
   const account = useActiveAccount();
-  const chainId = Number(project.chainId) || 11155111; // Default Sepolia
 
-  // 1. Define License Contract
-  const licenseContract = project.licenseContractAddress ? getContract({
+  // Robust Chain ID handling: Handle potential undefined/null/NaN/0 values from DB
+  const rawChainId = Number(project.chainId);
+  const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111; // Default Sepolia
+
+  // 1. Define License Contract safely
+  // Ensure address is a valid hex string AND not the zero address
+  const isValidAddress = (addr: string | null | undefined): boolean =>
+    !!addr && addr.startsWith("0x") && addr.length === 42 && addr !== "0x0000000000000000000000000000000000000000";
+
+  const licenseContract = isValidAddress(project.licenseContractAddress) ? getContract({
     client,
-    chain: defineChain(chainId),
-    address: project.licenseContractAddress
+    chain: defineChain(safeChainId),
+    address: project.licenseContractAddress!
   }) : undefined;
 
   // Fallback to prevent hook crash if contract is undefined (even if disabled)
+  // Use the SAME chain to avoid mismatches
   const dummyContract = getContract({
     client,
-    chain: defineChain(chainId),
+    chain: defineChain(safeChainId),
     address: "0x0000000000000000000000000000000000000000"
   });
 
