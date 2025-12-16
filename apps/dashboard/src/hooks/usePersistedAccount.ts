@@ -211,9 +211,28 @@ export function usePersistedAccount() {
       }
 
       void connect(async () => {
-        const wallet = createWallet(session.walletType);
-        await wallet.connect({ client });
-        return wallet;
+        try {
+          const wallet = createWallet(session.walletType);
+          await wallet.connect({ client });
+          return wallet;
+        } catch (innerErr) {
+          const errMsg = innerErr instanceof Error ? innerErr.message : String(innerErr);
+          const isSilentError = errMsg.includes('no accounts available') || errMsg.includes('User rejected');
+
+          if (isSilentError) {
+            // 🤫 Silently fail and clean up session
+            if (typeof window !== "undefined") {
+              const correctedSession = { ...session, shouldReconnect: false };
+              localStorage.setItem("wallet-session", JSON.stringify(correctedSession));
+              setSession(correctedSession);
+            }
+            // Return undefined to abort connection attempt gracefully (if types allow) 
+            // or throw a specific error we know to ignore? 
+            // Returning undefined usually stops the mutation in thirdweb SDK without big error.
+            return undefined as any;
+          }
+          throw innerErr;
+        }
       }).catch((err: unknown) => {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
 
@@ -224,7 +243,8 @@ export function usePersistedAccount() {
 
         const isNoAccounts = errorMessage.includes('no accounts available') ||
           errorMessage.includes('User rejected') ||
-          errorMessage.includes('User denied');
+          errorMessage.includes('User denied') ||
+          errorMessage.includes('Failed to connect');
 
         if (isRequestPending) {
           // Para este error específico, NO deshabilitamos la reconexión automática
@@ -235,19 +255,24 @@ export function usePersistedAccount() {
 
         if (isNoAccounts) {
           // Normal behavior if wallet is locked or user cancels. Don't warn.
-          // IMPORTANT: Do NOT disable shouldReconnect here. If it's a transient issue (e.g. chain switch),
-          // we want to keep the session alive so the user can just click "Connect" or we can retry later.
+          // Clean up session to prevent infinite retry loops if the wallet is truly GONE.
           if (process.env.NODE_ENV === 'development') {
-            console.log("ℹ️ Reconexión cancelada o fallida (normal):", errorMessage);
+            console.log("ℹ️ Reconexión imposible (wallet bloqueada/inexistente). Limpiando sesión.", errorMessage);
           }
-          return; // Exit early, preserving session state
+          // Limpiar sesión para evitar bucles de error
+          if (typeof window !== "undefined") {
+            const correctedSession = { ...session, shouldReconnect: false };
+            localStorage.setItem("wallet-session", JSON.stringify(correctedSession));
+            setSession(correctedSession);
+          }
+          return;
         } else {
           if (process.env.NODE_ENV === 'development') {
-            console.warn("⚠️ Error reconectando wallet injected, deshabilitando reconexión automática:", errorMessage);
+            console.warn("⚠️ Error reconectando wallet injected:", errorMessage);
           }
         }
 
-        // Marcar que no se debe reconectar automáticamente después de errores CRITICOS (no "no accounts")
+        // Marcar que no se debe reconectar automáticamente después de errores CRITICOS
         if (typeof window !== "undefined") {
           const correctedSession = { ...session, shouldReconnect: false };
           localStorage.setItem("wallet-session", JSON.stringify(correctedSession));

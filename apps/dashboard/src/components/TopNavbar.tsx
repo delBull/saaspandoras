@@ -13,12 +13,15 @@ import {
   WalletIcon,
   TicketIcon,
 } from "@heroicons/react/24/outline";
-import { useActiveAccount } from "thirdweb/react";
+import { useActiveAccount, useConnectModal } from "thirdweb/react";
 import { ethereum } from "thirdweb/chains";
 import { WalletBalance, NetworkSelector, ConnectWalletButton } from "@/components/wallet";
 import { SUPPORTED_NETWORKS } from "@/config/networks";
 import { usePathname } from "next/navigation";
 import { PendingRewardsNotification } from "@/components/PendingRewardsNotification";
+import { client } from "@/lib/thirdweb-client";
+import { inAppWallet, createWallet } from "thirdweb/wallets";
+import { config } from "@/config";
 
 interface TopNavbarProps {
   wallet?: string;
@@ -34,6 +37,7 @@ export function TopNavbar({
   isSuperAdmin: isSuperAdminProp,
 }: TopNavbarProps) {
 
+  const { connect } = useConnectModal();
   const [profileDropdown, setProfileDropdown] = useState(false);
   const [userProfile, setUserProfile] = useState<{ image?: string; role?: string; projectCount?: number } | null>(null);
   const [dropdownOpenedAt, setDropdownOpenedAt] = useState<number>(0);
@@ -240,35 +244,57 @@ export function TopNavbar({
           <div className="flex items-center">
             {/* Right side - Profile and other items - Always pushed to the right */}
             <div className="flex items-center gap-4 ml-auto pointer-events-auto">
-              {/* Profile Button */}
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
+              {/* Profile Button or Connect Button */}
+              {!account?.address ? (
+                <button
+                  onClick={() => connect({
+                    client,
+                    chain: config.chain,
+                    showThirdwebBranding: false,
+                    wallets: [
+                      inAppWallet({
+                        auth: {
+                          options: ["email", "google", "apple", "facebook", "passkey"],
+                        },
+                      }),
+                      createWallet("io.metamask"),
+                    ],
+                  })}
+                  className="flex items-center gap-2 px-4 py-2 bg-lime-400 hover:bg-lime-500 text-gray-900 rounded-lg transition-colors shadow-lg shadow-lime-400/20"
+                >
+                  <WalletIcon className="w-5 h-5" />
+                  <span>Inicia Sesión</span>
+                </button>
+              ) : (
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
 
-                  const isOpening = !profileDropdown;
-                  setProfileDropdown(!profileDropdown);
+                    const isOpening = !profileDropdown;
+                    setProfileDropdown(!profileDropdown);
 
-                  if (isOpening) {
-                    setDropdownOpenedAt(Date.now());
-                  }
-                }}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-zinc-800/50 transition-colors"
-                title="Perfil"
-              >
-                <Image
-                  src={userProfile?.image ?? '/images/avatars/onlybox2.png'}
-                  alt="Profile Avatar"
-                  width={32}
-                  height={32}
-                  className="w-8 h-8 rounded-lg border border-lime-400"
-                />
-                <span className="text-sm text-gray-300 font-medium">Perfil</span>
-              </button>
+                    if (isOpening) {
+                      setDropdownOpenedAt(Date.now());
+                    }
+                  }}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-zinc-800/50 transition-colors"
+                  title="Perfil"
+                >
+                  <Image
+                    src={userProfile?.image ?? '/images/avatars/onlybox2.png'}
+                    alt="Profile Avatar"
+                    width={32}
+                    height={32}
+                    className="w-8 h-8 rounded-lg border border-lime-400"
+                  />
+                  <span className="text-sm text-gray-300 font-medium">Perfil</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -435,6 +461,6 @@ export function TopNavbar({
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </div >
   );
 }
