@@ -231,15 +231,15 @@ export function TopNavbar({
   }, []);
 
   return (
-    <div className={`absolute w-full z-50 md:block hidden pt-4 transition-opacity duration-700 pointer-events-none ${mounted ? 'opacity-100' : 'opacity-0'}`}>
+    <div className={`absolute w-full z-[100] md:block hidden pt-4 transition-opacity duration-700 pointer-events-none ${mounted ? 'opacity-100' : 'opacity-0'}`}>
       <div className="pointer-events-auto"><PendingRewardsNotification /></div>
-      <div className={`pointer-events-auto bg-gradient-to-r from-purple-950/0 to-black/0 transition-all duration-500 ${isApplicantsPage ? (panelCollapsed ? 'mr-8 lg:mr-12' : 'mr-[240px] lg:mr-[270px]') : ''
+      <div className={`bg-gradient-to-r from-purple-950/0 to-black/0 transition-all duration-500 ${isApplicantsPage ? (panelCollapsed ? 'mr-8 lg:mr-12' : 'mr-[240px] lg:mr-[270px]') : ''
         }`}>
         <div className={`px-4 ${isApplicantsPage ? '' : 'max-w-7xl mx-auto'
           }`}>
           <div className="flex items-center">
             {/* Right side - Profile and other items - Always pushed to the right */}
-            <div className="flex items-center gap-4 ml-auto">
+            <div className="flex items-center gap-4 ml-auto pointer-events-auto">
               {/* Profile Button */}
               <button
                 onClick={(e) => {
