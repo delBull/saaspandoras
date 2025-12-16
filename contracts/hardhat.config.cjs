@@ -25,7 +25,7 @@ module.exports = {
       chainId: 84532,
     },
     sepolia: {
-      url: "https://rpc.sepolia.org", // Or Alchemy/Infura URL if env var available, but public RPC is fine for low traffic
+      url: "https://ethereum-sepolia-rpc.publicnode.com", // More reliable public RPC
       accounts: [process.env.PRIVATE_KEY],
       chainId: 11155111,
     },

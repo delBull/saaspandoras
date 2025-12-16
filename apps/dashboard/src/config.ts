@@ -13,9 +13,10 @@ const defaultChain = (isStaging || process.env.NODE_ENV === 'development') ? 'se
 const chainName = process.env.NODE_ENV === 'development' ? 'sepolia' : (process.env.NEXT_PUBLIC_CHAIN_NAME || defaultChain);
 const nftContractAddress = process.env.NEXT_PUBLIC_NFT_CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000";
 const poolContractAddress = process.env.NEXT_PUBLIC_POOL_CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000";
+const superAdminAddress = process.env.NEXT_PUBLIC_SUPER_ADMIN || ""; // Off-chain Super Admin override
 const GOV_ADDRESS_PROD = process.env.NEXT_PUBLIC_GOVERNANCE_CONTRACT_ADDRESS || "0x4122D7A6F11286B881F8332D8c27deBcC922B2fA";
 // Do NOT use the generic env var for Sepolia, as it likely contains the Prod address in local .env files
-const GOV_ADDRESS_SEPOLIA = "0x88812b1862ab510f488b1c89e3a1e69bdcc32290"; // Deployed to Sepolia Ethereum
+const GOV_ADDRESS_SEPOLIA = "0xe225DDceEfb5bd0957Ed165193267691083E25ED"; // Pandoras DAO Gov v2 (Roles, Penalties)
 
 // --- 2. Valida que las variables de entorno existan (Log instead of throw) ---
 if (!process.env.NEXT_PUBLIC_CHAIN_NAME) {
@@ -54,4 +55,5 @@ export const config = {
   poolContractAddress: poolContractAddress,
   governanceContractAddress: governanceContractAddress,
   governanceChain: governanceChain,
+  superAdminAddress: superAdminAddress,
 };

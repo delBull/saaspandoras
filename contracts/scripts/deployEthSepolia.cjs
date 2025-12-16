@@ -6,19 +6,13 @@ async function main() {
     console.log("🚀 Iniciando despliegue manual a SEPOLIA ETH...");
 
     // 1. Setup Provider & Wallet manually
-    // Check if we are on the right network
-    console.log(`- Network: ${hre.network.name} (ChainID: ${hre.network.config.chainId})`);
-
-    const apiKey = process.env.THIRDWEB_API_KEY || process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID; // Fallback or check env names
-    let providerUrl = `https://11155111.rpc.thirdweb.com/${apiKey}`;
-
-    console.log(`- Connecting to Thirdweb RPC...`);
-    const provider = new ethers.providers.JsonRpcProvider(providerUrl);
-    const network = await provider.getNetwork();
-    console.log(`- Connected to Chain ID: ${network.chainId}`);
-
+    // Using hre.network.config.url from hardhat.config.ts
+    const provider = new ethers.providers.JsonRpcProvider(hre.network.config.url, hre.network.config.chainId);
     const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+
+    console.log("- Network:", hre.network.name);
     console.log("- Cuenta:", wallet.address);
+
     const balance = await wallet.getBalance();
     console.log("- Balance:", ethers.utils.formatEther(balance), "ETH");
 
@@ -27,7 +21,7 @@ async function main() {
     }
 
     // 2. Load Artifacts
-    const artifactName = "PoolPandorasSepolia";
+    const artifactName = "PoolPandoras";
     const artifact = await hre.artifacts.readArtifact(artifactName);
 
     // 3. Deployment Config

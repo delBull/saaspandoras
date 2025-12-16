@@ -20,7 +20,7 @@ async function main() {
     console.log("- Balance:", (await wallet.getBalance()).toString());
 
     // 2. Load Artifacts
-    const artifactName = "PoolPandorasSepolia";
+    const artifactName = "PoolPandoras";
     const artifact = await hre.artifacts.readArtifact(artifactName);
 
     // 3. Deployment Config

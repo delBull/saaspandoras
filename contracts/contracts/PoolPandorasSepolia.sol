@@ -461,6 +461,141 @@ contract PoolPandorasSepolia is AccessControl, ReentrancyGuard, ERC2771Context {
         usdcInVault = usdc.balanceOf(address(this));
         totalDepositedETH_ = totalDepositedETH; totalDepositedUSDC_ = totalDepositedUSDC; totalWithdrawnETH_ = totalWithdrawnETH; totalWithdrawnUSDC_ = totalWithdrawnUSDC; totalUtilityETH_ = totalUtilityETH; totalUtilityUSDC_ = totalUtilityUSDC; totalReinvestedETH_ = totalReinvestedETH; totalReinvestedUSDC_ = totalReinvestedUSDC; totalInvestedETH_ = totalInvestedETH; totalInvestedUSDC_ = totalInvestedUSDC; numDepositors = 0; numWithdrawnUsers = withdrawnUsers.length;
     }
+    // --- Governance System ---
+
+    struct Proposal {
+        uint256 id;
+        address proposer;
+        string title;
+        string description;
+        uint256 startTime;
+        uint256 endTime;
+        uint256 forVotes;
+        uint256 againstVotes;
+        bool active;
+        bool executed;
+    }
+
+    uint256 public proposalCount;
+    mapping(uint256 => Proposal) public proposals;
+    mapping(uint256 => mapping(address => bool)) public hasVoted;
+
+    uint256 public constant VP_ETH_MULTIPLIER = 2000;
+    uint256 public constant PROPOSAL_THRESHOLD = 500 * 1e18; // Min VP (wei-equivalent) to propose? Let's say 1000 VP unit
+    // Wait, VP calculation: 1 ETH = 2000 VP. 1 USDC = 1 VP.
+    // Let's stick to a raw unit threshold. 1000 VP.
+
+    event ProposalCreated(uint256 indexed id, address indexed proposer, string title, uint256 endTime);
+    event Voted(uint256 indexed id, address indexed voter, bool support, uint256 weight);
+    event ProposalClosed(uint256 indexed id, bool executed);
+
+    function getVotingPower(address user) public view returns (uint256) {
+        // Calculate based on DEPOSITS only (Active + Reinvested).
+        // VP = (ETH_Amount * 2000) + (USDC_Amount)
+        // Note: Amounts in contract are: ETH (wei), USDC (6 decimals).
+        // To normalize, we generally treat 1 ETH (1e18) as 2000 Points. 
+        // 1 USDC (1e6) as 1 Point. 
+        // Logic: (ethAmount / 1e18 * 2000) + (usdcAmount / 1e6).
+        // Better: Normalized VP with 18 decimals? Or just simple Points?
+        // User saw "4 VP" for "0.001 ETH". 
+        // 0.001 * 2000 = 2. Correct.
+        // So 1 ETH (1e18 wei) = 2000 VP.
+        // 1 USDC (1e6 wei) = 1 VP.
+        
+        // Summing up user deposits
+        uint256 totalEth;
+        uint256 totalUsdc;
+
+        DepositInfo[] storage deps = userDeposits[user];
+        for (uint256 i = 0; i < deps.length; i++) {
+            DepositInfo memory dep = deps[i];
+            // Only count active (not withdrawn) deposits
+            if (!_isWithdrawn(dep.flags)) {
+                if (dep.token == TokenType.ETH) {
+                    totalEth += dep.amount;
+                } else {
+                    totalUsdc += dep.amount;
+                }
+            }
+        }
+
+        // Calculation: 
+        // VP From ETH = (totalEth * 2000) / 1e18; 
+        // VP From USDC = (totalUsdc * 1) / 1e6;
+        // BUT strict integer division might lose precision for small amounts (like 0.0001 ETH).
+        // The frontend showed decimals. Smart Contracts don't do decimals.
+        // Let's return VP scaled by 1e18 to allow fractional VP in frontend? 
+        // Or just return integer VP?
+        // User: "4 VP vs expected 2 VP". 
+        // Let's return RAW VP (integer).
+        // 1 ETH = 2000 VP. 2000 * 1e18 / 1e18.
+        
+        uint256 vpEth = (totalEth * 2000) / 1 ether; 
+        // Check precision loss: 0.001 ETH (1e15 wei) * 2000 = 2e18 / 1e18 = 2. OK.
+        // 0.0001 ETH (1e14 wei) * 2000 = 2e17 / 1e18 = 0. Loss.
+        // Let's use 100 decimals logic? No, let's keep it simple for now as requested.
+        
+        uint256 vpUsdc = (totalUsdc) / 1e6;
+
+        return vpEth + vpUsdc;
+    }
+
+    function createProposal(string calldata title, string calldata description, uint256 daysOpen) external nonReentrant {
+        if (daysOpen == 0) revert InvalidAmount();
+        
+        // Check Threshold: e.g. need at least 1 VP to spam?
+        if (getVotingPower(_msgSender()) < 1) revert InsufficientBalance(); // Mock threshold
+
+        proposalCount++;
+        uint256 newId = proposalCount;
+        
+        Proposal storage p = proposals[newId];
+        p.id = newId;
+        p.proposer = _msgSender();
+        p.title = title;
+        p.description = description;
+        p.startTime = block.timestamp;
+        p.endTime = block.timestamp + (daysOpen * 1 days);
+        p.active = true;
+
+        emit ProposalCreated(newId, _msgSender(), title, p.endTime);
+    }
+
+    function vote(uint256 proposalId, bool support) external nonReentrant {
+        Proposal storage p = proposals[proposalId];
+        if (!p.active) revert("Proposal not active");
+        if (block.timestamp > p.endTime) revert("Voting ended");
+        if (hasVoted[proposalId][_msgSender()]) revert("Already voted");
+
+        uint256 weight = getVotingPower(_msgSender());
+        if (weight == 0) revert("No Voting Power");
+
+        hasVoted[proposalId][_msgSender()] = true;
+
+        if (support) {
+            p.forVotes += weight;
+        } else {
+            p.againstVotes += weight;
+        }
+
+        emit Voted(proposalId, _msgSender(), support, weight);
+    }
+
+    function closeProposal(uint256 proposalId) external onlyRole(ADMIN_ROLE) {
+        Proposal storage p = proposals[proposalId];
+        p.active = false;
+        p.executed = true; // For now just mark as executed/closed
+        emit ProposalClosed(proposalId, true);
+    }
+
+    function getAllProposals() external view returns (Proposal[] memory) {
+        Proposal[] memory all = new Proposal[](proposalCount);
+        for (uint256 i = 1; i <= proposalCount; i++) {
+            all[i - 1] = proposals[i];
+        }
+        return all;
+    }
+
     function getUserStats(address user) external view returns (uint256 depositedETH, uint256 depositedUSDC, uint256 withdrawnETH, uint256 withdrawnUSDC, uint256 claimableUtilityETH, uint256 claimableUtilityUSDC, uint256 reinvestedETH, uint256 reinvestedUSDC) {
         DepositInfo[] storage deps = userDeposits[user];
         for (uint256 i = 0; i < deps.length; i++) {
