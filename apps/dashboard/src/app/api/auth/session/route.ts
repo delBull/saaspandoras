@@ -11,16 +11,16 @@ export async function GET(_request: Request) {
 
     // Try multiple header names in case Vercel filters some
     const headerWallet = requestHeaders.get('x-thirdweb-address') ??
-                        requestHeaders.get('x-wallet-address') ??
-                        requestHeaders.get('x-user-address') ??
-                        requestHeaders.get('x-wallet-address'); // fallback to same header
+      requestHeaders.get('x-wallet-address') ??
+      requestHeaders.get('x-user-address') ??
+      requestHeaders.get('x-wallet-address'); // fallback to same header
 
     if (!headerWallet) {
       return NextResponse.json({
         message: "No wallet address provided",
         hasSession: false,
         address: null
-      }, { status: 400 });
+      }, { status: 200 });
     }
 
     const walletAddress = headerWallet.toLowerCase().trim();
