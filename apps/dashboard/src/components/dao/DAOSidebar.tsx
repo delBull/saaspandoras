@@ -7,8 +7,10 @@ import {
     UsersIcon,
     SettingsIcon,
     ShieldCheckIcon,
-    HelpCircleIcon
+    HelpCircleIcon,
+    MessageSquare
 } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
@@ -33,6 +35,7 @@ export function DAOSidebar({
     const navItems = [
         { id: 'overview', label: 'Resumen DAO', icon: HomeIcon },
         { id: 'proposals', label: 'Propuestas y Votación', icon: VoteIcon },
+        { id: 'chat', label: 'Foro Global', icon: MessageSquare }, // New Chat Item
         { id: 'staking', label: 'Utilidad y Recompensas', icon: CoinsIcon },
         { id: 'members', label: 'Miembros', icon: UsersIcon },
         { id: 'info', label: 'Información y Ayuda', icon: HelpCircleIcon },

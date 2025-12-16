@@ -692,6 +692,36 @@ export const daoActivitySubmissions = pgTable("dao_activity_submissions", {
   reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
 });
 
+
+// DAO Chat / Forum Tables
+
+export const daoThreads = pgTable("dao_threads", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").notNull(), // Assuming relation is managed manually or via ID for now to avoid circular deps if projects is defined earlier
+  authorAddress: varchar("author_address", { length: 42 }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  category: varchar("category", { length: 50 }).default('general'),
+  isPinned: boolean("is_pinned").default(false),
+  isLocked: boolean("is_locked").default(false),
+  viewCount: integer("view_count").default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow()
+});
+
+export const daoPosts = pgTable("dao_posts", {
+  id: serial("id").primaryKey(),
+  threadId: integer("thread_id").notNull().references(() => daoThreads.id, { onDelete: 'cascade' }),
+  authorAddress: varchar("author_address", { length: 42 }).notNull(),
+  content: text("content").notNull(),
+  isSolution: boolean("is_solution").default(false),
+  likesCount: integer("likes_count").default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow()
+});
+
 // DAO Activities Types
 export type DaoActivity = typeof daoActivities.$inferSelect;
 export type DaoActivitySubmission = typeof daoActivitySubmissions.$inferSelect;
+
+export type DaoThread = typeof daoThreads.$inferSelect;
+export type DaoPost = typeof daoPosts.$inferSelect;

@@ -4,7 +4,8 @@ import { UserGovernanceList } from "../user/UserGovernanceList";
 import { ManageActivities } from "./ManageActivities";
 import { ActivitiesList } from "./ActivitiesList";
 import { DAOMetrics } from "./DAOMetrics";
-import { VoteIcon, Wallet, WalletIcon, TrendingUpIcon, ActivityIcon, ArrowUpRightIcon, HelpCircleIcon, SettingsIcon, LockIcon, ListTodoIcon, TrophyIcon, UsersIcon } from "lucide-react";
+import { DAOChat } from "./DAOChat";
+import { VoteIcon, Wallet, WalletIcon, TrendingUpIcon, ActivityIcon, ArrowUpRightIcon, HelpCircleIcon, SettingsIcon, LockIcon, ListTodoIcon, TrophyIcon, UsersIcon, InfoIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { useReadContract, useWalletBalance } from "thirdweb/react";
 import { getContract, defineChain } from "thirdweb";
@@ -363,6 +364,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
             >
                 {activeView === 'overview' && <OverviewView />}
                 {activeView === 'activities' && <ActivitiesView />}
+                {activeView === 'chat' && <DAOChat project={project} />}
                 {activeView === 'staking' && <StakingView />}
                 {activeView === 'proposals' && <ProposalsView />}
                 {activeView === 'info' && <InfoView />}
