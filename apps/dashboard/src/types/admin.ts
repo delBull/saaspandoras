@@ -41,6 +41,7 @@ export interface Project {
   chainId?: number;
   deploymentStatus?: string;
   w2eConfig?: any;
+  treasuryAddress?: string;
 }
 
 export interface AdminData {

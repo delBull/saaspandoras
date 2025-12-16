@@ -117,7 +117,7 @@ export async function GET(
         "license_contract_address" as "licenseContractAddress",
         "utility_contract_address" as "utilityContractAddress",
         "governor_contract_address" as "governorContractAddress",
-        "treasury_contract_address" as "treasuryContractAddress",
+        "treasury_address" as "treasuryAddress",
         "loom_contract_address" as "loomContractAddress",
         "deployment_status" as "deploymentStatus",
         "chain_id" as "chainId",

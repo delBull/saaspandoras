@@ -636,3 +636,62 @@ export type ShortlinkEvent = typeof shortlinkEvents.$inferSelect;
 export type Shortlink = typeof shortlinks.$inferSelect;
 
 // Email Metrics Types
+export type EmailMetric = typeof emailMetrics.$inferSelect;
+
+// --- DAO ACTIVITIES & REWARDS TABLES ---
+
+export const daoActivityTypeEnum = pgEnum("dao_activity_type", [
+  "social",    // Retweet, Follow, Share
+  "on_chain",  // Vote, Delegate, Hold Token
+  "content",   // Write Article, Video
+  "custom"     // Manual task
+]);
+
+export const daoActivityStatusEnum = pgEnum("dao_activity_status", [
+  "active",
+  "paused",
+  "ended"
+]);
+
+export const daoActivitySubmissionStatusEnum = pgEnum("dao_activity_submission_status", [
+  "pending",
+  "approved",
+  "rejected"
+]);
+
+export const daoActivities = pgTable("dao_activities", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+
+  // Rewards
+  rewardAmount: decimal("reward_amount", { precision: 18, scale: 6 }).default("0").notNull(),
+  rewardTokenSymbol: varchar("reward_token_symbol", { length: 20 }).default("PBOX").notNull(),
+
+  // Config
+  type: daoActivityTypeEnum("type").default("custom").notNull(),
+  status: daoActivityStatusEnum("status").default("active").notNull(),
+  externalLink: text("external_link"),
+
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const daoActivitySubmissions = pgTable("dao_activity_submissions", {
+  id: serial("id").primaryKey(),
+  activityId: integer("activity_id").references(() => daoActivities.id).notNull(),
+  userWallet: varchar("user_wallet", { length: 42 }).notNull(), // Wallet for payout
+
+  // Proof
+  proofData: text("proof_data"), // URL or text explanation
+  status: daoActivitySubmissionStatusEnum("status").default("pending").notNull(),
+  feedback: text("feedback"), // Rejection reason or cheer
+
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+});
+
+// DAO Activities Types
+export type DaoActivity = typeof daoActivities.$inferSelect;
+export type DaoActivitySubmission = typeof daoActivitySubmissions.$inferSelect;

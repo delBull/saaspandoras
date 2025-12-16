@@ -2,6 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { EyeIcon, ImageIcon } from "lucide-react";
 import type { Project } from "../../../hooks/applicants/useApplicantsData";
+import { useWalletBalance } from "thirdweb/react";
+import { client } from "@/lib/thirdweb-client";
+import { config } from "@/config";
 
 interface ProjectCardProps {
   project: Project;
@@ -9,10 +12,26 @@ interface ProjectCardProps {
   gridColumns?: 3 | 4 | 6;
 }
 
+import { defineChain } from "thirdweb";
+
+// ...
+
 export function ProjectCard({ project, variant = 'approved', gridColumns = 3 }: ProjectCardProps) {
+  // Robust Chain ID handling
+  const rawChainId = Number((project as any).chainId);
+  const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
+
+  // Real Data Hook
+  const { data: treasuryBalance } = useWalletBalance({
+    client,
+    chain: defineChain(safeChainId),
+    address: (project as any).treasuryAddress || (project as any).treasuryContractAddress || "",
+  });
+
   const targetAmount = Number(project.targetAmount ?? 0);
-  const raisedAmount = Number(project.raisedAmount ?? 0);
-  const progress = targetAmount > 0 ? (raisedAmount / targetAmount) * 100 : 0;
+  // Use real balance if available, otherwise fallback to DB text (or 0)
+  const raisedAmount = treasuryBalance ? Number(treasuryBalance.displayValue) : Number(project.raisedAmount ?? 0);
+  const progress = targetAmount > 0 ? Math.min((raisedAmount / targetAmount) * 100, 100) : 0;
 
   const isPending = project.status === 'pending';
 

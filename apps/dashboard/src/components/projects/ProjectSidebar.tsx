@@ -9,7 +9,7 @@ import type { ProjectData } from "@/app/()/projects/types";
 import AccessCardPurchaseModal from "../modals/AccessCardPurchaseModal";
 import ArtifactPurchaseModal from "../modals/ArtifactPurchaseModal"; // Unified Modal
 import type { UtilityPhase } from '@/types/deployment';
-import { useActiveAccount, useReadContract, TransactionButton } from "thirdweb/react";
+import { useActiveAccount, useReadContract, TransactionButton, useWalletBalance } from "thirdweb/react";
 import { getContract, defineChain, prepareContractCall } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { balanceOf } from "thirdweb/extensions/erc721";
@@ -22,16 +22,28 @@ interface ProjectSidebarProps {
 export default function ProjectSidebar({ project, targetAmount }: ProjectSidebarProps) {
   // Debug: Check status
   // console.log("ProjectSidebar Debug:", { id: project.id, status: project.deploymentStatus });
+  // Robust Chain ID handling: Handle potential undefined/null/NaN/0 values from DB
+  const rawChainId = Number(project.chainId);
+  const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111; // Default Sepolia
 
-  const raisedAmount = Number(project.raised_amount ?? 0);
-  const raisedPercentage = (raisedAmount / targetAmount) * 100;
+  // --- Real Data Hook ---
+  const { data: treasuryBalance } = useWalletBalance({
+    client,
+    chain: defineChain(safeChainId),
+    address: project.treasuryAddress || "",
+  });
+
+  const dbRaised = Number(project.raised_amount ?? 0);
+  const raisedAmount = treasuryBalance ? Number(treasuryBalance.displayValue) : dbRaised;
+  const progressPercent = Math.min((raisedAmount / targetAmount) * 100, 100);
+
+  // Fallack for visual (deprecated logic replacement)
+  const raisedPercentage = progressPercent;
 
   // --- Access Gating Logic ---
   const account = useActiveAccount();
 
-  // Robust Chain ID handling: Handle potential undefined/null/NaN/0 values from DB
-  const rawChainId = Number(project.chainId);
-  const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111; // Default Sepolia
+
 
   // 1. Define License Contract safely
   // Ensure address is a valid hex string AND not the zero address
