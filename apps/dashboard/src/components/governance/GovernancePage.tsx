@@ -157,7 +157,7 @@ export default function GovernancePage() {
     }).sort((a: any, b: any) => b.id < a.id ? 1 : -1).reverse(); // Newest first
 
     // --- Activity Feed Merge ---
-    type ActivityItem = {
+    interface ActivityItem {
         type: 'contract' | 'proposal';
         title?: string; // Only for proposals
         user: string;
@@ -165,7 +165,7 @@ export default function GovernancePage() {
         amount?: bigint; // Only for contract
         isReinvestment?: boolean;
         timestamp: number;
-    };
+    }
 
     const combinedActivity: ActivityItem[] = [
         ...(depositEvents?.map(e => ({
@@ -330,6 +330,9 @@ export default function GovernancePage() {
                                                     <div
                                                         key={`prop-${i}`}
                                                         onClick={() => setActiveTab("proposals")}
+                                                        role="button"
+                                                        tabIndex={0}
+                                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setActiveTab("proposals"); }}
                                                         className="flex items-center justify-between p-4 bg-zinc-950/50 rounded-lg border border-zinc-900 cursor-pointer hover:bg-zinc-900 transition-colors group"
                                                     >
                                                         <div className="flex items-center gap-3">
