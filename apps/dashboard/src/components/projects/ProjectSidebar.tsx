@@ -9,7 +9,7 @@ import type { ProjectData } from "@/app/()/projects/types";
 import AccessCardPurchaseModal from "../modals/AccessCardPurchaseModal";
 import ArtifactPurchaseModal from "../modals/ArtifactPurchaseModal"; // Unified Modal
 import type { UtilityPhase } from '@/types/deployment';
-import { useActiveAccount, useReadContract, TransactionButton } from "thirdweb/react";
+import { useActiveAccount, useReadContract, TransactionButton, useWalletBalance } from "thirdweb/react";
 import { getContract, defineChain, prepareContractCall } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { balanceOf } from "thirdweb/extensions/erc721";
@@ -22,25 +22,32 @@ interface ProjectSidebarProps {
 export default function ProjectSidebar({ project, targetAmount }: ProjectSidebarProps) {
   // Debug: Check status
   // console.log("ProjectSidebar Debug:", { id: project.id, status: project.deploymentStatus });
+  // Robust Chain ID handling: Handle potential undefined/null/NaN/0 values from DB
+  const rawChainId = Number(project.chainId);
+  const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111; // Default Sepolia
 
-  const raisedAmount = Number(project.raised_amount ?? 0);
-  const raisedPercentage = (raisedAmount / targetAmount) * 100;
 
   // --- Access Gating Logic ---
   const account = useActiveAccount();
-  const chainId = Number(project.chainId) || 11155111; // Default Sepolia
 
-  // 1. Define License Contract
-  const licenseContract = project.licenseContractAddress ? getContract({
+
+
+  // 1. Define License Contract safely
+  // Ensure address is a valid hex string AND not the zero address
+  const isValidAddress = (addr: string | null | undefined): boolean =>
+    !!addr && addr.startsWith("0x") && addr.length === 42 && addr !== "0x0000000000000000000000000000000000000000";
+
+  const licenseContract = isValidAddress(project.licenseContractAddress) ? getContract({
     client,
-    chain: defineChain(chainId),
-    address: project.licenseContractAddress
+    chain: defineChain(safeChainId),
+    address: project.licenseContractAddress!
   }) : undefined;
 
   // Fallback to prevent hook crash if contract is undefined (even if disabled)
+  // Use the SAME chain to avoid mismatches
   const dummyContract = getContract({
     client,
-    chain: defineChain(chainId),
+    chain: defineChain(safeChainId),
     address: "0x0000000000000000000000000000000000000000"
   });
 
@@ -54,6 +61,39 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
 
   const hasAccess = licenseBalance ? Number(licenseBalance) > 0 : false;
   // For verification: If we are the creator, maybe bypass? No, stricter is better.
+
+  // --- Real Data Hooks (Moved Down) ---
+  const { data: treasuryBalance } = useWalletBalance({
+    client,
+    chain: defineChain(safeChainId),
+    address: project.treasuryAddress || "",
+  });
+
+  const { data: totalSupply } = useReadContract({
+    contract: licenseContract || dummyContract, // Safe now
+    queryOptions: { enabled: !!licenseContract },
+    method: "function totalSupply() view returns (uint256)",
+    params: []
+  });
+
+  const dbRaised = Number(project.raised_amount ?? 0);
+  const raisedAmount = treasuryBalance ? Number(treasuryBalance.displayValue) : dbRaised;
+
+  // Calculate Progress Logic
+  const price = Number(project.w2eConfig?.licenseToken?.price ?? 0);
+  const maxSupply = Number(project.w2eConfig?.licenseToken?.maxSupply ?? 0);
+
+  // Financial Progress
+  const financialProgress = targetAmount > 0 ? Math.min((raisedAmount / targetAmount) * 100, 100) : 0;
+
+  // Token Progress (For Free Mints)
+  const currentSupply = totalSupply ? Number(totalSupply) : 0;
+  const tokenProgress = maxSupply > 0 ? Math.min((currentSupply / maxSupply) * 100, 100) : 0;
+
+  // Effective Progress (Use Token Progress if Price is 0 or it's higher)
+  const progressPercent = price === 0 ? tokenProgress : Math.max(financialProgress, tokenProgress);
+
+  const raisedPercentage = progressPercent;
 
   // Debug log (remove in prod)
   // console.log("Gating Check:", { user: account?.address, hasAccess, balance: licenseBalance?.toString() });
@@ -94,7 +134,11 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                 </div>
               ) : (
                 <div className="text-3xl font-bold text-white mb-2">
-                  ${raisedAmount.toLocaleString()}
+                  {price === 0 ? (
+                    <span>{currentSupply} / {maxSupply > 0 ? maxSupply.toLocaleString() : '∞'}</span>
+                  ) : (
+                    <span>${raisedAmount.toLocaleString()}</span>
+                  )}
                 </div>
               )}
 

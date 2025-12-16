@@ -14,6 +14,7 @@ export interface Project {
   targetAmount?: string | number | null;
   raisedAmount?: string | number | null;
   w2eConfig?: any;
+  treasuryAddress?: string;
 }
 
 export interface ApplicantsData {

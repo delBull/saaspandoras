@@ -53,10 +53,30 @@ export function DeploymentConfigModal({
         setPhases(phases.filter(p => p.id !== id));
     };
 
+    const calculateEndDate = (startDateStr: string | undefined, days: number): string | undefined => {
+        if (!startDateStr || !days) return undefined;
+        const date = new Date(startDateStr);
+        date.setDate(date.getDate() + days);
+        return date.toISOString().split('T')[0];
+    };
+
     const handlePhaseChange = (id: string, field: keyof UtilityPhase, value: string | number | boolean) => {
         setPhases(prev => prev.map(p => {
             if (p.id !== id) return p;
-            return { ...p, [field]: value };
+
+            const updatedPhase = { ...p, [field]: value };
+
+            // Logic: Auto-calculate End Date if type is 'time'
+            if (updatedPhase.type === 'time') {
+                if (field === 'startDate' || field === 'limit' || field === 'type') {
+                    const days = Number(updatedPhase.limit);
+                    if (updatedPhase.startDate && !isNaN(days) && days > 0) {
+                        updatedPhase.endDate = calculateEndDate(updatedPhase.startDate, days);
+                    }
+                }
+            }
+
+            return updatedPhase;
         }));
     };
 
@@ -398,13 +418,16 @@ export function DeploymentConfigModal({
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label htmlFor={`phase-end-${phase.id}`} className="block text-xs text-gray-400 mb-1">Fecha Fin</label>
+                                                    <label htmlFor={`phase-end-${phase.id}`} className="block text-xs text-gray-400 mb-1">
+                                                        {phase.type === 'time' ? 'Fecha Fin (Calculada)' : 'Fecha Fin (Opcional)'}
+                                                    </label>
                                                     <input
                                                         id={`phase-end-${phase.id}`}
                                                         type="date"
                                                         value={phase.endDate || ''}
                                                         onChange={(e) => handlePhaseChange(phase.id, 'endDate', e.target.value)}
-                                                        className="w-full bg-zinc-900 border border-zinc-700 rounded p-2 text-white text-sm focus:border-indigo-500 outline-none transition-colors"
+                                                        disabled={phase.type === 'time'}
+                                                        className={`w-full bg-zinc-900 border border-zinc-700 rounded p-2 text-white text-sm focus:border-indigo-500 outline-none transition-colors ${phase.type === 'time' ? 'opacity-50 cursor-not-allowed bg-zinc-800' : ''}`}
                                                     />
                                                 </div>
                                                 <div className="col-span-full flex items-center gap-2">
