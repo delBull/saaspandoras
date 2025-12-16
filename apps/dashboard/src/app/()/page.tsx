@@ -7,7 +7,7 @@ import { useProfile } from "@/hooks/useProfile";
 import Link from "next/link";
 import { config } from "@/config";
 import { getContract, prepareContractCall } from "thirdweb";
-import { PANDORAS_GOVERNANCE_ABI } from "@/lib/governance-abi";
+import { governanceABI as PANDORAS_GOVERNANCE_ABI } from "@/lib/governance-abi";
 import { PANDORAS_POOL_ABI } from "@/lib/pandoras-pool-abi"; // Keeping for compatibility if needed
 import { UserGroupIcon, ArrowPathIcon, BanknotesIcon, LockClosedIcon, Squares2X2Icon, ShieldCheckIcon, ChevronRightIcon, ChevronLeftIcon, CurrencyDollarIcon, RocketLaunchIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
