@@ -15,7 +15,7 @@ export function PanelProjects({ pendingProjects, approvedOnlyProjects, isCollaps
   const [activeCategory, setActiveCategory] = useState<'pending' | 'approved'>('pending');
   return (
     <div
-      className={`fixed right-0 top-0 h-screen bg-zinc-900/95 backdrop-blur-xl ml-20 border-l border-zinc-800 transition-all duration-500 ease-in-out ${isCollapsed ? 'w-20' : 'w-1/5 min-w-[300px] max-w-[320px]'
+      className={`fixed right-0 top-0 h-screen bg-zinc-900/95 backdrop-blur-xl border-l border-zinc-800 transition-all duration-500 ease-in-out ${isCollapsed ? 'w-20' : 'w-1/5 min-w-[300px] max-w-[320px]'
         } z-30 overflow-hidden flex flex-col`}
     >
       {/* Panel Header */}
