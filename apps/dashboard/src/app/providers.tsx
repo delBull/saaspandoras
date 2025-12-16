@@ -4,6 +4,7 @@ import { Toaster, toast } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThirdwebProvider, AutoConnect, useActiveAccount } from "thirdweb/react";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
+import { defineChain } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { useThirdwebUserSync } from "@/hooks/useThirdwebUserSync";
 // 🎮 IMPORTAR GAMIFICATION PROVIDER
@@ -54,9 +55,9 @@ export function Providers({
           "facebook",
         ],
       },
-      executionMode: {
-        mode: "EIP7702",
-        sponsorGas: true, // ⚡ Gasless transactions enabled
+      smartAccount: {
+        chain: defineChain(11155111), // Default to Sepolia
+        sponsorGas: true, // ⚡ Gasless transactions enabled via Account Abstraction
       },
     }),
     createWallet("io.metamask"),
