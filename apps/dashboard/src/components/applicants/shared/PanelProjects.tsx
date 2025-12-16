@@ -15,9 +15,8 @@ export function PanelProjects({ pendingProjects, approvedOnlyProjects, isCollaps
   const [activeCategory, setActiveCategory] = useState<'pending' | 'approved'>('pending');
   return (
     <div
-      className={`fixed right-0 top-0 h-screen bg-zinc-900/95 backdrop-blur-xl border-l border-zinc-800 transition-all duration-500 ease-in-out ${
-        isCollapsed ? 'w-20' : 'w-1/5 min-w-[300px] max-w-[320px]'
-      } z-30 overflow-hidden flex flex-col`}
+      className={`fixed right-0 top-0 h-screen bg-zinc-900/95 backdrop-blur-xl ml-20 border-l border-zinc-800 transition-all duration-500 ease-in-out ${isCollapsed ? 'w-20' : 'w-1/5 min-w-[300px] max-w-[320px]'
+        } z-30 overflow-hidden flex flex-col`}
     >
       {/* Panel Header */}
       <div className="sticky top-0 bg-zinc-900/95 backdrop-blur-xl border-b border-zinc-800/50 p-4 flex-shrink-0">
@@ -42,11 +41,10 @@ export function PanelProjects({ pendingProjects, approvedOnlyProjects, isCollaps
             {/* Categoría En Revisión */}
             <button
               onClick={() => setActiveCategory('pending')}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 ${
-                activeCategory === 'pending'
-                  ? 'bg-yellow-500/20 text-yellow-300 ring-1 ring-yellow-500/50'
-                  : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600'
-              }`}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 ${activeCategory === 'pending'
+                ? 'bg-yellow-500/20 text-yellow-300 ring-1 ring-yellow-500/50'
+                : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600'
+                }`}
             >
               <span>En Revisión</span>
               <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-yellow-500/20">
@@ -57,11 +55,10 @@ export function PanelProjects({ pendingProjects, approvedOnlyProjects, isCollaps
             {/* Categoría Aprobados */}
             <button
               onClick={() => setActiveCategory('approved')}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 ${
-                activeCategory === 'approved'
-                  ? 'bg-green-500/20 text-green-300 ring-1 ring-green-500/50'
-                  : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600'
-              }`}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 ${activeCategory === 'approved'
+                ? 'bg-green-500/20 text-green-300 ring-1 ring-green-500/50'
+                : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600'
+                }`}
             >
               <span>Aprobados</span>
               <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-500/20">
@@ -73,9 +70,8 @@ export function PanelProjects({ pendingProjects, approvedOnlyProjects, isCollaps
       </div>
 
       {/* Panel Content */}
-      <div className={`h-full px-3 py-3 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent ${
-        isCollapsed ? 'hidden' : ''
-      }`}>
+      <div className={`h-full px-3 py-3 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent ${isCollapsed ? 'hidden' : ''
+        }`}>
         {/* Para approved, mostrar en lista simple como pending, para pending mantener grid */}
         {activeCategory === 'pending' ? (
           <ProjectGrid
