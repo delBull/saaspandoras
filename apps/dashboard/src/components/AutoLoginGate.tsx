@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { usePersistedAccount } from "@/hooks/usePersistedAccount";
 import { useEffect, useState } from "react";
 
@@ -14,12 +14,18 @@ interface AutoLoginGateProps {
 export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGateProps) {
   const { account, canAutoReconnect, isBootstrapped, savedWalletAddress } = usePersistedAccount();
   const router = useRouter();
+  const pathname = usePathname();
   const [isClientReady, setIsClientReady] = useState(false);
 
   // Ensure we're fully hydrated on client side
   useEffect(() => {
     setIsClientReady(true);
   }, []);
+
+  // 🟢 SIEMPRE permitir acceso a la Home Page ("/") para marketing/landing
+  if (pathname === "/") {
+    return <>{children}</>;
+  }
 
   // 🟢 Espera a que se termine bootstrap antes de decidir
   if (!isBootstrapped || !isClientReady) {

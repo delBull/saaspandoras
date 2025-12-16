@@ -19,9 +19,13 @@ import { useToast } from "@saasfly/ui/use-toast";
 import { Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { InformationCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { usePathname } from "next/navigation";
 
 export function NFTGate({ children }: { children: React.ReactNode }) {
   const account = useActiveAccount();
+  const pathname = usePathname();
+
+
 
   const { mutate: sendTransaction } = useSendTransaction();
   const { toast } = useToast();
@@ -53,9 +57,11 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
   const { data: hasKey, isLoading: isLoadingKey, refetch, error } = useReadContract({
     contract,
     method: "isGateHolder",
-    params: account ? [account.address] : ["0x0000000000000000000000000000000000000000"],
+    params: [account?.address || "0x0000000000000000000000000000000000000000"],
     queryOptions: { enabled: !!account },
   });
+
+
 
   // Función para manejar el minteo manual
   const handleMint = () => {
@@ -153,6 +159,12 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
   );
 
   // --- LÓGICA DE RENDERIZADO ---
+
+  // 🟢 SIEMPRE permitir acceso a la Home Page ("/")
+  // Moved to END of hooks to prevent React Render Error ("Rendered more/fewer hooks")
+  if (pathname === "/") {
+    return <>{children}</>;
+  }
 
   if (!account) {
     return (

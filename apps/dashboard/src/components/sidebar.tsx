@@ -386,8 +386,8 @@ export function Sidebar({
         comingSoon: true,
         disabled: true,
       },
-      // Enlace solo visible para admin
-      ...(isAdmin
+      // Enlace solo visible para admin (STRICT CHECK)
+      ...(isAdmin && account
         ? [
           {
             label: "Admin Dash",
@@ -401,7 +401,7 @@ export function Sidebar({
         ]
         : []),
     ],
-    [isAdmin]
+    [isAdmin, account]
   );
 
   const logoVariants = {
@@ -489,7 +489,7 @@ export function Sidebar({
                     animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0 }}
                     className="truncate font-mono text-xs text-red-500 min-w-0"
                   >
-                    Not Connected
+                    Sin Conexión
                   </motion.span>
                 </div>
               </div>
@@ -548,8 +548,8 @@ export function Sidebar({
                         {open ? "C:\\USER\\" : ""}
                       </span>
                       <span
-                        className={`truncate font-mono text-xs transition-colors ${copyAnimation ? 'text-green-400' : 'text-lime-400 group-hover:text-lime-300'
-                          }`}
+                        className={`truncate font - mono text - xs transition - colors ${copyAnimation ? 'text-green-400' : 'text-lime-400 group-hover:text-lime-300'
+                          } `}
                       >
                         {isClient
                           ? (account?.address ?? walletProp ?? userName ?? "...").substring(0, 8) + '...' + (account?.address ?? walletProp ?? userName ?? "...").substring(36, 42)
@@ -828,7 +828,7 @@ export function Sidebar({
                   )}
                 </div>
               )}
-              {isClient && isAdmin && (
+              {isClient && account && isAdmin && (
                 <div
                   className={cn(
                     "border-t border-gray-800 pt-2",
@@ -916,7 +916,7 @@ export function Sidebar({
                         C:\PANDORAS\
                       </span>
                       <span className="truncate font-mono text-xs text-red-500 min-w-0">
-                        Not Connected
+                        Sin Conexión
                       </span>
                     </div>
                   </div>
@@ -976,8 +976,8 @@ export function Sidebar({
                             C:\USER\
                           </span>
                           <span
-                            className={`truncate font-mono text-xs transition-colors ${copyAnimation ? 'text-green-400' : 'text-lime-400 group-hover:text-lime-300'
-                              }`}
+                            className={`truncate font - mono text - xs transition - colors ${copyAnimation ? 'text-green-400' : 'text-lime-400 group-hover:text-lime-300'
+                              } `}
                           >
                             {isClient
                               ? (account?.address ?? walletProp ?? userName ?? "...").substring(0, 8) + '...' + (account?.address ?? walletProp ?? userName ?? "...").substring(36, 42)
@@ -1090,7 +1090,7 @@ export function Sidebar({
                 <div className="flex flex-col gap-2">
                   {links.map((link) => (
                     <Link
-                      key={`mobile-${link.label}`}
+                      key={`mobile - ${link.label} `}
                       href={link.href}
                       className={cn(
                         "relative flex items-center rounded-lg py-2 px-4 text-gray-400 transition-all duration-200",
@@ -1152,7 +1152,7 @@ export function Sidebar({
                       </button>
                     </div>
                   )}
-                  {isClient && isAdmin && (
+                  {isClient && account && isAdmin && (
                     <div className="border-t border-gray-800 pt-2">
                       <Link
                         href="/admin"
