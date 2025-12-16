@@ -415,22 +415,23 @@ export default function DashboardPage() {
       {/* Dynamic Featured Carousel + Notifications Grid */}
       {homeData.loading ? (
         // Skeleton logic for Banner
-        <div className="relative px-5 mt-6 mb-8 w-full md:max-w-7xl">
+        <div className="relative px-5 mt-6 mb-16 w-full md:max-w-7xl">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <div className="lg:col-span-3 aspect-[16/10] md:aspect-[21/9] rounded-2xl bg-zinc-900 animate-pulse border border-zinc-800" />
             <div className="hidden lg:block lg:col-span-1 rounded-2xl bg-zinc-900 animate-pulse border border-zinc-800" />
           </div>
         </div>
       ) : (
-        <div className="px-5 mt-6 mb-8 w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-auto lg:h-[450px]">
-            {/* Carousel takes 3/4 width on Large screens */}
-            <div className="lg:col-span-3 h-[300px] lg:h-full">
+        <div className="px-5 mt-6 mb-16 w-full">
+          {/* Grid layout driven by Aspect Ratio instead of Fixed Height to prevent scrolling/overlap issues */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Carousel: Uses proper aspect ratio to define grid height */}
+            <div className="lg:col-span-3 w-full aspect-[16/10] lg:aspect-[16/9] 2xl:aspect-[21/9]">
               <FeaturedCarousel projects={homeData.featuredProjects} />
             </div>
 
-            {/* Notifications Panel takes 1/4 width on Large screens */}
-            <div className="lg:col-span-1 h-[300px] lg:h-full">
+            {/* Notifications Panel: Stretches to match Carousel on Desktop, Fixed height on Mobile */}
+            <div className="lg:col-span-1 w-full h-[400px] lg:h-full">
               <NotificationsPanel hasAccess={homeData.accessCards.length > 0} />
             </div>
           </div>
@@ -438,7 +439,9 @@ export default function DashboardPage() {
       )}
 
       {/* Governance Section */}
-      <GovernanceSection onParticipate={() => setIsGovernanceModalOpen(true)} />
+      <div className="mt-8">
+        <GovernanceSection onParticipate={() => setIsGovernanceModalOpen(true)} />
+      </div>
 
       {/* Access & Artifacts Tabs Section */}
       {homeData.loading ? (
