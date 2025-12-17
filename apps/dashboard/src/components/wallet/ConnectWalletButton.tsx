@@ -1,8 +1,8 @@
 import React from "react";
 import { ConnectButton } from "thirdweb/react";
-import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { client } from "@/lib/thirdweb-client";
 import { SUPPORTED_NETWORKS } from "@/config/networks";
+import { wallets, accountAbstractionConfig } from "@/config/wallets";
 
 interface ConnectWalletButtonProps {
   onConnect?: () => void;
@@ -14,19 +14,11 @@ interface ConnectWalletButtonProps {
 const baseWalletConfig = {
   client,
   chains: SUPPORTED_NETWORKS.map(network => network.chain),
-  wallets: [
-    inAppWallet({
-      auth: {
-        options: ["email", "google", "apple", "facebook", "passkey"],
-      },
-      executionMode: {
-        mode: "EIP7702",
-        sponsorGas: true,
-      },
-    }),
-    createWallet("io.metamask"),
-  ],
+  wallets,
+  accountAbstraction: accountAbstractionConfig, // ⚡ GLOBAL SMART ACCOUNTS
   theme: "dark" as const,
+  modalSize: "compact" as const, // 🤏 Compact Mode (No Sidebar)
+  modalTitle: "Inicia Sesión" as const, // 📝 Custom Title
 };
 
 /**

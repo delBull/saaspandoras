@@ -251,6 +251,8 @@ export function TopNavbar({
                     client,
                     chain: config.chain,
                     showThirdwebBranding: false,
+                    size: "compact",
+                    modalTitle: "Inicia Sesión",
                     wallets: [
                       inAppWallet({
                         auth: {

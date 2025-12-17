@@ -399,7 +399,7 @@ export default function WalletProPage() {
               </h2>
 
               <p className="text-zinc-400 text-lg mb-8 max-w-xl mx-auto">
-                Accede a todas las funciones avanzadas de gestiรณn de activos digitales.
+                Accede a todas las funciones avanzadas de gestión de activos digitales.
                 Balances multi-chain, envío/recepción de crypto y mucho más.
               </p>
 
@@ -433,10 +433,6 @@ export default function WalletProPage() {
                     }
                   }}
                 />
-                <Button variant="outline" className="border-zinc-700 hover:border-orange-500/50">
-                  <QrCodeIcon className="w-5 h-5 mr-2" />
-                  Escanear QR
-                </Button>
               </div>
 
               <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
