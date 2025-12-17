@@ -194,10 +194,11 @@ export function ManageActivities({ projectId }: ManageActivitiesProps) {
                         </div>
 
                         <div className="bg-zinc-800/30 p-4 rounded-xl border border-zinc-800">
-                            <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3">Recompensa a otorgar</label>
+                            <label htmlFor="rewardAmount" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3">Recompensa a otorgar</label>
                             <div className="flex gap-3">
                                 <div className="flex-1">
                                     <input
+                                        id="rewardAmount"
                                         type="number"
                                         className="w-full bg-black/40 border border-zinc-700 rounded-lg p-2.5 text-white font-bold text-lg outline-none focus:border-lime-500 transition-colors"
                                         value={rewardAmount}

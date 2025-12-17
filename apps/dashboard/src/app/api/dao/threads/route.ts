@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+import { headers } from "next/headers";
 import { db } from "~/db";
 import { daoThreads, projects } from "~/db/schema";
 import { eq, desc } from "drizzle-orm";
-import { SUPER_ADMIN_WALLET } from "~/lib/constants";
+import { getSuperAdminWallet } from "~/lib/constants";
+import { getAuth } from "~/lib/auth";
 
 export const dynamic = 'force-dynamic';
 
@@ -37,7 +39,11 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
         }
 
-        // TODO: Verify signature/auth (skipped for MVP speed as per user preference for now, but should be added)
+        // Verify Auth
+        const { session } = await getAuth(await headers());
+        if (!session?.address || session.address.toLowerCase() !== authorAddress.toLowerCase()) {
+            return NextResponse.json({ error: "Unauthorized: Invalid Session or Address Mismatch" }, { status: 401 });
+        }
 
         // Check for Project Owner or Super Admin to auto-mark as Official
         const project = await db.query.projects.findFirst({
@@ -46,7 +52,8 @@ export async function POST(request: Request) {
         });
 
         const isProjectOwner = project?.applicantWalletAddress?.toLowerCase() === authorAddress.toLowerCase();
-        const isSuperAdmin = authorAddress.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase();
+        const superAdminWallet = getSuperAdminWallet();
+        const isSuperAdmin = authorAddress.toLowerCase() === superAdminWallet.toLowerCase();
 
         // Auto-official if owner or super admin
         const shouldBeOfficial = isProjectOwner || isSuperAdmin || isOfficial;
