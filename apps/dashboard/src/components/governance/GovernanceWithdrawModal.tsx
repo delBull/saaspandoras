@@ -87,7 +87,7 @@ export function GovernanceWithdrawModal({ isOpen, onClose }: GovernanceWithdrawM
                                             <TooltipProvider delayDuration={0}>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                        <span tabIndex={0}> {/* Wrapper for disabled element accessibility */}
+                                                        <span> {/* Wrapper for disabled element accessibility */}
                                                             <Button variant="ghost" disabled className="text-yellow-500 bg-yellow-500/10 opacity-50 cursor-not-allowed border border-yellow-500/20">
                                                                 <Lock className="w-4 h-4 mr-2" /> Bloqueado
                                                             </Button>
