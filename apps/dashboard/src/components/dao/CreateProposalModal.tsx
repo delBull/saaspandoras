@@ -78,8 +78,9 @@ export function CreateProposalModal({ projectId, isOpen, onClose, onCreated, vot
 
                 <form onSubmit={isOffChain ? handleSubmitOffChain : (e) => e.preventDefault()} className="space-y-4">
                     <div>
-                        <label className="block text-sm text-zinc-400 mb-1">Título</label>
+                        <label htmlFor="proposal-title" className="block text-sm text-zinc-400 mb-1">Título</label>
                         <input
+                            id="proposal-title"
                             className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white outline-none focus:border-lime-500"
                             value={title}
                             onChange={e => setTitle(e.target.value)}
@@ -87,8 +88,9 @@ export function CreateProposalModal({ projectId, isOpen, onClose, onCreated, vot
                         />
                     </div>
                     <div>
-                        <label className="block text-sm text-zinc-400 mb-1">Descripción</label>
+                        <label htmlFor="proposal-desc" className="block text-sm text-zinc-400 mb-1">Descripción</label>
                         <textarea
+                            id="proposal-desc"
                             className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white outline-none focus:border-lime-500"
                             value={description}
                             onChange={e => setDescription(e.target.value)}
