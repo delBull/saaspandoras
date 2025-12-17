@@ -19,7 +19,7 @@ export async function GET(req: Request) {
         if (userAddress) conditions.push(eq(daoActivitySubmissions.userWallet, userAddress));
 
         if (conditions.length > 0) {
-            // @ts-ignore
+            // @ts-expect-error
             query = query.where(and(...conditions));
         }
 
@@ -73,7 +73,7 @@ export async function POST(req: Request) {
 
             if (!activity) return NextResponse.json({ error: 'Activity not found' }, { status: 404 });
 
-            // @ts-ignore
+            // @ts-expect-error
             const duration = activity.requirements?.durationSeconds || 0;
 
             // Fetch submission

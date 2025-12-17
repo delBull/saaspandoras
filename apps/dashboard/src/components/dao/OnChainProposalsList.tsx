@@ -35,7 +35,7 @@ export function OnChainProposalsList({ votingContractAddress, chainId, governanc
 
     // Helper to get state
     // state: 0=Pending, 1=Active, 2=Canceled, 3=Defeated, 4=Succeeded, 5=Queued, 6=Expired, 7=Executed
-    const getProposalState = async (proposalId: bigint) => {
+    const getProposalState = (proposalId: bigint) => {
         // This requires a separate call per proposal if getAll doesn't return state. 
         // We might need to fetch state separately or assume standard Vote struct has executed/cancelled flags?
         // Thirdweb "Vote" contract usually returns struct with state?
@@ -103,7 +103,7 @@ function ProposalCard({ proposal, contract, account, chainId }: any) {
     const isActive = stateData === 1;
 
     // Vote Action
-    const vote = async (support: number) => {
+    const vote = (support: number) => {
         // 0 = Against, 1 = For, 2 = Abstain
         if (!account) return toast.error("Conecta tu wallet");
 
