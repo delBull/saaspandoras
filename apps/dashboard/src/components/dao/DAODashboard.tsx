@@ -3,6 +3,8 @@
 import { UserGovernanceList } from "../user/UserGovernanceList";
 import { ManageActivities } from "./ManageActivities";
 import { ActivitiesList } from "./ActivitiesList";
+import { LaboresList } from "./LaboresList";
+import { CreateProposalModal } from "./CreateProposalModal";
 import { DAOMetrics } from "./DAOMetrics";
 import { DAOChat } from "./DAOChat";
 import { VoteIcon, Wallet, WalletIcon, TrendingUpIcon, ActivityIcon, ArrowUpRightIcon, HelpCircleIcon, SettingsIcon, LockIcon, ListTodoIcon, TrophyIcon, UsersIcon, InfoIcon } from "lucide-react";
@@ -10,8 +12,9 @@ import { motion } from "framer-motion";
 import { useReadContract, useWalletBalance } from "thirdweb/react";
 import { getContract, defineChain } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
-import { config } from "@/config";
 import { toast } from "sonner";
+import { useState } from "react";
+import { OnChainProposalsList } from "./OnChainProposalsList";
 
 interface DAODashboardProps {
     project: any;
@@ -44,6 +47,8 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
         chain: defineChain(safeChainId),
         address: project.licenseContractAddress,
     }) : undefined;
+
+    const [isProposalModalOpen, setIsProposalModalOpen] = useState(false);
 
     // -- Sub-Views --
 
@@ -115,24 +120,18 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
     );
 
     const StakingView = () => (
-        <div className="p-12 text-center bg-zinc-900/50 rounded-2xl border border-zinc-800 border-dashed">
-            <div className="inline-flex p-4 bg-zinc-800 rounded-full mb-4">
-                <TrendingUpIcon className="w-8 h-8 text-lime-400" />
+        <div className="space-y-6">
+            <div className="flex justify-between items-center mb-6">
+                <div>
+                    <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                        <TrendingUpIcon className="w-6 h-6 text-lime-400" />
+                        Utilidad y Labores
+                    </h3>
+                    <p className="text-zinc-400 mt-1">Realiza staking de tus artefactos o cumple misiones para ganar recompensas.</p>
+                </div>
             </div>
-            <h3 className="text-2xl font-bold text-white mb-2">Utilidad y Recompensas</h3>
-            <p className="text-zinc-400 max-w-md mx-auto mb-8">
-                Participa activamente utilizando tus Access Cards o Tokens de Utilidad.
-                Las recompensas se otorgan en base a la participación y contribución al protocolo.
-            </p>
-            <div className="flex justify-center gap-4">
-                <button className="px-6 py-3 bg-zinc-800 text-zinc-500 font-bold rounded-xl cursor-not-allowed flex items-center gap-2 border border-zinc-700">
-                    <LockIcon className="w-4 h-4" />
-                    Programa de Recompensas
-                </button>
-            </div>
-            <p className="mt-4 text-xs text-zinc-500">
-                El dueño del protocolo ({project.applicant_name}) está configurando los pools de utilidad.
-            </p>
+
+            <LaboresList project={project} />
         </div>
     );
 
@@ -141,12 +140,27 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
             <div className="flex justify-between items-center">
                 <h3 className="text-xl font-bold text-white">Todas las Propuestas</h3>
                 {isOwner && (
-                    <button className="px-4 py-2 bg-lime-500 hover:bg-lime-400 text-black text-sm font-bold rounded-lg transition-colors shadow-lg shadow-lime-500/10">
+                    <button
+                        onClick={() => setIsProposalModalOpen(true)}
+                        className="px-4 py-2 bg-lime-500 hover:bg-lime-400 text-black text-sm font-bold rounded-lg transition-colors shadow-lg shadow-lime-500/10"
+                    >
                         + Nueva Propuesta
                     </button>
                 )}
             </div>
-            <UserGovernanceList projectIds={[Number(project.id)]} />
+            {project.voting_contract_address ? (
+                <OnChainProposalsList
+                    votingContractAddress={project.voting_contract_address}
+                    chainId={safeChainId}
+                />
+            ) : (
+                <div className="space-y-4">
+                    <div className="bg-yellow-900/20 border border-yellow-500/30 text-yellow-400 p-4 rounded-xl text-sm mb-4">
+                        Este proyecto no tiene un contrato de votación configurado. Las propuestas serán off-chain.
+                    </div>
+                    <UserGovernanceList projectIds={[Number(project.id)]} />
+                </div>
+            )}
         </div>
     );
 
@@ -316,7 +330,10 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                         <p className="text-sm text-zinc-400 mb-4">
                             Inicia propuestas para mover fondos de la tesorería o cambiar fees.
                         </p>
-                        <button className="w-full py-2 bg-lime-900/20 text-lime-400 border border-lime-500/30 hover:bg-lime-900/30 rounded-lg text-sm transition-colors font-bold">
+                        <button
+                            onClick={() => setIsProposalModalOpen(true)}
+                            className="w-full py-2 bg-lime-900/20 text-lime-400 border border-lime-500/30 hover:bg-lime-900/30 rounded-lg text-sm transition-colors font-bold"
+                        >
                             Crear Propuesta de Fondos
                         </button>
                     </div>
@@ -364,7 +381,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
             >
                 {activeView === 'overview' && <OverviewView />}
                 {activeView === 'activities' && <ActivitiesView />}
-                {activeView === 'chat' && <DAOChat project={project} />}
+                {activeView === 'chat' && <DAOChat project={project} isOwner={isOwner} />}
                 {activeView === 'staking' && <StakingView />}
                 {activeView === 'proposals' && <ProposalsView />}
                 {activeView === 'info' && <InfoView />}
@@ -376,9 +393,20 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                         <p>Directorio de miembros en construcción</p>
                     </div>
                 )}
+
             </motion.div>
+
+            <CreateProposalModal
+                projectId={Number(project.id)}
+                isOpen={isProposalModalOpen}
+                onClose={() => setIsProposalModalOpen(false)}
+                onCreated={() => {
+                    // Refetch data if needed (SWR handles it automatically if we revalidate, but simple close is fine)
+                    toast.success("Propuesta registrada.");
+                }}
+                votingContractAddress={project.voting_contract_address}
+                chainId={safeChainId}
+            />
         </div>
     );
 }
-
-

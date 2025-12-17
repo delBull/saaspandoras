@@ -17,7 +17,7 @@ export async function GET(request: Request) {
         const threads = await db.select()
             .from(daoThreads)
             .where(eq(daoThreads.projectId, Number(projectId)))
-            .orderBy(desc(daoThreads.isPinned), desc(daoThreads.updatedAt));
+            .orderBy(desc(daoThreads.isPinned), desc(daoThreads.isOfficial), desc(daoThreads.updatedAt));
 
         return NextResponse.json(threads);
 
@@ -30,7 +30,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { projectId, authorAddress, title, category } = body;
+        const { projectId, authorAddress, title, category, isOfficial } = body;
 
         if (!projectId || !authorAddress || !title) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -43,6 +43,7 @@ export async function POST(request: Request) {
             authorAddress,
             title,
             category: category || 'general',
+            isOfficial: isOfficial || false,
         }).returning();
 
         return NextResponse.json(newThread);
