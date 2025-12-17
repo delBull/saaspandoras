@@ -219,6 +219,7 @@ export const eventTypeEnum = pgEnum("event_type", [
   "staking_deposit",
   "proposal_vote",
   "rewards_claimed",
+  "activity_completed",
   "forum_post",
   "access_card_acquired",
   "artifact_acquired"
@@ -727,8 +728,16 @@ export const daoPosts = pgTable("dao_posts", {
   content: text("content").notNull(),
   isSolution: boolean("is_solution").default(false),
   likesCount: integer("likes_count").default(0),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow()
+});
+
+export const userBalances = pgTable("user_balances", {
+  walletAddress: varchar("wallet_address", { length: 42 }).primaryKey(),
+  pboxBalance: decimal("pbox_balance", { precision: 18, scale: 2 }).default("0").notNull(),
+  usdcBalance: decimal("usdc_balance", { precision: 18, scale: 6 }).default("0").notNull(),
+  ethBalance: decimal("eth_balance", { precision: 18, scale: 18 }).default("0").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 // DAO Activities Types
@@ -737,3 +746,4 @@ export type DaoActivitySubmission = typeof daoActivitySubmissions.$inferSelect;
 
 export type DaoThread = typeof daoThreads.$inferSelect;
 export type DaoPost = typeof daoPosts.$inferSelect;
+export type UserBalance = typeof userBalances.$inferSelect;
