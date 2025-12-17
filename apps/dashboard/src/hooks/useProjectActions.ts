@@ -283,6 +283,9 @@ export function useProjectActions({ setActionsLoading, walletAddress, refreshCal
     setActionsLoading((prev) => ({ ...prev, [actionKey]: true }));
 
     try {
+      // Extract force flag from config if present (smuggled in ProjectTableView)
+      const forceRedeploy = (config as any)?.forceRedeploy;
+
       const response = await fetch(`/api/admin/deploy-protocol/${projectSlug}`, {
         method: 'POST',
         headers: {
@@ -291,7 +294,7 @@ export function useProjectActions({ setActionsLoading, walletAddress, refreshCal
           'x-wallet-address': walletAddress,
           'x-user-address': walletAddress,
         },
-        body: JSON.stringify({ config }),
+        body: JSON.stringify({ config, forceRedeploy }),
       });
 
       if (response.ok) {

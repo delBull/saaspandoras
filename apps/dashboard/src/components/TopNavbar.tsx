@@ -251,6 +251,7 @@ export function TopNavbar({
                     client,
                     chain: config.chain,
                     showThirdwebBranding: false,
+                    size: "compact",
                     wallets: [
                       inAppWallet({
                         auth: {

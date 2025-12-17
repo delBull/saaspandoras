@@ -3,13 +3,14 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { DAOChat } from "@/components/dao/DAOChat";
-import { Lock, ShieldCheck, Vote, Coins, TrendingUp, Users, AlertTriangle, Settings2, X, Bell, CheckCircle2, XCircle, Unlock, MessageSquare } from "lucide-react";
+import { Lock, ShieldCheck, Vote, Coins, TrendingUp, Users, AlertTriangle, Settings2, X, Bell, CheckCircle2, XCircle, Unlock, MessageSquare, ListTodo } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GovernanceParticipationModal } from "./GovernanceParticipationModal";
 import { GovernanceProposalModal } from "./GovernanceProposalModal";
 import { GovernanceWithdrawModal } from "./GovernanceWithdrawModal";
+import { ManageActivities } from "../dao/ManageActivities";
 import { useReadContract, useActiveAccount, useContractEvents, TransactionButton } from "thirdweb/react";
 import { getContract, prepareEvent, prepareContractCall } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
@@ -81,6 +82,7 @@ function LockedView({ onAction }: { onAction: () => void }) {
 export default function GovernancePage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isManageOpen, setIsManageOpen] = useState(false);
+    const [isActivitiesOpen, setIsActivitiesOpen] = useState(false);
     const [isProposalModalOpen, setIsProposalModalOpen] = useState(false);
     const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
     const [pendingProposal, setPendingProposal] = useState<{ title: string; description: string; days: number } | null>(null);
@@ -270,14 +272,24 @@ export default function GovernancePage() {
 
                     <div className="flex gap-3 w-full md:w-auto mt-4 md:mt-0">
                         {isAdmin && (
-                            <Button
-                                variant="outline"
-                                onClick={() => setIsManageOpen(true)}
-                                className="border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500 rounded-xl h-auto py-2 px-4 whitespace-nowrap flex-1 md:flex-none bg-zinc-900"
-                            >
-                                <Settings2 className="mr-2 h-4 w-4" />
-                                Manage
-                            </Button>
+                            <>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setIsActivitiesOpen(true)}
+                                    className="border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500 rounded-xl h-auto py-2 px-4 whitespace-nowrap flex-1 md:flex-none bg-zinc-900"
+                                >
+                                    <ListTodo className="mr-2 h-4 w-4" />
+                                    Misiones
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setIsManageOpen(true)}
+                                    className="border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500 rounded-xl h-auto py-2 px-4 whitespace-nowrap flex-1 md:flex-none bg-zinc-900"
+                                >
+                                    <Settings2 className="mr-2 h-4 w-4" />
+                                    Config
+                                </Button>
+                            </>
                         )}
 
                         <Button
@@ -286,7 +298,7 @@ export default function GovernancePage() {
                             className="border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500 rounded-xl h-auto py-2 px-4 whitespace-nowrap flex-1 md:flex-none bg-zinc-900"
                         >
                             <Unlock className="mr-2 h-4 w-4" />
-                            Retiros
+                            Recompensas
                         </Button>
                         <Button
                             onClick={() => setIsModalOpen(true)}
@@ -647,56 +659,74 @@ export default function GovernancePage() {
                 </DialogContent>
             </Dialog>
 
+            {/* Activities Management Modal */}
+            <Dialog open={isActivitiesOpen} onOpenChange={setIsActivitiesOpen}>
+                <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-xl max-h-[85vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Gestor de Misiones Global</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <ManageActivities projectId={0} />
+                    </div>
+                </DialogContent>
+            </Dialog>
+
             {/* Frontend Settings Modal (Manage) */}
             <Dialog open={isManageOpen} onOpenChange={setIsManageOpen}>
-                <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-lg">
+                <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-xl max-h-[85vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Frontend Settings (Admin)</DialogTitle>
+                        <DialogTitle>Global Governance Admin</DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-4 py-2">
-                        <div className="space-y-2">
-                            <Label>Display APY (%)</Label>
-                            <Input
-                                value={settings.apy}
-                                onChange={(e) => updateSettings({ apy: e.target.value })}
-                                className="bg-zinc-900 border-zinc-800"
-                            />
+
+                    <div className="space-y-6 py-4">
+                        {/* 2. Visual Settings */}
+                        <div className="space-y-4">
+                            <h4 className="font-bold text-lg text-zinc-400">Visual Settings</h4>
+                            <div className="space-y-2">
+                                <Label>Display APY (%)</Label>
+                                <Input
+                                    value={settings.apy}
+                                    onChange={(e) => updateSettings({ apy: e.target.value })}
+                                    className="bg-zinc-900 border-zinc-800"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Boost Multiplier Text</Label>
+                                <Input
+                                    value={settings.boostMultiplier}
+                                    onChange={(e) => updateSettings({ boostMultiplier: e.target.value })}
+                                    className="bg-zinc-900 border-zinc-800"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Activity Feed Title (Pinned)</Label>
+                                <Input
+                                    value={settings.activityTitle}
+                                    onChange={(e) => updateSettings({ activityTitle: e.target.value })}
+                                    className="bg-zinc-900 border-zinc-800"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Activity Feed Text</Label>
+                                <Textarea
+                                    value={settings.activityText}
+                                    onChange={(e) => updateSettings({ activityText: e.target.value })}
+                                    className="bg-zinc-900 border-zinc-800"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Early Access Announcement</Label>
+                                <Textarea
+                                    value={settings.announcement}
+                                    onChange={(e) => updateSettings({ announcement: e.target.value })}
+                                    className="bg-zinc-900 border-zinc-800"
+                                />
+                            </div>
                         </div>
-                        <div className="space-y-2">
-                            <Label>Boost Multiplier Text</Label>
-                            <Input
-                                value={settings.boostMultiplier}
-                                onChange={(e) => updateSettings({ boostMultiplier: e.target.value })}
-                                className="bg-zinc-900 border-zinc-800"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Activity Feed Title (Pinned)</Label>
-                            <Input
-                                value={settings.activityTitle}
-                                onChange={(e) => updateSettings({ activityTitle: e.target.value })}
-                                className="bg-zinc-900 border-zinc-800"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Activity Feed Text</Label>
-                            <Textarea
-                                value={settings.activityText}
-                                onChange={(e) => updateSettings({ activityText: e.target.value })}
-                                className="bg-zinc-900 border-zinc-800"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Early Access Announcement</Label>
-                            <Textarea
-                                value={settings.announcement}
-                                onChange={(e) => updateSettings({ announcement: e.target.value })}
-                                className="bg-zinc-900 border-zinc-800"
-                            />
-                        </div>
+
                         <div className="pt-2">
                             <Button className="w-full bg-lime-500 text-black hover:bg-lime-400 font-bold" onClick={() => setIsManageOpen(false)}>
-                                Save Settings
+                                Save & Close
                             </Button>
                         </div>
                     </div>

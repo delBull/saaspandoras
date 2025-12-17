@@ -65,7 +65,11 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
 
   // Función para manejar el minteo manual
   const handleMint = () => {
-    if (hasStartedProcessing.current) return;
+    console.log("🟢 handleMint invocado");
+    if (hasStartedProcessing.current) {
+      console.log("🟠 handleMint ignorado: ya en proceso");
+      return;
+    }
 
     hasStartedProcessing.current = true;
 
@@ -74,60 +78,85 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
       description: "Confirma en tu wallet para obtener tu llave de acceso.",
     });
 
-    // Preparamos la transacción para el minteo.
-    const transaction = prepareContractCall({
-      contract,
-      method: "freeMint",
-      params: [],
-    });
+    try {
+      // Preparamos la transacción para el minteo.
+      console.log("🟢 Preparando contrato (freeMint)...", {
+        contractAddress: contract.address,
+        chainId: contract.chain.id
+      });
 
-    // Actualizamos el estado para mostrar el modal de progreso.
-    setGateStatus("awaiting_confirmation");
+      const transaction = prepareContractCall({
+        contract,
+        method: "freeMint",
+        params: [],
+      });
+      console.log("🟢 Transacción preparada:", transaction);
 
-    // Enviamos la transacción y manejamos éxito/error.
-    sendTransaction(transaction, {
-      onSuccess: () => {
-        setGateStatus("success");
-        setShowSuccessAnimation(true);
+      // Actualizamos el estado para mostrar el modal de progreso.
+      setGateStatus("awaiting_confirmation");
 
-        // Forzar refresh después del minteo exitoso para verificar el estado
-        setTimeout(() => {
-          void refetch();
-        }, 2000); // Esperar para que se indexe en blockchain
-      },
-      onError: (error) => {
-        console.error("Fallo al mintear Pandora's Key", error);
+      // Enviamos la transacción y manejamos éxito/error.
+      sendTransaction(transaction, {
+        onSuccess: (txResult) => {
+          console.log("✅ Minteo exitoso! Hash:", txResult);
+          setGateStatus("success");
+          setShowSuccessAnimation(true);
 
-        // Mejor manejo de errores basado en el mensaje específico
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        if (errorMessage.includes("Max per wallet reached") ||
-          errorMessage.includes("exceeds max per wallet") ||
-          errorMessage.includes("already minted")) {
-          // Si ya tiene la llave, refrescamos la verificación
-          toast({
-            title: "Ya tienes tu llave",
-            description: "Verificando tu estado...",
-          });
-          // Refrescamos la consulta para verificar de nuevo
-          void refetch().then(() => {
-            setGateStatus("alreadyOwned");
+          // Forzar refresh después del minteo exitoso para verificar el estado
+          setTimeout(() => {
+            void refetch();
+          }, 2000); // Esperar para que se indexe en blockchain
+        },
+        onError: (error) => {
+          console.error("🔴 Fallo al mintear Pandora's Key:", error);
+
+          // Mejor manejo de errores basado en el mensaje específico
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          if (errorMessage.includes("Max per wallet reached") ||
+            errorMessage.includes("exceeds max per wallet") ||
+            errorMessage.includes("already minted")) {
+            // Si ya tiene la llave, refrescamos la verificación
+            toast({
+              title: "Ya tienes tu llave",
+              description: "Verificando tu estado...",
+            });
+            // Refrescamos la consulta para verificar de nuevo
+            void refetch().then(() => {
+              setGateStatus("alreadyOwned");
+              hasStartedProcessing.current = false;
+            });
+          } else {
+            // Para otros errores, mostramos el mensaje de fallo.
+            toast({
+              title: "Fallo en el Minteo",
+              description: "Hubo un error al mintear tu llave de acceso. Por favor, intenta de nuevo.",
+              variant: "destructive",
+            });
+            setGateStatus("error");
             hasStartedProcessing.current = false;
-          });
-        } else {
-          // Para otros errores, mostramos el mensaje de fallo.
-          toast({
-            title: "Fallo en el Minteo",
-            description: "Hubo un error al mintear tu llave de acceso. Por favor, intenta de nuevo.",
-            variant: "destructive",
-          });
-          setGateStatus("error");
-          hasStartedProcessing.current = false;
-        }
-      },
-    });
+          }
+        },
+      });
+    } catch (prepError) {
+      console.error("🔴 Error crítico preparando transacción:", prepError);
+      hasStartedProcessing.current = false;
+      toast({
+        title: "Error Interno",
+        description: "No se pudo iniciar la transacción.",
+        variant: "destructive",
+      });
+    }
   };
 
   useEffect(() => {
+    // Debug log
+    console.log("🔒 Gate Check:", {
+      account: account?.address,
+      hasKey,
+      isLoadingKey,
+      pathname
+    });
+
     // No ejecutar lógica si no hay cuenta
     if (!account) {
       return;
@@ -135,10 +164,11 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
 
     // Si la wallet ya tiene la llave, marcamos el estado y terminamos.
     if (!isLoadingKey && hasKey === true) {
+      console.log("🔓 Acceso permitido: Wallet ya tiene llave.");
       setGateStatus("alreadyOwned");
       return;
     }
-  }, [account, hasKey, isLoadingKey]);
+  }, [account, hasKey, isLoadingKey, pathname]);
 
   useEffect(() => {
     // Este efecto resetea el bloqueo de "proceso iniciado" si el usuario cambia de cuenta.
@@ -160,80 +190,13 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
 
   // --- LÓGICA DE RENDERIZADO ---
 
-  // 🟢 SIEMPRE permitir acceso a la Home Page ("/")
-  // Moved to END of hooks to prevent React Render Error ("Rendered more/fewer hooks")
-  if (pathname === "/") {
-    return <>{children}</>;
-  }
+  // 🟢 SIEMPRE permitir acceso a la Home Page ("/") - REMOVIDO para proteger el Dashboard
+  // if (pathname === "/") {
+  //   return <>{children}</>;
+  // }
 
   if (!account) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <div className="text-center p-4">
-          <h2 className="text-2xl font-mono font-bold">Acceso Restringido</h2>
-          <p className="mt-2 font-mono text-gray-400">
-            Conecta tu wallet para verificar tu llave de acceso.
-          </p>
-          <div className="mt-6 flex flex-col items-center gap-2">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowInfo(prev => !prev)}
-                className="p-2 rounded-full text-gray-500 hover:text-gray-300 hover:bg-zinc-800 transition-colors"
-                aria-label="Mostrar información sobre wallets compatibles"
-              >
-                <InformationCircleIcon className="h-6 w-6" />
-              </button>
-              <div className="w-full max-w-xs space-y-3">
-                <button
-                  onClick={() =>
-                    connect({
-                      client,
-                      chain: config.chain,
-                      showThirdwebBranding: false,
-                      wallets: [
-                        inAppWallet({
-                          auth: {
-                            options: ["email", "google", "apple", "facebook", "passkey"],
-                          },
-                          executionMode: {
-                            mode: "EIP7702",
-                            sponsorGas: true,
-                          },
-                        }),
-                      ],
-                    })
-                  }
-                  className="w-full bg-gradient-to-r from-lime-300 to-lime-400 text-gray-800 py-2 px-6 rounded-md hover:opacity-90 font-semibold transition"
-                >
-                  🔑 Login Rápido (Gratis & Seguro)
-                </button>
-
-                <button
-                  onClick={() =>
-                    connect({
-                      client,
-                      chain: config.chain,
-                      showThirdwebBranding: false,
-                      wallets: [createWallet("io.metamask")],
-                    })
-                  }
-                  className="w-full bg-orange-600 hover:bg-orange-700 text-white py-2 px-6 rounded-md font-medium transition border border-orange-500/30"
-                >
-                  🦊 MetaMask (Pro)
-                </button>
-              </div>
-            </div>
-            <AnimatePresence>
-              {showInfo && explanation}
-            </AnimatePresence>
-            <p className="text-xs text-gray-500 text-center mt-2">
-              Email • Google • Apple • Facebook • Passkey
-            </p>
-          </div>
-
-        </div>
-      </div>
-    );
+    return <>{children}</>;
   }
 
   if (isLoadingKey && gateStatus !== 'success' && !hasStartedProcessing.current) {

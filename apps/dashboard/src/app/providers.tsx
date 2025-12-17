@@ -3,10 +3,9 @@
 import { Toaster, toast } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThirdwebProvider, AutoConnect, useActiveAccount } from "thirdweb/react";
-import { inAppWallet, createWallet } from "thirdweb/wallets";
-import { defineChain } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { useThirdwebUserSync } from "@/hooks/useThirdwebUserSync";
+import { wallets, accountAbstractionConfig } from "@/config/wallets";
 // 🎮 IMPORTAR GAMIFICATION PROVIDER
 import { GamificationProvider } from "@pandoras/gamification";
 
@@ -44,27 +43,6 @@ export function Providers({
 }: {
   children: React.ReactNode;
 }) {
-  // Configuración de wallets para AutoConnect
-  const wallets = [
-    inAppWallet({
-      auth: {
-        options: [
-          "google",
-          "email",
-          "apple",
-          "facebook",
-        ],
-      },
-      smartAccount: {
-        chain: defineChain(11155111), // Default to Sepolia
-        sponsorGas: true, // ⚡ Gasless transactions enabled via Account Abstraction
-      },
-    }),
-    createWallet("io.metamask"),
-    createWallet("com.coinbase.wallet"),
-    createWallet("me.rainbow"),
-  ];
-
   return (
     <ThemeProvider
       attribute="class"
@@ -75,6 +53,7 @@ export function Providers({
         <AutoConnect
           client={client}
           wallets={wallets}
+          accountAbstraction={accountAbstractionConfig}
           timeout={3000}  // Mucho menos agresivo para evitar spamming
           onConnect={(wallet) => {
             if (process.env.NODE_ENV === 'development') {

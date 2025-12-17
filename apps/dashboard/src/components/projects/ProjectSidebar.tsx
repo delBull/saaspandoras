@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useState } from 'react';
-import { Ticket, Lock, Unlock, Share2, Users, Heart, Check, Clock, Shield } from "lucide-react";
+import { Ticket, Lock, Unlock, Share2, Users, Heart, Check, Clock, Shield, Copy, MessageSquare } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { SimpleTooltip } from "../ui/simple-tooltip";
 import { toast } from "sonner";
 import type { ProjectData } from "@/app/()/projects/types";
@@ -102,6 +103,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
   const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
   const [selectedPhase, setSelectedPhase] = useState<UtilityPhase | null>(null);
   const [isArtifactModalOpen, setIsArtifactModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   const handlePhaseClick = (phase: any) => {
     setSelectedPhase(phase);
@@ -198,10 +200,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                 {/* 1. Share Project */}
                 <SimpleTooltip content="Compartir Proyecto">
                   <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(window.location.href);
-                      toast.success("Enlace copiado al portapapeles");
-                    }}
+                    onClick={() => setIsShareModalOpen(true)}
                     className="p-2 text-gray-400 hover:text-lime-400 transition-colors"
                   >
                     <Share2 className="w-3 h-3" />
@@ -419,6 +418,56 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
           )}
         </div>
       </div>
+
+      {/* Share Modal */}
+      <Dialog open={isShareModalOpen} onOpenChange={setIsShareModalOpen}>
+        <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Compartir Proyecto</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-3 gap-4 py-4">
+            <button
+              onClick={() => {
+                window.open(`https://twitter.com/intent/tweet?text=Check out ${project.title} on Pandoras!&url=${window.location.href}`, '_blank');
+                setIsShareModalOpen(false);
+              }}
+              className="flex flex-col items-center gap-2 p-4 bg-zinc-900 rounded-xl hover:bg-zinc-800 transition-colors border border-zinc-800"
+            >
+              <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center border border-zinc-700">
+                <span className="text-white font-bold text-lg">X</span>
+              </div>
+              <span className="text-xs text-zinc-400">Twitter / X</span>
+            </button>
+
+            <button
+              onClick={() => {
+                window.open(`https://wa.me/?text=Check out ${project.title} on Pandoras: ${window.location.href}`, '_blank');
+                setIsShareModalOpen(false);
+              }}
+              className="flex flex-col items-center gap-2 p-4 bg-zinc-900 rounded-xl hover:bg-zinc-800 transition-colors border border-zinc-800"
+            >
+              <div className="w-10 h-10 bg-[#25D366] rounded-full flex items-center justify-center">
+                <MessageSquare className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xs text-zinc-400">WhatsApp</span>
+            </button>
+
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(window.location.href);
+                toast.success("Enlace copiado");
+                setIsShareModalOpen(false);
+              }}
+              className="flex flex-col items-center gap-2 p-4 bg-zinc-900 rounded-xl hover:bg-zinc-800 transition-colors border border-zinc-800"
+            >
+              <div className="w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center border border-zinc-700">
+                <Copy className="w-5 h-5 text-lime-400" />
+              </div>
+              <span className="text-xs text-zinc-400">Copiar</span>
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Modals */}
       <AccessCardPurchaseModal
