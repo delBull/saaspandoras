@@ -34,6 +34,17 @@ export async function POST(
 
 
 
+        // Parse Request Body for optional Config and Force Flag
+        let reqConfig: any = null;
+        let forceRedeploy = false;
+        try {
+            const body = await req.json();
+            reqConfig = body.config;
+            forceRedeploy = body.forceRedeploy;
+        } catch (e) {
+            // Body might be empty, ignore
+        }
+
         const project = await db.query.projects.findFirst({
             where: eq(projects.slug, slug),
         });
@@ -42,7 +53,7 @@ export async function POST(
             return NextResponse.json({ error: "Project not found" }, { status: 404 });
         }
 
-        if (project.deploymentStatus === 'deployed') {
+        if (project.deploymentStatus === 'deployed' && !forceRedeploy) {
             return NextResponse.json({ error: "Project already deployed" }, { status: 400 });
         }
 
@@ -57,15 +68,6 @@ export async function POST(
         // Determine network first
         const isProduction = process.env.NODE_ENV === 'production';
         const network = isProduction ? 'base' : 'sepolia';
-
-        // Parse Request Body for optional Config
-        let reqConfig: any = null;
-        try {
-            const body = await req.json();
-            reqConfig = body.config;
-        } catch (e) {
-            // Body might be empty, ignore
-        }
 
         // Mapping project data to W2EConfig
         const config: W2EConfig = {
