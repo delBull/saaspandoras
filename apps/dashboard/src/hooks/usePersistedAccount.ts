@@ -2,8 +2,9 @@
 
 import { useEffect, useCallback, useState } from "react";
 import { useActiveAccount, useActiveWallet, useConnect, useDisconnect } from "thirdweb/react";
-import { createWallet, type WalletId } from "thirdweb/wallets";
+import { createWallet, type WalletId, smartWallet } from "thirdweb/wallets";
 import { client } from "@/lib/thirdweb-client";
+import { accountAbstractionConfig } from "@/config/wallets";
 
 interface SavedSession {
   address: string;
@@ -152,8 +153,14 @@ export function usePersistedAccount() {
 
                 // Reconectar usando el mismo tipo de wallet
                 void connect(async () => {
-                  const wallet = createWallet(session.walletType);
-                  await wallet.connect({ client });
+                  const personalWallet = createWallet(session.walletType);
+                  const personalAccount = await personalWallet.connect({ client });
+
+                  const wallet = smartWallet(accountAbstractionConfig);
+                  await wallet.connect({
+                    client,
+                    personalAccount,
+                  });
                   return wallet;
                 }).catch((err) => {
                   console.warn("⚠️ Error reconectando social login:", err);
@@ -210,75 +217,11 @@ export function usePersistedAccount() {
         console.log("✅ Intentando reconectar wallet injected:", session.walletType);
       }
 
-      void connect(async () => {
-        try {
-          const wallet = createWallet(session.walletType);
-          await wallet.connect({ client });
-          return wallet;
-        } catch (innerErr) {
-          const errMsg = innerErr instanceof Error ? innerErr.message : String(innerErr);
-          const isSilentError = errMsg.includes('no accounts available') || errMsg.includes('User rejected');
-
-          if (isSilentError) {
-            // 🤫 Silently fail and clean up session
-            if (typeof window !== "undefined") {
-              const correctedSession = { ...session, shouldReconnect: false };
-              localStorage.setItem("wallet-session", JSON.stringify(correctedSession));
-              setSession(correctedSession);
-            }
-            // Return undefined to abort connection attempt gracefully (if types allow) 
-            // or throw a specific error we know to ignore? 
-            // Returning undefined usually stops the mutation in thirdweb SDK without big error.
-            return undefined as any;
-          }
-          throw innerErr;
-        }
-      }).catch((err: unknown) => {
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-
-        // Manejo especial para errores comunes de conexión
-        const isRequestPending = errorMessage.includes('already pending') ||
-          errorMessage.includes('Request of type') ||
-          (typeof err === 'object' && err !== null && 'code' in err && typeof (err as { code: unknown }).code === 'number' && (err as { code: number }).code === -32002);
-
-        const isNoAccounts = errorMessage.includes('no accounts available') ||
-          errorMessage.includes('User rejected') ||
-          errorMessage.includes('User denied') ||
-          errorMessage.includes('Failed to connect');
-
-        if (isRequestPending) {
-          // Para este error específico, NO deshabilitamos la reconexión automática
-          // Simplemente esperamos que el usuario complete la solicitud existente
-          setLastReconnectAttempt(Date.now() + 30000); // Bloquear reconexiones por 30 segundos
-          return;
-        }
-
-        if (isNoAccounts) {
-          // Normal behavior if wallet is locked or user cancels. Don't warn.
-          // Clean up session to prevent infinite retry loops if the wallet is truly GONE.
-          if (process.env.NODE_ENV === 'development') {
-            console.log("ℹ️ Reconexión imposible (wallet bloqueada/inexistente). Limpiando sesión.", errorMessage);
-          }
-          // Limpiar sesión para evitar bucles de error
-          if (typeof window !== "undefined") {
-            const correctedSession = { ...session, shouldReconnect: false };
-            localStorage.setItem("wallet-session", JSON.stringify(correctedSession));
-            setSession(correctedSession);
-          }
-          return;
-        } else {
-          if (process.env.NODE_ENV === 'development') {
-            console.warn("⚠️ Error reconectando wallet injected:", errorMessage);
-          }
-        }
-
-        // Marcar que no se debe reconectar automáticamente después de errores CRITICOS
-        if (typeof window !== "undefined") {
-          const correctedSession = { ...session, shouldReconnect: false };
-          localStorage.setItem("wallet-session", JSON.stringify(correctedSession));
-          setSession(correctedSession);
-        }
-      });
+      // ⚠️ Manual reconnection disabled in favor of AutoConnect (Global Smart Wallets)
+      // AutoConnect in providers.tsx now handles the Account Abstraction wrapping automatically.
+      if (process.env.NODE_ENV === 'development') {
+        console.log("ℹ️ Skipping manual injected reconnection - relying on AutoConnect");
+      }
     }
   }, [isBootstrapped, session, account?.address, isConnecting, connect, lastReconnectAttempt, isLogoutInProgress]);
 
