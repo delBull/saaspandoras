@@ -15,6 +15,8 @@ interface GovernanceWithdrawModalProps {
     onClose: () => void;
 }
 
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
 export function GovernanceWithdrawModal({ isOpen, onClose }: GovernanceWithdrawModalProps) {
     const account = useActiveAccount();
     const targetChain = config.governanceChain;
@@ -40,15 +42,14 @@ export function GovernanceWithdrawModal({ isOpen, onClose }: GovernanceWithdrawM
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
             <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-xl max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Gestionar Retiros</DialogTitle>
+                    <DialogTitle>Recompensas y Retiros</DialogTitle>
                 </DialogHeader>
 
                 <div className="space-y-4">
                     <div className="bg-blue-900/20 border border-blue-800 p-4 rounded-xl flex gap-3">
                         <AlertTriangle className="text-blue-400 w-5 h-5 shrink-0" />
                         <p className="text-sm text-blue-200">
-                            Los depósitos están sujetos a un periodo de bloqueo de 180 días.
-                            Solo puedes retirar fondos que hayan cumplido este periodo.
+                            Los depósitos generan recompensas pero están sujetos a un periodo de bloqueo de 180 días.
                         </p>
                     </div>
 
@@ -71,6 +72,10 @@ export function GovernanceWithdrawModal({ isOpen, onClose }: GovernanceWithdrawM
                                 const isLocked = Date.now() / 1000 < unlockTime;
                                 const unlockDate = new Date(unlockTime * 1000).toLocaleDateString();
 
+                                // Calculate remaining days
+                                const remainingMs = (unlockTime * 1000) - Date.now();
+                                const remainingDays = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
+
                                 return (
                                     <div key={index} className="bg-zinc-900 border border-zinc-800 p-4 rounded-xl flex justify-between items-center">
                                         <div>
@@ -79,9 +84,21 @@ export function GovernanceWithdrawModal({ isOpen, onClose }: GovernanceWithdrawM
                                         </div>
 
                                         {isLocked ? (
-                                            <Button variant="ghost" disabled className="text-yellow-500 bg-yellow-500/10 cursor-not-allowed border border-yellow-500/20">
-                                                <Lock className="w-4 h-4 mr-2" /> Bloqueado
-                                            </Button>
+                                            <TooltipProvider delayDuration={0}>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <span tabIndex={0}> {/* Wrapper for disabled element accessibility */}
+                                                            <Button variant="ghost" disabled className="text-yellow-500 bg-yellow-500/10 opacity-50 cursor-not-allowed border border-yellow-500/20">
+                                                                <Lock className="w-4 h-4 mr-2" /> Bloqueado
+                                                            </Button>
+                                                        </span>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="bg-zinc-900 border-zinc-800 text-white">
+                                                        <p>Reglas no cumplidas: Periodo de bloqueo activo.</p>
+                                                        <p className="text-xs text-yellow-400 mt-1">Faltan {remainingDays} días.</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
                                         ) : (
                                             <TransactionButton
                                                 transaction={() => prepareContractCall({
@@ -96,7 +113,7 @@ export function GovernanceWithdrawModal({ isOpen, onClose }: GovernanceWithdrawM
                                                 theme="dark"
                                                 className="!bg-lime-500 !text-black hover:!bg-lime-400 !px-4 !py-2 !h-auto !text-sm !font-bold"
                                             >
-                                                <Unlock className="w-4 h-4 mr-2" /> Retirar
+                                                <Unlock className="w-4 h-4 mr-2" /> Reclamar
                                             </TransactionButton>
                                         )}
                                     </div>

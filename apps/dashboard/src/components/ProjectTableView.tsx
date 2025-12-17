@@ -37,15 +37,15 @@ export function ProjectTableView({
   actionsLoading
 }: ProjectTableViewProps) {
   const [isConfigModalOpen, setIsConfigModalOpen] = React.useState(false);
-  const [selectedProjectForDeployment, setSelectedProjectForDeployment] = React.useState<{ id: string, title: string, slug: string } | null>(null);
+  const [selectedProjectForDeployment, setSelectedProjectForDeployment] = React.useState<{ id: string, title: string, slug: string, forceRedeploy?: boolean } | null>(null);
 
   // Deployment Progress State
   const [deploymentStatus, setDeploymentStatus] = React.useState<'idle' | 'deploying' | 'success' | 'error'>('idle');
   const [deploymentError, setDeploymentError] = React.useState<string | undefined>(undefined);
   const [isProgressModalOpen, setIsProgressModalOpen] = React.useState(false);
 
-  const handleDeployClick = (id: string, title: string, slug: string) => {
-    setSelectedProjectForDeployment({ id, title, slug });
+  const handleDeployClick = (id: string, title: string, slug: string, forceRedeploy?: boolean) => {
+    setSelectedProjectForDeployment({ id, title, slug, forceRedeploy });
     setIsConfigModalOpen(true);
   };
 
@@ -63,7 +63,8 @@ export function ProjectTableView({
           selectedProjectForDeployment.id,
           selectedProjectForDeployment.title,
           selectedProjectForDeployment.slug,
-          config
+          // Merge force flag into config (requires logic update in useProjectActions to extract it)
+          { ...config, forceRedeploy: selectedProjectForDeployment.forceRedeploy } as any
         );
         setDeploymentStatus('success');
       } catch (err) {
@@ -448,7 +449,7 @@ export function ProjectTableView({
                                     <button
                                       onClick={() => {
                                         if (window.confirm("⚠️ ¿Estás seguro de que quieres REDESPLEGAR este protocolo?\n\nEsta acción es PELIGROSA:\n- Se crearán NUEVOS contratos.\n- Los contratos anteriores quedarán huérfanos.\n- Tendrás que actualizar manualmente cualquier frontend externo.\n\n¿Continuar?")) {
-                                          handleDeployClick(p.id, p.title, p.slug!);
+                                          handleDeployClick(p.id, p.title, p.slug!, true);
                                         }
                                       }}
                                       disabled={actionsLoading?.[p.id]}

@@ -8,7 +8,8 @@ import {
     SettingsIcon,
     ShieldCheckIcon,
     HelpCircleIcon,
-    MessageSquare
+    MessageSquare,
+    ListTodo
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -94,16 +95,29 @@ export function DAOSidebar({
 
             {/* Owner Actions */}
             {isOwner && (
-                <div className="mt-6">
+                <div className="mt-6 space-y-2">
+                    <p className="px-1 text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Administración</p>
+
+                    <button
+                        onClick={() => onViewChange('activities_admin')}
+                        className={cn(
+                            "w-full flex items-center gap-3 px-4 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-xl transition-colors text-sm font-medium border border-zinc-700",
+                            activeView === 'activities_admin' && "bg-lime-900/20 border-lime-500/50 text-lime-400"
+                        )}
+                    >
+                        <ListTodo className="w-4 h-4" />
+                        Gestionar Misiones
+                    </button>
+
                     <button
                         onClick={() => onViewChange('manage')}
                         className={cn(
-                            "w-full flex items-center justify-center gap-2 px-4 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-colors font-medium border border-zinc-700",
+                            "w-full flex items-center gap-3 px-4 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-xl transition-colors text-sm font-medium border border-zinc-700",
                             activeView === 'manage' && "bg-lime-900/20 border-lime-500/50 text-lime-400"
                         )}
                     >
                         <SettingsIcon className="w-4 h-4" />
-                        Administrar DAO
+                        Configuración
                     </button>
                 </div>
             )}

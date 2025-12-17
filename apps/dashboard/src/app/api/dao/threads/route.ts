@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "~/db";
-import { daoThreads } from "~/db/schema";
+import { daoThreads, projects } from "~/db/schema";
 import { eq, desc } from "drizzle-orm";
+import { SUPER_ADMIN_WALLET } from "~/lib/constants";
 
 export const dynamic = 'force-dynamic';
 
@@ -38,12 +39,24 @@ export async function POST(request: Request) {
 
         // TODO: Verify signature/auth (skipped for MVP speed as per user preference for now, but should be added)
 
+        // Check for Project Owner or Super Admin to auto-mark as Official
+        const project = await db.query.projects.findFirst({
+            columns: { applicantWalletAddress: true },
+            where: eq(projects.id, Number(projectId)),
+        });
+
+        const isProjectOwner = project?.applicantWalletAddress?.toLowerCase() === authorAddress.toLowerCase();
+        const isSuperAdmin = authorAddress.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase();
+
+        // Auto-official if owner or super admin
+        const shouldBeOfficial = isProjectOwner || isSuperAdmin || isOfficial;
+
         const [newThread] = await db.insert(daoThreads).values({
             projectId: Number(projectId),
             authorAddress,
             title,
             category: category || 'general',
-            isOfficial: isOfficial || false,
+            isOfficial: shouldBeOfficial,
         }).returning();
 
         if (!newThread) {

@@ -9,8 +9,14 @@ import { DAOMetrics } from "./DAOMetrics";
 import { DAOChat } from "./DAOChat";
 import { VoteIcon, Wallet, WalletIcon, TrendingUpIcon, ActivityIcon, ArrowUpRightIcon, HelpCircleIcon, SettingsIcon, LockIcon, ListTodoIcon, TrophyIcon, UsersIcon, InfoIcon } from "lucide-react";
 import { motion } from "framer-motion";
-import { useReadContract, useWalletBalance } from "thirdweb/react";
-import { getContract, defineChain } from "thirdweb";
+import { useReadContract, useWalletBalance, useActiveAccount } from "thirdweb/react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { getContract, defineChain, sendTransaction } from "thirdweb";
+import { mintWithSignature } from "thirdweb/extensions/erc20";
+import { usePBOXBalance } from "@/hooks/usePBOXBalance";
 import { client } from "@/lib/thirdweb-client";
 import { toast } from "sonner";
 import { useState } from "react";
@@ -261,6 +267,22 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
         </div>
     );
 
+    const ActivitiesAdminView = () => {
+        if (!isOwner) return <div className="text-red-500">Acceso denegado.</div>;
+        return (
+            <div className="space-y-6">
+                <div>
+                    <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                        <ListTodoIcon className="w-6 h-6 text-lime-400" />
+                        Gestor de Misiones
+                    </h3>
+                    <p className="text-zinc-400 mt-1">Crea, edita y administra las misiones disponibles para la comunidad.</p>
+                </div>
+                <ManageActivities projectId={Number(project.id)} />
+            </div>
+        );
+    };
+
     const ManageView = () => {
         if (!isOwner) return <div className="text-red-500">Acceso denegado.</div>;
 
@@ -269,17 +291,13 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                 <div className="flex items-center gap-4 mb-4">
                     <SettingsIcon className="w-8 h-8 text-lime-400" />
                     <div>
-                        <h3 className="text-2xl font-bold text-white">Administración del DAO</h3>
-                        <p className="text-zinc-400">Panel exclusivo para el dueño del protocolo.</p>
+                        <h3 className="text-2xl font-bold text-white">Configuración del DAO</h3>
+                        <p className="text-zinc-400">Panel administrativo general.</p>
                     </div>
                 </div>
 
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Activity Management (New) */}
-                    <div className="col-span-1 md:col-span-2">
-                        <ManageActivities projectId={Number(project.id)} />
-                    </div>
 
                     {/* Configuración General */}
                     <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl hover:border-lime-500/30 transition-colors">
@@ -350,6 +368,66 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
         );
     };
 
+    // --- PBOX Redemption Logic ---
+    const account = useActiveAccount();
+    const { balance: pboxBalance, mutate: refreshBalance } = usePBOXBalance(account?.address);
+    const [isRedeemOpen, setIsRedeemOpen] = useState(false);
+    const [redeemAmount, setRedeemAmount] = useState("");
+    const [isRedeeming, setIsRedeeming] = useState(false);
+    const [redemptionType, setRedemptionType] = useState<'CRYPTO' | 'TOKEN'>('CRYPTO');
+
+    const handleRedeem = async () => {
+        if (!account) return;
+        setIsRedeeming(true);
+        try {
+            const outputToken = redemptionType === 'TOKEN' ? 'PBOX_GOV' : 'USDC';
+
+            const res = await fetch("/api/dao/redemption", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    userAddress: account.address,
+                    amount: redeemAmount,
+                    outputToken
+                })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Redemption failed");
+
+            if (data.signature && data.payload) {
+                // Execute Minting on Client
+                const pboxContract = getContract({
+                    client,
+                    chain: defineChain(process.env.NODE_ENV === 'production' ? 8453 : 11155111),
+                    address: process.env.NEXT_PUBLIC_PBOX_TOKEN_ADDRESS || ""
+                });
+
+                // Execute Signature Mint
+                const transaction = mintWithSignature({
+                    contract: pboxContract,
+                    payload: data.payload,
+                    signature: data.signature
+                });
+
+                await sendTransaction({
+                    transaction,
+                    account
+                });
+
+                toast.success(`Canjeado exitosamente! Has recibido ${redeemAmount} $PBOX`);
+            } else {
+                toast.success(`Canjeado exitosamente! Recibirás ${data.payout} ${data.symbol}`);
+            }
+            setIsRedeemOpen(false);
+            setRedeemAmount("");
+            refreshBalance();
+        } catch (e: any) {
+            toast.error(e.message);
+        } finally {
+            setIsRedeeming(false);
+        }
+    };
+
     const ActivitiesView = () => (
         <div className="space-y-6">
             <div className="flex justify-between items-center mb-6">
@@ -360,9 +438,84 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                     </h3>
                     <p className="text-zinc-400 mt-1">Completa tareas para ganar recompensas y reputación en el DAO.</p>
                 </div>
-                <div className="bg-zinc-800 px-4 py-2 rounded-lg border border-zinc-700 flex items-center gap-2">
-                    <TrophyIcon className="w-4 h-4 text-yellow-400" />
-                    <span className="text-sm text-zinc-300">Mis Puntos: <span className="text-white font-bold font-mono">0</span></span>
+                <div className="flex items-center gap-3">
+                    <div className="bg-zinc-800 px-4 py-2 rounded-lg border border-zinc-700 flex items-center gap-2">
+                        <TrophyIcon className="w-4 h-4 text-yellow-400" />
+                        <span className="text-sm text-zinc-300">Mis Puntos: <span className="text-white font-bold font-mono">{Number(pboxBalance).toFixed(0)} PBOX</span></span>
+                    </div>
+
+                    <Dialog open={isRedeemOpen} onOpenChange={setIsRedeemOpen}>
+                        <DialogTrigger asChild>
+                            <button className="px-4 py-2 bg-gradient-to-r from-lime-500 to-green-600 text-black text-sm font-bold rounded-lg shadow-lg hover:shadow-lime-500/20 transition-all flex items-center gap-2">
+                                <WalletIcon className="w-4 h-4" />
+                                Canjear
+                            </button>
+                        </DialogTrigger>
+                        <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
+                            <DialogHeader>
+                                <DialogTitle>Canjear PBOX</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4 pt-4">
+                                <div className="flex bg-zinc-950 p-1 rounded-lg">
+                                    <button
+                                        onClick={() => setRedemptionType('CRYPTO')}
+                                        className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${redemptionType === 'CRYPTO' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                    >
+                                        Crypto (USDC/ETH)
+                                    </button>
+                                    <button
+                                        onClick={() => setRedemptionType('TOKEN')}
+                                        className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${redemptionType === 'TOKEN' ? 'bg-zinc-800 text-lime-400 shadow' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                    >
+                                        $PBOX (Governance)
+                                    </button>
+                                </div>
+
+                                <p className="text-sm text-zinc-400">
+                                    {redemptionType === 'CRYPTO'
+                                        ? <span>Convierte puntos en dinero real.<br />Tasa: <span className="text-lime-400">100 PBOX = 1 USDC</span></span>
+                                        : <span>Obtén poder de voto en el DAO.<br />Tasa: <span className="text-lime-400">1 PBOX = 1 $PBOX</span></span>
+                                    }
+                                </p>
+
+                                <div className="space-y-2">
+                                    <Label>Cantidad a Canjear</Label>
+                                    <div className="relative">
+                                        <Input
+                                            type="number"
+                                            className="bg-zinc-800 border-zinc-700 pr-16"
+                                            placeholder="0"
+                                            value={redeemAmount}
+                                            onChange={(e) => setRedeemAmount(e.target.value)}
+                                        />
+                                        <button
+                                            onClick={() => setRedeemAmount(Number(pboxBalance).toString())}
+                                            className="absolute right-2 top-2 text-xs text-lime-400 font-bold hover:text-lime-300"
+                                        >
+                                            MAX
+                                        </button>
+                                    </div>
+                                    <p className="text-xs text-zinc-500 text-right">Disponible: {Number(pboxBalance).toFixed(2)} PBOX</p>
+                                </div>
+                                <div className="p-3 bg-zinc-950 rounded-lg flex justify-between items-center text-sm">
+                                    <span className="text-zinc-400">Recibirás (Estimado):</span>
+                                    <span className="font-mono font-bold text-white">
+                                        {redemptionType === 'CRYPTO'
+                                            ? `${(Number(redeemAmount || 0) * 0.01).toFixed(2)} ${process.env.NODE_ENV === 'production' ? 'USDC' : 'ETH'}`
+                                            : `${Number(redeemAmount || 0)} $PBOX`
+                                        }
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={handleRedeem}
+                                    disabled={isRedeeming || Number(redeemAmount) <= 0 || Number(redeemAmount) > Number(pboxBalance)}
+                                    className="w-full bg-lime-500 hover:bg-lime-400 text-black font-bold py-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    {isRedeeming ? "Procesando..." : "Confirmar Canje"}
+                                </button>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
                 </div>
             </div>
 
@@ -381,6 +534,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
             >
                 {activeView === 'overview' && <OverviewView />}
                 {activeView === 'activities' && <ActivitiesView />}
+                {activeView === 'activities_admin' && <ActivitiesAdminView />}
                 {activeView === 'chat' && <DAOChat project={project} isOwner={isOwner} />}
                 {activeView === 'staking' && <StakingView />}
                 {activeView === 'proposals' && <ProposalsView />}

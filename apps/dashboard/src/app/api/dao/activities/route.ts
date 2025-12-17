@@ -42,8 +42,35 @@ export async function POST(req: Request) {
         // TODO: Verify user is owner/admin of project (skipping rigid auth for speed/prototype as per context, but should be added)
         // Assuming component handles ownership check via UI or Middleware
 
+        let targetProjectId = Number(projectId);
+
+        // Special handling for Global DAO (Project 0 from frontend)
+        if (targetProjectId === 0) {
+            const globalProject = await db.query.projects.findFirst({
+                where: eq(projects.slug, 'pandoras-dao')
+            });
+
+            if (globalProject) {
+                targetProjectId = globalProject.id;
+            } else {
+                // Auto-create Global DAO Project if missing
+                const result = await db.insert(projects).values({
+                    title: "Pandoras Governance",
+                    slug: "pandoras-dao",
+                    description: "DAO Oficial de la Plataforma Pandoras.",
+                    status: "live",
+                    targetAmount: "0",
+                    featured: true,
+                    treasuryAddress: "0x0000000000000000000000000000000000000000", // Placeholder
+                }).returning();
+
+                if (!result[0]) throw new Error("Failed to create Global DAO project");
+                targetProjectId = result[0].id;
+            }
+        }
+
         const newActivity = await db.insert(daoActivities).values({
-            projectId: Number(projectId),
+            projectId: targetProjectId,
             title,
             description,
             rewardAmount: rewardAmount.toString(),
