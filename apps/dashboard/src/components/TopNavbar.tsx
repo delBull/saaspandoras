@@ -235,7 +235,7 @@ export function TopNavbar({
   }, []);
 
   return (
-    <div className={`absolute w-full z-[100] md:block hidden pt-4 transition-opacity duration-700 pointer-events-none ${mounted ? 'opacity-100' : 'opacity-0'}`}>
+    <div className={`absolute w-full z-[9999] md:block hidden pt-4 transition-opacity duration-700 pointer-events-none ${mounted ? 'opacity-100' : 'opacity-0'}`}>
       <div className="pointer-events-auto"><PendingRewardsNotification /></div>
       <div className={`bg-gradient-to-r from-purple-950/0 to-black/0 transition-all duration-500 ${isApplicantsPage ? (panelCollapsed ? 'mr-8 lg:mr-12' : 'mr-[240px] lg:mr-[270px]') : ''
         }`}>
@@ -307,7 +307,7 @@ export function TopNavbar({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            className="absolute top-full right-4 mt-2 w-80 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 topnav-profile-dropdown"
+            className="absolute top-full right-4 mt-2 w-80 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 topnav-profile-dropdown pointer-events-auto"
           >
             <div className="p-3 space-y-2">
               {/* Wallet Copy Section - FIRST PRIORITY */}

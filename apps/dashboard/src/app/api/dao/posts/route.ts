@@ -52,6 +52,22 @@ export async function POST(request: Request) {
             return post;
         });
 
+        if (!newPost) {
+            return NextResponse.json({ error: "Failed to create post" }, { status: 500 });
+        }
+
+        // Track Gamification Event
+        try {
+            const { GamificationService } = await import("~/lib/gamification/service");
+            await GamificationService.trackEvent(authorAddress, 'forum_post', {
+                threadId: Number(threadId),
+                postId: newPost.id,
+                isReply: true
+            });
+        } catch (error) {
+            console.error("Error tracking gamification event:", error);
+        }
+
         return NextResponse.json(newPost);
 
     } catch (error) {
