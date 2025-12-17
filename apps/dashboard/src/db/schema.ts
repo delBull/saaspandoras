@@ -728,6 +728,7 @@ export const daoPosts = pgTable("dao_posts", {
   content: text("content").notNull(),
   isSolution: boolean("is_solution").default(false),
   likesCount: integer("likes_count").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow()
 });
 

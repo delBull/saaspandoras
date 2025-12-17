@@ -81,7 +81,7 @@ export async function POST(request: Request) {
         }
 
         // 4. Transfer Funds (Real & Dynamic)
-        let txHash = "";
+        const txHash = "";
 
         // 4. Award Reward (DB Balance)
         // Check if user balance exists, if not create
