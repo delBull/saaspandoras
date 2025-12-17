@@ -137,7 +137,7 @@ export async function POST(
                 licenseContractAddress: result.licenseAddress,
                 utilityContractAddress: result.phiAddress,
                 loomContractAddress: result.loomAddress,
-                governorContractAddress: result.governorAddress,
+                votingContractAddress: result.governorAddress,
                 treasuryAddress: result.treasuryAddress,
                 chainId: result.chainId,
                 deploymentStatus: 'deployed',

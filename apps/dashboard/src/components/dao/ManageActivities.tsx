@@ -14,6 +14,8 @@ export function ManageActivities({ projectId }: ManageActivitiesProps) {
     const [description, setDescription] = useState("");
     const [rewardAmount, setRewardAmount] = useState("0");
     const [rewardToken, setRewardToken] = useState("PBOX");
+    const [category, setCategory] = useState("social"); // social, labor
+    const [durationHours, setDurationHours] = useState("24");
     const [isLoading, setIsLoading] = useState(false);
 
     const handleCreate = async (e: React.FormEvent) => {
@@ -30,7 +32,9 @@ export function ManageActivities({ projectId }: ManageActivitiesProps) {
                     description,
                     rewardAmount,
                     rewardTokenSymbol: rewardToken,
-                    type: "custom"
+                    type: "custom",
+                    category,
+                    requirements: category === 'labor' ? { durationSeconds: Number(durationHours) * 3600 } : {}
                 }),
             });
 
@@ -100,6 +104,33 @@ export function ManageActivities({ projectId }: ManageActivitiesProps) {
                             <option value="ETH">ETH</option>
                         </select>
                     </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label htmlFor="activity-category" className="block text-sm text-zinc-400 mb-1">Tipo de Actividad</label>
+                        <select
+                            id="activity-category"
+                            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white outline-none"
+                            value={category}
+                            onChange={(e) => setCategory(e.target.value)}
+                        >
+                            <option value="social">Misión (Social)</option>
+                            <option value="labor">Labor (Staking)</option>
+                        </select>
+                    </div>
+                    {category === 'labor' && (
+                        <div>
+                            <label htmlFor="activity-duration" className="block text-sm text-zinc-400 mb-1">Duración (Horas)</label>
+                            <input
+                                id="activity-duration"
+                                type="number"
+                                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white outline-none"
+                                value={durationHours}
+                                onChange={(e) => setDurationHours(e.target.value)}
+                            />
+                        </div>
+                    )}
                 </div>
 
                 <button
