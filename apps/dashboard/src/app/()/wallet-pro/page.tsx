@@ -1,5 +1,5 @@
 'use client';
-
+import { useUserAssets } from '@/hooks/useUserAssets';
 // Force dynamic rendering - this page uses auth
 export const dynamic = 'force-dynamic';
 
@@ -47,6 +47,12 @@ export default function WalletProPage() {
     chain: base,
   });
 
+  // Get new user assets
+  const { assets, loading: loadingAssets } = useUserAssets();
+
+  const accessCount = assets.filter(a => a.type === 'access').length;
+  const artifactCount = assets.filter(a => a.type === 'utility' || a.type === 'artifact').length;
+
   // Formatear el balance en USD
   const walletBalance = React.useMemo(() => {
     if (!balanceData) return '$0.00';
@@ -75,15 +81,15 @@ export default function WalletProPage() {
     {
       icon: <KeyIcon className="w-5 h-5" />,
       label: 'Accesos',
-      value: '0',
-      change: 'Próximamente',
+      value: accessCount.toString(),
+      change: 'Activos',
       positive: true,
     },
     {
       icon: <SparklesIcon className="w-5 h-5" />,
       label: 'Artefactos',
-      value: '0',
-      change: 'Próximamente',
+      value: artifactCount.toString(),
+      change: 'Activos',
       positive: true,
     },
   ];
@@ -337,7 +343,7 @@ export default function WalletProPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 1.4 }}
                 >
-                  <NFTGallery selectedChain={selectedChain} />
+                  <NFTGallery assets={assets} isLoading={loadingAssets} />
                 </motion.div>
               </motion.div>
 

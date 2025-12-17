@@ -18,6 +18,7 @@ import {
   userAchievements,
   projects,
   userReferrals,
+  gamificationEvents,
   type GamificationProfile as DrizzleGamificationProfile
 } from '@/db/schema';
 import { eq, sql, desc } from 'drizzle-orm';
@@ -265,9 +266,19 @@ export class GamificationService {
 
       console.log(`✅ Event tracked: +${points} points awarded to wallet ${walletAddress} (user ID: ${userId})`);
 
+      // PERSIST EVENT HISTORY
+      const [savedEvent] = await db.insert(gamificationEvents).values({
+        userId: userId,
+        type: eventType as any,
+        category: this.getEventCategory(eventType) as any,
+        points: points,
+        projectId: metadata?.projectId ? Number(metadata.projectId) : null,
+        metadata: metadata ? metadata : {},
+      }).returning();
+
       // Return basic event object (without ID dependency)
       return {
-        id: `event_${Date.now()}_${walletAddress}`,
+        id: savedEvent?.id.toString() ?? `event_${Date.now()}_${walletAddress}`,
         userId: walletAddress,
         type: eventType as any,
         category: this.getEventCategory(eventType) as any,
@@ -763,6 +774,9 @@ export class GamificationService {
       'staking_deposit': 20,
       'proposal_vote': 10,
       'rewards_claimed': 5,
+      'forum_post': 10,
+      'access_card_acquired': 50,
+      'artifact_acquired': 15, // Differentiates from 'artifact_purchased' (acquired can be free)
       'COURSE_STARTED': 10,  // Keep for backward compat
       'COURSE_COMPLETED': 100 // Keep for backward compat
     };
