@@ -22,7 +22,7 @@ export function NotificationsPanel({ hasAccess, notifications = [] }: { hasAcces
         actionText: null, // Basic events usually don't have action
         bgClass: n.points > 0 ? "bg-amber-900/10 border-amber-800/30" : "bg-blue-900/10 border-blue-800/30",
         dismissible: true,
-        onClick: () => { } // No action for now
+        onClick: () => void 0 // No action for now
     }));
 
     // Base list
