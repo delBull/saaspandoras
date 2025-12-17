@@ -359,6 +359,7 @@ export default function DashboardPage() {
     featuredProjects: any[];
     accessCards: any[];
     artifacts: any[];
+    notifications?: any[]; // optional
     loading: boolean
   }>({
     featuredProjects: [],
@@ -370,7 +371,8 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch('/api/home-data');
+        const query = account?.address ? `?wallet=${account.address}` : '';
+        const res = await fetch(`/api/home-data${query}`);
         if (res.ok) {
           const json = await res.json();
           // Use DB projects if available, otherwise FALLBACK
@@ -379,6 +381,7 @@ export default function DashboardPage() {
             featuredProjects: rawProjects.length > 0 ? rawProjects : FALLBACK_PROJECTS,
             accessCards: json.accessCards || [],
             artifacts: json.artifacts || [],
+            notifications: json.notifications || [], // Add notifications
             loading: false
           });
         } else {
@@ -398,7 +401,7 @@ export default function DashboardPage() {
       }
     };
     fetchData();
-  }, []);
+  }, [account?.address]);
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -432,7 +435,10 @@ export default function DashboardPage() {
 
             {/* Notifications Panel: Stretches to match Carousel on Desktop, Fixed height on Mobile */}
             <div className="lg:col-span-1 w-full h-[400px] lg:h-full">
-              <NotificationsPanel hasAccess={homeData.accessCards.length > 0} />
+              <NotificationsPanel
+                hasAccess={homeData.accessCards.length > 0}
+                notifications={homeData.notifications}
+              />
             </div>
           </div>
         </div>
