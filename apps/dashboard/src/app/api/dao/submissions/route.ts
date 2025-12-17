@@ -19,7 +19,7 @@ export async function GET(req: Request) {
         if (userAddress) conditions.push(eq(daoActivitySubmissions.userWallet, userAddress));
 
         if (conditions.length > 0) {
-            // @ts-expect-error
+            // @ts-expect-error: Drizzle query construction complexity
             query = query.where(and(...conditions));
         }
 
@@ -73,7 +73,7 @@ export async function POST(req: Request) {
 
             if (!activity) return NextResponse.json({ error: 'Activity not found' }, { status: 404 });
 
-            // @ts-expect-error
+            // @ts-expect-error: JSONB type inference for activity requirements
             const duration = activity.requirements?.durationSeconds || 0;
 
             // Fetch submission
