@@ -178,6 +178,7 @@ export const projects = pgTable("projects", {
   raisedAmount: decimal("raised_amount", { precision: 18, scale: 2 }).default("0.00"),
   returnsPaid: decimal("returns_paid", { precision: 18, scale: 2 }).default("0.00"),
   // Deployment & Contracts (Refs above)
+  votingContractAddress: varchar("voting_contract_address", { length: 42 }), // For On-Chain Governance
 
 
   // --- AJUSTE 2: Estado por defecto corregido a 'draft' ---
@@ -606,7 +607,7 @@ export const emailMetrics = pgTable("email_metrics", {
   id: serial("id").primaryKey(),
   emailId: varchar("email_id", { length: 255 }).unique().notNull(),
   type: varchar("type", { length: 50 }).default('unknown').notNull(), // creator_welcome, founders, utility, etc.
-  status: varchar("status", { length: 50 }).default('unknown').notNull(), // sent, delivered, opened, clicked, bounced, etc.
+  status: varchar('status', { length: 20 }).default('pending').notNull(), // pending, approved, rejected, clicked, bounced, etc.
   recipient: varchar("recipient", { length: 255 }),
   emailSubject: text("email_subject"),
   clickedUrl: text("clicked_url"), // URL que se clickeó
@@ -667,12 +668,15 @@ export const daoActivities = pgTable("dao_activities", {
 
   // Rewards
   rewardAmount: decimal("reward_amount", { precision: 18, scale: 6 }).default("0").notNull(),
-  rewardTokenSymbol: varchar("reward_token_symbol", { length: 20 }).default("PBOX").notNull(),
+  rewardTokenSymbol: varchar('reward_token_symbol', { length: 20 }).default('PBOX').notNull(), // PBOX, USDC, ETH
+  category: varchar('category', { length: 50 }).default('social'), // 'social', 'labor', 'governance'
+  requirements: jsonb('requirements').default({}), // For complex logic
 
   // Config
   type: daoActivityTypeEnum("type").default("custom").notNull(),
   status: daoActivityStatusEnum("status").default("active").notNull(),
   externalLink: text("external_link"),
+  startedAt: timestamp('started_at', { withTimezone: true }), // For staking start
 
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -680,6 +684,7 @@ export const daoActivities = pgTable("dao_activities", {
 
 export const daoActivitySubmissions = pgTable("dao_activity_submissions", {
   id: serial("id").primaryKey(),
+  projectId: integer("project_id"), // Optional denormalization or required if API relies on it
   activityId: integer("activity_id").references(() => daoActivities.id).notNull(),
   userWallet: varchar("user_wallet", { length: 42 }).notNull(), // Wallet for payout
 
@@ -689,6 +694,9 @@ export const daoActivitySubmissions = pgTable("dao_activity_submissions", {
   feedback: text("feedback"), // Rejection reason or cheer
 
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  startedAt: timestamp("started_at", { withTimezone: true }), // For staking start
+  statusUpdatedAt: timestamp("status_updated_at", { withTimezone: true }), // When status changed
   reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
 });
 
@@ -699,9 +707,10 @@ export const daoThreads = pgTable("dao_threads", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").notNull(), // Assuming relation is managed manually or via ID for now to avoid circular deps if projects is defined earlier
   authorAddress: varchar("author_address", { length: 42 }).notNull(),
-  title: varchar("title", { length: 255 }).notNull(),
-  category: varchar("category", { length: 50 }).default('general'),
-  isPinned: boolean("is_pinned").default(false),
+  title: varchar('title', { length: 255 }).notNull(),
+  category: varchar('category', { length: 50 }).default('general'),
+  isOfficial: boolean('is_official').default(false),
+  isPinned: boolean('is_pinned').default(false),
   isLocked: boolean("is_locked").default(false),
   viewCount: integer("view_count").default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
