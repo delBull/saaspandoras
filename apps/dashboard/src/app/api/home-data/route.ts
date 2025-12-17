@@ -1,14 +1,18 @@
 
 import { NextResponse } from "next/server";
 import { db } from "~/db";
+// ... imports ...
 import { sql, eq, and, desc, inArray } from "drizzle-orm";
-import { projects } from "~/db/schema";
+import { projects, gamificationEvents, users } from "~/db/schema";
 import type { DeploymentConfig } from "~/types/deployment";
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
+        const { searchParams } = new URL(request.url);
+        const wallet = searchParams.get("wallet");
+
         // 1. Fetch Featured Projects (Allow 'approved' or 'live', even if not deployed yet, for marketing)
         const featuredProjectsRaw = await db.select({
             id: projects.id,
@@ -34,6 +38,29 @@ export async function GET() {
             status: projects.status,
             deploymentStatus: projects.deploymentStatus
         }).from(projects).where(and(eq(projects.status, 'live'), eq(projects.deploymentStatus, 'deployed')));
+
+        // 3. Fetch Notifications (Recent Events) if wallet provided
+        let notifications: any[] = [];
+        if (wallet) {
+            const user = await db.select({ id: users.id }).from(users).where(eq(users.walletAddress, wallet)).limit(1);
+            if (user && user.length > 0 && user[0]) {
+                const rawEvents = await db.select()
+                    .from(gamificationEvents)
+                    .where(eq(gamificationEvents.userId, user[0].id))
+                    .orderBy(desc(gamificationEvents.createdAt))
+                    .limit(5); // Last 5 events
+
+                notifications = rawEvents.map(e => ({
+                    id: e.id,
+                    type: e.points > 0 ? "success" : "info",
+                    title: `Event: ${e.type.replace(/_/g, ' ').toUpperCase()}`,
+                    description: `You earned ${e.points} points!`,
+                    category: e.category,
+                    createdAt: e.createdAt,
+                    dismissible: true
+                }));
+            }
+        }
 
         // Map Featured
         const featuredProjects = featuredProjectsRaw.map(p => ({
@@ -65,7 +92,7 @@ export async function GET() {
 
             // --- Process Artifacts (Phases) ---
             const config = project.w2eConfig as DeploymentConfig;
-            if (config?.phases) { // Use optional chain // Use optional chain
+            if (config?.phases) { // Use optional chain
                 for (const phase of config.phases) {
                     if (phase.isActive) {
                         artifacts.push({
@@ -88,7 +115,8 @@ export async function GET() {
         return NextResponse.json({
             accessCards,
             artifacts,
-            featuredProjects
+            featuredProjects,
+            notifications
         });
 
     } catch (error) {

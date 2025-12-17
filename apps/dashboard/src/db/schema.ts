@@ -218,7 +218,10 @@ export const eventTypeEnum = pgEnum("event_type", [
   "artifact_purchased",
   "staking_deposit",
   "proposal_vote",
-  "rewards_claimed"
+  "rewards_claimed",
+  "forum_post",
+  "access_card_acquired",
+  "artifact_acquired"
 ]);
 
 export const eventCategoryEnum = pgEnum("event_category", [

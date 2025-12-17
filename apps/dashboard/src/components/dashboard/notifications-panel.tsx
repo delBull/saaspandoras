@@ -4,17 +4,31 @@ import {
     AcademicCapIcon,
     KeyIcon,
     BellIcon,
-    XMarkIcon
+    XMarkIcon,
+    GiftIcon
 } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 
-export function NotificationsPanel({ hasAccess }: { hasAccess: boolean }) {
+export function NotificationsPanel({ hasAccess, notifications = [] }: { hasAccess: boolean, notifications?: any[] }) {
     const router = useRouter();
 
+    // Map API notifications to component structure if they come from DB
+    const apiItems = notifications.map((n: any) => ({
+        id: typeof n.id === 'string' ? parseInt(n.id.replace(/\D/g, '').slice(0, 5)) || Math.random() : n.id, // Ensure ID is usable
+        type: n.type || "info",
+        title: n.title,
+        description: n.description,
+        icon: n.points > 0 ? <GiftIcon className="w-5 h-5 text-amber-400" /> : <BellIcon className="w-5 h-5 text-blue-400" />,
+        actionText: null, // Basic events usually don't have action
+        bgClass: n.points > 0 ? "bg-amber-900/10 border-amber-800/30" : "bg-blue-900/10 border-blue-800/30",
+        dismissible: true,
+        onClick: () => void 0 // No action for now
+    }));
+
     // Base list
-    const [items, setItems] = React.useState([
+    const defaultItems = [
         {
-            id: 1,
+            id: 101,
             type: "action",
             title: "Únete y Gana",
             description: "Comparte tu perfil y gana recompensas por cada amigo que se una.",
@@ -26,7 +40,7 @@ export function NotificationsPanel({ hasAccess }: { hasAccess: boolean }) {
         },
         // Conditionally added
         ...(!hasAccess ? [{
-            id: 2,
+            id: 102,
             type: "reminder",
             title: "Tu Primer Acceso",
             description: "Aún no tienes acceso a ningún proyecto. Explora el Hub.",
@@ -40,7 +54,7 @@ export function NotificationsPanel({ hasAccess }: { hasAccess: boolean }) {
             }
         }] : []),
         {
-            id: 3,
+            id: 103,
             type: "info",
             title: "Centro Educativo",
             description: "Aprende cómo funciona la tokenización en nuestra academia.",
@@ -50,9 +64,23 @@ export function NotificationsPanel({ hasAccess }: { hasAccess: boolean }) {
             dismissible: true,
             onClick: () => router.push('/education')
         }
-    ]);
+    ];
 
-    const dismiss = (id: number, e: React.MouseEvent) => {
+    const [items, setItems] = React.useState([...apiItems, ...defaultItems]);
+
+    // Update items if notifications prop changes (e.g. after fetch)
+    React.useEffect(() => {
+        if (notifications.length > 0) {
+            setItems(prev => {
+                // Avoid duplicates if already merged
+                const existingIds = new Set(prev.map(i => i.id));
+                const newItems = apiItems.filter(i => !existingIds.has(i.id));
+                return [...newItems, ...prev];
+            });
+        }
+    }, [notifications]);
+
+    const dismiss = (id: number | string, e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent card click
         setItems(prev => prev.filter(i => i.id !== id));
     };

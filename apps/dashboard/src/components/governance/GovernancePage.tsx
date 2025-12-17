@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { ShieldCheck, Vote, Coins, TrendingUp, Users, AlertTriangle, Settings2, X, Bell, CheckCircle2, XCircle, Unlock } from "lucide-react";
+import { DAOChat } from "@/components/dao/DAOChat";
+import { Lock, ShieldCheck, Vote, Coins, TrendingUp, Users, AlertTriangle, Settings2, X, Bell, CheckCircle2, XCircle, Unlock, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GovernanceParticipationModal } from "./GovernanceParticipationModal";
 import { GovernanceProposalModal } from "./GovernanceProposalModal";
@@ -14,10 +15,10 @@ import { getContract, prepareEvent, prepareContractCall } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { config } from "@/config";
 import { governanceABI } from "@/lib/governance-abi";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import { Textarea } from "../ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
 // --- Simple Local Settings Store (Mock Backend for Text/CMS) ---
@@ -52,6 +53,30 @@ const useGovernanceSettings = () => {
 
     return { settings, updateSettings };
 };
+
+function LockedView({ onAction }: { onAction: () => void }) {
+    return (
+        <div className="flex flex-col items-center justify-center min-h-[400px] text-center space-y-6 bg-zinc-900/30 rounded-2xl border border-zinc-800 border-dashed p-8">
+            <div className="h-20 w-20 bg-zinc-800/50 rounded-full flex items-center justify-center">
+                <Lock className="h-10 w-10 text-zinc-500" />
+            </div>
+            <div className="space-y-2 max-w-md">
+                <h3 className="text-2xl font-bold text-white">Acceso Restringido</h3>
+                <p className="text-gray-400">
+                    Esta sección es exclusiva para participantes activos de la Gobernanza Pandora.
+                    Debes tener Staking activo o Voting Power para acceder.
+                </p>
+            </div>
+            <Button
+                onClick={onAction}
+                className="bg-lime-500 text-black hover:bg-lime-400 font-bold px-8 py-6 rounded-xl shadow-[0_0_20px_rgba(132,204,22,0.2)]"
+            >
+                <ShieldCheck className="mr-2 h-5 w-5" />
+                Desbloquear Acceso
+            </Button>
+        </div>
+    );
+}
 
 export default function GovernancePage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -129,6 +154,13 @@ export default function GovernancePage() {
     if (Number(userVP.replace(/,/g, '')) > 0 && account?.address) uniqueDepositors.add(account.address as `0x${string}`);
     const participantCount = uniqueDepositors.size > 0 ? uniqueDepositors.size : ((Number(totalStakedETH) > 0 || Number(totalStakedUSDC) > 0) ? 1 : 0);
 
+    // --- Participation Check ---
+    const hasParticipation = useMemo(() => {
+        const vpValue = Number(String(userVP).replace(/,/g, ''));
+        const hasActiveDeposits = userDeposits && userDeposits.length > 0;
+        return vpValue > 0 || hasActiveDeposits;
+    }, [userVP, userDeposits]);
+
     // --- Process Proposals ---
     const now = Date.now() / 1000;
     const proposals = (rawProposals || []).map((p: any) => {
@@ -154,7 +186,7 @@ export default function GovernancePage() {
             status,
             raw: p
         };
-    }).sort((a: any, b: any) => b.id < a.id ? 1 : -1).reverse(); // Newest first
+    }).sort((a: any, b: any) => Number(b.id) - Number(a.id)); // Newest first
 
     // --- Activity Feed Merge ---
     interface ActivityItem {
@@ -207,7 +239,6 @@ export default function GovernancePage() {
     };
 
     // 6. Admin Check
-    // Hybrid: Check on-chain role OR off-chain specific super-admin wallet (from .env)
     const { data: hasChainRole, isLoading: isLoadingRole } = useReadContract({
         contract,
         method: "hasRole",
@@ -221,18 +252,6 @@ export default function GovernancePage() {
     );
 
     const isAdmin = isSuperAdmin || !!hasChainRole;
-
-    // Debugging Permissions
-    useEffect(() => {
-        if (account?.address) {
-            console.log(`[Permissions] Checking Access for: ${account.address}`);
-            console.log(`- Configured SuperAdmin: ${config.superAdminAddress || "Not Set"}`);
-            console.log(`- Is Super Admin (Env): ${isSuperAdmin}`);
-            console.log(`- Has Chain Role (0x00): ${hasChainRole} (Loading: ${isLoadingRole})`);
-            console.log(`-> FINAL IS_ADMIN: ${isAdmin}`);
-        }
-    }, [account?.address, isSuperAdmin, hasChainRole, isLoadingRole]);
-
 
     return (
         <div className="min-h-screen bg-black text-white w-full">
@@ -254,7 +273,7 @@ export default function GovernancePage() {
                             <Button
                                 variant="outline"
                                 onClick={() => setIsManageOpen(true)}
-                                className="border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500 rounded-xl h-auto py-2 px-4 whitespace-nowrap flex-1 md:flex-none"
+                                className="border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500 rounded-xl h-auto py-2 px-4 whitespace-nowrap flex-1 md:flex-none bg-zinc-900"
                             >
                                 <Settings2 className="mr-2 h-4 w-4" />
                                 Manage
@@ -264,14 +283,13 @@ export default function GovernancePage() {
                         <Button
                             variant="outline"
                             onClick={() => setIsWithdrawModalOpen(true)}
-                            className="border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500 rounded-xl h-auto py-2 px-4 whitespace-nowrap flex-1 md:flex-none"
+                            className="border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500 rounded-xl h-auto py-2 px-4 whitespace-nowrap flex-1 md:flex-none bg-zinc-900"
                         >
                             <Unlock className="mr-2 h-4 w-4" />
                             Retiros
                         </Button>
                         <Button
                             onClick={() => setIsModalOpen(true)}
-                            // ...
                             className="bg-lime-500 text-black hover:bg-lime-400 font-bold px-6 py-2 rounded-xl shadow-[0_0_20px_rgba(132,204,22,0.3)] transition-all hover:scale-105 whitespace-nowrap flex-1 md:flex-none"
                         >
                             <ShieldCheck className="mr-2 h-5 w-5" />
@@ -293,6 +311,9 @@ export default function GovernancePage() {
                     <TabsList className="bg-zinc-900 border border-zinc-800 p-1 rounded-xl">
                         <TabsTrigger value="overview">Visión General</TabsTrigger>
                         <TabsTrigger value="staking">Staking & Rewards</TabsTrigger>
+                        <TabsTrigger value="chat" className="flex items-center gap-2">
+                            <MessageSquare className="w-4 h-4" /> Discusión
+                        </TabsTrigger>
                         <TabsTrigger value="proposals">Propuestas ({proposals.filter((p: any) => p.status === 'active').length})</TabsTrigger>
                     </TabsList>
 
@@ -393,7 +414,7 @@ export default function GovernancePage() {
                                             Activo para depositantes de Fase 0.
                                         </div>
                                     )}
-                                    <Button className="w-full" variant="outline" onClick={() => setIsModalOpen(true)}>
+                                    <Button className="w-full bg-zinc-800 hover:bg-zinc-700" variant="outline" onClick={() => setIsModalOpen(true)}>
                                         Aprovechar Boost
                                     </Button>
                                 </CardContent>
@@ -435,124 +456,140 @@ export default function GovernancePage() {
                                 <Coins className="h-16 w-16 text-zinc-700" />
                                 <h3 className="text-xl font-bold text-gray-300">No Active Staking</h3>
                                 <p className="text-gray-500 max-w-md">You don't have any active deposits yet. Start staking to earn rewards.</p>
-                                <Button onClick={() => setIsModalOpen(true)}>Start Staking</Button>
+                                <Button onClick={() => setIsModalOpen(true)} className="bg-lime-500 text-black hover:bg-lime-400">Start Staking</Button>
                             </div>
                         )}
                     </TabsContent>
 
+                    <TabsContent value="chat">
+                        {hasParticipation ? (
+                            <Card className="bg-zinc-900/50 border-zinc-800">
+                                <CardContent className="p-6">
+                                    <DAOChat project={{ id: 0, title: 'Global Pandora Governance' }} isOwner={isAdmin} />
+                                </CardContent>
+                            </Card>
+                        ) : (
+                            <LockedView onAction={() => setIsModalOpen(true)} />
+                        )}
+                    </TabsContent>
+
                     <TabsContent value="proposals">
-                        {proposals.length > 0 ? (
-                            <div className="space-y-4">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-lg font-bold text-white">Active Proposals</h3>
+                        {hasParticipation ? (
+                            proposals.length > 0 ? (
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="text-lg font-bold text-white">Active Proposals</h3>
+                                        {isAdmin && (
+                                            <Button variant="secondary" size="sm" onClick={() => setIsProposalModalOpen(true)}>
+                                                <Vote className="mr-2 h-4 w-4" /> Nueva Propuesta
+                                            </Button>
+                                        )}
+                                    </div>
+
+                                    <div className="grid gap-4">
+                                        {proposals.map((prop: any) => {
+                                            const totalVotes = prop.votesFor + prop.votesAgainst;
+                                            const forPercent = totalVotes > 0 ? (prop.votesFor / totalVotes) * 100 : 0;
+                                            const againstPercent = totalVotes > 0 ? (prop.votesAgainst / totalVotes) * 100 : 0;
+
+                                            return (
+                                                <Card key={prop.id.toString()} className="bg-zinc-900/50 border-zinc-800">
+                                                    <CardContent className="p-6">
+                                                        <div className="space-y-6">
+                                                            <div className="flex justify-between items-start">
+                                                                <div className="space-y-2">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <h4 className="text-lg font-bold text-white">{prop.title}</h4>
+                                                                        <span className={`px-2 py-0.5 text-xs rounded-full ${prop.status === 'active' ? 'bg-purple-500/20 text-purple-400' : 'bg-zinc-700 text-zinc-400'}`}>
+                                                                            {prop.status.toUpperCase()}
+                                                                        </span>
+                                                                    </div>
+                                                                    <p className="text-gray-400 text-sm max-w-2xl">{prop.description}</p>
+                                                                    <div className="flex items-center gap-4 text-xs text-zinc-500 pt-2">
+                                                                        <span>Ends: {new Date(prop.endDate).toLocaleDateString()}</span>
+                                                                        <span>Total Votes (VP): {totalVotes.toLocaleString()}</span>
+                                                                    </div>
+                                                                </div>
+
+                                                                {prop.status === 'active' && (
+                                                                    <TransactionButton
+                                                                        transaction={() => prepareContractCall({
+                                                                            contract,
+                                                                            method: "closeProposal",
+                                                                            params: [prop.id]
+                                                                        })}
+                                                                        onTransactionConfirmed={() => toast.success("Proposal Closed")}
+                                                                        theme="dark"
+                                                                        className="!bg-zinc-800 !text-zinc-400 hover:!bg-zinc-700 !scale-90 !py-2 !px-4"
+                                                                    >
+                                                                        Close
+                                                                    </TransactionButton>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Progress Bar */}
+                                                            <div className="space-y-2">
+                                                                <div className="flex justify-between text-xs font-medium text-gray-400">
+                                                                    <span className="text-lime-400">For: {prop.votesFor.toLocaleString()} VP ({forPercent.toFixed(1)}%)</span>
+                                                                    <span className="text-red-400">Against: {prop.votesAgainst.toLocaleString()} VP ({againstPercent.toFixed(1)}%)</span>
+                                                                </div>
+                                                                <div className="h-2 w-full bg-zinc-800 rounded-full overflow-hidden flex">
+                                                                    <div className="bg-lime-500 transition-all duration-500" style={{ width: `${forPercent}%` }} />
+                                                                    <div className="bg-red-500 transition-all duration-500" style={{ width: `${againstPercent}%` }} />
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Voting Actions */}
+                                                            {prop.status === 'active' && (
+                                                                <div className="flex gap-3 pt-2">
+                                                                    <TransactionButton
+                                                                        transaction={() => prepareContractCall({
+                                                                            contract,
+                                                                            method: "vote",
+                                                                            params: [prop.id, true]
+                                                                        })}
+                                                                        onTransactionConfirmed={() => toast.success("Voted FOR!")}
+                                                                        theme="dark"
+                                                                        className="!bg-lime-500/10 hover:!bg-lime-500/20 !text-lime-500 !border !border-lime-500/20 !flex-1 !font-bold"
+                                                                    >
+                                                                        <CheckCircle2 className="mr-2 h-4 w-4" /> Vote FOR
+                                                                    </TransactionButton>
+
+                                                                    <TransactionButton
+                                                                        transaction={() => prepareContractCall({
+                                                                            contract,
+                                                                            method: "vote",
+                                                                            params: [prop.id, false]
+                                                                        })}
+                                                                        onTransactionConfirmed={() => toast.success("Voted AGAINST")}
+                                                                        theme="dark"
+                                                                        className="!bg-red-500/10 hover:!bg-red-500/20 !text-red-500 !border !border-red-500/20 !flex-1 !font-bold"
+                                                                    >
+                                                                        <XCircle className="mr-2 h-4 w-4" /> Vote AGAINST
+                                                                    </TransactionButton>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </CardContent>
+                                                </Card>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center min-h-[400px] text-center space-y-4 bg-zinc-900/30 rounded-2xl border border-zinc-800 border-dashed">
+                                    <Vote className="h-16 w-16 text-zinc-700" />
+                                    <h3 className="text-xl font-bold text-gray-300">No Proposals Found</h3>
+                                    <p className="text-gray-500 max-w-md">Currently there are no active proposals on-chain.</p>
                                     {isAdmin && (
-                                        <Button variant="secondary" size="sm" onClick={() => setIsProposalModalOpen(true)}>
-                                            <Vote className="mr-2 h-4 w-4" /> Nueva Propuesta
+                                        <Button variant="secondary" className="mt-4" onClick={() => setIsProposalModalOpen(true)}>
+                                            Create Proposal (On-Chain)
                                         </Button>
                                     )}
                                 </div>
-
-                                <div className="grid gap-4">
-                                    {proposals.map((prop: any) => {
-                                        const totalVotes = prop.votesFor + prop.votesAgainst;
-                                        const forPercent = totalVotes > 0 ? (prop.votesFor / totalVotes) * 100 : 0;
-                                        const againstPercent = totalVotes > 0 ? (prop.votesAgainst / totalVotes) * 100 : 0;
-
-                                        return (
-                                            <Card key={prop.id.toString()} className="bg-zinc-900/50 border-zinc-800">
-                                                <CardContent className="p-6">
-                                                    <div className="space-y-6">
-                                                        <div className="flex justify-between items-start">
-                                                            <div className="space-y-2">
-                                                                <div className="flex items-center gap-2">
-                                                                    <h4 className="text-lg font-bold text-white">{prop.title}</h4>
-                                                                    <span className={`px-2 py-0.5 text-xs rounded-full ${prop.status === 'active' ? 'bg-purple-500/20 text-purple-400' : 'bg-zinc-700 text-zinc-400'}`}>
-                                                                        {prop.status.toUpperCase()}
-                                                                    </span>
-                                                                </div>
-                                                                <p className="text-gray-400 text-sm max-w-2xl">{prop.description}</p>
-                                                                <div className="flex items-center gap-4 text-xs text-zinc-500 pt-2">
-                                                                    <span>Ends: {new Date(prop.endDate).toLocaleDateString()}</span>
-                                                                    <span>Total Votes (VP): {totalVotes.toLocaleString()}</span>
-                                                                </div>
-                                                            </div>
-
-                                                            {prop.status === 'active' && (
-                                                                <TransactionButton
-                                                                    transaction={() => prepareContractCall({
-                                                                        contract,
-                                                                        method: "closeProposal",
-                                                                        params: [prop.id]
-                                                                    })}
-                                                                    onTransactionConfirmed={() => toast.success("Proposal Closed")}
-                                                                    theme="dark"
-                                                                    className="!bg-zinc-800 !text-zinc-400 hover:!bg-zinc-700 !scale-90 !py-2 !px-4"
-                                                                >
-                                                                    Close
-                                                                </TransactionButton>
-                                                            )}
-                                                        </div>
-
-                                                        {/* Progress Bar */}
-                                                        <div className="space-y-2">
-                                                            <div className="flex justify-between text-xs font-medium text-gray-400">
-                                                                <span className="text-lime-400">For: {prop.votesFor.toLocaleString()} VP ({forPercent.toFixed(1)}%)</span>
-                                                                <span className="text-red-400">Against: {prop.votesAgainst.toLocaleString()} VP ({againstPercent.toFixed(1)}%)</span>
-                                                            </div>
-                                                            <div className="h-2 w-full bg-zinc-800 rounded-full overflow-hidden flex">
-                                                                <div className="bg-lime-500 transition-all duration-500" style={{ width: `${forPercent}%` }} />
-                                                                <div className="bg-red-500 transition-all duration-500" style={{ width: `${againstPercent}%` }} />
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Voting Actions */}
-                                                        {prop.status === 'active' && (
-                                                            <div className="flex gap-3 pt-2">
-                                                                <TransactionButton
-                                                                    transaction={() => prepareContractCall({
-                                                                        contract,
-                                                                        method: "vote",
-                                                                        params: [prop.id, true]
-                                                                    })}
-                                                                    onTransactionConfirmed={() => toast.success("Voted FOR!")}
-                                                                    theme="dark"
-                                                                    className="!bg-lime-500/10 hover:!bg-lime-500/20 !text-lime-500 !border !border-lime-500/20 !flex-1 !font-bold"
-                                                                >
-                                                                    <CheckCircle2 className="mr-2 h-4 w-4" /> Vote FOR
-                                                                </TransactionButton>
-
-                                                                <TransactionButton
-                                                                    transaction={() => prepareContractCall({
-                                                                        contract,
-                                                                        method: "vote",
-                                                                        params: [prop.id, false]
-                                                                    })}
-                                                                    onTransactionConfirmed={() => toast.success("Voted AGAINST")}
-                                                                    theme="dark"
-                                                                    className="!bg-red-500/10 hover:!bg-red-500/20 !text-red-500 !border !border-red-500/20 !flex-1 !font-bold"
-                                                                >
-                                                                    <XCircle className="mr-2 h-4 w-4" /> Vote AGAINST
-                                                                </TransactionButton>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        );
-                                    })}
-                                </div>
-                            </div>
+                            )
                         ) : (
-                            <div className="flex flex-col items-center justify-center min-h-[400px] text-center space-y-4 bg-zinc-900/30 rounded-2xl border border-zinc-800 border-dashed">
-                                <Vote className="h-16 w-16 text-zinc-700" />
-                                <h3 className="text-xl font-bold text-gray-300">No Proposals Found</h3>
-                                <p className="text-gray-500 max-w-md">Currently there are no active proposals on-chain.</p>
-                                {isAdmin && (
-                                    <Button variant="secondary" className="mt-4" onClick={() => setIsProposalModalOpen(true)}>
-                                        Create Proposal (On-Chain)
-                                    </Button>
-                                )}
-                            </div>
+                            <LockedView onAction={() => setIsModalOpen(true)} />
                         )}
                     </TabsContent>
                 </Tabs>

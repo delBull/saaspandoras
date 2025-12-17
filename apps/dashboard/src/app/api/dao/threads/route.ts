@@ -46,6 +46,22 @@ export async function POST(request: Request) {
             isOfficial: isOfficial || false,
         }).returning();
 
+        if (!newThread) {
+            return NextResponse.json({ error: "Failed to create thread" }, { status: 500 });
+        }
+
+        // Track Gamification Event
+        try {
+            const { GamificationService } = await import("~/lib/gamification/service");
+            await GamificationService.trackEvent(authorAddress, 'forum_post', {
+                threadId: newThread.id,
+                projectId: Number(projectId),
+                isThreadCreation: true
+            });
+        } catch (error) {
+            console.error("Error tracking gamification event:", error);
+        }
+
         return NextResponse.json(newThread);
 
     } catch (error) {
