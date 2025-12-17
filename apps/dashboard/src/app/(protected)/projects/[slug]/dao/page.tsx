@@ -18,9 +18,18 @@ import { Loader2 } from "lucide-react";
 // Let's adapt that pattern.
 
 import useSWR from "swr";
-import { useActiveAccount } from "thirdweb/react";
+import { useActiveAccount, useReadContract } from "thirdweb/react";
+import { getContract, defineChain } from "thirdweb";
+import { client } from "@/lib/thirdweb-client"; // Verify client import path
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+// Dummy contract for typing fallback
+const dummyContract = getContract({
+    client,
+    chain: defineChain(11155111),
+    address: "0x0000000000000000000000000000000000000000"
+});
 
 export default function DAOPage({ params }: { params: Promise<{ slug: string }> }) {
     const resolvedParams = use(params); // React 19 `use` for params
@@ -34,6 +43,25 @@ export default function DAOPage({ params }: { params: Promise<{ slug: string }> 
     const isOwner = account?.address && project?.applicant_wallet_address
         ? account.address.toLowerCase() === project.applicant_wallet_address.toLowerCase()
         : false;
+
+    // -- Voting Power Fetching --
+    const govTokenAddress = project?.governance_token_address;
+    const chainId = project?.chain_id ? Number(project.chain_id) : 11155111;
+
+    const tokenContract = govTokenAddress ? getContract({
+        client,
+        chain: defineChain(chainId),
+        address: govTokenAddress
+    }) : undefined;
+
+    const { data: votingPowerBigInt } = useReadContract({
+        contract: tokenContract || dummyContract,
+        method: "function getVotes(address) view returns (uint256)",
+        params: [account?.address || "0x0000000000000000000000000000000000000000"],
+        queryOptions: { enabled: !!tokenContract && !!account }
+    });
+
+    const votingPower = votingPowerBigInt ? Number(votingPowerBigInt) / 1e18 : 0; // Assuming 18 decimals. Ideally read decimals too.
 
 
     if (isLoading) {
@@ -63,16 +91,18 @@ export default function DAOPage({ params }: { params: Promise<{ slug: string }> 
             <div className="flex flex-col lg:flex-row max-w-[1600px] mx-auto">
                 {/* Main Content (Left/Center) */}
                 <div className="flex-1 order-2 lg:order-1 border-r border-zinc-800/50 min-h-[calc(100vh-80px)]">
-                    <DAODashboard project={project} activeView={activeView} />
+                    <DAODashboard project={project} activeView={activeView} isOwner={isOwner} />
                 </div>
 
                 {/* Sidebar (Right Side - per User Request) */}
                 <div className="lg:w-80 order-1 lg:order-2">
+
                     <DAOSidebar
                         project={project}
                         activeView={activeView}
                         onViewChange={setActiveView}
                         isOwner={isOwner}
+                        votingPower={votingPower}
                         className="lg:h-[calc(100vh-80px)]"
                     />
                 </div>

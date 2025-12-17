@@ -9,9 +9,10 @@ import { es } from 'date-fns/locale';
 
 interface DAOChatProps {
     project: any;
+    isOwner?: boolean;
 }
 
-export function DAOChat({ project }: DAOChatProps) {
+export function DAOChat({ project, isOwner = false }: DAOChatProps) {
     const account = useActiveAccount();
     const [view, setView] = useState<'list' | 'thread' | 'create'>('list');
     const [threads, setThreads] = useState<any[]>([]);
@@ -21,6 +22,7 @@ export function DAOChat({ project }: DAOChatProps) {
     // Create Thread Form
     const [newThreadTitle, setNewThreadTitle] = useState('');
     const [newThreadContent, setNewThreadContent] = useState(''); // Initial post
+    const [isOfficial, setIsOfficial] = useState(false);
 
     // Fetch Threads
     useEffect(() => {
@@ -56,7 +58,8 @@ export function DAOChat({ project }: DAOChatProps) {
                     projectId: project.id,
                     authorAddress: account.address,
                     title: newThreadTitle,
-                    category: 'general'
+                    category: 'general',
+                    isOfficial: isOwner && isOfficial
                 })
             });
             const thread = await resThread.json();
@@ -116,7 +119,10 @@ export function DAOChat({ project }: DAOChatProps) {
                         >
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <h3 className="text-white font-medium group-hover:text-lime-400 transition-colors">{thread.title}</h3>
+                                    <h3 className="text-white font-medium group-hover:text-lime-400 transition-colors flex items-center gap-2">
+                                        {thread.isOfficial && <span className="bg-yellow-500/20 text-yellow-400 text-[10px] px-1.5 py-0.5 rounded border border-yellow-500/30 uppercase font-bold">Oficial</span>}
+                                        {thread.title}
+                                    </h3>
                                     <div className="flex items-center gap-3 mt-2 text-xs text-zinc-500">
                                         <span className="bg-zinc-800 px-2 py-0.5 rounded text-zinc-400">{thread.category}</span>
                                         <span>por {thread.authorAddress.slice(0, 6)}...</span>
@@ -151,7 +157,19 @@ export function DAOChat({ project }: DAOChatProps) {
                         value={newThreadContent}
                         onChange={e => setNewThreadContent(e.target.value)}
                     />
-                    <div className="flex justify-end">
+                    <div className="flex justify-between items-center">
+                        {isOwner && (
+                            <label className="flex items-center gap-2 text-sm text-zinc-400 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={isOfficial}
+                                    onChange={e => setIsOfficial(e.target.checked)}
+                                    className="w-4 h-4 rounded border-zinc-700 bg-zinc-800 text-lime-500 focus:ring-lime-500/20"
+                                />
+                                Marcar como Oficial
+                            </label>
+                        )}
+                        {!isOwner && <div />}
                         <button
                             onClick={handleCreateThread}
                             className="bg-lime-500 hover:bg-lime-400 text-black px-6 py-2 rounded-lg font-medium"

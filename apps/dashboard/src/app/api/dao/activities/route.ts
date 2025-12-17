@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { daoActivities, projects } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
@@ -13,11 +13,19 @@ export async function GET(req: Request) {
     }
 
     try {
+        const category = searchParams.get('category');
+
+        const whereCondition = category
+            ? and(eq(daoActivities.projectId, Number(projectId)), eq(daoActivities.category, category))
+            : eq(daoActivities.projectId, Number(projectId));
+
         const activities = await db
             .select()
             .from(daoActivities)
-            .where(eq(daoActivities.projectId, Number(projectId)))
+            .where(whereCondition)
             .orderBy(desc(daoActivities.createdAt));
+
+
 
         return NextResponse.json(activities);
     } catch (error) {
@@ -41,6 +49,8 @@ export async function POST(req: Request) {
             rewardAmount: rewardAmount.toString(),
             rewardTokenSymbol: rewardTokenSymbol || 'PBOX',
             type: type || 'custom',
+            category: body.category || 'social',
+            requirements: body.requirements || {},
             status: 'active',
             externalLink,
         }).returning();
