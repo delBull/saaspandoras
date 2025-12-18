@@ -15,6 +15,8 @@ const baseWalletConfig = {
   client,
   chains: SUPPORTED_NETWORKS.map(network => network.chain),
   wallets,
+  showThirdwebBranding: false,
+  showAllWallets: false,
   accountAbstraction: accountAbstractionConfig, // ⚡ GLOBAL SMART ACCOUNTS
   theme: "dark" as const,
   modalSize: "compact" as const, // 🤏 Compact Mode (No Sidebar)

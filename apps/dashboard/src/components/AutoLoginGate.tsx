@@ -12,7 +12,8 @@ interface AutoLoginGateProps {
 }
 
 export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGateProps) {
-  const { account, canAutoReconnect, isBootstrapped, savedWalletAddress } = usePersistedAccount();
+  // @ts-ignore
+  const { account, canAutoReconnect, isBootstrapped, savedWalletAddress, isConnecting } = usePersistedAccount();
   const router = useRouter();
   const pathname = usePathname();
   const [isClientReady, setIsClientReady] = useState(false);
@@ -34,6 +35,19 @@ export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGa
         <div className="text-center">
           <p>Inicializando sesión...</p>
           <p className="text-xs mt-2">Cargando datos</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 🟢 Esperar si Thirdweb está intentando conectar (evita race condition con localStorage)
+  // 🟢 Esperar si Thirdweb está intentando conectar (evita race condition con localStorage)
+  if (isConnecting) {
+    return (
+      <div className="flex items-center justify-center min-h-screen text-gray-400">
+        <div className="text-center">
+          <p>Conectando wallet...</p>
+          <p className="text-xs mt-2">Sincronizando</p>
         </div>
       </div>
     );
