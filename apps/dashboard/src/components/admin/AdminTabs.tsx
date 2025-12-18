@@ -8,6 +8,7 @@ import WhatsAppLeadsTab from './WhatsAppLeadsTab';
 import ShortlinksSubTab from './ShortlinksSubTab';
 import { NFTManager } from "./NFTManager";
 import NewsletterSubTab from './NewsletterSubTab';
+import { DiscordManager } from './DiscordManager';
 
 interface Swap {
   txHash: string;
@@ -30,7 +31,7 @@ interface AdminTabsProps {
 
 export function AdminTabs({ swaps, users, children, showSettings = false, showUsers = false, showShortlinks = false, showMarketing = false }: AdminTabsProps) {
   const [activeTab, setActiveTab] = useState('projects');
-  const [activeMarketingSubTab, setActiveMarketingSubTab] = useState<'wa-leads' | 'shortlinks' | 'newsletter' | 'campaigns'>('wa-leads');
+  const [activeMarketingSubTab, setActiveMarketingSubTab] = useState<'wa-leads' | 'shortlinks' | 'newsletter' | 'discord' | 'campaigns'>('wa-leads');
 
   return (
     <>
@@ -104,6 +105,15 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
                 📧 Newsletter Analytics
               </button>
               <button
+                onClick={() => setActiveMarketingSubTab('discord')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeMarketingSubTab === 'discord'
+                  ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
+                  : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
+                  }`}
+              >
+                🎮 Discord
+              </button>
+              <button
                 onClick={() => setActiveMarketingSubTab('campaigns')}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${activeMarketingSubTab === 'campaigns'
                   ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
@@ -120,6 +130,7 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
           {activeMarketingSubTab === 'wa-leads' && <WhatsAppLeadsTab />}
           {activeMarketingSubTab === 'shortlinks' && <ShortlinksSubTab />}
           {activeMarketingSubTab === 'newsletter' && <NewsletterSubTab />}
+          {activeMarketingSubTab === 'discord' && <DiscordManager />}
           {activeMarketingSubTab === 'campaigns' && (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">🎯</div>
