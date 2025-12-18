@@ -268,6 +268,7 @@ export function usePersistedAccount() {
     savedWalletAddress: session?.address ?? null,
     hasSavedWallet: !!session?.address,
     canAutoReconnect: !account?.address && !!session?.shouldReconnect,
-    isBootstrapped, // 👈 nuevo flag para AutoLoginGate
+    isBootstrapped,
+    isConnecting,  // 👈 Expose connection status
   };
 }

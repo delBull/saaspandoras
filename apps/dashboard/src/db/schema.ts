@@ -740,6 +740,17 @@ export const userBalances = pgTable("user_balances", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+// Platform Settings (Global Configuration)
+export const platformSettings = pgTable("platform_settings", {
+  id: serial("id").primaryKey(),
+  key: varchar("key", { length: 255 }).unique().notNull(), // e.g., 'apply_gate_enabled'
+  value: text("value"), // JSON string or text value
+  description: text("description"), // For admin UI context
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedBy: varchar("updated_by", { length: 42 }), // Admin wallet who changed it
+});
+
+
 // DAO Activities Types
 export type DaoActivity = typeof daoActivities.$inferSelect;
 export type DaoActivitySubmission = typeof daoActivitySubmissions.$inferSelect;
@@ -747,3 +758,4 @@ export type DaoActivitySubmission = typeof daoActivitySubmissions.$inferSelect;
 export type DaoThread = typeof daoThreads.$inferSelect;
 export type DaoPost = typeof daoPosts.$inferSelect;
 export type UserBalance = typeof userBalances.$inferSelect;
+export type PlatformSetting = typeof platformSettings.$inferSelect;
