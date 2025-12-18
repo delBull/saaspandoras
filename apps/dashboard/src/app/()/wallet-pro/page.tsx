@@ -24,6 +24,9 @@ import { inAppWallet, createWallet } from 'thirdweb/wallets';
 import { base } from 'thirdweb/chains';
 import { client } from '@/lib/thirdweb-client';
 import { SUPPORTED_NETWORKS } from '@/config/networks';
+import { getContract } from "thirdweb";
+import { useReadContract } from "thirdweb/react";
+import { config } from "@/config";
 import {
   NFTGallery,
   TransactionHistory
@@ -47,8 +50,48 @@ export default function WalletProPage() {
     chain: base,
   });
 
+  // --- 1. NFT Pass Logic ---
+  const applyPassContract = getContract({
+    client,
+    chain: config.chain,
+    address: config.applyPassNftAddress,
+  });
+
+  const { data: passBalance } = useReadContract({
+    contract: applyPassContract,
+    method: "balanceOf",
+    params: [account?.address || "0x0000000000000000000000000000000000000000"],
+    queryOptions: { enabled: !!account }
+  });
+
   // Get new user assets
-  const { assets, loading: loadingAssets } = useUserAssets();
+  const { assets: rawAssets, loading: loadingAssets } = useUserAssets();
+
+  const assets = React.useMemo(() => {
+    const list = [...rawAssets];
+    // Inject Apply Pass if owned
+    if (passBalance && Number(passBalance) > 0) {
+      // Inject Apply Pass if owned
+      if (passBalance && Number(passBalance) > 0) {
+        // Mock Project for Asset Interface
+        const mockProject = {
+          title: "Pandoras Apply Pass",
+          slug: "apply-pass",
+          imageUrl: "/badges/apply-pass.png",
+          // ... minimum required props
+        } as any;
+
+        list.push({
+          name: 'Apply Pass',
+          type: 'access',
+          balance: passBalance.toString(),
+          tokenAddress: config.applyPassNftAddress,
+          project: mockProject
+        });
+      }
+    }
+    return list;
+  }, [rawAssets, passBalance]);
 
   const accessCount = assets.filter(a => a.type === 'access').length;
   const artifactCount = assets.filter(a => a.type === 'utility' || a.type === 'artifact').length;
@@ -168,6 +211,7 @@ export default function WalletProPage() {
                     </div>
                     <ConnectButton
                       client={client}
+                      showAllWallets={false}
                       chains={SUPPORTED_NETWORKS.map(network => network.chain)}
                       wallets={[
                         inAppWallet({
@@ -194,6 +238,9 @@ export default function WalletProPage() {
                           borderRadius: '8px',
                           fontSize: '14px',
                         }
+                      }}
+                      connectModal={{
+                        showThirdwebBranding: false,
                       }}
                     />
                   </div>
@@ -272,6 +319,7 @@ export default function WalletProPage() {
                         </div>
                         <ConnectButton
                           client={client}
+                          showAllWallets={false}
                           chains={SUPPORTED_NETWORKS.map(network => network.chain)}
                           wallets={[
                             inAppWallet({
@@ -298,6 +346,9 @@ export default function WalletProPage() {
                               borderRadius: '8px',
                               fontSize: '14px',
                             }
+                          }}
+                          connectModal={{
+                            showThirdwebBranding: false,
                           }}
                         />
                       </div>
@@ -406,6 +457,7 @@ export default function WalletProPage() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <ConnectButton
                   client={client}
+                  showAllWallets={false}
                   chains={SUPPORTED_NETWORKS.map(network => network.chain)}
                   wallets={[
                     inAppWallet({
@@ -431,6 +483,9 @@ export default function WalletProPage() {
                       borderRadius: '8px',
                       fontSize: '16px',
                     }
+                  }}
+                  connectModal={{
+                    showThirdwebBranding: false,
                   }}
                 />
               </div>

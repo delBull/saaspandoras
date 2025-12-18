@@ -6,6 +6,7 @@ import type { UserData } from "@/types/admin";
 import { UsersTable } from "./UsersTable";
 import WhatsAppLeadsTab from './WhatsAppLeadsTab';
 import ShortlinksSubTab from './ShortlinksSubTab';
+import { NFTManager } from "./NFTManager";
 import NewsletterSubTab from './NewsletterSubTab';
 
 interface Swap {
@@ -41,6 +42,9 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
           <button onClick={() => setActiveTab('users')} className={`pb-2 font-semibold ${activeTab === 'users' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-gray-400'} flex items-center gap-2`}>
             Usuarios
           </button>
+          <button onClick={() => setActiveTab('nft')} className={`pb-2 font-semibold ${activeTab === 'nft' ? 'text-lime-400 border-b-2 border-lime-400' : 'text-gray-400'} flex items-center gap-2`}>
+            NFT Passes
+          </button>
 
           {showMarketing && (
             <button onClick={() => setActiveTab('marketing')} className={`pb-2 font-semibold ${activeTab === 'marketing' ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-400'} flex items-center gap-2`}>
@@ -61,6 +65,10 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
         <UsersTable users={users} />
       )}
 
+      {activeTab === 'nft' && (
+        <NFTManager />
+      )}
+
       {activeTab === 'marketing' && showMarketing && (
         <div>
           <h2 className="text-xl font-bold mb-4 text-white">📈 Marketing Hub</h2>
@@ -70,41 +78,37 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
             <div className="flex flex-wrap gap-4 border-b border-zinc-700 pb-2">
               <button
                 onClick={() => setActiveMarketingSubTab('wa-leads')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  activeMarketingSubTab === 'wa-leads'
-                    ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                    : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
-                }`}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeMarketingSubTab === 'wa-leads'
+                  ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                  : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
+                  }`}
               >
                 💬 WA Leads
               </button>
               <button
                 onClick={() => setActiveMarketingSubTab('shortlinks')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  activeMarketingSubTab === 'shortlinks'
-                    ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                    : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
-                }`}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeMarketingSubTab === 'shortlinks'
+                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                  : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
+                  }`}
               >
                 🔗 Shortlinks
               </button>
               <button
                 onClick={() => setActiveMarketingSubTab('newsletter')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  activeMarketingSubTab === 'newsletter'
-                    ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                    : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
-                }`}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeMarketingSubTab === 'newsletter'
+                  ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                  : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
+                  }`}
               >
                 📧 Newsletter Analytics
               </button>
               <button
                 onClick={() => setActiveMarketingSubTab('campaigns')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                  activeMarketingSubTab === 'campaigns'
-                    ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-                    : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
-                }`}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${activeMarketingSubTab === 'campaigns'
+                  ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                  : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
+                  }`}
                 disabled
               >
                 🎯 Campaigns (Próximamente)

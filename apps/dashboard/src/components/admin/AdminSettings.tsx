@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Input } from "@saasfly/ui/input";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@saasfly/ui/switch";
 import { Trash2, PlusCircle, Loader2, Pencil } from "lucide-react";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 
@@ -38,14 +39,10 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
     if (typeof window !== 'undefined') {
       try {
         const sessionData = localStorage.getItem('wallet-session');
-        console.log('🔍 AdminSettings: wallet-session data:', sessionData);
         if (sessionData) {
           const parsedSession = JSON.parse(sessionData) as { address?: string };
           const address = parsedSession.address?.toLowerCase() ?? null;
-          console.log('🔍 AdminSettings: parsed wallet address:', address);
           setWalletAddress(address);
-        } else {
-          console.log('🔍 AdminSettings: no wallet-session data found');
         }
       } catch (e) {
         console.warn('Error getting wallet address for AdminSettings:', e);
@@ -57,23 +54,11 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
   const validAdmins = initialAdmins.filter(admin => {
     const walletAddr = getWalletAddress(admin);
     const isValid = walletAddr !== 'N/A' &&
-                   admin.id !== 999 &&
-                   walletAddr.toLowerCase() !== SUPER_ADMIN_WALLET.toLowerCase();
-
-    // Debug logging for super admin filtering
-    if (!isValid) {
-      console.log('🔍 AdminSettings: Filtering out admin:', {
-        id: admin.id,
-        walletAddr: walletAddr,
-        isSuperAdmin: walletAddr.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase(),
-        reason: admin.id === 999 ? 'id: 999' :
-                walletAddr.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase() ? 'super admin wallet' :
-                'invalid wallet'
-      });
-    }
-
+      admin.id !== 999 &&
+      walletAddr.toLowerCase() !== SUPER_ADMIN_WALLET.toLowerCase();
     return isValid;
   });
+
   const [admins, setAdmins] = useState<Admin[]>(validAdmins);
   const [newAddress, setNewAddress] = useState("");
   const [newAlias, setNewAlias] = useState("");
@@ -81,21 +66,71 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
   const [editingAliasId, setEditingAliasId] = useState<number | null>(null);
   const [editingAliasValue, setEditingAliasValue] = useState("");
 
-  const handleAddAdmin = async () => {
-    console.log('🔍 AdminSettings: handleAddAdmin called, walletAddress:', walletAddress);
+  // --- Platform Settings Logic ---
+  const [nftGateEnabled, setNftGateEnabled] = useState(false);
+  const [loadingSettings, setLoadingSettings] = useState(false);
 
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch("/api/settings?key=apply_gate_enabled");
+        if (res.ok) {
+          const data = await res.json();
+          setNftGateEnabled(data.value === "true");
+        }
+      } catch (e) {
+        console.error("Failed to fetch settings", e);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  const handleToggleNftGate = async (checked: boolean) => {
+    if (!walletAddress) {
+      toast.error("Conecta tu wallet primero");
+      return;
+    }
+    setLoadingSettings(true);
+    // Optimistic update
+    setNftGateEnabled(checked);
+
+    try {
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          'x-wallet-address': walletAddress,
+        },
+        body: JSON.stringify({
+          key: "apply_gate_enabled",
+          value: String(checked),
+          description: "Enables or disables the NFT requirement for accessing the application form."
+        })
+      });
+
+      if (!res.ok) throw new Error("Failed to update");
+      toast.success(`NFT Gate ${checked ? 'Activado' : 'Desactivado'}`);
+
+    } catch (error) {
+      console.error(error);
+      toast.error("Error al actualizar configuración");
+      setNftGateEnabled(!checked); // Revert
+    } finally {
+      setLoadingSettings(false);
+    }
+  };
+
+  const handleAddAdmin = async () => {
     if (!/^0x[a-fA-F0-9]{40}$/.test(newAddress)) {
       toast.error("Por favor, introduce una dirección de wallet válida.");
       return;
     }
 
     if (!walletAddress) {
-      console.log('❌ AdminSettings: No wallet address available');
       toast.error("No se pudo obtener la dirección de tu wallet. Conecta tu wallet primero.");
       return;
     }
 
-    console.log('✅ AdminSettings: Making API call with wallet address:', walletAddress);
     setIsLoading(true);
     try {
       const response = await fetch("/api/admin/administrators", {
@@ -203,87 +238,111 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold text-white">Añadir Nuevo Administrador</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
-          <Input
-            type="text"
-            placeholder="Dirección de Wallet (0x...)"
-            value={newAddress}
-            onChange={(e) => setNewAddress(e.target.value)}
-            className="bg-zinc-800 border-zinc-700 sm:col-span-1"
+    <div className="space-y-8">
+
+      {/* --- PLATFORM SETTINGS SECTION --- */}
+      <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <span className="bg-lime-500/10 text-lime-500 p-1 rounded">⚙️</span> Configuración Global
+        </h3>
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <div className="font-medium text-zinc-200">Restringir Acceso (NFT Gate)</div>
+            <p className="text-sm text-zinc-500">
+              Si está activo, solo los holders del "Apply Pass" podrán acceder al formulario.
+            </p>
+          </div>
+          <Switch
+            checked={nftGateEnabled}
+            onCheckedChange={handleToggleNftGate}
+            disabled={loadingSettings}
+            className="data-[state=checked]:bg-lime-500"
           />
-          <Input
-            type="text"
-            placeholder="Alias (opcional)"
-            value={newAlias}
-            onChange={(e) => setNewAlias(e.target.value)}
-            className="bg-zinc-800 border-zinc-700 sm:col-span-1"
-            maxLength={100}
-          />
-          <Button onClick={handleAddAdmin} disabled={isLoading} className="bg-lime-500 hover:bg-lime-600 text-zinc-900 sm:col-span-1">
-            {isLoading ? <Loader2 className="animate-spin" /> : <PlusCircle className="w-4 h-4 mr-2" />}
-            Añadir
-          </Button>
         </div>
       </div>
-      <div>
-        <h3 className="text-lg font-semibold text-white">Administradores Actuales</h3>
-        <ul className="mt-2 space-y-2">
-          {admins.map((admin) => (
-            <li key={admin.id} className="p-3 bg-zinc-800/50 rounded-md border border-zinc-700">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <div className="min-w-0 flex-1">
-                      <div className="font-semibold text-white truncate">{admin.alias ?? 'Sin alias'}</div>
-                      <div className="font-mono text-xs text-gray-400 truncate">
-                        {truncateWallet(getWalletAddress(admin), 6)}
+
+      <div className="space-y-6">
+        <div>
+          <h3 className="text-lg font-semibold text-white">Añadir Nuevo Administrador</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
+            <Input
+              type="text"
+              placeholder="Dirección de Wallet (0x...)"
+              value={newAddress}
+              onChange={(e) => setNewAddress(e.target.value)}
+              className="bg-zinc-800 border-zinc-700 sm:col-span-1"
+            />
+            <Input
+              type="text"
+              placeholder="Alias (opcional)"
+              value={newAlias}
+              onChange={(e) => setNewAlias(e.target.value)}
+              className="bg-zinc-800 border-zinc-700 sm:col-span-1"
+              maxLength={100}
+            />
+            <Button onClick={handleAddAdmin} disabled={isLoading} className="bg-lime-500 hover:bg-lime-600 text-zinc-900 sm:col-span-1">
+              {isLoading ? <Loader2 className="animate-spin" /> : <PlusCircle className="w-4 h-4 mr-2" />}
+              Añadir
+            </Button>
+          </div>
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-white">Administradores Actuales</h3>
+          <ul className="mt-2 space-y-2">
+            {admins.map((admin) => (
+              <li key={admin.id} className="p-3 bg-zinc-800/50 rounded-md border border-zinc-700">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-white truncate">{admin.alias ?? 'Sin alias'}</div>
+                        <div className="font-mono text-xs text-gray-400 truncate">
+                          {truncateWallet(getWalletAddress(admin), 6)}
+                        </div>
                       </div>
+                      {editingAliasId === admin.id ? (
+                        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                          <Input
+                            type="text"
+                            value={editingAliasValue}
+                            onChange={(e) => setEditingAliasValue(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleUpdateAlias()}
+                            className="w-24 sm:w-32 h-8 text-xs sm:text-sm bg-zinc-700 border-zinc-600"
+                            placeholder="Alias..."
+                            maxLength={100}
+                          />
+                          <Button size="sm" variant="outline" onClick={handleUpdateAlias} className="h-8 px-1 sm:px-2">
+                            ✓
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={handleCancelEditAlias} className="h-8 px-1 sm:px-2 text-gray-400">
+                            ✕
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleStartEditAlias(admin)}
+                          className="h-8 w-8 p-0 text-gray-400 hover:text-white flex-shrink-0"
+                          title="Editar alias"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                      )}
                     </div>
-                    {editingAliasId === admin.id ? (
-                      <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-                        <Input
-                          type="text"
-                          value={editingAliasValue}
-                          onChange={(e) => setEditingAliasValue(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleUpdateAlias()}
-                          className="w-24 sm:w-32 h-8 text-xs sm:text-sm bg-zinc-700 border-zinc-600"
-                          placeholder="Alias..."
-                          maxLength={100}
-                        />
-                        <Button size="sm" variant="outline" onClick={handleUpdateAlias} className="h-8 px-1 sm:px-2">
-                          ✓
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={handleCancelEditAlias} className="h-8 px-1 sm:px-2 text-gray-400">
-                          ✕
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleStartEditAlias(admin)}
-                        className="h-8 w-8 p-0 text-gray-400 hover:text-white flex-shrink-0"
-                        title="Editar alias"
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                    )}
                   </div>
+                  {/* Verificación de seguridad en la UI: no mostrar el botón de borrar para el Super Admin */}
+                  {getWalletAddress(admin).toLowerCase() !== SUPER_ADMIN_WALLET && (
+                    <Button variant="destructive" size="sm" onClick={() => handleDeleteAdmin(admin.id)} className="flex-shrink-0 px-2 sm:px-3 text-xs sm:text-sm">
+                      <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-0" />
+                      <span className="hidden sm:inline">Borrar</span>
+                    </Button>
+                  )}
                 </div>
-                {/* Verificación de seguridad en la UI: no mostrar el botón de borrar para el Super Admin */}
-                {getWalletAddress(admin).toLowerCase() !== SUPER_ADMIN_WALLET && (
-                  <Button variant="destructive" size="sm" onClick={() => handleDeleteAdmin(admin.id)} className="flex-shrink-0 px-2 sm:px-3 text-xs sm:text-sm">
-                    <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-0" />
-                    <span className="hidden sm:inline">Borrar</span>
-                  </Button>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
   );

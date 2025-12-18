@@ -23,7 +23,9 @@ import { useProfile } from "@/hooks/useProfile";
 // Reward modal manager inside dashboard wrapper
 // 🎮 TODO: IMPORTAR HUD cuando esté funcional en páginas específicas
 // import { GamificationHUD } from "@pandoras/gamification";
+// import { GamificationHUD } from "@pandoras/gamification";
 // import { useGamificationContext } from "@pandoras/gamification";
+import { GamificationListener } from "@/components/gamification/GamificationListener";
 
 // Removed: fetchUserName was a mock function for Vitalik's address
 // that was unsafe (hardcoded dependencies) and inefficient (300ms delay)
@@ -212,6 +214,7 @@ export function DashboardClientWrapper({
         {!isLoadingUserData && <MobileNavMenu profile={profile} />}
 
         <TermsModalRenderer />
+        <GamificationListener />
 
         {/* 🎮 Reward Modal - Mock implementation */}
         <RewardModalManager />
