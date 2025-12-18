@@ -21,7 +21,7 @@ export async function PATCH(request: Request) {
 
     // Actualizar el status en la base de datos del nuevo sistema
     // El leadId es el session_id del nuevo sistema
-    
+
     // Si el status es 'completed' o 'rejected', desactivar la sesión
     if (status === 'completed' || status === 'rejected') {
       await sql`
@@ -123,31 +123,36 @@ export async function GET(request: Request) {
     const simplifiedStats = {
       total: leads.length,
       active: leads.filter(l => l.status === 'active').length,
-      
+
       // Estadísticas por flujo independiente
       eight_q: {
         total: flowStats.find(s => s.flow_type === 'eight_q')?.total_sessions || 0,
         active: flowStats.find(s => s.flow_type === 'eight_q')?.active_sessions || 0,
       },
-      
+
       utility: {
         total: flowStats.find(s => s.flow_type === 'utility')?.total_sessions || 0,
         active: flowStats.find(s => s.flow_type === 'utility')?.active_sessions || 0,
       },
-      
+
       high_ticket: {
         total: flowStats.find(s => s.flow_type === 'high_ticket')?.total_sessions || 0,
         active: flowStats.find(s => s.flow_type === 'high_ticket')?.active_sessions || 0,
       },
-      
+
       support: {
         total: flowStats.find(s => s.flow_type === 'support')?.total_sessions || 0,
         active: flowStats.find(s => s.flow_type === 'support')?.active_sessions || 0,
       },
-      
+
       human: {
         total: flowStats.find(s => s.flow_type === 'human')?.total_sessions || 0,
         active: flowStats.find(s => s.flow_type === 'human')?.active_sessions || 0,
+      },
+
+      protocol_application: {
+        total: flowStats.find(s => s.flow_type === 'protocol_application')?.total_sessions || 0,
+        active: flowStats.find(s => s.flow_type === 'protocol_application')?.active_sessions || 0,
       }
     };
 
@@ -178,6 +183,7 @@ export async function GET(request: Request) {
           high_ticket: { total: 0, active: 0 },
           support: { total: 0, active: 0 },
           human: { total: 0, active: 0 },
+          protocol_application: { total: 0, active: 0 },
         },
         flow_stats: [],
         timestamp: new Date().toISOString(),

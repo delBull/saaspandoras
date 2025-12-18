@@ -3,10 +3,10 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Check, X, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { PreFilterModal } from "@/components/apply/PreFilterModal";
+import { ApplyFormProtocol } from "@/components/apply/ApplyFormProtocol";
 
 // --- COMPONENTS ---
 
@@ -56,12 +56,12 @@ const FAQItem = ({ question, answer }: { question: string, answer: React.ReactNo
 };
 
 export default function ProtocolStoryPage() {
-    const [showPreFilterModal, setShowPreFilterModal] = useState(false);
+    const [showApplyModal, setShowApplyModal] = useState(false);
     const [selectedTier, setSelectedTier] = useState<string | null>(null);
 
     const openApplication = (tier: string) => {
         setSelectedTier(tier);
-        setShowPreFilterModal(true);
+        setShowApplyModal(true);
     };
 
     return (
@@ -382,12 +382,27 @@ export default function ProtocolStoryPage() {
             </div>
 
             {/* --- MODAL --- */}
-            <PreFilterModal
-                isOpen={showPreFilterModal}
-                onClose={() => setShowPreFilterModal(false)}
-                onProceed={() => window.location.href = '/apply'}
-                formType="conversational"
-            />
+            {/* --- MODAL --- */}
+            <AnimatePresence>
+                {showApplyModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 overflow-y-auto"
+                        onClick={() => setShowApplyModal(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full max-w-2xl"
+                        >
+                            <ApplyFormProtocol onClose={() => setShowApplyModal(false)} />
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
         </div>
     );
