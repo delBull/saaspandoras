@@ -1,5 +1,6 @@
 // Exportar funciones principales
 export { deployW2EProtocol, default as deployW2EProtocolDefault } from './deploy';
+export { deployNFTPass, type NFTPassConfig } from './deploy-nft';
 
 // Exportar configuraciones
 export { PANDORA_ORACLE_CONFIG, getPandoraOracleWallet } from './config/oracle';
