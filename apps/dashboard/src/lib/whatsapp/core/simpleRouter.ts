@@ -7,6 +7,12 @@
 import { sql } from "@/lib/database";
 import type { WhatsAppUser, WhatsAppSession } from "@/db/schema";
 import { notifyHumanAgent } from "@/lib/notifications";
+import { db } from "~/db";
+import { whatsappUsers, whatsappSessions, whatsappMessages } from "@/db/schema";
+import { eq, and, desc } from "drizzle-orm";
+// @ts-expect-error - module exists but TS config might be strict
+import { notifySupportRequest, notifyWhatsAppLead } from "@/lib/discord"; // Dynamic or direct import
+import { sendWhatsAppMessage, sendInteractiveMessage } from "../utils/client";
 
 /**
  * INTERFACES SIMPLIFICADAS
@@ -31,8 +37,8 @@ export interface FlowResult {
   error?: string;
 }
 
-// Los 5 flujos independientes
-export type FlowType = 'utility' | 'high_ticket' | 'eight_q' | 'support' | 'human';
+// Los 6 flujos independientes
+export type FlowType = 'utility' | 'high_ticket' | 'eight_q' | 'support' | 'human' | 'protocol_application';
 
 /**
  * HANDLERS SIMPLES PARA CADA FLUJO
@@ -200,7 +206,7 @@ function handleEightQFlow(message: string, step = 0): FlowResult {
     return {
       handled: true,
       flowType: 'eight_q',
-      response: `�🔍 **Mecanismos:** ✅ Moderación verificable, tareas cuantificables. Guía: pndrs.link/mechanic-guide`
+      response: `🔍 **Mecanismos:** ✅ Moderación verificable, tareas cuantificables. Guía: pndrs.link/mechanic-guide`
     };
   }
 
@@ -288,15 +294,95 @@ function handleSupportFlow(message: string): FlowResult {
 }
 
 // Human Flow
-async function handleHumanFlow(phone: string, message = ''): Promise<FlowResult> {
+async function handleHumanFlow(phone: string, message = '', step = 0): Promise<FlowResult> {
+  const text = message.toLowerCase().trim();
   // Send notification to Discord/Email
   await notifyHumanAgent(phone, message || 'Usuario solicita hablar con humano');
+
+  // NOTIFICAR SI ES START
+  if (step === 0 && !text.includes('gracias')) {
+    try {
+      notifySupportRequest(phone, text, 'Human Flow Requested');
+    } catch (e) { console.error(e); }
+  }
 
   return {
     handled: true,
     flowType: 'human',
-    response: `👨‍💼 **Escalado a Agente Humano**\n\nGracias por escribirnos. Un agente especializado te contactará en las próximas 2-4 horas.\n\n📧 **Confirmación:** Recibirás un email de confirmación.\n📞 **Urgente:** Si es urgente, llama a +52 1 332 213 7498`,
+    response: step === 0
+      ? `👨‍💻 Un agente humano ha sido notificado. Te responderemos en breve.\n\nPuedes escribir tu consulta ahora mismo:`
+      : `👨‍💼 **Escalado a Agente Humano**\n\nGracias por escribirnos. Un agente especializado te contactará en las próximas 2-4 horas.\n\n📧 **Confirmación:** Recibirás un email de confirmación.\n📞 **Urgente:** Si es urgente, llama a +52 1 332 213 7498`,
     action: 'human_escalated'
+  };
+}
+
+// Protocol Application Flow (Automated Follow-up)
+function handleProtocolApplicationFlow(message: string, step = 0): FlowResult {
+  const text = message.toLowerCase().trim();
+
+  // Step 1: User replied to "Welcome... Confirm name? (Sí)"
+  // Current step in DB is 1 (waiting for this reply)
+  if (step === 1) {
+    if (text.includes('sí') || text.includes('si') || text.includes('confirm')) {
+      return {
+        handled: true,
+        flowType: 'protocol_application',
+        response: `Genial. Para cerrar tu aplicación y agendar llamada, ¿cuál es tu presupuesto aproximado para tech+execution?\n\n1️⃣ $5k–$15k\n2️⃣ $15k–$35k\n3️⃣ $35k+\n\nResponde con el número correspondiente (1, 2 o 3).`,
+        action: 'next_question'
+      };
+    } else {
+      // If they don't say yes, purely transactional, we can just nudge them or accept it as update
+      return {
+        handled: true,
+        flowType: 'protocol_application',
+        response: `Gracias. Para continuar con tu proceso de validación, por favor confirma tu interés respondiendo "Sí".`,
+        action: 'retry_step'
+      };
+    }
+  }
+
+  // Step 2: User replied with Budget (1, 2, 3)
+  if (step === 2) {
+    // Map 1, 2, 3 to packages
+    let packageId = 'General';
+    if (text.includes('1') || text.includes('5k')) packageId = 'Despliegue Rápido';
+    if (text.includes('2') || text.includes('15k')) packageId = 'Partner Crecimiento';
+    if (text.includes('3') || text.includes('35k')) packageId = 'Ecosystem Builder';
+
+    return {
+      handled: true,
+      flowType: 'protocol_application',
+      response: `Gracias — tengo tu perfil actualizado (${packageId}).\n\nAquí te dejo este enlace para agendar una llamada estratégica de 15 mins conmigo:\n🔗 https://calendly.com/pandoras-w2e/strategy\n\nSi no ves horario que te funcione, responde 'AGENDAR' y te contacto manualmente.`,
+      isCompleted: true,
+      action: 'flow_completed'
+    };
+  }
+
+  // Post-completion fallback
+  if (step >= 3) {
+    if (text.includes('agendar')) {
+      try {
+        notifySupportRequest(message, 'User requested manual scheduling', 'Protocol Application - Scheduling');
+      } catch (e) { /* ignore */ }
+
+      return {
+        handled: true,
+        flowType: 'protocol_application',
+        response: `Entendido. He notificado a un agente humano para que te contacte y coordinen agenda.`,
+        action: 'human_escalated'
+      };
+    }
+    return {
+      handled: true,
+      flowType: 'protocol_application',
+      response: `Ya tenemos tu aplicación registrada. Si necesitas algo más, escribe "support".`
+    };
+  }
+
+  return {
+    handled: true,
+    flowType: 'protocol_application',
+    response: 'Por favor completa la pregunta anterior.'
   };
 }
 
@@ -537,6 +623,15 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
           case 'human':
             result = await handleHumanFlow(phone, messageText);
             break;
+
+          case 'protocol_application':
+            result = handleProtocolApplicationFlow(messageText, currentState.step);
+            if (result.action === 'next_question') {
+              await updateFlowStep(phone, 2);
+            } else if (result.action === 'flow_completed') {
+              await updateFlowStep(phone, 3);
+            }
+            break;
           default:
             result = handleEightQFlow(messageText, 0);
         }
@@ -650,6 +745,9 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
         break;
       case 'human':
         result = await handleHumanFlow(phone, messageText);
+        break;
+      case 'protocol_application':
+        result = handleProtocolApplicationFlow(messageText, 1);
         break;
       default:
         result = handleEightQFlow(messageText, 0);

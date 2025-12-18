@@ -53,6 +53,11 @@ interface MultiFlowStats {
     active: number;
     resolved: number;
   };
+  protocol_application?: {
+    total: number;
+    active: number;
+    resolved?: number;
+  };
 }
 
 export default function WhatsAppLeadsTab() {
@@ -64,7 +69,8 @@ export default function WhatsAppLeadsTab() {
     high_ticket: { total: 0, scheduled: 0, contacted: 0 },
     utility: { total: 0, pending: 0, approved: 0 },
     support: { total: 0, escalated: 0, resolved: 0 },
-    human: { total: 0, active: 0, resolved: 0 }
+    human: { total: 0, active: 0, resolved: 0 },
+    protocol_application: { total: 0, active: 0, resolved: 0 }
   });
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -106,7 +112,8 @@ export default function WhatsAppLeadsTab() {
           high_ticket: { total: 0, scheduled: 0, contacted: 0 },
           utility: { total: 0, pending: 0, approved: 0 },
           support: { total: 0, escalated: 0, resolved: 0 },
-          human: { total: 0, active: 0, resolved: 0 }
+          human: { total: 0, active: 0, resolved: 0 },
+          protocol_application: { total: 0, active: 0, resolved: 0 }
         });
       } catch (fallbackError) {
         console.error('Fallback also failed:', fallbackError);
@@ -178,6 +185,7 @@ export default function WhatsAppLeadsTab() {
       case 'utility': return 'bg-green-500';
       case 'support': return 'bg-red-500';
       case 'human': return 'bg-blue-500';
+      case 'protocol_application': return 'bg-violet-500';
       default: return 'bg-gray-500';
     }
   };
@@ -189,6 +197,7 @@ export default function WhatsAppLeadsTab() {
       case 'utility': return '🚀';
       case 'support': return '🆘';
       case 'human': return '👨‍💼';
+      case 'protocol_application': return '📜';
       default: return '💬';
     }
   };
@@ -292,6 +301,29 @@ export default function WhatsAppLeadsTab() {
               </div>
             </div>
           </div>
+          <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-500/20 rounded-lg">
+                <MessageSquare className="w-5 h-5 text-purple-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-purple-400">{stats.support.total + stats.human.total}</p>
+                <p className="text-xs text-zinc-400">Soporte/Asistencia</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-violet-500/20 rounded-lg">
+                <Users className="w-5 h-5 text-violet-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-violet-400">{stats.protocol_application?.total || 0}</p>
+                <p className="text-xs text-zinc-400">Protocol Leads</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Flow-specific Stats */}
@@ -366,6 +398,7 @@ export default function WhatsAppLeadsTab() {
               <option value="utility">Utility</option>
               <option value="support">Soporte</option>
               <option value="human">Agentes</option>
+              <option value="protocol_application">Protocol App</option>
             </select>
 
             {/* Priority Filter */}
@@ -465,11 +498,12 @@ export default function WhatsAppLeadsTab() {
                     </td>
                     <td className="px-4 py-3 text-zinc-300">
                       {lead.flow_type === 'eight_q' ? `${(Number(lead.current_step) || 0) + 1}/8` :
-                       lead.flow_type === 'high_ticket' ? `${(Number(lead.current_step) || 0) + 1}/3` :
-                       lead.flow_type === 'support' ? 'Escalado' :
-                       lead.flow_type === 'human' ? 'Agente' :
-                       lead.flow_type === 'utility' ? 'Consultando' :
-                       '-'}
+                        lead.flow_type === 'high_ticket' ? `${(Number(lead.current_step) || 0) + 1}/3` :
+                          lead.flow_type === 'support' ? 'Escalado' :
+                            lead.flow_type === 'human' ? 'Agente' :
+                              lead.flow_type === 'utility' ? 'Consultando' :
+                                lead.flow_type === 'protocol_application' ? `${(Number(lead.current_step) || 0) + 1}/3` :
+                                  '-'}
                     </td>
                     <td className="px-4 py-3 text-zinc-400 max-w-xs truncate">
                       {lead.last_message || "Sin mensajes"}
@@ -530,6 +564,12 @@ export default function WhatsAppLeadsTab() {
                         {lead.flow_type === 'human' && (
                           <span className="px-2 py-1 bg-purple-600 text-white text-xs rounded">
                             👨‍💼 Agente
+                          </span>
+                        )}
+
+                        {lead.flow_type === 'protocol_application' && (
+                          <span className="px-2 py-1 bg-violet-600 text-white text-xs rounded">
+                            📜 Protocol
                           </span>
                         )}
                       </div>

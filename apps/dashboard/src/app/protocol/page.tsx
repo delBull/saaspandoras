@@ -29,6 +29,7 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useGoogleAnalytics, trackEvent, trackPageView } from "@/lib/analytics";
+import { ApplyFormProtocol } from "@/components/apply/ApplyFormProtocol";
 
 // Configuración whatsapp default
 const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_BUSINESS_PHONE || "5213221374392";
@@ -456,7 +457,7 @@ function ProtocolContent() {
 
     const [modalState, setModalState] = useState<{
         isOpen: boolean;
-        type: 'email' | 'whatsapp';
+        type: 'email' | 'whatsapp' | 'apply';
         plan?: string;
     }>({ isOpen: false, type: 'whatsapp' });
 
@@ -472,8 +473,8 @@ function ProtocolContent() {
     };
 
     const handleApply = (plan: string) => {
-        // Para aplicar siempre vamos a WhatsApp en este flujo high-ticket
-        openWhatsApp(plan);
+        setModalState({ isOpen: true, type: 'apply', plan });
+        trackEvent('protocol_apply', 'click', `form_new_${plan}`);
     };
 
     const handleEmailSubmit = async (e: React.FormEvent) => {
@@ -496,7 +497,7 @@ function ProtocolContent() {
             <div className="relative z-10 pt-20 pb-20">
 
                 <Hero onMethodSelect={(method) => {
-                    if (method === 'whatsapp') openWhatsApp('Hero CTA');
+                    if (method === 'whatsapp') handleApply('Hero CTA');
                     else setModalState({ isOpen: true, type: 'email' });
                 }} />
 
@@ -505,69 +506,82 @@ function ProtocolContent() {
                 <ComparisonSection />
                 <PricingSection onApply={handleApply} />
                 <LegalBlock />
-                <FinalCTA onAction={() => openWhatsApp('Final CTA')} />
+                <FinalCTA onAction={() => handleApply('Final CTA')} />
 
             </div>
 
             {/* Modal para Email (Placeholder de funcionalidad) */}
             <AnimatePresence>
-                {modalState.isOpen && modalState.type === 'email' && (
+                {modalState.isOpen && (
                     <motion.div
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 overflow-y-auto"
                         onClick={() => setModalState({ ...modalState, isOpen: false })}
                     >
-                        <motion.div
-                            initial={{ scale: 0.95 }} animate={{ scale: 1 }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="bg-zinc-900 border border-zinc-800 p-8 rounded-2xl max-w-md w-full relative"
-                        >
-                            <button
-                                onClick={() => setModalState({ ...modalState, isOpen: false })}
-                                className="absolute top-4 right-4 text-zinc-500 hover:text-white"
+                        {modalState.type === 'email' && (
+                            <motion.div
+                                initial={{ scale: 0.95 }} animate={{ scale: 1 }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="bg-zinc-900 border border-zinc-800 p-8 rounded-2xl max-w-md w-full relative"
                             >
-                                <X className="w-5 h-5" />
-                            </button>
+                                <button
+                                    onClick={() => setModalState({ ...modalState, isOpen: false })}
+                                    className="absolute top-4 right-4 text-zinc-500 hover:text-white"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
 
-                            {!isSuccess ? (
-                                <>
-                                    <h3 className="text-xl font-bold mb-2">Recibe el Breakdown del Programa</h3>
-                                    <p className="text-zinc-400 text-sm mb-6">Te enviaremos los detalles técnicos de los paquetes y requisitos de aplicación.</p>
+                                {!isSuccess ? (
+                                    <>
+                                        <h3 className="text-xl font-bold mb-2">Recibe el Breakdown del Programa</h3>
+                                        <p className="text-zinc-400 text-sm mb-6">Te enviaremos los detalles técnicos de los paquetes y requisitos de aplicación.</p>
 
-                                    <form onSubmit={handleEmailSubmit} className="space-y-4">
-                                        <div>
-                                            <input
-                                                type="email"
-                                                required
-                                                placeholder="tu@email.com"
-                                                className="w-full bg-black border border-zinc-700 rounded-lg px-4 py-3 text-white focus:border-blue-500 outline-none"
-                                                value={email}
-                                                onChange={e => setEmail(e.target.value)}
-                                            />
-                                        </div>
+                                        <form onSubmit={handleEmailSubmit} className="space-y-4">
+                                            <div>
+                                                <input
+                                                    type="email"
+                                                    required
+                                                    placeholder="tu@email.com"
+                                                    className="w-full bg-black border border-zinc-700 rounded-lg px-4 py-3 text-white focus:border-blue-500 outline-none"
+                                                    value={email}
+                                                    onChange={e => setEmail(e.target.value)}
+                                                />
+                                            </div>
+                                            <Button
+                                                type="submit"
+                                                className="w-full bg-white text-black hover:bg-zinc-200 font-bold"
+                                                disabled={isSubmitting}
+                                            >
+                                                {isSubmitting ? 'Enviando...' : 'Enviar Información'}
+                                            </Button>
+                                        </form>
+                                    </>
+                                ) : (
+                                    <div className="text-center py-8">
+                                        <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                                        <h3 className="text-xl font-bold text-white mb-2">¡Recibido!</h3>
+                                        <p className="text-zinc-400 text-sm">Revisa tu bandeja de entrada en unos minutos.</p>
                                         <Button
-                                            type="submit"
-                                            className="w-full bg-white text-black hover:bg-zinc-200 font-bold"
-                                            disabled={isSubmitting}
+                                            className="mt-6 w-full bg-zinc-800"
+                                            onClick={() => setModalState({ ...modalState, isOpen: false })}
                                         >
-                                            {isSubmitting ? 'Enviando...' : 'Enviar Información'}
+                                            Cerrar
                                         </Button>
-                                    </form>
-                                </>
-                            ) : (
-                                <div className="text-center py-8">
-                                    <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                                    <h3 className="text-xl font-bold text-white mb-2">¡Recibido!</h3>
-                                    <p className="text-zinc-400 text-sm">Revisa tu bandeja de entrada en unos minutos.</p>
-                                    <Button
-                                        className="mt-6 w-full bg-zinc-800"
-                                        onClick={() => setModalState({ ...modalState, isOpen: false })}
-                                    >
-                                        Cerrar
-                                    </Button>
-                                </div>
-                            )}
-                        </motion.div>
+                                    </div>
+                                )}
+                            </motion.div>
+                        )}
+
+                        {modalState.type === 'apply' && (
+                            <motion.div
+                                initial={{ scale: 0.95, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-full max-w-2xl"
+                            >
+                                <ApplyFormProtocol onClose={() => setModalState({ ...modalState, isOpen: false })} />
+                            </motion.div>
+                        )}
                     </motion.div>
                 )}
             </AnimatePresence>
