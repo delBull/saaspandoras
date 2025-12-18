@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, ExternalLink, Copy, Trash2, BarChart3, Users, TrendingUp, Eye } from 'lucide-react';
+import { ShortlinkAnalyticsModal } from "./ShortlinkAnalyticsModal";
 
 interface Shortlink {
   id: number;
@@ -29,6 +30,9 @@ export default function ShortlinksSubTab() {
   const [creating, setCreating] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
 
+  // Analytics State
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
+
   // Form state
   const [formData, setFormData] = useState({
     slug: '',
@@ -49,8 +53,8 @@ export default function ShortlinksSubTab() {
         setStats({
           total: shortlinksData.length,
           active: shortlinksData.filter((s: Shortlink) => s.isActive).length,
-          totalClicks: 0, // Would come from analytics API
-          uniqueVisitors: 0, // Would come from analytics API
+          totalClicks: 0, // Pending backend aggregation
+          uniqueVisitors: 0, // Pending backend aggregation
         });
       } else {
         console.error('Failed to fetch shortlinks');
@@ -308,11 +312,10 @@ export default function ShortlinksSubTab() {
                       <code className="px-2 py-1 rounded text-sm font-mono bg-zinc-700 text-green-400">
                         /{shortlink.slug}
                       </code>
-                      <span className={`text-xs px-2 py-1 rounded ${
-                        shortlink.isActive
+                      <span className={`text-xs px-2 py-1 rounded ${shortlink.isActive
                           ? 'bg-green-500/20 text-green-400 border border-green-500/30'
                           : 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
-                      }`}>
+                        }`}>
                         {shortlink.isActive ? '✓ Activo' : '⏸️ Inactivo'}
                       </span>
                     </div>
@@ -343,13 +346,13 @@ export default function ShortlinksSubTab() {
                     >
                       <Copy className="h-4 w-4" />
                     </button>
-                    <a
-                      href={`/admin/analytics/shortlinks?slug=${shortlink.slug}`}
+                    <button
+                      onClick={() => setSelectedSlug(shortlink.slug)}
                       className="p-2 text-zinc-400 hover:text-purple-400 hover:bg-purple-500/10 rounded transition-colors"
                       title="Ver Analytics"
                     >
-                      📊
-                    </a>
+                      <BarChart3 className="h-4 w-4" />
+                    </button>
                     <button
                       onClick={() => alert('Eliminar shortlinks próximamente')}
                       className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
@@ -364,6 +367,12 @@ export default function ShortlinksSubTab() {
           </div>
         )}
       </div>
+
+      <ShortlinkAnalyticsModal
+        isOpen={!!selectedSlug}
+        onClose={() => setSelectedSlug(null)}
+        slug={selectedSlug}
+      />
     </div>
   );
 }

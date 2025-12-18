@@ -4,12 +4,14 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@saasfly/ui/use-toast";
-import { Loader2, ShieldCheck, Send, BarChart2, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Loader2, ShieldCheck, Send, BarChart2, CheckCircle2, AlertTriangle, Wallet } from "lucide-react";
 import { useActiveAccount, useReadContract, useSendTransaction } from "thirdweb/react";
 import { getContract, prepareContractCall, readContract } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { config } from "@/config";
 import { PANDORAS_KEY_ABI } from "@/lib/pandoras-key-abi";
+import { CreateNFTPassModal } from "./CreateNFTPassModal";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 // Extend the ABI to include missing standard items + adminMint
 const EXTENDED_ABI = [
@@ -40,10 +42,12 @@ const EXTENDED_ABI = [
 export function NFTManager() {
     const { toast } = useToast();
     const account = useActiveAccount();
+    const [showCreateWizard, setShowCreateWizard] = useState(false);
 
     // 1. Global Gate Settings (API)
     const [nftGateEnabled, setNftGateEnabled] = useState(false);
     const [loadingSettings, setLoadingSettings] = useState(true);
+    const [togglingGate, setTogglingGate] = useState(false);
 
     // 2. Contract Stats (Thirdweb)
     const contract = getContract({
@@ -53,10 +57,17 @@ export function NFTManager() {
         abi: EXTENDED_ABI,
     });
 
-    const { data: totalSupply, isLoading: isLoadingSupply, refetch: refetchSupply } = useReadContract({
+    const { data: supply, isLoading: supplyLoading, refetch: refetchSupply } = useReadContract({
         contract,
         method: "totalSupply",
         params: []
+    });
+
+    const { data: balance, isLoading: balanceLoading, refetch: refetchBalance } = useReadContract({
+        contract,
+        method: "balanceOf",
+        params: [account?.address || "0x0000000000000000000000000000000000000000"],
+        queryOptions: { enabled: !!account?.address }
     });
 
     // 3. Airdrop Logic
@@ -65,6 +76,7 @@ export function NFTManager() {
     const [airdropStatus, setAirdropStatus] = useState<'idle' | 'checking' | 'confirm_overwrite' | 'minting' | 'success' | 'error'>('idle');
     const [showAirdropModal, setShowAirdropModal] = useState(false);
     const [balanceCheckValue, setBalanceCheckValue] = useState<bigint | null>(null);
+    const [checkingBalance, setCheckingBalance] = useState(false);
 
     // --- Functions ---
 
@@ -86,9 +98,9 @@ export function NFTManager() {
         }
     };
 
-    const handleToggleGate = async () => {
+    const toggleGate = async () => {
+        setTogglingGate(true);
         const newValue = !nftGateEnabled;
-        setNftGateEnabled(newValue); // Optimistic
 
         try {
             const res = await fetch("/api/settings", {
@@ -99,46 +111,37 @@ export function NFTManager() {
 
             if (!res.ok) throw new Error("Failed to update");
 
+            setNftGateEnabled(newValue);
             toast({
                 title: "Configuración Actualizada",
                 description: `El NFT Gate ha sido ${newValue ? "ACTIVADO" : "DESACTIVADO"}.`,
             });
         } catch (error) {
-            setNftGateEnabled(!newValue); // Revert
             toast({
                 title: "Error",
                 description: "No se pudo actualizar la configuración.",
                 variant: "destructive",
             });
+        } finally {
+            setTogglingGate(false);
         }
     };
 
-    const initiateAirdrop = async () => {
+    const checkBalance = async () => {
         if (!airdropAddress) return;
-
-        setAirdropStatus('checking');
-        setShowAirdropModal(true);
-
+        setCheckingBalance(true);
         try {
-            // Check if user already has a pass
             const bal = await readContract({
                 contract,
                 method: "balanceOf",
                 params: [airdropAddress]
             });
-
-            if (bal > 0n) {
-                setBalanceCheckValue(bal);
-                setAirdropStatus('confirm_overwrite');
-            } else {
-                // Proceed directly
-                executeMint();
-            }
+            setBalanceCheckValue(bal);
         } catch (e) {
             console.error("Failed to check balance", e);
-            // If check fails, we might still want to proceed or error out. 
-            // Let's assume safely proceed but maybe log it.
-            executeMint();
+            toast({ title: "Error", description: "Fallo al verificar balance.", variant: "destructive" });
+        } finally {
+            setCheckingBalance(false);
         }
     };
 
@@ -159,20 +162,22 @@ export function NFTManager() {
                         description: `Apply Pass otorgado a ${airdropAddress}`,
                     });
                     setAirdropAddress("");
+                    setBalanceCheckValue(null);
 
                     // Force refresh stats
                     await refetchSupply();
+                    await refetchBalance();
 
                     // Close modal after delay
                     setTimeout(() => {
                         setShowAirdropModal(false);
                         setAirdropStatus('idle');
-                        setBalanceCheckValue(null);
                     }, 3000);
                 },
                 onError: (e) => {
                     console.error(e);
                     setAirdropStatus('error');
+                    toast({ title: "Error", description: "Fallo al enviar pase.", variant: "destructive" });
                 }
             });
         } catch (e) {
@@ -184,173 +189,187 @@ export function NFTManager() {
 
     return (
         <div className="space-y-6">
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 relative">
-                <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    <ShieldCheck className="w-6 h-6 text-lime-400" />
-                    Control de Acceso (NFT Gate)
-                </h3>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-500">
+                        Gestión de Accesos
+                    </h2>
+                    <p className="text-zinc-400 text-sm">
+                        Administra el pase del sistema y crea nuevos contratos de acceso.
+                    </p>
+                </div>
+                <Button
+                    onClick={() => setShowCreateWizard(true)}
+                    className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700"
+                >
+                    <Wallet className="w-4 h-4 mr-2" />
+                    Crear Nuevo NFT Pass
+                </Button>
+            </div>
 
-                {/* Toggle Section */}
-                <div className="flex items-center justify-between bg-zinc-800/50 p-4 rounded-lg border border-zinc-700 mb-6">
-                    <div>
-                        <p className="text-white font-medium">Restringir Acceso a Aplicaciones Protocolo</p>
-                        <p className="text-sm text-zinc-400">Solo usuarios con <strong>Apply Pass</strong> podrán ver el formulario.</p>
-                    </div>
-                    {loadingSettings ? <Loader2 className="animate-spin" /> : (
-                        <div
-                            onClick={handleToggleGate}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                    handleToggleGate();
-                                }
-                            }}
-                            role="button"
-                            tabIndex={0}
-                            className={`w-14 h-7 rounded-full p-1 cursor-pointer transition-colors duration-300 ${nftGateEnabled ? "bg-lime-500" : "bg-zinc-600"}`}
-                        >
-                            <div className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-300 ${nftGateEnabled ? "translate-x-7" : "translate-x-0"}`} />
-                        </div>
-                    )}
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-3 opacity-10">
+                    <ShieldCheck className="w-32 h-32" />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Stats Card */}
-                    <div className="bg-zinc-800/30 p-6 rounded-xl border border-zinc-700">
-                        <div className="flex items-center gap-3 mb-2">
-                            <BarChart2 className="w-5 h-5 text-blue-400" />
-                            <h4 className="text-white font-semibold">Estadísticas de Pases</h4>
+                <div className="mb-6 relative z-10">
+                    <div className="flex items-center gap-2 mb-1">
+                        <span className="bg-lime-500/10 text-lime-500 text-xs px-2 py-0.5 rounded border border-lime-500/20 font-mono">
+                            SYSTEM CORE
+                        </span>
+                        <h3 className="text-lg font-semibold text-white">System Access Pass (Global)</h3>
+                    </div>
+                    <p className="text-zinc-400 text-sm max-w-2xl">
+                        Este es el pase principal que controla el acceso al dashboard y funcionalidades admin.
+                        Contract: <span className="font-mono text-xs bg-zinc-950 px-1 rounded text-zinc-500">{config.applyPassNftAddress}</span>
+                    </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 relative z-10">
+                    <div className="bg-black/40 p-4 rounded-lg border border-zinc-800/50">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-zinc-500 text-xs uppercase tracking-wider">Total Supply</span>
+                            <BarChart2 className="w-4 h-4 text-zinc-600" />
                         </div>
-                        <div className="mt-4">
-                            <p className="text-3xl font-bold text-white">
-                                {isLoadingSupply ? "..." : totalSupply?.toString() || "0"}
-                            </p>
-                            <p className="text-sm text-zinc-500">Pases Apply Pass emitidos</p>
+                        <div className="text-2xl font-mono font-bold text-white">
+                            {supplyLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : supply?.toString() || "0"}
                         </div>
                     </div>
 
-                    {/* Airdrop Tool */}
-                    <div className="bg-zinc-800/30 p-6 rounded-xl border border-zinc-700">
-                        <div className="flex items-center gap-3 mb-4">
-                            <Send className="w-5 h-5 text-purple-400" />
-                            <h4 className="text-white font-semibold">Otorgar Pase (Airdrop)</h4>
+                    <div className="bg-black/40 p-4 rounded-lg border border-zinc-800/50">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-zinc-500 text-xs uppercase tracking-wider">Estado del Gate</span>
+                            {nftGateEnabled ?
+                                <CheckCircle2 className="w-4 h-4 text-green-500" /> :
+                                <AlertTriangle className="w-4 h-4 text-yellow-500" />
+                            }
                         </div>
-
-                        <div className="space-y-3">
-                            <Input
-                                placeholder="0x... Dirección de la Wallet"
-                                value={airdropAddress}
-                                onChange={(e) => setAirdropAddress(e.target.value)}
-                                className="bg-zinc-900 border-zinc-700 text-white"
-                            />
-                            <Button
-                                onClick={initiateAirdrop}
-                                disabled={airdropStatus !== 'idle' && airdropStatus !== 'error' || !airdropAddress}
-                                className="w-full bg-purple-600 hover:bg-purple-700 font-bold"
-                            >
-                                {airdropStatus === 'minting' ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-                                Enviar Pase
-                            </Button>
+                        <div className={`text-sm font-semibold ${nftGateEnabled ? "text-green-400" : "text-yellow-400"}`}>
+                            {loadingSettings ? <Loader2 className="w-3 h-3 animate-spin" /> : (nftGateEnabled ? "ACTIVO (Restringido)" : "INACTIVO (Público)")}
                         </div>
                     </div>
+
+                    <div className="bg-black/40 p-4 rounded-lg border border-zinc-800/50">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-zinc-500 text-xs uppercase tracking-wider">Tu Balance</span>
+                            <Wallet className="w-4 h-4 text-zinc-600" />
+                        </div>
+                        <div className="text-2xl font-mono font-bold text-white">
+                            {balanceLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : balance?.toString() || "0"}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex gap-3 relative z-10">
+                    <Button
+                        onClick={() => setShowAirdropModal(true)}
+                        className="bg-lime-500 text-black hover:bg-lime-400"
+                    >
+                        <Send className="w-4 h-4 mr-2" />
+                        Airdrop Pass
+                    </Button>
+
+                    <Button
+                        onClick={toggleGate}
+                        disabled={togglingGate}
+                        variant="outline"
+                        className={`border-zinc-700 hover:bg-zinc-800 ${!nftGateEnabled && "text-yellow-500 border-yellow-500/20 hover:bg-yellow-500/10"}`}
+                    >
+                        {togglingGate ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                        {nftGateEnabled ? "Desactivar Gate" : "Activar Gate"}
+                    </Button>
                 </div>
             </div>
 
-            {/* Status Modal Overlay */}
-            {showAirdropModal && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-                    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl transform transition-all scale-100 relative">
-                        {/* Close button for error state */}
-                        {(airdropStatus === 'error' || airdropStatus === 'confirm_overwrite') && (
-                            <button
-                                onClick={() => {
-                                    setShowAirdropModal(false);
-                                    setAirdropStatus('idle');
-                                }}
-                                className="absolute top-4 right-4 text-zinc-500 hover:text-white"
-                            >
-                                ✕
-                            </button>
-                        )}
+            <Dialog open={showAirdropModal} onOpenChange={setShowAirdropModal}>
+                <DialogContent className="sm:max-w-md bg-zinc-900 border-zinc-800 text-white">
+                    <DialogHeader>
+                        <DialogTitle>Airdrop Access Pass</DialogTitle>
+                        <DialogDescription className="text-zinc-400">
+                            Envía un pase de acceso a una wallet específica sin costo.
+                        </DialogDescription>
+                    </DialogHeader>
 
-                        {airdropStatus === 'checking' && (
-                            <div className="flex flex-col items-center">
-                                <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
-                                <h3 className="text-xl font-bold text-white mb-2">Verificando...</h3>
-                                <p className="text-zinc-400 text-sm">Comprobando si el usuario ya tiene un pase.</p>
-                            </div>
-                        )}
-
-                        {airdropStatus === 'confirm_overwrite' && (
-                            <div className="flex flex-col items-center">
-                                <div className="w-12 h-12 bg-yellow-500/10 rounded-full flex items-center justify-center mb-4 border border-yellow-500/20">
-                                    <AlertTriangle className="w-8 h-8 text-yellow-500" />
-                                </div>
-                                <h3 className="text-xl font-bold text-white mb-2">¡Usuario ya tiene Pase!</h3>
-                                <p className="text-zinc-400 text-sm mb-6">
-                                    Esta wallet ya posee <strong>{balanceCheckValue?.toString()}</strong> pase(s). ¿Deseas enviarle otro de todos modos?
-                                </p>
-                                <div className="flex gap-3 w-full">
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => {
-                                            setShowAirdropModal(false);
-                                            setAirdropStatus('idle');
+                    {airdropStatus === 'idle' || airdropStatus === 'checking' ? (
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <label htmlFor="airdrop-wallet" className="text-xs text-zinc-500 uppercase font-semibold">Wallet Address</label>
+                                <div className="flex gap-2">
+                                    <Input
+                                        id="airdrop-wallet"
+                                        placeholder="0x..."
+                                        value={airdropAddress}
+                                        onChange={(e) => {
+                                            setAirdropAddress(e.target.value);
+                                            if (balanceCheckValue !== null) setBalanceCheckValue(null);
                                         }}
-                                        className="flex-1"
-                                    >
-                                        Cancelar
-                                    </Button>
+                                        className="bg-black/50 border-zinc-700 font-mono"
+                                    />
                                     <Button
-                                        onClick={() => executeMint()}
-                                        className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white"
+                                        size="icon"
+                                        variant="outline"
+                                        className="border-zinc-700 hover:bg-zinc-800 shrink-0"
+                                        onClick={checkBalance}
+                                        disabled={checkingBalance || !airdropAddress}
+                                        title="Verificar si ya tiene pase"
                                     >
-                                        Enviar Otro
+                                        {checkingBalance ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
                                     </Button>
                                 </div>
+                                {balanceCheckValue !== null && (
+                                    <p className={`text-xs ${balanceCheckValue > 0n ? "text-yellow-500" : "text-green-500"}`}>
+                                        {balanceCheckValue > 0n ? `⚠️ Esta wallet ya tiene ${balanceCheckValue.toString()} pase(s).` : "✅ Wallet limpia (0 pases)."}
+                                    </p>
+                                )}
                             </div>
-                        )}
-
-                        {airdropStatus === 'minting' && (
-                            <div className="flex flex-col items-center">
-                                <div className="relative w-16 h-16 mb-6 flex items-center justify-center">
-                                    <div className="absolute inset-0 border-4 border-purple-500/30 rounded-full"></div>
-                                    <div className="absolute inset-0 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-                                    <Send className="w-6 h-6 text-purple-500" />
-                                </div>
-                                <h3 className="text-xl font-bold text-white mb-2">Airdrop en Progreso</h3>
-                                <p className="text-zinc-400 text-sm">Confirmando transacción en la blockchain...</p>
-                            </div>
-                        )}
-
-                        {airdropStatus === 'success' && (
-                            <div className="flex flex-col items-center animate-in fade-in zoom-in duration-300">
-                                <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mb-6 border border-green-500/20 shadow-[0_0_15px_rgba(34,197,94,0.3)]">
-                                    <CheckCircle2 className="w-8 h-8 text-green-500" />
-                                </div>
-                                <h3 className="text-xl font-bold text-white mb-2">¡Pase Enviado!</h3>
-                                <p className="text-zinc-400 text-sm">El usuario ha recibido su Apply Pass correctamente.</p>
-                            </div>
-                        )}
-
-                        {airdropStatus === 'error' && (
-                            <div className="flex flex-col items-center animate-in shake duration-300">
-                                <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20">
-                                    <ShieldCheck className="w-8 h-8 text-red-500" />
-                                </div>
-                                <h3 className="text-xl font-bold text-white mb-2">Error al Enviar</h3>
-                                <p className="text-zinc-400 text-sm mb-4">No se pudo completar la transacción. Asegúrate de tener permisos y gas suficiente.</p>
+                            <DialogFooter className="flex justify-between sm:justify-between w-full">
+                                <Button variant="ghost" onClick={() => setShowAirdropModal(false)}>Cancelar</Button>
                                 <Button
-                                    variant="destructive"
-                                    onClick={() => setShowAirdropModal(false)}
-                                    className="w-full mt-2"
+                                    onClick={() => executeMint()}
+                                    disabled={!airdropAddress}
+                                    className="bg-lime-500 text-black hover:bg-lime-400"
                                 >
-                                    Cerrar
+                                    <Send className="w-4 h-4 mr-2" />
+                                    Enviar Pase
                                 </Button>
+                            </DialogFooter>
+                        </div>
+                    ) : null}
+
+                    {airdropStatus === 'minting' && (
+                        <div className="flex flex-col items-center py-8">
+                            <Loader2 className="w-12 h-12 text-purple-500 animate-spin mb-4" />
+                            <h3 className="text-xl font-bold text-white mb-2">Enviando Airdrop...</h3>
+                            <p className="text-zinc-400 text-sm">Confirmando transacción en la blockchain.</p>
+                        </div>
+                    )}
+
+                    {airdropStatus === 'success' && (
+                        <div className="flex flex-col items-center py-8">
+                            <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mb-6 border border-green-500/20">
+                                <CheckCircle2 className="w-8 h-8 text-green-500" />
                             </div>
-                        )}
-                    </div>
-                </div>
-            )}
+                            <h3 className="text-xl font-bold text-white mb-2">¡Pase Enviado!</h3>
+                            <p className="text-zinc-400 text-sm">El usuario ha recibido su Apply Pass correctamente.</p>
+                        </div>
+                    )}
+
+                    {airdropStatus === 'error' && (
+                        <div className="flex flex-col items-center py-8">
+                            <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20">
+                                <AlertTriangle className="w-8 h-8 text-red-500" />
+                            </div>
+                            <h3 className="text-xl font-bold text-white mb-2">Error al Enviar</h3>
+                            <p className="text-zinc-400 text-sm">No se pudo completar la transacción.</p>
+                            <Button variant="ghost" onClick={() => { setAirdropStatus('idle'); setShowAirdropModal(false); }} className="mt-4">
+                                Cerrar
+                            </Button>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            <CreateNFTPassModal isOpen={showCreateWizard} onClose={() => setShowCreateWizard(false)} />
         </div>
     );
 }

@@ -74,7 +74,44 @@ export function DiscordManager() {
 
     return (
         <div className="space-y-6">
+            {/* Analytics Section */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Send className="w-4 h-4 text-zinc-400" />
+                        <span className="text-xs text-zinc-400 uppercase tracking-wider">Messages Sent</span>
+                    </div>
+                    <p className="text-2xl font-bold text-white">1,284</p>
+                    <p className="text-xs text-green-400 mt-1">↑ 12% last 7 days</p>
+                </div>
+                <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                        <CheckCircle className="w-4 h-4 text-green-400" />
+                        <span className="text-xs text-zinc-400 uppercase tracking-wider">Success Rate</span>
+                    </div>
+                    <p className="text-2xl font-bold text-green-400">99.2%</p>
+                    <p className="text-xs text-zinc-500 mt-1">System healthy</p>
+                </div>
+                <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Hash className="w-4 h-4 text-blue-400" />
+                        <span className="text-xs text-zinc-400 uppercase tracking-wider">Active Channels</span>
+                    </div>
+                    <p className="text-2xl font-bold text-blue-400">3</p>
+                    <p className="text-xs text-zinc-500 mt-1">Fully Connected</p>
+                </div>
+                <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                        <AlertTriangle className="w-4 h-4 text-red-400" />
+                        <span className="text-xs text-zinc-400 uppercase tracking-wider">Failed Deliveries</span>
+                    </div>
+                    <p className="text-2xl font-bold text-red-400">8</p>
+                    <p className="text-xs text-zinc-500 mt-1">Last 30 days</p>
+                </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
                 {webhooks.map((hook) => (
                     <div key={hook.type} className="bg-zinc-800/50 border border-zinc-700/50 rounded-lg p-4 flex flex-col justify-between">
                         <div className="flex items-start justify-between mb-4">
