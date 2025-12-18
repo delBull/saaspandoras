@@ -48,6 +48,8 @@ if (!supportedChains[chainName as SupportedChainName]) {
 const governanceContractAddress = activeChainObject.id === base.id ? GOV_ADDRESS_PROD : GOV_ADDRESS_SEPOLIA;
 const governanceChain = activeChainObject.id === base.id ? base : sepolia;
 
+const applyPassNftAddress = process.env.NEXT_PUBLIC_APPLY_PASS_NFT_ADDRESS || "0xDBb729113F95C7Be1e6Aa976f5584ea0246e1cFE"; // Fallback to main NFT for now if not set
+
 // --- 5. Exporta la configuración final con tipos 100% seguros ---
 export const config = {
   chain: activeChainObject,
@@ -56,4 +58,5 @@ export const config = {
   governanceContractAddress: governanceContractAddress,
   governanceChain: governanceChain,
   superAdminAddress: superAdminAddress,
+  applyPassNftAddress: applyPassNftAddress,
 };
