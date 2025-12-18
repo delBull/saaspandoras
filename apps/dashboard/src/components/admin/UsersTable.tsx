@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import Image from 'next/image';
 import type { UserData, UserRole } from '@/types/admin';
+import { UserKeyStatus } from './UserKeyStatus';
 
 interface UsersTableProps {
   users: UserData[];
@@ -124,11 +125,10 @@ export function UsersTable({ users }: UsersTableProps) {
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setRoleFilter('all')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
-                roleFilter === 'all'
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${roleFilter === 'all'
                   ? 'bg-cyan-500 text-black shadow-lg'
                   : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600 hover:text-white'
-              }`}
+                }`}
             >
               Todos ({users.length})
             </button>
@@ -138,15 +138,13 @@ export function UsersTable({ users }: UsersTableProps) {
                 <button
                   key={role}
                   onClick={() => setRoleFilter(role)}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
-                    roleFilter === role
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${roleFilter === role
                       ? 'bg-cyan-500 text-black shadow-lg'
-                      : `${
-                          role === 'applicant' ? 'text-green-300 bg-green-500/10 border border-green-500/20 hover:bg-green-500/20' :
-                          role === 'pandorian' ? 'text-blue-300 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20' :
+                      : `${role === 'applicant' ? 'text-green-300 bg-green-500/10 border border-green-500/20 hover:bg-green-500/20' :
+                        role === 'pandorian' ? 'text-blue-300 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20' :
                           'text-red-300 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20'
-                        } bg-zinc-700 hover:bg-zinc-600`
-                  }`}
+                      } bg-zinc-700 hover:bg-zinc-600`
+                    }`}
                 >
                   {text} ({count})
                 </button>
@@ -225,13 +223,7 @@ export function UsersTable({ users }: UsersTableProps) {
                     {formatDate(user.lastConnectionAt)}
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      {user.hasPandorasKey ? (
-                        <span className="text-yellow-400 text-xs">✓ Sí</span>
-                      ) : (
-                        <span className="text-gray-500 text-xs">✗ No</span>
-                      )}
-                    </div>
+                    <UserKeyStatus walletAddress={user.walletAddress} />
                   </td>
                 </tr>
               );
