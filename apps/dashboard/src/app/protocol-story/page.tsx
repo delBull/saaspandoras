@@ -4,11 +4,9 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Check, X } from "lucide-react"; // Using Lucide icons for consistency
+import { ArrowRight, Check, X, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PreFilterModal } from "@/components/apply/PreFilterModal";
-// Assuming we can reuse the PreFilterModal or a similar mechanism for the application flow
-// If not, I will mock the interaction for now or reuse the one from /protocol
 
 // --- COMPONENTS ---
 
@@ -30,13 +28,39 @@ const Signature = () => (
     </div>
 );
 
+const FAQItem = ({ question, answer }: { question: string, answer: React.ReactNode }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+        <div className="border-b border-zinc-800">
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-full py-6 flex justify-between items-center text-left focus:outline-none group"
+            >
+                <span className="font-serif text-lg text-zinc-200 group-hover:text-lime-400 transition-colors pr-8">
+                    {question}
+                </span>
+                {isOpen ? <ChevronUp className="w-5 h-5 text-lime-500" /> : <ChevronDown className="w-5 h-5 text-zinc-600 group-hover:text-lime-500" />}
+            </button>
+            <motion.div
+                initial={false}
+                animate={{ height: isOpen ? "auto" : 0, opacity: isOpen ? 1 : 0 }}
+                transition={{ duration: 0.3 }}
+                className="overflow-hidden"
+            >
+                <div className="pb-8 text-zinc-400 font-sans leading-relaxed text-sm md:text-base border-l-2 border-lime-500/20 pl-6 ml-2">
+                    {answer}
+                </div>
+            </motion.div>
+        </div>
+    );
+};
+
 export default function ProtocolStoryPage() {
     const [showPreFilterModal, setShowPreFilterModal] = useState(false);
     const [selectedTier, setSelectedTier] = useState<string | null>(null);
 
     const openApplication = (tier: string) => {
         setSelectedTier(tier);
-        // In a real implementation, we might pass the tier to the modal context
         setShowPreFilterModal(true);
     };
 
@@ -51,6 +75,7 @@ export default function ProtocolStoryPage() {
                         alt="Chaos into Order"
                         fill
                         className="object-cover object-center opacity-60"
+                        priority
                     />
                     <div className="absolute inset-0 bg-gradient-to-b from-[#050505] via-[#050505]/80 to-[#050505]" />
                 </div>
@@ -65,106 +90,114 @@ export default function ProtocolStoryPage() {
                     <span className="text-xs font-mono text-lime-500/50">EST. 2024</span>
                 </header>
 
-                {/* --- TITLE --- */}
-                <section className="mb-32">
+                {/* --- TITLE (THE HOOK) --- */}
+                <section className="mb-24">
                     <FadeIn>
                         <h1 className="font-serif text-4xl md:text-6xl lg:text-7xl leading-[1.1] text-white tracking-tight mb-8">
                             La mentira de la <br />
-                            <span className="text-lime-500 italic">descentralización</span>.
+                            <span className="text-lime-500 italic">descentralización</span>
+                            <span className="block text-2xl md:text-3xl mt-4 text-zinc-500 font-normal">(y el cementerio de los $50,000 USD).</span>
                         </h1>
                     </FadeIn>
                     <FadeIn delay={0.2}>
                         <p className="text-lg md:text-xl leading-relaxed text-zinc-400 font-serif max-w-xl border-l-2 border-lime-500/30 pl-6 my-12">
-                            &quot;No necesitas un smart contract. Necesitas un sistema operativo económico.&quot;
+                            &quot;Tu Smart Contract no va a salvar tu negocio. De hecho, probablemente sea lo que lo mate.&quot;
                         </p>
                     </FadeIn>
                 </section>
 
-                {/* --- THE LETTER: PART 1 (THE STRUGGLE) --- */}
-                <article className="prose prose-invert prose-lg max-w-none font-serif text-zinc-300 space-y-12">
+                {/* --- THE STORY (VILLAIN: TECHNICAL COMPLEXITY) --- */}
+                <article className="prose prose-invert prose-lg max-w-none font-serif text-zinc-300 space-y-12 mb-32">
                     <FadeIn>
                         <p>
                             <span className="text-4xl float-left mr-3 mt-[-6px] text-white font-bold">H</span>
                             ola. Soy Pablo.
                         </p>
                         <p>
-                            Llevo años construyendo en esta industria. Y he visto la misma historia repetirse tantas veces que ha dejado de ser una tragedia para convertirse en una estadística.
+                            He estado en las trincheras de Web3 el tiempo suficiente para ver cómo proyectos con millones de dólares en financiamiento morían antes de lanzar su primer tweet.
                         </p>
                         <p>
-                            Un founder brillante tiene una visión. Quiere tokenizar una comunidad, un activo inmobiliario, o crear una DAO.
+                            ¿Sabes por qué? Porque cayeron en la <strong className="text-white">Trampa del Desarrollador.</strong>
                         </p>
                     </FadeIn>
 
                     <FadeIn>
-                        <h3 className="text-white font-sans text-xs tracking-widest uppercase mb-4 mt-16 font-bold text-red-400">El Error Común</h3>
                         <p>
-                            Lo primero que hace es buscar un desarrollador. <br />
-                            <em className="text-zinc-500">&quot;¿Cuánto me cobras por un token?&quot;</em>
+                            Esa trampa donde crees que el código es el producto. Contratas a un experto en Solidity, le pagas una fortuna por un contrato &quot;único&quot;, y cuando finalmente tienes el token en la mainnet, te das cuenta de que tienes un Ferrari sin motor, sin gasolina y sin carreteras.
                         </p>
                         <p>
-                            El desarrollador dice: &quot;$5,000 USD y 3 meses&quot;. <br />
-                            El founder paga. Espera. Suda.
-                        </p>
-                        <p>
-                            Seis meses después (porque siempre son seis), recibe un contrato desplegado en Etherscan. Y entonces se da cuenta de la brutal verdad:
+                            Tienes un token, sí. Pero no tienes cómo pagar a tus contribuidores, no tienes cómo votar propuestas de forma eficiente y no tienes una forma de que el dinero fluya de forma legal y transparente.
                         </p>
                         <p className="text-white text-xl border-l border-white pl-4 italic">
-                            Un token sin un sistema económico es solo un número en una base de datos.
+                            Tenías una visión de futuro, pero terminaste con una deuda técnica del pasado.
                         </p>
                     </FadeIn>
-
-                    {/* --- VISUAL BREAK --- */}
-                    <div className="my-24 h-px w-full bg-gradient-to-r from-transparent via-lime-900/50 to-transparent" />
-
-                    {/* --- THE SHIFT (SOLUTION) --- */}
-                    <FadeIn>
-                        <h2 className="font-sans text-2xl md:text-3xl font-bold text-white mb-8">
-                            El código es un <i>commodity</i>. <br />
-                            <span className="text-lime-400">La ejecución es el arte.</span>
-                        </h2>
-                        <p>
-                            Dejé de construir DAOs &quot;a medida&quot; porque entendí que estábamos reinventando la rueda cuadrada.
-                        </p>
-                        <p>
-                            Pandora no es un software que te &quot;ayuda&quot;. <br />
-                            Es la infraestructura completa que hubieras tardado 8 meses y $80,000 USD en construir mal.
-                        </p>
-                        <p>
-                            Es un <strong>Sistema Operativo Económico</strong>.
-                        </p>
-                    </FadeIn>
-
-                    <FadeIn className="grid grid-cols-1 md:grid-cols-2 gap-8 my-16 font-sans text-sm">
-                        <div className="bg-zinc-900/30 p-6 border border-zinc-800 backdrop-blur-sm">
-                            <h4 className="text-gray-500 uppercase tracking-widest text-xs mb-2">Lo que crees que necesitas</h4>
-                            <ul className="space-y-2 text-zinc-400">
-                                <li className="flex gap-2"><X className="w-4 h-4 text-red-500" /> Un developer Solidity</li>
-                                <li className="flex gap-2"><X className="w-4 h-4 text-red-500" /> Una auditoría de $10k</li>
-                                <li className="flex gap-2"><X className="w-4 h-4 text-red-500" /> Un whitepaper de 40 páginas</li>
-                            </ul>
-                        </div>
-                        <div className="bg-lime-900/10 p-6 border border-lime-500/20 backdrop-blur-sm">
-                            <h4 className="text-lime-500 uppercase tracking-widest text-xs mb-2">Lo que realmente necesitas</h4>
-                            <ul className="space-y-2 text-zinc-200">
-                                <li className="flex gap-2"><Check className="w-4 h-4 text-lime-500" /> Gobernanza lista para usar</li>
-                                <li className="flex gap-2"><Check className="w-4 h-4 text-lime-500" /> Work-to-Earn activo</li>
-                                <li className="flex gap-2"><Check className="w-4 h-4 text-lime-500" /> Cashflow desde el Día 1</li>
-                            </ul>
-                        </div>
-                    </FadeIn>
-
-                    {/* --- THE OFFER (NARRATIVE) --- */}
-                    <FadeIn>
-                        <p className="mb-12">
-                            No vendo software barato. Vendo velocidad y certeza. <br />
-                            He diseñado tres caminos para trabajar juntos. Elige el que resuene con tu nivel de ambición.
-                        </p>
-                    </FadeIn>
-
                 </article>
 
+                {/* --- VISUAL BREAK --- */}
+                <div className="my-24 h-px w-full bg-gradient-to-r from-transparent via-lime-900/50 to-transparent" />
+
+                {/* --- THE SHIFT (SOLUTION) --- */}
+                <section className="mb-32">
+                    <FadeIn>
+                        <h2 className="font-sans text-2xl md:text-3xl font-bold text-white mb-8">
+                            Dejé de construir DAOs &quot;a medida&quot; porque <span className="text-lime-400">me cansé de ver founders agotados.</span>
+                        </h2>
+                        <p className="font-serif text-zinc-400 text-lg mb-6">
+                            Entendí que estábamos intentando construir una ciudad diseñando cada ladrillo desde cero. Es ineficiente. Es caro. Es lento.
+                        </p>
+                        <p className="font-serif text-lg mb-12">
+                            <strong className="text-white">Pandora no es un software. Es un Sistema Operativo Económico.</strong>
+                        </p>
+
+                        <div className="bg-zinc-900/30 p-8 border-l-4 border-lime-500 backdrop-blur-sm mb-12">
+                            <p className="font-serif text-zinc-300 italic mb-4">&quot;Imagina que quieres abrir un restaurante. Tienes dos opciones:&quot;</p>
+                            <ol className="list-decimal pl-5 space-y-2 font-sans text-sm md:text-base text-zinc-400">
+                                <li>Metalurgias para fabricar tus propios hornos y cubiertos <span className="text-red-400">(El camino tradicional Web3)</span>.</li>
+                                <li>Una cocina industrial de última generación lista para que empieces a cocinar hoy mismo <span className="text-lime-400">(Pandora)</span>.</li>
+                            </ol>
+                        </div>
+                    </FadeIn>
+
+                    {/* --- THE CONTRAST TABLE --- */}
+                    <FadeIn className="overflow-hidden border border-zinc-800 rounded-lg bg-[#0A0A0A]">
+                        <div className="grid grid-cols-2 text-xs md:text-sm">
+                            {/* Header */}
+                            <div className="bg-zinc-900/50 p-4 border-b border-r border-zinc-800 font-bold text-zinc-500 uppercase tracking-wider">El Camino Tradicional <br /><span className="text-[10px] text-red-500/80 font-normal normal-case">(Lento y Caro)</span></div>
+                            <div className="bg-lime-900/20 p-4 border-b border-zinc-800 font-bold text-lime-500 uppercase tracking-wider">El Camino Pandora <br /><span className="text-[10px] text-lime-400/80 font-normal normal-case">(Veloz y Cierto)</span></div>
+
+                            {/* Row 1 */}
+                            <div className="p-4 border-b border-r border-zinc-800 text-zinc-400">6-8 meses de desarrollo de Smart Contracts.</div>
+                            <div className="p-4 border-b border-zinc-800 text-white font-medium bg-lime-500/5">Despliegue en 72 horas.</div>
+
+                            {/* Row 2 */}
+                            <div className="p-4 border-b border-r border-zinc-800 text-zinc-400">$20k - $50k en salarios de devs y auditorías.</div>
+                            <div className="p-4 border-b border-zinc-800 text-white font-medium bg-lime-500/5">Fracción del costo con tecnología probada.</div>
+
+                            {/* Row 3 */}
+                            <div className="p-4 border-b border-r border-zinc-800 text-zinc-400">Caos administrativo y Excel para pagos.</div>
+                            <div className="p-4 border-b border-zinc-800 text-white font-medium bg-lime-500/5">Gobernanza y Work-to-Earn automatizado.</div>
+
+                            {/* Row 4 */}
+                            <div className="p-4 border-r border-zinc-800 text-zinc-400">El token es un gasto.</div>
+                            <div className="p-4 text-white font-medium bg-lime-500/5">El sistema es un generador de Cashflow.</div>
+                        </div>
+                    </FadeIn>
+                </section>
+
+                {/* --- THE OFFER INTRO --- */}
+                <FadeIn className="mb-16">
+                    <h2 className="font-serif text-3xl font-medium text-white mb-6">
+                        No vendo software. <br />
+                        Vendo el fin de tu <span className="text-lime-500">parálisis técnica</span>.
+                    </h2>
+                    <p className="font-serif text-zinc-400">
+                        He diseñado tres niveles de ambición. No busco clientes, busco economías que merezcan ser escaladas.
+                    </p>
+                </FadeIn>
+
                 {/* --- CARDS SECTION (Offers) --- */}
-                <section className="grid grid-cols-1 gap-8 mt-12 mb-24">
+                <section className="grid grid-cols-1 gap-8 mb-32">
 
                     {/* TIER 1 */}
                     <FadeIn delay={0.1} className="group relative border border-zinc-800 bg-[#0A0A0A] p-8 hover:border-zinc-600 transition-all duration-500">
@@ -188,26 +221,30 @@ export default function ProtocolStoryPage() {
                         </button>
                     </FadeIn>
 
-                    {/* TIER 2 - HIGHLIGHTED */}
+                    {/* TIER 2 - OPTIMIZED */}
                     <FadeIn delay={0.2} className="group relative border border-lime-500/30 bg-[#0C0C0C] p-10 ring-1 ring-lime-500/10 hover:ring-lime-500/30 transition-all duration-500 shadow-2xl shadow-lime-900/10">
                         <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-40 transition-opacity">
                             <span className="text-6xl font-serif font-bold text-lime-900">02</span>
                         </div>
                         <div className="absolute -top-3 left-10 px-3 py-1 bg-lime-500 text-black text-[10px] uppercase font-bold tracking-widest">
-                            Recomendado
+                            El Salto Cuántico
                         </div>
                         <h3 className="text-xl font-sans font-bold text-white mb-2">Partner de Crecimiento</h3>
-                        <p className="text-lime-400 text-sm mb-6 font-serif italic">&quot;Quiero un copiloto que sepa la ruta.&quot;</p>
+                        <p className="text-lime-400 text-sm mb-6 font-serif italic">&quot;No quiero un proveedor, quiero un socio de infraestructura.&quot;</p>
                         <div className="space-y-4 mb-8 text-zinc-400 text-sm">
                             <p>
-                                Aquí compartimos riesgo. <br />
-                                Bajo el costo de entrada porque confío en que vamos a facturar. Te doy las herramientas de venta, el CRM y estrategia semanal.
+                                Este es el camino para quienes ya tienen tracción o una comunidad real. Aquí yo absorbo parte del riesgo porque sé que el sistema funciona.
                             </p>
-                            <p className="text-white">Si tú no ganas, yo no gano.</p>
+                            <p className="text-white">
+                                Te entrego el CRM Web3, el motor de ventas y mi estrategia de Go-to-Market.
+                            </p>
                         </div>
                         <div className="flex items-baseline gap-2 mb-6">
                             <span className="text-2xl text-white font-bold">$4,500</span>
                             <span className="text-xs text-zinc-500">setup + 10% revenue</span>
+                        </div>
+                        <div className="text-[10px] text-lime-500/70 uppercase tracking-widest mb-6 border-l border-lime-500/30 pl-2">
+                            Solo para proyectos con validación previa
                         </div>
                         <button
                             onClick={() => openApplication('tier-2')}
@@ -242,13 +279,91 @@ export default function ProtocolStoryPage() {
 
                 </section>
 
-                {/* --- CLOSING --- */}
-                <section className="text-center md:text-left mb-32">
+                {/* --- KILLER FAQS --- */}
+                <section className="mb-32">
                     <FadeIn>
-                        <p className="font-serif text-lg text-zinc-400 mb-8 italic">
-                            &quot;Si estás listo para dejar de jugar a la startup y empezar a operar una economía real, te espero dentro.&quot;
+                        <h2 className="font-serif text-3xl text-white mb-12 border-b border-zinc-800 pb-6">
+                            Preguntas Incómodas <br />
+                            <span className="text-zinc-500 text-xl">(Que nadie más te responde)</span>
+                        </h2>
+                    </FadeIn>
+                    <div className="space-y-2">
+                        <FadeIn delay={0.1}>
+                            <FAQItem
+                                question="¿Y si la regulación cambia mañana? ¿Es esto legal?"
+                                answer={
+                                    <>
+                                        <p className="mb-4 text-white font-bold">La tecnología es neutral; la implementación es la clave.</p>
+                                        <p className="mb-4">La mayoría de los proyectos fallan legalmente no por el token, sino porque no tienen un &quot;Espejo Legal&quot; en el mundo real.</p>
+                                        <p>Pandora no es solo código. Nuestros sistemas están diseñados para integrarse con estructuras de <strong>&quot;Legal Wrappers&quot; (SPVs, Fideicomisos, LLCs)</strong>. Te damos la infraestructura técnica para que tus abogados puedan conectar activos reales (Inmuebles, Facturas, Equity) a la Blockchain sin que parezca un esquema Ponzi. No vendemos consejos legales, vendemos la herramienta que los equipos legales <em>aman</em> usar porque todo es trazable.</p>
+                                    </>
+                                }
+                            />
+                        </FadeIn>
+                        <FadeIn delay={0.2}>
+                            <FAQItem
+                                question="¿Por qué debería confiar en tu sistema en lugar de tener mi propio código?"
+                                answer={
+                                    <>
+                                        <p className="mb-4 text-white font-bold">Porque el &quot;código propio&quot; es el más inseguro de todos.</p>
+                                        <p className="mb-4">Cuando contratas a un desarrollador para que haga algo desde cero, eres el conejillo de indias. Nadie ha probado ese código antes.</p>
+                                        <p>Pandora es un estándar. Nuestros contratos han procesado transacciones y gobernanza repetidamente. Al usar nuestro sistema operativo, te beneficias de la seguridad colectiva. No estás pagando por un experimento, estás pagando por una infraestructura blindada que ya ha cometido los errores por ti.</p>
+                                    </>
+                                }
+                            />
+                        </FadeIn>
+                        <FadeIn delay={0.3}>
+                            <FAQItem
+                                question="¿Si uso Pandora, pierdo el control de mi proyecto?"
+                                answer={
+                                    <>
+                                        <p className="mb-4 text-white font-bold">Al contrario. Por fin tomas el control.</p>
+                                        <p className="mb-4">Ahora mismo, si tu desarrollador desaparece, tu proyecto muere. Eso es perder el control.</p>
+                                        <p>Con Pandora, tú tienes las llaves. Eres dueño de la configuración, de la tesorería y de la comunidad. Nosotros somos el motor, pero tú eres el conductor. Si mañana decides migrar, la Blockchain es pública y los datos son tuyos. No te encadenamos con contratos, te retenemos con resultados.</p>
+                                    </>
+                                }
+                            />
+                        </FadeIn>
+                        <FadeIn delay={0.4}>
+                            <FAQItem
+                                question="¿No es mejor pagar una sola vez a un desarrollador que un fee mensual o revenue share?"
+                                answer={
+                                    <>
+                                        <p className="mb-4 text-white font-bold">Esa mentalidad es la razón por la que el 90% de las Startups Web3 quiebran en 6 meses.</p>
+                                        <p className="mb-4">Un desarrollador freelance cobra y se va. Su incentivo es terminar rápido, no que tú factures.</p>
+                                        <p>Nuestro modelo de <strong>Partner de Crecimiento (Tier 2)</strong> alinea mis intereses con los tuyos. Si tú no facturas, yo no gano. Si el sistema se cae, yo pierdo. ¿Prefieres pagar $5,000 USD una vez por algo que nadie mantendrá, o compartir el éxito con un socio tecnológico que necesita que ganes dinero?</p>
+                                    </>
+                                }
+                            />
+                        </FadeIn>
+                    </div>
+                </section>
+
+                {/* --- CLOSING / FINAL CTA --- */}
+                <section className="text-center md:text-left mb-32 relative">
+                    <div className="absolute -left-10 -top-10 w-32 h-32 bg-lime-500/10 rounded-full blur-3xl pointer-events-none" />
+                    <FadeIn>
+                        <h2 className="font-serif text-4xl text-white mb-8">
+                            La duda es el asesino de la oportunidad.
+                        </h2>
+                        <p className="font-serif text-lg text-zinc-400 mb-12 italic leading-relaxed max-w-xl">
+                            &quot;Mientras tú piensas si necesitas un Whitepaper de 40 páginas, alguien más ya está usando Pandora para lanzar el modelo de negocio que tú imaginaste.&quot;
                         </p>
-                        <Signature />
+
+                        <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-lg max-w-xl">
+                            <p className="font-sans text-sm text-zinc-400 mb-6 font-bold uppercase tracking-wider">Tienes dos opciones:</p>
+                            <ul className="space-y-3 mb-8 text-zinc-300 font-serif">
+                                <li className="flex gap-3"><X className="w-5 h-5 text-zinc-600" /> Seguir buscando al &quot;desarrollador perfecto&quot; en LinkedIn.</li>
+                                <li className="flex gap-3"><Check className="w-5 h-5 text-lime-500" /> Agendar una llamada y ver cómo se ve tu economía funcionando en tiempo real.</li>
+                            </ul>
+                            <button
+                                onClick={() => openApplication('general')}
+                                className="w-full bg-white text-black font-bold py-4 text-sm uppercase tracking-[0.2em] hover:bg-lime-400 transition-colors shadow-2xl shadow-white/5"
+                            >
+                                Aplicar Ahora
+                            </button>
+                            <p className="text-center text-xs text-zinc-600 mt-4">Sin compromisos. Solo estrategia.</p>
+                        </div>
                     </FadeIn>
                 </section>
 
@@ -277,4 +392,3 @@ export default function ProtocolStoryPage() {
         </div>
     );
 }
-
