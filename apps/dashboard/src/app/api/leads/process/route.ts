@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import { db } from "~/db";
-import { projects } from "@/db/schema";
+import { projects, whatsappPreapplyLeads } from "@/db/schema";
 import { sql } from "drizzle-orm";
 // import ProtocolApplicationEmail from '@/emails/protocol-application'; // Dynamic import used instead
 import { sendWhatsAppMessage } from '@/lib/whatsapp/utils/client';
@@ -115,96 +115,127 @@ export async function POST(request: Request) {
             });
             console.log('✅ Lead saved to DB');
         } catch (dbError) {
-            console.error('❌ Failed to save lead to DB:', dbError);
-            // Continue execution - notifications are critical
+            console.error('⚠️ DB Error (Non-fatal):', dbError);
         }
 
-        // 3. Send Email
-        if (RESEND_API_KEY && contactEmail) {
-            try {
-                const { render } = await import('@react-email/render');
-                const ProtocolApplicationEmail = (await import('@/emails/protocol-application')).default;
-
-                const html = await render(ProtocolApplicationEmail({ name: contactHandle || 'Futuro Creador' }));
-
-                await fetch('https://api.resend.com/emails', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${RESEND_API_KEY}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        from: FROM_EMAIL,
-                        to: [contactEmail],
-                        subject: 'Gracias por aplicar a Pandora’s W2E — paso siguiente',
-                        html: html,
-                    }),
-                });
-                console.log('📧 Email sent successfully');
-            } catch (emailError) {
-                console.error('❌ Failed to send email:', emailError);
-            }
-        }
-
-        // 3.1 Notify Discord (Async, verify logic inside utility)
         try {
-            const { notifyNewLead } = await import('@/lib/discord');
-            // Notify without awaiting to prevent blocking
-            notifyNewLead(
-                projectName,
-                contactEmail || 'No Email',
-                score,
-                suggestedPackage,
-                fullDescription
-            ).catch(err => console.error('Discord Error:', err));
-            console.log('👾 Discord notification sent');
-        } catch (discordError) {
-            console.error('❌ Failed to send Discord:', discordError);
-        }
+            // 3. Send Email
+            if (RESEND_API_KEY && contactEmail) {
+                try {
+                    const { render } = await import('@react-email/render');
+                    const ProtocolApplicationEmail = (await import('@/emails/protocol-application')).default;
 
-        // 4. Trigger WhatsApp Flow (Step 1: Welcome)
-        // We assume contactHandle might be a phone number. We strip non-numeric chars.
-        // In a real app we'd validate this rigorously.
-        const phone = contactHandle?.replace(/\D/g, '');
+                    const html = await render(ProtocolApplicationEmail({ name: contactHandle || 'Futuro Creador' }));
 
-        if (phone && phone.length >= 10) {
+                    await fetch('https://api.resend.com/emails', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${RESEND_API_KEY}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            from: FROM_EMAIL,
+                            to: [contactEmail],
+                            subject: 'Gracias por aplicar a Pandora’s W2E — paso siguiente',
+                            html: html,
+                        }),
+                    });
+                    console.log('📧 Email sent successfully');
+                } catch (emailError) {
+                    console.error('❌ Failed to send email:', emailError);
+                }
+            }
+
+            // 3.1 Notify Discord (Async, verify logic inside utility)
             try {
-                // Initialize Session in DB for 'protocol_application' flow
-                // This ensures the next reply is routed correctly
-                await db.execute(sql`
+                const { notifyNewLead } = await import('@/lib/discord');
+                // Notify without awaiting to prevent blocking
+                notifyNewLead(
+                    projectName,
+                    contactEmail || 'No Email',
+                    score,
+                    suggestedPackage,
+                    fullDescription
+                ).catch(err => console.error('Discord Error:', err));
+                console.log('👾 Discord notification sent');
+            } catch (discordError) {
+                console.error('❌ Failed to send Discord:', discordError);
+            }
+
+            // 4. Trigger WhatsApp Flow (Step 1: Welcome)
+            // We assume contactHandle might be a phone number. We strip non-numeric chars.
+            // In a real app we'd validate this rigorously.
+            const phone = contactHandle?.replace(/\D/g, '');
+
+            if (phone && phone.length >= 10) {
+                try {
+                    // Initialize Session in DB for 'protocol_application' flow
+                    // This ensures the next reply is routed correctly
+                    await db.execute(sql`
                     INSERT INTO whatsapp_users (phone, name, priority_level)
                     VALUES (${phone}, ${projectName || 'Lead'}, 'normal')
                     ON CONFLICT (phone) DO UPDATE SET name = ${projectName || 'Lead'};
                 `);
 
-                // Get User ID
-                const userResult = await db.execute(sql`SELECT id FROM whatsapp_users WHERE phone = ${phone}`);
-                const user = userResult[0] as any;
+                    // Get User ID
+                    const userResult = await db.execute(sql`SELECT id FROM whatsapp_users WHERE phone = ${phone}`);
+                    const user = userResult[0] as any;
 
-                if (user) {
-                    // Set Active Session to 'protocol_application'
-                    await db.execute(sql`
+                    if (user) {
+                        // Set Active Session to 'protocol_application'
+                        await db.execute(sql`
                         INSERT INTO whatsapp_sessions (user_id, flow_type, state, current_step, is_active)
                         VALUES (${user.id}, 'protocol_application', '{}'::jsonb, 1, true)
                         ON CONFLICT (user_id, flow_type)
                         DO UPDATE SET is_active = true, current_step = 1, updated_at = now();
                     `);
 
-                    // Disable other sessions
-                    await db.execute(sql`
+                        // Disable other sessions
+                        await db.execute(sql`
                         UPDATE whatsapp_sessions SET is_active = false 
                         WHERE user_id = ${user.id} AND flow_type != 'protocol_application';
                     `);
 
-                    // Send Welcome Message
-                    const welcomeMsg = `Hola ${contactHandle || ''} 👋 ¡Gracias por aplicar a Pandora’s W2E!\n¿Puedo confirmarte tu nombre completo y el nombre del proyecto?\n\nResponde con 'Sí'.`;
-                    await sendWhatsAppMessage(phone, welcomeMsg);
-                    console.log('📱 WhatsApp welcome sent');
-                }
+                        // Send Welcome Message
+                        const welcomeMsg = `Hola ${contactHandle || ''} 👋 ¡Gracias por aplicar a Pandora’s W2E!\n¿Puedo confirmarte tu nombre completo y el nombre del proyecto?\n\nResponde con 'Sí'.`;
+                        await sendWhatsAppMessage(phone, welcomeMsg);
+                        console.log('📱 WhatsApp welcome sent');
+                    }
 
-            } catch (waError) {
-                console.error('❌ Failed to trigger WhatsApp:', waError);
+                    // Sync with Marketing Engine (WhatsApp Leads Table)
+                    try {
+                        await db.insert(whatsappPreapplyLeads).values({
+                            userPhone: phone,
+                            applicantName: projectName || 'Lead',
+                            applicantEmail: contactEmail,
+                            status: 'pending',
+                            answers: {
+                                projectDescription: fullDescription,
+                                source: 'protocol_landing',
+                                rawStats: { score, suggestedPackage }
+                            }
+                        }).onConflictDoUpdate({
+                            target: whatsappPreapplyLeads.userPhone,
+                            set: {
+                                updatedAt: new Date(),
+                                answers: sql`jsonb_set(
+                                jsonb_set(whatsapp_preapply_leads.answers, '{projectDescription}', ${JSON.stringify(fullDescription)}::jsonb),
+                                '{source}', '"protocol_landing"'::jsonb
+                            )`
+                            }
+                        });
+                        console.log('✅ Lead synced to Marketing Engine (whatsappPreapplyLeads)');
+                    } catch (marketingError) {
+                        console.error('❌ Failed to sync lead to Marketing DB:', marketingError);
+                    }
+
+                } catch (waError) {
+                    console.error('❌ Failed to trigger WhatsApp:', waError);
+                }
             }
+
+        } catch (nonFatalError) {
+            console.error('⚠️ Non-fatal workflow error:', nonFatalError);
         }
 
         return NextResponse.json({ success: true, score, suggestedPackage });
