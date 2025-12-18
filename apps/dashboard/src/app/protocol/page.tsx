@@ -464,7 +464,7 @@ function ProtocolContent() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
 
-    const openWhatsApp = (plan: string = 'General') => {
+    const openWhatsApp = (plan = 'General') => {
         // En un futuro aqui va el flujo especifico. Por ahora link directo.
         const message = encodeURIComponent(`Hola, estoy interesado en aplicar para lanzar un protocolo (${plan}). Tengo capital y proyecto listo.`);
         window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, '_blank');
@@ -576,6 +576,7 @@ function ProtocolContent() {
             <a
                 href={WHATSAPP_LINK}
                 target="_blank"
+                rel="noopener noreferrer"
                 className="fixed bottom-6 right-6 z-40 bg-[#25D366] hover:bg-[#20bd5a] text-white p-4 rounded-full shadow-lg transition-transform hover:scale-110"
                 onClick={() => trackEvent('protocol_floating', 'click', 'whatsapp')}
             >
