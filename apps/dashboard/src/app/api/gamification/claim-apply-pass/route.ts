@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { users, achievements, userAchievements, gamificationProfiles, userPoints } from "@/db/schema";
 import { eq, and } from "drizzle-orm";

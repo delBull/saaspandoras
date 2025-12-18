@@ -12,7 +12,6 @@ interface AutoLoginGateProps {
 }
 
 export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGateProps) {
-  // @ts-ignore
   const { account, canAutoReconnect, isBootstrapped, savedWalletAddress, isConnecting } = usePersistedAccount();
   const router = useRouter();
   const pathname = usePathname();
