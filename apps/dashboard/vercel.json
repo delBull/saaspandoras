@@ -2,5 +2,11 @@
   "buildCommand": "bun run build",
   "installCommand": "bun install",
   "framework": "nextjs",
-  "ignoreCommand": "git diff --name-only $(git merge-base HEAD origin/main) HEAD | grep -q '^apps/dashboard/'"
+  "ignoreCommand": "git diff --name-only $(git merge-base HEAD origin/main) HEAD | grep -q '^apps/dashboard/'",
+  "crons": [
+    {
+      "path": "/api/cron/marketing",
+      "schedule": "0 10 * * *"
+    }
+  ]
 }
