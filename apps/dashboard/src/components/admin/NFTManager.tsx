@@ -199,6 +199,13 @@ export function NFTManager() {
                     {loadingSettings ? <Loader2 className="animate-spin" /> : (
                         <div
                             onClick={handleToggleGate}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    handleToggleGate();
+                                }
+                            }}
+                            role="button"
+                            tabIndex={0}
                             className={`w-14 h-7 rounded-full p-1 cursor-pointer transition-colors duration-300 ${nftGateEnabled ? "bg-lime-500" : "bg-zinc-600"}`}
                         >
                             <div className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-300 ${nftGateEnabled ? "translate-x-7" : "translate-x-0"}`} />
