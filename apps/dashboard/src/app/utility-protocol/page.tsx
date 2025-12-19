@@ -19,52 +19,52 @@ import {
 
 // Componentes de Referencia (Simulados, debes adaptarlos o importarlos)
 const ModernBackground = ({ children }: { children?: React.ReactNode }) => (
-    <div className="absolute inset-0 z-0 overflow-hidden bg-gradient-to-br from-zinc-950 via-zinc-900 to-black">
-        {/* Simulación del fondo abstracto/moderno */}
-        <div className="absolute top-0 left-0 w-full h-full opacity-10" style={{
-            backgroundImage: 'radial-gradient(circle at 100% 100%, #4F46E5, transparent), radial-gradient(circle at 0% 0%, #06B6D4, transparent)',
-        }}></div>
-        {children}
-    </div>
+  <div className="absolute inset-0 z-0 overflow-hidden bg-gradient-to-br from-zinc-950 via-zinc-900 to-black">
+    {/* Simulación del fondo abstracto/moderno */}
+    <div className="absolute top-0 left-0 w-full h-full opacity-10" style={{
+      backgroundImage: 'radial-gradient(circle at 100% 100%, #4F46E5, transparent), radial-gradient(circle at 0% 0%, #06B6D4, transparent)',
+    }}></div>
+    {children}
+  </div>
 );
 const GlassCard = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
-    <div className={"bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-6 transition-all hover:border-blue-400/50 " + className}>
-        {children}
-    </div>
+  <div className={"bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-6 transition-all hover:border-blue-400/50 " + className}>
+    {children}
+  </div>
 );
 const Button = ({ children, size = 'lg', variant = 'primary', className = '', onClick, type = 'button', disabled = false }: any) => {
-    let baseStyle = "font-bold rounded-full transition-all duration-300 shadow-lg ";
-    const sizeStyle = size === 'lg' ? "px-8 py-3 text-lg" : "px-6 py-2 text-md";
+  let baseStyle = "font-bold rounded-full transition-all duration-300 shadow-lg ";
+  const sizeStyle = size === 'lg' ? "px-8 py-3 text-lg" : "px-6 py-2 text-md";
 
-    if (variant === 'primary' || className.includes('bg-gradient')) {
-        baseStyle += "text-white " + className;
-    } else if (variant === 'ghost') {
-        baseStyle += "text-white border border-zinc-700 hover:bg-zinc-800 " + className;
-    } else if (variant === 'outline') {
-        baseStyle += "text-white border border-blue-500 hover:bg-blue-500/20 " + className;
-    } else {
-        baseStyle += className;
-    }
+  if (variant === 'primary' || className.includes('bg-gradient')) {
+    baseStyle += "text-white " + className;
+  } else if (variant === 'ghost') {
+    baseStyle += "text-white border border-zinc-700 hover:bg-zinc-800 " + className;
+  } else if (variant === 'outline') {
+    baseStyle += "text-white border border-blue-500 hover:bg-blue-500/20 " + className;
+  } else {
+    baseStyle += className;
+  }
 
-    return (
-        <button type={type} className={`${baseStyle} ${sizeStyle} disabled:opacity-50`} onClick={onClick} disabled={disabled}>
-            {children}
-        </button>
-    );
+  return (
+    <button type={type} className={`${baseStyle} ${sizeStyle} disabled:opacity-50`} onClick={onClick} disabled={disabled}>
+      {children}
+    </button>
+  );
 };
 const TypewriterText = ({ text, delay, speed, className }: any) => (
-    <p className={className}>{text}</p>
+  <p className={className}>{text}</p>
 );
 const StaggerText = ({ text, className, delay, as = 'span' }: any) => {
-    const Component = as === 'h1' ? 'h1' : 'span';
-    return <Component className={className}>{text}</Component>;
+  const Component = as === 'h1' ? 'h1' : 'span';
+  return <Component className={className}>{text}</Component>;
 };
 const QuestionIcon = () => (
-    <svg className="w-6 h-6 text-yellow-400" viewBox="0 0 24 24" fill="none">
-        <path d="M12 18h.01" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M9.09 9a3 3 0 115.82 0c0 2.2-3 2.8-3 4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
+  <svg className="w-6 h-6 text-yellow-400" viewBox="0 0 24 24" fill="none">
+    <path d="M12 18h.01" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M9.09 9a3 3 0 115.82 0c0 2.2-3 2.8-3 4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
 );
 
 // Componentes importados para el sistema completo
@@ -98,15 +98,15 @@ function Hero({ onMethodSelect }: { onMethodSelect: (method: 'email' | 'whatsapp
         </div>
 
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-tight mb-6">
-          <StaggerText text="Arquitectura de Utilidad Funcional" className="block" delay={0.4} as="span" />
+          <StaggerText text="La mayoría de los protocolos no fallan por falta de capital." className="block" delay={0.4} as="span" />
           <span className="block text-2xl md:text-3xl text-zinc-300 mt-3">
-            Lanza tu protocolo, integrando lógica Work-to-Earn (W2E) verificable.
+            <span className="text-blue-400">FALLAN</span> porque su utilidad nunca fue clara.
           </span>
         </h1>
 
         <div className="max-w-3xl mx-auto mt-4">
           <TypewriterText
-            text="Confirmamos la viabilidad y estructura de tu Creación en 8 preguntas clave. Si pasas, tu Protocolo entra en Fuzz Testing y Arquitectura."
+            text="Work-to-Earn es una palabra bonita. Pero si no puedes explicarla en pasos medibles, tu protocolo ya está muerto."
             delay={1}
             speed={50}
             className="text-lg text-zinc-300"
@@ -140,16 +140,16 @@ function UtilityFocusBlock({ onMethodSelect }: { onMethodSelect: (method: 'email
       <div className="max-w-5xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
         <GlassCard>
           <div className="space-y-4">
-            <h3 className="text-2xl font-bold">La Arquitectura es la Utilidad</h3>
+            <h3 className="text-2xl font-bold">El problema que nadie quiere aceptar</h3>
             <p className="text-zinc-300 leading-relaxed">
-              Tu proyecto tiene valor. Nosotros lo convertimos en un <strong>Protocolo Inmutable</strong>. La base de Pandora's es el <strong>Loom Protocol</strong> (Motor W2E) que teje la <strong>Labor</strong> del usuario con las <strong>Recompensas</strong>, asegurando valor medible.
+              Cada semana vemos lo mismo: Whitepapers extensos, Tokens bien diseñados, Comunidades entusiasmadas... y una pregunta que nadie puede responder:
             </p>
-
-            <ul className="mt-4 space-y-2 text-sm text-zinc-400">
-              <li className="flex items-start gap-3"><CheckCircle className="w-4 h-4 text-green-400 mt-1" />Mecanismos de Labor (W2E) Verificables</li>
-              <li className="flex items-start gap-3"><CheckCircle className="w-4 h-4 text-green-400 mt-1" />Diseño de Tesorería Modular (Dual-Treasury)</li>
-              <li className="flex items-start gap-3"><CheckCircle className="w-4 h-4 text-green-400 mt-1" />Fuzz Testing y Auditoría Continua</li>
-            </ul>
+            <p className="text-white font-bold text-lg border-l-2 border-blue-500 pl-4 py-2 bg-blue-500/10">
+              ¿Qué acción exacta hace el usuario… y por qué merece una recompensa?
+            </p>
+            <p className="text-zinc-400 text-sm">
+              Cuando esa respuesta es ambigua, el protocolo colapsa. La tesorería se diluye y el riesgo legal se multiplica.
+            </p>
           </div>
         </GlassCard>
 
@@ -158,18 +158,19 @@ function UtilityFocusBlock({ onMethodSelect }: { onMethodSelect: (method: 'email
             <div className="flex items-center gap-4 mb-4">
               <Lightbulb className="w-8 h-8 text-yellow-400" />
               <div>
-                <h4 className="text-lg font-semibold">El Costo de la Ambigüedad</h4>
-                <p className="text-sm text-zinc-400">Si el W2E no es claro, tu Protocolo colapsará. Evita la deuda técnica.</p>
+                <h4 className="text-lg font-semibold">Aquí no validamos ideas.</h4>
+                <p className="text-sm text-zinc-400">Validamos utilidad funcional. Este filtro es arquitectura, no marketing.</p>
               </div>
             </div>
 
-            <div className="space-y-2 text-sm text-zinc-300">
-              <p><strong>El Filtro se enfoca en:</strong></p>
-              <ul className="list-disc ml-5">
-                <li>La Acción <strong>medible</strong> que realiza el usuario. (Q1)</li>
-                <li>El <strong>Flujo Paso a Paso</strong> de la utilidad. (Q2)</li>
-                <li>La <strong>Estructura Operativa</strong> del equipo. (Q3)</li>
+            <div className="space-y-4 text-sm text-zinc-300">
+              <p><strong>Si tu protocolo pasa, validamos:</strong></p>
+              <ul className="list-disc ml-5 space-y-2">
+                <li><span className="text-blue-300">Q1 — La Acción Medible:</span> ¿Qué hace exactamente? ¿Cómo se verifica?</li>
+                <li><span className="text-blue-300">Q2 — El Flujo paso a paso:</span> Desde entrada a recompensa.</li>
+                <li><span className="text-blue-300">Q3 — Estructura Operativa:</span> ¿Quién valida? ¿Quién ejecuta?</li>
               </ul>
+              <p className="text-xs text-red-400 italic mt-2">"Si no puedes responder esto con claridad, el W2E no existe."</p>
             </div>
 
             <div className="mt-6">
@@ -188,20 +189,20 @@ function WhyPandoras() {
       <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-6">
         <GlassCard className="text-center">
           <Shield className="w-10 h-10 mx-auto mb-3 text-cyan-400" />
-          <h4 className="font-bold">Protocolo Inmutable</h4>
-          <p className="text-zinc-400 text-sm mt-2">Seguridad auditada y Fuzz Testing para minimizar riesgo financiero y legal.</p>
+          <h4 className="font-bold">El Loom Protocol</h4>
+          <p className="text-zinc-400 text-sm mt-2">Teje acción → validación → recompensa. No es un token, es un motor económico.</p>
         </GlassCard>
 
         <GlassCard className="text-center">
-          <Users className="w-10 h-10 mx-auto mb-3 text-indigo-400" />
-          <h4 className="font-bold">Ecosistema Recurrente</h4>
-          <p className="text-zinc-400 text-sm mt-2">Modelos de utilidad que incentivan la Labor recurrente, no la venta única.</p>
+          <RefreshCw className="w-10 h-10 mx-auto mb-3 text-indigo-400" />
+          <h4 className="font-bold">Dual-Tesorería</h4>
+          <p className="text-zinc-400 text-sm mt-2">Separa capital operativo de recompensas para control de riesgo real.</p>
         </GlassCard>
 
         <GlassCard className="text-center">
           <FileText className="w-10 h-10 mx-auto mb-3 text-green-400" />
-          <h4 className="font-bold">Documentación Legal Base</h4>
-          <p className="text-zinc-400 text-sm mt-2">Marco conceptual para De-Risking legal del Protocolo.</p>
+          <h4 className="font-bold">Reducción de Ambigüedad</h4>
+          <p className="text-zinc-400 text-sm mt-2">Define legal y técnicamente el valor antes de escribir la primera línea de código.</p>
         </GlassCard>
       </div>
     </motion.section>
@@ -210,9 +211,9 @@ function WhyPandoras() {
 
 function ProgramSteps() {
   const steps = [
-    { title: "Viabilidad (Filtro 8)", desc: "Evaluación de la utilidad funcional y el equipo operativo.", icon: MessageSquare },
-    { title: "Arquitectura SC", desc: "Diseño del Loom Protocol, Dual-Tesorería y Tokenomics (Dual-Token).", icon: FileText },
-    { title: "Deployment", desc: "Parametrización en ModularFactory y despliegue del Protocolo.", icon: Zap }
+    { title: "1. Viabilidad (Filtro 8)", desc: "Evaluación funcional y operativa. Sin teoría.", icon: MessageSquare },
+    { title: "2. Arquitectura SC", desc: "Diseño del Loom Protocol, tokenomics y tesorería.", icon: FileText },
+    { title: "3. Deployment", desc: "Parametrización y despliegue en ModularFactory.", icon: Zap }
   ];
 
   return (
@@ -243,9 +244,9 @@ function ProgramSteps() {
 
 function FAQ() {
   const faqs = [
-    { q: "¿Qué pasa si no paso el filtro de 8 preguntas?", a: "Recibirás un feedback específico sobre los puntos débiles de tu arquitectura (ej. ambigüedad en el W2E) para que puedas re-aplicar cuando tengas mayor claridad." },
-    { q: "¿Necesito capital para el filtro?", a: "No. El filtro valida la viabilidad funcional. Los costos de Deployment, Auditoría y Fuzz Testing se revelan una vez que pasas la Capa de Arquitectura (Q1-Q8)." },
-    { q: "¿Qué es el Loom Protocol?", a: "Es el motor Work-to-Earn (W2E) de Pandora's. Es el Smart Contract que teje la Labor verificable del usuario con la recompensa ($PBOX), garantizando que el valor esté atado a la actividad real." }
+    { q: "¿Qué pasa si no paso el filtro?", a: "No te rechazamos. Te devolvemos claridad. Recibes feedback específico sobre ambigüedad y riesgos estructurales." },
+    { q: "¿Para quién es este filtro?", a: "SÍ: Si estás listo para construir algo inmutable. NO: Si estás explorando ideas (haz eso primero)." },
+    { q: "¿Por qué 8 preguntas?", a: "Son los 8 puntos de falla más comunes en protocolos W2E. Si los respondes, tienes arquitectura, no solo una idea." }
   ];
 
   return (
@@ -331,8 +332,8 @@ export default function UtilityProtocolPage() {
           {/* CTA final */}
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="mt-8">
             <GlassCard className="p-6 text-center">
-              <h3 className="text-2xl font-bold mb-2">Inicia tu Evaluación de Viabilidad ahora.</h3>
-              <p className="text-zinc-400 mb-4">La claridad de tu Protocolo define su éxito. Confirma tu estructura en el filtro de 8 preguntas.</p>
+              <h3 className="text-2xl font-bold mb-2">Comienza tu Evaluación de Viabilidad</h3>
+              <p className="text-zinc-400 mb-4">8 preguntas. Sin compromisos. Sin promesas vacías.</p>
 
               <div className="flex justify-center">
                 <Button
