@@ -5,9 +5,14 @@
 
 MIGRATION_FILE="2024-12-18_marketing_automation.sql"
 
-LOCAL_DB="postgresql://Marco@localhost:5432/pandoras_local"
-STAGING_DB="postgresql://neondb_owner:npg_uj0h1LpbAQxi@ep-withered-thunder-adt88vka-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require"
-MAIN_DB="postgresql://neondb_owner:npg_MjazsA5ybWQ3@ep-summer-bread-adqdsnx4-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require"
+# Load .env if present
+if [ -f .env ]; then
+  export $(grep -v '^#' .env | xargs)
+fi
+
+LOCAL_DB="${DATABASE_URL:-postgresql://localhost:5432/pandoras_local}"
+STAGING_DB="${DATABASE_URL_STAGING:?Missing DATABASE_URL_STAGING env var}"
+MAIN_DB="${DATABASE_URL_MAIN:?Missing DATABASE_URL_MAIN env var}"
 
 run_migration() {
     local ENV_NAME=$1
