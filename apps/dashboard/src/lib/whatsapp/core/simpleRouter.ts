@@ -507,7 +507,7 @@ async function handleProtocolApplicationFlow(message: string, step = 0, phone?: 
     return {
       handled: true,
       flowType: 'protocol_application',
-      response: `Perfecto.\nPor lo que veo, tu perfil sí encaja con los protocolos que estamos lanzando ahora.\n\nEl siguiente paso es una llamada estratégica de 15 minutos para:\n• Confirmar viabilidad real\n• Definir si entramos en ejecución\n• Ver qué modelo aplica\n\nAgenda aquí:\n🔗 https://calendly.com/pandoras-w2e/strategy\n\nSi no ves horario, responde 'AGENDAR'.`,
+      response: `Perfecto.\nPor lo que veo, tu perfil sí encaja con los protocolos que estamos lanzando ahora.\n\nEl siguiente paso es una llamada estratégica de 15 minutos para:\n• Confirmar viabilidad real\n• Definir si entramos en ejecución\n• Ver qué modelo aplica\n\nAgenda aquí:\n🔗 https://dash.pandoras.finance/schedule/protocol\n\nSi no ves horario, responde 'AGENDAR'.`,
       isCompleted: true,
       action: 'flow_completed'
     };

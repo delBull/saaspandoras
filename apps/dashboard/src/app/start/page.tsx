@@ -239,16 +239,23 @@ function StartPageContent() {
             transition={{ delay: 0.6 }}
             className="flex justify-center mb-8"
           >
-            <Button
-              size="lg"
-              className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white font-bold text-base md:text-lg px-8 md:px-12 py-4 md:py-6 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg shadow-blue-500/25 w-full sm:w-auto max-w-xs md:max-w-none"
-              onClick={() => document.getElementById('subscription')?.scrollIntoView({ behavior: 'smooth' })}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6 }}
+              className="flex justify-center mb-8"
             >
-              <span className="flex items-center gap-2">
-                [ Construye tu Protocolo Ahora ]
-                <ArrowRight className="w-4 h-4 md:w-5" />
-              </span>
-            </Button>
+              <Button
+                size="lg"
+                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white font-bold text-base md:text-lg px-8 md:px-12 py-4 md:py-6 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg shadow-blue-500/25 w-full sm:w-auto max-w-xs md:max-w-none"
+                onClick={() => document.getElementById('subscription')?.scrollIntoView({ behavior: 'smooth' })}
+              >
+                <span className="flex items-center gap-2">
+                  [ Construye tu Protocolo Ahora ]
+                  <ArrowRight className="w-4 h-4 md:w-5" />
+                </span>
+              </Button>
+            </motion.div>
           </motion.div>
         </motion.div>
 

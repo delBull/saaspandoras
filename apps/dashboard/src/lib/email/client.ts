@@ -7,9 +7,14 @@ interface SendEmailParams {
     subject: string;
     html: string;
     from?: string;
+    attachments?: {
+        content: string; // Base64 or plain content if using Resend SDK, but via API it expects `content` (base64) + `filename`.
+        filename: string;
+        content_type?: string;
+    }[];
 }
 
-export async function sendEmail({ to, subject, html, from = FROM_EMAIL }: SendEmailParams) {
+export async function sendEmail({ to, subject, html, from = FROM_EMAIL, attachments }: SendEmailParams) {
     if (!RESEND_API_KEY) {
         console.warn('⚠️ [EmailClient] RESEND_API_KEY missing. Mocking send to:', to);
         return { success: true, id: 'mock-id' };
@@ -27,6 +32,7 @@ export async function sendEmail({ to, subject, html, from = FROM_EMAIL }: SendEm
                 to,
                 subject,
                 html,
+                attachments
             }),
         });
 

@@ -10,6 +10,7 @@ import { NFTManager } from "./NFTManager";
 import NewsletterSubTab from './NewsletterSubTab';
 import { DiscordManager } from './DiscordManager';
 import { MarketingDashboard } from './marketing/MarketingDashboard';
+import { CalendarManager } from "./CalendarManager";
 
 interface Swap {
   txHash: string;
@@ -28,11 +29,12 @@ interface AdminTabsProps {
   showUsers?: boolean;
   showShortlinks?: boolean;
   showMarketing?: boolean;
+  currentUserId?: string; // ID of the logged-in admin
 }
 
-export function AdminTabs({ swaps, users, children, showSettings = false, showUsers = false, showShortlinks = false, showMarketing = false }: AdminTabsProps) {
+export function AdminTabs({ swaps, users, children, showSettings = false, showUsers = false, showShortlinks = false, showMarketing = false, currentUserId }: AdminTabsProps) {
   const [activeTab, setActiveTab] = useState('projects');
-  const [activeMarketingSubTab, setActiveMarketingSubTab] = useState<'wa-leads' | 'shortlinks' | 'newsletter' | 'discord' | 'campaigns'>('wa-leads');
+  const [activeMarketingSubTab, setActiveMarketingSubTab] = useState<'wa-leads' | 'shortlinks' | 'newsletter' | 'discord' | 'campaigns' | 'agenda'>('wa-leads');
 
   return (
     <>
@@ -123,6 +125,15 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
               >
                 🎯 Campaigns
               </button>
+              <button
+                onClick={() => setActiveMarketingSubTab('agenda')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeMarketingSubTab === 'agenda'
+                  ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                  : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
+                  }`}
+              >
+                🗓️ Agenda
+              </button>
             </div>
           </div>
 
@@ -133,6 +144,13 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
           {activeMarketingSubTab === 'discord' && <DiscordManager />}
           {activeMarketingSubTab === 'campaigns' && (
             <MarketingDashboard />
+          )}
+          {activeMarketingSubTab === 'agenda' && (
+            // TODO: Pass real UserID here. For now utilizing a clear fallback or needing context.
+            // We'll import CalendarManager dynamically to avoid heavy load if not used
+            <div className="w-full">
+              <CalendarManager userId="FIXME_CURRENT_USER_ID" />
+            </div>
           )}
         </div>
       )}
