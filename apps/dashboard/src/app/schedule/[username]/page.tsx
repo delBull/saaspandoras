@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import { resolveUserByAlias } from "@/actions/scheduling";
 import { SchedulerForm } from "@/components/scheduler/SchedulerForm";
 

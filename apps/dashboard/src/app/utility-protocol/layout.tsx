@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import type { ReactNode } from "react";
 
 export const metadata: Metadata = {
     title: "Arquitecto de Protocolos de Utilidad | Pandora's Finance",

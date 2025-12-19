@@ -3,18 +3,23 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, RefreshCw, Play, Settings2 } from "lucide-react";
+import { Loader2, RefreshCw, Play, Settings2, User } from "lucide-react";
 import { MarketingStats } from "./MarketingStats";
 import { toast } from "@saasfly/ui/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
+import { getMarketingDashboardStats } from "@/actions/marketing";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useRouter } from "next/navigation";
 
 // Types matching API response roughly
 interface Execution {
     id: string;
     campaignName: string;
     targetName: string; // User or Lead name
-    status: 'active' | 'paused' | 'completed' | 'failed';
+    userId?: string | null;
+    leadId?: string | null;
+    status: 'active' | 'paused' | 'completed' | 'failed' | 'intercepted';
     currentStep: number;
     nextRunAt: string | null;
     lastRunAt: string | null;
@@ -25,32 +30,23 @@ export function MarketingDashboard() {
     const [stats, setStats] = useState({ total: 0, active: 0, paused: 0, completed: 0 });
     const [executions, setExecutions] = useState<Execution[]>([]);
     const [isRunningCron, setIsRunningCron] = useState(false);
+    const router = useRouter();
 
     const fetchData = async () => {
         setLoading(true);
         try {
-            // Fetch Stats & Executions (Mock for now or real API if exists)
-            // In a real scenario, we'd have a GET /api/admin/marketing/stats
-            // implementing a simple mock fetch here to verify UI first
+            const res = await getMarketingDashboardStats();
 
-            // Simulating API call
-            await new Promise(r => setTimeout(r, 800));
-
-            // TODO: Replace with real API fetch
-            // const res = await fetch('/api/admin/marketing/stats');
-            // const data = await res.json();
-
-            // Mock Data
-            setStats({ total: 12, active: 5, paused: 2, completed: 5 });
-            setExecutions([
-                { id: '1', campaignName: 'ApplyProtocol Hot Leads', targetName: 'Nova Protocol', status: 'active', currentStep: 1, nextRunAt: new Date(Date.now() + 3600000).toISOString(), lastRunAt: new Date().toISOString() },
-                { id: '2', campaignName: 'ApplyProtocol Hot Leads', targetName: 'DeFi Matrix', status: 'completed', currentStep: 3, nextRunAt: null, lastRunAt: new Date(Date.now() - 86400000).toISOString() },
-                { id: '3', campaignName: 'Onboarding General', targetName: 'CryptoUser 99', status: 'paused', currentStep: 0, nextRunAt: null, lastRunAt: null },
-            ]);
+            if (res.success) {
+                setStats(res.stats);
+                setExecutions(res.executions as any); // Casting for slight type mismatch on dates/nulls if any
+            } else {
+                toast({ title: "Error", description: "No se pudieron cargar las métricas.", variant: "destructive" });
+            }
 
         } catch (error) {
             console.error("Failed to fetch marketing data", error);
-            toast({ title: "Error", description: "No se pudieron cargar los datos.", variant: "destructive" });
+            toast({ title: "Error", description: "Error de conexión.", variant: "destructive" });
         } finally {
             setLoading(false);
         }
@@ -65,18 +61,26 @@ export function MarketingDashboard() {
         try {
             const res = await fetch('/api/cron/marketing-engine', {
                 method: 'GET',
-                headers: { 'Authorization': `Bearer ${process.env.CRON_SECRET || 'dev_secret'}` } // Note: Client side env var usage is risky, better to use a server action proxy
+                headers: { 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET || 'dev_secret'}` }
             });
             if (res.ok) {
-                toast({ title: "Cron Ejecutado", description: "El motor de marketing ha procesado las tareas pendientes." });
+                toast({ title: "Motor Ejecutado", description: "Se han procesado las campañas activas." });
                 fetchData();
             } else {
                 throw new Error("Cron failed");
             }
         } catch (e) {
-            toast({ title: "Error", description: "Falló la ejecución manual del Cron.", variant: "destructive" });
+            toast({ title: "Error", description: "Falló la ejecución manual.", variant: "destructive" });
         } finally {
             setIsRunningCron(false);
+        }
+    };
+
+    const handleUserClick = (exec: Execution) => {
+        if (exec.userId) {
+            router.push(`/admin/users/${exec.userId}`);
+        } else {
+            toast({ title: "Lead de WhatsApp", description: "Este usuario no tiene perfil completo aún." });
         }
     };
 
@@ -89,10 +93,20 @@ export function MarketingDashboard() {
                         <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                         Actualizar
                     </Button>
-                    <Button size="sm" onClick={handleRunCron} disabled={isRunningCron} className="bg-purple-600 hover:bg-purple-700 text-white">
-                        {isRunningCron ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />}
-                        Ejecutar Motor Ahora
-                    </Button>
+
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button size="sm" onClick={handleRunCron} disabled={isRunningCron} className="bg-purple-600 hover:bg-purple-700 text-white">
+                                    {isRunningCron ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />}
+                                    Ejecutar Motor Ahora
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p className="max-w-xs text-xs">Forza la verificación de todas las campañas activas y avanza a los leads a la siguiente etapa si cumplen las condiciones.</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                 </div>
             </div>
 
@@ -121,23 +135,35 @@ export function MarketingDashboard() {
                             {executions.map((exec) => (
                                 <tr key={exec.id} className="hover:bg-zinc-800/30 transition-colors">
                                     <td className="px-4 py-3 font-medium text-white">{exec.targetName}</td>
-                                    <td className="px-4 py-3 text-purple-400">{exec.campaignName}</td>
+                                    <td className="px-4 py-3 text-purple-400 text-xs">{exec.campaignName || 'Sin Nombre'}</td>
                                     <td className="px-4 py-3">
-                                        <Badge variant={exec.status === 'active' ? 'default' : exec.status === 'completed' ? 'secondary' : 'destructive'}
-                                            className={`${exec.status === 'active' ? 'bg-green-500/10 text-green-500 hover:bg-green-500/20' :
-                                                exec.status === 'completed' ? 'bg-blue-500/10 text-blue-500 hover:bg-blue-500/20' :
-                                                    'bg-zinc-500/10 text-zinc-500 hover:bg-zinc-500/20'
-                                                } border-0`}>
+                                        <Badge variant="outline"
+                                            className={`${exec.status === 'active' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                                                exec.status === 'completed' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
+                                                    exec.status === 'paused' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' :
+                                                        'bg-zinc-500/10 text-zinc-500 border-zinc-500/20'
+                                                } border`}>
                                             {exec.status}
                                         </Badge>
                                     </td>
-                                    <td className="px-4 py-3 text-zinc-400">Paso {exec.currentStep}</td>
-                                    <td className="px-4 py-3 text-zinc-400">
+                                    <td className="px-4 py-3 text-zinc-400">Paso {exec.currentStep + 1}</td>
+                                    <td className="px-4 py-3 text-zinc-400 text-xs">
                                         {exec.nextRunAt ? formatDistanceToNow(new Date(exec.nextRunAt), { addSuffix: true, locale: es }) : '-'}
                                     </td>
-                                    <td className="px-4 py-3">
-                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                            <Settings2 className="w-4 h-4 text-zinc-500" />
+                                    <td className="px-4 py-3 flex gap-2">
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-white hover:bg-zinc-700" onClick={() => handleUserClick(exec)}>
+                                                        <User className="w-4 h-4" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent><p>Ver Perfil</p></TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-white hover:bg-zinc-700">
+                                            <Settings2 className="w-4 h-4" />
                                         </Button>
                                     </td>
                                 </tr>
