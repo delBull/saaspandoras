@@ -96,12 +96,12 @@ export default function ProtocolStoryPage() {
                         <h1 className="font-serif text-4xl md:text-6xl lg:text-7xl leading-[1.1] text-white tracking-tight mb-8">
                             La mentira de la <br />
                             <span className="text-lime-500 italic">descentralización</span>
-                            <span className="block text-2xl md:text-3xl mt-4 text-zinc-500 font-normal">(y el cementerio de los $50,000 USD).</span>
+                            <span className="block text-2xl md:text-3xl mt-4 text-zinc-500 font-normal">y el cementerio silencioso de founders con capital.</span>
                         </h1>
                     </FadeIn>
                     <FadeIn delay={0.2}>
                         <p className="text-lg md:text-xl leading-relaxed text-zinc-400 font-serif max-w-xl border-l-2 border-lime-500/30 pl-6 my-12">
-                            &quot;Tu Smart Contract no va a salvar tu negocio. De hecho, probablemente sea lo que lo mate.&quot;
+                            &quot;Tu Smart Contract no va a salvar tu negocio. La parálisis técnica sí puede matarlo.&quot;
                         </p>
                     </FadeIn>
                 </section>
@@ -110,26 +110,19 @@ export default function ProtocolStoryPage() {
                 <article className="prose prose-invert prose-lg max-w-none font-serif text-zinc-300 space-y-12 mb-32">
                     <FadeIn>
                         <p>
-                            <span className="text-4xl float-left mr-3 mt-[-6px] text-white font-bold">H</span>
-                            ola. Soy Pablo.
+                            He visto demasiados founders con capital perder meses —y cientos de miles— construyendo infraestructura que nunca monetiza.
                         </p>
                         <p>
-                            He estado en las trincheras de Web3 el tiempo suficiente para ver cómo proyectos con millones de dólares en financiamiento morían antes de lanzar su primer tweet.
-                        </p>
-                        <p>
-                            ¿Sabes por qué? Porque cayeron en la <strong className="text-white">Trampa del Desarrollador.</strong>
+                            No por falta de talento. Por construir tecnología antes de construir economía.
                         </p>
                     </FadeIn>
 
                     <FadeIn>
                         <p>
-                            Esa trampa donde crees que el código es el producto. Contratas a un experto en Solidity, le pagas una fortuna por un contrato &quot;único&quot;, y cuando finalmente tienes el token en la mainnet, te das cuenta de que tienes un Ferrari sin motor, sin gasolina y sin carreteras.
+                            La trampa no es contratar devs caros. La trampa es creer que el código es el negocio.
                         </p>
                         <p>
-                            Tienes un token, sí. Pero no tienes cómo pagar a tus contribuidores, no tienes cómo votar propuestas de forma eficiente y no tienes una forma de que el dinero fluya de forma legal y transparente.
-                        </p>
-                        <p className="text-white text-xl border-l border-white pl-4 italic">
-                            Tenías una visión de futuro, pero terminaste con una deuda técnica del pasado.
+                            Un token sin sistema de pagos, gobernanza y ejecución no es innovación. Es deuda técnica con marketing bonito.
                         </p>
                     </FadeIn>
                 </article>
@@ -151,11 +144,8 @@ export default function ProtocolStoryPage() {
                         </p>
 
                         <div className="bg-zinc-900/30 p-8 border-l-4 border-lime-500 backdrop-blur-sm mb-12">
-                            <p className="font-serif text-zinc-300 italic mb-4">&quot;Imagina que quieres abrir un restaurante. Tienes dos opciones:&quot;</p>
-                            <ol className="list-decimal pl-5 space-y-2 font-sans text-sm md:text-base text-zinc-400">
-                                <li>Metalurgias para fabricar tus propios hornos y cubiertos <span className="text-red-400">(El camino tradicional Web3)</span>.</li>
-                                <li>Una cocina industrial de última generación lista para que empieces a cocinar hoy mismo <span className="text-lime-400">(Pandora)</span>.</li>
-                            </ol>
+                            <p className="font-serif text-zinc-300 italic mb-4">&quot;Construir una DAO desde cero es como fabricar tu propia cocina industrial antes de abrir un restaurante.&quot;</p>
+                            <p className="text-lime-400 font-bold">Pandora es llegar, encender y empezar a vender hoy.</p>
                         </div>
                     </FadeIn>
 
@@ -181,6 +171,10 @@ export default function ProtocolStoryPage() {
                             {/* Row 4 */}
                             <div className="p-4 border-r border-zinc-800 text-zinc-400">El token es un gasto.</div>
                             <div className="p-4 text-white font-medium bg-lime-500/5">El sistema es un generador de Cashflow.</div>
+
+                            {/* Row 5 - The Contrast */}
+                            <div className="p-4 border-t border-r border-zinc-800 text-red-400 font-serif italic text-xs">Miedo a invertir mal.</div>
+                            <div className="p-4 border-t border-zinc-800 text-lime-400 font-serif italic text-xs">La diferencia no es técnica. Es si lanzas este trimestre… o no.</div>
                         </div>
                     </FadeIn>
                 </section>
@@ -189,7 +183,7 @@ export default function ProtocolStoryPage() {
                 <FadeIn className="mb-16">
                     <h2 className="font-serif text-3xl font-medium text-white mb-6">
                         No vendo software. <br />
-                        Vendo el fin de tu <span className="text-lime-500">parálisis técnica</span>.
+                        Vendo velocidad con <span className="text-lime-500">control</span>.
                     </h2>
                     <p className="font-serif text-zinc-400">
                         He diseñado tres niveles de ambición. No busco clientes, busco economías que merezcan ser escaladas.
@@ -207,6 +201,7 @@ export default function ProtocolStoryPage() {
                         <h3 className="text-lg font-sans font-bold text-white mb-2">Despliegue Rápido</h3>
                         <p className="text-zinc-500 text-sm mb-6  font-serif italic">&quot;Dame las llaves del coche, yo sé conducir.&quot;</p>
                         <div className="space-y-4 mb-8 text-zinc-400 text-sm">
+                            <p className="text-white font-bold mb-2">Ideal si ya sabes vender y solo necesitas infraestructura ahora.</p>
                             <p>Tecnología pura. Te entrego el sistema completo: DAO, Token, Dashboard, Accesos. Tú te encargas de la estrategia y la venta.</p>
                         </div>
                         <div className="flex items-baseline gap-2 mb-6">
@@ -232,6 +227,7 @@ export default function ProtocolStoryPage() {
                         <h3 className="text-xl font-sans font-bold text-white mb-2">Partner de Crecimiento</h3>
                         <p className="text-lime-400 text-sm mb-6 font-serif italic">&quot;No quiero un proveedor, quiero un socio de infraestructura.&quot;</p>
                         <div className="space-y-4 mb-8 text-zinc-400 text-sm">
+                            <p className="text-white font-bold mb-2">Ideal si quieres ejecutar sin cargar todo el riesgo tú solo.</p>
                             <p>
                                 Este es el camino para quienes ya tienen tracción o una comunidad real. Aquí yo absorbo parte del riesgo porque sé que el sistema funciona.
                             </p>
@@ -262,8 +258,9 @@ export default function ProtocolStoryPage() {
                         <h3 className="text-lg font-sans font-bold text-white mb-2">Ecosystem Builder</h3>
                         <p className="text-zinc-500 text-sm mb-6 font-serif italic">&quot;Construyamos un imperio juntos.&quot;</p>
                         <div className="space-y-4 mb-8 text-zinc-400 text-sm">
+                            <p className="text-white font-bold mb-2">Ideal si buscas un socio técnico con piel en el juego.</p>
                             <p>Incubación total. Me siento en tu mesa. Diseñamos la tokenomics, la gobernanza y la estrategia go-to-market desde cero.</p>
-                            <p className="text-red-400 text-xs mt-2 uppercase tracking-wide">⚠️ Solo 2 plazas por trimestre</p>
+                            <p className="text-red-400 text-xs mt-2 uppercase tracking-wide">⚠️ Acepto máximo 2 proyectos por trimestre. Si no hay encaje, no avanzamos.</p>
                         </div>
                         <div className="flex items-baseline gap-2 mb-6">
                             <span className="text-2xl text-white font-bold">$35,000</span>
@@ -344,10 +341,10 @@ export default function ProtocolStoryPage() {
                     <div className="absolute -left-10 -top-10 w-32 h-32 bg-lime-500/10 rounded-full blur-3xl pointer-events-none" />
                     <FadeIn>
                         <h2 className="font-serif text-4xl text-white mb-8">
-                            La duda es el asesino de la oportunidad.
+                            Cada mes que no lanzas, tu idea pierde ventaja.
                         </h2>
                         <p className="font-serif text-lg text-zinc-400 mb-12 italic leading-relaxed max-w-xl">
-                            &quot;Mientras tú piensas si necesitas un Whitepaper de 40 páginas, alguien más ya está usando Pandora para lanzar el modelo de negocio que tú imaginaste.&quot;
+                            &quot;Otros founders no están esperando. Si tu proyecto tiene capital y urgencia, aplica. Si no, guarda esta página y vuelve cuando estés listo.&quot;
                         </p>
 
                         <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-lg max-w-xl">
@@ -362,7 +359,7 @@ export default function ProtocolStoryPage() {
                             >
                                 Aplicar Ahora
                             </button>
-                            <p className="text-center text-xs text-zinc-600 mt-4">Sin compromisos. Solo estrategia.</p>
+                            <p className="text-center text-xs text-zinc-600 mt-4">No es una venta. Es un filtro.</p>
                         </div>
                     </FadeIn>
                 </section>
