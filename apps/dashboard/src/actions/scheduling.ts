@@ -171,12 +171,91 @@ export async function rejectBooking(bookingId: string) {
 }
 
 /**
+ * Admin: Create Manual Booking (Bypasses availability)
+ * Useful for "Agendar Ahora" or manual calendar management
+ */
+export async function createAdminBooking(userId: string, data: {
+    title: string,
+    leadName: string,
+    leadEmail: string,
+    description?: string,
+    startTime: Date,
+    durationMinutes: number,
+    meetingType: 'video' | 'phone' | 'person'
+}) {
+    try {
+        const endTime = new Date(data.startTime.getTime() + data.durationMinutes * 60000);
+
+        // 1. Create a "Booked" Slot directly
+        // We use a transaction to ensure atomicity
+        const bookingId = crypto.randomUUID();
+        const slotId = crypto.randomUUID(); // Assuming UUID PK for slots, or let DB handle if Serial (schema check needed)
+        // Checking existing code: createSlots uses db.insert(schedulingSlots) without ID, implying Serial or Default UUID.
+        // Let's check schema import... schema file showed `id: serial("id")` for others, but schedulingSlots might be different.
+        // `bookSlot` uses `slotId` string. Let's assume it's UUID or we let it auto-gen.
+        // BUT `bookSlot` receives `slotId`.
+        // Inspecting `createSlots`: `await db.insert(schedulingSlots).values(...)`. It doesn't pass ID. So it's auto-generated.
+        // We need the ID returned.
+
+        const [newSlot] = await db.insert(schedulingSlots).values({
+            userId,
+            startTime: data.startTime,
+            endTime: endTime,
+            isBooked: true, // Directly booked
+            type: `${data.durationMinutes}_min_admin`
+        }).returning({ id: schedulingSlots.id });
+
+        if (!newSlot) throw new Error("Failed to create slot");
+
+        // 2. Create Confirmed Booking
+        await db.insert(schedulingBookings).values({
+            id: bookingId,
+            slotId: newSlot.id,
+            leadName: data.leadName,
+            leadEmail: data.leadEmail,
+            leadPhone: "", // Optional for admin manual
+            notificationPreference: 'email',
+            notes: `${data.title}\n${data.description || ''} \n[Type: ${data.meetingType}]`,
+            status: "confirmed",
+            confirmedAt: new Date()
+        });
+
+        // 3. Trigger Notifications
+        // We use the same notification handlers
+        const { sendSchedulerNotification } = await import("@/lib/discord/scheduler-notifier");
+        const { sendBookingPendingEmail } = await import("@/lib/email/scheduler-mailer");
+        // TODO: Create specific "Invite" email for admin bookings, for now using Pending/Confirmed template
+
+        await Promise.allSettled([
+            sendSchedulerNotification(bookingId, data.startTime, {
+                name: data.leadName,
+                email: data.leadEmail,
+                notes: `(Admin Manual) ${data.title}`
+            }),
+            // Use existing emailer (might need adjustment to send "Confirmed" directly)
+            sendBookingPendingEmail(data.leadEmail, {
+                name: data.leadName,
+                date: data.startTime.toLocaleDateString(),
+                time: data.startTime.toLocaleTimeString()
+            })
+        ]);
+
+        return { success: true, bookingId };
+
+    } catch (error) {
+        console.error("[Scheduler] Admin booking failed:", error);
+        return { success: false, error: "Failed to create booking" };
+    }
+}
+
+/**
  * Action: Resolve User by Alias (for public routes like /schedule/founders)
  */
 export async function resolveUserByAlias(alias: string) {
     try {
         // 1. Static Aliases for Landing Pages
-        const LANDING_ALIASES = ["founders", "protocol", "protocol-story", "start", "utility-protocol"];
+        // Added 'pandoras' for generic scheduling link
+        const LANDING_ALIASES = ["founders", "protocol", "protocol-story", "start", "utility-protocol", "pandoras"];
 
         if (LANDING_ALIASES.includes(alias)) {
             // For V1, map all these to the FIRST user in the DB (Lead Admin)

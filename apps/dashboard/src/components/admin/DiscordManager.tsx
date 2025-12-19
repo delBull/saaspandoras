@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { CheckCircle, AlertTriangle, Send, RefreshCw, Hash } from "lucide-react";
+import { useState, useEffect } from "react";
+import { CheckCircle, AlertTriangle, Send, RefreshCw, Hash, Activity } from "lucide-react";
+import { getDiscordWebhookStatus } from "@/actions/discord";
+import { getMarketingDashboardStats } from "@/actions/marketing";
+import { toast } from "sonner";
 
 interface WebhookStatus {
     name: string;
     type: 'leads' | 'applications' | 'alerts';
     configured: boolean;
-    status: 'active' | 'error' | 'testing';
+    status: 'active' | 'error' | 'testing' | 'missing';
     lastPing?: string;
 }
 
@@ -16,12 +19,61 @@ export function DiscordManager() {
     const [message, setMessage] = useState("");
     const [selectedChannel, setSelectedChannel] = useState<'leads' | 'applications' | 'alerts'>('alerts');
 
-    // Simulation of status (in real app, can optimize via API check)
+    const [metrics, setMetrics] = useState({
+        totalActions: 0,
+        successRate: 0,
+        activeChannels: 0,
+        failedActions: 0
+    });
+
     const [webhooks, setWebhooks] = useState<WebhookStatus[]>([
-        { name: '📢 Applications (Forms)', type: 'applications', configured: true, status: 'active' },
-        { name: '🚨 System Alerts', type: 'alerts', configured: true, status: 'active' },
-        { name: '📱 WhatsApp Leads', type: 'leads', configured: true, status: 'active' }
+        { name: '📢 Applications (Forms)', type: 'applications', configured: false, status: 'testing' },
+        { name: '🚨 System Alerts', type: 'alerts', configured: false, status: 'testing' },
+        { name: '📱 WhatsApp Leads', type: 'leads', configured: false, status: 'testing' }
     ]);
+
+    useEffect(() => {
+        fetchStatus();
+    }, []);
+
+    async function fetchStatus() {
+        setLoading(true);
+        try {
+            // Parallel Fetch
+            const [discordRes, marketingRes] = await Promise.all([
+                getDiscordWebhookStatus(),
+                getMarketingDashboardStats()
+            ]);
+
+            // Update Webhooks
+            setWebhooks([
+                { name: '📢 Applications (Forms)', type: 'applications', configured: discordRes.applications.configured, status: discordRes.applications.status as any },
+                { name: '🚨 System Alerts', type: 'alerts', configured: discordRes.alerts.configured, status: discordRes.alerts.status as any },
+                { name: '📱 WhatsApp Leads', type: 'leads', configured: discordRes.leads.configured, status: discordRes.leads.status as any }
+            ]);
+
+            // Calculate Metrics from Marketing Executions (Proxy for Activity)
+            const total = marketingRes.stats.total;
+            const completed = marketingRes.stats.completed;
+            const failed = total - (marketingRes.stats.active + marketingRes.stats.paused + completed); // Rough estimate
+            const successRate = total > 0 ? ((completed / total) * 100).toFixed(1) : "100";
+
+            const activeCh = [discordRes.alerts.configured, discordRes.applications.configured, discordRes.leads.configured].filter(Boolean).length;
+
+            setMetrics({
+                totalActions: total,
+                successRate: Number(successRate),
+                activeChannels: activeCh,
+                failedActions: failed
+            });
+
+        } catch (e) {
+            console.error(e);
+            toast.error("Error cargando estado de Discord");
+        } finally {
+            setLoading(false);
+        }
+    }
 
     const handleTestWebhook = async (type: string) => {
         setLoading(true);
@@ -33,12 +85,12 @@ export function DiscordManager() {
             });
 
             if (response.ok) {
-                alert('✅ Webhook tested successfully!');
+                toast.success('Webhook probado con éxito');
             } else {
-                alert('❌ Test failed. Check logs.');
+                toast.error('Prueba fallida. Revisa los logs.');
             }
         } catch (e) {
-            alert('❌ Error connecting to server.');
+            toast.error('Error de conexión.');
         } finally {
             setLoading(false);
         }
@@ -60,13 +112,13 @@ export function DiscordManager() {
 
             if (response.ok) {
                 setMessage("");
-                alert('✅ Message sent!');
+                toast.success('Mensaje enviado');
             } else {
-                alert('❌ Failed to send message.');
+                toast.error('Error al enviar mensaje');
             }
         } catch (e) {
             console.error(e);
-            alert('❌ Error sending message.');
+            toast.error('Error de red');
         } finally {
             setLoading(false);
         }
@@ -78,18 +130,18 @@ export function DiscordManager() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-2">
-                        <Send className="w-4 h-4 text-zinc-400" />
-                        <span className="text-xs text-zinc-400 uppercase tracking-wider">Messages Sent</span>
+                        <Activity className="w-4 h-4 text-zinc-400" />
+                        <span className="text-xs text-zinc-400 uppercase tracking-wider">Automations</span>
                     </div>
-                    <p className="text-2xl font-bold text-white">1,284</p>
-                    <p className="text-xs text-green-400 mt-1">↑ 12% last 7 days</p>
+                    <p className="text-2xl font-bold text-white">{metrics.totalActions}</p>
+                    <p className="text-xs text-zinc-500 mt-1">Triggered actions</p>
                 </div>
                 <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-2">
                         <CheckCircle className="w-4 h-4 text-green-400" />
                         <span className="text-xs text-zinc-400 uppercase tracking-wider">Success Rate</span>
                     </div>
-                    <p className="text-2xl font-bold text-green-400">99.2%</p>
+                    <p className="text-2xl font-bold text-green-400">{metrics.successRate}%</p>
                     <p className="text-xs text-zinc-500 mt-1">System healthy</p>
                 </div>
                 <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-lg p-4">
@@ -97,16 +149,16 @@ export function DiscordManager() {
                         <Hash className="w-4 h-4 text-blue-400" />
                         <span className="text-xs text-zinc-400 uppercase tracking-wider">Active Channels</span>
                     </div>
-                    <p className="text-2xl font-bold text-blue-400">3</p>
+                    <p className="text-2xl font-bold text-blue-400">{metrics.activeChannels}</p>
                     <p className="text-xs text-zinc-500 mt-1">Fully Connected</p>
                 </div>
                 <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-2">
                         <AlertTriangle className="w-4 h-4 text-red-400" />
-                        <span className="text-xs text-zinc-400 uppercase tracking-wider">Failed Deliveries</span>
+                        <span className="text-xs text-zinc-400 uppercase tracking-wider">Fails</span>
                     </div>
-                    <p className="text-2xl font-bold text-red-400">8</p>
-                    <p className="text-xs text-zinc-500 mt-1">Last 30 days</p>
+                    <p className="text-2xl font-bold text-red-400">{metrics.failedActions}</p>
+                    <p className="text-xs text-zinc-500 mt-1">Needs attention</p>
                 </div>
             </div>
 
@@ -117,8 +169,8 @@ export function DiscordManager() {
                         <div className="flex items-start justify-between mb-4">
                             <div className="flex items-center gap-3">
                                 <div className={`p-2 rounded-lg ${hook.type === 'alerts' ? 'bg-red-500/20 text-red-400' :
-                                    hook.type === 'applications' ? 'bg-green-500/20 text-green-400' :
-                                        'bg-blue-500/20 text-blue-400'
+                                        hook.type === 'applications' ? 'bg-green-500/20 text-green-400' :
+                                            'bg-blue-500/20 text-blue-400'
                                     }`}>
                                     <Hash className="w-5 h-5" />
                                 </div>
@@ -129,19 +181,29 @@ export function DiscordManager() {
                             </div>
                             {hook.status === 'active' ? (
                                 <CheckCircle className="w-5 h-5 text-green-500" />
+                            ) : hook.status === 'missing' ? (
+                                <AlertTriangle className="w-5 h-5 text-red-500" />
                             ) : (
                                 <AlertTriangle className="w-5 h-5 text-yellow-500" />
                             )}
                         </div>
 
-                        <button
-                            onClick={() => handleTestWebhook(hook.type)}
-                            disabled={loading}
-                            className="w-full py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 text-sm rounded transition-colors flex items-center justify-center gap-2"
-                        >
-                            <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
-                            Test Connection
-                        </button>
+                        <div className="flex flex-col gap-2">
+                            <div className="flex justify-between text-xs text-zinc-500">
+                                <span>Status:</span>
+                                <span className={hook.configured ? 'text-green-400' : 'text-red-400'}>
+                                    {hook.configured ? 'Configured' : 'Missing Env Var'}
+                                </span>
+                            </div>
+                            <button
+                                onClick={() => handleTestWebhook(hook.type)}
+                                disabled={loading || !hook.configured}
+                                className="w-full py-2 bg-zinc-700 hover:bg-zinc-600 disabled:opacity-50 text-zinc-200 text-sm rounded transition-colors flex items-center justify-center gap-2"
+                            >
+                                <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+                                Test Connection
+                            </button>
+                        </div>
                     </div>
                 ))}
             </div>
