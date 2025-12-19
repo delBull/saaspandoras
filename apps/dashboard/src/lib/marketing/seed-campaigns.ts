@@ -19,7 +19,14 @@ export async function seedMarketingCampaigns() {
             .limit(1);
 
         if (existing.length > 0) {
-            console.log(`✓ [Marketing] Campaign "${campaignData.name}" already exists. Skipping.`);
+            // Update config to ensure latest seeds are applied
+            await db.update(marketingCampaigns)
+                .set({
+                    config: campaignData.config as any,
+                    updatedAt: new Date()
+                })
+                .where(eq(marketingCampaigns.name, campaignData.name));
+            console.log(`🔄 [Marketing] Campaign "${campaignData.name}" updated with latest config.`);
             continue;
         }
 

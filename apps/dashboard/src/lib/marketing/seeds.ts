@@ -77,4 +77,74 @@ export const APPLY_PROTOCOL_CAMPAIGNS = [
             ],
         },
     },
+    {
+        name: "Utility Protocol Follow-up",
+        triggerType: "manual", // Triggered via code after technical filter
+        config: {
+            steps: [
+                {
+                    day: 0,
+                    type: "email",
+                    subject: "Tu protocolo está en evaluación",
+                    contentId: "utility_day_0",
+                },
+                {
+                    day: 2,
+                    type: "email",
+                    subject: "El error #1 en Work-to-Earn",
+                    contentId: "utility_day_2",
+                },
+                {
+                    day: 4,
+                    type: "email",
+                    subject: "Arquitectura vs idea",
+                    contentId: "utility_day_4",
+                },
+                {
+                    day: 7,
+                    type: "email",
+                    subject: "Siguiente paso (si aplica)",
+                    contentId: "utility_day_7",
+                },
+            ],
+        },
+    },
+    {
+        name: "Start Creator Nurture",
+        triggerType: "manual", // Triggered via code after sovereignty filter
+        config: {
+            steps: [
+                {
+                    day: 0,
+                    type: "email",
+                    subject: "No eres una audiencia",
+                    contentId: "creator_day_0",
+                },
+                {
+                    day: 2,
+                    type: "email",
+                    subject: "El 30% no es el verdadero costo",
+                    contentId: "creator_day_2",
+                },
+                {
+                    day: 4,
+                    type: "email",
+                    subject: "Tu comunidad no es tu audiencia",
+                    contentId: "creator_day_4",
+                },
+                {
+                    day: 6,
+                    type: "email",
+                    subject: "Esto no es Web3 marketing",
+                    contentId: "creator_day_6",
+                },
+                {
+                    day: 9,
+                    type: "email",
+                    subject: "El siguiente paso no es una llamada",
+                    contentId: "creator_day_9",
+                },
+            ],
+        },
+    },
 ];
