@@ -482,6 +482,28 @@ async function handleProtocolApplicationFlow(message: string, step = 0, phone?: 
       } catch (e) { console.error('[Protocol App] Campaign Trigger Error:', e); }
     }
 
+    // 🚀 MARKETING AUTOMATION: Start Hot Leads Campaign
+    if (phone) {
+      try {
+        const { MarketingEngine } = await import('@/lib/marketing/engine');
+        const { whatsappPreapplyLeads } = await import('@/db/schema');
+
+        // Find lead ID for this phone
+        const leadResults = await db.select().from(whatsappPreapplyLeads).where(eq(whatsappPreapplyLeads.userPhone, phone)).limit(1);
+        const lead = leadResults[0];
+
+        if (lead) {
+          console.log(`[Protocol App] 🎯 Starting Hot Leads campaign for lead ${lead.id}`);
+          await MarketingEngine.startCampaign('ApplyProtocol Hot Leads', { leadId: lead.id });
+        } else {
+          console.warn(`[Protocol App] ⚠️ No lead found for phone ${phone}, cannot start campaign`);
+        }
+      } catch (error) {
+        console.error('[Protocol App] ❌ Failed to start marketing campaign:', error);
+        // Don't fail the user flow, just log
+      }
+    }
+
     return {
       handled: true,
       flowType: 'protocol_application',
