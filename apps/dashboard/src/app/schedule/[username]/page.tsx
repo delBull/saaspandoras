@@ -1,18 +1,29 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { resolveUserByAlias } from "@/actions/scheduling";
-import { SchedulerForm } from "@/components/scheduler/SchedulerForm";
+import { SchedulerForm, type MeetingType } from "@/components/scheduler/SchedulerForm";
 
 export const metadata: Metadata = {
     title: "Agendar Llamada | Pandora's Finance",
     description: "Agenda una sesión soberana.",
 };
 
-export default async function SchedulePage({ params }: { params: Promise<{ username: string }> }) {
+export default async function SchedulePage({
+    params,
+    searchParams,
+}: {
+    params: Promise<{ username: string }>;
+    searchParams: Promise<{ type?: string }>;
+}) {
 
     // Resolve Identity
     const { username } = await params;
+    const { type } = await searchParams;
     const { success, userId, name } = await resolveUserByAlias(username);
+
+    // Validate Type
+    const validTypes: MeetingType[] = ['strategy', 'architecture', 'capital'];
+    const meetingType = validTypes.includes(type as MeetingType) ? (type as MeetingType) : 'strategy';
 
     if (!success || !userId) {
         return notFound();
@@ -32,7 +43,7 @@ export default async function SchedulePage({ params }: { params: Promise<{ usern
                     <div className="mt-8 space-y-4">
                         <div className="flex items-center gap-3 text-sm text-zinc-300">
                             <span className="p-2 bg-zinc-800 rounded-lg">🕒</span>
-                            <span>30 Minutos</span>
+                            <span>{meetingType === 'architecture' ? '20' : '30'} Minutos</span>
                         </div>
                         <div className="flex items-center gap-3 text-sm text-zinc-300">
                             <span className="p-2 bg-zinc-800 rounded-lg">📹</span>
@@ -47,7 +58,7 @@ export default async function SchedulePage({ params }: { params: Promise<{ usern
 
                 {/* Right: Calendar */}
                 <div className="bg-zinc-950 p-6 rounded-xl border border-zinc-800/50">
-                    <SchedulerForm userId={userId} />
+                    <SchedulerForm userId={userId} meetingType={meetingType} />
                 </div>
             </div>
         </div>

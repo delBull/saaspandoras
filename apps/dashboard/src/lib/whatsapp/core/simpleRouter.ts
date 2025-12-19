@@ -243,7 +243,7 @@ async function handleHighTicketFlow(message: string, step = 0, phone?: string): 
     return {
       handled: true,
       flowType: 'high_ticket',
-      response: `Entendido.\n\nPor lo que veo, tu perfil sí encaja con el Inner Circle actual.\n\nEl siguiente paso no es una venta ni una llamada abierta.\nEs una conversación privada para:\n• Validar encaje estratégico\n• Determinar si tiene sentido abrirte espacio\n\nUn estratega senior te contactará directamente.\n\n_Nota: solo abrimos cupos cuando hay alineación clara._`,
+      response: `Entendido.\n\nPor lo que veo, tu perfil sí encaja con el Inner Circle actual.\n\nEl siguiente paso no es una venta ni una llamada abierta.\nEs una Conversación de Capital para:\n• Validar encaje estratégico\n• Determinar si tiene sentido abrirte espacio\n\nAgenda aquí tu sesión:\n🔗 https://dash.pandoras.finance/schedule/protocol?type=capital\n\n_Nota: solo abrimos cupos cuando hay alineación clara._`,
       isCompleted: true,
       action: 'flow_completed'
     };
@@ -506,7 +506,7 @@ async function handleProtocolApplicationFlow(message: string, step = 0, phone?: 
     return {
       handled: true,
       flowType: 'protocol_application',
-      response: `Perfecto.\nPor lo que veo, tu perfil sí encaja con los protocolos que estamos lanzando ahora.\n\nEl siguiente paso es una llamada estratégica de 15 minutos para:\n• Confirmar viabilidad real\n• Definir si entramos en ejecución\n• Ver qué modelo aplica\n\nAgenda aquí:\n🔗 https://dash.pandoras.finance/schedule/protocol\n\nSi no ves horario, responde 'AGENDAR'.`,
+      response: `Perfecto.\nPor lo que veo, tu perfil sí encaja con los protocolos que estamos lanzando ahora.\n\nEl siguiente paso es una llamada estratégica de 15 minutos para:\n• Confirmar viabilidad real\n• Definir si entramos en ejecución\n• Ver qué modelo aplica\n\nAgenda aquí:\n🔗 https://dash.pandoras.finance/schedule/protocol?type=strategy\n\nSi no ves horario, responde 'AGENDAR'.`,
       isCompleted: true,
       action: 'flow_completed'
     };

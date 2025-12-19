@@ -145,41 +145,62 @@ export function CalendarManager({ userId }: { userId: string }) {
             {/* Manage Section (Collapsible) */}
             {showManage && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-4 duration-300">
-                    <Card className="bg-zinc-900 border-zinc-800">
+                    <Card className="bg-zinc-900 border-zinc-800 col-span-1 md:col-span-2">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-base">🔗 Enlaces Públicos</CardTitle>
-                            <CardDescription>Links para compartir tu agenda.</CardDescription>
+                            <CardTitle className="text-base">🔗 Enlaces Estratégicos</CardTitle>
+                            <CardDescription>Usa el enlace correcto según la temperatura y perfil del lead.</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label className="text-xs text-zinc-400">Public Link (Alias: pandoras)</Label>
+                        <CardContent className="grid gap-4 md:grid-cols-3">
+                            {/* Strategy / Close (Red) */}
+                            <div className="bg-zinc-950 p-3 rounded-lg border border-red-500/20">
+                                <Label className="text-xs text-red-400 font-bold mb-2 block">🔴 Strategy / Close</Label>
+                                <p className="text-[10px] text-zinc-500 mb-2">Para: Protocol / Founders (Capital Confirmado)</p>
                                 <div className="flex gap-2">
-                                    <Input value={publicLink} readOnly className="bg-zinc-950 font-mono text-xs" />
-                                    <Button size="icon" variant="outline" onClick={() => { navigator.clipboard.writeText(publicLink); toast.success("Link copiado"); }}>
+                                    <Input value={`${appUrl}/schedule/protocol?type=strategy`} readOnly className="h-7 text-[10px] font-mono bg-zinc-900" />
+                                    <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => { navigator.clipboard.writeText(`${appUrl}/schedule/protocol?type=strategy`); toast.success("Link Estrategia copiado"); }}>
                                         <Copy className="w-3 h-3" />
-                                    </Button>
-                                    <Button size="icon" variant="outline" onClick={() => window.open(publicLink, '_blank')}>
-                                        <ExternalLink className="w-3 h-3" />
                                     </Button>
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                <Label className="text-xs text-zinc-400">Embed Code (Iframe)</Label>
-                                <div className="relative">
-                                    <textarea
-                                        className="w-full h-20 bg-zinc-950 border border-zinc-800 rounded-md p-2 text-xs font-mono resize-none focus:outline-none focus:ring-1 focus:ring-lime-500"
-                                        readOnly
-                                        value={`<iframe src="${publicLink}?embed=true" width="100%" height="700px" frameborder="0"></iframe>`}
-                                    />
-                                    <Button
-                                        size="sm"
-                                        className="absolute top-2 right-2 h-6 px-2 text-xs"
-                                        onClick={() => {
-                                            navigator.clipboard.writeText(`<iframe src="${publicLink}?embed=true" width="100%" height="700px" frameborder="0"></iframe>`);
-                                            toast.success("Código copiado");
-                                        }}
-                                    >
-                                        Copy
+
+                            {/* Architecture (Blue) */}
+                            <div className="bg-zinc-950 p-3 rounded-lg border border-blue-500/20">
+                                <Label className="text-xs text-blue-400 font-bold mb-2 block">🔵 Architecture Review</Label>
+                                <p className="text-[10px] text-zinc-500 mb-2">Para: Utility Leads (Técnicos/Claridad)</p>
+                                <div className="flex gap-2">
+                                    <Input value={`${appUrl}/schedule/protocol?type=architecture`} readOnly className="h-7 text-[10px] font-mono bg-zinc-900" />
+                                    <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => { navigator.clipboard.writeText(`${appUrl}/schedule/protocol?type=architecture`); toast.success("Link Arquitectura copiado"); }}>
+                                        <Copy className="w-3 h-3" />
+                                    </Button>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="bg-zinc-900 border-zinc-800">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-base">⚙️ Disponibilidad General</CardTitle>
+                            <CardDescription>Configura tus reglas básicas.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex flex-col gap-4 text-sm text-zinc-400 text-center py-8">
+                                <Clock className="w-8 h-8 mx-auto opacity-50" />
+                                <p>Configuración avanzada próximamente.</p>
+                                <p className="text-xs">Por ahora, usa "Crear Evento" para bloquear espacios manualmente.</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+
+                            {/* Capital (Yellow) */}
+                            <div className="bg-zinc-950 p-3 rounded-lg border border-yellow-500/20">
+                                <Label className="text-xs text-yellow-400 font-bold mb-2 block">🟡 Founder Capital</Label>
+                                <p className="text-[10px] text-zinc-500 mb-2">Para: Founders Tier 3 (Capital + Timeline)</p>
+                                <div className="flex gap-2">
+                                    <Input value={`${appUrl}/schedule/protocol?type=capital`} readOnly className="h-7 text-[10px] font-mono bg-zinc-900" />
+                                    <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => { navigator.clipboard.writeText(`${appUrl}/schedule/protocol?type=capital`); toast.success("Link Capital copiado"); }}>
+                                        <Copy className="w-3 h-3" />
                                     </Button>
                                 </div>
                             </div>

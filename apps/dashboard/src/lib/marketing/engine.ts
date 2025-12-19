@@ -226,14 +226,14 @@ export class MarketingEngine {
                 heading: 'Tu aplicación no está aprobada aún',
                 body: `Hola ${name},\n\nRecibimos tu aplicación para lanzar un Protocolo en Pandora.\n\nImportante: aplicar no significa entrar.\n\nSolo avanzamos con proyectos que:\n• Pueden ejecutar este trimestre\n• Tienen claridad mínima de utilidad\n• No buscan experimentar con capital ajeno\n\nSi ese es tu caso, el siguiente paso es una llamada breve para confirmar encaje.`,
                 ctaText: 'Agendar Aquí',
-                ctaLink: 'https://dash.pandoras.finance/schedule/protocol'
+                ctaLink: 'https://dash.pandoras.finance/schedule/protocol?type=strategy'
             },
             'hot_lead_day_3': {
                 previewText: 'Y cuesta caro',
                 heading: 'El error que veo todas las semanas',
                 body: `Hola ${name},\n\nLa mayoría de los proyectos Web3 no fallan por tecnología.\nFallan por postergar decisiones irreversibles.\n\nEsperan:\n• al socio ideal\n• a levantar más capital\n• a "pulir" la idea\n\nPandora existe para el momento opuesto:\ncuando decides ejecutar antes de que el mercado se mueva sin ti.\n\nSi ese momento es ahora, agenda aquí.\nSi no, no pasa nada — pero sé honesto contigo.`,
                 ctaText: 'Agendar Ahora',
-                ctaLink: 'https://dash.pandoras.finance/schedule/protocol'
+                ctaLink: 'https://dash.pandoras.finance/schedule/protocol?type=strategy'
             },
             'hot_lead_day_7': {
                 previewText: 'Por ahora',
@@ -264,7 +264,9 @@ export class MarketingEngine {
             'utility_day_7': {
                 previewText: 'No para todos',
                 heading: 'Siguiente paso (si aplica)',
-                body: `${name},\n\nSi tu protocolo pasa el filtro, el siguiente paso no es consultoría.\n\nEs:\n• Arquitectura SC\n• Loom Protocol\n• Estructura de tesorería\n\nSi no, también es una victoria.\nConstruir sin claridad es el error más caro en Web3.`
+                body: `${name},\n\nSi tu protocolo pasa el filtro, el siguiente paso no es consultoría.\n\nEs:\n• Arquitectura SC\n• Loom Protocol\n• Estructura de tesorería\n\nSi no, también es una victoria.\nConstruir sin claridad es el error más caro en Web3.`,
+                ctaText: 'Agendar Revisión',
+                ctaLink: 'https://dash.pandoras.finance/schedule/protocol?type=architecture'
             },
             'nurture_3': {
                 previewText: 'Pandora no es para todos',
