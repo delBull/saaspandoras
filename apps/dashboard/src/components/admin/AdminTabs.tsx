@@ -9,6 +9,7 @@ import ShortlinksSubTab from './ShortlinksSubTab';
 import { NFTManager } from "./NFTManager";
 import NewsletterSubTab from './NewsletterSubTab';
 import { DiscordManager } from './DiscordManager';
+import { MarketingDashboard } from './marketing/MarketingDashboard';
 
 interface Swap {
   txHash: string;
@@ -115,13 +116,12 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
               </button>
               <button
                 onClick={() => setActiveMarketingSubTab('campaigns')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${activeMarketingSubTab === 'campaigns'
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeMarketingSubTab === 'campaigns'
                   ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
                   : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
                   }`}
-                disabled
               >
-                🎯 Campaigns (Próximamente)
+                🎯 Campaigns
               </button>
             </div>
           </div>
@@ -132,11 +132,7 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
           {activeMarketingSubTab === 'newsletter' && <NewsletterSubTab />}
           {activeMarketingSubTab === 'discord' && <DiscordManager />}
           {activeMarketingSubTab === 'campaigns' && (
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">🎯</div>
-              <h3 className="text-lg font-medium mb-2">Campaign Management</h3>
-              <p className="text-zinc-500">Sistema de campañas de marketing próximamente...</p>
-            </div>
+            <MarketingDashboard />
           )}
         </div>
       )}

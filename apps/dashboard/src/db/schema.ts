@@ -759,3 +759,55 @@ export type DaoThread = typeof daoThreads.$inferSelect;
 export type DaoPost = typeof daoPosts.$inferSelect;
 export type UserBalance = typeof userBalances.$inferSelect;
 export type PlatformSetting = typeof platformSettings.$inferSelect;
+
+// =========================================================
+// MARKETING OS TABLES
+// =========================================================
+
+export const triggerTypeEnum = pgEnum("trigger_type", [
+  "manual",
+  "auto_registration",
+  "api_event",
+]);
+
+export const executionStatusEnum = pgEnum("execution_status", [
+  "active",
+  "paused",
+  "completed",
+  "intercepted",
+  "failed"
+]);
+
+export const marketingCampaigns = pgTable("marketing_campaigns", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  triggerType: triggerTypeEnum("trigger_type").default("manual").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  // Configuration for the campaign (flow steps, timing, messages)
+  // Format: { steps: [{ day: 0, type: 'whatsapp', content: '...', conditions: {} }] }
+  config: jsonb("config").notNull().default('{}'),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const marketingExecutions = pgTable("marketing_executions", {
+  id: varchar("id", { length: 36 }).primaryKey(), // using uuid string
+  userId: varchar("user_id", { length: 255 }), // Link to users table (optional)
+  leadId: varchar("lead_id", { length: 36 }),  // Link to whatsapp leads (optional) (using varchar mostly for flexible linking)
+  campaignId: integer("campaign_id").references(() => marketingCampaigns.id).notNull(),
+  status: executionStatusEnum("status").default("active").notNull(),
+  currentStageIndex: integer("current_stage_index").default(0).notNull(),
+  nextRunAt: timestamp("next_run_at"), // Critical for Cron
+
+  // History log: Array of events { timestamp, action, result }
+  historyLog: jsonb("history_log").default('[]'),
+
+  // Metadata: Store flow variations, priority answers, etc.
+  metadata: jsonb("metadata").default('{}'),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type MarketingCampaign = typeof marketingCampaigns.$inferSelect;
+export type MarketingExecution = typeof marketingExecutions.$inferSelect;
