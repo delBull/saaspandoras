@@ -68,7 +68,9 @@ export async function getMarketingDashboardStats() {
                         targetName = l.applicantName || l.userPhone || 'Lead';
                         targetType = 'lead';
                     }
-                } catch (e) { }
+                } catch (e) {
+                    // Ignore missing lead data
+                }
             }
 
             return {
