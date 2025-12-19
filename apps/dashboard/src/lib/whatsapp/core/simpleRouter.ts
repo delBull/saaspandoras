@@ -10,8 +10,7 @@ import { notifyHumanAgent } from "@/lib/notifications";
 import { db } from "~/db";
 import { whatsappUsers, whatsappSessions, whatsappMessages } from "@/db/schema";
 import { eq, and, desc } from "drizzle-orm";
-// @ts-expect-error - module exists but TS config might be strict
-import { notifySupportRequest, notifyWhatsAppLead } from "@/lib/discord"; // Dynamic or direct import
+import { notifySupportRequest } from "@/lib/discord"; // Dynamic or direct import
 import { sendWhatsAppMessage, sendInteractiveMessage } from "../utils/client";
 
 /**
