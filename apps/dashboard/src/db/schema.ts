@@ -809,5 +809,57 @@ export const marketingExecutions = pgTable("marketing_executions", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// =========================================================
+// SOVEREIGN SCHEDULER TABLES
+// =========================================================
+
+export const bookingStatusEnum = pgEnum("booking_status", [
+  "pending",
+  "confirmed",
+  "rejected",
+  "cancelled",
+  "rescheduled"
+]);
+
+export const schedulingSlots = pgTable("scheduling_slots", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: varchar("user_id", { length: 255 }).references(() => users.id).notNull(), // The host (Admin/Creator)
+  startTime: timestamp("start_time", { withTimezone: true }).notNull(),
+  endTime: timestamp("end_time", { withTimezone: true }).notNull(),
+  isBooked: boolean("is_booked").default(false).notNull(),
+  type: varchar("type", { length: 50 }).default("30_min").notNull(), // '15_min', '30_min', '60_min'
+
+  // Metadata
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const schedulingBookings = pgTable("scheduling_bookings", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  slotId: text("slot_id").references(() => schedulingSlots.id).notNull(),
+
+  // Lead Info
+  leadName: text("lead_name").notNull(),
+  leadEmail: text("lead_email").notNull(),
+  leadPhone: text("lead_phone"), // Optional if email preferred
+  notificationPreference: varchar("notification_preference", { length: 20 }).default("email").notNull(), // 'email', 'whatsapp', 'both'
+
+  // Status & Details
+  status: bookingStatusEnum("status").default("pending").notNull(),
+  meetingLink: text("meeting_link"), // Google Meet / Zoom generated or static
+  notes: text("notes"), // User's comments/questions
+
+  // Metadata
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+  cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+  cancellationReason: text("cancellation_reason"),
+});
+
 export type MarketingCampaign = typeof marketingCampaigns.$inferSelect;
 export type MarketingExecution = typeof marketingExecutions.$inferSelect;
+
+// Scheduler Types
+export type SchedulingSlot = typeof schedulingSlots.$inferSelect;
+export type SchedulingBooking = typeof schedulingBookings.$inferSelect;

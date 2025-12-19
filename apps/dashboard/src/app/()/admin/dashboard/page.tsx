@@ -662,6 +662,13 @@ export default function AdminDashboardPage() {
     return counts;
   }, [enhancedProjects]);
 
+  // Find current user ID based on wallet
+  const currentUserId = useMemo(() => {
+    if (!walletAddress || users.length === 0) return undefined;
+    const user = users.find(u => u.walletAddress?.toLowerCase() === walletAddress.toLowerCase());
+    return user?.id;
+  }, [users, walletAddress]);
+
   // Show loading state while checking admin status
   if (loading) {
     return (
@@ -712,7 +719,7 @@ export default function AdminDashboardPage() {
         /> */}
       </div>
 
-      <AdminTabs swaps={mockSwaps} users={users} showSettings={true} showUsers={true} showShortlinks={true} showMarketing={true}>
+      <AdminTabs swaps={mockSwaps} users={users} showSettings={true} showUsers={true} showShortlinks={true} showMarketing={true} currentUserId={currentUserId}>
         {/* Tab de proyectos */}
         <div key="projects-tab" className="space-y-6">
           {/* Barra de herramientas mejorada */}
