@@ -11,10 +11,15 @@ const sqlPathStaging = path.join(process.cwd(), 'scripts', 'scheduler-migration-
 const sqlStaging = fs.readFileSync(sqlPathStaging, 'utf8');
 
 const DBS = {
-    local: process.env.DATABASE_URL || "postgresql://Marco@localhost:5432/pandoras_local",
-    staging: "postgresql://neondb_owner:npg_uj0h1LpbAQxi@ep-withered-thunder-adt88vka-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require",
-    main: "postgresql://neondb_owner:npg_MjazsA5ybWQ3@ep-summer-bread-adqdsnx4-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require"
+    local: process.env.DATABASE_URL || "",
+    staging: process.env.DATABASE_URL_STAGING || "",
+    main: process.env.DATABASE_URL_MAIN || ""
 };
+
+// Validation
+if (!DBS.local && !DBS.staging && !DBS.main) {
+    console.warn("⚠️ No database URLs found in environment variables. Set DATABASE_URL, DATABASE_URL_STAGING, or DATABASE_URL_MAIN.");
+}
 
 async function migrate(env: keyof typeof DBS, url: string) {
     console.log(`\n🚀 Migrating [${env}]...`);
