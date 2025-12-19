@@ -11,6 +11,7 @@ import NewsletterSubTab from './NewsletterSubTab';
 import { DiscordManager } from './DiscordManager';
 import { MarketingDashboard } from './marketing/MarketingDashboard';
 import { CalendarManager } from "./CalendarManager";
+import { ClientsManager } from "./clients/ClientsManager";
 
 interface Swap {
   txHash: string;
@@ -49,6 +50,9 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
           <button onClick={() => setActiveTab('nft')} className={`pb-2 font-semibold ${activeTab === 'nft' ? 'text-lime-400 border-b-2 border-lime-400' : 'text-gray-400'} flex items-center gap-2`}>
             NFT Passes
           </button>
+          <button onClick={() => setActiveTab('clients')} className={`pb-2 font-semibold ${activeTab === 'clients' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-400'} flex items-center gap-2`}>
+            Clientes
+          </button>
 
           {showMarketing && (
             <button onClick={() => setActiveTab('marketing')} className={`pb-2 font-semibold ${activeTab === 'marketing' ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-400'} flex items-center gap-2`}>
@@ -71,6 +75,10 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
 
       {activeTab === 'nft' && (
         <NFTManager />
+      )}
+
+      {activeTab === 'clients' && (
+        <ClientsManager />
       )}
 
       {activeTab === 'marketing' && showMarketing && (

@@ -174,24 +174,7 @@ export function CalendarManager({ userId }: { userId: string }) {
                                     </Button>
                                 </div>
                             </div>
-                        </CardContent>
-                    </Card>
 
-                    <Card className="bg-zinc-900 border-zinc-800">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-base">⚙️ Disponibilidad General</CardTitle>
-                            <CardDescription>Configura tus reglas básicas.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="flex flex-col gap-4 text-sm text-zinc-400 text-center py-8">
-                                <Clock className="w-8 h-8 mx-auto opacity-50" />
-                                <p>Configuración avanzada próximamente.</p>
-                                <p className="text-xs">Por ahora, usa "Crear Evento" para bloquear espacios manualmente.</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
 
                             {/* Capital (Yellow) */}
                             <div className="bg-zinc-950 p-3 rounded-lg border border-yellow-500/20">
