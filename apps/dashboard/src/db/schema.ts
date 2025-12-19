@@ -863,3 +863,93 @@ export type MarketingExecution = typeof marketingExecutions.$inferSelect;
 // Scheduler Types
 export type SchedulingSlot = typeof schedulingSlots.$inferSelect;
 export type SchedulingBooking = typeof schedulingBookings.$inferSelect;
+
+// =========================================================
+// CLIENTS & PAYMENTS SYSTEM (CRM LITE & PAYMENT BRIDGE)
+// =========================================================
+
+export const clientStatusEnum = pgEnum("client_status", [
+  "lead",         // Registered interest
+  "negotiating",  // In conversation / Payment Link Sent
+  "closed_won",   // Paid / Active
+  "closed_lost",  // Rejected / Ghosted
+  "churned"       // Former client
+]);
+
+export const paymentMethodEnum = pgEnum("payment_method", [
+  "stripe",
+  "crypto",
+  "wire"
+]);
+
+export const transactionStatusEnum = pgEnum("transaction_status", [
+  "pending",
+  "processing",
+  "completed",
+  "failed",
+  "refunded"
+]);
+
+// 1. CLIENTS (CRM IDENTITY)
+export const clients = pgTable("clients", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: varchar("user_id", { length: 255 }), // Link to platform user (optional initially)
+  email: varchar("email", { length: 255 }).notNull(),
+  phone: varchar("phone", { length: 50 }),
+  name: varchar("name", { length: 255 }),
+  walletAddress: varchar("wallet_address", { length: 42 }),
+
+  // Segmentation
+  source: varchar("source", { length: 50 }).default('manual'), // protocol, founders, manual
+  package: varchar("package", { length: 50 }), // starter, pro, enterprise, custom
+  status: clientStatusEnum("status").default("lead").notNull(),
+
+  // Metadata
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// 2. PAYMENT LINKS (THE BRIDGE)
+export const paymentLinks = pgTable("payment_links", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()), // Public ID for URL
+  clientId: text("client_id").references(() => clients.id).notNull(),
+
+  // Configuration
+  title: varchar("title", { length: 255 }).notNull(), // "Protocol Deployment - Initial Batch"
+  description: text("description"),
+
+  // Financials
+  amount: decimal("amount", { precision: 18, scale: 2 }).notNull(), // USD
+  currency: varchar("currency", { length: 10 }).default("USD").notNull(),
+
+  // Methods Enabled
+  methods: jsonb("methods").default(['stripe', 'crypto', 'wire']).notNull(), // Array of enabled methods
+
+  // Lifecycle
+  isActive: boolean("is_active").default(true).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+
+  createdBy: varchar("created_by", { length: 255 }), // Admin who created it
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// 3. TRANSACTIONS (VALUE TRANSFER)
+export const transactions = pgTable("transactions", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  linkId: text("link_id").references(() => paymentLinks.id), // Optional: could be direct without link
+  clientId: text("client_id").references(() => clients.id).notNull(),
+
+  amount: decimal("amount", { precision: 18, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 10 }).default("USD").notNull(),
+
+  method: paymentMethodEnum("method").notNull(),
+  status: transactionStatusEnum("status").default("pending").notNull(),
+
+  // Proof of Payment
+  externalId: text("external_id"), // Stripe PaymentIntent ID, TxHash, etc.
+  proofUrl: text("proof_url"), // For Wire uploads
+
+  processedAt: timestamp("processed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
