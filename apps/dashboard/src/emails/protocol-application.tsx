@@ -37,16 +37,17 @@ export const ProtocolApplicationEmail = ({
                 </Text>
 
                 <Text style={text}>
-                    Gracias por aplicar para lanzar tu protocolo con <strong>Pandora’s W2E</strong>. Hemos recibido tu información con éxito y está siendo revisada manualmente para asegurar que tu proyecto encaja con lo que hacemos (infraestructura real, ejecución operativa y monetización a corto plazo).
+                    <strong>Recibimos tu aplicación correctamente.</strong><br />
+                    Nuestro equipo revisa solicitudes en menos de 24h para asegurar que tu proyecto encaja con lo que hacemos (infraestructura real, ejecución operativa y monetización a corto plazo).
                 </Text>
 
                 <Section style={box}>
                     <Heading as="h3" style={h3}>🔎 ¿Qué sucede ahora?</Heading>
                     <Text style={text}>
-                        Revisaremos tu aplicación en las próximas 48 horas.
+                        Revisaremos tu aplicación en breve.
                     </Text>
                     <Text style={text}>
-                        Si tu proyecto califica, recibirás una invitación para agendar una llamada estratégica conmigo.
+                        <strong>Pandora’s no acepta todos los proyectos.</strong> Si calificas, recibirás una invitación para agendar una llamada estratégica.
                     </Text>
                     <Text style={text}>
                         En esa llamada veremos tu proyecto, tu modelo de monetización y te propondré un paquete claro que puedes contratar para empezar ya mismo.

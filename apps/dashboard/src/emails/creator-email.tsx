@@ -58,7 +58,7 @@ export default function PandorasWelcomeEmail({
               </Text>
 
               <Link
-                href="https://dash.pandoras.finance/apply"
+                href="https://dash.pandoras.finance/protocol/apply"
                 className="inline-flex items-center rounded-full bg-blue-600 px-12 py-4 text-center font-bold text-sm text-white no-underline hover:bg-blue-700"
               >
                 🏗️ Lanzar Mi Primer Protocolo
@@ -154,7 +154,7 @@ export default function PandorasWelcomeEmail({
               </Text>
 
               <Link
-                href="https://dash.pandoras.finance/apply"
+                href="https://dash.pandoras.finance/protocol/apply"
                 className="inline-flex items-center rounded-full bg-blue-600 px-8 py-4 text-center font-bold text-sm text-white no-underline hover:bg-blue-700"
               >
                 🔧 Ir al Dashboard de Construcción

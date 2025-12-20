@@ -406,6 +406,34 @@ export default function LitepaperPage() {
                         </div>
                     </section>
 
+                    {/* 15. Call to Action */}
+                    <section className="mt-24 text-center">
+                        <div className="bg-gradient-to-b from-card to-background border rounded-2xl p-8 md:p-12 shadow-2xl">
+                            <h2 className="text-3xl font-bold mb-4">¿Tu proyecto califica?</h2>
+                            <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
+                                Si tienes infraestructura real y buscas un modelo de utilidad verificable, solicita una evaluación técnica.
+                            </p>
+                            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                                <Link
+                                    href="/protocol/apply"
+                                    className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground px-8 py-4 font-bold text-lg hover:bg-primary/90 transition-all shadow-lg hover:shadow-primary/25"
+                                >
+                                    🚀 Solicitar Evaluación
+                                </Link>
+                                <a
+                                    href="/docs/pandoras-litepaper-v1.pdf"
+                                    target="_blank"
+                                    className="inline-flex items-center justify-center rounded-full border border-input bg-background hover:bg-accent px-8 py-4 font-medium"
+                                >
+                                    Descargar PDF
+                                </a>
+                            </div>
+                            <p className="mt-6 text-xs text-muted-foreground">
+                                Pandora's revisa solicitudes en menos de 24h.
+                            </p>
+                        </div>
+                    </section>
+
                 </div>
             </article>
 
@@ -420,6 +448,6 @@ export default function LitepaperPage() {
                     </p>
                 </div>
             </footer>
-        </main>
+        </main >
     );
 }
