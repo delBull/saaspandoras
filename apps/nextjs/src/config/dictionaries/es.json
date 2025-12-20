@@ -108,9 +108,21 @@
       "title": "Construye en web3",
       "subtitle": "Tu comunidad cobra vida.",
       "typewriter_words": [
-        { "text": "Construye Protocolos de Lealtad.", "cursorColor": "#A3E635", "contentColor": "#A3E635" },
-        { "text": "Sistema de Incentivos Participativos.", "cursorColor": "#7b1b74", "contentColor": "#7b1b74" },
-        { "text": "Diseña Membresías NFT Verdaderas.", "cursorColor": "#A3E635", "contentColor": "#A3E635" }
+        {
+          "text": "Construye Protocolos de Lealtad.",
+          "cursorColor": "#A3E635",
+          "contentColor": "#A3E635"
+        },
+        {
+          "text": "Sistema de Incentivos Participativos.",
+          "cursorColor": "#7b1b74",
+          "contentColor": "#7b1b74"
+        },
+        {
+          "text": "Diseña Membresías NFT Verdaderas.",
+          "cursorColor": "#A3E635",
+          "contentColor": "#A3E635"
+        }
       ]
     },
     "final_cta": {
@@ -313,136 +325,151 @@
     "sign_out": "Cerrar sesión"
   },
   "terms": {
-    "title": "Términos de Uso del Servicio",
-    "lastUpdate": "Última Actualización: Octubre 2025",
+    "title": "Términos y Condiciones",
+    "lastUpdate": "Última Actualización: Diciembre 2025",
     "tabTerms": "Términos de Uso",
     "tabPrivacy": "Política de Privacidad",
     "sections": {
-      "welcome": {
-        "title": "Bienvenido a Pandora's Finance",
-        "content": "Estos términos y condiciones ('Términos de Uso') regulan el acceso y uso de nuestra plataforma de software como servicio (SaaS) y DApp, disponible en https://dapp.pandoras.finance/ (la 'Plataforma'), así como los servicios de emisión de Artefactos Digitales y la adquisición de derechos y utilidades digitales."
-      },
-      "definitions": {
-        "title": "Definiciones",
+      "nature": {
+        "title": "Naturaleza de la Plataforma",
+        "content": "Pandora’s Finance (“Pandora’s”) provee una plataforma de software como servicio (SaaS) y una aplicación descentralizada (DApp) que permite a creadores y organizaciones diseñar, desplegar y gestionar protocolos digitales basados en utilidad sobre infraestructura blockchain.",
         "items": [
-          "Plataforma: DApp y servicios tecnológicos SaaS de Pandora's.",
-          "Usuarios: Personas físicas o jurídicas ('Creadores' o 'Comunidad') que acceden y usan los servicios.",
-          "Artefactos de Acceso (NFTs): Activos digitales únicos (NFTs) que otorgan al portador acceso a protocolos de utilidad, beneficios o 'Creaciones' específicas.",
-          "Derechos de Utilidad: Beneficios, accesos o funcionalidades digitales específicas vinculadas a un Artefacto de Acceso o a un protocolo dentro de la Plataforma.",
-          "Emisión de Artefactos: El proceso de crear y registrar un activo digital único (NFT) en la blockchain, que representa una utilidad específica definida por un 'Creador'."
+          "Pandora’s no es: Una plataforma de inversión, Un asesor financiero, Un bróker, custodio o fiduciario, Un garante de resultados, ganancias o estatus regulatorio.",
+          "Pandora’s provee únicamente tecnología e infraestructura."
         ]
       },
-      "usage": {
-        "title": "Uso de la Plataforma",
+      "roles": {
+        "title": "Roles de Usuario",
+        "content": "La Plataforma puede ser utilizada por diferentes tipos de usuarios, incluyendo pero no limitado a: Creadores / Dueños de Protocolo, Participantes de la Comunidad, Clientes contratando servicios profesionales bajo acuerdo separado. Aplican diferentes derechos y obligaciones según el rol."
+      },
+      "no_investment": {
+        "title": "No es Inversión ni Oferta de Valores",
         "items": [
-          "La Plataforma permite a los 'Creadores' diseñar y lanzar protocolos de utilidad, y a la 'Comunidad' obtener Artefactos de Acceso (NFTs) que otorgan Derechos de Utilidad en 'Creaciones' seleccionadas.",
-          "Los usuarios deben tener una billetera digital compatible para interactuar con la Plataforma.",
-          "Pandora's opera como una plataforma tecnológica (SaaS) y no es un asesor financiero, de inversiones, ni de ningún tipo. No ofrecemos garantías sobre el valor, la liquidez o los beneficios futuros de los Artefactos Digitales o Derechos de Utilidad."
+          "Cualquier artefacto digital, NFT, llave de acceso o utilidad de protocolo creada o emitida usando la Plataforma: No representa equidad (equity), propiedad, derechos de ganancia o contratos de inversión. No garantiza valor, liquidez o apreciación. Está estrictamente limitada a la utilidad explícitamente definida por el creador.",
+          "Pandora’s no ofrece, promueve ni facilita valores (securities)."
         ]
       },
-      "responsibility": {
-        "title": "Responsabilidad y Exención de Garantías",
+      "blockchain": {
+        "title": "Reconocimiento de Blockchain",
         "items": [
-          "Pandora's no se responsabiliza por la volatilidad, pérdidas, riesgos o fluctuaciones de valor de los activos digitales (como criptomonedas o Artefactos) utilizados o adquiridos en la Plataforma.",
-          "La Plataforma opera en blockchain, por lo que todas las transacciones son irreversibles y no pueden modificarse una vez confirmadas.",
-          "Los usuarios aceptan y entienden que la posesión de un Artefacto de Acceso (NFT) otorga únicamente los derechos de utilidad o acceso especificados en su 'Creación' (protocolo), y no confiere propiedad sobre la empresa Pandora's, sus activos, ni ningún activo subyacente que no esté explícitamente definido en dicho protocolo.",
-          "La Plataforma se reserva el derecho de modificar, actualizar o suspender cualquier servicio sin previo aviso."
+          "Los usuarios reconocen y aceptan que: Las transacciones en blockchain son irreversibles. Los contratos inteligentes son inmutables una vez desplegados. Errores, mal uso o mala configuración pueden resultar en pérdidas permanentes.",
+          "Pandora’s no es responsable por pérdidas derivadas de la mecánica de blockchain o acciones del usuario."
         ]
       },
-      "requirements": {
-        "title": "Requisitos del Usuario",
-        "items": [
-          "Debe ser mayor de 18 años para usar la Plataforma.",
-          "Acepta cumplir con las regulaciones fiscales y legales de su país de residencia.",
-          "Pandora's se reserva el derecho de rechazar el acceso a cualquier usuario si se detecta actividad sospechosa o violaciones a estos Términos."
-        ]
+      "services": {
+        "title": "Servicios Profesionales",
+        "content": "Cualquier servicio profesional (incluyendo análisis de viabilidad de protocolo, diseño de arquitectura o despliegue) se rige exclusivamente por: Un Master Services Agreement (MSA), y Uno o más Statements of Work (SOW). Estos documentos prevalecen sobre estos Términos con respecto a los servicios."
       },
       "payments": {
-        "title": "Pagos y Tarifas de Servicio",
+        "title": "Pagos y Reembolsos",
         "items": [
-          "Los pagos de tarifas de servicio en la Plataforma se realizan exclusivamente en criptomonedas o mediante métodos aprobados.",
-          "Pandora's, como proveedor SaaS, cobra tarifas (fees) por el uso de la plataforma, la emisión de Artefactos o la interacción con los protocolos. Estas tarifas se comunicarán claramente.",
-          "Debido a la naturaleza de la blockchain, todas las transacciones (incluyendo el pago de tarifas de servicio o la adquisición de Artefactos) son finales e irreversibles. No se ofrecen reembolsos."
+          "Todos los pagos realizados a través de la Plataforma o enlaces asociados son: Finales, No reembolsables, Considerados como aceptación de los términos contractuales aplicables.",
+          "Pandora’s no ofrece reembolsos una vez que el trabajo ha comenzado o se han autorizado acciones en blockchain."
         ]
       },
-      "dataProtection": {
-        "title": "Protección de Datos y Seguridad",
+      "liability": {
+        "title": "Limitación de Responsabilidad",
         "items": [
-          "Los datos personales se tratan conforme a nuestra Política de Privacidad.",
-          "El usuario es responsable de la seguridad de su billetera digital y claves privadas.",
-          "Pandora's no se hace responsable por accesos no autorizados por negligencia del usuario en la custodia de sus credenciales."
+          "En la máxima medida permitida por la ley: Pandora’s no será responsable por daños indirectos, incidentales o consecuentes.",
+          "La responsabilidad total no excederá las tarifas pagadas directamente a Pandora’s por el servicio específico o uso de plataforma que dio origen al reclamo."
         ]
+      },
+      "ip": {
+        "title": "Propiedad Intelectual",
+        "content": "La Plataforma, frameworks, fábricas y tecnología subyacente permanecen como propiedad exclusiva de Pandora’s. Los Clientes retienen la propiedad de sus configuraciones específicas de proyecto y contratos desplegados, sujeto a los acuerdos aplicables."
+      },
+      "termination": {
+        "title": "Suspensión y Terminación",
+        "content": "Pandora’s puede suspender o terminar el acceso a la Plataforma si: Se violan estos Términos, Se detecta actividad ilegal o abusiva, No se cumplen los estándares de cumplimiento requeridos."
       },
       "law": {
-        "title": "Ley Aplicable y Jurisdicción",
-        "items": [
-          "Estos Términos de Uso se rigen por las leyes de México.",
-          "Cualquier disputa se resolverá en tribunales competentes en Ciudad de México, México."
-        ]
+        "title": "Ley Aplicable",
+        "content": "Estos Términos se rigen por las leyes de México. La jurisdicción se acuerda expresamente en la Ciudad de México."
+      },
+      "acceptance": {
+        "title": "Aceptación",
+        "content": "Al acceder o usar la Plataforma, usted reconoce que ha leído, entendido y aceptado estos Términos."
       }
-    },
-    "acceptance": {
-      "title": "Aceptación de los Términos de Uso",
-      "content": "Al hacer uso de la plataforma, usted reconoce haber leído y comprendido estos Términos de Uso y la Política de Privacidad, aceptando su cumplimiento sin reservas."
     }
   },
   "privacy": {
     "title": "Política de Privacidad",
-    "lastUpdate": "Última Actualización: Marzo 2025",
-    "introduction": "En Pandora's, nos comprometemos a proteger la privacidad de nuestros usuarios. Esta Política de Privacidad describe cómo recopilamos, usamos y protegemos su información personal cuando usa nuestra Plataforma.",
+    "lastUpdate": "Última Actualización: Diciembre 2025",
+    "introduction": "Pandora’s Finance (“Pandora’s”, “nosotros”) está comprometido a proteger la privacidad de los usuarios de su plataforma SaaS, aplicaciones descentralizadas (DApps) y servicios profesionales relacionados. Esta Política explica cómo recolectamos, usamos, almacenamos y protegemos datos personales.",
     "sections": {
+      "scope": {
+        "title": "Alcance",
+        "items": [
+          "Usuarios de la Plataforma y DApp de Pandora’s",
+          "Clientes contratando servicios profesionales bajo un Master Services Agreement (MSA) y Statement(s) of Work (SOW)",
+          "Visitantes del sitio web y envíos de clientes potenciales (leads)"
+        ]
+      },
       "collection": {
         "title": "Información que Recopilamos",
         "items": [
-          "Información personal: Nombre, correo electrónico (si se proporciona voluntariamente), dirección de billetera digital.",
-          "Información de transacciones: Historial de interacciones en la plataforma, 'minteo' (creación) de Artefactos y movimientos en la blockchain asociados a su billetera.",
-          "Datos técnicos: Dirección IP, tipo de navegador, datos de cookies."
+          "a) Información que provees: Nombre, email. Nombre de empresa o proyecto. Dirección de billetera (wallet). Comunicaciones (emails, WhatsApp, formularios). Información de facturación (cuando aplique).",
+          "b) Datos recolectados automáticamente: Dirección IP. Datos de navegador y dispositivo. Logs de uso. Cookies e identificadores de sesión.",
+          "c) Datos de Blockchain: Direcciones públicas de wallet. Transacciones on-chain. Interacciones con smart contracts. ⚠️ Los datos de blockchain son públicos, inmutables y no controlados por Pandora’s."
         ]
       },
-      "usage": {
-        "title": "Uso de la Información",
+      "purpose": {
+        "title": "Propósito del Procesamiento de Datos",
         "items": [
-          "Procesar transacciones y administrar cuentas de usuario.",
-          "Mejorar la seguridad y funcionalidad de la Plataforma.",
-          "Enviar comunicaciones sobre cambios y actualizaciones del servicio.",
-          "Cumplir con regulaciones legales y de KYC/AML si fuesen aplicables."
+          "Proveer acceso a la Plataforma y DApp",
+          "Entregar servicios profesionales (ejecución de SOW)",
+          "Emitir facturas, recibos y confirmaciones",
+          "Operar CRM, calificación de leads y automatización de flujos",
+          "Comunicar actualizaciones, avisos operativos e información de servicio",
+          "Mejorar seguridad, rendimiento y confiabilidad",
+          "Cumplir con obligaciones legales, fiscales y regulatorias"
         ]
       },
-      "protection": {
-        "title": "Protección de la Información",
+      "legal_basis": {
+        "title": "Bases Legales",
         "items": [
-          "Implementamos medidas de seguridad técnicas y organizativas.",
-          "La información en blockchain es pública, inmutable y transparente.",
-          "No vendemos información personal a terceros sin consentimiento explícito."
+          "Consentimiento del usuario",
+          "Necesidad contractual (Uso de Plataforma, MSA/SOW)",
+          "Obligaciones legales",
+          "Intereses comerciales legítimos (seguridad, prevención de fraude, analítica)"
         ]
+      },
+      "sharing": {
+        "title": "Compartir Datos y Procesadores",
+        "content": "Pandora’s puede compartir datos con proveedores de servicios confiables estrictamente para propósitos operativos (Procesadores de pago, Infraestructura blockchain, Servicios de email). Estos proveedores procesan datos bajo confidencialidad. Pandora’s no vende datos personales."
+      },
+      "international": {
+        "title": "Transferencias Internacionales",
+        "content": "Debido a la naturaleza global y descentralizada de blockchain y la nube, los datos pueden procesarse o almacenarse en jurisdicciones fuera de tu país de residencia. Pandora’s toma medidas razonables para asegurar estándares adecuados de protección."
+      },
+      "retention": {
+        "title": "Retención de Datos",
+        "content": "Retenemos datos personales solo el tiempo necesario para obligaciones contractuales y de cumplimiento. Algunos datos no pueden ser eliminados (Registros blockchain, Facturación)."
       },
       "rights": {
-        "title": "Derechos del Usuario (ARCO)",
+        "title": "Derechos del Usuario",
         "items": [
-          "Acceder, modificar o eliminar su información personal (en la medida que no esté en la blockchain).",
-          "Solicitar la cancelación de su cuenta (si aplica).",
-          "Optar por no recibir comunicaciones promocionales."
+          "Solicitar acceso a tus datos personales",
+          "Solicitar corrección de datos inexactos",
+          "Solicitar eliminación donde sea legalmente permisible",
+          "Optar por no recibir comunicaciones no esenciales"
         ]
       },
-      "cookies": {
-        "title": "Cookies y Tecnologías de Rastreo",
-        "items": [
-          "Utilizamos cookies para mejorar la experiencia del usuario.",
-          "Autenticación segura y persistente en la sesión.",
-          "Análisis de comportamiento y navegación."
-        ]
+      "security": {
+        "title": "Seguridad",
+        "content": "Implementamos salvaguardas técnicas y organizativas. Sin embargo, ningún sistema es totalmente libre de riesgos. Los usuarios son responsables de salvaguardar sus billeteras y llaves privadas."
       },
-      "transfers": {
-        "title": "Transferencias Internacionales de Datos",
-        "content": "Debido a la naturaleza descentralizada de la tecnología blockchain, algunos datos (como las transacciones públicas) pueden ser procesados y replicados globalmente. Nos aseguramos de cumplir con regulaciones de protección de datos aplicables."
+      "other_agreements": {
+        "title": "Relación con Otros Acuerdos",
+        "content": "Esta Política opera junto con los Términos y Condiciones, MSA y SOW de Pandora’s. En caso de conflicto, prevalecen los acuerdos contractuales que rigen los servicios."
       },
-      "changes": {
-        "title": "Cambios en la Política de Privacidad",
-        "content": "Podemos actualizar esta política en cualquier momento. Se notificará a los usuarios sobre cambios importantes mediante la Plataforma o correo electrónico (si fue proporcionado)."
+      "updates": {
+        "title": "Actualizaciones",
+        "content": "Pandora’s puede actualizar esta Política de vez en cuando. Cambios materiales serán comunicados vía Plataforma o email."
       },
       "contact": {
         "title": "Contacto",
-        "content": "Para dudas o solicitudes sobre la privacidad de los datos, contáctenos en:",
+        "content": "Para preguntas o solicitudes de privacidad:",
         "email": "legal@pandoras.finance"
       }
     }
@@ -472,12 +499,36 @@
     "subtitle": "En Pandora, cada Creación disponible es construido por arquitectos de comunidades. Esto asegura que solo Creaciones basadas en utilidad real formen parte de nuestra plataforma.",
     "clasification": "Clasificación de Artefactos y Protocolos de Utilidad",
     "assets": {
-      "casa_bella": { "tag": "REAL ESTATE", "title": "Casa Bella", "description": "Una villa de lujo con vista al mar y acabados de alta gama." },
-      "vista_horizonte": { "tag": "REAL ESTATE", "title": "Vista Horizonte", "description": "La mejor vista de la Bahía en un lugar maravilloso." },
-      "narai": { "tag": "REAL ESTATE", "title": "Narai", "description": "Condominios con vista al mar, comodidad y lujo." },
-      "startup_ia": { "tag": "STARTUP", "title": "Startup de IA", "description": "Revolucionando el mercado con inteligencia artificial." },
-      "fintech": { "tag": "STARTUP", "title": "Fintech Innovadora", "description": "Ofreciendo soluciones de pago radicalmente nuevas." },
-      "ecommerce": { "tag": "STARTUP", "title": "E-commerce Sostenible", "description": "Moda sostenible con un gran potencial de crecimiento." }
+      "casa_bella": {
+        "tag": "REAL ESTATE",
+        "title": "Casa Bella",
+        "description": "Una villa de lujo con vista al mar y acabados de alta gama."
+      },
+      "vista_horizonte": {
+        "tag": "REAL ESTATE",
+        "title": "Vista Horizonte",
+        "description": "La mejor vista de la Bahía en un lugar maravilloso."
+      },
+      "narai": {
+        "tag": "REAL ESTATE",
+        "title": "Narai",
+        "description": "Condominios con vista al mar, comodidad y lujo."
+      },
+      "startup_ia": {
+        "tag": "STARTUP",
+        "title": "Startup de IA",
+        "description": "Revolucionando el mercado con inteligencia artificial."
+      },
+      "fintech": {
+        "tag": "STARTUP",
+        "title": "Fintech Innovadora",
+        "description": "Ofreciendo soluciones de pago radicalmente nuevas."
+      },
+      "ecommerce": {
+        "tag": "STARTUP",
+        "title": "E-commerce Sostenible",
+        "description": "Moda sostenible con un gran potencial de crecimiento."
+      }
     },
     "info_modal": {
       "title": "Sobre nuestro Hub de Creaciones",
@@ -485,42 +536,42 @@
       "paragraph2": "Con Pandora, la participación deja de ser pasiva: ahora puedes construir tu comunidad, activarla y generar Recompensas por la 'Labor' real. Nuestra plataforma te guía de principio a fin: desde el diseño de tu protocolo hasta la gestión de tus Creaciones y Artefactos, todo dentro de un ecosistema transparente, basado en utilidad y diseñado para crecer con tu comunidad."
     },
     "info_sections": {
-        "section1": {
-          "title": "Toma el control de tu comunidad",
-          "content": "Selecciona uan categoría, revisa su 'Códice' (documentación) y comienza tu proceso de 'Forja' (creación) en minutos. Cada categoría viene con métricas claras para que tomes decisiones de diseño con confianza."
-        },
-        "section2": {
-          "title": "Transparencia y participación continua",
-          "content": "Ofrecemos un sistema de monitoreo en tiempo real de la 'Labor' (trabajo) que garantiza la calidad de cada protocolo. Así, tu comunidad crece respaldada por datos y transparencia total."
-        }
+      "section1": {
+        "title": "Toma el control de tu comunidad",
+        "content": "Selecciona uan categoría, revisa su 'Códice' (documentación) y comienza tu proceso de 'Forja' (creación) en minutos. Cada categoría viene con métricas claras para que tomes decisiones de diseño con confianza."
       },
-      "tokenization_process": {
-        "title_part1": "De Idea a Artefacto",
-        "title_part2": "Manifiesto",
-        "subtitle": "Transparencia y utilidad al servicio de tu comunidad",
-        "steps": [
-          {
-            "title": "Selección de Plantilla",
-            "description": "Elige una plantilla base ('Accesos', 'Lealtad', 'Work-to-Earn') de nuestro 'Códice' (biblioteca de plantillas auditadas)."
-          },
-          {
-            "title": "Configuración No-Code",
-            "description": "Define las reglas de tu protocolo: tareas, recompensas, beneficios y gobernanza. Sin escribir código."
-          },
-          {
-            "title": "Diseño y Pruebas (Testnet)",
-            "description": "Personaliza tu Artefacto y pruébalo en un entorno seguro (Testnet) antes de 'Desatarlo' al mundo."
-          },
-          {
-            "title": "Despliegue y Propiedad",
-            "description": "'Desata' (lanza) tu Artefacto en la blockchain. Tú eres el único dueño y responsable del contrato inteligente."
-          },
-          {
-            "title": "Gestión y Crecimiento",
-            "description": "Usa tu dashboard para monitorear la participación, gestionar las recompensas y hacer crecer tu ecosistema."
-          }
-        ]
+      "section2": {
+        "title": "Transparencia y participación continua",
+        "content": "Ofrecemos un sistema de monitoreo en tiempo real de la 'Labor' (trabajo) que garantiza la calidad de cada protocolo. Así, tu comunidad crece respaldada por datos y transparencia total."
       }
+    },
+    "tokenization_process": {
+      "title_part1": "De Idea a Artefacto",
+      "title_part2": "Manifiesto",
+      "subtitle": "Transparencia y utilidad al servicio de tu comunidad",
+      "steps": [
+        {
+          "title": "Selección de Plantilla",
+          "description": "Elige una plantilla base ('Accesos', 'Lealtad', 'Work-to-Earn') de nuestro 'Códice' (biblioteca de plantillas auditadas)."
+        },
+        {
+          "title": "Configuración No-Code",
+          "description": "Define las reglas de tu protocolo: tareas, recompensas, beneficios y gobernanza. Sin escribir código."
+        },
+        {
+          "title": "Diseño y Pruebas (Testnet)",
+          "description": "Personaliza tu Artefacto y pruébalo en un entorno seguro (Testnet) antes de 'Desatarlo' al mundo."
+        },
+        {
+          "title": "Despliegue y Propiedad",
+          "description": "'Desata' (lanza) tu Artefacto en la blockchain. Tú eres el único dueño y responsable del contrato inteligente."
+        },
+        {
+          "title": "Gestión y Crecimiento",
+          "description": "Usa tu dashboard para monitorear la participación, gestionar las recompensas y hacer crecer tu ecosistema."
+        }
+      ]
+    }
   },
   "about": {
     "title": "Sobre Pandora's Finance: Construyendo la Nueva Utilidad Digital",

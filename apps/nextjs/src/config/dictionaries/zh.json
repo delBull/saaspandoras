@@ -1,10 +1,10 @@
 {
   "whitepaper": {
-      "sections": "白皮书章节",
-      "search": "搜索",
-      "search_placeholder": "在白皮书中搜索...",
-      "ai_search_soon": "AI 搜索功能即将推出。",
-      "on_this_page": "在本页"
+    "sections": "白皮书章节",
+    "search": "搜索",
+    "search_placeholder": "在白皮书中搜索...",
+    "ai_search_soon": "AI 搜索功能即将推出。",
+    "on_this_page": "在本页"
   },
   "price": {
     "title": "透明且实惠的价格！",
@@ -108,9 +108,21 @@
       "title": "在 web3 上构建",
       "subtitle": "你的社区焕发活力。",
       "typewriter_words": [
-        { "text": "构建忠诚度协议。", "cursorColor": "#A3E635", "contentColor": "#A3E635" },
-        { "text": "参与式激励系统。", "cursorColor": "#7b1b74", "contentColor": "#7b1b74" },
-        { "text": "设计真正的NFT会员资格。", "cursorColor": "#A3E635", "contentColor": "#A3E635" }
+        {
+          "text": "构建忠诚度协议。",
+          "cursorColor": "#A3E635",
+          "contentColor": "#A3E635"
+        },
+        {
+          "text": "参与式激励系统。",
+          "cursorColor": "#7b1b74",
+          "contentColor": "#7b1b74"
+        },
+        {
+          "text": "设计真正的NFT会员资格。",
+          "cursorColor": "#A3E635",
+          "contentColor": "#A3E635"
+        }
       ]
     },
     "video": {
@@ -278,136 +290,151 @@
     "sign_out": "退出"
   },
   "terms": {
-    "title": "服务使用条款",
-    "lastUpdate": "最后更新：2025年3月",
-    "tabTerms": "使用条款",
-    "tabPrivacy": "隐私政策",
+    "title": "Terms & Conditions",
+    "lastUpdate": "Last Updated: December 2025",
+    "tabTerms": "Terms of Use",
+    "tabPrivacy": "Privacy Policy",
     "sections": {
-      "welcome": {
-        "title": "欢迎来到 Pandora's Finance",
-        "content": "本条款与条件（“使用条款”）管辖对我们的软件即服务（SaaS）平台和DApp（位于 https://dapp.pandoras.finance/，简称“平台”）的访问和使用，以及数字凭证发行和数字权益与实用功能的获取服务。"
-      },
-      "definitions": {
-        "title": "定义",
+      "nature": {
+        "title": "Nature of the Platform",
+        "content": "Pandora’s Finance (“Pandora’s”) provides a software-as-a-service (SaaS) platform and decentralized application (DApp) that enables creators and organizations to design, deploy, and manage utility-based digital protocols on blockchain infrastructure.",
         "items": [
-          "平台: Pandora's 的 SaaS 技术服务和 DApp。",
-          "用户: 访问和使用服务的个人或法人实体（“创作者”或“社区”）。",
-          "访问凭证 (NFT): 一种独特的数字资产 (NFT)，授予持有者访问实用协议、权益或特定“创作”的权限。",
-          "实用权益: 与平台内的“访问凭证”或协议相关联的特定数字权益、访问权或功能。",
-          "凭证发行: 在区块链上创建和注册一个独特的数字资产 (NFT) 的过程，该资产代表由“创作者”定义的特定实用功能。"
+          "Pandora’s is not: An investment platform, A financial advisor, A broker, custodian, or fiduciary, A guarantor of outcomes, profits, or regulatory status.",
+          "Pandora’s provides technology and infrastructure only."
         ]
       },
-      "usage": {
-        "title": "平台使用",
+      "roles": {
+        "title": "User Roles",
+        "content": "The Platform may be used by different types of users, including but not limited to: Creators / Protocol Owners, Community Participants, Clients engaging professional services under a separate agreement. Different rights and obligations apply depending on the role."
+      },
+      "no_investment": {
+        "title": "No Investment or Securities Offering",
         "items": [
-          "平台允许“创作者”设计和启动实用协议，并允许“社区”获取“访问凭证”(NFT)，从而在选定的“创作”中授予“实用权益”。",
-          "用户必须拥有兼容的数字钱包才能与平台互动。",
-          "Pandora's 作为一个技术平台 (SaaS) 运营，并非财务、投资或任何其他类型的顾问。我们不对“数字凭证”或“实用权益”的价值、流动性或未来收益提供任何保证。"
+          "Any digital artifacts, NFTs, access keys, or protocol utilities created or issued using the Platform: Do not represent equity, ownership, profit rights, or investment contracts. Do not guarantee value, liquidity, or appreciation. Are strictly limited to the utility explicitly defined by the creator.",
+          "Pandora’s does not offer, promote, or facilitate securities."
         ]
       },
-      "responsibility": {
-        "title": "责任与免责声明",
+      "blockchain": {
+        "title": "Blockchain Acknowledgment",
         "items": [
-          "Pandora's 对平台上使用或获取的数字资产（如加密货币或凭证）的波动性、损失、风险或价值波动不承担任何责任。",
-          "平台在区块链上运行，因此所有交易一经确认即不可逆转，无法修改。",
-          "用户接受并理解，拥有“访问凭证”(NFT) 仅授予其“创作”（协议）中指定的实用权益或访问权限，并不授予 Pandora's 公司、其资产或该协议中未明确定义的任何标的资产的所有权。",
-          "平台保留随时修改、更新或暂停任何服务的权利，恕不另行通知。"
+          "Users acknowledge and accept that: Blockchain transactions are irreversible. Smart contracts are immutable once deployed. Errors, misuse, or misconfiguration may result in permanent loss.",
+          "Pandora’s is not responsible for losses arising from blockchain mechanics or user actions."
         ]
       },
-      "requirements": {
-        "title": "用户要求",
-        "items": [
-          "您必须年满18岁才能使用本平台。",
-          "您同意遵守您居住国家/地区的税务和法律法规。",
-          "如果检测到可疑活动或违反本条款的行为，Pandora's 保留拒绝任何用户访问的权利。"
-        ]
+      "services": {
+        "title": "Professional Services",
+        "content": "Any professional services (including protocol viability analysis, architecture design, or deployment) are governed exclusively by: A Master Services Agreement (MSA), and One or more Statements of Work (SOW). These documents supersede these Terms with respect to services."
       },
       "payments": {
-        "title": "付款和服务费",
+        "title": "Payments & Refunds",
         "items": [
-          "平台上的服务费支付仅限使用加密货币或经批准的方式进行。",
-          "作为SaaS提供商，Pandora's 会对使用平台、发行凭证或与协议互动收取费用。这些费用将明确传达。",
-          "鉴于区块链的性质，所有交易（包括支付服务费或获取凭证）均为最终且不可逆的。我们不提供退款。"
+          "All payments made through the Platform or associated links are: Final, Non-refundable, Considered acceptance of the applicable contractual terms.",
+          "Pandora’s does not offer refunds once work has started or blockchain actions have been authorized."
         ]
       },
-      "dataProtection": {
-        "title": "数据保护与安全",
+      "liability": {
+        "title": "Limitation of Liability",
         "items": [
-          "个人数据将根据我们的隐私政策进行处理。",
-          "用户有责任保护其数字钱包和私钥的安全。",
-          "因用户疏忽保管其凭证而导致的未经授权的访问，Pandora's 不承担任何责任。"
+          "To the maximum extent permitted by law: Pandora’s shall not be liable for indirect, incidental, or consequential damages.",
+          "Total liability shall not exceed the fees paid directly to Pandora’s for the specific service or platform usage giving rise to the claim."
         ]
+      },
+      "ip": {
+        "title": "Intellectual Property",
+        "content": "The Platform, frameworks, factories, and underlying technology remain the exclusive property of Pandora’s. Clients retain ownership of their project-specific configurations and deployed contracts, subject to the applicable agreements."
+      },
+      "termination": {
+        "title": "Suspension & Termination",
+        "content": "Pandora’s may suspend or terminate access to the Platform if: These Terms are violated, Illegal or abusive activity is detected, Required compliance standards are not met."
       },
       "law": {
-        "title": "适用法律与管辖权",
-        "items": [
-          "本使用条款受墨西哥法律管辖。",
-          "任何争议将在墨西哥合众国墨西哥城的有管辖权的法院解决。"
-        ]
+        "title": "Governing Law",
+        "content": "These Terms are governed by the laws of Mexico. Jurisdiction is expressly agreed to be Mexico City."
+      },
+      "acceptance": {
+        "title": "Acceptance",
+        "content": "By accessing or using the Platform, you acknowledge that you have read, understood, and accepted these Terms."
       }
-    },
-    "acceptance": {
-      "title": "接受使用条款",
-      "content": "使用本平台即表示您确认已阅读并理解本使用条款和隐私政策，并毫无保留地同意遵守。"
     }
   },
   "privacy": {
-    "title": "隐私政策",
-    "lastUpdate": "最后更新：2025年3月",
-    "introduction": "在 Pandora's，我们致力于保护用户的隐私。本隐私政策描述了当您使用我们的平台时，我们如何收集、使用和保护您的个人信息。",
+    "title": "Privacy Policy",
+    "lastUpdate": "Last Updated: December 2025",
+    "introduction": "Pandora’s Finance (“Pandora’s”, “we”, “us”) is committed to protecting the privacy of users of its software-as-a-service platform, decentralized applications (DApps), and related professional services. This Privacy Policy explains how we collect, use, store, and protect personal data.",
     "sections": {
+      "scope": {
+        "title": "Scope",
+        "items": [
+          "Users of the Pandora’s Platform and DApp",
+          "Clients engaging professional services under a Master Services Agreement (MSA) and Statement(s) of Work (SOW)",
+          "Website visitors and lead submissions"
+        ]
+      },
       "collection": {
-        "title": "我们收集的信息",
+        "title": "Information We Collect",
         "items": [
-          "个人信息: 姓名、电子邮箱（如果自愿提供）、数字钱包地址。",
-          "交易信息: 平台互动历史、凭证“铸造”以及与您钱包相关的区块链动向。",
-          "技术数据: IP地址、浏览器类型、Cookie数据。"
+          "a) Information You Provide: Name, email address. Company or project name. Wallet address(es). Communications (emails, WhatsApp, forms). Billing and invoicing information (when applicable).",
+          "b) Automatically Collected Data: IP address. Browser and device data. Usage logs. Cookies and session identifiers.",
+          "c) Blockchain Data: Public wallet addresses. On-chain transactions. Smart contract interactions. ⚠️ Blockchain data is public, immutable, and not controlled by Pandora’s."
         ]
       },
-      "usage": {
-        "title": "信息的使用",
+      "purpose": {
+        "title": "Purpose of Data Processing",
         "items": [
-          "处理交易和管理用户账户。",
-          "改善平台的安全性和功能性。",
-          "发送有关服务变更和更新的通讯。",
-          "在需要时遵守适用的法律和 KYC/AML 法规。"
+          "Provide access to the Platform and DApp",
+          "Deliver professional services (SOW execution)",
+          "Issue invoices, receipts, and confirmations",
+          "Operate CRM, lead qualification, and workflow automation",
+          "Communicate updates, operational notices, and service-related information",
+          "Improve security, performance, and reliability",
+          "Comply with legal, tax, and regulatory obligations"
         ]
       },
-      "protection": {
-        "title": "信息保护",
+      "legal_basis": {
+        "title": "Legal Basis",
         "items": [
-          "我们实施技术和组织上的安全措施。",
-          "区块链上的信息是公开的、不可篡改的和透明的。",
-          "未经明确同意，我们不会将个人信息出售给第三方。"
+          "User consent",
+          "Contractual necessity (Platform use, MSA/SOW)",
+          "Legal obligations",
+          "Legitimate business interests (security, fraud prevention, analytics)"
         ]
+      },
+      "sharing": {
+        "title": "Data Sharing & Processors",
+        "content": "Pandora’s may share data with trusted third-party service providers strictly for operational purposes (Payment processors, Blockchain infrastructure, Email services). These providers process data under confidentiality. Pandora’s does not sell personal data."
+      },
+      "international": {
+        "title": "International Data Transfers",
+        "content": "Due to the global and decentralized nature of blockchain and cloud infrastructure, data may be processed or stored in jurisdictions outside your country of residence. Pandora’s takes reasonable measures to ensure adequate data protection standards."
+      },
+      "retention": {
+        "title": "Data Retention",
+        "content": "We retain personal data only as long as necessary for contractual obligations and compliance. Some data cannot be deleted (Blockchain records, Invoicing)."
       },
       "rights": {
-        "title": "用户权利（数据保护）",
+        "title": "User Rights",
         "items": [
-          "访问、修改或删除您的个人信息（在信息未上链的范围内）。",
-          "请求注销您的账户（如果适用）。",
-          "选择不接收促销信息。"
+          "Request access to your personal data",
+          "Request correction of inaccurate data",
+          "Request deletion where legally permissible",
+          "Opt out of non-essential communications"
         ]
       },
-      "cookies": {
-        "title": "Cookie 和跟踪技术",
-        "items": [
-          "我们使用 Cookie 来改善用户体验。",
-          "安全身份验证和持久会话。",
-          "行为和导航分析。"
-        ]
+      "security": {
+        "title": "Security",
+        "content": "We implement technical and organizational safeguards. However, no system is entirely risk-free. Users are responsible for safeguarding their wallets and private keys."
       },
-      "transfers": {
-        "title": "国际数据传输",
-        "content": "鉴于区块链技术的去中心化性质，某些数据（如公开交易）可能会在全球范围内被处理和复制。我们确保遵守适用的数据保护法规。"
+      "other_agreements": {
+        "title": "Relationship with Other Agreements",
+        "content": "This Privacy Policy operates alongside Pandora’s Terms & Conditions, MSA, and SOW. In case of conflict, contractual agreements governing services prevail."
       },
-      "changes": {
-        "title": "隐私政策的变更",
-        "content": "我们可能随时更新本政策。重大变更将通过平台或电子邮件（如果已提供）通知用户。"
+      "updates": {
+        "title": "Updates",
+        "content": "Pandora’s may update this Privacy Policy from time to time. Material changes will be communicated via the Platform or email."
       },
       "contact": {
-        "title": "联系方式",
-        "content": "如有关于数据隐私的疑问或请求，请通过以下方式联系我们：",
+        "title": "Contact",
+        "content": "For privacy-related questions or requests:",
         "email": "legal@pandoras.finance"
       }
     }
@@ -437,12 +464,36 @@
     "subtitle": "在 Pandora，每一个可用的‘创作’都是由社区架构师构建的。这确保了只有基于真实实用性的‘创作’才能成为我们平台的一部分。",
     "clasification": "神器和实用协议的分类",
     "assets": {
-      "casa_bella": { "tag": "REAL ESTATE", "title": "Casa Bella", "description": "Una villa de lujo con vista al mar y acabados de alta gama." },
-      "vista_horizonte": { "tag": "REAL ESTATE", "title": "Vista Horizonte", "description": "La mejor vista de la Bahía en un lugar maravilloso." },
-      "narai": { "tag": "REAL ESTATE", "title": "Narai", "description": "Condominios con vista al mar, comodidad y lujo." },
-      "startup_ia": { "tag": "STARTUP", "title": "Startup de IA", "description": "Revolucionando el mercado con inteligencia artificial." },
-      "fintech": { "tag": "STARTUP", "title": "Fintech Innovadora", "description": "Ofreciendo soluciones de pago radicalmente nuevas." },
-      "ecommerce": { "tag": "STARTUP", "title": "E-commerce Sostenible", "description": "Moda sostenible con un gran potencial de crecimiento." }
+      "casa_bella": {
+        "tag": "REAL ESTATE",
+        "title": "Casa Bella",
+        "description": "Una villa de lujo con vista al mar y acabados de alta gama."
+      },
+      "vista_horizonte": {
+        "tag": "REAL ESTATE",
+        "title": "Vista Horizonte",
+        "description": "La mejor vista de la Bahía en un lugar maravilloso."
+      },
+      "narai": {
+        "tag": "REAL ESTATE",
+        "title": "Narai",
+        "description": "Condominios con vista al mar, comodidad y lujo."
+      },
+      "startup_ia": {
+        "tag": "STARTUP",
+        "title": "Startup de IA",
+        "description": "Revolucionando el mercado con inteligencia artificial."
+      },
+      "fintech": {
+        "tag": "STARTUP",
+        "title": "Fintech Innovadora",
+        "description": "Ofreciendo soluciones de pago radicalmente nuevas."
+      },
+      "ecommerce": {
+        "tag": "STARTUP",
+        "title": "E-commerce Sostenible",
+        "description": "Moda sostenible con un gran potencial de crecimiento."
+      }
     },
     "info_modal": {
       "title": "关于我们的创作中心",
@@ -450,42 +501,42 @@
       "paragraph2": "有了 Pandora，参与不再是被动的：现在您可以建立您的社区，激活它，并为真正的‘劳动’创造‘回报’。我们的平台全程指导您：从设计您的协议到管理您的‘创作’和‘神器’，一切都在一个透明、基于实用性并为您的社区增长而设计的生态系统中完成。"
     },
     "info_sections": {
-        "section1": {
-          "title": "掌控您的社区",
-          "content": "选择一个类别，查看其‘法典’（文档），并在几分钟内开始您的‘锻造’（创作）过程。每个类别都附有明确的指标，以便您自信地做出设计决策。"
-        },
-        "section2": {
-          "title": "透明度与持续参与",
-          "content": "我们为‘劳动’（工作）提供实时监控系统，确保每个协议的质量。这样，您的社区在数据和完全透明的支持下成长。"
-        }
+      "section1": {
+        "title": "掌控您的社区",
+        "content": "选择一个类别，查看其‘法典’（文档），并在几分钟内开始您的‘锻造’（创作）过程。每个类别都附有明确的指标，以便您自信地做出设计决策。"
       },
-      "tokenization_process": {
-        "title_part1": "从创意到神器",
-        "title_part2": "宣言",
-        "subtitle": "透明度与实用性，服务于您的社区",
-        "steps": [
-          {
-            "title": "模板选择",
-            "description": "从我们的‘法典’（经审计的模板库）中选择一个基础模板（‘访问’、‘忠诚度’、‘Work-to-Earn’）。"
-          },
-          {
-            "title": "无代码配置",
-            "description": "定义您的协议规则：任务、奖励、福利和治理。无需编写代码。"
-          },
-          {
-            "title": "设计与测试 (Testnet)",
-            "description": "在将您的‘神器’‘释放’到世界之前，在安全环境 (Testnet) 中自定义并测试它。"
-          },
-          {
-            "title": "部署与所有权",
-            "description": "在区块链上‘释放’（启动）您的‘神器’。您是智能合约的唯一所有者和负责人。"
-          },
-          {
-            "title": "管理与增长",
-            "description": "使用您的仪表板监控参与情况，管理奖励，并发展您的生态系统。"
-          }
-        ]
+      "section2": {
+        "title": "透明度与持续参与",
+        "content": "我们为‘劳动’（工作）提供实时监控系统，确保每个协议的质量。这样，您的社区在数据和完全透明的支持下成长。"
       }
+    },
+    "tokenization_process": {
+      "title_part1": "从创意到神器",
+      "title_part2": "宣言",
+      "subtitle": "透明度与实用性，服务于您的社区",
+      "steps": [
+        {
+          "title": "模板选择",
+          "description": "从我们的‘法典’（经审计的模板库）中选择一个基础模板（‘访问’、‘忠诚度’、‘Work-to-Earn’）。"
+        },
+        {
+          "title": "无代码配置",
+          "description": "定义您的协议规则：任务、奖励、福利和治理。无需编写代码。"
+        },
+        {
+          "title": "设计与测试 (Testnet)",
+          "description": "在将您的‘神器’‘释放’到世界之前，在安全环境 (Testnet) 中自定义并测试它。"
+        },
+        {
+          "title": "部署与所有权",
+          "description": "在区块链上‘释放’（启动）您的‘神器’。您是智能合约的唯一所有者和负责人。"
+        },
+        {
+          "title": "管理与增长",
+          "description": "使用您的仪表板监控参与情况，管理奖励，并发展您的生态系统。"
+        }
+      ]
+    }
   },
   "about": {
     "title": "关于 Pandora's Finance：构建全新的数字实用性",

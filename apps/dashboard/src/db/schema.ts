@@ -905,6 +905,7 @@ export const clients = pgTable("clients", {
   status: clientStatusEnum("status").default("lead").notNull(),
 
   // Metadata
+  metadata: jsonb("metadata").default('{}'),
   notes: text("notes"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -947,9 +948,20 @@ export const transactions = pgTable("transactions", {
   status: transactionStatusEnum("status").default("pending").notNull(),
 
   // Proof of Payment
-  externalId: text("external_id"), // Stripe PaymentIntent ID, TxHash, etc.
-  proofUrl: text("proof_url"), // For Wire uploads
-
   processedAt: timestamp("processed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+// 4. SOW TEMPLATES
+export const sowTemplates = pgTable("sow_templates", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  tier: varchar("tier", { length: 50 }).notNull(), // TIER_1, TIER_2, TIER_3
+  name: varchar("name", { length: 255 }).notNull(),
+  content: text("content").notNull(),
+  variables: jsonb("variables").default('[]'),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type SOWTemplate = typeof sowTemplates.$inferSelect;
