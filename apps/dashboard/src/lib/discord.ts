@@ -107,3 +107,25 @@ export async function notifySystemAlert(source: string, error: string) {
 
     await sendDiscordNotification(DISCORD_WEBHOOK_ALERTS, '', [embed]);
 }
+
+/**
+ * Notify about a Successful Payment (Active Client)
+ */
+export async function notifyPaymentSuccess(projectTitle: string, amount: string, method: string, email: string) {
+    const embed: DiscordEmbed = {
+        title: `💰 Payment Received: ${projectTitle}`,
+        description: `Client is now **ACTIVE** in the system.`,
+        color: COLORS.PURPLE,
+        fields: [
+            { name: 'Amount', value: amount, inline: true },
+            { name: 'Method', value: method, inline: true },
+            { name: 'Email', value: email, inline: true },
+            { name: 'Next Action', value: 'Assign Architect in Dashboard' }
+        ],
+        timestamp: new Date().toISOString(),
+        footer: { text: 'Pandora\'s Payment System' }
+    };
+
+    // Send to ALERTS webhook for high visibility
+    await sendDiscordNotification(DISCORD_WEBHOOK_ALERTS, '<@&MANAGER_ROLE_ID> 🚀 NEW ACTIVE CLIENT!', [embed]);
+}
