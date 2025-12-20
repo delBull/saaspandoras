@@ -57,7 +57,12 @@ export const ProtocolApplicationEmail = ({
 
                 <Text style={text}>
                     <strong>👉 Mientras tanto:</strong><br />
-                    Si tienes un pitch deck, breve one-pager o un documento con estadísticas del proyecto, puedes responder a este email con esos archivos adjuntos — me ayudarán a prepararme para la llamada y a darte un diagnóstico más preciso.
+                    Si tienes un pitch deck, breve one-pager o un documento con estadísticas del proyecto, puedes responder a este email con esos archivos adjuntos.<br /><br />
+
+                    Además, te recomendamos leer nuestro <strong>Litepaper Técnico</strong> mientras esperas. Define el marco bajo el cual operan nuestros protocolos de utilidad:<br />
+                    <Link href="https://dash.pandoras.finance/litepaper" style={{ color: "#3b82f6", textDecoration: "none", fontWeight: "bold" }}>
+                        📄 Leer Litepaper Técnico (Web)
+                    </Link>
                 </Text>
 
                 <Text style={text}>

@@ -11,10 +11,188 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Plus, CreditCard, Link as LinkIcon, Copy, History, FileText, CheckCircle, Smartphone } from "lucide-react";
 import { toast } from "sonner";
-import { getClients, createClient, createPaymentLink, getClientLinks, updatePaymentStatus, manualSendReceipt } from "@/actions/clients";
-
-// Types
+import { getClients, createClient, createPaymentLink, getClientLinks, updatePaymentStatus, manualSendReceipt, sendProtocolSOW, advanceProtocolState } from "@/actions/clients";
+import { ProtocolMetadata } from "@/types/protocol-state";
 import type { clients, paymentLinks } from "@/db/schema";
+import { SOWTemplateManager } from "../sow/SOWTemplateManager";
+import { getSOWTemplates } from "@/actions/sow";
+import { sendMSALink } from "@/actions/clients";
+import { Check, Mail } from "lucide-react";
+
+
+// ... existing imports ...
+
+// ... (existing helper functions) ...
+
+function ProtocolStageBadge({ metadata }: { metadata: any }) {
+    const meta = (metadata as { protocol?: ProtocolMetadata }) || {};
+    const state = meta.protocol?.state || 'LEAD';
+
+    const colors: Record<string, string> = {
+        'LEAD': 'text-zinc-500 border-zinc-700 bg-zinc-900',
+        'ACTIVE_TIER_1': 'text-purple-400 border-purple-900 bg-purple-950/20',
+        'IN_PROGRESS_TIER_1': 'text-yellow-400 border-yellow-900 bg-yellow-950/20',
+        'APPROVED_TIER_1': 'text-purple-300 border-purple-500 bg-purple-500/10',
+        'ACTIVE_TIER_2': 'text-blue-400 border-blue-900 bg-blue-950/20',
+        'IN_PROGRESS_TIER_2': 'text-yellow-400 border-yellow-900 bg-yellow-950/20',
+        'APPROVED_TIER_2': 'text-blue-300 border-blue-500 bg-blue-500/10',
+        'ACTIVE_TIER_3': 'text-orange-400 border-orange-900 bg-orange-950/20',
+        'IN_PROGRESS_TIER_3': 'text-yellow-400 border-yellow-900 bg-yellow-950/20',
+        'DEPLOYED': 'text-lime-400 border-lime-500 bg-lime-500/10 font-bold',
+    };
+
+    return (
+        <Badge variant="outline" className={`text-[10px] ${colors[state] || colors.LEAD}`}>
+            {state.replace(/_/g, ' ')}
+        </Badge>
+    );
+}
+
+function ProtocolActions({ client, onSuccess, onSendSOW }: { client: Client, onSuccess: () => void, onSendSOW?: (tier: string) => void }) {
+    const meta = (client.metadata as { protocol?: ProtocolMetadata }) || {};
+    const state = meta.protocol?.state || 'LEAD';
+    const [loading, setLoading] = useState(false);
+
+    function handleOpenSend(tier: 'TIER_1' | 'TIER_2' | 'TIER_3') {
+        if (onSendSOW) onSendSOW(tier);
+    }
+
+
+    async function handleAdvance(target: string) {
+        if (!confirm(`Mark this phase as DELIVERED and approved?`)) return;
+        setLoading(true);
+        // We reuse advanceProtocolState but we need to import it or make sure it's available. 
+        // It is not imported at top yet! I need to check imports.
+        // Wait, ClientsManager imports everything from @/actions/clients.
+        // But advanceProtocolState is not in the import list at line 14.
+        // I will assume I need to update imports too?
+        // Actually I'll use a specific server action just for this if needed, but likely I can add it to imports.
+        // For now let's write the logic assuming I add the import.
+        const res = await advanceProtocolState(client.id, target as any);
+        if (res.success) {
+            toast.success("State Updated!");
+            onSuccess();
+        } else {
+            toast.error("Failed update");
+        }
+        setLoading(false);
+    }
+
+    async function handleSendMSA() {
+        if (!confirm("Send MSA Link via Email?")) return;
+        setLoading(true);
+        const res = await sendMSALink(client.id);
+        if (res.success) {
+            toast.success("MSA Link Sent!");
+            onSuccess();
+        } else {
+            toast.error("Failed to send MSA");
+        }
+        setLoading(false);
+    }
+
+    // 0. CHECK MSA STATUS
+    // If not accepted/sent, we should prioritize showing that? 
+    // Or just show a fast action.
+    const msaStatus = meta.protocol?.msa_status;
+    const isMSAApproved = msaStatus === 'accepted';
+
+    // RENDER MSA BADGE/ACTION
+    const MSAAction = () => {
+        if (isMSAApproved) {
+            return (
+                <div title="MSA Signed" className="flex items-center justify-center w-7 h-7 bg-green-900/30 border border-green-500/30 rounded mr-2">
+                    <Check className="w-4 h-4 text-green-500" />
+                </div>
+            );
+        }
+        if (msaStatus === 'sent') {
+            return (
+                <Button size="icon" variant="outline" className="h-7 w-7 mr-2 border-yellow-500/30 text-yellow-500" onClick={handleSendMSA} title="Resend MSA">
+                    <Mail className="w-3 h-3" />
+                </Button>
+            );
+        }
+        return (
+            <Button size="sm" variant="outline" className="h-7 text-xs mr-2 border-zinc-700 text-zinc-400 hover:text-white" onClick={handleSendMSA}>
+                Send MSA
+            </Button>
+        );
+    };
+
+    // Helper wrapper to include MSA action
+    const WithMSA = ({ children }: { children: React.ReactNode }) => (
+        <div className="flex items-center">
+            <MSAAction />
+            {children}
+        </div>
+    );
+
+    if (state === 'LEAD' || !state) {
+        return (
+            <WithMSA>
+                <Button size="sm" variant="outline" className="h-7 text-xs border-purple-500/30 text-purple-400 hover:bg-purple-900/30" disabled={loading} onClick={() => handleOpenSend('TIER_1')}>
+                    {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Send Tier 1"}
+                </Button>
+            </WithMSA>
+        );
+    }
+
+    if (state === 'ACTIVE_TIER_1') {
+        return <span className="text-[10px] text-zinc-500 italic mr-2">Waiting Payment (T1)...</span>;
+    }
+
+    if (state === 'IN_PROGRESS_TIER_1') {
+        return (
+            <Button size="sm" variant="outline" className="h-7 text-xs border-yellow-500/30 text-yellow-400 hover:bg-yellow-900/30" disabled={loading} onClick={() => handleAdvance('APPROVED_TIER_1')}>
+                {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Mark T1 Delivered"}
+            </Button>
+        );
+    }
+
+    if (state === 'APPROVED_TIER_1' || state === 'SKIPPED_TIER_1') {
+        return (
+            <Button size="sm" variant="outline" className="h-7 text-xs border-blue-500/30 text-blue-400 hover:bg-blue-900/30" disabled={loading} onClick={() => handleOpenSend('TIER_2')}>
+                {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Send Tier 2"}
+            </Button>
+        );
+    }
+
+    if (state === 'ACTIVE_TIER_2') {
+        return <span className="text-[10px] text-zinc-500 italic mr-2">Waiting Payment (T2)...</span>;
+    }
+
+    if (state === 'IN_PROGRESS_TIER_2') {
+        return (
+            <Button size="sm" variant="outline" className="h-7 text-xs border-yellow-500/30 text-yellow-400 hover:bg-yellow-900/30" disabled={loading} onClick={() => handleAdvance('APPROVED_TIER_2')}>
+                {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Mark T2 Delivered"}
+            </Button>
+        );
+    }
+
+    if (state === 'APPROVED_TIER_2') {
+        return (
+            <Button size="sm" variant="outline" className="h-7 text-xs border-orange-500/30 text-orange-400 hover:bg-orange-900/30" disabled={loading} onClick={() => handleOpenSend('TIER_3')}>
+                {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Deploy (Tier 3)"}
+            </Button>
+        );
+    }
+
+    if (state === 'ACTIVE_TIER_3') {
+        return <span className="text-[10px] text-orange-500 italic mr-2">Waiting Payment (T3)...</span>;
+    }
+
+    if (state === 'IN_PROGRESS_TIER_3') {
+        return (
+            <Button size="sm" variant="outline" className="h-7 text-xs border-yellow-500/30 text-yellow-400 hover:bg-yellow-900/30" disabled={loading} onClick={() => handleAdvance('DEPLOYED')}>
+                {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Mark Deployed"}
+            </Button>
+        );
+    }
+
+    return null;
+}
+
 
 type Client = typeof clients.$inferSelect;
 type PaymentLink = typeof paymentLinks.$inferSelect;
@@ -25,7 +203,10 @@ export function ClientsManager() {
     const [showNewClient, setShowNewClient] = useState(false);
     const [showPaymentBridge, setShowPaymentBridge] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
+    const [showTemplates, setShowTemplates] = useState(false);
+    const [showSendSOW, setShowSendSOW] = useState(false);
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+    const [selectedTier, setSelectedTier] = useState<string>('TIER_1');
 
     // Filter state
     const [searchTerm, setSearchTerm] = useState("");
@@ -60,9 +241,17 @@ export function ClientsManager() {
                         className="bg-zinc-900 border-zinc-800"
                     />
                 </div>
-                <Button onClick={() => setShowNewClient(true)} className="bg-lime-500 text-black hover:bg-lime-400">
-                    <Plus className="w-4 h-4 mr-2" /> Nuevo Cliente
-                </Button>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => window.open('/litepaper', '_blank')} className="border-zinc-700 text-zinc-400 hover:bg-zinc-800">
+                        <FileText className="w-4 h-4 mr-2" /> Ver Litepaper
+                    </Button>
+                    <Button variant="outline" onClick={() => setShowTemplates(true)} className="border-zinc-700 text-zinc-400 hover:bg-zinc-800">
+                        <FileText className="w-4 h-4 mr-2" /> Templates
+                    </Button>
+                    <Button onClick={() => setShowNewClient(true)} className="bg-lime-500 text-black hover:bg-lime-400">
+                        <Plus className="w-4 h-4 mr-2" /> Nuevo Cliente
+                    </Button>
+                </div>
             </div>
 
             <Card className="bg-zinc-900 border-zinc-800">
@@ -79,8 +268,8 @@ export function ClientsManager() {
                                 <TableRow className="border-zinc-800 hover:bg-zinc-900">
                                     <TableHead>Cliente</TableHead>
                                     <TableHead>Fuente</TableHead>
-                                    <TableHead>Paquete</TableHead>
-                                    <TableHead>Estado</TableHead>
+                                    <TableHead>Activity</TableHead>
+                                    <TableHead>Stage</TableHead>
                                     <TableHead className="text-right">Acciones</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -92,12 +281,25 @@ export function ClientsManager() {
                                             <div className="text-xs text-zinc-500">{client.email}</div>
                                         </TableCell>
                                         <TableCell><Badge variant="outline" className="text-xs bg-zinc-950">{client.source}</Badge></TableCell>
-                                        <TableCell className="text-zinc-300 text-sm capital">{client.package || "-"}</TableCell>
+                                        <TableCell className="text-zinc-400 text-xs text-xs">
+                                            {(client.metadata as any)?.protocol?.sow_history?.length > 0 ? (
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="text-zinc-300">{(client.metadata as any).protocol.sow_history.slice(-1)[0].tier}</span>
+                                                    <span className="text-[10px] opacity-50">{new Date((client.metadata as any).protocol.sow_history.slice(-1)[0].sent_at).toLocaleDateString()}</span>
+                                                </div>
+                                            ) : <span className="text-zinc-600">-</span>}
+                                        </TableCell>
                                         <TableCell>
-                                            <StatusBadge status={client.status} />
+                                            <ProtocolStageBadge metadata={client.metadata} />
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <div className="flex justify-end gap-2">
+                                            <div className="flex justify-end gap-2 items-center">
+                                                <ProtocolActions
+                                                    client={client}
+                                                    onSuccess={loadClients}
+                                                    onSendSOW={(tier) => { setSelectedClient(client); setSelectedTier(tier); setShowSendSOW(true); }}
+                                                />
+
                                                 <Button
                                                     size="sm"
                                                     variant="ghost"
@@ -126,6 +328,18 @@ export function ClientsManager() {
 
             {/* MODALS */}
             <CreateClientModal open={showNewClient} onOpenChange={setShowNewClient} onSuccess={loadClients} />
+            <SOWTemplateManager open={showTemplates} onOpenChange={setShowTemplates} />
+
+            {showSendSOW && selectedClient && (
+                <SendSOWModal
+                    open={showSendSOW}
+                    onOpenChange={setShowSendSOW}
+                    client={selectedClient}
+                    tier={selectedTier}
+                    onSuccess={() => { setShowSendSOW(false); loadClients(); }}
+                />
+            )}
+
             {selectedClient && (
                 <>
                     <PaymentBridgeModal
@@ -142,6 +356,78 @@ export function ClientsManager() {
                 </>
             )}
         </div>
+    );
+}
+
+function SendSOWModal({ open, onOpenChange, client, tier, onSuccess }: { open: boolean, onOpenChange: (v: boolean) => void, client: Client, tier: string, onSuccess: () => void }) {
+    const [templates, setTemplates] = useState<any[]>([]);
+    const [selectedTemplate, setSelectedTemplate] = useState('default');
+    const [amount, setAmount] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        loadTemplates();
+    }, [tier]);
+
+    async function loadTemplates() {
+        // Load templates for this tier
+        const res = await getSOWTemplates(tier);
+        if (res.success && res.data) {
+            setTemplates(res.data.filter((t: any) => t.isActive));
+        }
+    }
+
+    async function handleSend() {
+        setLoading(true);
+        // @ts-expect-error - dynamic args
+        const res = await sendProtocolSOW(client.id, tier, selectedTemplate, amount);
+        if (res.success) {
+            toast.success("SOW Sent!");
+            onSuccess();
+            onOpenChange(false);
+        } else {
+            toast.error("Failed to send");
+        }
+        setLoading(false);
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="bg-zinc-950 border-zinc-800 text-white">
+                <DialogHeader>
+                    <DialogTitle>Send {tier}</DialogTitle>
+                    <CardDescription>Select template and confirm details for {client.name}.</CardDescription>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
+                    <div className="space-y-2">
+                        <Label>SOW Template</Label>
+                        <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                            <SelectTrigger className="bg-zinc-900 border-zinc-800">
+                                <SelectValue placeholder="Select Template" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="default">Default System Template</SelectItem>
+                                {templates.map(t => (
+                                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Override Amount (USD) (Optional)</Label>
+                        <Input
+                            value={amount}
+                            onChange={e => setAmount(e.target.value)}
+                            placeholder="Leave empty for default price"
+                            className="bg-zinc-900"
+                        />
+                    </div>
+                    <Button onClick={handleSend} disabled={loading} className="w-full bg-lime-500 text-black font-bold hover:bg-lime-400">
+                        {loading ? <Loader2 className="animate-spin" /> : "Confirm & Send SOW"}
+                    </Button>
+                </div>
+            </DialogContent>
+        </Dialog>
     );
 }
 

@@ -1,10 +1,10 @@
 {
   "whitepaper": {
-      "sections": "ホワイトペーパーのセクション",
-      "search": "検索",
-      "search_placeholder": "ホワイトペーパーを検索...",
-      "ai_search_soon": "AI検索は近日公開予定です。",
-      "on_this_page": "このページの内容"
+    "sections": "ホワイトペーパーのセクション",
+    "search": "検索",
+    "search_placeholder": "ホワイトペーパーを検索...",
+    "ai_search_soon": "AI検索は近日公開予定です。",
+    "on_this_page": "このページの内容"
   },
   "price": {
     "title": "透明で手頃な価格設定！",
@@ -108,9 +108,21 @@
       "title": "web3で構築",
       "subtitle": "あなたのコミュニティが活気づきます。",
       "typewriter_words": [
-        { "text": "ロイヤルティプロトコルを構築する。", "cursorColor": "#A3E635", "contentColor": "#A3E635" },
-        { "text": "参加型インセンティブシステム。", "cursorColor": "#7b1b74", "contentColor": "#7b1b74" },
-        { "text": "本物のNFTメンバーシップをデザインする。", "cursorColor": "#A3E635", "contentColor": "#A3E635" }
+        {
+          "text": "ロイヤルティプロトコルを構築する。",
+          "cursorColor": "#A3E635",
+          "contentColor": "#A3E635"
+        },
+        {
+          "text": "参加型インセンティブシステム。",
+          "cursorColor": "#7b1b74",
+          "contentColor": "#7b1b74"
+        },
+        {
+          "text": "本物のNFTメンバーシップをデザインする。",
+          "cursorColor": "#A3E635",
+          "contentColor": "#A3E635"
+        }
       ]
     },
     "video": {
@@ -278,136 +290,151 @@
     "sign_out": "サインアウト"
   },
   "terms": {
-    "title": "利用規約",
-    "lastUpdate": "最終更新日: 2025年3月",
-    "tabTerms": "利用規約",
-    "tabPrivacy": "プライバシーポリシー",
+    "title": "Terms & Conditions",
+    "lastUpdate": "Last Updated: December 2025",
+    "tabTerms": "Terms of Use",
+    "tabPrivacy": "Privacy Policy",
     "sections": {
-      "welcome": {
-        "title": "Pandora's Financeへようこそ",
-        "content": "本利用規約（以下「本規約」）は、https://dapp.pandoras.finance/ で利用可能な当社のSaaS（Software-as-a-Service）プラットフォームおよびDApp（以下「本プラットフォーム」）へのアクセスと利用、ならびにデジタルアーティファクトの発行およびデジタル権利・ユーティリティの取得に関するサービスを規定するものです。"
-      },
-      "definitions": {
-        "title": "定義",
+      "nature": {
+        "title": "Nature of the Platform",
+        "content": "Pandora’s Finance (“Pandora’s”) provides a software-as-a-service (SaaS) platform and decentralized application (DApp) that enables creators and organizations to design, deploy, and manage utility-based digital protocols on blockchain infrastructure.",
         "items": [
-          "プラットフォーム: Pandora'sのSaaS技術サービスおよびDApp。",
-          "ユーザー: 本サービスにアクセスし利用する個人または法人（「クリエイター」または「コミュニティ」）。",
-          "アクセスアーティファクト (NFT): 保有者にユーティリティプロトコル、特典、または特定の「創作物」へのアクセスを付与するユニークなデジタル資産（NFT）。",
-          "ユーティリティ権利: 本プラットフォーム内のアクセスアーティファクトまたはプロトコルにリンクされた、特定のデジタル特典、アクセス権、または機能。",
-          "アーティファクトの発行: 「クリエイター」によって定義された特定のユーティリティを表すユニークなデジタル資産（NFT）をブロックチェーン上に作成・登録するプロセス。"
+          "Pandora’s is not: An investment platform, A financial advisor, A broker, custodian, or fiduciary, A guarantor of outcomes, profits, or regulatory status.",
+          "Pandora’s provides technology and infrastructure only."
         ]
       },
-      "usage": {
-        "title": "プラットフォームの利用",
+      "roles": {
+        "title": "User Roles",
+        "content": "The Platform may be used by different types of users, including but not limited to: Creators / Protocol Owners, Community Participants, Clients engaging professional services under a separate agreement. Different rights and obligations apply depending on the role."
+      },
+      "no_investment": {
+        "title": "No Investment or Securities Offering",
         "items": [
-          "本プラットフォームにより、「クリエイター」はユーティリティプロトコルを設計・立ち上げることができ、「コミュニティ」は選択された「創作物」においてユーティリティ権利を付与するアクセスアーティファクト（NFT）を取得することができます。",
-          "ユーザーは、本プラットフォームと対話するために互換性のあるデジタルウォレットを保有する必要があります。",
-          "Pandora'sは技術プラットフォーム（SaaS）として運営されており、金融、投資、その他いかなる種類のアドバイザーでもありません。当社は、デジタルアーティファクトまたはユーティリティ権利の価値、流動性、または将来の利益について保証しません。"
+          "Any digital artifacts, NFTs, access keys, or protocol utilities created or issued using the Platform: Do not represent equity, ownership, profit rights, or investment contracts. Do not guarantee value, liquidity, or appreciation. Are strictly limited to the utility explicitly defined by the creator.",
+          "Pandora’s does not offer, promote, or facilitate securities."
         ]
       },
-      "responsibility": {
-        "title": "責任および保証の免責",
+      "blockchain": {
+        "title": "Blockchain Acknowledgment",
         "items": [
-          "Pandora'sは、本プラットフォームで使用または取得されたデジタル資産（暗号資産やアーティファクトなど）の変動性、損失、リスク、または価値の変動について責任を負いません。",
-          "本プラットフォームはブロックチェーン上で運営されているため、すべての取引は一度確認されると不可逆であり、変更することはできません。",
-          "ユーザーは、アクセスアーティファクト（NFT）を所有することは、その「創作物」（プロトコル）で指定されたユーティリティ権利またはアクセス権のみを付与するものであり、Pandora'sの会社、その資産、または当該プロトコルで明示的に定義されていないいかなる基礎資産に対する所有権も付与しないことを受諾し、理解します。",
-          "本プラットフォームは、事前の通知なしにいつでもサービスを変更、更新、または停止する権利を留保します。"
+          "Users acknowledge and accept that: Blockchain transactions are irreversible. Smart contracts are immutable once deployed. Errors, misuse, or misconfiguration may result in permanent loss.",
+          "Pandora’s is not responsible for losses arising from blockchain mechanics or user actions."
         ]
       },
-      "requirements": {
-        "title": "ユーザー要件",
-        "items": [
-          "本プラットフォームを利用するには、18歳以上である必要があります。",
-          "居住国の税法および法規制を遵守することに同意するものとします。",
-          "Pandora'sは、疑わしい活動や本規約の違反が検出された場合、いかなるユーザーのアクセスも拒否する権利を留保します。"
-        ]
+      "services": {
+        "title": "Professional Services",
+        "content": "Any professional services (including protocol viability analysis, architecture design, or deployment) are governed exclusively by: A Master Services Agreement (MSA), and One or more Statements of Work (SOW). These documents supersede these Terms with respect to services."
       },
       "payments": {
-        "title": "支払いとサービス手数料",
+        "title": "Payments & Refunds",
         "items": [
-          "本プラットフォームでのサービス手数料の支払いは、暗号資産または承認された方法によってのみ行われます。",
-          "Pandora'sはSaaSプロバイダーとして、プラットフォームの利用、アーティファクトの発行、またはプロトコルとの対話に対して手数料を請求します。これらの手数料は明確に通知されます。",
-          "ブロックチェーンの性質上、すべての取引（サービス手数料の支払いやアーティファクトの取得を含む）は最終的なものであり、元に戻すことはできません。返金は提供されません。"
+          "All payments made through the Platform or associated links are: Final, Non-refundable, Considered acceptance of the applicable contractual terms.",
+          "Pandora’s does not offer refunds once work has started or blockchain actions have been authorized."
         ]
       },
-      "dataProtection": {
-        "title": "データ保護とセキュリティ",
+      "liability": {
+        "title": "Limitation of Liability",
         "items": [
-          "個人データは、当社のプライバシーポリシーに従って処理されます。",
-          "ユーザーは、自身のデジタルウォレットと秘密鍵のセキュリティについて責任を負います。",
-          "Pandora'sは、ユーザーの認証情報管理の怠慢に起因する不正アクセスについて責任を負いません。"
+          "To the maximum extent permitted by law: Pandora’s shall not be liable for indirect, incidental, or consequential damages.",
+          "Total liability shall not exceed the fees paid directly to Pandora’s for the specific service or platform usage giving rise to the claim."
         ]
+      },
+      "ip": {
+        "title": "Intellectual Property",
+        "content": "The Platform, frameworks, factories, and underlying technology remain the exclusive property of Pandora’s. Clients retain ownership of their project-specific configurations and deployed contracts, subject to the applicable agreements."
+      },
+      "termination": {
+        "title": "Suspension & Termination",
+        "content": "Pandora’s may suspend or terminate access to the Platform if: These Terms are violated, Illegal or abusive activity is detected, Required compliance standards are not met."
       },
       "law": {
-        "title": "準拠法および裁判管轄",
-        "items": [
-          "本利用規約は、メキシコの法律に準拠します。",
-          "いかなる紛争も、メキシコシティの管轄裁判所において解決されるものとします。"
-        ]
+        "title": "Governing Law",
+        "content": "These Terms are governed by the laws of Mexico. Jurisdiction is expressly agreed to be Mexico City."
+      },
+      "acceptance": {
+        "title": "Acceptance",
+        "content": "By accessing or using the Platform, you acknowledge that you have read, understood, and accepted these Terms."
       }
-    },
-    "acceptance": {
-      "title": "利用規約への同意",
-      "content": "本プラットフォームを利用することにより、お客様は本利用規約およびプライバシーポリシーを読み、理解した上で、これらを無条件に遵守することに同意したものとみなされます。"
     }
   },
   "privacy": {
-    "title": "プライバシーポリシー",
-    "lastUpdate": "最終更新日: 2025年3月",
-    "introduction": "Pandora'sでは、ユーザーのプライバシー保護に取り組んでいます。本プライバシーポリシーは、お客様が当社のプラットフォームを利用する際に、当社がお客様の個人情報をどのように収集、使用、保護するかについて説明するものです。",
+    "title": "Privacy Policy",
+    "lastUpdate": "Last Updated: December 2025",
+    "introduction": "Pandora’s Finance (“Pandora’s”, “we”, “us”) is committed to protecting the privacy of users of its software-as-a-service platform, decentralized applications (DApps), and related professional services. This Privacy Policy explains how we collect, use, store, and protect personal data.",
     "sections": {
+      "scope": {
+        "title": "Scope",
+        "items": [
+          "Users of the Pandora’s Platform and DApp",
+          "Clients engaging professional services under a Master Services Agreement (MSA) and Statement(s) of Work (SOW)",
+          "Website visitors and lead submissions"
+        ]
+      },
       "collection": {
-        "title": "収集する情報",
+        "title": "Information We Collect",
         "items": [
-          "個人情報: 氏名、メールアドレス（任意で提供された場合）、デジタルウォレットアドレス。",
-          "取引情報: プラットフォームでの対話履歴、アーティファクトの「ミンティング」、およびウォレットに関連するブロックチェーン上の移動履歴。",
-          "技術データ: IPアドレス、ブラウザの種類、クッキーデータ。"
+          "a) Information You Provide: Name, email address. Company or project name. Wallet address(es). Communications (emails, WhatsApp, forms). Billing and invoicing information (when applicable).",
+          "b) Automatically Collected Data: IP address. Browser and device data. Usage logs. Cookies and session identifiers.",
+          "c) Blockchain Data: Public wallet addresses. On-chain transactions. Smart contract interactions. ⚠️ Blockchain data is public, immutable, and not controlled by Pandora’s."
         ]
       },
-      "usage": {
-        "title": "情報の利用",
+      "purpose": {
+        "title": "Purpose of Data Processing",
         "items": [
-          "取引の処理およびユーザーアカウントの管理。",
-          "プラットフォームのセキュリティと機能性の向上。",
-          "サービスの変更や更新に関する通知の送信。",
-          "適用される法規制およびKYC/AML規制（必要な場合）の遵守。"
+          "Provide access to the Platform and DApp",
+          "Deliver professional services (SOW execution)",
+          "Issue invoices, receipts, and confirmations",
+          "Operate CRM, lead qualification, and workflow automation",
+          "Communicate updates, operational notices, and service-related information",
+          "Improve security, performance, and reliability",
+          "Comply with legal, tax, and regulatory obligations"
         ]
       },
-      "protection": {
-        "title": "情報の保護",
+      "legal_basis": {
+        "title": "Legal Basis",
         "items": [
-          "技術的および組織的なセキュリティ対策を実施します。",
-          "ブロックチェーン上の情報は公開され、不変であり、透明性があります。",
-          "明示的な同意なしに個人情報を第三者に販売することはありません。"
+          "User consent",
+          "Contractual necessity (Platform use, MSA/SOW)",
+          "Legal obligations",
+          "Legitimate business interests (security, fraud prevention, analytics)"
         ]
+      },
+      "sharing": {
+        "title": "Data Sharing & Processors",
+        "content": "Pandora’s may share data with trusted third-party service providers strictly for operational purposes (Payment processors, Blockchain infrastructure, Email services). These providers process data under confidentiality. Pandora’s does not sell personal data."
+      },
+      "international": {
+        "title": "International Data Transfers",
+        "content": "Due to the global and decentralized nature of blockchain and cloud infrastructure, data may be processed or stored in jurisdictions outside your country of residence. Pandora’s takes reasonable measures to ensure adequate data protection standards."
+      },
+      "retention": {
+        "title": "Data Retention",
+        "content": "We retain personal data only as long as necessary for contractual obligations and compliance. Some data cannot be deleted (Blockchain records, Invoicing)."
       },
       "rights": {
-        "title": "ユーザーの権利（データ保護）",
+        "title": "User Rights",
         "items": [
-          "ご自身の個人情報へのアクセス、修正、または削除（ブロックチェーン上にない範囲で）。",
-          "アカウントの解約要求（該当する場合）。",
-          "プロモーション関連の通知の受信拒否。"
+          "Request access to your personal data",
+          "Request correction of inaccurate data",
+          "Request deletion where legally permissible",
+          "Opt out of non-essential communications"
         ]
       },
-      "cookies": {
-        "title": "クッキーおよび追跡技術",
-        "items": [
-          "ユーザーエクスペリエンス向上のためにクッキーを使用します。",
-          "安全な認証とセッションの維持。",
-          "行動およびナビゲーションの分析。"
-        ]
+      "security": {
+        "title": "Security",
+        "content": "We implement technical and organizational safeguards. However, no system is entirely risk-free. Users are responsible for safeguarding their wallets and private keys."
       },
-      "transfers": {
-        "title": "データの国際転送",
-        "content": "ブロックチェーン技術の分散型の性質により、一部のデータ（公開取引など）はグローバルに処理・複製される可能性があります。当社は、適用されるデータ保護規制の遵守を保証します。"
+      "other_agreements": {
+        "title": "Relationship with Other Agreements",
+        "content": "This Privacy Policy operates alongside Pandora’s Terms & Conditions, MSA, and SOW. In case of conflict, contractual agreements governing services prevail."
       },
-      "changes": {
-        "title": "プライバシーポリシーの変更",
-        "content": "当社は、本ポリシーをいつでも更新することができます。重要な変更については、プラットフォームまたはメール（提供されている場合）を通じてユーザーに通知されます。"
+      "updates": {
+        "title": "Updates",
+        "content": "Pandora’s may update this Privacy Policy from time to time. Material changes will be communicated via the Platform or email."
       },
       "contact": {
-        "title": "お問い合わせ",
-        "content": "データプライバシーに関するご質問やご要望は、下記までご連絡ください:",
+        "title": "Contact",
+        "content": "For privacy-related questions or requests:",
         "email": "legal@pandoras.finance"
       }
     }
@@ -437,12 +464,36 @@
     "subtitle": "Pandoraでは、利用可能なすべての「クリエイション」がコミュニティアーキテクトによって構築されています。これにより、真のユーティリティに基づいた「クリエイション」のみが私たちのプラットフォームの一部となります。",
     "clasification": "アーティファクトとユーティリティプロトコルの分類",
     "assets": {
-      "casa_bella": { "tag": "REAL ESTATE", "title": "Casa Bella", "description": "Una villa de lujo con vista al mar y acabados de alta gama." },
-      "vista_horizonte": { "tag": "REAL ESTATE", "title": "Vista Horizonte", "description": "La mejor vista de la Bahía en un lugar maravilloso." },
-      "narai": { "tag": "REAL ESTATE", "title": "Narai", "description": "Condominios con vista al mar, comodidad y lujo." },
-      "startup_ia": { "tag": "STARTUP", "title": "Startup de IA", "description": "Revolucionando el mercado con inteligencia artificial." },
-      "fintech": { "tag": "STARTUP", "title": "Fintech Innovadora", "description": "Ofreciendo soluciones de pago radicalmente nuevas." },
-      "ecommerce": { "tag": "STARTUP", "title": "E-commerce Sostenible", "description": "Moda sostenible con un gran potencial de crecimiento." }
+      "casa_bella": {
+        "tag": "REAL ESTATE",
+        "title": "Casa Bella",
+        "description": "Una villa de lujo con vista al mar y acabados de alta gama."
+      },
+      "vista_horizonte": {
+        "tag": "REAL ESTATE",
+        "title": "Vista Horizonte",
+        "description": "La mejor vista de la Bahía en un lugar maravilloso."
+      },
+      "narai": {
+        "tag": "REAL ESTATE",
+        "title": "Narai",
+        "description": "Condominios con vista al mar, comodidad y lujo."
+      },
+      "startup_ia": {
+        "tag": "STARTUP",
+        "title": "Startup de IA",
+        "description": "Revolucionando el mercado con inteligencia artificial."
+      },
+      "fintech": {
+        "tag": "STARTUP",
+        "title": "Fintech Innovadora",
+        "description": "Ofreciendo soluciones de pago radicalmente nuevas."
+      },
+      "ecommerce": {
+        "tag": "STARTUP",
+        "title": "E-commerce Sostenible",
+        "description": "Moda sostenible con un gran potencial de crecimiento."
+      }
     },
     "info_modal": {
       "title": "クリエイションハブについて",
@@ -450,42 +501,42 @@
       "paragraph2": "Pandoraを使えば、参加はもはや受動的なものではありません。コミュニティを構築し、活性化させ、真の「労働」に対する「報酬」を生み出すことができます。私たちのプラットフォームは、プロトコルの設計から「クリエイション」や「アーティファクト」の管理まで、透明でユーティリティに基づいた、コミュニティと共に成長するために設計されたエコシステム内で、あなたを最初から最後までガイドします。"
     },
     "info_sections": {
-        "section1": {
-          "title": "コミュニティを管理する",
-          "content": "カテゴリを選択し、その「コーデックス」（ドキュメント）を確認し、「フォージ」（作成）プロセスを数分で開始します。各カテゴリには明確な指標が付属しており、自信を持って設計の意思決定を行えます。"
-        },
-        "section2": {
-          "title": "透明性と継続的な参加",
-          "content": "各プロトコルの品質を保証する「労働」（仕事）のリアルタイム監視システムを提供します。こうして、あなたのコミュニティはデータと完全な透明性に支えられて成長します。"
-        }
+      "section1": {
+        "title": "コミュニティを管理する",
+        "content": "カテゴリを選択し、その「コーデックス」（ドキュメント）を確認し、「フォージ」（作成）プロセスを数分で開始します。各カテゴリには明確な指標が付属しており、自信を持って設計の意思決定を行えます。"
       },
-      "tokenization_process": {
-        "title_part1": "アイデアからアーティファクトへ",
-        "title_part2": "マニフェスト",
-        "subtitle": "コミュニティのための透明性とユーティリティ",
-        "steps": [
-          {
-            "title": "テンプレートの選択",
-            "description": "私たちの「コーデックス」（監査済みテンプレートライブラリ）からベーステンプレート（「アクセス」、「ロイヤルティ」、「Work-to-Earn」）を選択します。"
-          },
-          {
-            "title": "ノーコード設定",
-            "description": "プロトコルのルールを定義します：タスク、報酬、特典、ガバナンス。コードを書く必要はありません。"
-          },
-          {
-            "title": "設計とテスト (Testnet)",
-            "description": "「アーティファクト」を世界に「解き放つ」前に、安全な環境 (Testnet) でカスタマイズしてテストします。"
-          },
-          {
-            "title": "デプロイと所有権",
-            "description": "ブロックチェーン上で「アーティファクト」を「解き放ち」（ローンチ）ます。あなたはスマートコントラクトの唯一の所有者であり責任者です。"
-          },
-          {
-            "title": "管理と成長",
-            "description": "ダッシュボードを使用して参加状況を監視し、報酬を管理し、エコシステムを成長させます。"
-          }
-        ]
+      "section2": {
+        "title": "透明性と継続的な参加",
+        "content": "各プロトコルの品質を保証する「労働」（仕事）のリアルタイム監視システムを提供します。こうして、あなたのコミュニティはデータと完全な透明性に支えられて成長します。"
       }
+    },
+    "tokenization_process": {
+      "title_part1": "アイデアからアーティファクトへ",
+      "title_part2": "マニフェスト",
+      "subtitle": "コミュニティのための透明性とユーティリティ",
+      "steps": [
+        {
+          "title": "テンプレートの選択",
+          "description": "私たちの「コーデックス」（監査済みテンプレートライブラリ）からベーステンプレート（「アクセス」、「ロイヤルティ」、「Work-to-Earn」）を選択します。"
+        },
+        {
+          "title": "ノーコード設定",
+          "description": "プロトコルのルールを定義します：タスク、報酬、特典、ガバナンス。コードを書く必要はありません。"
+        },
+        {
+          "title": "設計とテスト (Testnet)",
+          "description": "「アーティファクト」を世界に「解き放つ」前に、安全な環境 (Testnet) でカスタマイズしてテストします。"
+        },
+        {
+          "title": "デプロイと所有権",
+          "description": "ブロックチェーン上で「アーティファクト」を「解き放ち」（ローンチ）ます。あなたはスマートコントラクトの唯一の所有者であり責任者です。"
+        },
+        {
+          "title": "管理と成長",
+          "description": "ダッシュボードを使用して参加状況を監視し、報酬を管理し、エコシステムを成長させます。"
+        }
+      ]
+    }
   },
   "about": {
     "title": "Pandora's Finance について：新しいデジタルユーティリティの構築",
