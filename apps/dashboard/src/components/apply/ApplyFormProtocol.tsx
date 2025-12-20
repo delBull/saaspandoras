@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -64,6 +65,7 @@ const INITIAL_DATA: FormData = {
 
 export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
     const { toast } = useToast();
+    const router = useRouter();
     const [step, setStep] = useState(0);
     const [data, setData] = useState<FormData>(INITIAL_DATA);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -147,8 +149,17 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
                     Tu proyecto <strong>{data.projectName}</strong> ha entrado en nuestro sistema de revisión.
                     Si eres seleccionado, recibirás un correo en <strong>{data.contactEmail}</strong> en las próximas 48 horas para agendar tu llamada estratégica.
                 </p>
-                <Button onClick={onClose} className="bg-white text-black hover:bg-zinc-200">
-                    Volver al Inicio
+                <Button
+                    onClick={() => {
+                        if (onClose) {
+                            onClose();
+                        } else {
+                            router.push('/dashboard'); // Or home if dashboard not accessible
+                        }
+                    }}
+                    className="bg-white text-black hover:bg-zinc-200"
+                >
+                    {onClose ? "Continuar" : "Volver al Inicio"}
                 </Button>
             </div>
         );

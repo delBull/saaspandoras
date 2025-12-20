@@ -134,6 +134,7 @@ export function PaymentCheckout({ link, client: clientData }: { link: any, clien
                                 }}
                                 theme={"dark"}
                             />
+                            {/* <Button onClick={manualVerify}>Ya pagué</Button> - Future improvement */}
                         </div>
                     </TabsContent>
 
@@ -173,10 +174,45 @@ export function PaymentCheckout({ link, client: clientData }: { link: any, clien
                         </div>
                     </TabsContent>
 
-                    <TabsContent value="stripe" className="text-center py-12">
-                        <CreditCard className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
-                        <p className="text-zinc-500">Stripe Integration Coming Soon...</p>
-                        {/* TODO: Implement Stripe Elements here */}
+                    <TabsContent value="stripe" className="text-center py-12 space-y-6">
+                        <div className="bg-zinc-900/50 p-6 rounded-xl border border-zinc-800">
+                            <CreditCard className="w-12 h-12 text-blue-400 mx-auto mb-4" />
+                            <h3 className="text-white font-bold text-lg mb-2">Pago con Tarjeta</h3>
+                            <p className="text-zinc-400 text-sm mb-6">
+                                Procesado de forma segura vía Stripe. Aceptamos Visa, Mastercard y Amex.
+                            </p>
+                            <Button
+                                onClick={async () => {
+                                    setLoading(true);
+                                    try {
+                                        const res = await fetch('/api/stripe/create-checkout', {
+                                            method: 'POST',
+                                            body: JSON.stringify({
+                                                linkId: link.id,
+                                                clientId: clientData?.id,
+                                                amount: link.amount,
+                                                title: link.title,
+                                                clientEmail: clientData?.email
+                                            })
+                                        });
+                                        const data = await res.json();
+                                        if (data.url) {
+                                            window.location.href = data.url;
+                                        } else {
+                                            toast.error("Error iniciando pago");
+                                            setLoading(false);
+                                        }
+                                    } catch (e) {
+                                        toast.error("Error de conexión");
+                                        setLoading(false);
+                                    }
+                                }}
+                                disabled={loading}
+                                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-6 text-lg"
+                            >
+                                {loading ? <Loader2 className="animate-spin mr-2" /> : "Pagar Ahora"}
+                            </Button>
+                        </div>
                     </TabsContent>
                 </Tabs>
             </div>
