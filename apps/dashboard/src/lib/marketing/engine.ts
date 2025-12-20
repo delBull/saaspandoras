@@ -9,9 +9,13 @@ import { PandorasCampaignEmail } from "@/emails/campaigns/PandorasCampaignEmail"
 interface CampaignStep {
     day: number;
     type: 'whatsapp' | 'email';
-    contentId?: string;
-    message?: string;
+    // Dynamic Mode
+    body?: string; // HTML for email, Text for WhatsApp
     subject?: string;
+    // Legacy Mode
+    contentId?: string;
+    message?: string; // Legacy WhatsApp
+    // Logic
     conditions?: Record<string, any>;
 }
 
@@ -20,6 +24,8 @@ interface CampaignConfig {
 }
 
 export class MarketingEngine {
+
+    // ... existing startCampaign and processDueExecutions ...
 
     static async startCampaign(campaignName: string, targetId: { userId?: string, leadId?: number }) {
         console.log(`[MarketingEngine] Starting campaign '${campaignName}' for user ${JSON.stringify(targetId)}`);
@@ -129,33 +135,58 @@ export class MarketingEngine {
         }
 
         // --- REPLACE VARIABLES ---
-        const replaceVars = (text: string) => text.replace(/{{name}}/g, contact.name).replace(/{{project}}/g, 'tu proyecto');
+        const replaceVars = (text: string) => text
+            .replace(/{{name}}/g, contact.name)
+            .replace(/{{project}}/g, 'tu proyecto')
+            .replace(/{{agent_name}}/g, 'Equipo Pandora');
 
         // --- EXECUTE ACTION ---
         let actionResult: any = {};
 
         if (step.type === 'whatsapp' && contact.phone) {
-            if (!step.message) throw new Error("WhatsApp step missing message");
-            const body = replaceVars(step.message);
+            // Priority: Dynamic Body -> Legacy Message -> Error
+            const rawBody = step.body || step.message;
+            if (!rawBody) throw new Error("WhatsApp step missing message body");
+
+            const body = replaceVars(rawBody);
             await sendWhatsAppMessage(contact.phone, body);
             actionResult = { channel: 'whatsapp', sentTo: contact.phone };
         }
         else if (step.type === 'email' && contact.email) {
-            if (!step.contentId) throw new Error("Email step missing contentId");
+            let subject = "";
+            let templateData: any = {};
 
-            const templateData = this.getTemplateData(step.contentId, contact.name);
+            // HYBRID ENGINE LOGIC
+            if (step.body) {
+                // Dynamic Mode (From DB)
+                subject = replaceVars(step.subject || "Actualización Pandora");
+                // For dynamic, we wrap the raw body in our standard template structure or send raw
+                // Here we re-use the PandorasCampaignEmail logic by mocking the data structure
+                templateData = {
+                    previewText: subject,
+                    heading: subject,
+                    body: step.body,
+                    // If we add CTA support to DB later, extract it here
+                };
+            } else if (step.contentId) {
+                // Legacy Mode (From Code Map)
+                templateData = this.getTemplateData(step.contentId, contact.name);
+                subject = step.subject ? replaceVars(step.subject) : templateData.heading;
+            } else {
+                throw new Error("Email step missing content (body or contentId)");
+            }
 
+            // Render
             // Dynamic import to avoid build issues with server components
             const { render } = await import('@react-email/render');
 
             const html = await render(
                 PandorasCampaignEmail({
                     ...templateData,
-                    bodyContent: templateData.body
+                    // Ensure body is processed if it came from dynamic and has vars
+                    bodyContent: step.body ? replaceVars(step.body) : templateData.body
                 })
             );
-
-            const subject = step.subject ? replaceVars(step.subject) : templateData.heading;
 
             await sendEmail({
                 to: contact.email,
