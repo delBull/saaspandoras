@@ -15,6 +15,7 @@ import {
 export const projectStatusEnum = pgEnum("project_status", [
   "draft",        // Borrador: Proyecto incompleto guardado por el solicitante
   "pending",      // Pendiente: Aplicación completa, esperando revisión
+  "active_client", // Cliente Activo: Pagó Tier 1, fase de análisis
   "approved",     // Aprobado: Aprobado por admin, listo para ir live
   "live",         // Live: Activo y aceptando inversiones
   "completed",    // Completed: Financiación completada exitosamente
