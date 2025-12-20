@@ -27,11 +27,23 @@ export function PaymentCheckout({ link, client: clientData }: { link: any, clien
 
     const handleWireConfirm = async () => {
         setLoading(true);
-        // Here we would call a Server Action to notify Discord
-        await new Promise(r => setTimeout(r, 1000)); // Simulating
-        setWireSent(true);
-        setLoading(false);
-        toast.success("Notificación enviada. Un administrador confirmará tu pago.");
+        try {
+            await fetch('/api/payments/verify-wire', {
+                method: 'POST',
+                body: JSON.stringify({
+                    linkId: link.id,
+                    clientId: clientData?.id,
+                    amount: link.amount,
+                    method: 'wire_manual'
+                })
+            });
+            toast.success("Notificación enviada. Un administrador confirmará tu pago.");
+            setWireSent(true);
+        } catch (e) {
+            toast.error("Error enviando notificación. Intenta de nuevo.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     if (wireSent) {
@@ -62,6 +74,12 @@ export function PaymentCheckout({ link, client: clientData }: { link: any, clien
                             <div className="text-sm text-zinc-500 mb-1">Concepto</div>
                             <h2 className="text-2xl font-bold text-white leading-tight">{link.title}</h2>
                             {link.description && <p className="text-zinc-400 text-sm mt-2">{link.description}</p>}
+
+                            <div className="mt-4 p-3 bg-red-950/30 border border-red-900/50 rounded-md">
+                                <p className="text-xs text-red-200/80 font-medium">
+                                    ⚠️ Disclaimer: Este pago corresponde a una fase de análisis y definición técnica. No implica garantía de despliegue ni retornos futuros.
+                                </p>
+                            </div>
                         </div>
 
                         <div className="pt-6 border-t border-zinc-900">

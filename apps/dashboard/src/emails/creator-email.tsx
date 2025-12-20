@@ -58,7 +58,7 @@ export default function PandorasWelcomeEmail({
               </Text>
 
               <Link
-                href="https://dash.pandoras.finance/apply"
+                href="https://dash.pandoras.finance/protocol/apply"
                 className="inline-flex items-center rounded-full bg-blue-600 px-12 py-4 text-center font-bold text-sm text-white no-underline hover:bg-blue-700"
               >
                 🏗️ Lanzar Mi Primer Protocolo
@@ -93,6 +93,9 @@ export default function PandorasWelcomeEmail({
                       <Text className="text-gray-700 text-sm">• Cómo funcionan internamente (acciones verificables, flujos, roles)</Text>
                       <Text className="text-gray-700 text-sm">• Cómo se diferencia de un token especulativo</Text>
                     </div>
+                    <Text className="text-gray-600 text-xs italic mt-3 mb-1">
+                      "Este Litepaper define el marco técnico bajo el cual operamos. Su lectura es clave antes de avanzar."
+                    </Text>
                     <Link
                       href="https://dash.pandoras.finance/uploads/Lanza_tu_protcolo_de_utilidad.pdf"
                       className="inline-flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium mt-4 hover:bg-blue-700 no-underline"
@@ -151,7 +154,7 @@ export default function PandorasWelcomeEmail({
               </Text>
 
               <Link
-                href="https://dash.pandoras.finance/apply"
+                href="https://dash.pandoras.finance/protocol/apply"
                 className="inline-flex items-center rounded-full bg-blue-600 px-8 py-4 text-center font-bold text-sm text-white no-underline hover:bg-blue-700"
               >
                 🔧 Ir al Dashboard de Construcción

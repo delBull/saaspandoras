@@ -1,6 +1,14 @@
 import type * as Lucide from "lucide-react";
 import type { Customer } from "@saasfly/db";
 
+
+export interface Section {
+  title: string;
+  content?: string;
+  items?: string[];
+  email?: string;
+}
+
 export interface Dictionary {
   whitepaper: {
     sections: string;
@@ -95,10 +103,10 @@ export interface Dictionary {
       desc: string;
     };
   };
-  
+
   benefits_market: {
     main_title: string;
-    main_description: string; 
+    main_description: string;
     ventajas_title0: string;
     ventajas_description0: string;
     ventajas_title1: string;
@@ -165,84 +173,13 @@ export interface Dictionary {
     lastUpdate: string;
     tabTerms: string;
     tabPrivacy: string;
-    sections: {
-      welcome: {
-        title: string;
-        content: string;
-      };
-      definitions: {
-        title: string;
-        items: string[];
-      };
-      usage: {
-        title: string;
-        items: string[];
-      };
-      responsibility: {
-        title: string;
-        items: string[];
-      };
-      requirements: {
-        title: string;
-        items: string[];
-      };
-      payments: {
-        title: string;
-        items: string[];
-      };
-      dataProtection: {
-        title: string;
-        items: string[];
-      };
-      law: {
-        title: string;
-        items: string[];
-      };
-    };
-    acceptance: {
-      title: string;
-      content: string;
-    };
+    sections: Record<string, Section>;
   };
   privacy: {
     title: string;
     lastUpdate: string;
     introduction: string;
-    sections: {
-      collection: {
-        title: string;
-        items: string[];
-      };
-      usage: {
-        title: string;
-        items: string[];
-      };
-      protection: {
-        title: string;
-        items: string[];
-      };
-      rights: {
-        title: string;
-        items: string[];
-      };
-      cookies: {
-        title: string;
-        items: string[];
-      };
-      transfers: {
-        title: string;
-        content: string;
-      };
-      changes: {
-        title: string;
-        content: string;
-      };
-      contact: {
-        title: string;
-        content: string;
-        email: string;
-      };
-    };
+    sections: Record<string, Section>;
   };
   invest: {
     title: string;
@@ -260,10 +197,10 @@ export interface Dictionary {
     title: string;
     subtitle: string;
     assets: Record<string, {
-        tag: string;
-        title: string;
-        description: string;
-      }>;
+      tag: string;
+      title: string;
+      description: string;
+    }>;
     info_modal: {
       title: string;
       paragraph1: string;
@@ -397,7 +334,7 @@ export interface MarketingDictionary {
   };
   benefits_market: {
     main_title: string;
-    main_description: string; 
+    main_description: string;
     ventajas_title0: string;
     ventajas_description0: string;
     ventajas_title1: string;
@@ -480,15 +417,15 @@ export type SidebarNavItem = {
   external?: boolean;
   icon?: Lucide.LucideIcon;
 } & (
-  | {
+    | {
       href: string;
       items?: never;
     }
-  | {
+    | {
       href?: string;
       items: NavLink[];
     }
-);
+  );
 
 export interface SiteConfig {
   name: string;
