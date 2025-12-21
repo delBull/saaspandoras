@@ -84,6 +84,29 @@ export function ShortlinksManager() {
     }
   };
 
+  const handleDeleteShortlink = async (id: number) => {
+    if (!confirm('¿Estás seguro de que deseas eliminar este enlace? Esta acción no se puede deshacer.')) return;
+
+    try {
+      const response = await fetch('/api/admin/shortlinks', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+
+      if (response.ok) {
+        setShortlinks(prev => prev.filter(link => link.id !== id));
+        alert('Enlace eliminado correctamente.');
+      } else {
+        const data = await response.json();
+        alert(`Error al eliminar: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Error deleting shortlink:', error);
+      alert('Hubo un problema conectando con el servidor.');
+    }
+  };
+
   const handleCopyUrl = (shortlink: Shortlink) => {
     const fullUrl = `${window.location.origin}/${shortlink.slug}`;
     navigator.clipboard.writeText(fullUrl);
@@ -241,11 +264,10 @@ export function ShortlinksManager() {
                         <code className="px-2 py-1 rounded text-sm font-mono">
                           /{shortlink.slug}
                         </code>
-                        <span className={`text-xs px-2 py-1 rounded ${
-                          shortlink.isActive
+                        <span className={`text-xs px-2 py-1 rounded ${shortlink.isActive
                             ? 'bg-green-400 text-zinc-800'
                             : 'bg-green-500 text-zinc-800'
-                        }`}>
+                          }`}>
                           {shortlink.isActive ? 'Activo' : 'Inactivo'}
                         </span>
                       </div>
@@ -284,7 +306,7 @@ export function ShortlinksManager() {
                         📊
                       </a>
                       <button
-                        onClick={() => alert('Eliminar shortlinks próximamente')}
+                        onClick={() => handleDeleteShortlink(shortlink.id)}
                         className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
                         title="Eliminar"
                       >

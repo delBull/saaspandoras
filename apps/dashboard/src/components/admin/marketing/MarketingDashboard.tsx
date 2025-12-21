@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, RefreshCw, Play, Settings2, User } from "lucide-react";
 import { MarketingStats } from "./MarketingStats";
+import { MarketingHelpModal } from "./MarketingHelpModal";
 import { toast } from "@saasfly/ui/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
@@ -86,29 +87,9 @@ export function MarketingDashboard() {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
-            <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold text-white">Resumen de Campañas</h2>
-                <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="border-zinc-700 text-zinc-400 hover:text-white">
-                        <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                        Actualizar
-                    </Button>
+            {/* Header moved to AdminTabs per user request */}
 
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button size="sm" onClick={handleRunCron} disabled={isRunningCron} className="bg-purple-600 hover:bg-purple-700 text-white">
-                                    {isRunningCron ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />}
-                                    Ejecutar Motor Ahora
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p className="max-w-xs text-xs">Forza la verificación de todas las campañas activas y avanza a los leads a la siguiente etapa si cumplen las condiciones.</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                </div>
-            </div>
+            <MarketingStats {...stats} />
 
             <MarketingStats {...stats} />
 

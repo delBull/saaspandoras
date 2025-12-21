@@ -200,7 +200,7 @@ export function NFTManager() {
                 </div>
                 <Button
                     onClick={() => setShowCreateWizard(true)}
-                    className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700"
+                    className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white"
                 >
                     <Wallet className="w-4 h-4 mr-2" />
                     Crear Nuevo NFT Pass
@@ -215,13 +215,13 @@ export function NFTManager() {
                 <div className="mb-6 relative z-10">
                     <div className="flex items-center gap-2 mb-1">
                         <span className="bg-lime-500/10 text-lime-500 text-xs px-2 py-0.5 rounded border border-lime-500/20 font-mono">
-                            SYSTEM CORE
+                            SYSTEM
                         </span>
-                        <h3 className="text-lg font-semibold text-white">System Access Pass (Global)</h3>
+                        <h3 className="text-lg font-semibold text-white">Apply Access Pass</h3>
                     </div>
                     <p className="text-zinc-400 text-sm max-w-2xl">
-                        Este es el pase principal que controla el acceso al dashboard y funcionalidades admin.
-                        Contract: <span className="font-mono text-xs bg-zinc-950 px-1 rounded text-zinc-500">{config.applyPassNftAddress}</span>
+                        Este es el pase que restringe el acceso a la aplicación de Protocolos.
+                        <span className="font-mono text-xs bg-zinc-950 px-1 rounded text-zinc-500">Contrato: {config.applyPassNftAddress}</span>
                     </p>
                 </div>
 

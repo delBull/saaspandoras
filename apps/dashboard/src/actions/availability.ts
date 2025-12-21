@@ -20,6 +20,8 @@ export interface AvailabilityConfig {
     saturday: DayConfig;
     sunday: DayConfig;
     timezone?: string;
+    googleCalendarUrl?: string;
+    notionCalendarUrl?: string;
 }
 
 const MAP_DAYS: Record<string, number> = {

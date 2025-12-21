@@ -5,10 +5,14 @@ import {
     KeyIcon,
     BellIcon,
     XMarkIcon,
-    GiftIcon
+    GiftIcon,
+    ChevronLeftIcon,
+    ChevronRightIcon
 } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 import { useTour } from "@/components/onboarding/TourEngine";
+
+const ITEMS_PER_PAGE = 5;
 
 export function NotificationsPanel({ hasAccess, notifications = [] }: { hasAccess: boolean, notifications?: any[] }) {
     const router = useRouter();
@@ -68,6 +72,7 @@ export function NotificationsPanel({ hasAccess, notifications = [] }: { hasAcces
     ];
 
     const [items, setItems] = React.useState([...apiItems, ...defaultItems]);
+    const [page, setPage] = React.useState(0);
     const tour = useTour();
 
     // Check for Onboarding Tour status
@@ -109,27 +114,43 @@ export function NotificationsPanel({ hasAccess, notifications = [] }: { hasAcces
     const dismiss = (id: number | string, e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent card click
         setItems(prev => prev.filter(i => i.id !== id));
+        // Reset to page 0 if current page becomes empty?
+        // Actually, if we delete items, page count might shrink.
+        // We'll handle that efficiently in render.
     };
 
+    // Pagination Logic
+    const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE);
+    const displayedItems = items.slice(page * ITEMS_PER_PAGE, (page + 1) * ITEMS_PER_PAGE);
+
+    // Safety check if page is out of bounds after deletion
+    React.useEffect(() => {
+        if (page >= totalPages && totalPages > 0) {
+            setPage(totalPages - 1);
+        }
+    }, [items.length, totalPages, page]);
+
     return (
-        <div className="h-full flex flex-col bg-zinc-900/30 border border-white/5 rounded-2xl overflow-hidden backdrop-blur-sm">
+        <div className="h-full flex flex-col bg-zinc-900/30 border border-white/5 rounded-2xl overflow-hidden backdrop-blur-sm relative">
             {/* Header */}
-            <div className="p-4 border-b border-white/5 flex justify-between items-center bg-zinc-900/50">
+            <div className="p-4 border-b border-white/5 flex justify-between items-center bg-zinc-900/50 shrink-0">
                 <div className="flex items-center gap-2">
                     <BellIcon className="w-4 h-4 text-gray-400" />
                     <h3 className="text-sm text-gray-200 tracking-wide">Notificaciones</h3>
                 </div>
-                {items.length > 0 && (
-                    <span className="text-[10px] bg-lime-500/20 text-lime-400 px-1.5 py-0.5 rounded border border-red-500/20">
-                        {items.length} Nuevas
-                    </span>
-                )}
+                <div className="flex items-center gap-2">
+                    {items.length > 0 && (
+                        <span className="text-[10px] bg-lime-500/20 text-lime-400 px-1.5 py-0.5 rounded border border-red-500/20">
+                            {items.length} Notifs
+                        </span>
+                    )}
+                </div>
             </div>
 
             {/* List */}
             <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
-                {items.length > 0 ? (
-                    items.map((item) => (
+                {displayedItems.length > 0 ? (
+                    displayedItems.map((item) => (
                         <div
                             key={item.id}
                             className={`relative rounded-xl border ${item.bgClass} transition-all duration-300 hover:bg-zinc-800/80 group hover:scale-[1.02] active:scale-[0.98]`}
@@ -180,6 +201,29 @@ export function NotificationsPanel({ hasAccess, notifications = [] }: { hasAcces
                     </div>
                 )}
             </div>
+
+            {/* Pagination Controls - Fixed at bottom if needed */}
+            {totalPages > 1 && (
+                <div className="p-2 border-t border-white/5 bg-zinc-900/50 flex justify-between items-center shrink-0">
+                    <button
+                        disabled={page === 0}
+                        onClick={() => setPage(p => p - 1)}
+                        className="p-1 px-3 text-xs text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1"
+                    >
+                        <ChevronLeftIcon className="w-3 h-3" /> Anterior
+                    </button>
+                    <span className="text-[10px] text-gray-500">
+                        {page + 1} / {totalPages}
+                    </span>
+                    <button
+                        disabled={page === totalPages - 1}
+                        onClick={() => setPage(p => p + 1)}
+                        className="p-1 px-3 text-xs text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1"
+                    >
+                        Siguiente <ChevronRightIcon className="w-3 h-3" />
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

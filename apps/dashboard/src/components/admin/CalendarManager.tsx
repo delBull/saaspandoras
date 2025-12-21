@@ -237,6 +237,7 @@ export function CalendarManager({ userId }: { userId: string }) {
                             <CardDescription>Configura tus reglas básicas.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
+                            {/* ... existing days map ... */}
                             <div className="space-y-3">
                                 {[
                                     { key: 'monday', label: 'Lunes' },
@@ -274,7 +275,7 @@ export function CalendarManager({ userId }: { userId: string }) {
                                                             ...config,
                                                             [day.key]: { ...dayConfig, start: e.target.value }
                                                         })}
-                                                        className="h-8 w-24 bg-zinc-950 border-zinc-800 text-xs"
+                                                        className="h-8 w-32 px-2 bg-zinc-950 border-zinc-800 text-xs"
                                                     />
                                                     <span className="text-zinc-500">-</span>
                                                     <Input
@@ -284,7 +285,7 @@ export function CalendarManager({ userId }: { userId: string }) {
                                                             ...config,
                                                             [day.key]: { ...dayConfig, end: e.target.value }
                                                         })}
-                                                        className="h-8 w-24 bg-zinc-950 border-zinc-800 text-xs"
+                                                        className="h-8 w-32 px-2 bg-zinc-950 border-zinc-800 text-xs"
                                                     />
                                                 </div>
                                             ) : (
@@ -303,6 +304,42 @@ export function CalendarManager({ userId }: { userId: string }) {
                                 >
                                     {savingConfig ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                                     Guardar y Generar Slots
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* NEW: Integrations Card */}
+                    <Card className="bg-zinc-900 border-zinc-800">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-base">🔄 Sincronización Externa</CardTitle>
+                            <CardDescription>Conecta tus calendarios de Google o Notion.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Label className="text-xs font-semibold text-zinc-400">Google Calendar (ICAL URL)</Label>
+                                <Input
+                                    placeholder="https://calendar.google.com/calendar/ical/..."
+                                    value={config.googleCalendarUrl || ''}
+                                    onChange={(e) => setConfig({ ...config, googleCalendarUrl: e.target.value })}
+                                    className="bg-zinc-950 border-zinc-800 text-xs font-mono"
+                                />
+                                <p className="text-[10px] text-zinc-500">Pega la dirección privada en formato iCal para bloquear slots automáticamente.</p>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label className="text-xs font-semibold text-zinc-400">Notion Calendar</Label>
+                                <Input
+                                    placeholder="https://..."
+                                    value={config.notionCalendarUrl || ''}
+                                    onChange={(e) => setConfig({ ...config, notionCalendarUrl: e.target.value })}
+                                    className="bg-zinc-950 border-zinc-800 text-xs font-mono"
+                                />
+                            </div>
+
+                            <div className="pt-4 flex justify-end">
+                                <Button variant="outline" size="sm" onClick={handleSaveConfig} disabled={savingConfig}>
+                                    Guardar Integraciones
                                 </Button>
                             </div>
                         </CardContent>
