@@ -168,12 +168,20 @@ export async function GET(request: Request) {
       cached: false,
     });
 
+
   } catch (error) {
-    console.error('❌ Error fetching simplified WhatsApp data:', error);
+    // 🔥 Detailed Error Logging for Staging Debugging
+    console.error('❌ [CRITICAL] Error fetching simplified WhatsApp data:', error);
+    if (error instanceof Error) {
+      console.error('Stack:', error.stack);
+      console.error('Message:', error.message);
+    }
+
     return NextResponse.json(
       {
         success: false,
         error: 'Failed to fetch simplified WhatsApp data',
+        details: error instanceof Error ? error.message : String(error),
         leads: [],
         stats: {
           total: 0,

@@ -12,6 +12,14 @@ import { DiscordManager } from './DiscordManager';
 import { MarketingDashboard } from './marketing/MarketingDashboard';
 import { CalendarManager } from "./CalendarManager";
 import { ClientsManager } from "./clients/ClientsManager";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Settings2, CreditCard } from "lucide-react";
+import { useRouter } from "next/navigation"; // Correct hook for client component
+import { MarketingHelpModal } from "./marketing/MarketingHelpModal";
+import { CreateCampaignModal } from "./marketing/CreateCampaignModal";
+import { CreatePaymentLinkModal } from "./payments/CreatePaymentLinkModal";
+import { toast } from "sonner";
 
 interface Swap {
   txHash: string;
@@ -82,8 +90,21 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
       )}
 
       {activeTab === 'marketing' && showMarketing && (
-        <div>
-          <h2 className="text-xl font-bold mb-4 text-white">📈 Marketing Hub</h2>
+        <div className="animate-in fade-in duration-500">
+          <div className="flex justify-between items-center mb-6 bg-zinc-900/50 p-4 rounded-xl border border-zinc-800 backdrop-blur-sm">
+            <div>
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                💎 Marketing Hub
+                <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/20">Active Suite</Badge>
+              </h2>
+              <p className="text-zinc-500 text-sm">Gestiona campañas, leads y flujos de conversión de forma soberana.</p>
+            </div>
+            <div className="flex gap-2">
+              <MarketingHelpModal />
+              <CreateCampaignModal />
+              <CreatePaymentLinkModal />
+            </div>
+          </div>
 
           {/* Sub-tabs para diferentes secciones de marketing */}
           <div className="mb-6">
