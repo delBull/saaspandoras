@@ -96,3 +96,21 @@ export async function getMarketingDashboardStats() {
         };
     }
 }
+
+export async function createCampaign(data: { name: string; triggerType?: string }) {
+    try {
+        const { name, triggerType = 'manual' } = data;
+
+        const [newCampaign] = await db.insert(marketingCampaigns).values({
+            name,
+            triggerType: triggerType as any,
+            config: {}, // Default empty config
+            isActive: true,
+        }).returning();
+
+        return { success: true, campaign: newCampaign };
+    } catch (error) {
+        console.error("Error creating campaign:", error);
+        return { success: false, error: "Failed to create campaign" };
+    }
+}

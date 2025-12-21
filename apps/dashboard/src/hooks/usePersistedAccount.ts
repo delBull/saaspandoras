@@ -13,6 +13,10 @@ interface SavedSession {
   isSocial?: boolean;
 }
 
+// 🛑 AGREGAR LISTA NEGRA DE WALLETS SI ES NECESARIO (O LOGICA DE LIMPIEZA)
+const PERSISTENCE_KEY = "wallet-session";
+
+
 export function usePersistedAccount() {
   const account = useActiveAccount();
   const activeWallet = useActiveWallet();
@@ -57,6 +61,10 @@ export function usePersistedAccount() {
           }
           localStorage.removeItem("wallet-session");
         }
+      } else {
+        // Enforce cleanup if no session key but cookies might exist
+        if (process.env.NODE_ENV === 'development')
+          console.log("🧹 No persisted session found - ensuring clean slate");
       }
       setIsBootstrapped(true);
     }
@@ -68,6 +76,7 @@ export function usePersistedAccount() {
     // NOTE: The 'wallet-logged-out' flag must be cleared by the Connect UI action. 
     // If we are here and the flag exists, it means we are likely in an auto-connect state that we want to reject.
     const isLoggedOut = typeof window !== "undefined" && localStorage.getItem("wallet-logged-out") === "true";
+
     if (isLoggedOut && account?.address) {
       console.log("🛑 Detected explicit logout flag - ignoring auto-save and awaiting disconnect...");
       return;
