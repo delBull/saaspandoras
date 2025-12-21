@@ -768,6 +768,7 @@ export class GamificationService {
       'course_started': 10,
       'course_completed': 100,
       'protocol_deployed': 500,
+      'onboarding_tour_completed': 50,
       // New Event Points
       'dao_activated': 250,
       'artifact_purchased': 50,
@@ -996,6 +997,12 @@ export class GamificationService {
         console.log(`🎉 Unlocked "Protocolo Desplegado" achievement for user ${userId}`);
       }
 
+      // 🎯 NUEVOS: ONBOARDING TOUR
+      if (eventType === 'onboarding_tour_completed') {
+        await this.unlockAchievement(userId, 'Iniciado en Pandoras');
+        console.log(`🎉 Unlocked "Iniciado en Pandoras" achievement for user ${userId}`);
+      }
+
       // Check for other achievements based on total points
       if (totalPoints >= 25) {
         await this.unlockAchievement(userId, 'Explorador Intrépido');
@@ -1172,6 +1179,20 @@ export class GamificationService {
           required_events: JSON.stringify(["protocol_deployed"]),
           points_reward: 500,
           badge_url: "/badges/protocol-deployert.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
+        },
+        {
+          name: "Iniciado en Pandoras",
+          description: "Has completado el recorrido de iniciación de Pandora's OS",
+          icon: "🚀",
+          type: "explorer" as any,
+          required_points: 0,
+          required_level: 1,
+          required_events: JSON.stringify(["onboarding_tour_completed"]),
+          points_reward: 50,
+          badge_url: "/badges/onboarding-complete.png",
           is_active: true,
           is_secret: false,
           created_at: new Date()

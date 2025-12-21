@@ -26,6 +26,7 @@ import { useProfile } from "@/hooks/useProfile";
 // import { GamificationHUD } from "@pandoras/gamification";
 // import { useGamificationContext } from "@pandoras/gamification";
 import { GamificationListener } from "@/components/gamification/GamificationListener";
+import { TourEngine } from "@/components/onboarding/TourEngine";
 
 // Removed: fetchUserName was a mock function for Vitalik's address
 // that was unsafe (hardcoded dependencies) and inefficient (300ms delay)
@@ -136,52 +137,28 @@ export function DashboardClientWrapper({
   return (
     <TokenPriceProvider>
       <TermsModalProvider>
+        <TourEngine>
 
-        <AutoLoginGate serverSession={serverSession}>
-          <DashboardShell
-            wallet={account?.address}
-            userName={userName ?? undefined}
-            isAdmin={isAdmin}
-            isSuperAdmin={isSuperAdmin}
-            sidebarDefaultOpen={pathname === '/applicants' ? false : undefined}
-          >
-            {/* Top Navbar with Profile - Superior derecha - OK */}
-            <div className="relative md:block hidden">
-              <TopNavbar
-                wallet={account?.address}
-                userName={userName ?? undefined}
-                isAdmin={isAdmin}
-                isSuperAdmin={isSuperAdmin}
-              />
-            </div>
+          <AutoLoginGate serverSession={serverSession}>
+            <DashboardShell
+              wallet={account?.address}
+              userName={userName ?? undefined}
+              isAdmin={isAdmin}
+              isSuperAdmin={isSuperAdmin}
+              sidebarDefaultOpen={pathname === '/applicants' ? false : undefined}
+            >
+              {/* Top Navbar with Profile - Superior derecha - OK */}
+              <div className="relative md:block hidden">
+                <TopNavbar
+                  wallet={account?.address}
+                  userName={userName ?? undefined}
+                  isAdmin={isAdmin}
+                  isSuperAdmin={isSuperAdmin}
+                />
+              </div>
 
-            {/* Admin Bypass: Admins skip NFT Gate check only if wallet is connected */}
-            {(isAdmin || isSuperAdmin) && account?.address ? (
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={pathname}
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: -20, opacity: 0 }}
-                  transition={{ duration: 0.3, ease: "easeInOut" }}
-                  className="pb-4 md:pb-0 h-full"
-                >
-                  {!isLoadingUserData && (
-                    <Suspense
-                      fallback={
-                        <div className="flex flex-col items-center justify-center w-full h-[calc(100vh-100px)] p-8 animate-pulse space-y-6">
-                          <div className="h-8 w-64 rounded bg-zinc-800/50" />
-                          <div className="h-64 w-full max-w-4xl rounded-2xl bg-zinc-800/30 border border-zinc-800" />
-                        </div>
-                      }
-                    >
-                      {children}
-                    </Suspense>
-                  )}
-                </motion.div>
-              </AnimatePresence>
-            ) : (
-              <NFTGate>
+              {/* Admin Bypass: Admins skip NFT Gate check only if wallet is connected */}
+              {(isAdmin || isSuperAdmin) && account?.address ? (
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={pathname}
@@ -205,19 +182,45 @@ export function DashboardClientWrapper({
                     )}
                   </motion.div>
                 </AnimatePresence>
-              </NFTGate>
-            )}
-          </DashboardShell>
-        </AutoLoginGate>
+              ) : (
+                <NFTGate>
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={pathname}
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: -20, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      className="pb-4 md:pb-0 h-full"
+                    >
+                      {!isLoadingUserData && (
+                        <Suspense
+                          fallback={
+                            <div className="flex flex-col items-center justify-center w-full h-[calc(100vh-100px)] p-8 animate-pulse space-y-6">
+                              <div className="h-8 w-64 rounded bg-zinc-800/50" />
+                              <div className="h-64 w-full max-w-4xl rounded-2xl bg-zinc-800/30 border border-zinc-800" />
+                            </div>
+                          }
+                        >
+                          {children}
+                        </Suspense>
+                      )}
+                    </motion.div>
+                  </AnimatePresence>
+                </NFTGate>
+              )}
+            </DashboardShell>
+          </AutoLoginGate>
 
-        {/* Mobile Navigation Menu - Fijo al bottom pero solo si no está cargando */}
-        {!isLoadingUserData && <MobileNavMenu profile={profile} />}
+          {/* Mobile Navigation Menu - Fijo al bottom pero solo si no está cargando */}
+          {!isLoadingUserData && <MobileNavMenu profile={profile} />}
 
-        <TermsModalRenderer />
-        <GamificationListener />
+          <TermsModalRenderer />
+          <GamificationListener />
 
-        {/* 🎮 Reward Modal - Mock implementation */}
-        <RewardModalManager />
+          {/* 🎮 Reward Modal - Mock implementation */}
+          <RewardModalManager />
+        </TourEngine>
       </TermsModalProvider>
     </TokenPriceProvider>
   );

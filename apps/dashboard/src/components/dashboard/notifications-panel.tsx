@@ -8,6 +8,7 @@ import {
     GiftIcon
 } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
+import { useTour } from "@/components/onboarding/TourEngine";
 
 export function NotificationsPanel({ hasAccess, notifications = [] }: { hasAccess: boolean, notifications?: any[] }) {
     const router = useRouter();
@@ -67,6 +68,31 @@ export function NotificationsPanel({ hasAccess, notifications = [] }: { hasAcces
     ];
 
     const [items, setItems] = React.useState([...apiItems, ...defaultItems]);
+    const tour = useTour();
+
+    // Check for Onboarding Tour status
+    React.useEffect(() => {
+        const tourCompleted = localStorage.getItem('pandoras_tour_completed');
+        if (!tourCompleted && tour?.startTour) {
+            setItems(prev => {
+                if (prev.some(i => i.id === 999)) return prev;
+                return [
+                    {
+                        id: 999,
+                        type: "action",
+                        title: "Iniciación Pendiente",
+                        description: "Completa el recorrido para obtener tu insignia de 'Iniciado'.",
+                        icon: <div className="text-xl">🚀</div>,
+                        actionText: "Iniciar",
+                        bgClass: "bg-purple-900/40 border-purple-500/50 animate-pulse-slow", // Highlight
+                        dismissible: false, // Force them to do it or click start
+                        onClick: () => tour.startTour()
+                    },
+                    ...prev
+                ];
+            });
+        }
+    }, [tour]);
 
     // Update items if notifications prop changes (e.g. after fetch)
     React.useEffect(() => {

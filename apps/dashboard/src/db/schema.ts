@@ -44,6 +44,7 @@ export const administrators = pgTable("administrators", {
   role: varchar("role", { length: 50 }).default('admin').notNull(),
   addedBy: varchar("added_by", { length: 42 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  availability: jsonb("availability"), // Configuración de agenda (días, horas, etc)
 });
 
 // Tabla users existente en la base de datos
