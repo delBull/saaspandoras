@@ -3,15 +3,24 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, RefreshCw, Play, Settings2, User } from "lucide-react";
+import { Loader2, RefreshCw, Play, Settings2, User, ChevronDown, ChevronUp } from "lucide-react";
+import { MarketingCampaignList } from "@/app/admin/marketing/DashboardClient";
+import { Info } from "lucide-react";
 import { MarketingStats } from "./MarketingStats";
-import { MarketingHelpModal } from "./MarketingHelpModal";
 import { toast } from "@saasfly/ui/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { getMarketingDashboardStats } from "@/actions/marketing";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useRouter } from "next/navigation";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
 
 // Types matching API response roughly
 interface Execution {
@@ -30,7 +39,10 @@ export function MarketingDashboard() {
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({ total: 0, active: 0, paused: 0, completed: 0 });
     const [executions, setExecutions] = useState<Execution[]>([]);
+    const [campaigns, setCampaigns] = useState<any[]>([]);
     const [isRunningCron, setIsRunningCron] = useState(false);
+    const [syncing, setSyncing] = useState(false);
+    const [showCampaigns, setShowCampaigns] = useState(false); // Default collapsed
     const router = useRouter();
 
     const fetchData = async () => {
@@ -40,7 +52,8 @@ export function MarketingDashboard() {
 
             if (res.success) {
                 setStats(res.stats);
-                setExecutions(res.executions as any); // Casting for slight type mismatch on dates/nulls if any
+                setExecutions(res.executions as any);
+                setCampaigns(res.campaigns || []);
             } else {
                 toast({ title: "Error", description: "No se pudieron cargar las métricas.", variant: "destructive" });
             }
@@ -57,23 +70,21 @@ export function MarketingDashboard() {
         fetchData();
     }, []);
 
-    const handleRunCron = async () => {
-        setIsRunningCron(true);
+    const handleSync = async () => {
+        setSyncing(true);
         try {
-            const res = await fetch('/api/cron/marketing-engine', {
-                method: 'GET',
-                headers: { 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET || 'dev_secret'}` }
-            });
-            if (res.ok) {
-                toast({ title: "Motor Ejecutado", description: "Se han procesado las campañas activas." });
+            const res = await fetch('/api/admin/migrations/migrate-campaigns');
+            const data = await res.json();
+            if (data.success) {
+                toast({ title: "Sincronizado", description: "Campañas sincronizadas correctamente." });
                 fetchData();
             } else {
-                throw new Error("Cron failed");
+                toast({ title: "Error", description: "Error al sincronizar.", variant: "destructive" });
             }
         } catch (e) {
-            toast({ title: "Error", description: "Falló la ejecución manual.", variant: "destructive" });
+            toast({ title: "Error", description: "Error de conexión.", variant: "destructive" });
         } finally {
-            setIsRunningCron(false);
+            setSyncing(false);
         }
     };
 
@@ -86,16 +97,61 @@ export function MarketingDashboard() {
     };
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500">
+        <div className="space-y-8 animate-in fade-in duration-500">
             {/* Header moved to AdminTabs per user request */}
 
             <MarketingStats {...stats} />
 
-            <MarketingStats {...stats} />
+            {/* Campaign List Section */}
+            <div className="space-y-4">
+                <div className="flex justify-between items-center bg-zinc-900 p-4 rounded-xl border border-zinc-800 cursor-pointer hover:bg-zinc-800/50 transition-colors" onClick={() => setShowCampaigns(!showCampaigns)}>
+                    <div className="flex items-center gap-2">
+                        <div className={`p-1 rounded-full bg-zinc-800 text-zinc-400 transition-transform ${showCampaigns ? 'rotate-180' : ''}`}>
+                            <ChevronDown className="h-4 w-4" />
+                        </div>
+                        <h3 className="font-semibold text-white text-lg select-none">Campañas Activas</h3>
+                        <Badge variant="outline" className="ml-2 bg-zinc-800 text-zinc-500 border-zinc-700">{campaigns.length}</Badge>
+                        {/* Info Modal Trigger */}
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <div onClick={(e) => e.stopPropagation()} className="p-1 cursor-pointer hover:bg-zinc-700 rounded-full">
+                                    <Info className="h-4 w-4 text-zinc-500 hover:text-purple-400" />
+                                </div>
+                            </DialogTrigger>
+                            <DialogContent className="bg-zinc-900 border-zinc-800">
+                                <DialogHeader>
+                                    <DialogTitle>Sincronización de Flujos</DialogTitle>
+                                    <DialogDescription>
+                                        El motor de marketing sincroniza automáticamente las campañas editadas en el código (hardcoded json) con la base de datos.
+                                        <br /><br />
+                                        Si has hecho cambios manuales o desplegado nuevas versiones de flujos, usa el botón "Sincronizar Flujos" para asegurar que el Dashboard refleje la última verdad.
+                                    </DialogDescription>
+                                </DialogHeader>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
 
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+                    <div className="flex items-center gap-2">
+                        {/* Sync Button */}
+                        <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); handleSync(); }} disabled={syncing} className="border-purple-500/20 text-purple-400 hover:bg-purple-500/10 hover:text-purple-300">
+                            <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+                            {syncing ? 'Sincronizando...' : 'Sincronizar'}
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Collapsible Content */}
+                {showCampaigns && (
+                    <div className="animate-in slide-in-from-top-2 duration-200">
+                        <MarketingCampaignList initialCampaigns={campaigns} />
+                    </div>
+                )}
+            </div>
+
+
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden mt-8">
                 <div className="p-4 border-b border-zinc-800 flex justify-between items-center">
-                    <h3 className="font-semibold text-white">Ejecuciones Recientes</h3>
+                    <h3 className="font-semibold text-white">Ejecuciones Recientes (Logs)</h3>
                     <Button variant="ghost" size="sm" className="text-xs text-zinc-500 hover:text-white">
                         Ver todas
                     </Button>

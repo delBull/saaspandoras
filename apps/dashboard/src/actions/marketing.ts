@@ -81,10 +81,14 @@ export async function getMarketingDashboardStats() {
             };
         }));
 
+        // 4. Fetch All Campaigns (for list view)
+        const campaigns = await db.select().from(marketingCampaigns).orderBy(desc(marketingCampaigns.createdAt));
+
         return {
             success: true,
             stats: { total, active, paused, completed },
-            executions: detailedExecs
+            executions: detailedExecs,
+            campaigns // Return the list
         };
 
     } catch (error) {
@@ -112,5 +116,31 @@ export async function createCampaign(data: { name: string; triggerType?: string 
     } catch (error) {
         console.error("Error creating campaign:", error);
         return { success: false, error: "Failed to create campaign" };
+    }
+}
+
+export async function toggleCampaignStatus(id: number, isActive: boolean) {
+    try {
+        await db.update(marketingCampaigns)
+            .set({ isActive })
+            .where(eq(marketingCampaigns.id, id));
+        return { success: true };
+    } catch (error) {
+        console.error("Error toggling campaign:", error);
+        return { success: false, error: "Failed to update campaign status" };
+    }
+}
+
+export async function deleteCampaign(id: number) {
+    try {
+        // Delete executions first (referential integrity usually requires this if no cascade)
+        await db.delete(marketingExecutions).where(eq(marketingExecutions.campaignId, id));
+
+        // Delete campaign
+        await db.delete(marketingCampaigns).where(eq(marketingCampaigns.id, id));
+        return { success: true };
+    } catch (error) {
+        console.error("Error deleting campaign:", error);
+        return { success: false, error: "Failed to delete campaign" };
     }
 }
