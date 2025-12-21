@@ -429,12 +429,12 @@ export default function DashboardPage() {
           {/* Grid layout driven by Aspect Ratio instead of Fixed Height to prevent scrolling/overlap issues */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Carousel: Uses proper aspect ratio to define grid height */}
-            <div className="lg:col-span-3 w-full aspect-[16/10] lg:aspect-[16/9] 2xl:aspect-[21/9]">
+            <div id="tour-carousel" className="lg:col-span-3 w-full aspect-[16/10] lg:aspect-[16/9] 2xl:aspect-[21/9]">
               <FeaturedCarousel projects={homeData.featuredProjects} />
             </div>
 
             {/* Notifications Panel: Stretches to match Carousel on Desktop, Fixed height on Mobile */}
-            <div className="lg:col-span-1 w-full h-[400px] lg:h-full">
+            <div id="tour-notifications" className="lg:col-span-1 w-full h-[400px] lg:h-full">
               <NotificationsPanel
                 hasAccess={homeData.accessCards.length > 0}
                 notifications={homeData.notifications}
@@ -445,7 +445,7 @@ export default function DashboardPage() {
       )}
 
       {/* Governance Section */}
-      <div className="mt-8">
+      <div id="tour-governance" className="mt-8">
         <GovernanceSection onParticipate={() => setIsGovernanceModalOpen(true)} />
       </div>
 
@@ -456,7 +456,9 @@ export default function DashboardPage() {
           {[1, 2, 3].map(i => <div key={i} className="h-28 bg-zinc-900 animate-pulse rounded-xl" />)}
         </div>
       ) : (
-        <AccessArtifactsSection accessCards={homeData.accessCards} artifacts={homeData.artifacts} />
+        <div id="tour-assets">
+          <AccessArtifactsSection accessCards={homeData.accessCards} artifacts={homeData.artifacts} />
+        </div>
       )}
 
       {/* Governance Participation Modal */}
