@@ -63,7 +63,7 @@ export function CreateCampaignModal() {
                     <div className="space-y-2">
                         <Label htmlFor="triggerType">Disparador (Trigger)</Label>
                         <Select name="triggerType" defaultValue="manual">
-                            <SelectTrigger className="bg-zinc-800 border-zinc-700">
+                            <SelectTrigger id="triggerType" className="bg-zinc-800 border-zinc-700">
                                 <SelectValue placeholder="Selecciona un trigger" />
                             </SelectTrigger>
                             <SelectContent className="bg-zinc-800 border-zinc-700 text-white">

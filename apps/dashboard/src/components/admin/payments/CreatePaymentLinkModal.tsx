@@ -83,7 +83,7 @@ export function CreatePaymentLinkModal() {
                             <div className="space-y-2">
                                 <Label htmlFor="currency">Moneda</Label>
                                 <Select name="currency" defaultValue="USD">
-                                    <SelectTrigger className="bg-zinc-800 border-zinc-700">
+                                    <SelectTrigger id="currency" className="bg-zinc-800 border-zinc-700">
                                         <SelectValue placeholder="USD" />
                                     </SelectTrigger>
                                     <SelectContent className="bg-zinc-800 border-zinc-700 text-white">
@@ -108,9 +108,9 @@ export function CreatePaymentLinkModal() {
                             <h3 className="font-bold text-green-500">¡Link Generado!</h3>
                         </div>
                         <div className="space-y-2">
-                            <Label>URL Pública</Label>
+                            <Label htmlFor="created-link">URL Pública</Label>
                             <div className="flex gap-2">
-                                <Input readOnly value={createdLink} className="bg-zinc-950 font-mono text-xs" />
+                                <Input id="created-link" readOnly value={createdLink} className="bg-zinc-950 font-mono text-xs" />
                                 <Button size="icon" variant="secondary" onClick={copyToClipboard}>
                                     <Copy className="w-4 h-4" />
                                 </Button>

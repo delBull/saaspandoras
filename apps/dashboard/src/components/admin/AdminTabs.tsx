@@ -15,11 +15,12 @@ import { ClientsManager } from "./clients/ClientsManager";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Settings2, CreditCard } from "lucide-react";
-import { useRouter } from "next/navigation"; // Correct hook for client component
+import { useRouter } from "next/navigation";
 import { MarketingHelpModal } from "./marketing/MarketingHelpModal";
 import { CreateCampaignModal } from "./marketing/CreateCampaignModal";
 import { CreatePaymentLinkModal } from "./payments/CreatePaymentLinkModal";
 import { toast } from "sonner";
+import { PaymentsDashboard } from "./payments/PaymentsDashboard";
 
 interface Swap {
   txHash: string;
@@ -43,7 +44,7 @@ interface AdminTabsProps {
 
 export function AdminTabs({ swaps, users, children, showSettings = false, showUsers = false, showShortlinks = false, showMarketing = false, currentUserId }: AdminTabsProps) {
   const [activeTab, setActiveTab] = useState('projects');
-  const [activeMarketingSubTab, setActiveMarketingSubTab] = useState<'wa-leads' | 'shortlinks' | 'newsletter' | 'discord' | 'campaigns' | 'agenda'>('wa-leads');
+  const [activeMarketingSubTab, setActiveMarketingSubTab] = useState<'wa-leads' | 'shortlinks' | 'newsletter' | 'discord' | 'campaigns' | 'agenda' | 'pay'>('wa-leads');
 
   return (
     <>
@@ -119,6 +120,15 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
                 💬 WA Leads
               </button>
               <button
+                onClick={() => setActiveMarketingSubTab('pay')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeMarketingSubTab === 'pay'
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                  : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
+                  }`}
+              >
+                💸 Pay & Finance
+              </button>
+              <button
                 onClick={() => setActiveMarketingSubTab('shortlinks')}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeMarketingSubTab === 'shortlinks'
                   ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
@@ -168,6 +178,7 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
 
           {/* Contenido dinámico según sub-tab activa */}
           {activeMarketingSubTab === 'wa-leads' && <WhatsAppLeadsTab />}
+          {activeMarketingSubTab === 'pay' && <PaymentsDashboard />}
           {activeMarketingSubTab === 'shortlinks' && <ShortlinksSubTab />}
           {activeMarketingSubTab === 'newsletter' && <NewsletterSubTab />}
           {activeMarketingSubTab === 'discord' && <DiscordManager />}
@@ -175,8 +186,6 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
             <MarketingDashboard />
           )}
           {activeMarketingSubTab === 'agenda' && (
-            // TODO: Pass real UserID here. For now utilizing a clear fallback or needing context.
-            // We'll import CalendarManager dynamically to avoid heavy load if not used
             <div className="w-full">
               <CalendarManager userId="FIXME_CURRENT_USER_ID" />
             </div>
