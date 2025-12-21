@@ -10,20 +10,27 @@ import { toast } from "sonner";
 import { Loader2, CheckCircle, CreditCard, Wallet, Landmark } from "lucide-react";
 import { PayEmbed } from "thirdweb/react";
 import { createThirdwebClient } from "thirdweb";
-import { base, mainnet, polygon, optimism, arbitrum } from "thirdweb/chains";
+import { base, sepolia } from "thirdweb/chains";
 
 // Initialize Thirdweb
 const client = createThirdwebClient({
     clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID || "",
 });
 
+// Token Addresses (Native USDC)
+const USDC_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+const USDC_SEPOLIA = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
+
+const IS_PROD = process.env.NEXT_PUBLIC_VERCEL_ENV === 'production';
+const ACTIVE_CHAIN = IS_PROD ? base : sepolia;
+const ACTIVE_TOKEN = IS_PROD ? USDC_BASE : USDC_SEPOLIA;
+
 export function PaymentCheckout({ link, client: clientData }: { link: any, client: any }) {
-    const [method, setMethod] = useState("crypto");
+    // Default to 'stripe' if available, then 'crypto'
+    const enabledMethods = (link.methods as string[]) || ["stripe", "crypto", "wire"];
+    const [method, setMethod] = useState(enabledMethods.includes("stripe") ? "stripe" : "crypto");
     const [loading, setLoading] = useState(false);
     const [wireSent, setWireSent] = useState(false);
-
-    // Filter enabled methods (assuming config is correct)
-    const enabledMethods = (link.methods as string[]) || ["crypto"];
 
     const handleWireConfirm = async () => {
         setLoading(true);
@@ -64,8 +71,8 @@ export function PaymentCheckout({ link, client: clientData }: { link: any, clien
             <div className="p-8 bg-zinc-950 flex flex-col justify-between border-r border-zinc-800">
                 <div>
                     <div className="mb-8">
-                        {/* Logo Placeholder */}
-                        <div className="w-10 h-10 bg-white rounded-full mb-4"></div>
+                        {/* Valid Logo */}
+                        <img src="/logo-finance.png" alt="Pandora's Finance" className="w-12 h-12 mb-4 rounded-lg bg-zinc-900 p-1" />
                         <h1 className="text-xl font-bold text-zinc-500 uppercase tracking-widest">Pandora's Finance</h1>
                     </div>
 
@@ -93,7 +100,7 @@ export function PaymentCheckout({ link, client: clientData }: { link: any, clien
 
                 <div className="mt-12 text-xs text-zinc-600">
                     Cliente: {clientData?.name} ({clientData?.email}) <br />
-                    ID Referencia: {link.id}
+                    ID Referencia: {link.id.substring(0, 8)}...
                 </div>
             </div>
 
@@ -101,14 +108,14 @@ export function PaymentCheckout({ link, client: clientData }: { link: any, clien
             <div className="p-8 bg-black">
                 <Tabs value={method} onValueChange={setMethod} className="w-full">
                     <TabsList className="grid w-full grid-cols-3 bg-zinc-900 mb-6">
-                        {enabledMethods.includes('crypto') && (
-                            <TabsTrigger value="crypto" className="data-[state=active]:bg-zinc-800">
-                                <Wallet className="w-4 h-4 mr-2" /> Crypto
-                            </TabsTrigger>
-                        )}
                         {enabledMethods.includes('stripe') && (
                             <TabsTrigger value="stripe" className="data-[state=active]:bg-zinc-800">
                                 <CreditCard className="w-4 h-4 mr-2" /> Card
+                            </TabsTrigger>
+                        )}
+                        {enabledMethods.includes('crypto') && (
+                            <TabsTrigger value="crypto" className="data-[state=active]:bg-zinc-800">
+                                <Wallet className="w-4 h-4 mr-2" /> Crypto
                             </TabsTrigger>
                         )}
                         {enabledMethods.includes('wire') && (
@@ -117,62 +124,6 @@ export function PaymentCheckout({ link, client: clientData }: { link: any, clien
                             </TabsTrigger>
                         )}
                     </TabsList>
-
-                    <TabsContent value="crypto" className="space-y-4">
-                        <div className="text-center mb-4">
-                            <h3 className="text-white font-medium">Pago Seguro Web3</h3>
-                            <p className="text-xs text-zinc-500">USDC, ETH, MATIC en redes principales</p>
-                        </div>
-                        <div className="flex justify-center theme-dark">
-                            <PayEmbed
-                                client={client}
-                                payOptions={{
-                                    prefillBuy: {
-                                        chain: base,
-                                        amount: link.amount,
-                                    }
-                                }}
-                                theme={"dark"}
-                            />
-                            {/* <Button onClick={manualVerify}>Ya pagué</Button> - Future improvement */}
-                        </div>
-                    </TabsContent>
-
-                    <TabsContent value="wire" className="space-y-6">
-                        <div className="bg-zinc-900 p-4 rounded-lg border border-zinc-800 space-y-4">
-                            <h3 className="text-white font-bold flex items-center"><Landmark className="w-4 h-4 mr-2 text-lime-500" /> Datos Bancarios (México)</h3>
-                            <div className="space-y-2 text-sm">
-                                <div className="flex justify-between border-b border-zinc-800 pb-2">
-                                    <span className="text-zinc-500">Banco</span>
-                                    <span className="text-white font-mono">Banregio</span>
-                                </div>
-                                <div className="flex justify-between border-b border-zinc-800 pb-2">
-                                    <span className="text-zinc-500">CLABE</span>
-                                    <span className="text-white font-mono select-all">058375000152087056</span>
-                                </div>
-                                <div className="flex justify-between border-b border-zinc-800 pb-2">
-                                    <span className="text-zinc-500">Beneficiario</span>
-                                    <span className="text-white">Pandoras Finance</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-zinc-500">Referencia</span>
-                                    <span className="text-lime-500 font-mono select-all">{link.id.substring(0, 8)}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="space-y-4">
-                            <Label className="text-white">Subir Comprobante (Opcional)</Label>
-                            <Input type="file" className="bg-zinc-900 border-zinc-800" />
-                            <Button
-                                onClick={handleWireConfirm}
-                                disabled={loading}
-                                className="w-full bg-lime-500 text-black hover:bg-lime-400 font-bold"
-                            >
-                                {loading ? <Loader2 className="animate-spin mr-2" /> : "Ya realicé la transferencia"}
-                            </Button>
-                        </div>
-                    </TabsContent>
 
                     <TabsContent value="stripe" className="text-center py-12 space-y-6">
                         <div className="bg-zinc-900/50 p-6 rounded-xl border border-zinc-800">
@@ -211,6 +162,69 @@ export function PaymentCheckout({ link, client: clientData }: { link: any, clien
                                 className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-6 text-lg"
                             >
                                 {loading ? <Loader2 className="animate-spin mr-2" /> : "Pagar Ahora"}
+                            </Button>
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="crypto" className="space-y-4">
+                        <div className="text-center mb-4">
+                            <h3 className="text-white font-medium">Pago Seguro Web3</h3>
+                            <p className="text-xs text-zinc-500">
+                                {IS_PROD ? 'Base Mainnet' : 'Sepolia Testnet'} • USDC (Prioridad)
+                            </p>
+                        </div>
+                        <div className="flex justify-center theme-dark">
+                            <PayEmbed
+                                client={client}
+                                payOptions={{
+                                    prefillBuy: {
+                                        chain: ACTIVE_CHAIN,
+                                        amount: link.amount,
+                                        token: {
+                                            address: ACTIVE_TOKEN,
+                                            symbol: "USDC",
+                                            name: "USD Coin",
+                                            decimals: 6
+                                        } as any // flexible cast
+                                    }
+                                }}
+                                theme={"dark"}
+                            />
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="wire" className="space-y-6">
+                        <div className="bg-zinc-900 p-4 rounded-lg border border-zinc-800 space-y-4">
+                            <h3 className="text-white font-bold flex items-center"><Landmark className="w-4 h-4 mr-2 text-lime-500" /> Datos Bancarios (México)</h3>
+                            <div className="space-y-2 text-sm">
+                                <div className="flex justify-between border-b border-zinc-800 pb-2">
+                                    <span className="text-zinc-500">Banco</span>
+                                    <span className="text-white font-mono">Banregio</span>
+                                </div>
+                                <div className="flex justify-between border-b border-zinc-800 pb-2">
+                                    <span className="text-zinc-500">CLABE</span>
+                                    <span className="text-white font-mono select-all">058375000152087056</span>
+                                </div>
+                                <div className="flex justify-between border-b border-zinc-800 pb-2">
+                                    <span className="text-zinc-500">Beneficiario</span>
+                                    <span className="text-white">Pandoras Finance</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-zinc-500">Referencia</span>
+                                    <span className="text-lime-500 font-mono select-all">{link.id.substring(0, 8)}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <Label className="text-white">Subir Comprobante (Opcional)</Label>
+                            <Input type="file" className="bg-zinc-900 border-zinc-800" />
+                            <Button
+                                onClick={handleWireConfirm}
+                                disabled={loading}
+                                className="w-full bg-lime-500 text-black hover:bg-lime-400 font-bold"
+                            >
+                                {loading ? <Loader2 className="animate-spin mr-2" /> : "Ya realicé la transferencia"}
                             </Button>
                         </div>
                     </TabsContent>
