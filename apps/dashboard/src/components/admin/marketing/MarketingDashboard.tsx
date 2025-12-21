@@ -104,7 +104,11 @@ export function MarketingDashboard() {
 
             {/* Campaign List Section */}
             <div className="space-y-4">
-                <div className="flex justify-between items-center bg-zinc-900 p-4 rounded-xl border border-zinc-800 cursor-pointer hover:bg-zinc-800/50 transition-colors" onClick={() => setShowCampaigns(!showCampaigns)}>
+                <div className="flex justify-between items-center bg-zinc-900 p-4 rounded-xl border border-zinc-800 cursor-pointer hover:bg-zinc-800/50 transition-colors"
+                    onClick={() => setShowCampaigns(!showCampaigns)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setShowCampaigns(!showCampaigns); }}>
                     <div className="flex items-center gap-2">
                         <div className={`p-1 rounded-full bg-zinc-800 text-zinc-400 transition-transform ${showCampaigns ? 'rotate-180' : ''}`}>
                             <ChevronDown className="h-4 w-4" />
@@ -114,9 +118,13 @@ export function MarketingDashboard() {
                         {/* Info Modal Trigger */}
                         <Dialog>
                             <DialogTrigger asChild>
-                                <div onClick={(e) => e.stopPropagation()} className="p-1 cursor-pointer hover:bg-zinc-700 rounded-full">
+                                <button
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="p-1 cursor-pointer hover:bg-zinc-700 rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    type="button"
+                                >
                                     <Info className="h-4 w-4 text-zinc-500 hover:text-purple-400" />
-                                </div>
+                                </button>
                             </DialogTrigger>
                             <DialogContent className="bg-zinc-900 border-zinc-800">
                                 <DialogHeader>

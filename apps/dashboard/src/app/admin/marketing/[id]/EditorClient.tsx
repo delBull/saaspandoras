@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Save, Plus, Trash2, Clock, Mail, MessageSquare, Edit, Layers, Settings, Workflow } from "lucide-react";
 import { toast } from "sonner";
-import { CampaignTiersEditor, Tier, SOW } from "./CampaignTiersEditor";
+import { CampaignTiersEditor, type Tier, type SOW } from "./CampaignTiersEditor";
 
 interface CampaignStep {
     day: number;
@@ -212,12 +212,12 @@ export function CampaignEditorClient({ campaign }: { campaign: Campaign }) {
 
                                         <div className="grid grid-cols-2 gap-6 bg-zinc-900/50 p-4 rounded-lg border border-zinc-800">
                                             <div className="space-y-2">
-                                                <label className="text-sm font-medium text-zinc-400">Canal de Envío</label>
+                                                <label htmlFor={`step-type-${selectedStepIndex}`} className="text-sm font-medium text-zinc-400">Canal de Envío</label>
                                                 <Select
                                                     value={currentStep.type}
                                                     onValueChange={(v: any) => updateStep(selectedStepIndex, 'type', v)}
                                                 >
-                                                    <SelectTrigger className="bg-zinc-950 border-zinc-800">
+                                                    <SelectTrigger id={`step-type-${selectedStepIndex}`} className="bg-zinc-950 border-zinc-800">
                                                         <SelectValue />
                                                     </SelectTrigger>
                                                     <SelectContent>
@@ -227,9 +227,10 @@ export function CampaignEditorClient({ campaign }: { campaign: Campaign }) {
                                                 </Select>
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-sm font-medium text-zinc-400">Timing (Días desde inicio)</label>
+                                                <label htmlFor={`step-day-${selectedStepIndex}`} className="text-sm font-medium text-zinc-400">Timing (Días desde inicio)</label>
                                                 <div className="flex items-center gap-2">
                                                     <Input
+                                                        id={`step-day-${selectedStepIndex}`}
                                                         type="number"
                                                         value={currentStep.day}
                                                         onChange={(e) => updateStep(selectedStepIndex, 'day', parseInt(e.target.value))}
@@ -243,8 +244,9 @@ export function CampaignEditorClient({ campaign }: { campaign: Campaign }) {
                                         {currentStep.type === 'email' && (
                                             <div className="space-y-4">
                                                 <div className="space-y-2">
-                                                    <label className="text-sm font-medium text-zinc-400">Asunto del Correo</label>
+                                                    <label htmlFor={`step-subj-${selectedStepIndex}`} className="text-sm font-medium text-zinc-400">Asunto del Correo</label>
                                                     <Input
+                                                        id={`step-subj-${selectedStepIndex}`}
                                                         value={currentStep.subject || ''}
                                                         onChange={(e) => updateStep(selectedStepIndex, 'subject', e.target.value)}
                                                         placeholder="Ej: Bienvenido al futuro de la inversión..."
@@ -253,13 +255,14 @@ export function CampaignEditorClient({ campaign }: { campaign: Campaign }) {
                                                 </div>
                                                 <div className="space-y-2">
                                                     <div className="flex justify-between">
-                                                        <label className="text-sm font-medium text-zinc-400">Contenido HTML</label>
+                                                        <label htmlFor={`step-body-${selectedStepIndex}`} className="text-sm font-medium text-zinc-400">Contenido HTML</label>
                                                         <div className="flex gap-2">
                                                             <Badge variant="outline" className="cursor-pointer hover:bg-zinc-800" onClick={() => updateStep(selectedStepIndex, 'body', (currentStep.body || '') + ' {{name}}')}>+ Nombre</Badge>
                                                             <Badge variant="outline" className="cursor-pointer hover:bg-zinc-800" onClick={() => updateStep(selectedStepIndex, 'body', (currentStep.body || '') + ' {{project}}')}>+ Proyecto</Badge>
                                                         </div>
                                                     </div>
                                                     <Textarea
+                                                        id={`step-body-${selectedStepIndex}`}
                                                         value={currentStep.body || ''}
                                                         onChange={(e) => updateStep(selectedStepIndex, 'body', e.target.value)}
                                                         className="min-h-[400px] font-mono text-sm leading-relaxed bg-zinc-950 border-zinc-800"
@@ -315,9 +318,9 @@ export function CampaignEditorClient({ campaign }: { campaign: Campaign }) {
                                     <h3 className="text-lg font-medium text-white">Configuración General</h3>
                                     <div className="grid gap-4">
                                         <div className="flex flex-col space-y-1.5">
-                                            <label className="text-sm text-zinc-400">Trigger Type</label>
+                                            <label htmlFor="trigger-type-static" className="text-sm text-zinc-400">Trigger Type</label>
                                             <Select value={campaign.triggerType || 'manual'} disabled>
-                                                <SelectTrigger className="bg-zinc-950 border-zinc-800"><SelectValue /></SelectTrigger>
+                                                <SelectTrigger id="trigger-type-static" className="bg-zinc-950 border-zinc-800"><SelectValue /></SelectTrigger>
                                                 <SelectContent><SelectItem value={campaign.triggerType || 'manual'}>{campaign.triggerType || 'Manual'}</SelectItem></SelectContent>
                                             </Select>
                                             <p className="text-xs text-zinc-600">El trigger se define al crear la campaña.</p>

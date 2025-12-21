@@ -40,7 +40,7 @@ export function CampaignTiersEditor({ tiers, sows, onChangeTiers, onChangeSOWs }
     const updateTier = (index: number, field: keyof Tier, value: any) => {
         const newTiers = [...tiers];
         if (newTiers[index]) {
-            newTiers[index] = { ...newTiers[index], [field]: value };
+            newTiers[index] = { ...newTiers[index], [field]: value } as Tier;
             onChangeTiers(newTiers);
         }
     };
@@ -53,30 +53,32 @@ export function CampaignTiersEditor({ tiers, sows, onChangeTiers, onChangeSOWs }
 
     const addFeature = (tierIndex: number) => {
         const newTiers = [...tiers];
-        if (newTiers[tierIndex]) {
-            // Create a new array for features to avoid mutation issues if strict
-            const features = [...newTiers[tierIndex].features, "Nueva característica"];
-            newTiers[tierIndex] = { ...newTiers[tierIndex], features };
+        const tier = newTiers[tierIndex];
+        if (tier) {
+            const features = [...tier.features, "Nueva característica"];
+            newTiers[tierIndex] = { ...tier, features } as Tier;
             onChangeTiers(newTiers);
         }
     };
 
     const updateFeature = (tierIndex: number, featureIndex: number, value: string) => {
         const newTiers = [...tiers];
-        if (newTiers[tierIndex]) {
-            const features = [...newTiers[tierIndex].features];
+        const tier = newTiers[tierIndex];
+        if (tier) {
+            const features = [...tier.features];
             features[featureIndex] = value;
-            newTiers[tierIndex] = { ...newTiers[tierIndex], features };
+            newTiers[tierIndex] = { ...tier, features } as Tier;
             onChangeTiers(newTiers);
         }
     };
 
     const removeFeature = (tierIndex: number, featureIndex: number) => {
         const newTiers = [...tiers];
-        if (newTiers[tierIndex]) {
-            const features = [...newTiers[tierIndex].features];
+        const tier = newTiers[tierIndex];
+        if (tier) {
+            const features = [...tier.features];
             features.splice(featureIndex, 1);
-            newTiers[tierIndex] = { ...newTiers[tierIndex], features };
+            newTiers[tierIndex] = { ...tier, features } as Tier;
             onChangeTiers(newTiers);
         }
     };
@@ -88,7 +90,7 @@ export function CampaignTiersEditor({ tiers, sows, onChangeTiers, onChangeSOWs }
 
     const updateSOW = (tierName: string, field: keyof SOW, value: string) => {
         const existingIndex = sows.findIndex(s => s.tierId === tierName);
-        let newSOWs = [...sows];
+        const newSOWs = [...sows];
 
         if (existingIndex >= 0) {
             newSOWs[existingIndex] = {
@@ -208,8 +210,9 @@ export function CampaignTiersEditor({ tiers, sows, onChangeTiers, onChangeSOWs }
                                 </CardHeader>
                                 <CardContent className="grid md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-semibold uppercase text-zinc-500">Entregables (Deliverables)</label>
+                                        <label htmlFor={`sow-del-${idx}`} className="text-xs font-semibold uppercase text-zinc-500">Entregables (Deliverables)</label>
                                         <Textarea
+                                            id={`sow-del-${idx}`}
                                             value={sow.deliverables}
                                             onChange={(e) => updateSOW(tier.name, 'deliverables', e.target.value)}
                                             className="min-h-[150px] bg-zinc-950 font-mono text-xs"
@@ -218,8 +221,9 @@ export function CampaignTiersEditor({ tiers, sows, onChangeTiers, onChangeSOWs }
                                     </div>
                                     <div className="space-y-4">
                                         <div className="space-y-2">
-                                            <label className="text-xs font-semibold uppercase text-zinc-500">Timeline Estimado</label>
+                                            <label htmlFor={`sow-time-${idx}`} className="text-xs font-semibold uppercase text-zinc-500">Timeline Estimado</label>
                                             <Input
+                                                id={`sow-time-${idx}`}
                                                 value={sow.timeline}
                                                 onChange={(e) => updateSOW(tier.name, 'timeline', e.target.value)}
                                                 className="bg-zinc-950"
@@ -227,8 +231,9 @@ export function CampaignTiersEditor({ tiers, sows, onChangeTiers, onChangeSOWs }
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-xs font-semibold uppercase text-zinc-500">Términos Clave</label>
+                                            <label htmlFor={`sow-terms-${idx}`} className="text-xs font-semibold uppercase text-zinc-500">Términos Clave</label>
                                             <Textarea
+                                                id={`sow-terms-${idx}`}
                                                 value={sow.terms}
                                                 onChange={(e) => updateSOW(tier.name, 'terms', e.target.value)}
                                                 className="min-h-[80px] bg-zinc-950 text-xs"
