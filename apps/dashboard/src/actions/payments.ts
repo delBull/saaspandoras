@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from "@/db";
-import { paymentLinks, clients } from "@/db/schema";
+import { paymentLinks, clients, transactions } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function createPaymentLink(data: {
@@ -12,12 +12,6 @@ export async function createPaymentLink(data: {
 }) {
     try {
         const { title, amount, currency, description } = data;
-
-        // 1. Create or Find a "Guest" Client for generic links? 
-        // For now, we might need a default Client or allow link without client?
-        // Schema says: clientId: text("client_id").references(() => clients.id).notNull()
-        // We will fallback to a "Default" or "Direct Link" client placeholder if not provided, 
-        // or effectively create a "General Public" client record for this purpose if it doesn't exist.
 
         // Strategy: Create a 'General Public' client if not exists
         let generalClient = await db.query.clients.findFirst({
@@ -48,5 +42,52 @@ export async function createPaymentLink(data: {
     } catch (error) {
         console.error("Error creating payment link:", error);
         return { success: false, error: "Failed to create payment link" };
+    }
+}
+
+export async function getPaymentsDashboardStats() {
+    try {
+        // 1. Fetch Links and Transactions
+        const links = await db.select().from(paymentLinks);
+        // Using raw select for transactions to ensure we get everything
+        const allTransactions = await db.select().from(transactions);
+
+        // 2. Calculate Stats
+        const totalLinks = links.length;
+        const activeLinks = links.filter(l => l.isActive).length;
+
+        // Real Revenue: Sum of all transactions with status 'completed'
+        // We assume amounts are USD-normalized or simplistic sum for V1 if all generic
+        const completedTx = allTransactions.filter(t => t.status === 'completed');
+        const totalRevenue = completedTx.reduce((acc, curr) => acc + Number(curr.amount), 0);
+
+        // Pending Payment: Sum of ACTIVE links' amounts minus Revenue?
+        // Actually, a better metric for "Pending" might be:
+        // Sum of all Active Links created recently that don't have a completed transaction?
+        // This is tricky without strict 1-to-1 link tracking. 
+        // Simplification: Sum of all Active Links that are NOT expired.
+        // We will just sum all Active Links amounts. This represents "Potential Revenue in Pipeline".
+        const potentialRevenue = links.filter(l => l.isActive).reduce((acc, curr) => acc + Number(curr.amount), 0);
+
+        // "Pending" = Potential - Collected (roughly, assuming 1 link = 1 intended payment)
+        // Ensure non-negative
+        const pendingPayment = Math.max(0, potentialRevenue - totalRevenue);
+
+        // 3. Recent Links (descending)
+        const recentLinks = [...links].reverse().slice(0, 10);
+
+        return {
+            success: true,
+            stats: {
+                totalRevenue,
+                activeLinks,
+                totalLinks,
+                pendingPayment
+            },
+            links: recentLinks
+        };
+    } catch (error) {
+        console.error("Error fetching payment stats:", error);
+        return { success: false, error: "Failed to fetch stats" };
     }
 }
