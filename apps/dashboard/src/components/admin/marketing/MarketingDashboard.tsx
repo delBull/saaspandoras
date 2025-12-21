@@ -7,6 +7,7 @@ import { Loader2, RefreshCw, Play, Settings2, User, ChevronDown, ChevronUp } fro
 import { MarketingCampaignList } from "@/app/admin/marketing/DashboardClient";
 import { Info } from "lucide-react";
 import { MarketingStats } from "./MarketingStats";
+import { MarketingHelpModal } from "./MarketingHelpModal";
 import { toast } from "@saasfly/ui/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
