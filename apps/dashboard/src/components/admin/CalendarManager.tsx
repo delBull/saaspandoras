@@ -5,7 +5,9 @@ import { useState, useEffect } from "react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addHours, setHours, setMinutes } from "date-fns";
 import { es } from "date-fns/locale";
 import { getAvailableSlots, createAdminBooking } from "@/actions/scheduling";
-import { Loader2, Plus, Calendar as CalendarIcon, Settings, Copy, ExternalLink, Video, Phone, User as UserIcon, Clock } from "lucide-react";
+import { getAdminAvailability, saveAvailability } from "@/actions/availability";
+import type { AvailabilityConfig } from "@/actions/availability";
+import { Loader2, Plus, Calendar as CalendarIcon, Settings, Copy, ExternalLink, Video, Phone, User as UserIcon, Clock, Check, Save } from "lucide-react";
 import { toast } from "sonner";
 
 // UI Components
@@ -39,6 +41,19 @@ export function CalendarManager({ userId }: { userId: string }) {
         type: 'video' as 'video' | 'phone' | 'person'
     });
 
+    // Availablity State
+    const [savingConfig, setSavingConfig] = useState(false);
+    const [config, setConfig] = useState<AvailabilityConfig>({
+        monday: { enabled: true, start: "09:00", end: "17:00" },
+        tuesday: { enabled: true, start: "09:00", end: "17:00" },
+        wednesday: { enabled: true, start: "09:00", end: "17:00" },
+        thursday: { enabled: true, start: "09:00", end: "17:00" },
+        friday: { enabled: true, start: "09:00", end: "17:00" },
+        saturday: { enabled: false, start: "10:00", end: "14:00" },
+        sunday: { enabled: false, start: "10:00", end: "14:00" },
+        timezone: "America/Mexico_City"
+    });
+
     const monthStart = startOfMonth(currentDate);
     const monthEnd = endOfMonth(monthStart);
     const calendarDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
@@ -55,9 +70,35 @@ export function CalendarManager({ userId }: { userId: string }) {
     }, [userId, currentDate]);
 
     async function loadSlots() {
-        const res = await getAvailableSlots(userId);
-        if (res.slots) setSlots(res.slots as any[]);
+        // Load Slots
+        const resStats = await getAvailableSlots(userId);
+        if (resStats.slots) setSlots(resStats.slots as any[]);
+
+        // Load Availability Config
+        const resConfig = await getAdminAvailability(userId);
+        if (resConfig.success && resConfig.availability) {
+            setConfig(resConfig.availability);
+        }
+
         setLoading(false);
+    }
+
+    async function handleSaveConfig() {
+        setSavingConfig(true);
+        try {
+            const res = await saveAvailability(userId, config);
+            if (res.success) {
+                toast.success(`Configuración guardada. ${res.generatedCount} slots generados.`);
+                loadSlots(); // Reload slots to show new generation
+            } else {
+                toast.error("Error al guardar configuración");
+            }
+        } catch (e) {
+            console.error(e);
+            toast.error("Error de conexión");
+        } finally {
+            setSavingConfig(false);
+        }
     }
 
     function openCreateModal(day: Date) {
@@ -195,11 +236,74 @@ export function CalendarManager({ userId }: { userId: string }) {
                             <CardTitle className="text-base">⚙️ Disponibilidad General</CardTitle>
                             <CardDescription>Configura tus reglas básicas.</CardDescription>
                         </CardHeader>
-                        <CardContent>
-                            <div className="flex flex-col gap-4 text-sm text-zinc-400 text-center py-8">
-                                <Clock className="w-8 h-8 mx-auto opacity-50" />
-                                <p>Configuración avanzada próximamente.</p>
-                                <p className="text-xs">Por ahora, usa "Crear Evento" para bloquear espacios manualmente.</p>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-3">
+                                {[
+                                    { key: 'monday', label: 'Lunes' },
+                                    { key: 'tuesday', label: 'Martes' },
+                                    { key: 'wednesday', label: 'Miércoles' },
+                                    { key: 'thursday', label: 'Jueves' },
+                                    { key: 'friday', label: 'Viernes' },
+                                    { key: 'saturday', label: 'Sábado' },
+                                    { key: 'sunday', label: 'Domingo' }
+                                ].map((day) => {
+                                    const dayConfig = (config as any)[day.key];
+                                    return (
+                                        <div key={day.key} className="flex items-center justify-between p-2 rounded hover:bg-zinc-800/50 transition-colors">
+                                            <div className="flex items-center gap-3">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={dayConfig.enabled}
+                                                    onChange={(e) => setConfig({
+                                                        ...config,
+                                                        [day.key]: { ...dayConfig, enabled: e.target.checked }
+                                                    })}
+                                                    className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-lime-500 focus:ring-lime-500/20"
+                                                />
+                                                <Label className={`w-20 ${dayConfig.enabled ? 'text-white' : 'text-zinc-500'}`}>
+                                                    {day.label}
+                                                </Label>
+                                            </div>
+
+                                            {dayConfig.enabled ? (
+                                                <div className="flex items-center gap-2">
+                                                    <Input
+                                                        type="time"
+                                                        value={dayConfig.start}
+                                                        onChange={(e) => setConfig({
+                                                            ...config,
+                                                            [day.key]: { ...dayConfig, start: e.target.value }
+                                                        })}
+                                                        className="h-8 w-24 bg-zinc-950 border-zinc-800 text-xs"
+                                                    />
+                                                    <span className="text-zinc-500">-</span>
+                                                    <Input
+                                                        type="time"
+                                                        value={dayConfig.end}
+                                                        onChange={(e) => setConfig({
+                                                            ...config,
+                                                            [day.key]: { ...dayConfig, end: e.target.value }
+                                                        })}
+                                                        className="h-8 w-24 bg-zinc-950 border-zinc-800 text-xs"
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <span className="text-xs text-zinc-600 block w-[200px] text-right italic">No disponible</span>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="pt-4 border-t border-zinc-800 flex justify-end">
+                                <Button
+                                    onClick={handleSaveConfig}
+                                    disabled={savingConfig}
+                                    className="bg-lime-500 hover:bg-lime-600 text-black font-medium gap-2"
+                                >
+                                    {savingConfig ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                    Guardar y Generar Slots
+                                </Button>
                             </div>
                         </CardContent>
                     </Card>

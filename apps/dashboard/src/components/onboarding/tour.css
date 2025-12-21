@@ -1,0 +1,114 @@
+/* Pandora's Theme Overrides for driver.js */
+.driver-popover.driverjs-theme {
+    background-color: rgba(9, 9, 11, 0.95) !important;
+    /* Zinc 950 with opacity */
+    color: white !important;
+    border: 1px solid rgba(132, 204, 22, 0.3) !important;
+    /* Lime 500 / 30% */
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(132, 204, 22, 0.1), 0 0 0 1px rgba(132, 204, 22, 0.1) !important;
+    backdrop-filter: blur(10px);
+    padding: 16px !important;
+    min-width: 300px;
+}
+
+.driver-popover-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #a3e635 !important;
+    /* Lime 400 */
+    margin-bottom: 8px !important;
+    font-family: var(--font-sans, sans-serif);
+}
+
+.driver-popover-description {
+    font-size: 14px;
+    color: #e4e4e7 !important;
+    /* Zinc 200 */
+    line-height: 1.6;
+    margin-bottom: 16px !important;
+}
+
+/* Active Element Interaction */
+.driver-active-element {
+    pointer-events: auto !important;
+    z-index: 100004 !important;
+    /* Above overlay */
+    position: relative !important;
+}
+
+/* Footer & Buttons */
+.driver-popover-footer {
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 8px !important;
+    margin-top: 12px !important;
+    min-height: 30px;
+    /* Ensure space for skip button even if empty */
+}
+
+.driver-popover-footer button {
+    background-color: #84cc16 !important;
+    /* Lime 500 */
+    color: black !important;
+    text-shadow: none !important;
+    border: none !important;
+    border-radius: 6px !important;
+    padding: 8px 16px !important;
+    font-weight: 600 !important;
+    font-size: 12px !important;
+    cursor: pointer !important;
+    transition: all 0.2s !important;
+}
+
+.driver-popover-footer button:hover {
+    background-color: #65a30d !important;
+    /* Lime 600 */
+    transform: scale(1.05);
+}
+
+.driver-popover-footer button.driver-popover-prev-btn {
+    background-color: transparent !important;
+    border: 1px solid #3f3f46 !important;
+    color: #a1a1aa !important;
+}
+
+.driver-popover-footer button.driver-popover-prev-btn:hover {
+    border-color: #71717a !important;
+    color: white !important;
+    background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Close Button */
+.driver-popover-close-btn {
+    color: #71717a !important;
+    transition: color 0.2s !important;
+}
+
+.driver-popover-close-btn:hover {
+    color: white !important;
+}
+
+/* Skip Button (Custom) */
+.driver-popover-skip-btn {
+    background: transparent !important;
+    border: none !important;
+    color: #52525b !important;
+    /* Zinc 600 */
+    font-size: 10px !important;
+    text-decoration: underline;
+    cursor: pointer !important;
+    margin-right: auto !important;
+    /* Push to left */
+    padding: 0 !important;
+}
+
+.driver-popover-skip-btn:hover {
+    color: #a1a1aa !important;
+    /* Zinc 400 */
+}
+
+/* Navigation Dots (if used) */
+.driver-popover-progress-text {
+    color: #52525b !important;
+}

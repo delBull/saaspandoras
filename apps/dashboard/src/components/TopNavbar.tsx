@@ -22,6 +22,8 @@ import { PendingRewardsNotification } from "@/components/PendingRewardsNotificat
 import { client } from "@/lib/thirdweb-client";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { config } from "@/config";
+import { useTour } from "@/components/onboarding/TourEngine";
+import { RocketLaunchIcon } from "@heroicons/react/24/outline";
 
 interface TopNavbarProps {
   wallet?: string;
@@ -38,6 +40,9 @@ export function TopNavbar({
 }: TopNavbarProps) {
 
   const { connect } = useConnectModal();
+  const tour = useTour(); // Can be undefined if outside provider
+  const startTour = tour?.startTour;
+
   const [profileDropdown, setProfileDropdown] = useState(false);
   const [userProfile, setUserProfile] = useState<{ image?: string; role?: string; projectCount?: number } | null>(null);
   const [dropdownOpenedAt, setDropdownOpenedAt] = useState<number>(0);
@@ -247,21 +252,27 @@ export function TopNavbar({
               {/* Profile Button or Connect Button */}
               {!account?.address ? (
                 <button
-                  onClick={() => connect({
-                    client,
-                    chain: config.chain,
-                    showThirdwebBranding: false,
-                    showAllWallets: false,
-                    size: "compact",
-                    wallets: [
-                      inAppWallet({
-                        auth: {
-                          options: ["email", "google", "apple", "facebook", "passkey"],
-                        },
-                      }),
-                      createWallet("io.metamask"),
-                    ],
-                  })}
+                  id="wallet-connect-btn"
+                  onClick={() => {
+                    if (typeof window !== "undefined") {
+                      localStorage.removeItem("wallet-logged-out");
+                    }
+                    connect({
+                      client,
+                      chain: config.chain,
+                      showThirdwebBranding: false,
+                      showAllWallets: false,
+                      size: "compact",
+                      wallets: [
+                        inAppWallet({
+                          auth: {
+                            options: ["email", "google", "apple", "facebook", "passkey"],
+                          },
+                        }),
+                        createWallet("io.metamask"),
+                      ],
+                    })
+                  }}
                   className="flex items-center gap-2 px-4 py-2 bg-lime-400 hover:bg-lime-500 text-gray-900 rounded-lg transition-colors shadow-lg shadow-lime-400/20"
                 >
                   <WalletIcon className="w-5 h-5" />
@@ -436,6 +447,23 @@ export function TopNavbar({
                     <div className="text-gray-400 text-xs">Artefactos y DAO</div>
                   </div>
                 </Link>
+              )}
+
+              {/* RESTART TOUR BUTTON */}
+              {startTour && (
+                <button
+                  onClick={() => {
+                    setProfileDropdown(false);
+                    startTour();
+                  }}
+                  className="w-full flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors text-left"
+                >
+                  <RocketLaunchIcon className="w-5 h-5 text-purple-400" />
+                  <div>
+                    <div className="text-white text-sm">Reiniciar Tutorial</div>
+                    <div className="text-gray-400 text-xs">Vuelve a ver la guía de inicio</div>
+                  </div>
+                </button>
               )}
 
               <Link
