@@ -24,10 +24,11 @@ export function CreatePaymentLinkModal() {
         const title = formData.get("title") as string;
         const amount = parseFloat(formData.get("amount") as string);
         const currency = formData.get("currency") as string;
+        const destinationWallet = formData.get("destinationWallet") as string;
         // description optional
 
         try {
-            const res = await createPaymentLink({ title, amount, currency });
+            const res = await createPaymentLink({ title, amount, currency, destinationWallet });
             if (res.success && res.link) {
                 toast.success("Link de pago generado");
                 // Construct the public URL (mocking localhost/prod logic)
@@ -93,6 +94,10 @@ export function CreatePaymentLinkModal() {
                                     </SelectContent>
                                 </Select>
                             </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="destinationWallet" className="text-zinc-400 text-xs">Wallet Destino (Opcional - Crypto)</Label>
+                            <Input id="destinationWallet" name="destinationWallet" placeholder="0x..." className="bg-zinc-800 border-zinc-700 text-xs font-mono" />
                         </div>
                         <DialogFooter className="pt-4">
                             <Button type="submit" disabled={loading} className="w-full bg-green-600 hover:bg-green-700 text-white">

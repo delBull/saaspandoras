@@ -17,7 +17,7 @@ import type { clients, paymentLinks } from "@/db/schema";
 import { SOWTemplateManager } from "../sow/SOWTemplateManager";
 import { getSOWTemplates } from "@/actions/sow";
 import { sendMSALink } from "@/actions/clients";
-import { Check, Mail } from "lucide-react";
+import { Check, Mail, Info } from "lucide-react";
 
 
 // ... existing imports ...
@@ -204,6 +204,7 @@ export function ClientsManager() {
     const [showPaymentBridge, setShowPaymentBridge] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
     const [showTemplates, setShowTemplates] = useState(false);
+    const [showInfo, setShowInfo] = useState(false);
     const [showSendSOW, setShowSendSOW] = useState(false);
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
     const [selectedTier, setSelectedTier] = useState<string>('TIER_1');
@@ -242,6 +243,9 @@ export function ClientsManager() {
                     />
                 </div>
                 <div className="flex gap-2">
+                    <Button variant="ghost" size="icon" onClick={() => setShowInfo(true)} className="text-zinc-500 hover:text-white">
+                        <Info className="w-5 h-5" />
+                    </Button>
                     <Button variant="outline" onClick={() => window.open('/litepaper', '_blank')} className="border-zinc-700 text-zinc-400 hover:bg-zinc-800">
                         <FileText className="w-4 h-4 mr-2" /> Ver Litepaper
                     </Button>
@@ -355,6 +359,7 @@ export function ClientsManager() {
                     />
                 </>
             )}
+            <InfoModal open={showInfo} onOpenChange={setShowInfo} />
         </div>
     );
 }
@@ -667,6 +672,50 @@ function ClientHistoryModal({ open, onOpenChange, client }: { open: boolean, onO
                             )}
                         </div>
                     )}
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function InfoModal({ open, onOpenChange }: { open: boolean, onOpenChange: (v: boolean) => void }) {
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Flujo de Operaciones: Clientes & Protocolos</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-6 pt-4 text-sm text-zinc-300">
+                    <div className="space-y-2">
+                        <h3 className="text-lime-400 font-bold flex items-center"><CheckCircle className="w-4 h-4 mr-2" /> 1. Lead & SOW Tier 1</h3>
+                        <p>
+                            Al crear un cliente (Lead), se habilita el envío del <strong>SOW Tier 1 (Viabilidad)</strong>.
+                            Esto genera un link de pago único. Al pagarse, el cliente avanza a estado <em>ACTIVE_TIER_1</em>.
+                        </p>
+                    </div>
+
+                    <div className="space-y-2">
+                        <h3 className="text-blue-400 font-bold flex items-center"><CheckCircle className="w-4 h-4 mr-2" /> 2. Master Services Agreement (MSA)</h3>
+                        <p>
+                            Antes de avanzar a Tier 2, se recomienda enviar y firmar el MSA. Puedes enviarlo desde la columna de acciones (botón "Send MSA" o ícono de Sobre).
+                        </p>
+                    </div>
+
+                    <div className="space-y-2">
+                        <h3 className="text-orange-400 font-bold flex items-center"><CheckCircle className="w-4 h-4 mr-2" /> 3. Tier 2 & 3 (Arquitectura & Deploy)</h3>
+                        <p>
+                            El flujo sigue secuencialmente. Una vez entregado el Tier 1, se habilita el Tier 2, y posteriormente el Tier 3.
+                            Cada Tier tiene su propio SOW y Link de Pago.
+                        </p>
+                    </div>
+
+                    <div className="bg-zinc-900 p-4 rounded border border-zinc-800 mt-4">
+                        <h4 className="font-bold text-white mb-2">⚙️ Configuración & Precios</h4>
+                        <p className="text-xs">
+                            Al enviar cualquier Tier, puedes <strong>sobrescribir el precio</strong> default en el modal de confirmación.
+                            Esto permite ajustar costos según la complejidad del proyecto específico del cliente.
+                        </p>
+                    </div>
                 </div>
             </DialogContent>
         </Dialog>

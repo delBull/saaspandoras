@@ -1,34 +1,37 @@
-import { NextResponse } from "next/server";
-import { activateClient } from "@/lib/project-utils";
 
-// This endpoint receives post-payment notification from the frontend
-// In a highly secure environment, we would monitor the blockchain independently,
-// but relying on the client to send the txHash + confirming verification here is a valid Step 1.
+import { NextResponse } from 'next/server';
+import { updatePaymentStatus } from "@/actions/clients";
+import { sendPaymentNotification } from "@/lib/discord/notifier";
 
-export async function POST(req: Request) {
+export async function POST(request: Request) {
     try {
-        const body = await req.json();
-        const { linkId, clientId, amount, method, txHash, chainId, walletAddress } = body;
+        const body = await request.json();
+        console.log("💰 [CRYPTO_PAYMENT] Verified client-side:", body);
 
-        console.log(`⛓️  Verifying Crypto Payment: ${txHash} on Chain ${chainId}`);
+        // Record Completed Transaction
+        // Record Completed Transaction via Action
+        const res = await updatePaymentStatus(body.linkId, 'paid', 'crypto');
 
-        // TODO: Use Thirdweb SDK to verify txHash status on-chain if strict security is needed.
-        // For now, we trust the successful callback data but log it for manual audit.
+        if (!res.success) throw new Error(res.error);
 
-        if (!clientId) {
-            return NextResponse.json({ error: "Missing Client ID" }, { status: 400 });
-        }
+        // Notify
+        await sendPaymentNotification({
+            type: "payment_received",
+            amount: Number(body.amount),
+            currency: "USDC",
+            method: "crypto",
+            status: "completed",
+            linkId: body.linkId,
+            clientId: body.clientId,
+            metadata: {
+                txHash: body.txHash,
+                chainId: body.chainId
+            }
+        });
 
-        const project = await activateClient(
-            Number(clientId),
-            `crypto_${method}_${chainId}`,
-            amount
-        );
-
-        return NextResponse.json({ success: true, project });
-
-    } catch (error: any) {
-        console.error("Crypto Verification Error:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ success: true, message: "Logged" });
+    } catch (error) {
+        console.error("Crypto Verify Error:", error);
+        return NextResponse.json({ success: false }, { status: 500 });
     }
 }
