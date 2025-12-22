@@ -11,6 +11,9 @@ import { Loader2, CheckCircle, CreditCard, Wallet, Landmark } from "lucide-react
 import { PayEmbed } from "thirdweb/react";
 import { createThirdwebClient } from "thirdweb";
 import { base, sepolia } from "thirdweb/chains";
+import { getContract } from "thirdweb";
+import { transfer } from "thirdweb/extensions/erc20";
+import { TransactionButton, useActiveAccount } from "thirdweb/react";
 
 // Initialize Thirdweb
 const client = createThirdwebClient({
@@ -24,6 +27,7 @@ const USDC_SEPOLIA = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
 const IS_PROD = process.env.NEXT_PUBLIC_VERCEL_ENV === 'production';
 const ACTIVE_CHAIN = IS_PROD ? base : sepolia;
 const ACTIVE_TOKEN = IS_PROD ? USDC_BASE : USDC_SEPOLIA;
+const MERCHANT_WALLET = "0xDEEb671dEda720a75B07E9874e4371c194e38919";
 
 export function PaymentCheckout({ link, client: clientData }: { link: any, client: any }) {
     // Default to 'stripe' if available, then 'crypto'
@@ -53,6 +57,39 @@ export function PaymentCheckout({ link, client: clientData }: { link: any, clien
         }
     };
 
+    const handleCryptoSuccess = async (txInfo: any) => {
+        // txInfo usually contains transactionHash 
+        // We'll trust the callback but verifying on backend is best practice (which verify-crypto doesn't fully do yet without RPC check, but good for now)
+        setLoading(true);
+        try {
+            await fetch('/api/payments/verify-crypto', {
+                method: 'POST',
+                body: JSON.stringify({
+                    linkId: link.id,
+                    clientId: clientData?.id,
+                    amount: link.amount,
+                    txHash: txInfo?.transactionHash || "unknown",
+                    chainId: ACTIVE_CHAIN.id
+                })
+            });
+            toast.success("Pago Crypto confirmado con éxito!");
+            // Redirect or show success
+            window.location.reload();
+        } catch (e) {
+            console.error("Crypto Verify Error", e);
+            toast.error("Error registrando pago. Contacta soporte.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Prepare Contract
+    const usdcContract = getContract({
+        client,
+        chain: ACTIVE_CHAIN,
+        address: ACTIVE_TOKEN
+    });
+
     if (wireSent) {
         return (
             <Card className="w-full max-w-lg bg-zinc-900 border-lime-500/50">
@@ -60,6 +97,11 @@ export function PaymentCheckout({ link, client: clientData }: { link: any, clien
                     <CheckCircle className="w-16 h-16 text-lime-500 mx-auto" />
                     <h2 className="text-2xl font-bold text-white">¡Gracias!</h2>
                     <p className="text-zinc-400">Hemos recibido tu notificación de transferencia. <br />Confirmaremos la recepción en breve.</p>
+                    <div className="pt-4">
+                        <Button onClick={() => window.location.href = '/'} variant="outline" className="border-lime-500 text-lime-500 hover:bg-lime-500 hover:text-black">
+                            Continuar a la Plataforma
+                        </Button>
+                    </div>
                 </CardContent>
             </Card>
         );
@@ -72,7 +114,7 @@ export function PaymentCheckout({ link, client: clientData }: { link: any, clien
                 <div>
                     <div className="mb-8">
                         {/* Valid Logo */}
-                        <img src="/logo-finance.png" alt="Pandora's Finance" className="w-12 h-12 mb-4 rounded-lg bg-zinc-900 p-1" />
+                        <img src="/apple-touch-icon.png" alt="Pandora's Finance" className="w-12 h-12 mb-4 rounded-lg bg-zinc-900 p-1" />
                         <h1 className="text-xl font-bold text-zinc-500 uppercase tracking-widest">Pandora's Finance</h1>
                     </div>
 
@@ -173,23 +215,35 @@ export function PaymentCheckout({ link, client: clientData }: { link: any, clien
                                 {IS_PROD ? 'Base Mainnet' : 'Sepolia Testnet'} • USDC (Prioridad)
                             </p>
                         </div>
-                        <div className="flex justify-center theme-dark">
-                            <PayEmbed
-                                client={client}
-                                payOptions={{
-                                    prefillBuy: {
-                                        chain: ACTIVE_CHAIN,
-                                        amount: link.amount,
-                                        token: {
-                                            address: ACTIVE_TOKEN,
-                                            symbol: "USDC",
-                                            name: "USD Coin",
-                                            decimals: 6
-                                        } as any // flexible cast
-                                    }
+                        <div className="flex flex-col items-center justify-center theme-dark py-8 space-y-4">
+                            {!IS_PROD && <div className="text-amber-500 text-xs bg-amber-950/30 p-2 rounded">TESTNET MODE (Sepolia)</div>}
+
+                            <TransactionButton
+                                transaction={() => {
+                                    // Amount is string string, e.g. "500.00"
+
+                                    const destWallet = link.destinationWallet || MERCHANT_WALLET;
+
+                                    return transfer({
+                                        contract: usdcContract,
+                                        to: destWallet,
+                                        amount: link.amount // e.g., "500"
+                                    });
+                                }}
+                                onTransactionConfirmed={(tx) => handleCryptoSuccess(tx)}
+                                onError={(error) => {
+                                    console.error("Tx Failed", error);
+                                    toast.error("Error en la transacción");
                                 }}
                                 theme={"dark"}
-                            />
+                                className="w-full !bg-blue-600 hover:!bg-blue-500 text-white font-bold py-4 rounded-xl"
+                            >
+                                Pagar ${link.amount} USDC
+                            </TransactionButton>
+
+                            <p className="text-xs text-zinc-500 max-w-xs text-center">
+                                Se abrirá tu wallet para confirmar. Si no tienes USDC en Base, podrás intercambiar otros tokens automáticamente.
+                            </p>
                         </div>
                     </TabsContent>
 

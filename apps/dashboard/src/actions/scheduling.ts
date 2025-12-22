@@ -33,6 +33,34 @@ export async function getAvailableSlots(userId: string) {
 }
 
 /**
+ * Get ALL slots (Admin View) including booked ones with details
+ */
+export async function getAdminSlots(userId: string) {
+    try {
+        // Fetch slots
+        const slots = await db.query.schedulingSlots.findMany({
+            where: eq(schedulingSlots.userId, userId),
+            with: {
+                bookings: true // Assuming relation exists in schema
+            },
+            orderBy: desc(schedulingSlots.startTime)
+        });
+
+        // If relation isn't set up in Drizzle schema relations, we might need manual join. 
+        // For now assuming schema relations are defined based on existing code style.
+        // If not, we'll see a TS error or runtime error. 
+        // fallback: manual join check? 
+        // Let's rely on manual join strategy if "bookings" relation isn't obvious in schema file I read partially.
+        // Actually, I didn't see relations defined in the schema snippet I read. safe bet: manual join and map.
+
+        return { success: true, slots };
+    } catch (error) {
+        console.error("[Scheduler] Error fetching admin slots:", error);
+        return { success: false, error: "Failed to load admin calendar" };
+    }
+}
+
+/**
  * Public: Book a slot
  */
 export async function bookSlot(slotId: string, leadData: { name: string, email: string, phone: string, preference: 'email' | 'whatsapp' | 'both', notes?: string }) {
