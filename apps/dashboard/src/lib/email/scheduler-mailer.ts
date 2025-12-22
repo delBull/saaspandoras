@@ -30,15 +30,43 @@ function generateICS(event: {
 }
 
 export async function sendBookingPendingEmail(to: string, data: { name: string, date: string, time: string }) {
+    const styles = {
+        container: "font-family: sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; border: 1px solid #e5e7eb; overflow: hidden;",
+        header: "background: #f4f4f5; padding: 24px; text-align: center; border-bottom: 1px solid #e5e7eb;",
+        content: "padding: 32px 24px;",
+        details: "background: #fcfcfc; border: 1px solid #e5e7eb; border-radius: 6px; padding: 16px; margin: 24px 0;",
+        footer: "background: #f4f4f5; padding: 16px; text-align: center; font-size: 12px; color: #71717a;"
+    };
+
     await sendEmail({
         to,
-        subject: "🗓️ Cita Pendiente - Pandoras",
+        subject: `🗓️ Solicitud de Agenda Recibida - ${data.date}`,
         html: `
-            <h1>Hola ${data.name},</h1>
-            <p>Hemos recibido tu solicitud de agenda para el <strong>${data.date} a las ${data.time}</strong>.</p>
-            <p>Estamos revisando disponibilidad. Recibirás una confirmación definitiva en breve.</p>
-            <br>
-            <p>Atte,<br>Equipo Pandoras</p>
+            <div style="${styles.container}">
+                <div style="${styles.header}">
+                    <h2 style="margin:0; color: #18181b; font-size: 20px;">Solicitud Recibida</h2>
+                </div>
+                <div style="${styles.content}">
+                    <p style="color: #3f3f46; font-size: 16px; margin-top: 0;">Hola <strong>${data.name}</strong>,</p>
+                    <p style="color: #52525b; line-height: 1.6;">
+                        Hemos reservado tu espacio provisionalmente. Nuestro equipo está preparando la sesión y recibirás la confirmación final con el enlace de acceso en breve.
+                    </p>
+                    
+                    <div style="${styles.details}">
+                        <h3 style="margin: 0 0 12px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; color: #71717a;">Detalles del Evento</h3>
+                        <p style="margin: 8px 0; color: #18181b;"><strong>Fecha:</strong> ${data.date}</p>
+                        <p style="margin: 8px 0; color: #18181b;"><strong>Hora:</strong> ${data.time}</p>
+                        <p style="margin: 8px 0; color: #18181b;"><strong>Duración:</strong> 30 min</p>
+                    </div>
+
+                    <p style="color: #71717a; font-size: 14px;">
+                        Si necesitas cambiar el horario, por favor responde a este correo.
+                    </p>
+                </div>
+                <div style="${styles.footer}">
+                    Pandora's Finance • Automated Scheduling
+                </div>
+            </div>
         `
     });
 }

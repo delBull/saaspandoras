@@ -12,6 +12,7 @@ import { config } from "@/config";
 import { PANDORAS_KEY_ABI } from "@/lib/pandoras-key-abi";
 import { CreateNFTPassModal } from "./CreateNFTPassModal";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Switch } from "@saasfly/ui/switch";
 
 // Extend the ABI to include missing standard items + adminMint
 const EXTENDED_ABI = [
@@ -145,6 +146,8 @@ export function NFTManager() {
         }
     };
 
+
+
     const executeMint = () => {
         setAirdropStatus('minting');
         try {
@@ -260,24 +263,31 @@ export function NFTManager() {
                     </div>
                 </div>
 
-                <div className="flex gap-3 relative z-10">
-                    <Button
-                        onClick={() => setShowAirdropModal(true)}
-                        className="bg-lime-500 text-black hover:bg-lime-400"
-                    >
-                        <Send className="w-4 h-4 mr-2" />
-                        Airdrop Pass
-                    </Button>
+                <div className="flex gap-3 relative z-10 items-center justify-between mt-4 border-t border-zinc-800 pt-4">
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <Switch
+                                checked={nftGateEnabled}
+                                onCheckedChange={toggleGate}
+                                disabled={togglingGate}
+                                className="data-[state=checked]:bg-lime-500"
+                            />
+                            <span className="text-sm font-medium text-zinc-300">
+                                {nftGateEnabled ? "Gate Activo" : "Gate Inactivo"}
+                            </span>
+                        </div>
+                        {togglingGate && <Loader2 className="w-4 h-4 animate-spin text-zinc-500" />}
+                    </div>
 
-                    <Button
-                        onClick={toggleGate}
-                        disabled={togglingGate}
-                        variant="outline"
-                        className={`border-zinc-700 hover:bg-zinc-800 ${!nftGateEnabled && "text-yellow-500 border-yellow-500/20 hover:bg-yellow-500/10"}`}
-                    >
-                        {togglingGate ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                        {nftGateEnabled ? "Desactivar Gate" : "Activar Gate"}
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button
+                            onClick={() => setShowAirdropModal(true)}
+                            className="bg-lime-500 text-black hover:bg-lime-400"
+                        >
+                            <Send className="w-4 h-4 mr-2" />
+                            Airdrop Pass
+                        </Button>
+                    </div>
                 </div>
             </div>
 

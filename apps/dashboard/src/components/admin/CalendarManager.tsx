@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addHours, setHours, setMinutes } from "date-fns";
 import { es } from "date-fns/locale";
-import { getAvailableSlots, createAdminBooking } from "@/actions/scheduling";
+import { getAvailableSlots, createAdminBooking, getAdminSlots } from "@/actions/scheduling";
 import { getAdminAvailability, saveAvailability } from "@/actions/availability";
 import type { AvailabilityConfig } from "@/actions/availability";
 import { Loader2, Plus, Calendar as CalendarIcon, Settings, Copy, ExternalLink, Video, Phone, User as UserIcon, Clock, Check, Save } from "lucide-react";
@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function CalendarManager({ userId }: { userId: string }) {
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -60,18 +61,15 @@ export function CalendarManager({ userId }: { userId: string }) {
 
     // Environment-aware public link
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || (typeof window !== 'undefined' ? window.location.origin : '');
-    // Logic for public alias: In V1 we use 'pandoras' as the default alias for the main calendar if userId matches admin
-    // For now we show the direct userId link to be safe, or 'pandoras' if the user prefers that alias.
-    // Let's allow copying both or defaulting to 'pandoras' for cleanliness if it's the main admin.
-    const publicLink = `${appUrl}/schedule/pandoras`; // Defaulting to the brand alias for V1 
+    const publicLink = `${appUrl}/schedule/pandoras`;
 
     useEffect(() => {
         loadSlots();
     }, [userId, currentDate]);
 
     async function loadSlots() {
-        // Load Slots
-        const resStats = await getAvailableSlots(userId);
+        // Load Slots (Admin View)
+        const resStats = await getAdminSlots(userId);
         if (resStats.slots) setSlots(resStats.slots as any[]);
 
         // Load Availability Config
@@ -379,11 +377,32 @@ export function CalendarManager({ userId }: { userId: string }) {
                                 </span>
 
                                 <div className="space-y-1">
-                                    {daySlots.map(s => (
-                                        <div key={s.id} className={`text-[10px] px-1.5 py-0.5 rounded border truncate ${s.isBooked ? 'bg-indigo-900/30 border-indigo-500/30 text-indigo-300' : 'bg-lime-900/20 border-lime-500/30 text-lime-400'}`}>
-                                            {format(new Date(s.startTime), "HH:mm")} • {s.isBooked ? 'Booked' : 'Free'}
-                                        </div>
-                                    ))}
+                                    {daySlots.map(s => {
+                                        const booking = s.bookings?.[0]; // Assuming array or single relation mapped
+                                        return (
+                                            <TooltipProvider key={s.id}>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <div className={`text-[10px] px-1.5 py-0.5 rounded border truncate flex items-center gap-1 ${s.isBooked ? 'bg-indigo-900/30 border-indigo-500/30 text-indigo-300' : 'bg-lime-900/20 border-lime-500/30 text-lime-400'}`}>
+                                                            {format(new Date(s.startTime), "HH:mm")} •
+                                                            {s.isBooked ? (
+                                                                <span className="font-semibold text-white ml-1">{booking?.leadName || 'Ocupado'}</span>
+                                                            ) : 'Libre'}
+                                                        </div>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="bg-zinc-950 border-zinc-800 text-zinc-300 text-xs">
+                                                        {s.isBooked && booking ? (
+                                                            <div className="space-y-1">
+                                                                <p><strong className="text-white">{booking.leadName}</strong></p>
+                                                                <p>{booking.leadEmail}</p>
+                                                                {booking.notes && <p className="italic opacity-80 max-w-[200px]">{booking.notes}</p>}
+                                                            </div>
+                                                        ) : "Espacio disponible para agendar"}
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        );
+                                    })}
                                 </div>
 
                                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">

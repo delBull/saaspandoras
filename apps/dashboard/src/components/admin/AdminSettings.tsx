@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Input } from "@saasfly/ui/input";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@saasfly/ui/switch";
+
 import { Trash2, PlusCircle, Loader2, Pencil } from "lucide-react";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 
@@ -66,59 +66,7 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
   const [editingAliasId, setEditingAliasId] = useState<number | null>(null);
   const [editingAliasValue, setEditingAliasValue] = useState("");
 
-  // --- Platform Settings Logic ---
-  const [nftGateEnabled, setNftGateEnabled] = useState(false);
-  const [loadingSettings, setLoadingSettings] = useState(false);
 
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const res = await fetch("/api/settings?key=apply_gate_enabled");
-        if (res.ok) {
-          const data = await res.json();
-          setNftGateEnabled(data.value === "true");
-        }
-      } catch (e) {
-        console.error("Failed to fetch settings", e);
-      }
-    };
-    fetchSettings();
-  }, []);
-
-  const handleToggleNftGate = async (checked: boolean) => {
-    if (!walletAddress) {
-      toast.error("Conecta tu wallet primero");
-      return;
-    }
-    setLoadingSettings(true);
-    // Optimistic update
-    setNftGateEnabled(checked);
-
-    try {
-      const res = await fetch("/api/settings", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          'x-wallet-address': walletAddress,
-        },
-        body: JSON.stringify({
-          key: "apply_gate_enabled",
-          value: String(checked),
-          description: "Enables or disables the NFT requirement for accessing the application form."
-        })
-      });
-
-      if (!res.ok) throw new Error("Failed to update");
-      toast.success(`NFT Gate ${checked ? 'Activado' : 'Desactivado'}`);
-
-    } catch (error) {
-      console.error(error);
-      toast.error("Error al actualizar configuración");
-      setNftGateEnabled(!checked); // Revert
-    } finally {
-      setLoadingSettings(false);
-    }
-  };
 
   const handleAddAdmin = async () => {
     if (!/^0x[a-fA-F0-9]{40}$/.test(newAddress)) {
@@ -241,25 +189,7 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
     <div className="space-y-8">
 
       {/* --- PLATFORM SETTINGS SECTION --- */}
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <span className="bg-lime-500/10 text-lime-500 p-1 rounded">⚙️</span> Configuración Global
-        </h3>
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <div className="font-medium text-zinc-200">Restringir Acceso (NFT Gate)</div>
-            <p className="text-sm text-zinc-500">
-              Si está activo, solo los holders del "Apply Pass" podrán acceder al formulario.
-            </p>
-          </div>
-          <Switch
-            checked={nftGateEnabled}
-            onCheckedChange={handleToggleNftGate}
-            disabled={loadingSettings}
-            className="data-[state=checked]:bg-lime-500"
-          />
-        </div>
-      </div>
+
 
       <div className="space-y-6">
         <div>

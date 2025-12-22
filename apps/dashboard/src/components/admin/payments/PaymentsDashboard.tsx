@@ -4,9 +4,9 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, DollarSign, Link as LinkIcon, Users, ArrowUpRight, Copy, CreditCard } from "lucide-react";
+import { Loader2, DollarSign, Link as LinkIcon, Users, ArrowUpRight, Copy, CreditCard, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { getPaymentsDashboardStats } from "@/actions/payments";
+import { getPaymentsDashboardStats, deletePaymentLink, updateTransactionStatus } from "@/actions/payments";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { CreatePaymentLinkModal } from "./CreatePaymentLinkModal";
@@ -15,6 +15,7 @@ export function PaymentsDashboard() {
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({ totalRevenue: 0, activeLinks: 0, totalLinks: 0, pendingPayment: 0, activeClients: 0 });
     const [links, setLinks] = useState<any[]>([]);
+    const [pendingTransactions, setPendingTransactions] = useState<any[]>([]);
 
     useEffect(() => {
         loadData();
@@ -27,6 +28,7 @@ export function PaymentsDashboard() {
             if (res.success && res.stats) {
                 setStats(res.stats as any);
                 setLinks(res.links || []);
+                setPendingTransactions(res.pendingTransactions || []);
             }
         } catch (e) {
             toast.error("Error cargando finanzas");
@@ -35,10 +37,34 @@ export function PaymentsDashboard() {
         }
     };
 
+    const handleTransactionAction = async (id: string, status: 'completed' | 'rejected') => {
+        toast.loading("Procesando...", { id: "tx-action" });
+        const res = await updateTransactionStatus(id, status);
+        toast.dismiss("tx-action");
+
+        if (res.success) {
+            toast.success(status === 'completed' ? "Pago aprobado" : "Pago rechazado");
+            loadData();
+        } else {
+            toast.error("Error al actualizar");
+        }
+    };
+
     const copyLink = (id: string) => {
         const url = `${window.location.origin}/pay/${id}`;
         navigator.clipboard.writeText(url);
         toast.success("Link copiado");
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm("¿Estás seguro de eliminar este link?")) return;
+        const res = await deletePaymentLink(id);
+        if (res.success) {
+            toast.success("Link eliminado");
+            loadData();
+        } else {
+            toast.error("Error al eliminar");
+        }
     };
 
     return (
@@ -87,6 +113,54 @@ export function PaymentsDashboard() {
                 </Card>
             </div>
 
+            {/* Pending Transactions Section */}
+            {links.length > 0 && typeof pendingTransactions !== 'undefined' && pendingTransactions.length > 0 && (
+                <Card className="bg-yellow-950/20 border-yellow-500/20 animate-in slide-in-from-top-4">
+                    <CardHeader>
+                        <CardTitle className="text-yellow-500 flex items-center gap-2">
+                            ⚠️ Aprobaciones Pendientes
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-2">
+                            {pendingTransactions.map((tx: any) => (
+                                <div key={tx.id} className="flex flex-col md:flex-row items-start md:items-center justify-between p-3 bg-zinc-950/50 rounded-lg border border-yellow-500/10 gap-4">
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-bold text-white">{Number(tx.amount).toLocaleString()} {tx.currency}</span>
+                                            <Badge variant="outline" className="border-yellow-500/50 text-yellow-500 uppercase text-[10px]">Wire</Badge>
+                                        </div>
+                                        <p className="text-xs text-zinc-400 mt-1">
+                                            Concepto: <span className="text-zinc-300">{tx.linkTitle}</span> • Client ID: {tx.clientId}
+                                        </p>
+                                        <p className="text-[10px] text-zinc-500 mt-0.5">
+                                            Reportado: {new Date(tx.processedAt).toLocaleString()}
+                                        </p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            size="sm"
+                                            className="bg-green-500 hover:bg-green-600 text-black h-8 font-medium"
+                                            onClick={() => handleTransactionAction(tx.id, 'completed')}
+                                        >
+                                            Aprobar Pago
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            variant="destructive"
+                                            className="h-8 bg-red-950/50 hover:bg-red-900 border border-red-900"
+                                            onClick={() => handleTransactionAction(tx.id, 'rejected')}
+                                        >
+                                            Rechazar
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
             {/* Recent Links Table */}
             <Card className="bg-zinc-900 border-zinc-800">
                 <CardHeader className="flex flex-row items-center justify-between">
@@ -131,6 +205,9 @@ export function PaymentsDashboard() {
                                         <td className="px-4 py-3 text-right">
                                             <Button variant="ghost" size="icon" onClick={() => copyLink(link.id)}>
                                                 <Copy className="h-4 w-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-400 hover:bg-red-950/20" onClick={() => handleDelete(link.id)}>
+                                                <Trash2 className="h-4 w-4" />
                                             </Button>
                                         </td>
                                     </tr>

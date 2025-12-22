@@ -889,7 +889,8 @@ export const transactionStatusEnum = pgEnum("transaction_status", [
   "processing",
   "completed",
   "failed",
-  "refunded"
+  "refunded",
+  "rejected"
 ]);
 
 // 1. CLIENTS (CRM IDENTITY)
@@ -928,6 +929,7 @@ export const paymentLinks = pgTable("payment_links", {
 
   // Methods Enabled
   methods: jsonb("methods").default(['stripe', 'crypto', 'wire']).notNull(), // Array of enabled methods
+  destinationWallet: varchar("destination_wallet", { length: 42 }), // Override for Crypto Payments
 
   // Lifecycle
   isActive: boolean("is_active").default(true).notNull(),
@@ -941,7 +943,7 @@ export const paymentLinks = pgTable("payment_links", {
 export const transactions = pgTable("transactions", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   linkId: text("link_id").references(() => paymentLinks.id), // Optional: could be direct without link
-  clientId: text("client_id").references(() => clients.id).notNull(),
+  clientId: text("client_id").references(() => clients.id),
 
   amount: decimal("amount", { precision: 18, scale: 2 }).notNull(),
   currency: varchar("currency", { length: 10 }).default("USD").notNull(),

@@ -52,69 +52,83 @@ export async function createPaymentLink(data: typeof paymentLinks.$inferInsert) 
     }
 }
 
-export async function updatePaymentStatus(linkId: string, status: 'pending' | 'paid' | 'cancelled') {
+export async function updatePaymentStatus(linkId: string, status: 'pending' | 'paid' | 'cancelled', method: 'stripe' | 'crypto' | 'wire' = 'wire') {
     try {
-        // Fetch Link & Client details first to populate transaction
+        // Fetch Link & Client details
         const link = await db.query.paymentLinks.findFirst({
             where: eq(paymentLinks.id, linkId),
-            with: {
-                client: true
-            }
+            with: { client: true }
         });
 
-        if (!link) {
-            return { success: false, error: "Link not found" };
-        }
+        if (!link) return { success: false, error: "Link not found" };
 
         // Insert Transaction Record
-        // We use 'wire' as the method for manual admin confirmation usually.
         await db.insert(transactions).values({
             linkId: link.id,
             clientId: link.clientId,
             amount: link.amount,
             currency: link.currency || "USD",
-            method: 'wire', // Defaulting to wire for manual confirmation
+            method: method,
             status: status === 'paid' ? 'completed' : 'pending',
             processedAt: new Date(),
             createdAt: new Date(),
         });
 
-        // Update Client Status to 'closed_won' if not already
-        if (status === 'paid' && link.client) {
-            const client = link.client as any; // Cast to access metadata
-            let newStatus = client.status;
-            const meta = (client.metadata as any) || {};
-            const approved = new Set(meta.protocol?.approved_tiers || []);
-
-            // Check if SOW Payment and Advance State
-            if (link.title.includes("SOW Tier 1")) {
-                newStatus = 'closed_won';
-                await advanceProtocolState(link.clientId, 'IN_PROGRESS_TIER_1');
-            } else if (link.title.includes("SOW Tier 2")) {
-                await advanceProtocolState(link.clientId, 'IN_PROGRESS_TIER_2');
-            } else if (link.title.includes("SOW Tier 3")) {
-                await advanceProtocolState(link.clientId, 'IN_PROGRESS_TIER_3');
-            } else {
-                // Standard payment
-                newStatus = 'closed_won';
-            }
-
-            // Update standard status
-            if (newStatus !== client.status) {
-                await db.update(clients)
-                    .set({ status: newStatus })
-                    .where(eq(clients.id, link.clientId));
-            }
-
-            // Send Receipt
-            const c = link.client as any;
-            await sendReceiptEmail(c.email, c.name || "Builder", link.title, link.amount);
+        // Trigger Business Logic if Paid
+        if (status === 'paid') {
+            await processPaymentSuccess(linkId);
         }
 
         return { success: true };
     } catch (e) {
         console.error("Error updating payment status:", e);
         return { success: false, error: "Failed to update status" };
+    }
+}
+
+export async function processPaymentSuccess(linkId: string) {
+    try {
+        // Fetch Link & Client details
+        // We re-fetch to ensure we have latest state or we could pass arguments. 
+        // Re-fetching is safer for standalone usage.
+        const link = await db.query.paymentLinks.findFirst({
+            where: eq(paymentLinks.id, linkId),
+            with: { client: true }
+        });
+
+        if (!link || !link.client) return { success: false, error: "Link or Client not found" };
+
+        const client = link.client as any;
+        let newStatus = client.status;
+        const meta = (client.metadata as any) || {};
+
+        // 1. Advance Protocol State based on Link Title (SOW)
+        if (link.title.includes("SOW Tier 1")) {
+            newStatus = 'closed_won';
+            await advanceProtocolState(link.clientId, 'IN_PROGRESS_TIER_1');
+        } else if (link.title.includes("SOW Tier 2")) {
+            await advanceProtocolState(link.clientId, 'IN_PROGRESS_TIER_2');
+        } else if (link.title.includes("SOW Tier 3")) {
+            await advanceProtocolState(link.clientId, 'IN_PROGRESS_TIER_3');
+        } else {
+            // Standard payment
+            newStatus = 'closed_won';
+        }
+
+        // 2. Update Client Status in DB
+        if (newStatus !== client.status) {
+            await db.update(clients)
+                .set({ status: newStatus })
+                .where(eq(clients.id, link.clientId));
+        }
+
+        // 3. Send Receipt
+        await sendReceiptEmail(client.email, client.name || "Builder", link.title, link.amount);
+
+        return { success: true };
+    } catch (e) {
+        console.error("Error processing payment success:", e);
+        return { success: false, error: "Business logic failed" };
     }
 }
 

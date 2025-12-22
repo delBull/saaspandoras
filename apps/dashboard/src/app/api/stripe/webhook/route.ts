@@ -38,23 +38,46 @@ export async function POST(req: Request) {
             const { clientId, linkId, projectTitle } = session.metadata || {};
 
             if (clientId) {
-                // Determine Project ID (in a real app, Client might be different from Project, 
-                // but assuming 1:1 or we look up Project by Client ID for this flow)
-                // For now, let's assume 'clientId' corresponds to 'projectId' in our logic if passed that way,
-                // OR we strictly passed 'projectId' in metadata if available.
-                // In PaymentCheckout.tsx we passed `clientData?.id`. 
-                // If `clientData` is `projects` row, then it's projectId.
-
                 try {
+                    // 1. Legacy Activation (Optional, if still needed for marketing OS)
                     await activateClient(
                         Number(clientId),
                         'stripe_card',
                         (session.amount_total ? session.amount_total / 100 : 0).toString() + ' USD'
                     );
+
+                    // 2. Register Transaction in Dashboard DB
+                    const { db } = await import("@/db");
+                    const { transactions } = await import("@/db/schema");
+
+                    await db.insert(transactions).values({
+                        linkId: linkId || undefined,
+                        clientId: clientId.toString(),
+                        amount: (session.amount_total ? session.amount_total / 100 : 0).toString(),
+                        currency: session.currency?.toUpperCase() || 'USD',
+                        method: 'stripe',
+                        status: 'completed',
+                        processedAt: new Date(),
+                    });
+
+                    // 3. Send Discord Notification
+                    const { sendPaymentNotification } = await import("@/lib/discord/notifier");
+                    await sendPaymentNotification({
+                        type: "payment_received",
+                        amount: session.amount_total ? session.amount_total / 100 : 0,
+                        currency: session.currency?.toUpperCase() || "USD",
+                        method: "stripe",
+                        status: "completed",
+                        linkId: linkId,
+                        clientId: clientId,
+                        metadata: {
+                            stripeSessionId: session.id,
+                            customerEmail: session.customer_details?.email
+                        }
+                    });
+
                 } catch (e) {
-                    console.error("Failed to activate client from webhook:", e);
-                    // Don't return 500 here to avoid retrying indefinitely if it's a logic error,
-                    // but do log it.
+                    console.error("Failed to process Stripe webhook:", e);
                 }
             } else {
                 console.warn("⚠️ No clientId in metadata");
