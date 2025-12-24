@@ -79,6 +79,31 @@ export async function deployW2EProtocol(
 
   if (!rpcUrl) throw new Error(`RPC URL not found for network: ${network}`);
 
+  // Connectivity Check
+  try {
+    console.log(`📡 Testing connection to RPC: ${rpcUrl}`);
+    // Simple POST to check if endpoint is alive (JSON-RPC 2.0 basic call)
+    const testRes = await fetch(rpcUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_chainId', params: [], id: 1 })
+    });
+
+    if (!testRes.ok) {
+      console.error(`❌ RPC Connection Failed with Status: ${testRes.status} ${testRes.statusText}`);
+      const body = await testRes.text();
+      console.error(`❌ Response Body: ${body}`);
+      // throw new Error(`RPC Unreachable: ${testRes.status} (Check Thirdweb Key Restrictions?)`);
+    } else {
+      const testJson = await testRes.json() as any;
+      console.log(`✅ RPC Connection OK. Chain ID: ${testJson.result}`);
+    }
+
+  } catch (connError: any) {
+    console.warn(`⚠️ RPC Connectivity Check Failed: ${connError.message}`);
+    // We don't block here, we let Ethers try, but this log will be crucial.
+  }
+
   const privateKey = process.env.PANDORA_ORACLE_PRIVATE_KEY || process.env.PRIVATE_KEY;
   if (!privateKey) throw new Error("Private Key not found in environment (PANDORA_ORACLE_PRIVATE_KEY)");
 
