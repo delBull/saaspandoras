@@ -65,18 +65,20 @@ export async function POST(
         }
 
         // 2. Prepare Configuration
-        // Determine network first
-        // Priority 1: Check Git Branch Name (Reliable for Staging/Dev branches deployed as Prod)
-        const branchName = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF || '';
-        const isStagingBranch = ['staging', 'dev', 'development', 'release/staging'].some(b => branchName.includes(b));
+        // Determine network based on Domain (Host Header) - Most reliable for Vercel
+        const host = req.headers.get("host") || "";
+        const isProductionDomain = host === "dash.pandoras.finance" || host === "www.dash.pandoras.finance";
 
-        // Priority 2: Check Vercel Env
-        const isVercelProd = process.env.NEXT_PUBLIC_VERCEL_ENV === 'production';
+        // Network Logic: Only use Base on explicit Production Domain, otherwise Sepolia (Staging/Dev/Preview)
+        const network = isProductionDomain ? 'base' : 'sepolia';
 
-        // Logic: It is Mainnet ONLY if it's Vercel Prod AND NOT a Staging Branch
-        const isMainnet = isVercelProd && !isStagingBranch;
+        // Debug Env Vars (Safety Check)
+        const hasSepoliaRPC = !!process.env.SEPOLIA_RPC_URL;
+        const hasBaseRPC = !!process.env.BASE_RPC_URL;
 
-        const network = isMainnet ? 'base' : 'sepolia';
+        console.log(`🚀 API: Deploying ${slug}`);
+        console.log(`🌍 Network Decision: Host="${host}" -> Network="${network}"`);
+        console.log(`🔌 RPC Check: SEPOLIA_RPC_URL=${hasSepoliaRPC ? 'OK' : 'MISSING'}, BASE_RPC_URL=${hasBaseRPC ? 'OK' : 'MISSING'}`);
 
         // Mapping project data to W2EConfig
         const config: W2EConfig = {
@@ -127,7 +129,9 @@ export async function POST(
         };
 
         console.log(`🚀 API: Deploying ${slug}`);
-        console.log(`🌍 Environment Detect: BRANCH=${branchName}, VERCEL_ENV=${process.env.NEXT_PUBLIC_VERCEL_ENV}, NODE_ENV=${process.env.NODE_ENV} -> Network: ${network}`);
+        // Debug Log
+        // console.log(`🌍 Environment Detect: BRANCH=${branchName}...`); // Removed to avoid lint error
+        // Already logged above at "Network Decision"
 
         console.log(`🚀 API: Proceeding with config:`, config);
 
