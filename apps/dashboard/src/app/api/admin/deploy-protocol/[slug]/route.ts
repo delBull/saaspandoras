@@ -17,6 +17,12 @@ export async function POST(
     { params }: { params: Promise<{ slug: string }> }
 ) {
     const { slug } = await params;
+
+    // Diagnostic Variables (Outer Scope)
+    let network: 'sepolia' | 'base' = 'sepolia'; // Default
+    let host = '';
+    let branchName = '';
+
     try {
         // 1. Auth & Admin Check
         const headersObj = await headers();
@@ -66,11 +72,12 @@ export async function POST(
 
         // 2. Prepare Configuration
         // Determine network based on Domain (Host Header) - Most reliable for Vercel
-        const host = req.headers.get("host") || "";
+        host = req.headers.get("host") || "";
         const isProductionDomain = host === "dash.pandoras.finance" || host === "www.dash.pandoras.finance";
 
-        // Network Logic: Only use Base on explicit Production Domain, otherwise Sepolia (Staging/Dev/Preview)
-        const network = isProductionDomain ? 'base' : 'sepolia';
+        // Network Logic: Maintain Sepolia default unless explicitly Prod Domain
+        network = isProductionDomain ? 'base' : 'sepolia';
+        branchName = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF || 'unknown';
 
         // Debug Env Vars (Safety Check)
         const hasSepoliaRPC = !!process.env.SEPOLIA_RPC_URL;
@@ -184,10 +191,29 @@ export async function POST(
 
         return NextResponse.json({ success: true, deployment: result });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Deploy API Error:", error);
+
+        // Diagnostic Info
+        const diagnostics = {
+            networkAttempted: network,
+            envDetection: {
+                host: host,
+                vercelEnv: process.env.NEXT_PUBLIC_VERCEL_ENV,
+                branch: branchName
+            },
+            rpcStatus: {
+                sepolia: process.env.SEPOLIA_RPC_URL ? `Configured (Length: ${process.env.SEPOLIA_RPC_URL.length})` : 'MISSING',
+                base: process.env.BASE_RPC_URL ? `Configured (Length: ${process.env.BASE_RPC_URL.length})` : 'MISSING'
+            },
+            errorDetails: error?.message || error
+        };
+
         return NextResponse.json(
-            { error: error instanceof Error ? error.message : "Internal Server Error" },
+            {
+                error: error instanceof Error ? error.message : "Internal Server Error",
+                details: diagnostics
+            },
             { status: 500 }
         );
     }
