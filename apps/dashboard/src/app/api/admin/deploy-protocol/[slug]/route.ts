@@ -65,9 +65,20 @@ export async function POST(
         }
 
         // 2. Prepare Configuration
-        // Determine network first
-        const isProduction = process.env.NODE_ENV === 'production';
-        const network = isProduction ? 'base' : 'sepolia';
+        // Determine network based on Domain (Host Header) - Most reliable for Vercel
+        const host = req.headers.get("host") || "";
+        const isProductionDomain = host === "dash.pandoras.finance" || host === "www.dash.pandoras.finance";
+
+        // Network Logic: Only use Base on explicit Production Domain, otherwise Sepolia (Staging/Dev/Preview)
+        const network = isProductionDomain ? 'base' : 'sepolia';
+
+        // Debug Env Vars (Safety Check)
+        const hasSepoliaRPC = !!process.env.SEPOLIA_RPC_URL;
+        const hasBaseRPC = !!process.env.BASE_RPC_URL;
+
+        console.log(`🚀 API: Deploying ${slug}`);
+        console.log(`🌍 Network Decision: Host="${host}" -> Network="${network}"`);
+        console.log(`🔌 RPC Check: SEPOLIA_RPC_URL=${hasSepoliaRPC ? 'OK' : 'MISSING'}, BASE_RPC_URL=${hasBaseRPC ? 'OK' : 'MISSING'}`);
 
         // Mapping project data to W2EConfig
         const config: W2EConfig = {
@@ -117,7 +128,12 @@ export async function POST(
             targetNetwork: network
         };
 
-        console.log(`🚀 API: Deploying ${slug} to ${network} with config:`, config);
+        console.log(`🚀 API: Deploying ${slug}`);
+        // Debug Log
+        // console.log(`🌍 Environment Detect: BRANCH=${branchName}...`); // Removed to avoid lint error
+        // Already logged above at "Network Decision"
+
+        console.log(`🚀 API: Proceeding with config:`, config);
 
         // 4. Call Deployer
         const result = await deployW2EProtocol(slug, config, network);
