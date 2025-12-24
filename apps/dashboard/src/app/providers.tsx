@@ -53,7 +53,7 @@ export function Providers({
         <AutoConnect
           client={client}
           wallets={wallets}
-          accountAbstraction={accountAbstractionConfig}
+          // accountAbstraction={accountAbstractionConfig} // ❌ DISABLED GLOBAL AA: Allows Metamask to stay EOA.
           timeout={3000}  // Mucho menos agresivo para evitar spamming
           onConnect={(wallet) => {
             if (process.env.NODE_ENV === 'development') {
