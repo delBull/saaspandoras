@@ -66,9 +66,16 @@ export async function POST(
 
         // 2. Prepare Configuration
         // Determine network first
-        // Use NEXT_PUBLIC_VERCEL_ENV to distinguish Production (Mainnet) from Preview/Dev (Testnet)
-        // NODE_ENV is always 'production' in built apps, so it's unreliable for Staging detection.
-        const isMainnet = process.env.NEXT_PUBLIC_VERCEL_ENV === 'production';
+        // Priority 1: Check Git Branch Name (Reliable for Staging/Dev branches deployed as Prod)
+        const branchName = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF || '';
+        const isStagingBranch = ['staging', 'dev', 'development', 'release/staging'].some(b => branchName.includes(b));
+
+        // Priority 2: Check Vercel Env
+        const isVercelProd = process.env.NEXT_PUBLIC_VERCEL_ENV === 'production';
+
+        // Logic: It is Mainnet ONLY if it's Vercel Prod AND NOT a Staging Branch
+        const isMainnet = isVercelProd && !isStagingBranch;
+
         const network = isMainnet ? 'base' : 'sepolia';
 
         // Mapping project data to W2EConfig
@@ -120,7 +127,7 @@ export async function POST(
         };
 
         console.log(`🚀 API: Deploying ${slug}`);
-        console.log(`🌍 Environment Detect: VERCEL_ENV=${process.env.NEXT_PUBLIC_VERCEL_ENV}, NODE_ENV=${process.env.NODE_ENV} -> Network: ${network}`);
+        console.log(`🌍 Environment Detect: BRANCH=${branchName}, VERCEL_ENV=${process.env.NEXT_PUBLIC_VERCEL_ENV}, NODE_ENV=${process.env.NODE_ENV} -> Network: ${network}`);
 
         console.log(`🚀 API: Proceeding with config:`, config);
 
