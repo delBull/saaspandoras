@@ -66,8 +66,10 @@ export async function POST(
 
         // 2. Prepare Configuration
         // Determine network first
-        const isProduction = process.env.NODE_ENV === 'production';
-        const network = isProduction ? 'base' : 'sepolia';
+        // Use NEXT_PUBLIC_VERCEL_ENV to distinguish Production (Mainnet) from Preview/Dev (Testnet)
+        // NODE_ENV is always 'production' in built apps, so it's unreliable for Staging detection.
+        const isMainnet = process.env.NEXT_PUBLIC_VERCEL_ENV === 'production';
+        const network = isMainnet ? 'base' : 'sepolia';
 
         // Mapping project data to W2EConfig
         const config: W2EConfig = {
@@ -117,7 +119,10 @@ export async function POST(
             targetNetwork: network
         };
 
-        console.log(`🚀 API: Deploying ${slug} to ${network} with config:`, config);
+        console.log(`🚀 API: Deploying ${slug}`);
+        console.log(`🌍 Environment Detect: VERCEL_ENV=${process.env.NEXT_PUBLIC_VERCEL_ENV}, NODE_ENV=${process.env.NODE_ENV} -> Network: ${network}`);
+
+        console.log(`🚀 API: Proceeding with config:`, config);
 
         // 4. Call Deployer
         const result = await deployW2EProtocol(slug, config, network);
