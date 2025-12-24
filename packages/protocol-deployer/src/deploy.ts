@@ -57,6 +57,17 @@ export async function deployW2EProtocol(
     ? (process.env.SEPOLIA_RPC_URL || defaultSepoliaRpc)
     : process.env.BASE_RPC_URL;
 
+  // Manual Sanitization for Vercel Env Vars (Remove accidental quotes/whitespace)
+  if (rpcUrl) {
+    rpcUrl = rpcUrl.trim();
+    if (rpcUrl.startsWith('"') && rpcUrl.endsWith('"')) {
+      rpcUrl = rpcUrl.slice(1, -1);
+    }
+    if (rpcUrl.startsWith("'") && rpcUrl.endsWith("'")) {
+      rpcUrl = rpcUrl.slice(1, -1);
+    }
+  }
+
   console.log(`🌍 Connecting to RPC: ${rpcUrl}`);
 
   // Auto-fix: Avoid known bad RPCs if they come from env
