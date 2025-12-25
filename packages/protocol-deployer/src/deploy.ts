@@ -93,7 +93,9 @@ export async function deployW2EProtocol(
       console.error(`❌ RPC Connection Failed with Status: ${testRes.status} ${testRes.statusText}`);
       const body = await testRes.text();
       console.error(`❌ Response Body: ${body}`);
-      // throw new Error(`RPC Unreachable: ${testRes.status} (Check Thirdweb Key Restrictions?)`);
+      console.error(`❌ Response Body: ${body}`);
+      // Throwing error here to make it visible in the API response JSON
+      throw new Error(`RPC Unreachable: ${testRes.status} ${testRes.statusText} - Body: ${body.slice(0, 100)}...`);
     } else {
       const testJson = await testRes.json() as any;
       console.log(`✅ RPC Connection OK. Chain ID: ${testJson.result}`);
