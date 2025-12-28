@@ -30,7 +30,7 @@ interface WalletSession {
   shouldReconnect: boolean;
 }
 
-export const dynamic = 'force-dynamic';
+// export const dynamic = 'force-dynamic'; // Optimization: Removed.
 
 // CRÍTICO: Movemos TODAS las fetch calls al useEffect cliente-side
 // ✅ Esto evita que se ejecuten durante el BUILD de Vercel
