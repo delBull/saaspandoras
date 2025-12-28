@@ -1,5 +1,5 @@
 'use client';
-
+import { useUserAssets } from '@/hooks/useUserAssets';
 // Force dynamic rendering - this page uses auth
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +24,9 @@ import { inAppWallet, createWallet } from 'thirdweb/wallets';
 import { base } from 'thirdweb/chains';
 import { client } from '@/lib/thirdweb-client';
 import { SUPPORTED_NETWORKS } from '@/config/networks';
+import { getContract } from "thirdweb";
+import { useReadContract } from "thirdweb/react";
+import { config } from "@/config";
 import {
   NFTGallery,
   TransactionHistory
@@ -46,6 +49,52 @@ export default function WalletProPage() {
     address: account?.address,
     chain: base,
   });
+
+  // --- 1. NFT Pass Logic ---
+  const applyPassContract = getContract({
+    client,
+    chain: config.chain,
+    address: config.applyPassNftAddress,
+  });
+
+  const { data: passBalance } = useReadContract({
+    contract: applyPassContract,
+    method: "balanceOf",
+    params: [account?.address || "0x0000000000000000000000000000000000000000"],
+    queryOptions: { enabled: !!account }
+  });
+
+  // Get new user assets
+  const { assets: rawAssets, loading: loadingAssets } = useUserAssets();
+
+  const assets = React.useMemo(() => {
+    const list = [...rawAssets];
+    // Inject Apply Pass if owned
+    if (passBalance && Number(passBalance) > 0) {
+      // Inject Apply Pass if owned
+      if (passBalance && Number(passBalance) > 0) {
+        // Mock Project for Asset Interface
+        const mockProject = {
+          title: "Pandoras Apply Pass",
+          slug: "apply-pass",
+          imageUrl: "/badges/apply-pass.png",
+          // ... minimum required props
+        } as any;
+
+        list.push({
+          name: 'Apply Pass',
+          type: 'access',
+          balance: passBalance.toString(),
+          tokenAddress: config.applyPassNftAddress,
+          project: mockProject
+        });
+      }
+    }
+    return list;
+  }, [rawAssets, passBalance]);
+
+  const accessCount = assets.filter(a => a.type === 'access').length;
+  const artifactCount = assets.filter(a => a.type === 'utility' || a.type === 'artifact').length;
 
   // Formatear el balance en USD
   const walletBalance = React.useMemo(() => {
@@ -75,15 +124,15 @@ export default function WalletProPage() {
     {
       icon: <KeyIcon className="w-5 h-5" />,
       label: 'Accesos',
-      value: '0',
-      change: 'Próximamente',
+      value: accessCount.toString(),
+      change: 'Activos',
       positive: true,
     },
     {
       icon: <SparklesIcon className="w-5 h-5" />,
       label: 'Artefactos',
-      value: '0',
-      change: 'Próximamente',
+      value: artifactCount.toString(),
+      change: 'Activos',
       positive: true,
     },
   ];
@@ -162,6 +211,7 @@ export default function WalletProPage() {
                     </div>
                     <ConnectButton
                       client={client}
+                      showAllWallets={false}
                       chains={SUPPORTED_NETWORKS.map(network => network.chain)}
                       wallets={[
                         inAppWallet({
@@ -188,6 +238,9 @@ export default function WalletProPage() {
                           borderRadius: '8px',
                           fontSize: '14px',
                         }
+                      }}
+                      connectModal={{
+                        showThirdwebBranding: false,
                       }}
                     />
                   </div>
@@ -266,6 +319,7 @@ export default function WalletProPage() {
                         </div>
                         <ConnectButton
                           client={client}
+                          showAllWallets={false}
                           chains={SUPPORTED_NETWORKS.map(network => network.chain)}
                           wallets={[
                             inAppWallet({
@@ -292,6 +346,9 @@ export default function WalletProPage() {
                               borderRadius: '8px',
                               fontSize: '14px',
                             }
+                          }}
+                          connectModal={{
+                            showThirdwebBranding: false,
                           }}
                         />
                       </div>
@@ -337,7 +394,7 @@ export default function WalletProPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 1.4 }}
                 >
-                  <NFTGallery selectedChain={selectedChain} />
+                  <NFTGallery assets={assets} isLoading={loadingAssets} />
                 </motion.div>
               </motion.div>
 
@@ -393,13 +450,14 @@ export default function WalletProPage() {
               </h2>
 
               <p className="text-zinc-400 text-lg mb-8 max-w-xl mx-auto">
-                Accede a todas las funciones avanzadas de gestiรณn de activos digitales.
+                Accede a todas las funciones avanzadas de gestión de activos digitales.
                 Balances multi-chain, envío/recepción de crypto y mucho más.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <ConnectButton
                   client={client}
+                  showAllWallets={false}
                   chains={SUPPORTED_NETWORKS.map(network => network.chain)}
                   wallets={[
                     inAppWallet({
@@ -426,11 +484,10 @@ export default function WalletProPage() {
                       fontSize: '16px',
                     }
                   }}
+                  connectModal={{
+                    showThirdwebBranding: false,
+                  }}
                 />
-                <Button variant="outline" className="border-zinc-700 hover:border-orange-500/50">
-                  <QrCodeIcon className="w-5 h-5 mr-2" />
-                  Escanear QR
-                </Button>
               </div>
 
               <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">

@@ -55,55 +55,57 @@ function StartPageContent() {
   trackPageView('Landing Start Page');
 
   // --- TRANSFORMACIÓN #1: DE "BARRERAS DE INVERSIÓN" A "BARRERAS DEL CREADOR" ---
+  // --- TRANSFORMACIÓN #1: DE "BARRERAS DEL CREADOR" A "LAS 3 CÁRCELES INVISIBLES" ---
   const barriers = [
     {
       id: 1,
       title: "La Prisión de la Plataforma (Web2)",
-      problem: "¿Tu comunidad vive en Patreon, Discord o Facebook? Ellos ponen las reglas, se llevan el 30% y te niegan la soberanía sobre tu audiencia.",
-      solution: "Declaración de Soberanía. Lanza tus propios protocolos. Define tus reglas, sin intermediarios y sin comisiones abusivas sobre tus ingresos.",
+      problem: "Tu comunidad vive en Patreon, Discord o Instagram. Ellos cambian las reglas, suben comisiones y deciden cuánto vales. SI ellos caen, tú caes.",
+      solution: "Pandora's no es una app. Es infraestructura. Lanzas tu protocolo soberano en la blockchain, donde nadie puede apagar tu negocio.",
       icon: <Users className="w-8 h-8" />,
       color: "from-red-500 to-orange-500"
     },
     {
       id: 2,
-      title: "El Engaño de la Apatía Comunitaria",
-      problem: "Tu comunidad es pasiva. Los 'Likes' y 'Follows' no construyen valor. El *engagement* superficial es insostenible y no paga el desarrollo.",
-      solution: "Protocolos de Incentivos Verificables. Activa a tus usuarios. Recompénsalos por aportar valor real y medible: validar, moderar, crear o promocionar.",
+      title: "El Engaño de la Apatía",
+      problem: "Tener followers no es tener negocio. Los likes no pagan facturas y el engagement vacío no construye lealtad. Estás entreteniendo, no construyendo.",
+      solution: "Convierte audiencia en colaboradores. Recompensa acciones verificables (moderar, validar, crear) con valor real, no puntos ficticios.",
       icon: <Puzzle className="w-8 h-8" />,
       color: "from-blue-500 to-purple-500"
     },
     {
       id: 3,
-      title: "La Parálisis Técnica y Regulatoria",
-      problem: "Lanzar un token es un riesgo legal, toma meses en desarrollo y requiere cientos de miles en auditorías. Es la vía rápida al fracaso.",
-      solution: "Plataforma No-Code y Blindaje Legal. Lanza tu protocolo de utilidad en minutos desde plantillas pre-auditadas y enfocadas 100% en la *utilidad*, no en la inversión.",
+      title: "La Parálisis Técnica",
+      problem: "Sabes que Web3 es el futuro, pero lanzar un token da miedo legal y cuesta una fortuna. El resultado: te quedas inmóvil en Web2.",
+      solution: "Eliminamos el riesgo técnico. Plantillas pre-auditadas de Protocolos de Utilidad lista para usar. Enfócate en tu comunidad, no en el código.",
       icon: <Shield className="w-8 h-8" />,
       color: "from-green-500 to-teal-500"
     }
   ];
 
-  // --- TRANSFORMACIÓN #2: MANIFIESTO ENFOCADO EN COMUNIDAD Y UTILIDAD ---
+  // --- TRANSFORMACIÓN #2: MANIFIESTO (PRINCIPIOS INNEGOCIABLES) ---
   const manifestoPoints = [
-    "La participación real debe ser recompensada con valor verificable, no solo con un 'gracias'.",
-    "La propiedad digital no es especulación. Es el derecho inalienable a la participación y la gobernanza.",
-    "La transparencia del código es la base inmutable de la confianza. No se negocia.",
-    "Construimos *con* nuestra comunidad, no *para* ella. Su voto define la evolución del protocolo."
+    "La participación real debe ser recompensada con valor verificable, no solo con 'gracias'.",
+    "La propiedad digital no es especulación. Es la única forma de libertad real en internet.",
+    "El código transparente es la única confianza válida. Todo lo demás es promesas.",
+    "Tu comunidad no es tu audiencia. Es tu infraestructura."
   ];
 
   // --- TRANSFORMACIÓN #3: TESTIMONIALES DE "INVERSORES" A "CREADORES" ---
+  // --- TRANSFORMACIÓN #3: TESTIMONIALES (CASOS REALES) ---
   const testimonials = [
     {
       name: "Laura",
-      type: "Artista Digital y Creadora",
-      before: "Vendía 'prints' en Patreon. 10% de comisión y cero control. Mi comunidad no tenía incentivo para crecer.",
-      after: "Lanzó un NFT de membresía. Ahora su comunidad vota sobre su próxima obra y es recompensada por la lealtad que inyecta valor real a su marca.",
+      type: "Artista Digital",
+      before: "Antes: Patreon se llevaba el 10% y su comunidad era pasiva. Alquilaba su negocio.",
+      after: "Ahora con Pandora's: Lanzó Membresía NFT. Su comunidad tiene voz, voto y gana recompensas por lealtad. Soberanía total.",
       icon: <Palette className="w-6 h-6" />
     },
     {
       name: "DevCore",
-      type: "Proyecto Open-Source",
-      before: "Dependían de donaciones esporádicas. Tenían una crisis de pocos contribuidores activos y nula tracción.",
-      after: "Implementaron un protocolo 'Work-to-Earn' para recompensar a los devs por cada 'bug' resuelto y validado, acelerando el desarrollo x10.",
+      type: "Comunidad Open Source",
+      before: "Antes: Dependían de donaciones esporádicas. Desarrollo lento y devs desmotivados.",
+      after: "Ahora con Pandora's: Implementaron 'Work-to-Earn'. Pagan por bug resuelto automáticamente. Desarrollo x10.",
       icon: <Code className="w-6 h-6" />
     }
   ];
@@ -189,20 +191,20 @@ function StartPageContent() {
           </motion.div>
 
           <div className="mb-8">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight mb-6">
-            <StaggerText
-              text="Construye Valor."
-              className="block"
-              delay={0.5}
-              staggerDelay={0.1}
-            />
-            <StaggerText
-              text="Blindaje Protocolario."
-              className="block"
-              delay={1}
-              staggerDelay={0.1}
-            />
-          </h1>
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight mb-6">
+              <StaggerText
+                text="Construye Valor."
+                className="block"
+                delay={0.5}
+                staggerDelay={0.1}
+              />
+              <StaggerText
+                text="Blindaje Protocolario."
+                className="block"
+                delay={1}
+                staggerDelay={0.1}
+              />
+            </h1>
 
             <div className="text-2xl md:text-3xl mb-6">
               <TypewriterText
@@ -219,14 +221,17 @@ function StartPageContent() {
             />
           </div>
 
-          <motion.p
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="text-xl md:text-2xl text-zinc-400 max-w-4xl mx-auto mb-8 leading-relaxed"
+            className="text-xl md:text-2xl text-zinc-400 max-w-4xl mx-auto mb-8 leading-relaxed space-y-4"
           >
-            ¿Por qué sigues construyendo en Web2, pagando 30% en comisiones y cediendo el control de tu audiencia? El futuro son los protocolos de utilidad: incentivos reales, valor verificable y soberanía total sobre tu negocio digital.
-          </motion.p>
+            <p>Construye valor real. Protege tu comunidad. Deja de alquilar tu negocio.</p>
+            <p className="text-lg text-zinc-500">
+              Tu audiencia no es tuya. Vive en redes sociales que controlan tu alcance. Pandora’s te da la infraestructura para romper esa prisión.
+            </p>
+          </motion.div>
 
           <motion.div
             initial={{ opacity: 0 }}
@@ -234,16 +239,23 @@ function StartPageContent() {
             transition={{ delay: 0.6 }}
             className="flex justify-center mb-8"
           >
-            <Button
-              size="lg"
-              className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white font-bold text-base md:text-lg px-8 md:px-12 py-4 md:py-6 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg shadow-blue-500/25 w-full sm:w-auto max-w-xs md:max-w-none"
-              onClick={() => document.getElementById('subscription')?.scrollIntoView({ behavior: 'smooth' })}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6 }}
+              className="flex justify-center mb-8"
             >
-              <span className="flex items-center gap-2">
-                [ Construye tu Protocolo Ahora ]
-                <ArrowRight className="w-4 h-4 md:w-5" />
-              </span>
-            </Button>
+              <Button
+                size="lg"
+                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white font-bold text-base md:text-lg px-8 md:px-12 py-4 md:py-6 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg shadow-blue-500/25 w-full sm:w-auto max-w-xs md:max-w-none"
+                onClick={() => document.getElementById('subscription')?.scrollIntoView({ behavior: 'smooth' })}
+              >
+                <span className="flex items-center gap-2">
+                  [ Construye tu Protocolo Ahora ]
+                  <ArrowRight className="w-4 h-4 md:w-5" />
+                </span>
+              </Button>
+            </motion.div>
           </motion.div>
         </motion.div>
 
@@ -257,13 +269,13 @@ function StartPageContent() {
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-5xl font-bold mb-6">
               <AnimatedGradientText
-                text="Las 3 Cárceles de Web2"
+                text="Las 3 Cárceles Invisibles"
                 gradientFrom="from-red-400"
                 gradientTo="to-orange-400"
               />
             </h2>
             <p className="text-xl text-zinc-400">
-              El Por Qué Tus Ingresos Son Frágiles
+              ¿Por qué sientes que trabajas para el algoritmo?
             </p>
           </div>
 
@@ -323,7 +335,7 @@ function StartPageContent() {
               />
             </h2>
             <p className="text-xl text-zinc-400">
-              Son Principios Inquebrantables.
+              Esto no es una app. Es una Declaración de Independencia.
             </p>
           </div>
 
@@ -639,10 +651,10 @@ function StartPageContent() {
                 <Mail className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-white mb-2">
-                Acceso Prioritario a Tu Arquitectura de Utilidad
+                Deja de Alquilar tu Negocio
               </h3>
               <p className="text-zinc-400">
-                Antes de activar tus herramientas No-Code, necesitamos confirmar tu caso de uso y entregarte la guía técnica adecuada para tu Protocolo
+                Construye infraestructura propia. Comienza tu evaluación de caso de uso (8 preguntas) o recibe el dossier técnico.
               </p>
             </div>
 

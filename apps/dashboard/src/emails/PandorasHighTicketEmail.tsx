@@ -30,10 +30,10 @@ export default function PandorasHighTicketEmail({
 }: PandorasHighTicketEmailProps) {
   return (
     <Html>
-      <Head />
-      <Preview>Pandora’s Inner Circle — Solo 5 fundadores ingresan cada ciclo.</Preview>
-
       <Tailwind>
+        <Head />
+        <Preview>Pandora’s Inner Circle — Solo 5 fundadores ingresan cada ciclo.</Preview>
+
         <Body className="bg-white font-sans text-gray-900">
 
           <Container className="mx-auto w-full max-w-[600px] p-0">

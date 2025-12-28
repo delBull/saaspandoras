@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { MultiStepForm } from "@/app/()/admin/projects/[id]/edit/multi-step-form";
+import { MultiStepForm } from "@/app/()/admin/projects/[slug]/edit/multi-step-form";
 
 interface ProjectApplicationModalProps {
   isOpen: boolean;
@@ -43,9 +43,8 @@ export function ProjectApplicationModal({ isOpen, onClose, isAdminMode = false }
         <div className="flex-1 overflow-y-auto">
           <section className="py-12 md:py-24">
             <div className="max-w-4xl mx-auto px-6">
-              <div className={`bg-zinc-900/60 rounded-2xl p-6 md:p-8 border ${
-                isAdminMode ? 'border-purple-400/20' : 'border-lime-400/20'
-              }`}>
+              <div className={`bg-zinc-900/60 rounded-2xl p-6 md:p-8 border ${isAdminMode ? 'border-purple-400/20' : 'border-lime-400/20'
+                }`}>
                 {isAdminMode && (
                   <div className="mb-6 p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg">
                     <div className="flex items-center gap-2 mb-2">
@@ -53,7 +52,7 @@ export function ProjectApplicationModal({ isOpen, onClose, isAdminMode = false }
                       <span className="text-sm font-semibold text-purple-400">Modo Administrador</span>
                     </div>
                     <p className="text-xs text-purple-200">
-                      • La creación se creará como borrador automáticamente<br/>
+                      • La creación se creará como borrador automáticamente<br />
                       • La validación es más flexible para permitir pruebas
                     </p>
                   </div>

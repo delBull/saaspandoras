@@ -5,49 +5,67 @@ import {
   TabsList as TabsListRoot,
   TabsTrigger as TabsTriggerRoot,
 } from "@radix-ui/react-tabs";
-import type { Dictionary } from "~/types";
+import type { Dictionary, Section } from "~/types";
 
-interface Section {
-  title: string;
-  content?: string;
-  items?: string[];
-  email?: string;
-}
-
-type PrivacySections = Record<string, Section>;
 export function TermsContent({ dict }: { dict: Dictionary }) {
-  const currentDate = "Marzo 2025";
-
   const renderSectionItems = (items: string[]) => (
-    <ul className="list-disc pl-6">
+    <ul className="list-disc pl-6 space-y-2">
       {items.map((item: string, i: number) => (
         <li key={i}>{item}</li>
       ))}
     </ul>
   );
 
-  const renderPrivacySection = (section: Section, index: number) => {
+  const renderSection = (
+    section: Section,
+    index: number,
+    prefix: string = "",
+  ) => {
     if (!section) return null;
-
     return (
-      <section key={`privacy-section-${index}`} className="mt-8">
-        <h2>
-          {index + 3}. {section.title}
+      <section key={`${prefix}-section-${index}`} className="mt-8">
+        <h2 className="text-xl font-semibold mb-4 text-foreground">
+          {index + 1}. {section.title}
         </h2>
-        {section.items && renderSectionItems(section.items)}
-        {section.content && <p>{section.content}</p>}
+        {section.content && (
+          <p className="mb-4 text-muted-foreground">{section.content}</p>
+        )}
+        {section.items &&
+          section.items.length > 0 &&
+          renderSectionItems(section.items)}
         {section.email && <p className="mt-2">📩 {section.email}</p>}
       </section>
     );
   };
 
-  // Get filtered and sorted privacy sections
-  const getPrivacySections = () => {
-    const sections = dict.privacy.sections as PrivacySections;
-    return Object.entries(sections)
-      .filter(([key]) => !["collection", "usage"].includes(key))
-      .map(([_, section], index) => renderPrivacySection(section, index));
-  };
+  const TERMS_SECTIONS = [
+    "nature",
+    "roles",
+    "no_investment",
+    "blockchain",
+    "services",
+    "payments",
+    "liability",
+    "ip",
+    "termination",
+    "law",
+    "acceptance",
+  ];
+
+  const PRIVACY_SECTIONS = [
+    "scope",
+    "collection",
+    "purpose",
+    "legal_basis",
+    "sharing",
+    "international",
+    "retention",
+    "rights",
+    "security",
+    "other_agreements",
+    "updates",
+    "contact",
+  ];
 
   return (
     <>
@@ -55,116 +73,52 @@ export function TermsContent({ dict }: { dict: Dictionary }) {
         {dict.terms.title}
       </h1>
 
-      <div className="rounded-lg border bg-card p-8 text-card-foreground shadow">
+      <div className="rounded-lg border bg-card p-8 text-card-foreground shadow-sm">
         <TabsRoot defaultValue="terms" className="w-full">
-          <TabsListRoot className="grid w-full grid-cols-2">
-            <TabsTriggerRoot value="terms">
+          <TabsListRoot className="grid w-full grid-cols-2 mb-8 bg-muted rounded-lg p-1">
+            <TabsTriggerRoot
+              value="terms"
+              className="py-2.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-md"
+            >
               {dict.terms.tabTerms}
             </TabsTriggerRoot>
-            <TabsTriggerRoot value="privacy">
+            <TabsTriggerRoot
+              value="privacy"
+              className="py-2.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-md"
+            >
               {dict.terms.tabPrivacy}
             </TabsTriggerRoot>
           </TabsListRoot>
 
-          <TabsContentRoot value="terms" className="space-y-6">
+          <TabsContentRoot value="terms" className="space-y-6 outline-none">
             <div className="prose prose-gray dark:prose-invert max-w-none">
-              <p className="text-sm text-muted-foreground">
-                {dict.terms.lastUpdate} {currentDate}
+              <p className="text-sm text-muted-foreground mb-8">
+                {dict.terms.lastUpdate}
               </p>
 
-              {/* Welcome section */}
-              <section>
-                <p>{dict.terms.sections.welcome.content}</p>
-              </section>
-
-              {/* Definitions section */}
-              <section className="mt-8">
-                <h2>1. {dict.terms.sections.definitions.title}</h2>
-                {dict.terms.sections.definitions.items &&
-                  renderSectionItems(dict.terms.sections.definitions.items)}
-              </section>
-
-              {/* Platform Usage section */}
-              <section className="mt-8">
-                <h2>2. {dict.terms.sections.usage.title}</h2>
-                {dict.terms.sections.usage.items &&
-                  renderSectionItems(dict.terms.sections.usage.items)}
-              </section>
-
-              {/* Responsibility section */}
-              <section className="mt-8">
-                <h2>3. {dict.terms.sections.responsibility.title}</h2>
-                {dict.terms.sections.responsibility.items &&
-                  renderSectionItems(dict.terms.sections.responsibility.items)}
-              </section>
-
-              {/* User Requirements section */}
-              <section className="mt-8">
-                <h2>4. {dict.terms.sections.requirements.title}</h2>
-                {dict.terms.sections.requirements.items &&
-                  renderSectionItems(dict.terms.sections.requirements.items)}
-              </section>
-
-              {/* Payments section */}
-              <section className="mt-8">
-                <h2>5. {dict.terms.sections.payments.title}</h2>
-                {dict.terms.sections.payments.items &&
-                  renderSectionItems(dict.terms.sections.payments.items)}
-              </section>
-
-              {/* Data Protection section */}
-              <section className="mt-8">
-                <h2>6. {dict.terms.sections.dataProtection.title}</h2>
-                {dict.terms.sections.dataProtection.items &&
-                  renderSectionItems(dict.terms.sections.dataProtection.items)}
-              </section>
-
-              {/* Applicable Law section */}
-              <section className="mt-8">
-                <h2>7. {dict.terms.sections.law.title}</h2>
-                {dict.terms.sections.law.items &&
-                  renderSectionItems(dict.terms.sections.law.items)}
-              </section>
+              {TERMS_SECTIONS.map((key, index) => {
+                const section = dict.terms.sections[key];
+                return section ? renderSection(section, index, "terms") : null;
+              })}
             </div>
           </TabsContentRoot>
 
-          <TabsContentRoot value="privacy" className="space-y-6">
+          <TabsContentRoot value="privacy" className="space-y-6 outline-none">
             <div className="prose prose-gray dark:prose-invert max-w-none">
-              <p className="text-sm text-muted-foreground">
-                {dict.privacy.lastUpdate} {currentDate}
+              <p className="text-sm text-muted-foreground mb-8">
+                {dict.privacy.lastUpdate}
               </p>
 
-              <p>{dict.privacy.introduction}</p>
+              <p className="mb-8 text-muted-foreground">
+                {dict.privacy.introduction}
+              </p>
 
-              {/* Information Collection section */}
-              <section className="mt-8">
-                <h2>1. {dict.privacy.sections.collection.title}</h2>
-                {dict.privacy.sections.collection.items &&
-                  renderSectionItems(dict.privacy.sections.collection.items)}
-              </section>
-
-              {/* Information Usage section */}
-              <section className="mt-8">
-                <h2>2. {dict.privacy.sections.usage.title}</h2>
-                {dict.privacy.sections.usage.items &&
-                  renderSectionItems(dict.privacy.sections.usage.items)}
-              </section>
-
-              {/* Other privacy sections */}
-              {getPrivacySections()}
-
-              {/* Contact section */}
-              <section className="mt-8">
-                <h2>8. {dict.privacy.sections.contact.title}</h2>
-                <p>{dict.privacy.sections.contact.content}</p>
-                <p className="mt-2">📩 {dict.privacy.sections.contact.email}</p>
-              </section>
-
-              {/* Acceptance section */}
-              <section className="mt-8 border-t pt-8">
-                <h3>{dict.terms.acceptance.title}</h3>
-                <p>{dict.terms.acceptance.content}</p>
-              </section>
+              {PRIVACY_SECTIONS.map((key, index) => {
+                const section = dict.privacy.sections[key];
+                return section
+                  ? renderSection(section, index, "privacy")
+                  : null;
+              })}
             </div>
           </TabsContentRoot>
         </TabsRoot>

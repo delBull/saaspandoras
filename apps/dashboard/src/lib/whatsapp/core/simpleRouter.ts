@@ -7,6 +7,11 @@
 import { sql } from "@/lib/database";
 import type { WhatsAppUser, WhatsAppSession } from "@/db/schema";
 import { notifyHumanAgent } from "@/lib/notifications";
+import { db } from "~/db";
+import { whatsappUsers, whatsappSessions, whatsappMessages } from "@/db/schema";
+import { eq, and, desc } from "drizzle-orm";
+import { notifySupportRequest } from "@/lib/discord"; // Dynamic or direct import
+import { sendWhatsAppMessage, sendInteractiveMessage } from "../utils/client";
 
 /**
  * INTERFACES SIMPLIFICADAS
@@ -31,89 +36,116 @@ export interface FlowResult {
   error?: string;
 }
 
-// Los 5 flujos independientes
-export type FlowType = 'utility' | 'high_ticket' | 'eight_q' | 'support' | 'human';
+// Los 6 flujos independientes
+export type FlowType = 'utility' | 'high_ticket' | 'eight_q' | 'support' | 'human' | 'protocol_application';
 
 /**
  * HANDLERS SIMPLES PARA CADA FLUJO
  */
 
 // Utility Protocol Flow (Landing: utility-protocol) - NOW WITH PROGRESSION
-function handleUtilityFlow(message: string, step = 0): FlowResult {
+// Utility Protocol Flow (Landing: utility-protocol - OPTIMIZED TECHNICAL FILTER 2.5)
+async function handleUtilityFlow(message: string, step = 0, phone?: string): Promise<FlowResult> {
   const text = message.toLowerCase().trim();
 
-  // Step 0: Initial introduction and project details request
+  // Step 0: Entry Authority (No Servilismo)
+  // Message 0 sent: "Estás entrando al Filtro de Viabilidad 2.5..."
+  // Waiting for: "Sí", "Listo", "Continuar"
   if (step === 0) {
-    return {
-      handled: true,
-      flowType: 'utility',
-      response: `🏗️ **Consultoría Arquitectura W2E - Pandora's**\n\nHola! Soy tu asesor especializado en protocolos de utilidad.\n\nPara darte una consultoría personalizada, por favor responde:\n\n• ¿Qué tipo de utilidad quieres implementar?\n• ¿Para qué problema es tu solución?\n• ¿Cuál es tu público objetivo?\n\n💡 **Comandos disponibles:** 📝 'eight_q', 🎯 'founders', 🆘 'support'`
-    };
-  }
-
-  // Step 1: Project details collection and validation
-  if (step === 1) {
-    const hasProjectDetails = (msg: string) => {
-      const words = msg.split(' ').length;
-      return words >= 3; // Relaxed: allow simpler descriptions
-    };
-
-    if (hasProjectDetails(text)) {
+    if (text.includes('sí') || text.includes('si') || text.includes('listo') || text.includes('continuar')) {
       return {
         handled: true,
         flowType: 'utility',
-        response: `✅ **Perfecto! Recibí tu idea inicial**\n\nAhora necesito más detalles técnicos:\n\n• Plataforma de desarrollo (Ethereum, Solana, etc.)\n• Mecánicas principales de tu protocolo\n• Modelo de tokenomics básico\n• Recursos disponibles para desarrollo\n\n_Responde con estos detalles para continuar la consultoría_`,
-        action: 'details_collected'
+        response: `Q1 — Acción Medible\n\nDescribe una sola acción concreta que el usuario realiza dentro de tu protocolo.\n\nNo visión.\nNo beneficios futuros.\n\n👉 Acción específica + resultado observable.`,
+        action: 'next_question'
       };
     } else {
       return {
         handled: true,
         flowType: 'utility',
-        response: `📝 **Gracias por la información parcial**\n\nPara darte una mejor asesoría, ¿podrías detallar un poco más?\n• Objetivo principal\n• Tecnología (si ya la definiste)\n\n💡 _Tip: Usa al menos 3 palabras para describir tu proyecto._\n\n_Puedes escribir "continuar" si prefieres avanzar ahora._`,
-        action: 'more_details_needed'
+        response: `El Filtro de Viabilidad requiere confirmación explícita para iniciar. Responde "Listo" para comenzar.`,
+        action: 'retry_step'
       };
     }
   }
 
-  // Step 2: Technical details and consultancy options
+  // Step 1: Q1 Answered -> Q2: Verification
+  if (step === 1) {
+    if (text.length < 5) {
+      return {
+        handled: true,
+        flowType: 'utility',
+        response: `Demasiado ambiguo. Describe la acción concreta.`,
+        action: 'retry_step'
+      };
+    }
+    return {
+      handled: true,
+      flowType: 'utility',
+      response: `Q2 — Verificación\n\n¿Cómo se verifica objetivamente que esa acción ocurrió?\n\nEjemplos válidos:\n• on-chain\n• off-chain con oráculo\n• validación humana definida\n\nSi no hay verificación clara, no hay recompensa.`,
+      action: 'next_question'
+    };
+  }
+
+  // Step 2: Q2 Answered -> Q3: Full Flow
   if (step === 2) {
     return {
       handled: true,
       flowType: 'utility',
-      response: `🔧 **¡Excelente progreso! Tu idea suena sólida**\n\n📋 **Próximo paso:** Arquitectura y viabilidad\n\nTe ofrezco las siguientes opciones:\n\n1️⃣ **Análisis completo** - Arquitectura detallada ($499)\n2️⃣ **Plan de implementación** - Roadmap técnico ($299)\n3️⃣ **Consultoría financiera** - Modelo tokenomics ($399)\n\n_Escribe "finalizar" para completar tu aplicación_`
+      response: `Q3 — Flujo Paso a Paso\n\nEnumera el flujo completo:\n\n1. Entrada del usuario\n2. Acción\n3. Validación\n4. Liberación de recompensa\n\nSin saltos. Sin abstracciones.`,
+      action: 'next_question'
     };
   }
 
-  // Step 3: Lead generation and completion
-  if (step === 3 || text.toLowerCase().includes('finalizar')) {
+  // Step 3: Q3 Answered -> Framing (No Promise)
+  if (step === 3) {
+    // 🚀 MARKETING AUTOMATION: Utility Protocol Follow-up
+    if (phone) {
+      try {
+        const { MarketingEngine } = await import('@/lib/marketing/engine');
+        const { whatsappPreapplyLeads } = await import('@/db/schema');
+
+        // Ensure lead exists or update context
+        const leadResults = await db.select().from(whatsappPreapplyLeads).where(eq(whatsappPreapplyLeads.userPhone, phone)).limit(1);
+
+        if (leadResults[0]) {
+          await MarketingEngine.startCampaign('Utility Protocol Follow-up', { leadId: leadResults[0].id });
+          console.log(`[Utility] 🚀 Campaign triggered for ${phone}`);
+        } else {
+          // Create lead if missing (critical for campaign)
+          const [newLead] = await db.insert(whatsappPreapplyLeads).values({
+            userPhone: phone,
+            applicantName: 'Utility Architect', // Placeholder
+            applicantEmail: `${phone}@whatsapp.user`, // Placeholder
+            status: 'pending',
+            answers: { source: 'utility_filter' }
+          }).returning();
+          if (newLead) {
+            await MarketingEngine.startCampaign('Utility Protocol Follow-up', { leadId: newLead.id });
+          }
+        }
+      } catch (e) { console.error('[Utility] Campaign Error:', e); }
+    }
+
     return {
       handled: true,
       flowType: 'utility',
-      response: `🎯 **¡Perfecto! Hemos completado tu evaluación**\n\nTu caso ha sido registrado y marcado como **ALTA PRIORIDAD**.\n\nUn arquitecto especializado te contactará en las próximas 24h para:\n\n• Revisar tu idea en detalle\n• Desarrollar la especificación técnica\n• Estimar costos y timeline\n\n📧 **Confirmación enviada a tu email**\n🔗 **Dashboard:** dash.pandoras.finance`,
+      response: `Gracias.\n\nCon esto evaluamos viabilidad funcional, no diseño ni narrativa.\nTu respuesta entra ahora a revisión arquitectónica.\n\nSi hay claridad suficiente:\n• Te indicaremos el siguiente paso técnico\n\nSi hay ambigüedad:\n• Te devolveremos el punto exacto donde colapsa el modelo\n\nNota: No todos los protocolos deben construirse aún.`,
       isCompleted: true,
-      action: 'lead_generated'
+      action: 'flow_completed'
     };
   }
-
-  // Default response for ongoing conversations (show current step status)
-  const stepMessages = {
-    0: 'recopilando idea inicial',
-    1: 'recopilando detalles técnicos',
-    2: 'evaluando viabilidad',
-    3: 'generando lead'
-  };
 
   return {
     handled: true,
     flowType: 'utility',
-    response: `🎯 **Tu consultoría Utility Protocol está en progreso** (${stepMessages[step as keyof typeof stepMessages] || 'procesando'})\n\nContinua respondiendo o escribe:\n• "continuar" - próximo paso\n• "start" - cambiar a flujo 8 preguntas\n• "founders" - programa founders\n• "support" - soporte técnico`,
-    action: 'ongoing_consultation'
+    response: `Continuemos con el filtro... (Paso ${step})`
   };
 }
 
 // High Ticket Founders Flow (Landing: founders)
-// High Ticket Founders Flow (Landing: founders)
-function handleHighTicketFlow(message: string, step = 0): FlowResult {
+// High Ticket Founders Flow (Landing: founders - OPTIMIZED HIGH STATUS)
+async function handleHighTicketFlow(message: string, step = 0, phone?: string): Promise<FlowResult> {
   const text = message.toLowerCase().trim();
 
   if (text.includes('cancelar') || text.includes('stop')) {
@@ -124,140 +156,205 @@ function handleHighTicketFlow(message: string, step = 0): FlowResult {
     };
   }
 
-  // Step 0: Initial contact (Welcome & Ask Project)
+  // Step 0: Authority + Exclusivity Check
+  // Message 0 sent: "Estás aplicando al Pandora Founders Inner Circle... ¿Seguimos?"
+  // Waiting for: "Sí", "Vamos", "Ok"
   if (step === 0) {
-    return {
-      handled: true,
-      flowType: 'high_ticket',
-      response: `💎 **Programa Founders Inner Circle**\n\nBienvenido. Este canal es exclusivo para founders con capital listo para desplegar.\n\nPara validar tu perfil, por favor descríbeme brevemente tu proyecto:\n\n• ¿De qué trata?\n• ¿En qué etapa está actualmente?`
-    };
-  }
-
-  // Step 1: Project received, Ask Capital
-  if (step === 1) {
-    // Validation: Response should be meaningful (at least 3 chars)
-    if (text.length < 3) {
+    if (text.includes('sí') || text.includes('si') || text.includes('vamos') || text.includes('ok') || text.includes('dale')) {
       return {
         handled: true,
         flowType: 'high_ticket',
-        response: `📉 **Respuesta demasiado corta.**\n\nPor favor indica tu rango de capital (ej. "$50k", "Opción 1").\n\n¿Cuál es tu rango de inversión inmediata?\n1️⃣ $10k - $50k\n2️⃣ $50k - $100k\n3️⃣ +$100k\n\n💡 _Tip: Escribe el número o el monto._`,
-        action: 'invalid_response'
-      };
-    }
-
-    return {
-      handled: true,
-      flowType: 'high_ticket',
-      response: `📉 **Entendido. Hablemos de capacidad.**\n\n¿Cuál es tu rango de capital disponible para inversión inmediata?\n\n1️⃣ $10k - $50k\n2️⃣ $50k - $100k\n3️⃣ +$100k\n\n_Tu respuesta es confidencial._`,
-      action: 'next_question'
-    };
-  }
-
-  // Step 2: Capital received, Ask Timeline
-  if (step === 2) {
-    return {
-      handled: true,
-      flowType: 'high_ticket',
-      response: `⏳ **Último paso:**\n\n¿Cuándo tienes planeado lanzar tu operación?\n\n• "Este mes"\n• "Próximos 3 meses"\n• "Solo explorando"\n\n💡 _Tip: Sé honesto, esto nos ayuda a priorizarte._`,
-      action: 'next_question'
-    };
-  }
-
-  // Step 3: Completion
-  if (step >= 3) {
-    return {
-      handled: true,
-      flowType: 'high_ticket',
-      response: `✅ **Solicitud Completada - Founders Program**\n\nTu perfil ha sido elevado a **Prioridad Alta**.\n\nUn estratega senior analizará tu caso y te contactará en las próximas 24 horas para agendar una sesión privada.\n\n📧 Mientras tanto, puedes preparar tu deck o documentación adicional.`,
-      isCompleted: true,
-      action: 'flow_completed'
-    };
-  }
-
-  return {
-    handled: true,
-    flowType: 'high_ticket',
-    response: `Continuemos con tu aplicación... (Paso ${step})`
-  };
-}
-
-// Eight Questions Flow (Landing: start)
-function handleEightQFlow(message: string, step = 0): FlowResult {
-  const QUESTIONS = [
-    "¿Cuál es la acción verificable que realiza el usuario dentro de tu Creación? (💡 _Tip: Ej. 'Publicar un artículo', 'Hacer check-in'_)",
-    "Explica cómo interactúa un usuario final con tu Protocolo paso a paso. (💡 _Tip: Usa lista de pasos_)",
-    "¿Quién administrará tu Protocolo dentro de Pandora? (💡 _Tip: Tú, un equipo, o una DAO_)",
-    "¿En qué etapa está actualmente tu Protocolo? (💡 _Tip: Idea, Prototipo, Live_)",
-    "¿Cuál es tu objetivo al lanzar tu Protocolo dentro de Pandora?",
-    "¿Con cuántas personas cuenta tu proyecto actualmente? (💡 _Tip: Puedes poner solo el número_)",
-    "¿Tu proyecto ya cuenta con comunidad o audiencia?",
-    "¿Cuál es tu fecha estimada para lanzar la primera versión de tu Protocolo?"
-  ];
-
-  const text = message.toLowerCase().trim();
-
-  if (text.includes('info_mecanismo')) {
-    return {
-      handled: true,
-      flowType: 'eight_q',
-      response: `�🔍 **Mecanismos:** ✅ Moderación verificable, tareas cuantificables. Guía: pndrs.link/mechanic-guide`
-    };
-  }
-
-  if (text.includes('info_flujo')) {
-    return {
-      handled: true,
-      flowType: 'eight_q',
-      response: `🌊 **Flujos:** Usuario llega → completar misiones → ganar recompensas. Guía: pndrs.link/flow-guide`
-    };
-  }
-
-  // Si es una respuesta de pregunta (validar que tenga contenido significativo)
-  if (text && step < QUESTIONS.length && !text.includes('info_')) {
-    // Validar respuesta: permitir números (ej. "5", "10") o texto con longitud mínima
-    const isNumeric = /^\d+$/.test(text.replace(/\s/g, ''));
-    const isValidText = text.length >= 5 && /[a-zA-ZáéíóúñÁÉÍÓÚÑ]/.test(text);
-    const isValidResponse = isNumeric || isValidText;
-
-    if (!isValidResponse) {
-      return {
-        handled: true,
-        flowType: 'eight_q',
-        response: `📝 **Respuesta muy corta o inválida**\n\nPor favor proporciona una respuesta más detallada a:\n\n**Pregunta ${step + 1}:**\n${QUESTIONS[step]}\n\n💡 _Tip: Tu respuesta debe tener al menos 5 letras y ser clara._`,
-        action: 'invalid_response'
-      };
-    }
-
-    const nextStep = step + 1;
-
-    if (nextStep < QUESTIONS.length) {
-      return {
-        handled: true,
-        flowType: 'eight_q',
-        response: `✅ Respuesta registrada.\n\n**Pregunta ${nextStep + 1}:**\n${QUESTIONS[nextStep]}`,
-        progress: `${nextStep + 1}/${QUESTIONS.length}`,
+        response: `Perfecto.\n\nEn una frase:\n¿Qué tipo de proyecto estás construyendo y en qué etapa real está hoy?`,
         action: 'next_question'
       };
     } else {
       return {
         handled: true,
-        flowType: 'eight_q',
-        response: `🎉 **¡Perfecto! Filtro Completado**\n\nTus respuestas han sido registradas. Completa tu aplicación formal:\n\n🔗 **https://dash.pandoras.finance/apply**\n\n📧 Un estratega revisará tu caso en 24-48h.\n\n💡 **Comandos adicionales:**\n• "utility" - Consultoría de protocolos\n• "founders" - Programa founders\n• "support" - Soporte técnico`,
-        isCompleted: true,
-        action: 'redirect_to_apply'
+        flowType: 'high_ticket',
+        response: `El Inner Circle requiere decisión rápida. Confirma si deseas continuar respondiendo "Sí".`,
+        action: 'retry_step'
       };
     }
   }
 
-  // Primera pregunta
+  // Step 1: Context (Project Type & Stage) -> Ask Capital
+  if (step === 1) {
+    // Basic validation
+    if (text.length < 3) {
+      return {
+        handled: true,
+        flowType: 'high_ticket',
+        response: `Por favor sé un poco más descriptivo sobre tu proyecto.`,
+        action: 'retry_step'
+      };
+    }
+
+    return {
+      handled: true,
+      flowType: 'high_ticket',
+      response: `Gracias.\n\nPara ser directo: el Inner Circle existe para founders que ya juegan con capital propio o controlado, no para levantar desde cero.\n\n¿Qué rango de capital tienes disponible para ejecutar?\n\n1️⃣ $25k – $50k\n2️⃣ $50k – $100k\n3️⃣ $100k+`,
+      action: 'next_question'
+    };
+  }
+
+  // Step 2: Capital Answered -> Ask Timeline
+  if (step === 2) {
+    // If capital is too low or invalid, we could filter here, but we pass to Timeline for now to get full picture
+    return {
+      handled: true,
+      flowType: 'high_ticket',
+      response: `Última.\n\n¿En qué ventana estás tomando decisiones?\n\n1️⃣ Ejecutar este mes\n2️⃣ Ejecutar en ≤90 días\n3️⃣ Aún explorando`,
+      action: 'next_question'
+    };
+  }
+
+  // Step 3: Timeline Answered -> Qualification & Close
+  if (step === 3) {
+    // Logic: Fits if Timeline = 1 or 2 AND Capital was sufficient (assumed yes if they got here, or we check history if needed)
+    // Simple filter: If currently saying "3" (Exploring), reject.
+    if (text.includes('3') || text.includes('explora')) {
+      return {
+        handled: true,
+        flowType: 'high_ticket',
+        response: `Gracias por la claridad.\n\nEl Inner Circle no sería el vehículo correcto ahora mismo.\nTe recomiendo seguir desarrollando tracción y volver a aplicar cuando estés en fase de ejecución real.`,
+        isCompleted: true,
+        action: 'flow_completed' // Rejection
+      };
+    }
+
+    // 🚀 MARKETING AUTOMATION: Founders Nurture
+    if (phone) {
+      try {
+        const { MarketingEngine } = await import('@/lib/marketing/engine');
+        const { whatsappPreapplyLeads } = await import('@/db/schema');
+
+        // Find lead (assuming previously created by landing or we create raw here?)
+        // Usually created by landing api. If not, we might miss the lead ID.
+        // For robustness, usually we search by phone.
+        const leadResults = await db.select().from(whatsappPreapplyLeads).where(eq(whatsappPreapplyLeads.userPhone, phone)).limit(1);
+
+        if (leadResults[0]) {
+          await MarketingEngine.startCampaign('Founders Nurture', { leadId: leadResults[0].id });
+          console.log(`[Founders] 🚀 Campaign triggered for ${phone}`);
+        }
+      } catch (e) { console.error('[Founders] Campaign Error:', e); }
+    }
+
+    return {
+      handled: true,
+      flowType: 'high_ticket',
+      response: `Entendido.\n\nPor lo que veo, tu perfil sí encaja con el Inner Circle actual.\n\nEl siguiente paso no es una venta ni una llamada abierta.\nEs una Conversación de Capital para:\n• Validar encaje estratégico\n• Determinar si tiene sentido abrirte espacio\n\nAgenda aquí tu sesión:\n🔗 https://dash.pandoras.finance/schedule/protocol?type=capital\n\n_Nota: solo abrimos cupos cuando hay alineación clara._`,
+      isCompleted: true,
+      action: 'flow_completed'
+    };
+  }
+
+  // Fallback
   return {
     handled: true,
-    flowType: 'eight_q',
-    response: `📋 **Filtro de Viabilidad - 8 Preguntas**\n\n**Pregunta 1:**\n${QUESTIONS[0]}`,
-    progress: `1/${QUESTIONS.length}`,
-    action: 'first_question'
+    flowType: 'high_ticket',
+    response: `Continuemos. (Paso ${step})`
   };
 }
+
+// Creator / Start Flow (Landing: start) - SOVEREIGNTY FILTER
+async function handleCreatorFlow(message: string, step = 0, phone?: string): Promise<FlowResult> {
+  const text = message.toLowerCase().trim();
+
+  // Step 0: User sent "start" or similar -> We send Introduction
+  if (step === 0) {
+    return {
+      handled: true,
+      flowType: 'creator',
+      response: `Estás entrando a Pandora’s.\n\nEsto no es una plataforma para crecer seguidores.\nEs infraestructura para creadores que no quieren alquilar su negocio.\n\nAntes de continuar, aclaremos algo.\n\nResponde **"Continuar"** para iniciar.`,
+      action: 'next_question'
+    };
+  }
+
+  // Step 1: User replied to "Continuar". We show Q1 (Identity)
+  if (step === 1) {
+    return {
+      handled: true,
+      flowType: 'creator',
+      response: `¿Con cuál de estas frases te identificas más?\n\n1️⃣ Tengo audiencia, pero no control\n2️⃣ Monetizo, pero dependo de plataformas\n3️⃣ Quiero soberanía real, no hacks de crecimiento\n\nResponde 1, 2 o 3.`,
+      action: 'next_question'
+    };
+  }
+
+  // Step 2: User replied 1, 2, or 3. We show Q2 (Quiebre Mental)
+  if (step === 2) {
+    return {
+      handled: true,
+      flowType: 'creator',
+      response: `Bien.\n\nLa mayoría de los creadores nunca pasan de ahí.\n\nFollowers ≠ Infraestructura\nLikes ≠ Valor\nEngagement ≠ Negocio\n\nPandora existe para convertir participación en propiedad.\n\nResponde "Entendido" para avanzar.`,
+      action: 'next_question'
+    };
+  }
+
+  // Step 3: User replied "Entendido". We show Q3 (Enrutamiento)
+  if (step === 3) {
+    return {
+      handled: true,
+      flowType: 'creator',
+      response: `Ahora dime:\n\n¿Qué quieres construir primero?\n\n1️⃣ Membresía soberana (acceso / lealtad)\n2️⃣ Incentivar trabajo real (Work-to-Earn)\n3️⃣ Aún no lo tengo claro\n\nResponde con el número.`,
+      action: 'next_question'
+    };
+  }
+
+  // Step 4: User replied 1, 2, or 3. Routing + Campaign
+  if (step === 4) {
+    // 🚀 MARKETING AUTOMATION: Start Creator Nurture
+    if (phone) {
+      try {
+        const { MarketingEngine } = await import('@/lib/marketing/engine');
+        const { whatsappPreapplyLeads } = await import('@/db/schema');
+        const leadResults = await db.select().from(whatsappPreapplyLeads).where(eq(whatsappPreapplyLeads.userPhone, phone)).limit(1);
+
+        let leadId = leadResults[0]?.id;
+        if (!leadId) {
+          const [newLead] = await db.insert(whatsappPreapplyLeads).values({
+            userPhone: phone, applicantName: 'Creator Sovereign', applicantEmail: `${phone}@whatsapp.user`, status: 'pending', answers: { source: 'start_filter' }
+          }).returning();
+          leadId = newLead?.id;
+        }
+        if (leadId) await MarketingEngine.startCampaign('Start Creator Nurture', { leadId });
+      } catch (e) { console.error('[Creator] Campaign Error:', e); }
+    }
+
+    if (text.includes('1') || text.includes('2')) {
+      // Route to Utility
+      return {
+        handled: true,
+        flowType: 'creator',
+        response: `Perfecto.\n\nEl siguiente paso no es venderte nada.\nEs confirmar que tu utilidad existe antes de lanzar.\n\nEstás siendo redirigido al Filtro de Arquitectos...\n\n(Escribe "Utility" para confirmar)`,
+        action: 'redirect_utility_suggestion'
+      };
+    }
+
+    // Option 3 or Fallback
+    return {
+      handled: true,
+      flowType: 'creator',
+      response: `Entendido.\n\nTus respuestas han sido registradas.\n\nEl siguiente paso es educación estratégica sobre soberanía.\nTe enviaremos los principios por correo.\n\nCuando tengas claro qué construir, escribe "Utility" para iniciar el diseño técnico.`,
+      isCompleted: true,
+      action: 'flow_completed'
+    };
+  }
+
+  return { handled: true, flowType: 'creator', response: `Continuemos... (Paso ${step})` };
+}
+
+// Deprecated Stub
+async function handleEightQFlow(message: string, step = 0): Promise<FlowResult> {
+  await Promise.resolve();
+  return {
+    handled: true,
+    flowType: 'creator',
+    response: `(Redirecting to Creator Flow)`,
+    action: 'redirect_utility' // Using this to trigger switch logic
+  };
+}
+
 
 // Support Flow
 function handleSupportFlow(message: string): FlowResult {
@@ -288,15 +385,158 @@ function handleSupportFlow(message: string): FlowResult {
 }
 
 // Human Flow
-async function handleHumanFlow(phone: string, message: string = ''): Promise<FlowResult> {
+async function handleHumanFlow(phone: string, message = '', step = 0): Promise<FlowResult> {
+  const text = message.toLowerCase().trim();
   // Send notification to Discord/Email
   await notifyHumanAgent(phone, message || 'Usuario solicita hablar con humano');
+
+  // NOTIFICAR SI ES START
+  if (step === 0 && !text.includes('gracias')) {
+    try {
+      notifySupportRequest(phone, text, 'Human Flow Requested');
+    } catch (e) { console.error(e); }
+  }
 
   return {
     handled: true,
     flowType: 'human',
-    response: `👨‍💼 **Escalado a Agente Humano**\n\nGracias por escribirnos. Un agente especializado te contactará en las próximas 2-4 horas.\n\n📧 **Confirmación:** Recibirás un email de confirmación.\n📞 **Urgente:** Si es urgente, llama a +52 1 332 213 7498`,
+    response: step === 0
+      ? `👨‍💻 Un agente humano ha sido notificado. Te responderemos en breve.\n\nPuedes escribir tu consulta ahora mismo:`
+      : `👨‍💼 **Escalado a Agente Humano**\n\nGracias por escribirnos. Un agente especializado te contactará en las próximas 2-4 horas.\n\n📧 **Confirmación:** Recibirás un email de confirmación.\n📞 **Urgente:** Si es urgente, llama a +52 1 332 213 7498`,
     action: 'human_escalated'
+  };
+}
+
+// Protocol Application Flow (Automated Follow-up - OPTIMIZED CLOSING)
+async function handleProtocolApplicationFlow(message: string, step = 0, phone?: string): Promise<FlowResult> {
+  const text = message.toLowerCase().trim();
+
+  // Step 0: Welcome & Permission (Triggered manually or via initial hook)
+  // Message 0 sent: "Recibí tu aplicación... ¿Seguimos?"
+  // Waiting for: "Sí", "Vamos", "Ok"
+  if (step === 0) {
+    // If we are entering this function, it means we are usually handling a reply.
+    // However, in the updated flow, the system sends the first message. 
+    // We assume step 0 is the state WAITING for the user to confirm "Seguimos".
+    if (text.includes('sí') || text.includes('si') || text.includes('vamos') || text.includes('ok') || text.includes('dale')) {
+      return {
+        handled: true,
+        flowType: 'protocol_application',
+        response: `Perfecto.\n\n¿En qué estado real está tu proyecto hoy?\n\n1️⃣ Tengo comunidad / activos y quiero lanzar en ≤30 días\n2️⃣ Tengo idea validada pero necesito estructurar ejecución\n3️⃣ Solo estoy explorando opciones\n\n_Responde con el número (1, 2 o 3)._`,
+        action: 'next_question'
+      };
+    } else {
+      // Nudge if they don't confirm
+      return {
+        handled: true,
+        flowType: 'protocol_application',
+        response: `Antes de avanzar, necesito confirmar si estás listo para evaluar la ejecución.\n\n¿Seguimos? (Responde "Sí" para continuar)`,
+        action: 'retry_step'
+      };
+    }
+  }
+
+  // Step 1: Reality Check Answered (1, 2, or 3)
+  // Waiting for Qualification
+  if (step === 1) {
+    // Filter: If 3 (Exploring), we might downsell or pause.
+    if (text.includes('3') || text.includes('explora')) {
+      return {
+        handled: true,
+        flowType: 'protocol_application',
+        response: `Entendido. Pandora está optimizado para ejecución inmediata.\n\nTe recomiendo revisar nuestros recursos gratuitos en la web y volver cuando estés listo para lanzar.\n\nCierro el proceso por ahora. Saludos.`,
+        isCompleted: true,
+        action: 'flow_completed' // Soft rejection / specific bucket
+      };
+    }
+
+    // If 1 or 2, proceed to Budget (Framed)
+    return {
+      handled: true,
+      flowType: 'protocol_application',
+      response: `Gracias.\n\nPara ser transparente: Pandora no es experimental ni low-cost. Trabajamos solo con proyectos que pueden ejecutar sin fricción financiera.\n\n¿Qué rango tienes asignado para infraestructura + ejecución inicial?\n\n1️⃣ $7k–$15k\n2️⃣ $15k–$35k\n3️⃣ $35k+\n\n_Tu respuesta es confidencial._`,
+      action: 'next_question'
+    };
+  }
+
+  // Step 2: Budget Answered -> Scheduling
+  if (step === 2) {
+    // Map budget for context (could be saved to DB)
+    let budgetLevel = 'Standard';
+    if (text.includes('1') || text.includes('7k')) budgetLevel = 'Starter';
+    if (text.includes('2') || text.includes('15k')) budgetLevel = 'Pro';
+    if (text.includes('3') || text.includes('35k')) budgetLevel = 'Enterprise';
+
+    // 🚀 MARKETING AUTOMATION: Start Hot Leads Campaign
+    if (phone) {
+      try {
+        const { MarketingEngine } = await import('@/lib/marketing/engine');
+        const { whatsappPreapplyLeads } = await import('@/db/schema');
+        const leadResults = await db.select().from(whatsappPreapplyLeads).where(eq(whatsappPreapplyLeads.userPhone, phone)).limit(1);
+
+        if (leadResults[0]) {
+          // Start 'ApplyProtocol Hot Leads' (Day 0 Email)
+          await MarketingEngine.startCampaign('ApplyProtocol Hot Leads', { leadId: leadResults[0].id });
+        }
+      } catch (e) { console.error('[Protocol App] Campaign Trigger Error:', e); }
+    }
+
+    // 🚀 MARKETING AUTOMATION: Start Hot Leads Campaign
+    if (phone) {
+      try {
+        const { MarketingEngine } = await import('@/lib/marketing/engine');
+        const { whatsappPreapplyLeads } = await import('@/db/schema');
+
+        // Find lead ID for this phone
+        const leadResults = await db.select().from(whatsappPreapplyLeads).where(eq(whatsappPreapplyLeads.userPhone, phone)).limit(1);
+        const lead = leadResults[0];
+
+        if (lead) {
+          console.log(`[Protocol App] 🎯 Starting Hot Leads campaign for lead ${lead.id}`);
+          await MarketingEngine.startCampaign('ApplyProtocol Hot Leads', { leadId: lead.id });
+        } else {
+          console.warn(`[Protocol App] ⚠️ No lead found for phone ${phone}, cannot start campaign`);
+        }
+      } catch (error) {
+        console.error('[Protocol App] ❌ Failed to start marketing campaign:', error);
+        // Don't fail the user flow, just log
+      }
+    }
+
+    return {
+      handled: true,
+      flowType: 'protocol_application',
+      response: `Perfecto.\nPor lo que veo, tu perfil sí encaja con los protocolos que estamos lanzando ahora.\n\nEl siguiente paso es una llamada estratégica de 15 minutos para:\n• Confirmar viabilidad real\n• Definir si entramos en ejecución\n• Ver qué modelo aplica\n\nAgenda aquí:\n🔗 https://dash.pandoras.finance/schedule/protocol?type=strategy\n\nSi no ves horario, responde 'AGENDAR'.`,
+      isCompleted: true,
+      action: 'flow_completed'
+    };
+  }
+
+  // Post-completion / Fallback (Manual Agenda)
+  if (step >= 3) {
+    if (text.includes('agendar')) {
+      try {
+        notifySupportRequest(message, 'User requested manual scheduling (Protocol Flow)', 'Protocol Application - Scheduling');
+      } catch (e) { /* ignore */ }
+
+      return {
+        handled: true,
+        flowType: 'protocol_application',
+        response: `Perfecto. Te escribo personalmente para coordinar.\n\n_Nota: estamos cerrando agenda de esta semana, así que priorizo hoy._`,
+        action: 'human_escalated'
+      };
+    }
+    return {
+      handled: true,
+      flowType: 'protocol_application',
+      response: `Ya tenemos tu aplicación en proces. Si necesitas soporte urgente, escribe "support".`
+    };
+  }
+
+  return {
+    handled: true,
+    flowType: 'protocol_application',
+    response: 'Por favor selecciona una de las opciones anteriores.'
   };
 }
 
@@ -523,13 +763,32 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
         // Handle the message with the new flow
         switch (newFlow) {
           case 'utility':
-            result = handleUtilityFlow(messageText, 0);
+            result = await handleUtilityFlow(messageText, 0, phone);
             break;
           case 'high_ticket':
-            result = handleHighTicketFlow(messageText, 0);
+            result = await handleHighTicketFlow(messageText, 0, phone);
+            break;
+          case 'creator':
+            result = await handleCreatorFlow(messageText, 0, phone);
+            if (result.action === 'redirect_utility_suggestion') {
+              // Auto-switch to utility
+              await sql`UPDATE whatsapp_sessions SET flow_type = 'utility', current_step = 0 WHERE user_id = (SELECT id FROM whatsapp_users WHERE phone = ${phone}) AND is_active = true`;
+              // Immediately start Utility step 0
+              result = await handleUtilityFlow("start_from_creator", 0, phone);
+              result.response = `🔄 **Redirigiendo al Filtro Técnico...**\n\n${result.response}`;
+            } else if (result.action === 'next_question') {
+              await updateFlowStep(phone, 1);
+            } else if (result.action === 'flow_completed') {
+              await updateFlowStep(phone, 5); // Mark done
+            }
             break;
           case 'eight_q':
-            result = handleEightQFlow(messageText, 0);
+            // Redirect legacy 8q to Creator flow now? Or Utility?
+            // User instruction was 8q -> Utility manually, but 'start' -> Creator.
+            // Let's map 'start' to 'creator' in detection logic below.
+            // If someone is stuck in 8q, we can switch them to creator.
+            result = await handleCreatorFlow(messageText, 0, phone); // Treat as new creator flow entry
+            await sql`UPDATE whatsapp_sessions SET flow_type = 'creator', current_step = 0 WHERE user_id = (SELECT id FROM whatsapp_users WHERE phone = ${phone}) AND is_active = true`;
             break;
           case 'support':
             result = handleSupportFlow(messageText);
@@ -537,8 +796,17 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
           case 'human':
             result = await handleHumanFlow(phone, messageText);
             break;
+
+          case 'protocol_application':
+            result = await handleProtocolApplicationFlow(messageText, currentState.step, phone);
+            if (result.action === 'next_question') {
+              await updateFlowStep(phone, 2);
+            } else if (result.action === 'flow_completed') {
+              await updateFlowStep(phone, 3);
+            }
+            break;
           default:
-            result = handleEightQFlow(messageText, 0);
+            result = await handleEightQFlow(messageText, 0);
         }
 
         result.response = `🔄 **Cambiando a ${newFlow.replace('_', ' ').toUpperCase()}**\n\n${result.response || ''}`;
@@ -546,20 +814,16 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
         // PROCESS EXISTING FLOW NORMALLY
         switch (existingFlow) {
           case 'utility':
-            result = handleUtilityFlow(messageText, currentState.step);
-            if (result.action === 'details_collected') {
-              await updateFlowStep(phone, 2); // Skip to consultancy options
-            } else if (result.action === 'lead_generated') {
-              await updateFlowStep(phone, 4); // Mark as completed
-              console.log(`🎯 [UTILITY] Lead generated for user ${phone}`);
-            } else if (messageText.toLowerCase().includes('continuar')) {
-              const nextStep = Math.min(currentState.step + 1, 3);
-              await updateFlowStep(phone, nextStep);
-              result = handleUtilityFlow(messageText, nextStep);
+            result = await handleUtilityFlow(messageText, currentState.step, phone);
+            if (result.action === 'next_question') {
+              const next = currentState.step + 1;
+              await updateFlowStep(phone, next);
+            } else if (result.action === 'flow_completed') {
+              await updateFlowStep(phone, 4);
             }
             break;
           case 'high_ticket':
-            result = handleHighTicketFlow(messageText, currentState.step);
+            result = await handleHighTicketFlow(messageText, currentState.step, phone);
 
             // Only advance if input was valid (next_question)
             if (result.action === 'next_question' && currentState.step < 3) {
@@ -572,7 +836,7 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
             break;
           case 'eight_q':
             console.log(`🔍 [EIGHT_Q] Processing message for step ${currentState.step}: "${messageText}"`);
-            result = handleEightQFlow(messageText, currentState.step);
+            result = await handleEightQFlow(messageText, currentState.step);
             console.log(`📈 [EIGHT_Q] Result: action=${result.action}, progress=${result.progress}`);
 
             if (result.action === 'next_question') {
@@ -580,8 +844,6 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
               console.log(`📊 [EIGHT_Q] Updating step from ${currentState.step} to ${nextStep}`);
               await updateFlowStep(phone, nextStep);
             } else if (result.isCompleted) {
-              console.log(`🎯 [EIGHT_Q] Flow completed for user ${phone}, deactivating session`);
-              // Optional: Mark session as completed but don't deactivate yet
               await updateFlowStep(phone, 8); // Mark as completed
             }
             break;
@@ -637,13 +899,13 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
     let result: FlowResult;
     switch (detectedFlow) {
       case 'utility':
-        result = handleUtilityFlow(messageText);
+        result = await handleUtilityFlow(messageText);
         break;
       case 'high_ticket':
-        result = handleHighTicketFlow(messageText, 0);
+        result = await handleHighTicketFlow(messageText, 0);
         break;
       case 'eight_q':
-        result = handleEightQFlow(messageText, 0);
+        result = await handleEightQFlow(messageText, 0);
         break;
       case 'support':
         result = handleSupportFlow(messageText);
@@ -651,8 +913,11 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
       case 'human':
         result = await handleHumanFlow(phone, messageText);
         break;
+      case 'protocol_application':
+        result = await handleProtocolApplicationFlow(messageText, 1, phone);
+        break;
       default:
-        result = handleEightQFlow(messageText, 0);
+        result = await handleEightQFlow(messageText, 0);
         result.flowType = 'eight_q';
     }
 

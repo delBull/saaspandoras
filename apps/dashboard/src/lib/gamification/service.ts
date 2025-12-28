@@ -18,6 +18,7 @@ import {
   userAchievements,
   projects,
   userReferrals,
+  gamificationEvents,
   type GamificationProfile as DrizzleGamificationProfile
 } from '@/db/schema';
 import { eq, sql, desc } from 'drizzle-orm';
@@ -62,7 +63,39 @@ export class GamificationService {
 
       if (dbProfile.length > 0 && dbProfile[0]) {
         const profile = this.mapDbProfileToGamificationProfile(dbProfile[0]);
-        console.log(`✅ Profile found: Level ${profile.currentLevel}, ${profile.totalPoints} points`);
+
+        // Fetch achievements
+        try {
+          const userAchs = await db
+            .select({
+              id: achievements.id,
+              name: achievements.name,
+              description: achievements.description,
+              points: achievements.pointsReward,
+              isCompleted: userAchievements.isUnlocked,
+              unlockedAt: userAchievements.unlockedAt
+            })
+            .from(userAchievements)
+            .innerJoin(achievements, eq(userAchievements.achievementId, achievements.id))
+            .where(eq(userAchievements.userId, userId));
+
+          profile.achievements = userAchs.map(a => ({
+            id: a.id.toString(),
+            name: a.name,
+            description: a.description || "",
+            category: 'general' as any, // Default category
+            tier: 'bronze' as any, // Default
+            pointsReward: a.points,
+            isUnlocked: a.isCompleted ?? false,
+            isCompleted: a.isCompleted ?? false,
+            unlockedAt: a.unlockedAt
+          }));
+        } catch (err) {
+          console.warn(`⚠️ Failed to fetch achievements for user ${userId}`, err);
+          profile.achievements = [];
+        }
+
+        console.log(`✅ Profile found: Level ${profile.currentLevel}, ${profile.totalPoints} points, ${profile.achievements?.length || 0} achievements`);
         return profile;
       }
 
@@ -75,6 +108,8 @@ export class GamificationService {
       return null;
     }
   }
+
+
 
   /**
    * Create new user profile in database
@@ -231,12 +266,22 @@ export class GamificationService {
 
       console.log(`✅ Event tracked: +${points} points awarded to wallet ${walletAddress} (user ID: ${userId})`);
 
+      // PERSIST EVENT HISTORY
+      const [savedEvent] = await db.insert(gamificationEvents).values({
+        userId: userId,
+        type: eventType as any,
+        category: this.getEventCategory(eventType) as any,
+        points: points,
+        projectId: metadata?.projectId ? Number(metadata.projectId) : null,
+        metadata: metadata ? metadata : {},
+      }).returning();
+
       // Return basic event object (without ID dependency)
       return {
-        id: `event_${Date.now()}_${walletAddress}`,
+        id: savedEvent?.id.toString() ?? `event_${Date.now()}_${walletAddress}`,
         userId: walletAddress,
-        type: 'daily_login' as any,
-        category: 'daily' as any,
+        type: eventType as any,
+        category: this.getEventCategory(eventType) as any,
         points,
         metadata: metadata as any,
         createdAt: new Date()
@@ -378,7 +423,7 @@ export class GamificationService {
       // Contar achievements desbloqueados excluyendo "Primer Login"
       const unlockedAchievementsExcludingLogin = userAchievementRecords.filter(
         (ua: { achievementId: number; isUnlocked: boolean }) => ua.isUnlocked &&
-             (!primerLoginAchievement || ua.achievementId !== primerLoginAchievement.id)
+          (!primerLoginAchievement || ua.achievementId !== primerLoginAchievement.id)
       ).length;
 
       const hasCompletedOnboarding = (user?.kycCompleted ?? false) && user?.kycLevel === 'basic';
@@ -387,7 +432,7 @@ export class GamificationService {
 
       // Si ya tenía estos valores, no actualizar
       if (referral.referredCompletedOnboarding === hasCompletedOnboarding &&
-          referral.referredFirstProject === hasFirstProject) {
+        referral.referredFirstProject === hasFirstProject) {
         return;
       }
 
@@ -463,8 +508,8 @@ export class GamificationService {
           completedOnboarding: referral.referredCompletedOnboarding,
           completedFirstProject: referral.referredFirstProject,
           completionType: referral.referredCompletedOnboarding && referral.referredFirstProject ? 'all' :
-                         referral.referredCompletedOnboarding ? 'onboarding_only' :
-                         referral.referredFirstProject ? 'project_only' : 'achievement_only'
+            referral.referredCompletedOnboarding ? 'onboarding_only' :
+              referral.referredFirstProject ? 'project_only' : 'achievement_only'
         }
       );
 
@@ -701,149 +746,162 @@ export class GamificationService {
   static getEngine(): GamificationEngine {
     return GamificationService.engine;
   }
-// static getDatabaseService(): DatabaseService { // Commented out - using direct DB access instead
-//   return GamificationService.dbService;
-// }
+  // static getDatabaseService(): DatabaseService { // Commented out - using direct DB access instead
+  //   return GamificationService.dbService;
+  // }
 
-/**
- * Get event points based on event type
- */
-private static getEventPoints(eventType: string): number {
-  // Map frontend "DAILY_LOGIN" to database "daily_login"
-  const normalizedEventType = eventType === 'DAILY_LOGIN' ? 'daily_login' : eventType;
+  /**
+   * Get event points based on event type
+   */
+  private static getEventPoints(eventType: string): number {
+    // Map frontend "DAILY_LOGIN" to database "daily_login"
+    const normalizedEventType = eventType === 'DAILY_LOGIN' ? 'daily_login' : eventType;
 
-  const pointsMap: Record<string, number> = {
-    'project_application_submitted': 50,
-    'project_application_approved': 100,
-    'investment_made': 25,
-    'daily_login': 10,
-    'user_registered': 20,
-    'referral_made': 200,
-    'referral_completed': 100, // Bonus adicional cuando referido completa onboarding + proyecto
-    'COURSE_STARTED': 10,
-    'COURSE_COMPLETED': 100
-  };
+    const pointsMap: Record<string, number> = {
+      'project_application_submitted': 50,
+      'project_application_approved': 100,
+      'investment_made': 25,
+      'daily_login': 10,
+      'user_registered': 20,
+      'referral_made': 200,
+      'referral_completed': 100, // Bonus adicional cuando referido completa onboarding + proyecto
+      'course_started': 10,
+      'course_completed': 100,
+      'protocol_deployed': 500,
+      'onboarding_tour_completed': 50,
+      // New Event Points
+      'dao_activated': 250,
+      'artifact_purchased': 50,
+      'staking_deposit': 20,
+      'proposal_vote': 10,
+      'rewards_claimed': 5,
+      'forum_post': 10,
+      'access_card_acquired': 50,
+      'artifact_acquired': 15, // Differentiates from 'artifact_purchased' (acquired can be free)
+      'COURSE_STARTED': 10,  // Keep for backward compat
+      'COURSE_COMPLETED': 100 // Keep for backward compat
+    };
 
-  return pointsMap[normalizedEventType] ?? 0;
-}
-
-/**
- * Get event category from event type
- */
-private static getEventCategory(eventType: string): string {
-  // Map frontend "DAILY_LOGIN" to database "daily_login"
-  const normalizedEventType = eventType === 'DAILY_LOGIN' ? 'daily_login' : eventType;
-
-  const categoryMap: Record<string, string> = {
-    'project_application_submitted': 'projects',
-    'project_application_approved': 'projects',
-    'investment_made': 'investments',
-    'user_registered': 'community',
-    'daily_login': 'daily'
-  };
-
-  return categoryMap[normalizedEventType] ?? 'special';
-}
-
-/**
- * Get points category from event type
- */
-private static getPointsCategory(eventType: string): string {
-  // Map frontend "DAILY_LOGIN" to database "daily_login"
-  const normalizedEventType = eventType === 'DAILY_LOGIN' ? 'daily_login' : eventType;
-
-  const categoryMap: Record<string, string> = {
-    'project_application_submitted': 'project_application',
-    'project_application_approved': 'project_application',
-    'investment_made': 'investment',
-    'daily_login': 'daily_login'
-  };
-
-  return categoryMap[normalizedEventType] ?? 'special_event';
-}
-
-/**
- * Award points to database
- */
-private static async awardPointsToDb(
-  userId: string,
-  points: number,
-  reason: string,
-  category: string,
-  metadata?: Record<string, unknown>
-): Promise<void> {
-  try {
-    // For demo purposes, use the userId as string to match User table structure
-
-    // Insert points record
-    await db.insert(userPoints).values({
-      userId: userId,
-      points,
-      reason,
-      category: category as any,
-      metadata,
-      createdAt: new Date()
-    });
-
-    // Update user profile
-    await this.updateUserProfilePoints(userId, points);
-  } catch (error) {
-    console.error(`❌ Error awarding points to database for user ${userId}:`, error);
-    throw error;
+    return pointsMap[normalizedEventType] ?? 0;
   }
-}
 
-/**
- * Update user profile points in database
- */
-private static async updateUserProfilePoints(userId: string, pointsToAdd: number): Promise<void> {
-  try {
-    console.log(`💾 Updating profile points for user ${userId}: +${pointsToAdd} points`);
+  /**
+   * Get event category from event type
+   */
+  private static getEventCategory(eventType: string): string {
+    // Map frontend "DAILY_LOGIN" to database "daily_login"
+    const normalizedEventType = eventType === 'DAILY_LOGIN' ? 'daily_login' : eventType;
 
-    // For demo purposes, use the userId as string to match User table structure
+    const categoryMap: Record<string, string> = {
+      'project_application_submitted': 'projects',
+      'project_application_approved': 'projects',
+      'investment_made': 'investments',
+      'user_registered': 'community',
+      'daily_login': 'daily'
+    };
 
-    // Get current profile
-    const currentProfile = await db
-      .select()
-      .from(gamificationProfiles)
-      .where(eq(gamificationProfiles.userId, userId))
-      .limit(1);
-
-    if (!currentProfile[0]) {
-      console.error(`❌ Profile not found for user ${userId}`);
-      throw new Error('Profile not found');
-    }
-
-    const oldLevel = currentProfile[0].currentLevel;
-    const newTotalPoints = currentProfile[0].totalPoints + pointsToAdd;
-    const newLevel = Math.floor(newTotalPoints / 100) + 1;
-    const newLevelProgress = newTotalPoints % 100;
-
-    console.log(`📊 Profile update: ${currentProfile[0].totalPoints} → ${newTotalPoints} points, Level ${oldLevel} → ${newLevel}`);
-
-    // Update profile
-    await db
-      .update(gamificationProfiles)
-      .set({
-        totalPoints: newTotalPoints,
-        currentLevel: newLevel,
-        levelProgress: newLevelProgress,
-        pointsToNextLevel: 100 - newLevelProgress,
-        updatedAt: new Date()
-      })
-      .where(eq(gamificationProfiles.userId, userId));
-
-    console.log(`✅ Profile updated successfully for user ${userId}`);
-
-    // Check for level up
-    if (newLevel > oldLevel) {
-      console.log(`🎉 LEVEL UP! User ${userId} reached level ${newLevel}!`);
-    }
-  } catch (error) {
-    console.error(`❌ Error updating profile points for user ${userId}:`, error);
-    throw error;
+    return categoryMap[normalizedEventType] ?? 'special';
   }
-}
+
+  /**
+   * Get points category from event type
+   */
+  private static getPointsCategory(eventType: string): string {
+    // Map frontend "DAILY_LOGIN" to database "daily_login"
+    const normalizedEventType = eventType === 'DAILY_LOGIN' ? 'daily_login' : eventType;
+
+    const categoryMap: Record<string, string> = {
+      'project_application_submitted': 'project_application',
+      'project_application_approved': 'project_application',
+      'investment_made': 'investment',
+      'daily_login': 'daily_login'
+    };
+
+    return categoryMap[normalizedEventType] ?? 'special_event';
+  }
+
+  /**
+   * Award points to database
+   */
+  private static async awardPointsToDb(
+    userId: string,
+    points: number,
+    reason: string,
+    category: string,
+    metadata?: Record<string, unknown>
+  ): Promise<void> {
+    try {
+      // For demo purposes, use the userId as string to match User table structure
+
+      // Insert points record
+      await db.insert(userPoints).values({
+        userId: userId,
+        points,
+        reason,
+        category: category as any,
+        metadata,
+        createdAt: new Date()
+      });
+
+      // Update user profile
+      await this.updateUserProfilePoints(userId, points);
+    } catch (error) {
+      console.error(`❌ Error awarding points to database for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update user profile points in database
+   */
+  private static async updateUserProfilePoints(userId: string, pointsToAdd: number): Promise<void> {
+    try {
+      console.log(`💾 Updating profile points for user ${userId}: +${pointsToAdd} points`);
+
+      // For demo purposes, use the userId as string to match User table structure
+
+      // Get current profile
+      const currentProfile = await db
+        .select()
+        .from(gamificationProfiles)
+        .where(eq(gamificationProfiles.userId, userId))
+        .limit(1);
+
+      if (!currentProfile[0]) {
+        console.error(`❌ Profile not found for user ${userId}`);
+        throw new Error('Profile not found');
+      }
+
+      const oldLevel = currentProfile[0].currentLevel;
+      const newTotalPoints = currentProfile[0].totalPoints + pointsToAdd;
+      const newLevel = Math.floor(newTotalPoints / 100) + 1;
+      const newLevelProgress = newTotalPoints % 100;
+
+      console.log(`📊 Profile update: ${currentProfile[0].totalPoints} → ${newTotalPoints} points, Level ${oldLevel} → ${newLevel}`);
+
+      // Update profile
+      await db
+        .update(gamificationProfiles)
+        .set({
+          totalPoints: newTotalPoints,
+          currentLevel: newLevel,
+          levelProgress: newLevelProgress,
+          pointsToNextLevel: 100 - newLevelProgress,
+          updatedAt: new Date()
+        })
+        .where(eq(gamificationProfiles.userId, userId));
+
+      console.log(`✅ Profile updated successfully for user ${userId}`);
+
+      // Check for level up
+      if (newLevel > oldLevel) {
+        console.log(`🎉 LEVEL UP! User ${userId} reached level ${newLevel}!`);
+      }
+    } catch (error) {
+      console.error(`❌ Error updating profile points for user ${userId}:`, error);
+      throw error;
+    }
+  }
 
   /**
    * Check and unlock achievements based on user progress and events
@@ -869,50 +927,91 @@ private static async updateUserProfilePoints(userId: string, pointsToAdd: number
       await this.initializeBasicAchievements();
 
       // Check for specific achievements based on event
-      if (eventType === 'DAILY_LOGIN') {
-        // Unlock "Primer Login" achievement
-        await this.unlockAchievement(userId, 'primer_login');
+      if (eventType === 'daily_login' || eventType === 'DAILY_LOGIN') {
+        await this.unlockAchievement(userId, 'Primer Login');
         console.log(`🎉 Unlocked "Primer Login" achievement for user ${userId}`);
       }
 
       // 🎯 PROJECT APPLICATION: Achievement por primera aplicación enviada
       if (eventType === 'project_application_submitted') {
-        await this.unlockAchievement(userId, 'primer_borrador');
+        await this.unlockAchievement(userId, 'Primer Borrador');
         console.log(`🎉 Unlocked "Primer Borrador" achievement for user ${userId}`);
       }
 
       // 🎯 PROJECT APPROVAL: Achievement por proyecto aprobado por admin
       if (eventType === 'project_application_approved') {
-        await this.unlockAchievement(userId, 'proyecto_aprobado');
+        await this.unlockAchievement(userId, 'Proyecto Aprobado');
         console.log(`🎉 Unlocked "Proyecto Aprobado" achievement for user ${userId}`);
       }
 
       // 🎯 REFERIDOS: Achievement por primer referido exitoso
       if (eventType === 'referral_made') {
-        await this.unlockAchievement(userId, 'promotor_de_comunidad');
+        await this.unlockAchievement(userId, 'Promotor de Comunidad');
         console.log(`🎉 Unlocked "Promotor de Comunidad" achievement for referrer ${userId}`);
       }
 
-      // 🎯 NUEVOS: MAPPINGS FALTANTES PARA CURSOS
-      if (eventType === 'COURSE_STARTED') {
-        await this.unlockAchievement(userId, 'curso_iniciado');
+      // 🎯 DAO: Achievement por activación de DAO
+      if (eventType === 'dao_activated') {
+        await this.unlockAchievement(userId, 'Pionero DAO');
+        console.log(`🎉 Unlocked "Pionero DAO" achievement for user ${userId}`);
+      }
+
+      // 🎯 ARTIFACTS: Achievement por compra de artefacto
+      if (eventType === 'artifact_purchased') {
+        await this.unlockAchievement(userId, 'Coleccionista Novato');
+        console.log(`🎉 Unlocked "Coleccionista Novato" achievement for user ${userId}`);
+      }
+
+      // 🎯 STAKING: Achievement por depósito
+      if (eventType === 'staking_deposit') {
+        await this.unlockAchievement(userId, 'Iniciación DeFi');
+        console.log(`🎉 Unlocked "Iniciación DeFi" achievement for user ${userId}`);
+      }
+
+      // 🎯 VOTING: Achievement por votar
+      if (eventType === 'proposal_vote') {
+        await this.unlockAchievement(userId, 'Voz Activa');
+        console.log(`🎉 Unlocked "Voz Activa" achievement for user ${userId}`);
+      }
+
+      // 🎯 REWARDS: Achievement por reclamar recompensas
+      if (eventType === 'rewards_claimed') {
+        await this.unlockAchievement(userId, 'Cazador de Rendimiento');
+        console.log(`🎉 Unlocked "Cazador de Rendimiento" achievement for user ${userId}`);
+      }
+
+      // 🎯 NUEVOS: MAPPINGS PARA CURSOS
+      if (eventType === 'COURSE_STARTED' || eventType === 'course_started') {
+        await this.unlockAchievement(userId, 'Curso Iniciado');
         console.log(`🎉 Unlocked "Curso Iniciado" achievement for user ${userId}`);
       }
 
-      if (eventType === 'COURSE_COMPLETED') {
-        await this.unlockAchievement(userId, 'curso_completado');
+      if (eventType === 'COURSE_COMPLETED' || eventType === 'course_completed') {
+        await this.unlockAchievement(userId, 'Curso Completado');
         console.log(`🎉 Unlocked "Curso Completado" achievement for user ${userId}`);
+      }
+
+      // 🎯 NUEVOS: PROTOCOLO DESPLEGADO
+      if (eventType === 'protocol_deployed' || eventType === 'PROTOCOL_DEPLOYED') {
+        await this.unlockAchievement(userId, 'Protocolo Desplegado');
+        console.log(`🎉 Unlocked "Protocolo Desplegado" achievement for user ${userId}`);
+      }
+
+      // 🎯 NUEVOS: ONBOARDING TOUR
+      if (eventType === 'onboarding_tour_completed') {
+        await this.unlockAchievement(userId, 'Iniciado en Pandoras');
+        console.log(`🎉 Unlocked "Iniciado en Pandoras" achievement for user ${userId}`);
       }
 
       // Check for other achievements based on total points
       if (totalPoints >= 25) {
-        await this.unlockAchievement(userId, 'explorador_intrépido');
+        await this.unlockAchievement(userId, 'Explorador Intrépido');
         console.log(`🎉 Unlocked "Explorador Intrépido" achievement for user ${userId}`);
       }
 
       if (totalPoints >= 100) {
-        await this.unlockAchievement(userId, 'primer_aplicante');
-        console.log(`🎉 Unlocked "Primer Aplicante" achievement for user ${userId}`);
+        await this.unlockAchievement(userId, 'Aplicante Proactivo');
+        console.log(`🎉 Unlocked "Aplicante Proactivo" achievement for user ${userId}`);
       }
 
       console.log(`✅ Achievement check complete for user ${userId}`);
@@ -978,7 +1077,7 @@ private static async updateUserProfilePoints(userId: string, pointsToAdd: number
           type: "creator" as any,
           required_points: 100,
           required_level: 1,
-          required_events: JSON.stringify([]),
+          required_events: JSON.stringify(["project_application_started"]), // Fixed typo
           points_reward: 0,
           badge_url: "/badges/applicant.png",
           is_active: true,
@@ -989,7 +1088,7 @@ private static async updateUserProfilePoints(userId: string, pointsToAdd: number
           name: "Promotor de Comunidad",
           description: "Obtén tu primer referido exitoso",
           icon: "🎯",
-          type: "social" as any,
+          type: "community_builder" as any,
           required_points: 0,
           required_level: 1,
           required_events: JSON.stringify(["referral_made"]),
@@ -1017,10 +1116,10 @@ private static async updateUserProfilePoints(userId: string, pointsToAdd: number
           name: "Maestro Recrutador",
           description: "Ayuda a 5 personas a unirse",
           icon: "🎉",
-          type: "social" as any,
+          type: "community_builder" as any,
           required_points: 0,
           required_level: 1,
-          required_events: JSON.stringify([]),
+          required_events: JSON.stringify(["referral_made_5"]), // Placeholder
           points_reward: 1000,
           badge_url: "/badges/recruiter.png",
           is_active: true,
@@ -1031,7 +1130,7 @@ private static async updateUserProfilePoints(userId: string, pointsToAdd: number
           name: "Referido Completado",
           description: "Completa tu referido realizando acciones importantes",
           icon: "🎯",
-          type: "social" as any,
+          type: "community_builder" as any,
           required_points: 0,
           required_level: 1,
           required_events: JSON.stringify(["referral_completed"]),
@@ -1040,8 +1139,183 @@ private static async updateUserProfilePoints(userId: string, pointsToAdd: number
           is_active: true,
           is_secret: false,
           created_at: new Date()
+        },
+        // NEW ACHIEVEMENTS
+        {
+          name: "Curso Iniciado",
+          description: "Has comenzado tu viaje de aprendizaje",
+          icon: "📚",
+          type: "tokenization_expert" as any,
+          required_points: 0,
+          required_level: 1,
+          required_events: JSON.stringify(["course_started"]),
+          points_reward: 10,
+          badge_url: "/badges/scholar-start.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
+        },
+        {
+          name: "Curso Completado",
+          description: "Has completado un curso educativo",
+          icon: "🎓",
+          type: "tokenization_expert" as any,
+          required_points: 0,
+          required_level: 1,
+          required_events: JSON.stringify(["course_completed"]),
+          points_reward: 100,
+          badge_url: "/badges/scholar-complete.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
+        },
+        {
+          name: "Protocolo Desplegado",
+          description: "Has desplegado tu propio protocolo en blockchain",
+          icon: "🚀",
+          type: "creator" as any,
+          required_points: 0,
+          required_level: 1,
+          required_events: JSON.stringify(["protocol_deployed"]),
+          points_reward: 500,
+          badge_url: "/badges/protocol-deployert.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
+        },
+        {
+          name: "Iniciado en Pandoras",
+          description: "Has completado el recorrido de iniciación de Pandora's OS",
+          icon: "🚀",
+          type: "explorer" as any,
+          required_points: 0,
+          required_level: 1,
+          required_events: JSON.stringify(["onboarding_tour_completed"]),
+          points_reward: 50,
+          badge_url: "/badges/onboarding-complete.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
+        },
+      ];
+
+      const newAchievements = [
+        // --- NEW USER REQUESTED ACHIEVEMENTS ---
+        {
+          name: "Pionero DAO",
+          description: "Has activado el sistema de Gobernanza Descentralizada",
+          icon: "🏛️",
+          type: "dao_pioneer" as any,
+          required_points: 0,
+          required_level: 2,
+          required_events: JSON.stringify(["dao_activated"]),
+          points_reward: 500,
+          badge_url: "/badges/dao-pioneer.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
+        },
+        {
+          name: "Coleccionista Novato",
+          description: "Adquiere tu primer Artefacto",
+          icon: "🏺",
+          type: "artifact_collector" as any,
+          required_points: 0,
+          required_level: 1,
+          required_events: JSON.stringify(["artifact_purchased"]),
+          points_reward: 50,
+          badge_url: "/badges/collector-1.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
+        },
+        {
+          name: "Coleccionista Entusiasta",
+          description: "Posees 3 Artefactos de la comunidad",
+          icon: "🏺",
+          type: "artifact_collector" as any,
+          required_points: 0,
+          required_level: 1,
+          required_events: JSON.stringify(["artifact_purchased_3"]),
+          points_reward: 150,
+          badge_url: "/badges/collector-3.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
+        },
+        {
+          name: "Coleccionista Experto",
+          description: "Posees 5 Artefactos de la comunidad",
+          icon: "🏺",
+          type: "artifact_collector" as any,
+          required_points: 0,
+          required_level: 1,
+          required_events: JSON.stringify(["artifact_purchased_5"]),
+          points_reward: 300,
+          badge_url: "/badges/collector-5.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
+        },
+        {
+          name: "Ballena de Artefactos",
+          description: "Posees 10 o más Artefactos. ¡Eres una leyenda!",
+          icon: "🐋",
+          type: "artifact_collector" as any,
+          required_points: 0,
+          required_level: 1,
+          required_events: JSON.stringify(["artifact_purchased_10"]),
+          points_reward: 1000,
+          badge_url: "/badges/collector-whale.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
+        },
+        {
+          name: "Iniciación DeFi",
+          description: "Tu primer depósito en Staking",
+          icon: "🥩",
+          type: "defi_starter" as any,
+          required_points: 0,
+          required_level: 1,
+          required_events: JSON.stringify(["staking_deposit"]),
+          points_reward: 100,
+          badge_url: "/badges/defi-starter.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
+        },
+        {
+          name: "Voz Activa",
+          description: "Tu primera participación en una votación del DAO",
+          icon: "🗳️",
+          type: "governor" as any,
+          required_points: 0,
+          required_level: 1,
+          required_events: JSON.stringify(["proposal_vote"]),
+          points_reward: 50,
+          badge_url: "/badges/governor.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
+        },
+        {
+          name: "Cazador de Rendimiento",
+          description: "Tu primer reclamo de recompensas",
+          icon: "💰",
+          type: "yield_hunter" as any,
+          required_points: 0,
+          required_level: 1,
+          required_events: JSON.stringify(["rewards_claimed"]),
+          points_reward: 75,
+          badge_url: "/badges/yield-hunter.png",
+          is_active: true,
+          is_secret: false,
+          created_at: new Date()
         }
       ];
+
+      const mergedBasicAchievements = [...basicAchievements, ...newAchievements];
 
       // First import and convert TOKENIZATION_ACHIEVEMENTS from package
       // (Dynamic import to avoid build issues if package is not available)
@@ -1066,7 +1340,7 @@ private static async updateUserProfilePoints(userId: string, pointsToAdd: number
         }));
 
         // Merge with dashboard achievements
-        const allAchievements = [...basicAchievements, ...packageAchievements];
+        const allAchievements = [...mergedBasicAchievements, ...packageAchievements];
         console.log(`🏆 Total achievements to initialize: ${allAchievements.length}`);
 
         // Only insert if not exists (by name)
@@ -1160,15 +1434,15 @@ private static async updateUserProfilePoints(userId: string, pointsToAdd: number
             progress = 100,
             is_unlocked = true,
             unlocked_at = NOW(),
-            last_updated = NOW()
+            updated_at = NOW()
           WHERE user_id = ${userIdInt} AND achievement_id = ${achievementId}
         `);
       } else {
         // Insert new achievement for user
         await db.execute(sql`
           INSERT INTO user_achievements
-          (user_id, achievement_id, progress, is_unlocked, unlocked_at, last_updated)
-          VALUES (${userIdInt}, ${achievementId}, 100, true, NOW(), NOW())
+          (user_id, achievement_id, progress, is_unlocked, unlocked_at, updated_at, created_at)
+          VALUES (${userIdInt}, ${achievementId}, 100, true, NOW(), NOW(), NOW())
         `);
       }
 
@@ -1244,9 +1518,9 @@ private static async updateUserProfilePoints(userId: string, pointsToAdd: number
 // Export individual functions for API routes AND frontend usage
 export const getUserGamificationProfile = async (userId: string) => GamificationService.getUserProfile(userId);
 export const trackGamificationEvent = async (userId: string, eventType: string, metadata?: Record<string, unknown>) =>
-GamificationService.trackEvent(userId, eventType, metadata);
+  GamificationService.trackEvent(userId, eventType, metadata);
 export const awardGamificationPoints = async (userId: string, points: number, reason: string, category: string, metadata?: Record<string, unknown>) =>
-GamificationService.awardPoints(userId, points, reason, category, metadata);
+  GamificationService.awardPoints(userId, points, reason, category, metadata);
 export const getGamificationLeaderboard = async (type: string, limit?: number) => GamificationService.getLeaderboard(type, limit);
 export const getUserGamificationAchievements = async (userId: string) => GamificationService.getUserAchievements(userId);
 export const getAvailableGamificationRewards = async (userId: string) => GamificationService.getAvailableRewards(userId);

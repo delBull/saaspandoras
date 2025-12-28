@@ -6,7 +6,7 @@ import { getAuth } from "@/lib/auth"; // Fixed auth import
 import { headers } from "next/headers";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants"; // Fixed constant import
 import { deployW2EProtocol } from "@pandoras/protocol-deployer";
-import type { W2EConfig } from "@pandoras/protocol-deployer/dist/types";
+import type { W2EConfig } from "@pandoras/protocol-deployer";
 import { trackGamificationEvent } from "@/lib/gamification/service";
 
 // Force Node.js runtime for database interactions
@@ -14,8 +14,15 @@ export const runtime = "nodejs";
 
 export async function POST(
     req: Request,
-    { params }: { params: { slug: string } }
+    { params }: { params: Promise<{ slug: string }> }
 ) {
+    const { slug } = await params;
+
+    // Diagnostic Variables (Outer Scope)
+    let network: 'sepolia' | 'base' = 'sepolia'; // Default
+    let host = '';
+    let branchName = '';
+
     try {
         // 1. Auth & Admin Check
         const headersObj = await headers();
@@ -31,7 +38,18 @@ export async function POST(
             return NextResponse.json({ error: "Forbidden: Super Admin access required" }, { status: 403 });
         }
 
-        const { slug } = params;
+
+
+        // Parse Request Body for optional Config and Force Flag
+        let reqConfig: any = null;
+        let forceRedeploy = false;
+        try {
+            const body = await req.json();
+            reqConfig = body.config;
+            forceRedeploy = body.forceRedeploy;
+        } catch (e) {
+            // Body might be empty, ignore
+        }
 
         const project = await db.query.projects.findFirst({
             where: eq(projects.slug, slug),
@@ -41,18 +59,33 @@ export async function POST(
             return NextResponse.json({ error: "Project not found" }, { status: 404 });
         }
 
-        if (project.deploymentStatus === 'deployed') {
+        if (project.deploymentStatus === 'deployed' && !forceRedeploy) {
             return NextResponse.json({ error: "Project already deployed" }, { status: 400 });
         }
 
-        if (!project.treasuryAddress) {
-            return NextResponse.json({ error: "Project Treasury Address is missing" }, { status: 400 });
+        // Use Treasury Address or fallback to Applicant Wallet (Founder)
+        const treasuryAddress = project.treasuryAddress || project.applicantWalletAddress;
+
+        if (!treasuryAddress) {
+            return NextResponse.json({ error: "Project Treasury Address is missing (Advisor/Founder Wallet required)" }, { status: 400 });
         }
 
         // 2. Prepare Configuration
-        // Determine network first
-        const isProduction = process.env.NODE_ENV === 'production';
-        const network = isProduction ? 'base' : 'sepolia';
+        // Determine network based on Domain (Host Header) - Most reliable for Vercel
+        host = req.headers.get("host") || "";
+        const isProductionDomain = host === "dash.pandoras.finance" || host === "www.dash.pandoras.finance";
+
+        // Network Logic: Maintain Sepolia default unless explicitly Prod Domain
+        network = isProductionDomain ? 'base' : 'sepolia';
+        branchName = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF || 'unknown';
+
+        // Debug Env Vars (Safety Check)
+        const hasSepoliaRPC = !!process.env.SEPOLIA_RPC_URL;
+        const hasBaseRPC = !!process.env.BASE_RPC_URL;
+
+        console.log(`🚀 API: Deploying ${slug}`);
+        console.log(`🌍 Network Decision: Host="${host}" -> Network="${network}"`);
+        console.log(`🔌 RPC Check: SEPOLIA_RPC_URL=${hasSepoliaRPC ? 'OK' : 'MISSING'}, BASE_RPC_URL=${hasBaseRPC ? 'OK' : 'MISSING'}`);
 
         // Mapping project data to W2EConfig
         const config: W2EConfig = {
@@ -65,21 +98,21 @@ export async function POST(
                 name: `Licencia ${project.title}`,
                 symbol: "VHORA", // Using standard symbol or custom if needed
                 maxSupply: project.totalTokens || 1000,
-                price: project.tokenPriceUsd ? project.tokenPriceUsd.toString() : "0",
+                price: "0", // Access Cards (Licenses) are always FREE. Revenue comes from Token Sales, not Access.
             },
             utilityToken: {
                 name: `${project.title} Utility`,
                 symbol: "PHI", // Standard utility symbol
-                initialSupply: 0, // Minted via W2E
+                initialSupply: reqConfig?.tokenomics?.initialSupply || 0, // Minted via W2E
                 feePercentage: 100, // 1% (basis points usually 100 = 1%)
             },
 
             // Governance
-            quorumPercentage: 4, // 4%
+            quorumPercentage: reqConfig?.tokenomics?.votingPowerMultiplier ? Math.min(Math.max(reqConfig.tokenomics.votingPowerMultiplier, 10), 100) : 10, // Must be >= 10
             votingDelaySeconds: 0,
             votingPeriodHours: 24, // 1 day
             executionDelayHours: 24, // 1 day timelock
-            emergencyPeriodHours: 72, // 3 days
+            emergencyPeriodHours: 168, // 7 days (Minimum required by contract)
             emergencyQuorumPct: 10,
 
             // Economics
@@ -87,10 +120,10 @@ export async function POST(
             stakingRewardRate: "1000000000000000", // 0.001 tokens/sec placeholder
             phiFundSplitPct: 10,
             maxLicenses: project.totalTokens || 1000,
-            treasurySigners: [project.treasuryAddress],
+            treasurySigners: [treasuryAddress],
 
             // Capital Distribution
-            creatorWallet: project.treasuryAddress,
+            creatorWallet: treasuryAddress,
             creatorPayoutPct: 50, // 50% release
             targetAmount: project.targetAmount ? project.targetAmount.toString() : "0",
             payoutWindowSeconds: 60 * 60 * 24 * 7, // 7 days
@@ -102,12 +135,26 @@ export async function POST(
             targetNetwork: network
         };
 
-        console.log(`🚀 API: Deploying ${slug} to ${network} with config:`, config);
+        console.log(`🚀 API: Deploying ${slug}`);
+        // Debug Log
+        // console.log(`🌍 Environment Detect: BRANCH=${branchName}...`); // Removed to avoid lint error
+        // Already logged above at "Network Decision"
+
+        console.log(`🚀 API: Proceeding with config:`, config);
 
         // 4. Call Deployer
         const result = await deployW2EProtocol(slug, config, network);
 
         console.log("✅ Deployment Result:", result);
+
+        // Prepare Extended Config for DB (includes UI-specific fields not used by deployer)
+        const extendedConfig = {
+            ...config,
+            phases: reqConfig?.phases || [],
+            tokenomics: reqConfig?.tokenomics || {}, // Store raw tokenomics from UI
+            accessCardImage: reqConfig?.accessCardImage,
+            timelockAddress: result.timelockAddress // Store timelock in config since we lack a column
+        };
 
         // 5. Update Database
         await db.update(projects)
@@ -115,10 +162,11 @@ export async function POST(
                 licenseContractAddress: result.licenseAddress,
                 utilityContractAddress: result.phiAddress,
                 loomContractAddress: result.loomAddress,
-                governorContractAddress: result.governorAddress,
+                votingContractAddress: result.governorAddress,
+                treasuryAddress: result.treasuryAddress,
                 chainId: result.chainId,
                 deploymentStatus: 'deployed',
-                w2eConfig: config,
+                w2eConfig: extendedConfig,
             })
             .where(eq(projects.slug, slug));
 
@@ -143,10 +191,29 @@ export async function POST(
 
         return NextResponse.json({ success: true, deployment: result });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Deploy API Error:", error);
+
+        // Diagnostic Info
+        const diagnostics = {
+            networkAttempted: network,
+            envDetection: {
+                host: host,
+                vercelEnv: process.env.NEXT_PUBLIC_VERCEL_ENV,
+                branch: branchName
+            },
+            rpcStatus: {
+                sepolia: process.env.SEPOLIA_RPC_URL ? `Configured (Length: ${process.env.SEPOLIA_RPC_URL.length})` : 'MISSING',
+                base: process.env.BASE_RPC_URL ? `Configured (Length: ${process.env.BASE_RPC_URL.length})` : 'MISSING'
+            },
+            errorDetails: error?.message || error
+        };
+
         return NextResponse.json(
-            { error: error instanceof Error ? error.message : "Internal Server Error" },
+            {
+                error: error instanceof Error ? error.message : "Internal Server Error",
+                details: diagnostics
+            },
             { status: 500 }
         );
     }

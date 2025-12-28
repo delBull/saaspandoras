@@ -7,6 +7,10 @@ const nextConfig = {
   },
   serverExternalPackages: ["drizzle-orm", "postgres"],
 
+  compiler: {
+    removeConsole: process.env.NODE_ENV === "production",
+  },
+
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "assets.coingecko.com" },
@@ -24,7 +28,7 @@ const nextConfig = {
     ],
   },
 
-  transpilePackages: ["@pandoras/gamification"],
+  transpilePackages: ["@pandoras/gamification", "@pandoras/protocol-deployer"],
 
   webpack: (config, { isServer }) => {
     if (!isServer) {

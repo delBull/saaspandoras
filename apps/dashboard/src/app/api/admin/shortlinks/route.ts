@@ -143,6 +143,36 @@ export async function POST(req: NextRequest) {
         error: "Internal server error",
         details: error instanceof Error ? error.message : String(error)
       },
+    );
+  }
+}
+
+// DELETE /api/admin/shortlinks - Delete a shortlink
+export async function DELETE(req: NextRequest) {
+  try {
+    // Auth check
+    const { session } = await getAuth(await headers());
+    if (!session?.userId || !await isAdmin(session.userId)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const { id } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: "ID is required" }, { status: 400 });
+    }
+
+    await db.delete(shortlinks).where(eq(shortlinks.id, id));
+
+    console.log(`🗑️ Deleted shortlink ID: ${id}`);
+
+    return NextResponse.json({ success: true, message: "Shortlink deleted" });
+
+  } catch (error) {
+    console.error("Shortlinks delete API error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

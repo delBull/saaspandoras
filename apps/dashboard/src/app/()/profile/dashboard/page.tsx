@@ -202,7 +202,7 @@ export default function PandoriansDashboardPage() {
 
   // Generate recent activity from real gamification data
   const generateRecentActivity = () => {
-    const activities: {type: 'achievement' | 'login' | 'project', title: string, description: string, time: string, amount?: number}[] = [];
+    const activities: { type: 'achievement' | 'login' | 'project', title: string, description: string, time: string, amount?: number }[] = [];
 
     // Add recent achievements as activity
     const recentAchievements = achievements
@@ -288,9 +288,8 @@ export default function PandoriansDashboardPage() {
             </p>
             {/* Indicador KYC movido here */}
             <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${
-                profile.kycLevel === 'basic' ? 'bg-green-500' : 'bg-yellow-500'
-              }`}></div>
+              <div className={`w-3 h-3 rounded-full ${profile.kycLevel === 'basic' ? 'bg-green-500' : 'bg-yellow-500'
+                }`}></div>
               <span className="text-sm text-gray-400">
                 Nivel {profile.kycLevel === 'basic' ? 'Básico' : 'N/A'}
               </span>
@@ -300,11 +299,10 @@ export default function PandoriansDashboardPage() {
       </div>
 
       {/* Key Metrics */}
-      <div className={`grid gap-6 ${
-        profile.role === 'applicant'
-          ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
-          : 'grid-cols-1 md:grid-cols-3'
-      }`}>
+      <div className={`grid gap-6 ${profile.role === 'applicant'
+        ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
+        : 'grid-cols-1 md:grid-cols-3'
+        }`}>
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -381,19 +379,17 @@ export default function PandoriansDashboardPage() {
             <div className="space-y-4">
               {recentActivity.map((activity, index) => (
                 <div key={index} className="flex items-start space-x-4 p-3 rounded-lg bg-zinc-800/50">
-                  <div className={`w-2 h-2 rounded-full mt-2 ${
-                    activity.type === 'achievement' ? 'bg-yellow-500' :
+                  <div className={`w-2 h-2 rounded-full mt-2 ${activity.type === 'achievement' ? 'bg-yellow-500' :
                     activity.type === 'login' ? 'bg-blue-500' : 'bg-lime-500'
-                  }`}></div>
+                    }`}></div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white">{activity.title}</p>
                     <p className="text-sm text-gray-400">{activity.description}</p>
                     <div className="flex items-center justify-between mt-1">
                       <span className="text-xs text-gray-500">{activity.time}</span>
                       {activity.amount && (
-                        <span className={`text-xs font-medium ${
-                          activity.type === 'achievement' ? 'text-yellow-400' : 'text-blue-400'
-                        }`}>
+                        <span className={`text-xs font-medium ${activity.type === 'achievement' ? 'text-yellow-400' : 'text-blue-400'
+                          }`}>
                           ${activity.amount.toLocaleString()}
                         </span>
                       )}
@@ -429,8 +425,8 @@ export default function PandoriansDashboardPage() {
                 <button className="w-full flex items-center gap-3 p-3 rounded-lg bg-green-600 hover:bg-green-700 transition-colors text-left">
                   <CurrencyDollarIcon className="w-5 h-5 text-white" />
                   <div>
-                    <div className="text-white text-sm font-medium">Reclamar Pagos Laborales</div>
-                    <div className="text-green-200 text-xs">Retira recompensas disponibles</div>
+                    <div className="text-white text-sm font-medium">Minar Recompensas</div>
+                    <div className="text-green-200 text-xs">Minar recompensas disponibles</div>
                   </div>
                 </button>
                 {/*
@@ -470,49 +466,49 @@ export default function PandoriansDashboardPage() {
       </div>
 
       {/* Project Status Overview (only for applicants with projects) */}
-       {profile.role === 'applicant' && projects.length > 0 && (
-         <Card>
-           <CardHeader>
-             <CardTitle>Estado de Protocolos</CardTitle>
-             <CardDescription>
-               Resumen de todas tus protocolos por estado
-             </CardDescription>
-           </CardHeader>
-           <CardContent>
-             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-               <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
-                 <CheckCircleIcon className="w-8 h-8 text-green-500 mx-auto mb-2" />
-                 <div className="text-2xl font-bold text-white">{dashboardData.completedProjects}</div>
-                 <div className="text-sm text-gray-400">Completados</div>
-               </div>
+      {profile.role === 'applicant' && projects.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Estado de Protocolos</CardTitle>
+            <CardDescription>
+              Resumen de todas tus protocolos por estado
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
+                <CheckCircleIcon className="w-8 h-8 text-green-500 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-white">{dashboardData.completedProjects}</div>
+                <div className="text-sm text-gray-400">Completados</div>
+              </div>
 
-               <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
-                 <ClockIcon className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
-                 <div className="text-2xl font-bold text-white">{dashboardData.pendingProjects}</div>
-                 <div className="text-sm text-gray-400">En Progreso</div>
-               </div>
+              <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
+                <ClockIcon className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-white">{dashboardData.pendingProjects}</div>
+                <div className="text-sm text-gray-400">En Progreso</div>
+              </div>
 
-               <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
-                 <ChartBarIcon className="w-8 h-8 text-blue-500 mx-auto mb-2" />
-                 <div className="text-2xl font-bold text-white">{dashboardData.activeProjects}</div>
-                 <div className="text-sm text-gray-400">Activos</div>
-               </div>
+              <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
+                <ChartBarIcon className="w-8 h-8 text-blue-500 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-white">{dashboardData.activeProjects}</div>
+                <div className="text-sm text-gray-400">Activos</div>
+              </div>
 
-               <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
-                 <FolderIcon className="w-8 h-8 text-gray-500 mx-auto mb-2" />
-                 <div className="text-2xl font-bold text-white">{dashboardData.draftProjects}</div>
-                 <div className="text-sm text-gray-400">Borradores</div>
-               </div>
+              <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
+                <FolderIcon className="w-8 h-8 text-gray-500 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-white">{dashboardData.draftProjects}</div>
+                <div className="text-sm text-gray-400">Borradores</div>
+              </div>
 
-               <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
-                 <ExclamationCircleIcon className="w-8 h-8 text-red-500 mx-auto mb-2" />
-                 <div className="text-2xl font-bold text-white">{dashboardData.rejectedProjects}</div>
-                 <div className="text-sm text-gray-400">Rechazados</div>
-               </div>
-             </div>
-           </CardContent>
-         </Card>
-       )}
+              <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
+                <ExclamationCircleIcon className="w-8 h-8 text-red-500 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-white">{dashboardData.rejectedProjects}</div>
+                <div className="text-sm text-gray-400">Rechazados</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
 
 
@@ -618,25 +614,25 @@ export default function PandoriansDashboardPage() {
 
               {/* Show pending achievements if not enough completed */}
               {achievements.filter((a: any) => !(a.isCompleted || a.isUnlocked)).length > 0 &&
-               achievements.filter((a: any) => a.isCompleted || a.isUnlocked).length < 3 && (
-                <>
-                  <div className="text-xs text-gray-400 mb-2">Logros pendientes:</div>
-                  {achievements
-                    .filter((a: any) => !(a.isCompleted || a.isUnlocked))
-                    .slice(0, 3 - achievements.filter((a: any) => a.isCompleted || a.isUnlocked).length)
-                    .map((achievement: any) => (
-                      <div key={achievement.id || achievement.achievementId} className="flex items-center gap-4 p-3 bg-gray-900/20 border border-gray-500/30 rounded-lg">
-                        <div className="text-2xl">{achievement.icon || '🏆'}</div>
-                        <div className="flex-1">
-                          <div className="text-white text-sm font-medium">{achievement.name || 'Logro'}</div>
-                          <div className="text-gray-400 text-xs">{achievement.description || 'Descripción'}</div>
-                          <div className="text-gray-400 text-xs">Progreso: {achievement.progress || 0}/100</div>
+                achievements.filter((a: any) => a.isCompleted || a.isUnlocked).length < 3 && (
+                  <>
+                    <div className="text-xs text-gray-400 mb-2">Logros pendientes:</div>
+                    {achievements
+                      .filter((a: any) => !(a.isCompleted || a.isUnlocked))
+                      .slice(0, 3 - achievements.filter((a: any) => a.isCompleted || a.isUnlocked).length)
+                      .map((achievement: any) => (
+                        <div key={achievement.id || achievement.achievementId} className="flex items-center gap-4 p-3 bg-gray-900/20 border border-gray-500/30 rounded-lg">
+                          <div className="text-2xl">{achievement.icon || '🏆'}</div>
+                          <div className="flex-1">
+                            <div className="text-white text-sm font-medium">{achievement.name || 'Logro'}</div>
+                            <div className="text-gray-400 text-xs">{achievement.description || 'Descripción'}</div>
+                            <div className="text-gray-400 text-xs">Progreso: {achievement.progress || 0}/100</div>
+                          </div>
+                          <div className="text-gray-400 text-xs">Bloqueado</div>
                         </div>
-                        <div className="text-gray-400 text-xs">Bloqueado</div>
-                      </div>
-                    ))}
-                </>
-              )}
+                      ))}
+                  </>
+                )}
             </div>
 
             <div className="mt-4 pt-4 border-t border-zinc-700">

@@ -28,6 +28,7 @@
     "typechain": "^8.3.2"
   },
   "dependencies": {
-    "@nomicfoundation/hardhat-verify": "^2.0.14"
+    "@nomicfoundation/hardhat-verify": "^2.0.14",
+    "@thirdweb-dev/contracts": "^3.15.0"
   }
 }

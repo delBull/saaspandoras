@@ -8,8 +8,8 @@ import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 
 /**
  * @title PoolPandoras
- * @notice Vault multi-token (ETH, USDC) con métricas avanzadas, utilidad claimable, reinversión, batch y control granular,
- *         y soporte para transacciones gasless mediante un trusted forwarder (ERC-2771).
+ * @notice Vault multi-token (ETH, USDC) with On-Chain Governance features.
+ *         (Synced with Sepolia V1.5 Implementation)
  */
 contract PoolPandoras is AccessControl, ReentrancyGuard, ERC2771Context {
     // --- Errores Personalizados ---
@@ -31,13 +31,16 @@ contract PoolPandoras is AccessControl, ReentrancyGuard, ERC2771Context {
     error ArrayLengthMismatch();
 
     // --- Constantes y enums ---
-    address public constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
+    IERC20 public immutable usdc;
     enum TokenType { ETH, USDC }
 
     // --- Configuración de límites y periodos ---
     uint256 public lockupPeriod = 180 days;
     uint256 public maxCapETH   = 5_000_000 ether;
     uint256 public maxCapUSDC  = 5_000_000 * 1e6;
+    uint256 public minDepositETH = 0.001 ether;
+    uint256 public minDepositUSDC = 1 * 1e6;
+    uint256 public earlyWithdrawalPenaltyBps = 0; // Basis points (e.g. 500 = 5%)
 
     // --- Flags operativos ---
     bool public pausedDeposits;
@@ -55,21 +58,19 @@ contract PoolPandoras is AccessControl, ReentrancyGuard, ERC2771Context {
     bytes32 public constant UTILITY_INJECTOR_ROLE  = keccak256("UTILITY_INJECTOR_ROLE");
     bytes32 public constant UTILITY_WITHDRAWER_ROLE= keccak256("UTILITY_WITHDRAWER_ROLE");
     bytes32 public constant MANAGER_ROLE           = keccak256("MANAGER_ROLE");
+    bytes32 public constant PROPOSAL_CREATOR_ROLE  = keccak256("PROPOSAL_CREATOR_ROLE");
 
     // --- Estructura de depósito optimizada para gas ---
     struct DepositInfo {
-        // Slot 1
         uint96 amount;
         uint96 yieldReceived;
         uint48 timestamp;
-        // Slot 2
         uint48 withdrawnAt;
-        TokenType token; // enum -> uint8
-        // Flags: bit 0: withdrawn, bit 1: unlockedByAdmin, bit 2: fullyRedeemable, bit 3: isReinvestment
+        TokenType token; 
         uint8 flags;
     }
 
-    // --- Almacenamiento de depósitos y métricas por usuario ---
+    // --- Almacenamiento ---
     mapping(address => DepositInfo[]) public userDeposits;
     mapping(address => bool)        public isWhitelisted;
     mapping(address => bool)        public hasWithdrawn;
@@ -111,6 +112,8 @@ contract PoolPandoras is AccessControl, ReentrancyGuard, ERC2771Context {
     event ERC20Rescued(address indexed token, address indexed to, uint256 amount);
     event WithdrawnForInvestment(address indexed manager, TokenType token, address indexed to, uint256 amount, uint256 when);
     event InvestmentReturned(address indexed manager, TokenType token, uint256 amount, uint256 when);
+    event PenaltyApplied(address indexed user, uint256 amount, uint256 penalty, uint256 when);
+    event ConfigChanged(string key, uint256 value);
 
     // --- Modificadores ---
     modifier whenDepositsNotPaused()    { if (pausedDeposits) revert DepositsPaused(); _; }
@@ -120,12 +123,14 @@ contract PoolPandoras is AccessControl, ReentrancyGuard, ERC2771Context {
     constructor(
         address[] memory initialAdmins,
         address          _utilityAddress,
-        address          trustedForwarder
+        address          trustedForwarder,
+        address          _usdcAddress
     )
         ERC2771Context(trustedForwarder)
     {
         if (_utilityAddress == address(0)) revert ZeroAddress();
         utilityAddress = _utilityAddress;
+        usdc = IERC20(_usdcAddress);
 
         for (uint256 i = 0; i < initialAdmins.length; i++) {
             address admin = initialAdmins[i];
@@ -136,6 +141,7 @@ contract PoolPandoras is AccessControl, ReentrancyGuard, ERC2771Context {
             _grantRole(UTILITY_INJECTOR_ROLE,   admin);
             _grantRole(UTILITY_WITHDRAWER_ROLE, admin);
             _grantRole(MANAGER_ROLE,            admin);
+            _grantRole(PROPOSAL_CREATOR_ROLE,   admin);
         }
     }
 
@@ -143,7 +149,6 @@ contract PoolPandoras is AccessControl, ReentrancyGuard, ERC2771Context {
     function _msgSender() internal view override(Context, ERC2771Context) returns (address sender) {
         return ERC2771Context._msgSender();
     }
-
     function _contextSuffixLength() internal view override(ERC2771Context, Context) returns (uint256) {
         return ERC2771Context._contextSuffixLength();
     }
@@ -156,23 +161,29 @@ contract PoolPandoras is AccessControl, ReentrancyGuard, ERC2771Context {
         lockupPeriod = newPeriod;
         emit LockupPeriodChanged(newPeriod);
     }
-
     function setMaxCap(TokenType token, uint256 newCap) external onlyRole(ADMIN_ROLE) {
         if (token == TokenType.ETH)  maxCapETH  = newCap;
         else                           maxCapUSDC = newCap;
         emit MaxCapChanged(token, newCap);
     }
-
+    function setMinDeposit(TokenType token, uint256 newMin) external onlyRole(ADMIN_ROLE) {
+        if (token == TokenType.ETH) minDepositETH = newMin;
+        else                        minDepositUSDC = newMin;
+        emit ConfigChanged(token == TokenType.ETH ? "minDepositETH" : "minDepositUSDC", newMin);
+    }
+    function setEarlyWithdrawalPenalty(uint256 bps) external onlyRole(ADMIN_ROLE) {
+        require(bps <= 10000, "Invalid BPS");
+        earlyWithdrawalPenaltyBps = bps;
+        emit ConfigChanged("earlyWithdrawalPenaltyBps", bps);
+    }
     function setPaused(bool _deposits, bool _withdrawals) external onlyRole(PAUSER_ROLE) {
         pausedDeposits    = _deposits;
         pausedWithdrawals = _withdrawals;
         emit PauseChanged(_deposits, _withdrawals);
     }
-
     function setWhitelistEnabled(bool enabled) external onlyRole(ADMIN_ROLE) {
         whitelistEnabled = enabled;
     }
-
     function setWhitelist(address user, bool status) external onlyRole(ADMIN_ROLE) {
         isWhitelisted[user] = status;
         emit UserWhitelisted(user, status);
@@ -184,7 +195,6 @@ contract PoolPandoras is AccessControl, ReentrancyGuard, ERC2771Context {
             emit UserWhitelisted(users[i], statuses[i]);
         }
     }
-
     function setUtilityAddress(address newUtilityAddress) external onlyRole(ADMIN_ROLE) {
         if (newUtilityAddress == address(0)) revert ZeroAddress();
         utilityAddress = newUtilityAddress;
@@ -195,63 +205,47 @@ contract PoolPandoras is AccessControl, ReentrancyGuard, ERC2771Context {
     function withdrawForInvestmentETH(address to, uint256 amount) external onlyRole(MANAGER_ROLE) nonReentrant {
         if (to == address(0)) revert ZeroAddress();
         if (amount > address(this).balance) revert InsufficientBalance();
-
         totalInvestedETH += amount;
-
         (bool success, ) = to.call{value: amount}("");
         if (!success) revert TransferFailed();
-
         emit WithdrawnForInvestment(_msgSender(), TokenType.ETH, to, amount, block.timestamp);
     }
-
     function withdrawForInvestmentUSDC(address to, uint256 amount) external onlyRole(MANAGER_ROLE) nonReentrant {
         if (to == address(0)) revert ZeroAddress();
-        if (amount > IERC20(USDC).balanceOf(address(this))) revert InsufficientBalance();
-
+        if (amount > usdc.balanceOf(address(this))) revert InsufficientBalance();
         totalInvestedUSDC += amount;
-
-        IERC20(USDC).transfer(to, amount);
-
+        usdc.transfer(to, amount);
         emit WithdrawnForInvestment(_msgSender(), TokenType.USDC, to, amount, block.timestamp);
     }
-
     function returnInvestmentETH() external payable onlyRole(MANAGER_ROLE) nonReentrant {
         if (msg.value == 0) revert InvalidAmount();
         if (msg.value > totalInvestedETH) revert ReturnedAmountExceedsInvested();
-        
         totalInvestedETH -= msg.value;
-
         emit InvestmentReturned(_msgSender(), TokenType.ETH, msg.value, block.timestamp);
     }
-
     function returnInvestmentUSDC(uint256 amount) external onlyRole(MANAGER_ROLE) nonReentrant {
         if (amount == 0) revert InvalidAmount();
         if (amount > totalInvestedUSDC) revert ReturnedAmountExceedsInvested();
-
         totalInvestedUSDC -= amount;
-
-        IERC20(USDC).transferFrom(_msgSender(), address(this), amount);
-
+        usdc.transferFrom(_msgSender(), address(this), amount);
         emit InvestmentReturned(_msgSender(), TokenType.USDC, amount, block.timestamp);
     }
 
     // --- Depósitos ---
     function depositETH() external payable nonReentrant whenDepositsNotPaused {
         uint256 amt = msg.value;
-        if (amt == 0) revert InvalidAmount();
+        if (amt < minDepositETH) revert InvalidAmount();
         if (totalDepositedETH + amt > maxCapETH) revert CapReached();
         if (whitelistEnabled && !isWhitelisted[_msgSender()]) revert NotWhitelisted();
-
         _registerDeposit(_msgSender(), TokenType.ETH, amt, false);
         totalDepositedETH += amt;
     }
-
     function depositUSDC(uint256 amount) external nonReentrant whenDepositsNotPaused {
-        if (amount == 0) revert InvalidAmount();
+        if (address(usdc) == address(0)) revert ZeroAddress(); 
+        if (amount < minDepositUSDC) revert InvalidAmount();
         if (totalDepositedUSDC + amount > maxCapUSDC) revert CapReached();
         if (whitelistEnabled && !isWhitelisted[_msgSender()]) revert NotWhitelisted();
-
-        IERC20(USDC).transferFrom(_msgSender(), address(this), amount);
+        usdc.transferFrom(_msgSender(), address(this), amount);
         _registerDeposit(_msgSender(), TokenType.USDC, amount, false);
         totalDepositedUSDC += amount;
     }
@@ -261,7 +255,6 @@ contract PoolPandoras is AccessControl, ReentrancyGuard, ERC2771Context {
         if (isReinvestment) {
             flags = flags | (1 << 3);
         }
-
         userDeposits[user].push(DepositInfo({
             amount: uint96(amount),
             yieldReceived: 0,
@@ -270,60 +263,60 @@ contract PoolPandoras is AccessControl, ReentrancyGuard, ERC2771Context {
             token: token,
             flags: flags
         }));
-
         if (!isKnownDepositor[user]) {
             isKnownDepositor[user] = true;
-            // Event can be used off-chain to track unique depositors
-            // emit NewDepositor(user);
         }
         emit Deposit(user, token, amount, block.timestamp, userDeposits[user].length - 1, isReinvestment);
     }
 
     // --- Retiros individuales ---
-    function _isWithdrawn(uint8 flags) internal pure returns (bool) {
-        return (flags & (1 << 0)) != 0;
-    }
-
-    function _isUnlockedByAdmin(uint8 flags) internal pure returns (bool) {
-        return (flags & (1 << 1)) != 0;
-    }
-
-    function _isFullyRedeemable(uint8 flags) internal pure returns (bool) {
-        return (flags & (1 << 2)) != 0;
-    }
+    function _isWithdrawn(uint8 flags) internal pure returns (bool) { return (flags & (1 << 0)) != 0; }
+    function _isUnlockedByAdmin(uint8 flags) internal pure returns (bool) { return (flags & (1 << 1)) != 0; }
+    function _isFullyRedeemable(uint8 flags) internal pure returns (bool) { return (flags & (1 << 2)) != 0; }
 
     function withdraw(uint256 depositIndex) external nonReentrant whenWithdrawalsNotPaused {
         address user = _msgSender();
         DepositInfo storage dep = userDeposits[user][depositIndex];
-
         if (_isWithdrawn(dep.flags)) revert AlreadyWithdrawn();
-        if (
-            block.timestamp < dep.timestamp + lockupPeriod &&
-            !_isUnlockedByAdmin(dep.flags) &&
-            !(globalLiquidationEnabled && _isFullyRedeemable(dep.flags))
-        ) {
-            revert DepositLocked();
+        if (block.timestamp < dep.timestamp + lockupPeriod && !_isUnlockedByAdmin(dep.flags) && !(globalLiquidationEnabled && _isFullyRedeemable(dep.flags))) {
+            if (earlyWithdrawalPenaltyBps == 0) {
+               revert DepositLocked();
+            }
         }
-
-        dep.flags = dep.flags | (1 << 0); // Mark as withdrawn
+        dep.flags = dep.flags | (1 << 0);
         dep.withdrawnAt = uint48(block.timestamp);
+        
         uint256 principal = dep.amount;
         uint256 yieldAmt  = dep.yieldReceived;
+        uint256 penalty = 0;
+
+        // Apply Penalty if Early
+        if (block.timestamp < dep.timestamp + lockupPeriod && !_isUnlockedByAdmin(dep.flags) && !(globalLiquidationEnabled && _isFullyRedeemable(dep.flags))) {
+            if (earlyWithdrawalPenaltyBps > 0) {
+                penalty = (principal * earlyWithdrawalPenaltyBps) / 10000;
+                principal -= penalty;
+                emit PenaltyApplied(user, dep.amount, penalty, block.timestamp);
+            }
+        }
 
         if (dep.token == TokenType.ETH) {
-            totalWithdrawnETH += principal;
+            totalWithdrawnETH += dep.amount; // Mark full amount as withdrawn from global stats
+            if (penalty > 0) {
+                totalUtilityETH += penalty; // Add penalty to utility pool
+            }
             (bool ok, ) = user.call{value: principal + yieldAmt}("");
             if (!ok) revert TransferFailed();
         } else {
-            totalWithdrawnUSDC += principal;
-            IERC20(USDC).transfer(user, principal + yieldAmt);
+            totalWithdrawnUSDC += dep.amount;
+            if (penalty > 0) {
+                totalUtilityUSDC += penalty;
+            }
+            usdc.transfer(user, principal + yieldAmt);
         }
-
         if (!hasWithdrawn[user]) {
             withdrawnUsers.push(user);
             hasWithdrawn[user] = true;
         }
-
         emit Withdraw(user, dep.token, principal, yieldAmt, block.timestamp, depositIndex);
     }
 
@@ -334,59 +327,55 @@ contract PoolPandoras is AccessControl, ReentrancyGuard, ERC2771Context {
         uint256 totalYieldETH;
         uint256 totalPrincipalUSDC;
         uint256 totalYieldUSDC;
-
         uint256 ethToWithdraw;
         uint256 usdcToWithdraw;
-
         for (uint256 i = 0; i < depositIndices.length; i++) {
             uint256 index = depositIndices[i];
             DepositInfo storage dep = userDeposits[user][index];
-
             if (_isWithdrawn(dep.flags)) revert AlreadyWithdrawn();
-            if (
-                block.timestamp < dep.timestamp + lockupPeriod &&
-                !_isUnlockedByAdmin(dep.flags) &&
-                !(globalLiquidationEnabled && _isFullyRedeemable(dep.flags))
-            ) {
-                revert DepositLocked();
+            if (block.timestamp < dep.timestamp + lockupPeriod && !_isUnlockedByAdmin(dep.flags) && !(globalLiquidationEnabled && _isFullyRedeemable(dep.flags))) {
+                 if (earlyWithdrawalPenaltyBps == 0) revert DepositLocked();
             }
-
-            dep.flags = dep.flags | (1 << 0); // Mark as withdrawn
+            dep.flags = dep.flags | (1 << 0);
             dep.withdrawnAt = uint48(block.timestamp);
             uint256 principal = dep.amount;
             uint256 yieldAmt = dep.yieldReceived;
+            uint256 penalty = 0;
+
+            if (block.timestamp < dep.timestamp + lockupPeriod && !_isUnlockedByAdmin(dep.flags) && !(globalLiquidationEnabled && _isFullyRedeemable(dep.flags))) {
+                if (earlyWithdrawalPenaltyBps > 0) {
+                    penalty = (principal * earlyWithdrawalPenaltyBps) / 10000;
+                    principal -= penalty;
+                    emit PenaltyApplied(user, dep.amount, penalty, block.timestamp);
+                }
+            }
 
             if (dep.token == TokenType.ETH) {
+                if (penalty > 0) totalUtilityETH += penalty;
                 ethToWithdraw += principal;
                 totalPrincipalETH += principal;
                 totalYieldETH += yieldAmt;
             } else {
+                if (penalty > 0) totalUtilityUSDC += penalty;
                 usdcToWithdraw += principal;
                 totalPrincipalUSDC += principal;
                 totalYieldUSDC += yieldAmt;
             }
             emit Withdraw(user, dep.token, principal, yieldAmt, block.timestamp, index);
         }
-
-        if (ethToWithdraw > 0) {
-            totalWithdrawnETH += ethToWithdraw;
-        }
-        if (usdcToWithdraw > 0) {
-            totalWithdrawnUSDC += usdcToWithdraw;
-        }
-
+        if (ethToWithdraw > 0) totalWithdrawnETH += ethToWithdraw;
+        if (usdcToWithdraw > 0) totalWithdrawnUSDC += usdcToWithdraw;
         if (!hasWithdrawn[user] && depositIndices.length > 0) {
             withdrawnUsers.push(user);
             hasWithdrawn[user] = true;
         }
-
         if (totalPrincipalETH + totalYieldETH > 0) {
             (bool ok, ) = user.call{value: totalPrincipalETH + totalYieldETH}("");
             if (!ok) revert TransferFailed();
             emit BatchWithdraw(user, TokenType.ETH, depositIndices, totalPrincipalETH, totalYieldETH, block.timestamp);
         }
         if (totalPrincipalUSDC + totalYieldUSDC > 0) {
-            IERC20(USDC).transfer(user, totalPrincipalUSDC + totalYieldUSDC);
+            usdc.transfer(user, totalPrincipalUSDC + totalYieldUSDC);
             emit BatchWithdraw(user, TokenType.USDC, depositIndices, totalPrincipalUSDC, totalYieldUSDC, block.timestamp);
         }
     }
@@ -395,25 +384,17 @@ contract PoolPandoras is AccessControl, ReentrancyGuard, ERC2771Context {
     function unlockDepositsForUser(address user, uint256[] calldata depositIndices) external onlyRole(UNLOCKER_ROLE) {
         for (uint256 i = 0; i < depositIndices.length; i++) {
             DepositInfo storage dep = userDeposits[user][depositIndices[i]];
-            if (_isWithdrawn(dep.flags) || _isUnlockedByAdmin(dep.flags)) {
-                revert AlreadyUnlockedOrWithdrawn();
-            }
-            dep.flags = dep.flags | (1 << 1); // Mark as unlockedByAdmin
+            if (_isWithdrawn(dep.flags) || _isUnlockedByAdmin(dep.flags)) revert AlreadyUnlockedOrWithdrawn();
+            dep.flags = dep.flags | (1 << 1); 
         }
         emit DepositsUnlocked(user, depositIndices);
     }
-
     function enableGlobalLiquidation() external onlyRole(ADMIN_ROLE) {
         if (globalLiquidationEnabled) revert GlobalLiquidationAlreadyEnabled();
         globalLiquidationEnabled = true;
         globalLiquidationTimestamp = uint48(block.timestamp);
-        // The loop is removed to prevent extreme gas costs.
-        // This functionality must be handled off-chain or on a per-user basis.
-        // A user can now withdraw if globalLiquidationEnabled is true and their deposit is marked as fullyRedeemable.
-        // An admin function can be added to mark specific deposits as redeemable if needed.
         emit GlobalLiquidationEnabled(block.timestamp);
     }
-
     function setDepositsAsRedeemable(address user, uint256[] calldata depositIndices) external onlyRole(ADMIN_ROLE) {
         for (uint256 i = 0; i < depositIndices.length; i++) {
             userDeposits[user][depositIndices[i]].flags |= (1 << 2);
@@ -426,15 +407,14 @@ contract PoolPandoras is AccessControl, ReentrancyGuard, ERC2771Context {
         totalUtilityETH += msg.value;
         emit UtilityInjected(_msgSender(), TokenType.ETH, msg.value, block.timestamp);
     }
-
     function injectUtilityUSDC(uint256 amount) external onlyRole(UTILITY_INJECTOR_ROLE) {
         if (amount == 0) revert InvalidAmount();
-        IERC20(USDC).transferFrom(_msgSender(), address(this), amount);
+        usdc.transferFrom(_msgSender(), address(this), amount);
         totalUtilityUSDC += amount;
         emit UtilityInjected(_msgSender(), TokenType.USDC, amount, block.timestamp);
     }
 
-    // --- Utility assignment (admin) ---
+    // --- Utility assignment / claim / reinvest ---
     function assignUtilityETH(address user, uint256 amount) external onlyRole(ADMIN_ROLE) {
         if (amount == 0) revert InvalidAmount();
         if (amount > totalUtilityETH) revert ExceedsTotalUtility();
@@ -447,7 +427,6 @@ contract PoolPandoras is AccessControl, ReentrancyGuard, ERC2771Context {
         userClaimableUtilityUSDC[user] += amount;
         totalUtilityUSDC -= amount;
     }
-
     function assignUtilityETHBatch(address[] calldata users, uint256[] calldata amounts) external onlyRole(ADMIN_ROLE) {
         if (users.length != amounts.length) revert ArrayLengthMismatch();
         uint256 sum;
@@ -472,8 +451,6 @@ contract PoolPandoras is AccessControl, ReentrancyGuard, ERC2771Context {
         if (sum > totalUtilityUSDC) revert ExceedsTotalUtility();
         totalUtilityUSDC -= sum;
     }
-
-    // --- Claim utility (user) ---
     function claimUtilityETH() external nonReentrant {
         address user = _msgSender();
         uint256 amt = userClaimableUtilityETH[user];
@@ -483,17 +460,14 @@ contract PoolPandoras is AccessControl, ReentrancyGuard, ERC2771Context {
         if (!ok) revert TransferFailed();
         emit ClaimUtility(user, TokenType.ETH, amt, block.timestamp);
     }
-
     function claimUtilityUSDC() external nonReentrant {
         address user = _msgSender();
         uint256 amt = userClaimableUtilityUSDC[user];
         if (amt == 0) revert NoUtilityToClaim();
         userClaimableUtilityUSDC[user] = 0;
-        IERC20(USDC).transfer(user, amt);
+        usdc.transfer(user, amt);
         emit ClaimUtility(user, TokenType.USDC, amt, block.timestamp);
     }
-
-    // --- Reinvest utility (user) ---
     function reinvestUtilityETH() external nonReentrant {
         address user = _msgSender();
         uint256 amt = userClaimableUtilityETH[user];
@@ -504,7 +478,6 @@ contract PoolPandoras is AccessControl, ReentrancyGuard, ERC2771Context {
         userTotalReinvestedETH[user] += amt;
         emit Reinvest(user, TokenType.ETH, amt, block.timestamp);
     }
-
     function reinvestUtilityUSDC() external nonReentrant {
         address user = _msgSender();
         uint256 amt = userClaimableUtilityUSDC[user];
@@ -515,8 +488,6 @@ contract PoolPandoras is AccessControl, ReentrancyGuard, ERC2771Context {
         userTotalReinvestedUSDC[user] += amt;
         emit Reinvest(user, TokenType.USDC, amt, block.timestamp);
     }
-
-    // --- Utility withdrawal by admin ---
     function withdrawUtilityETH(uint256 amount) external onlyRole(UTILITY_WITHDRAWER_ROLE) nonReentrant {
         if (utilityAddress == address(0)) revert ZeroAddress();
         if (amount > address(this).balance) revert InsufficientBalance();
@@ -524,56 +495,126 @@ contract PoolPandoras is AccessControl, ReentrancyGuard, ERC2771Context {
         if (!ok) revert TransferFailed();
         emit UtilityWithdrawn(utilityAddress, TokenType.ETH, amount, block.timestamp);
     }
-
     function withdrawUtilityUSDC(uint256 amount) external onlyRole(UTILITY_WITHDRAWER_ROLE) nonReentrant {
         if (utilityAddress == address(0)) revert ZeroAddress();
-        IERC20(USDC).transfer(utilityAddress, amount);
+        usdc.transfer(utilityAddress, amount);
         emit UtilityWithdrawn(utilityAddress, TokenType.USDC, amount, block.timestamp);
     }
-
-    // --- Dashboard & consultas públicas ---
-    function getVaultStats() external view returns (
-        uint256 ethInVault,
-        uint256 usdcInVault,
-        uint256 totalDepositedETH_,
-        uint256 totalDepositedUSDC_,
-        uint256 totalWithdrawnETH_,
-        uint256 totalWithdrawnUSDC_,
-        uint256 totalUtilityETH_,
-        uint256 totalUtilityUSDC_,
-        uint256 totalReinvestedETH_,
-        uint256 totalReinvestedUSDC_,
-        uint256 totalInvestedETH_,
-        uint256 totalInvestedUSDC_,
-        uint256 numDepositors, // This is an approximation, relies on off-chain tracking for accuracy
-        uint256 numWithdrawnUsers
-    ) {
-        ethInVault             = address(this).balance;
-        usdcInVault            = IERC20(USDC).balanceOf(address(this));
-        totalDepositedETH_     = totalDepositedETH;
-        totalDepositedUSDC_    = totalDepositedUSDC;
-        totalWithdrawnETH_     = totalWithdrawnETH;
-        totalWithdrawnUSDC_    = totalWithdrawnUSDC;
-        totalUtilityETH_       = totalUtilityETH;
-        totalUtilityUSDC_      = totalUtilityUSDC;
-        totalReinvestedETH_    = totalReinvestedETH;
-        totalReinvestedUSDC_   = totalReinvestedUSDC;
-        totalInvestedETH_      = totalInvestedETH;
-        totalInvestedUSDC_     = totalInvestedUSDC;
-        numDepositors          = 0; // Deprecated: Track off-chain via events
-        numWithdrawnUsers      = withdrawnUsers.length;
+    function rescueERC20(address token, address to, uint256 amount) external onlyRole(ADMIN_ROLE) {
+        if (to == address(0)) revert ZeroAddress();
+        IERC20(token).transfer(to, amount);
+        emit ERC20Rescued(token, to, amount);
     }
 
-    function getUserStats(address user) external view returns (
-        uint256 depositedETH,
-        uint256 depositedUSDC,
-        uint256 withdrawnETH,
-        uint256 withdrawnUSDC,
-        uint256 claimableUtilityETH,
-        uint256 claimableUtilityUSDC,
-        uint256 reinvestedETH,
-        uint256 reinvestedUSDC
-    ) {
+    // --- Governance System ---
+
+    struct Proposal {
+        uint256 id;
+        address proposer;
+        string title;
+        string description;
+        uint256 startTime;
+        uint256 endTime;
+        uint256 forVotes;
+        uint256 againstVotes;
+        bool active;
+        bool executed;
+    }
+
+    uint256 public proposalCount;
+    mapping(uint256 => Proposal) public proposals;
+    mapping(uint256 => mapping(address => bool)) public hasVoted;
+
+    uint256 public constant VP_ETH_MULTIPLIER = 2000;
+    uint256 public constant PROPOSAL_THRESHOLD = 500 * 1e18; 
+
+    event ProposalCreated(uint256 indexed id, address indexed proposer, string title, uint256 endTime);
+    event Voted(uint256 indexed id, address indexed voter, bool support, uint256 weight);
+    event ProposalClosed(uint256 indexed id, bool executed);
+
+    function getVotingPower(address user) public view returns (uint256) {
+        uint256 totalEth;
+        uint256 totalUsdc;
+
+        DepositInfo[] storage deps = userDeposits[user];
+        for (uint256 i = 0; i < deps.length; i++) {
+            DepositInfo memory dep = deps[i];
+            if (!_isWithdrawn(dep.flags)) {
+                if (dep.token == TokenType.ETH) {
+                    totalEth += dep.amount;
+                } else {
+                    totalUsdc += dep.amount;
+                }
+            }
+        }
+        
+        uint256 vpEth = (totalEth * 2000) / 1 ether; 
+        uint256 vpUsdc = (totalUsdc) / 1e6;
+        return vpEth + vpUsdc;
+    }
+
+    function createProposal(string calldata title, string calldata description, uint256 daysOpen) external nonReentrant onlyRole(PROPOSAL_CREATOR_ROLE) {
+        if (daysOpen == 0) revert InvalidAmount();
+        // if (getVotingPower(_msgSender()) < 1) revert InsufficientBalance(); // Requirement removed for Admin/Creator logic 
+
+        proposalCount++;
+        uint256 newId = proposalCount;
+        
+        Proposal storage p = proposals[newId];
+        p.id = newId;
+        p.proposer = _msgSender();
+        p.title = title;
+        p.description = description;
+        p.startTime = block.timestamp;
+        p.endTime = block.timestamp + (daysOpen * 1 days);
+        p.active = true;
+
+        emit ProposalCreated(newId, _msgSender(), title, p.endTime);
+    }
+
+    function vote(uint256 proposalId, bool support) external nonReentrant {
+        Proposal storage p = proposals[proposalId];
+        if (!p.active) revert("Proposal not active");
+        if (block.timestamp > p.endTime) revert("Voting ended");
+        if (hasVoted[proposalId][_msgSender()]) revert("Already voted");
+
+        uint256 weight = getVotingPower(_msgSender());
+        if (weight == 0) revert("No Voting Power");
+
+        hasVoted[proposalId][_msgSender()] = true;
+
+        if (support) {
+            p.forVotes += weight;
+        } else {
+            p.againstVotes += weight;
+        }
+
+        emit Voted(proposalId, _msgSender(), support, weight);
+    }
+
+    function closeProposal(uint256 proposalId) external onlyRole(ADMIN_ROLE) {
+        Proposal storage p = proposals[proposalId];
+        p.active = false;
+        p.executed = true; 
+        emit ProposalClosed(proposalId, true);
+    }
+
+    function getAllProposals() external view returns (Proposal[] memory) {
+        Proposal[] memory all = new Proposal[](proposalCount);
+        for (uint256 i = 1; i <= proposalCount; i++) {
+            all[i - 1] = proposals[i];
+        }
+        return all;
+    }
+
+    // --- Views ---
+    function getVaultStats() external view returns (uint256 ethInVault, uint256 usdcInVault, uint256 totalDepositedETH_, uint256 totalDepositedUSDC_, uint256 totalWithdrawnETH_, uint256 totalWithdrawnUSDC_, uint256 totalUtilityETH_, uint256 totalUtilityUSDC_, uint256 totalReinvestedETH_, uint256 totalReinvestedUSDC_, uint256 totalInvestedETH_, uint256 totalInvestedUSDC_, uint256 numDepositors, uint256 numWithdrawnUsers) {
+        ethInVault = address(this).balance;
+        usdcInVault = usdc.balanceOf(address(this));
+        totalDepositedETH_ = totalDepositedETH; totalDepositedUSDC_ = totalDepositedUSDC; totalWithdrawnETH_ = totalWithdrawnETH; totalWithdrawnUSDC_ = totalWithdrawnUSDC; totalUtilityETH_ = totalUtilityETH; totalUtilityUSDC_ = totalUtilityUSDC; totalReinvestedETH_ = totalReinvestedETH; totalReinvestedUSDC_ = totalReinvestedUSDC; totalInvestedETH_ = totalInvestedETH; totalInvestedUSDC_ = totalInvestedUSDC; numDepositors = 0; numWithdrawnUsers = withdrawnUsers.length;
+    }
+
+    function getUserStats(address user) external view returns (uint256 depositedETH, uint256 depositedUSDC, uint256 withdrawnETH, uint256 withdrawnUSDC, uint256 claimableUtilityETH, uint256 claimableUtilityUSDC, uint256 reinvestedETH, uint256 reinvestedUSDC) {
         DepositInfo[] storage deps = userDeposits[user];
         for (uint256 i = 0; i < deps.length; i++) {
             DepositInfo memory dep = deps[i];
@@ -588,20 +629,10 @@ contract PoolPandoras is AccessControl, ReentrancyGuard, ERC2771Context {
                 if (isReinvestment) reinvestedUSDC += dep.amount;
             }
         }
-        claimableUtilityETH  = userClaimableUtilityETH[user];
-        claimableUtilityUSDC = userClaimableUtilityUSDC[user];
+        claimableUtilityETH = userClaimableUtilityETH[user]; claimableUtilityUSDC = userClaimableUtilityUSDC[user];
     }
-
-    function getUserDeposits(address user) external view returns (DepositInfo[] memory) {
-        return userDeposits[user];
-    }
-
-    // --- Rescate de ERC20 atascados ---
-    function rescueERC20(address token, address to, uint256 amount) external onlyRole(ADMIN_ROLE) {
-        if (to == address(0)) revert ZeroAddress();
-        IERC20(token).transfer(to, amount);
-        emit ERC20Rescued(token, to, amount);
-    }
-
+    
+    function getUserDeposits(address user) external view returns (DepositInfo[] memory) { return userDeposits[user]; }
+    
     receive() external payable {}
 }

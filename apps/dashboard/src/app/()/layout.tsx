@@ -6,7 +6,7 @@ import { DashboardClientWrapper } from "./dashboard-client-wrapper";
 import { ProjectModalProvider } from "@/contexts/ProjectModalContext";
 
 // Force dynamic rendering - this layout uses cookies and should not be prerendered
-export const dynamic = 'force-dynamic';
+// export const dynamic = 'force-dynamic'; // Optimization: Removed to allow caching where possible. Cookies() calls will trigger dynamic automatically.
 
 export default async function DashboardLayout({
   children,
@@ -18,7 +18,7 @@ export default async function DashboardLayout({
   // Try to get wallet address from cookies first for better server-side detection
   const cookieStore = await cookies();
   let walletFromCookies = cookieStore.get('wallet-address')?.value ??
-                         cookieStore.get('thirdweb:wallet-address')?.value ?? null;
+    cookieStore.get('thirdweb:wallet-address')?.value ?? null;
 
   // Also try to find wallet address in any cookie that contains it
   if (!walletFromCookies) {
@@ -49,7 +49,7 @@ export default async function DashboardLayout({
 
   // Check if user is super admin using either userId or address
   const userIsSuperAdmin = session?.userId?.toLowerCase() === SUPER_ADMIN_WALLET ||
-                           session?.address?.toLowerCase() === SUPER_ADMIN_WALLET;
+    session?.address?.toLowerCase() === SUPER_ADMIN_WALLET;
   console.log('🏠 DashboardLayout: isSuperAdmin result:', userIsSuperAdmin);
   console.log('🏠 DashboardLayout: Expected SUPER_ADMIN:', SUPER_ADMIN_WALLET);
 

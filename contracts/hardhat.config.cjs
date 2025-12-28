@@ -19,5 +19,15 @@ module.exports = {
       url: "https://mainnet.base.org",
       accounts: [process.env.PRIVATE_KEY],
     },
+    baseSepolia: {
+      url: "https://sepolia.base.org",
+      accounts: [process.env.PRIVATE_KEY],
+      chainId: 84532,
+    },
+    sepolia: {
+      url: "https://ethereum-sepolia-rpc.publicnode.com", // More reliable public RPC
+      accounts: [process.env.PRIVATE_KEY],
+      chainId: 11155111,
+    },
   },
 };

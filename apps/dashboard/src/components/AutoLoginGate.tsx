@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { usePersistedAccount } from "@/hooks/usePersistedAccount";
 import { useEffect, useState } from "react";
 
@@ -12,14 +12,20 @@ interface AutoLoginGateProps {
 }
 
 export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGateProps) {
-  const { account, canAutoReconnect, isBootstrapped, savedWalletAddress } = usePersistedAccount();
+  const { account, canAutoReconnect, isBootstrapped, savedWalletAddress, isConnecting } = usePersistedAccount();
   const router = useRouter();
+  const pathname = usePathname();
   const [isClientReady, setIsClientReady] = useState(false);
 
   // Ensure we're fully hydrated on client side
   useEffect(() => {
     setIsClientReady(true);
   }, []);
+
+  // 🟢 SIEMPRE permitir acceso a la Home Page ("/") para marketing/landing
+  if (pathname === "/") {
+    return <>{children}</>;
+  }
 
   // 🟢 Espera a que se termine bootstrap antes de decidir
   if (!isBootstrapped || !isClientReady) {
@@ -33,8 +39,49 @@ export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGa
     );
   }
 
+  // Check explicit logout flag
+  const isLoggedOut = typeof window !== 'undefined' && localStorage.getItem('wallet-logged-out') === 'true';
+
+  if (isLoggedOut) {
+    // If explicit logout is set, we ignore server session and force clean state
+    // Ensure cookies are cleared to prevent infinite loop
+    if (typeof window !== 'undefined') {
+      document.cookie = "wallet-address=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      document.cookie = "thirdweb:wallet-address=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    }
+
+    // If we are connecting (user action), let it pass?
+    // No, if isConnecting is true, user might have just clicked "Connect". 
+    // BUT we clear the flag on "Connect" click. So isLoggedOut should be false if connecting manually.
+    // So if isLoggedOut is true, we block.
+
+    // Fallback to home if no children should be shown
+    if (pathname !== "/") {
+      // Verify if we should redirect or just render children (unauthenticated)
+      // Dashboard routes usually require auth.
+      // But preventing loop is priority.
+      // We'll let it fall through to the final redirect logic.
+    }
+  }
+
+  // 🟢 Esperar si Thirdweb está intentando conectar (evita race condition con localStorage)
+  // 🟢 Esperar si Thirdweb está intentando conectar (evita race condition con localStorage)
+  if (isConnecting) {
+    return (
+      <div className="flex items-center justify-center min-h-screen text-gray-400">
+        <div className="text-center">
+          <p>Conectando wallet...</p>
+          <p className="text-xs mt-2">Sincronizando</p>
+        </div>
+      </div>
+    );
+  }
+
   // ✅ Caso 1: ya hay sesión activa EN THIRDWEB
   if (account?.address) {
+    // If logged out flag exists even if account exists (rare race), we might want to block, 
+    // but usually UsePersistedAccount handles disconnect. 
+    // If we are here, account is likely valid or reconnected manually.
     // Ensure wallet information is properly set in cookies for server-side requests
     if (typeof window !== 'undefined' && account.address) {
       document.cookie = `wallet-address=${account.address}; path=/; max-age=86400; samesite=strict`;
@@ -45,7 +92,8 @@ export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGa
   }
 
   // ✅ Caso 2: hay sesión válida en servidor (dashboard) → PERMITIR ACCESO
-  if (serverSession?.hasSession && serverSession?.address) {
+  // BLOQUEAR SI HUBO LOGOUT EXPLÍCITO
+  if (!isLoggedOut && serverSession?.hasSession && serverSession?.address) {
     // Ensure wallet information is properly set in cookies for server-side requests
     if (typeof window !== 'undefined' && serverSession.address) {
       document.cookie = `wallet-address=${serverSession.address}; path=/; max-age=86400; samesite=strict`;
@@ -55,7 +103,7 @@ export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGa
   }
 
   // ✅ Caso 3: hay wallet guardada en localStorage pero no activa → intentar sincronizar
-  if (savedWalletAddress && !account?.address) {
+  if (!isLoggedOut && savedWalletAddress && !account?.address) {
     // Ensure wallet information is properly set in cookies for server-side requests
     if (typeof window !== 'undefined' && savedWalletAddress) {
       document.cookie = `wallet-address=${savedWalletAddress}; path=/; max-age=86400; samesite=strict`;
@@ -99,7 +147,7 @@ export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGa
   }
 
   // ⏳ Caso 4: hay wallet guardada → intentando reconectar thirdweb
-  if (canAutoReconnect) {
+  if (!isLoggedOut && canAutoReconnect) {
     return (
       <div className="flex items-center justify-center min-h-screen text-gray-400">
         <div className="text-center">

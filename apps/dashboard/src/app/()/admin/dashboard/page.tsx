@@ -30,7 +30,7 @@ interface WalletSession {
   shouldReconnect: boolean;
 }
 
-export const dynamic = 'force-dynamic';
+// export const dynamic = 'force-dynamic'; // Optimization: Removed.
 
 // CRÍTICO: Movemos TODAS las fetch calls al useEffect cliente-side
 // ✅ Esto evita que se ejecuten durante el BUILD de Vercel
@@ -45,7 +45,7 @@ export default function AdminDashboardPage() {
   const [expandedProject, setExpandedProject] = useState<string | null>(null); // Para controlar el dropdown de detalles
   const [statusDropdown, setStatusDropdown] = useState<string | null>(null); // Para controlar el dropdown de estado
   const [actionsDropdown, setActionsDropdown] = useState<string | null>(null); // Para controlar el dropdown de acciones
-  const [actionsDropdownPosition, setActionsDropdownPosition] = useState<{top: number, left: number} | null>(null); // Posición del dropdown
+  const [actionsDropdownPosition, setActionsDropdownPosition] = useState<{ top: number, left: number } | null>(null); // Posición del dropdown
   const [actionsLoading, setActionsLoading] = useState<Record<string, boolean>>({}); // Track loading states for actions
   const [authError, setAuthError] = useState<string | null>(null); // Para mostrar errores de autenticación
 
@@ -186,7 +186,7 @@ export default function AdminDashboardPage() {
   };
 
   // Use project actions hook with refresh callback
-  const { deleteProject, approveProject, rejectProject, changeProjectStatus, transferProject } = useProjectActions({
+  const { deleteProject, approveProject, rejectProject, changeProjectStatus, transferProject, deployProtocol, certifySale } = useProjectActions({
     setActionsLoading,
     walletAddress: walletAddress ?? undefined,
     refreshCallback: refreshData,
@@ -248,12 +248,12 @@ export default function AdminDashboardPage() {
                 const walletCookie = allCookies.find(cookie => {
                   const parts = cookie.split('=');
                   return parts.length === 2 &&
-                         parts[0] &&
-                         parts[0].includes('wallet') &&
-                         parts[0].includes('address') &&
-                         parts[1] &&
-                         parts[1].startsWith('0x') &&
-                         parts[1].length === 42;
+                    parts[0] &&
+                    parts[0].includes('wallet') &&
+                    parts[0].includes('address') &&
+                    parts[1] &&
+                    parts[1].startsWith('0x') &&
+                    parts[1].length === 42;
                 });
                 if (walletCookie) {
                   walletAddress = walletCookie.split('=')[1];
@@ -438,8 +438,8 @@ export default function AdminDashboardPage() {
               status: projectsRes.status,
               walletAddress: currentWalletAddress,
               suggestion: projectsRes.status === 401 ? 'Authentication failed - check wallet address' :
-                         projectsRes.status === 403 ? 'Authorization failed - check admin permissions' :
-                         'Unknown error - check server logs'
+                projectsRes.status === 403 ? 'Authorization failed - check admin permissions' :
+                  'Unknown error - check server logs'
             });
           }
         }
@@ -551,9 +551,9 @@ export default function AdminDashboardPage() {
             statusText: usersRes.statusText,
             errorBody: errorText,
             suggestion: usersRes.status === 401 ? 'Authentication failed - check wallet address' :
-                       usersRes.status === 403 ? 'Authorization failed - check admin permissions' :
-                       usersRes.status === 500 ? 'Server error - check API logs' :
-                       'Unknown error - check network tab'
+              usersRes.status === 403 ? 'Authorization failed - check admin permissions' :
+                usersRes.status === 500 ? 'Server error - check API logs' :
+                  'Unknown error - check network tab'
           });
         }
       } catch (error) {
@@ -662,6 +662,13 @@ export default function AdminDashboardPage() {
     return counts;
   }, [enhancedProjects]);
 
+  // Find current user ID based on wallet
+  const currentUserId = useMemo(() => {
+    if (!walletAddress || users.length === 0) return undefined;
+    const user = users.find(u => u.walletAddress?.toLowerCase() === walletAddress.toLowerCase());
+    return user?.id;
+  }, [users, walletAddress]);
+
   // Show loading state while checking admin status
   if (loading) {
     return (
@@ -705,14 +712,14 @@ export default function AdminDashboardPage() {
             </div>
           )}
         </div>
-        <ProjectApplicationButton
+        {/* <ProjectApplicationButton
           buttonText="➕"
           className="px-3 sm:px-4 py-2 mr-24 bg-lime-500 hover:bg-lime-600 text-zinc-900 rounded-md font-semibold transition text-sm sm:text-base whitespace-nowrap"
           variant="default"
-        />
+        /> */}
       </div>
 
-      <AdminTabs swaps={mockSwaps} users={users} showSettings={true} showUsers={true} showShortlinks={true} showMarketing={true}>
+      <AdminTabs swaps={mockSwaps} users={users} showSettings={true} showUsers={true} showShortlinks={true} showMarketing={true} currentUserId={currentUserId}>
         {/* Tab de proyectos */}
         <div key="projects-tab" className="space-y-6">
           {/* Barra de herramientas mejorada */}
@@ -741,21 +748,19 @@ export default function AdminDashboardPage() {
                   <span className="text-sm text-gray-400">Vista:</span>
                   <button
                     onClick={() => setViewMode('table')}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                      viewMode === 'table'
-                        ? 'bg-lime-500 text-black'
-                        : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600'
-                    }`}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'table'
+                      ? 'bg-lime-500 text-black'
+                      : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600'
+                      }`}
                   >
                     📊 Tabla
                   </button>
                   <button
                     onClick={() => setViewMode('cards')}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                      viewMode === 'cards'
-                        ? 'bg-lime-500 text-black'
-                        : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600'
-                    }`}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'cards'
+                      ? 'bg-lime-500 text-black'
+                      : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600'
+                      }`}
                   >
                     🃏 Cards
                   </button>
@@ -796,11 +801,10 @@ export default function AdminDashboardPage() {
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setStatusFilter('all')}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
-                    statusFilter === 'all'
-                      ? 'bg-lime-500 text-black shadow-lg'
-                      : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600 hover:text-white'
-                  }`}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${statusFilter === 'all'
+                    ? 'bg-lime-500 text-black shadow-lg'
+                    : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600 hover:text-white'
+                    }`}
                 >
                   Todos ({projects.length})
                 </button>
@@ -809,18 +813,16 @@ export default function AdminDashboardPage() {
                     <button
                       key={status}
                       onClick={() => setStatusFilter(status)}
-                      className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
-                        statusFilter === status
-                          ? 'bg-lime-500 text-black shadow-lg'
-                          : `${
-                              status === 'pending' ? 'text-yellow-300 bg-yellow-500/10 border border-yellow-500/20 hover:bg-yellow-500/20' :
-                              status === 'approved' ? 'text-blue-300 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20' :
-                              status === 'live' ? 'text-green-300 bg-green-500/10 border border-green-500/20 hover:bg-green-500/20' :
+                      className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${statusFilter === status
+                        ? 'bg-lime-500 text-black shadow-lg'
+                        : `${status === 'pending' ? 'text-yellow-300 bg-yellow-500/10 border border-yellow-500/20 hover:bg-yellow-500/20' :
+                          status === 'approved' ? 'text-blue-300 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20' :
+                            status === 'live' ? 'text-green-300 bg-green-500/10 border border-green-500/20 hover:bg-green-500/20' :
                               status === 'completed' ? 'text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20' :
-                              status === 'draft' ? 'text-purple-300 bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20' :
-                              'text-red-300 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20'
-                            } bg-zinc-700 hover:bg-zinc-600`
-                      }`}
+                                status === 'draft' ? 'text-purple-300 bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20' :
+                                  'text-red-300 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20'
+                        } bg-zinc-700 hover:bg-zinc-600`
+                        }`}
                     >
                       {status?.charAt(0)?.toUpperCase() + status?.slice(1) || status} ({count})
                     </button>
@@ -888,7 +890,7 @@ export default function AdminDashboardPage() {
             </div>
             */}
           </div>
-          
+
           {/* Vista usando componentes modularizados */}
           {viewMode === 'cards' ? (
             <ProjectCardsView
@@ -910,6 +912,8 @@ export default function AdminDashboardPage() {
               toggleFeatured={toggleFeatured}
               setStatusDropdown={setStatusDropdown}
               statusDropdown={statusDropdown}
+              onDeployProtocol={deployProtocol}
+              actionsLoading={actionsLoading}
             />
           )}
         </div>
@@ -966,10 +970,9 @@ export default function AdminDashboardPage() {
                       }
                     }}
                     disabled={actionsLoading[`change-status-${statusDropdown}`]}
-                    className={`w-full text-left px-4 py-3 text-sm hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between ${
-                      currentProject?.status === statusOption ? 'font-bold bg-zinc-800 text-white' :
+                    className={`w-full text-left px-4 py-3 text-sm hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between ${currentProject?.status === statusOption ? 'font-bold bg-zinc-800 text-white' :
                       'text-gray-300 hover:text-white'
-                    }`}
+                      }`}
                     role="menuitem"
                     type="button"
                     tabIndex={0}
@@ -1017,6 +1020,38 @@ export default function AdminDashboardPage() {
                 if (!currentProject) return null;
 
                 const actions = [];
+
+                // SCaaS Actions (High Priority)
+
+                // 1. Deploy Protocol button
+                // Show if project is approved/live but NOT deployed yet
+                // checking status !== 'pending' && status !== 'rejected' implicit in approval flow?
+                // Actually, let's allow it for approved/live projects.
+
+
+                // 2. Certify Sale button
+                // Show ONLY if deployed AND not completed
+                if (currentProject.deploymentStatus === 'deployed' && currentProject.status !== 'completed') {
+                  actions.push(
+                    <button
+                      key="certify"
+                      onClick={async () => {
+                        await certifySale(currentProject.id, currentProject.title, currentProject.slug);
+                        setActionsDropdown(null);
+                      }}
+                      disabled={actionsLoading[`certify-${currentProject.id}`]}
+                      className={`w-full text-left px-4 py-3 text-sm hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between text-amber-400 hover:text-amber-300 font-semibold`}
+                      role="menuitem"
+                      type="button"
+                      tabIndex={0}
+                    >
+                      <span>BS 🏆 Certificar Venta</span>
+                      {actionsLoading[`certify-${currentProject.id}`] && (
+                        <div className="w-2 h-2 border border-current border-t-transparent rounded-full animate-spin"></div>
+                      )}
+                    </button>
+                  );
+                }
 
                 // Agregar acciones comunes
                 actions.push(

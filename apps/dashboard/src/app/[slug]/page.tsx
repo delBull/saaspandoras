@@ -8,8 +8,13 @@ import { shortlinks, shortlinkEvents } from '~/db/schema';
 import { headers } from 'next/headers';
 import { NextRequest } from 'next/server';
 
+// Force dynamic to prevent caching of 404s/redirects
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 interface PageProps {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 // Server Action for tracking and redirecting
@@ -116,8 +121,9 @@ async function handleShortlink(slug: string, searchParams: URLSearchParams, head
   }
 }
 
-export default async function ShortlinkPage({ params }: PageProps) {
+export default async function ShortlinkPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
+  const resolvedSearchParams = await searchParams;
 
   // Get host from headers for server-side URL construction
   const headersData = await headers();
@@ -125,7 +131,7 @@ export default async function ShortlinkPage({ params }: PageProps) {
   const protocol = host.includes('localhost') || host.includes('pbox.dev') ? 'http' : 'https';
 
   // Handle reserved slugs (you can add more)
-  if (['admin', 'api', 'dashboard', '_next', 'w'].includes(slug)) {
+  if (['admin', 'api', 'dashboard', '_next', 'w', 's'].includes(slug)) {
     console.log(`⏭️ Skipping reserved slug: ${slug}`);
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -141,15 +147,21 @@ export default async function ShortlinkPage({ params }: PageProps) {
     );
   }
 
-  // Get search params and headers for tracking
-  // Since this is a server component, we need access to URL search params
-  // Unfortunately Next.js doesn't directly provide search params to dynamic routes
-  // For now, we'll use empty search params and implement proper solution later
-  const searchParams = new URLSearchParams();
+  // Convert resolvedSearchParams to URLSearchParams
+  const urlSearchParams = new URLSearchParams();
+  if (resolvedSearchParams) {
+    Object.entries(resolvedSearchParams).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        value.forEach(v => urlSearchParams.append(key, v));
+      } else if (value) {
+        urlSearchParams.append(key, value);
+      }
+    });
+  }
 
   try {
     // Call handleShortlink - this will redirect if successful or throw error if not
-    await handleShortlink(slug, searchParams, headersData);
+    await handleShortlink(slug, urlSearchParams, headersData);
 
     // If we reach this point, handleShortlink should have redirected
     // This is a fallback in case something goes wrong

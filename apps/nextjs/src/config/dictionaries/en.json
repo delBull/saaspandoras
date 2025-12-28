@@ -107,9 +107,21 @@
       "title": "Build on web3",
       "subtitle": "Your community comes alive.",
       "typewriter_words": [
-        { "text": "Build Loyalty Protocols.", "cursorColor": "#A3E635", "contentColor": "#A3E635" },
-        { "text": "Participatory Incentive Systems.", "cursorColor": "#7b1b74", "contentColor": "#7b1b74" },
-        { "text": "Design Real NFT Memberships.", "cursorColor": "#A3E635", "contentColor": "#A3E635" }
+        {
+          "text": "Build Loyalty Protocols.",
+          "cursorColor": "#A3E635",
+          "contentColor": "#A3E635"
+        },
+        {
+          "text": "Participatory Incentive Systems.",
+          "cursorColor": "#7b1b74",
+          "contentColor": "#7b1b74"
+        },
+        {
+          "text": "Design Real NFT Memberships.",
+          "cursorColor": "#A3E635",
+          "contentColor": "#A3E635"
+        }
       ]
     },
     "video": {
@@ -271,141 +283,156 @@
     }
   },
   "dropdown": {
-        "billing": "Billing",
-        "settings": "Settings",
-        "sign_out": "Sign Out"
-      },
+    "billing": "Billing",
+    "settings": "Settings",
+    "sign_out": "Sign Out"
+  },
   "terms": {
-    "title": "Terms of Use",
-    "lastUpdate": "Last Updated: October 2025",
+    "title": "Terms & Conditions",
+    "lastUpdate": "Last Updated: December 2025",
     "tabTerms": "Terms of Use",
     "tabPrivacy": "Privacy Policy",
     "sections": {
-      "welcome": {
-        "title": "Welcome to Pandora's Finance",
-        "content": "These terms and conditions ('Terms of Use') govern the access to and use of our software-as-a-service (SaaS) platform and DApp, available at https://dapp.pandoras.finance/ (the 'Platform'), as well as the services for issuing Digital Artifacts and acquiring digital rights and utilities."
-      },
-      "definitions": {
-        "title": "Definitions",
+      "nature": {
+        "title": "Nature of the Platform",
+        "content": "Pandora’s Finance (“Pandora’s”) provides a software-as-a-service (SaaS) platform and decentralized application (DApp) that enables creators and organizations to design, deploy, and manage utility-based digital protocols on blockchain infrastructure.",
         "items": [
-          "Platform: Pandora's SaaS technological services and DApp.",
-          "Users: Individuals or legal entities ('Creators' or 'Community') who access and use the services.",
-          "Access Artifacts (NFTs): Unique digital assets (NFTs) that grant the holder access to utility protocols, benefits, or specific 'Creations'.",
-          "Utility Rights: Specific digital benefits, access, or functionalities linked to an Access Artifact or a protocol within the Platform.",
-          "Artifact Issuance: The process of creating and registering a unique digital asset (NFT) on the blockchain, which represents a specific utility defined by a 'Creator'."
+          "Pandora’s is not: An investment platform, A financial advisor, A broker, custodian, or fiduciary, A guarantor of outcomes, profits, or regulatory status.",
+          "Pandora’s provides technology and infrastructure only."
         ]
       },
-      "usage": {
-        "title": "Platform Use",
+      "roles": {
+        "title": "User Roles",
+        "content": "The Platform may be used by different types of users, including but not limited to: Creators / Protocol Owners, Community Participants, Clients engaging professional services under a separate agreement. Different rights and obligations apply depending on the role."
+      },
+      "no_investment": {
+        "title": "No Investment or Securities Offering",
         "items": [
-          "The Platform allows 'Creators' to design and launch utility protocols, and the 'Community' to obtain Access Artifacts (NFTs) that grant Utility Rights in selected 'Creations'.",
-          "Users must have a compatible digital wallet to interact with the Platform.",
-          "Pandora's operates as a technology platform (SaaS) and is not a financial, investment, or any other type of advisor. We do not offer guarantees on the value, liquidity, or future benefits of Digital Artifacts or Utility Rights."
+          "Any digital artifacts, NFTs, access keys, or protocol utilities created or issued using the Platform: Do not represent equity, ownership, profit rights, or investment contracts. Do not guarantee value, liquidity, or appreciation. Are strictly limited to the utility explicitly defined by the creator.",
+          "Pandora’s does not offer, promote, or facilitate securities."
         ]
       },
-      "responsibility": {
-        "title": "Liability and Disclaimer of Warranties",
+      "blockchain": {
+        "title": "Blockchain Acknowledgment",
         "items": [
-          "Pandora's is not responsible for the volatility, losses, risks, or value fluctuations of digital assets (like cryptocurrencies or Artifacts) used or acquired on the Platform.",
-          "The Platform operates on the blockchain, therefore all transactions are irreversible and cannot be modified once confirmed.",
-          "Users accept and understand that possessing an Access Artifact (NFT) only grants the utility rights or access specified in its 'Creation' (protocol), and does not confer ownership over the Pandora's company, its assets, or any underlying asset not explicitly defined in said protocol.",
-          "The Platform reserves the right to modify, update, or suspend any service without prior notice."
+          "Users acknowledge and accept that: Blockchain transactions are irreversible. Smart contracts are immutable once deployed. Errors, misuse, or misconfiguration may result in permanent loss.",
+          "Pandora’s is not responsible for losses arising from blockchain mechanics or user actions."
         ]
       },
-      "requirements": {
-        "title": "User Requirements",
-        "items": [
-          "You must be 18 years or older to use the Platform.",
-          "You agree to comply with the tax and legal regulations of your country of residence.",
-          "Pandora's reserves the right to refuse access to any user if suspicious activity or violations of these Terms are detected."
-        ]
+      "services": {
+        "title": "Professional Services",
+        "content": "Any professional services (including protocol viability analysis, architecture design, or deployment) are governed exclusively by: A Master Services Agreement (MSA), and One or more Statements of Work (SOW). These documents supersede these Terms with respect to services."
       },
       "payments": {
-        "title": "Payments and Service Fees",
+        "title": "Payments & Refunds",
         "items": [
-          "Service fee payments on the Platform are made exclusively in cryptocurrencies or via approved methods.",
-          "Pandora's, as a SaaS provider, charges fees for using the platform, issuing Artifacts, or interacting with protocols. These fees will be clearly communicated.",
-          "Due to the nature of the blockchain, all transactions (including service fee payments or Artifact acquisition) are final and irreversible. No refunds are offered."
+          "All payments made through the Platform or associated links are: Final, Non-refundable, Considered acceptance of the applicable contractual terms.",
+          "Pandora’s does not offer refunds once work has started or blockchain actions have been authorized."
         ]
       },
-      "dataProtection": {
-        "title": "Data Protection and Security",
+      "liability": {
+        "title": "Limitation of Liability",
         "items": [
-          "Personal data is processed in accordance with our Privacy Policy.",
-          "The user is responsible for the security of their digital wallet and private keys.",
-          "Pandora's is not responsible for unauthorized access resulting from the user's negligence in safeguarding their credentials."
+          "To the maximum extent permitted by law: Pandora’s shall not be liable for indirect, incidental, or consequential damages.",
+          "Total liability shall not exceed the fees paid directly to Pandora’s for the specific service or platform usage giving rise to the claim."
         ]
+      },
+      "ip": {
+        "title": "Intellectual Property",
+        "content": "The Platform, frameworks, factories, and underlying technology remain the exclusive property of Pandora’s. Clients retain ownership of their project-specific configurations and deployed contracts, subject to the applicable agreements."
+      },
+      "termination": {
+        "title": "Suspension & Termination",
+        "content": "Pandora’s may suspend or terminate access to the Platform if: These Terms are violated, Illegal or abusive activity is detected, Required compliance standards are not met."
       },
       "law": {
-        "title": "Applicable Law and Jurisdiction",
-        "items": [
-          "These Terms of Use are governed by the laws of Mexico.",
-          "Any dispute will be resolved in the competent courts in Mexico City, Mexico."
-        ]
+        "title": "Governing Law",
+        "content": "These Terms are governed by the laws of Mexico. Jurisdiction is expressly agreed to be Mexico City."
+      },
+      "acceptance": {
+        "title": "Acceptance",
+        "content": "By accessing or using the Platform, you acknowledge that you have read, understood, and accepted these Terms."
       }
-    },
-    "acceptance": {
-      "title": "Acceptance of the Terms of Use",
-      "content": "By using the platform, you acknowledge that you have read and understood these Terms of Use and the Privacy Policy, agreeing to comply with them without reservation."
     }
   },
   "privacy": {
     "title": "Privacy Policy",
-    "lastUpdate": "Last Updated: March 2025",
-    "introduction": "At Pandora's, we are committed to protecting our users' privacy. This Privacy Policy describes how we collect, use, and protect your personal information when you use our Platform.",
+    "lastUpdate": "Last Updated: December 2025",
+    "introduction": "Pandora’s Finance (“Pandora’s”, “we”, “us”) is committed to protecting the privacy of users of its software-as-a-service platform, decentralized applications (DApps), and related professional services. This Privacy Policy explains how we collect, use, store, and protect personal data.",
     "sections": {
+      "scope": {
+        "title": "Scope",
+        "items": [
+          "Users of the Pandora’s Platform and DApp",
+          "Clients engaging professional services under a Master Services Agreement (MSA) and Statement(s) of Work (SOW)",
+          "Website visitors and lead submissions"
+        ]
+      },
       "collection": {
         "title": "Information We Collect",
         "items": [
-          "Personal information: Name, email (if provided voluntarily), digital wallet address.",
-          "Transaction information: History of platform interactions, Artifact 'minting', and blockchain movements associated with your wallet.",
-          "Technical data: IP address, browser type, cookie data."
+          "a) Information You Provide: Name, email address. Company or project name. Wallet address(es). Communications (emails, WhatsApp, forms). Billing and invoicing information (when applicable).",
+          "b) Automatically Collected Data: IP address. Browser and device data. Usage logs. Cookies and session identifiers.",
+          "c) Blockchain Data: Public wallet addresses. On-chain transactions. Smart contract interactions. ⚠️ Blockchain data is public, immutable, and not controlled by Pandora’s."
         ]
       },
-      "usage": {
-        "title": "Use of Information",
+      "purpose": {
+        "title": "Purpose of Data Processing",
         "items": [
-          "To process transactions and manage user accounts.",
-          "To improve the security and functionality of the Platform.",
-          "To send communications about service changes and updates.",
-          "To comply with applicable legal and KYC/AML regulations, if required."
+          "Provide access to the Platform and DApp",
+          "Deliver professional services (SOW execution)",
+          "Issue invoices, receipts, and confirmations",
+          "Operate CRM, lead qualification, and workflow automation",
+          "Communicate updates, operational notices, and service-related information",
+          "Improve security, performance, and reliability",
+          "Comply with legal, tax, and regulatory obligations"
         ]
       },
-      "protection": {
-        "title": "Information Protection",
+      "legal_basis": {
+        "title": "Legal Basis",
         "items": [
-          "We implement technical and organizational security measures.",
-          "Information on the blockchain is public, immutable, and transparent.",
-          "We do not sell personal information to third parties without explicit consent."
+          "User consent",
+          "Contractual necessity (Platform use, MSA/SOW)",
+          "Legal obligations",
+          "Legitimate business interests (security, fraud prevention, analytics)"
         ]
+      },
+      "sharing": {
+        "title": "Data Sharing & Processors",
+        "content": "Pandora’s may share data with trusted third-party service providers strictly for operational purposes (Payment processors, Blockchain infrastructure, Email services). These providers process data under confidentiality. Pandora’s does not sell personal data."
+      },
+      "international": {
+        "title": "International Data Transfers",
+        "content": "Due to the global and decentralized nature of blockchain and cloud infrastructure, data may be processed or stored in jurisdictions outside your country of residence. Pandora’s takes reasonable measures to ensure adequate data protection standards."
+      },
+      "retention": {
+        "title": "Data Retention",
+        "content": "We retain personal data only as long as necessary for contractual obligations and compliance. Some data cannot be deleted (Blockchain records, Invoicing)."
       },
       "rights": {
-        "title": "User Rights (Data Protection)",
+        "title": "User Rights",
         "items": [
-          "Access, modify, or delete your personal information (to the extent it is not on the blockchain).",
-          "Request the cancellation of your account (if applicable).",
-          "Opt-out of receiving promotional communications."
+          "Request access to your personal data",
+          "Request correction of inaccurate data",
+          "Request deletion where legally permissible",
+          "Opt out of non-essential communications"
         ]
       },
-      "cookies": {
-        "title": "Cookies and Tracking Technologies",
-        "items": [
-          "We use cookies to improve the user experience.",
-          "Secure authentication and persistent session.",
-          "Behavioral and navigation analysis."
-        ]
+      "security": {
+        "title": "Security",
+        "content": "We implement technical and organizational safeguards. However, no system is entirely risk-free. Users are responsible for safeguarding their wallets and private keys."
       },
-      "transfers": {
-        "title": "International Data Transfers",
-        "content": "Due to the decentralized nature of blockchain technology, some data (like public transactions) may be processed and replicated globally. We ensure compliance with applicable data protection regulations."
+      "other_agreements": {
+        "title": "Relationship with Other Agreements",
+        "content": "This Privacy Policy operates alongside Pandora’s Terms & Conditions, MSA, and SOW. In case of conflict, contractual agreements governing services prevail."
       },
-      "changes": {
-        "title": "Changes to the Privacy Policy",
-        "content": "We may update this policy at any time. Users will be notified of significant changes via the Platform or email (if provided)."
+      "updates": {
+        "title": "Updates",
+        "content": "Pandora’s may update this Privacy Policy from time to time. Material changes will be communicated via the Platform or email."
       },
       "contact": {
         "title": "Contact",
-        "content": "For questions or requests regarding data privacy, contact us at:",
+        "content": "For privacy-related questions or requests:",
         "email": "legal@pandoras.finance"
       }
     }
@@ -435,12 +462,36 @@
     "subtitle": "At Pandora, every available Creation is built by community architects. This ensures that only Creations based on real utility are part of our platform.",
     "clasification": "Classification of Artifacts and Utility Protocols",
     "assets": {
-      "casa_bella": { "tag": "REAL ESTATE", "title": "Casa Bella", "description": "Una villa de lujo con vista al mar y acabados de alta gama." },
-      "vista_horizonte": { "tag": "REAL ESTATE", "title": "Vista Horizonte", "description": "La mejor vista de la Bahía en un lugar maravilloso." },
-      "narai": { "tag": "REAL ESTATE", "title": "Narai", "description": "Condominios con vista al mar, comodidad y lujo." },
-      "startup_ia": { "tag": "STARTUP", "title": "Startup de IA", "description": "Revolucionando el mercado con inteligencia artificial." },
-      "fintech": { "tag": "STARTUP", "title": "Fintech Innovadora", "description": "Ofreciendo soluciones de pago radicalmente nuevas." },
-      "ecommerce": { "tag": "STARTUP", "title": "E-commerce Sostenible", "description": "Moda sostenible con un gran potencial de crecimiento." }
+      "casa_bella": {
+        "tag": "REAL ESTATE",
+        "title": "Casa Bella",
+        "description": "Una villa de lujo con vista al mar y acabados de alta gama."
+      },
+      "vista_horizonte": {
+        "tag": "REAL ESTATE",
+        "title": "Vista Horizonte",
+        "description": "La mejor vista de la Bahía en un lugar maravilloso."
+      },
+      "narai": {
+        "tag": "REAL ESTATE",
+        "title": "Narai",
+        "description": "Condominios con vista al mar, comodidad y lujo."
+      },
+      "startup_ia": {
+        "tag": "STARTUP",
+        "title": "Startup de IA",
+        "description": "Revolucionando el mercado con inteligencia artificial."
+      },
+      "fintech": {
+        "tag": "STARTUP",
+        "title": "Fintech Innovadora",
+        "description": "Ofreciendo soluciones de pago radicalmente nuevas."
+      },
+      "ecommerce": {
+        "tag": "STARTUP",
+        "title": "E-commerce Sostenible",
+        "description": "Moda sostenible con un gran potencial de crecimiento."
+      }
     },
     "info_modal": {
       "title": "About our Creations Hub",
@@ -448,42 +499,42 @@
       "paragraph2": "With Pandora, participation is no longer passive: now you can build your community, activate it, and generate Rewards for real 'Labor'. Our platform guides you from start to finish: from designing your protocol to managing your Creations and Artifacts, all within a transparent, utility-based ecosystem designed to grow with your community."
     },
     "info_sections": {
-        "section1": {
-          "title": "Take control of your community",
-          "content": "Select a category, review its 'Codex' (documentation), and begin your 'Forge' (creation) process in minutes. Each category comes with clear metrics so you can make design decisions with confidence."
-        },
-        "section2": {
-          "title": "Transparency and continuous participation",
-          "content": "We offer a real-time monitoring system for 'Labor' (work) that guarantees the quality of each protocol. This way, your community grows, backed by data and total transparency."
-        }
+      "section1": {
+        "title": "Take control of your community",
+        "content": "Select a category, review its 'Codex' (documentation), and begin your 'Forge' (creation) process in minutes. Each category comes with clear metrics so you can make design decisions with confidence."
       },
-      "tokenization_process": {
-        "title_part1": "From Idea to Artifact",
-        "title_part2": "Manifest",
-        "subtitle": "Transparency and utility at the service of your community",
-        "steps": [
-          {
-            "title": "Template Selection",
-            "description": "Choose a base template ('Access', 'Loyalty', 'Work-to-Earn') from our 'Codex' (audited template library)."
-          },
-          {
-            "title": "No-Code Configuration",
-            "description": "Define your protocol's rules: tasks, rewards, benefits, and governance. Without writing code."
-          },
-          {
-            "title": "Design and Testing (Testnet)",
-            "description": "Customize your Artifact and test it in a safe environment (Testnet) before 'Unleashing' it to the world."
-          },
-          {
-            "title": "Deployment and Ownership",
-            "description": "'Unleash' (launch) your Artifact on the blockchain. You are the sole owner and person responsible for the smart contract."
-          },
-          {
-            "title": "Management and Growth",
-            "description": "Use your dashboard to monitor participation, manage rewards, and grow your ecosystem."
-          }
-        ]
+      "section2": {
+        "title": "Transparency and continuous participation",
+        "content": "We offer a real-time monitoring system for 'Labor' (work) that guarantees the quality of each protocol. This way, your community grows, backed by data and total transparency."
       }
+    },
+    "tokenization_process": {
+      "title_part1": "From Idea to Artifact",
+      "title_part2": "Manifest",
+      "subtitle": "Transparency and utility at the service of your community",
+      "steps": [
+        {
+          "title": "Template Selection",
+          "description": "Choose a base template ('Access', 'Loyalty', 'Work-to-Earn') from our 'Codex' (audited template library)."
+        },
+        {
+          "title": "No-Code Configuration",
+          "description": "Define your protocol's rules: tasks, rewards, benefits, and governance. Without writing code."
+        },
+        {
+          "title": "Design and Testing (Testnet)",
+          "description": "Customize your Artifact and test it in a safe environment (Testnet) before 'Unleashing' it to the world."
+        },
+        {
+          "title": "Deployment and Ownership",
+          "description": "'Unleash' (launch) your Artifact on the blockchain. You are the sole owner and person responsible for the smart contract."
+        },
+        {
+          "title": "Management and Growth",
+          "description": "Use your dashboard to monitor participation, manage rewards, and grow your ecosystem."
+        }
+      ]
+    }
   },
   "about": {
     "title": "About Pandora's Finance: Building the New Digital Utility",
