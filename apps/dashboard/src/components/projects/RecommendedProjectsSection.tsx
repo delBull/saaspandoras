@@ -25,8 +25,7 @@ export default function RecommendedProjectsSection({ currentProjectSlug }: Recom
   useEffect(() => {
     const fetchFeaturedProjects = async () => {
       try {
-        const baseUrl = typeof window !== 'undefined' ? '' : 'http://localhost:3000';
-        const response = await fetch(`${baseUrl}/api/projects/featured`, {
+        const response = await fetch('/api/projects/featured', {
           cache: 'no-store',
         });
 

@@ -1,0 +1,348 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "IW2ERewardDistributor",
+  "sourceName": "contracts/interfaces/advanced/IW2ERewardDistributor.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "taskId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address[]",
+          "name": "slashedVoters",
+          "type": "address[]"
+        },
+        {
+          "internalType": "string",
+          "name": "reason",
+          "type": "string"
+        }
+      ],
+      "name": "applySlashing",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "distributor",
+          "type": "address"
+        },
+        {
+          "internalType": "bool",
+          "name": "authorized",
+          "type": "bool"
+        }
+      ],
+      "name": "authorizeDistributor",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "taskId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "voter",
+          "type": "address"
+        }
+      ],
+      "name": "canClaimReward",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "taskId",
+          "type": "uint256"
+        }
+      ],
+      "name": "claimReward",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "taskId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "totalReward",
+          "type": "uint256"
+        },
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "winner",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "rewardAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bool",
+              "name": "claimed",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct IW2ERewardDistributor.WinnerInfo[]",
+          "name": "winners",
+          "type": "tuple[]"
+        }
+      ],
+      "name": "createDistribution",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "taskId",
+          "type": "uint256"
+        }
+      ],
+      "name": "finalizeDistribution",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "taskId",
+          "type": "uint256"
+        }
+      ],
+      "name": "getDistribution",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "taskId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "totalReward",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "distributedAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "remainingAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "participantsCount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "createdAt",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bool",
+              "name": "finalized",
+              "type": "bool"
+            },
+            {
+              "internalType": "bool",
+              "name": "claimed",
+              "type": "bool"
+            },
+            {
+              "internalType": "uint256",
+              "name": "claimDeadline",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct IW2ERewardDistributor.RewardDistribution",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getDistributionConfig",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "minParticipationRewardPct",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "maxSlashingPct",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "claimDuration",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "distributionFeeBps",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getDistributionMetrics",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "totalDistributions",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "totalRewardsDistributed",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "totalSlashingApplied",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "pendingDistributions",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "taskId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "voter",
+          "type": "address"
+        }
+      ],
+      "name": "getVoterReward",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "taskId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "rewardAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "slashingAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bool",
+              "name": "claimed",
+              "type": "bool"
+            },
+            {
+              "internalType": "uint256",
+              "name": "claimTime",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bool",
+              "name": "isSlashed",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct IW2ERewardDistributor.VoterReward",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "newMinParticipation",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "newMaxSlashing",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "newClaimDuration",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "newDistributionFee",
+          "type": "uint256"
+        }
+      ],
+      "name": "updateDistributionConfig",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

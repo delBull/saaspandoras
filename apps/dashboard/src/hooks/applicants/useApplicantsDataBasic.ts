@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 
 export interface Project {
@@ -13,7 +13,13 @@ export interface Project {
   businessCategory: string;
   coverPhotoUrl?: string | null;
   targetAmount?: string | number | null;
+
   raisedAmount?: string | number | null;
+  contractAddress?: string;
+  licenseContractAddress?: string;
+  utilityContractAddress?: string;
+  governorContractAddress?: string;
+  w2eConfig?: any;
 }
 
 export interface ApplicantsData {
@@ -62,9 +68,9 @@ export function useApplicantsDataBasic(): ApplicantsData {
     void fetchProjects();
   }, []);
 
-  const pendingProjects = projects.filter(p => p.status === 'pending');
-  const approvedProjects = projects.filter(p => ['approved', 'live', 'completed'].includes(p.status));
-  const approvedOnlyProjects = projects.filter(p => p.status === 'approved');
+  const pendingProjects = useMemo(() => projects.filter(p => p.status === 'pending'), [projects]);
+  const approvedProjects = useMemo(() => projects.filter(p => ['approved', 'live', 'completed'].includes(p.status)), [projects]);
+  const approvedOnlyProjects = useMemo(() => projects.filter(p => p.status === 'approved'), [projects]);
 
   return {
     projects,

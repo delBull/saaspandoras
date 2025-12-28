@@ -2,6 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { EyeIcon, ImageIcon } from "lucide-react";
 import type { Project } from "../../../hooks/applicants/useApplicantsData";
+import { useWalletBalance } from "thirdweb/react";
+import { client } from "@/lib/thirdweb-client";
+import { config } from "@/config";
 
 interface ProjectCardProps {
   project: Project;
@@ -9,10 +12,26 @@ interface ProjectCardProps {
   gridColumns?: 3 | 4 | 6;
 }
 
+import { defineChain } from "thirdweb";
+
+// ...
+
 export function ProjectCard({ project, variant = 'approved', gridColumns = 3 }: ProjectCardProps) {
+  // Robust Chain ID handling
+  const rawChainId = Number((project as any).chainId);
+  const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
+
+  // Real Data Hook
+  const { data: treasuryBalance } = useWalletBalance({
+    client,
+    chain: defineChain(safeChainId),
+    address: (project as any).treasuryAddress || (project as any).treasuryContractAddress || "",
+  });
+
   const targetAmount = Number(project.targetAmount ?? 0);
-  const raisedAmount = Number(project.raisedAmount ?? 0);
-  const progress = targetAmount > 0 ? (raisedAmount / targetAmount) * 100 : 0;
+  // Use real balance if available, otherwise fallback to DB text (or 0)
+  const raisedAmount = treasuryBalance ? Number(treasuryBalance.displayValue) : Number(project.raisedAmount ?? 0);
+  const progress = targetAmount > 0 ? Math.min((raisedAmount / targetAmount) * 100, 100) : 0;
 
   const isPending = project.status === 'pending';
 
@@ -122,6 +141,21 @@ export function ProjectCard({ project, variant = 'approved', gridColumns = 3 }: 
 
           {!isPending && project.status !== 'pending' && (
             <div className="mb-4">
+              {/* Dynamic Phase Info */}
+              {(() => {
+                const config = (project as any).w2eConfig;
+                const activePhase = config?.phases?.find((p: any) => p.isActive);
+                const price = activePhase?.tokenPrice ?? config?.tokenomics?.price;
+                return (activePhase || price) ? (
+                  <div className="flex justify-between items-center text-xs mb-2 bg-zinc-800/50 p-2 rounded-lg border border-zinc-700/50">
+                    <span className="text-gray-400">{activePhase?.name ?? "Venta Pública"}</span>
+                    <span className="font-mono font-bold text-lime-400">
+                      {price ? `$${price}` : 'N/A'}
+                    </span>
+                  </div>
+                ) : null;
+              })()}
+
               <div className="flex justify-between items-center text-xs text-gray-600 dark:text-gray-400 mb-2">
                 <span>Progreso de Financiamiento</span>
                 <span className="font-semibold text-gray-900 dark:text-white">{progress.toFixed(1)}%</span>
@@ -141,21 +175,18 @@ export function ProjectCard({ project, variant = 'approved', gridColumns = 3 }: 
 
           <div className={`flex justify-between items-center ${isPending ? 'pt-2' : 'pt-3'} border-t border-gray-200 dark:border-zinc-700 mt-auto`}>
             {variant === 'pending' ? (
-              <span className={`px-2 py-1 text-xs font-medium bg-yellow-500/20 text-yellow-300 rounded-full ${
-                gridColumns === 6 ? 'px-1.5 py-0.5 text-xs' : gridColumns === 4 ? 'px-2 py-1 text-xs' : 'px-2 py-1 text-xs'
-              }`}>
+              <span className={`px-2 py-1 text-xs font-medium bg-yellow-500/20 text-yellow-300 rounded-full ${gridColumns === 6 ? 'px-1.5 py-0.5 text-xs' : gridColumns === 4 ? 'px-2 py-1 text-xs' : 'px-2 py-1 text-xs'
+                }`}>
                 En Revisión
               </span>
             ) : (
-              <span className={`px-2 py-1 text-xs font-medium bg-emerald-500/20 text-emerald-300 rounded-full ${
-                gridColumns === 6 ? 'px-1.5 py-0.5 text-xs' : gridColumns === 4 ? 'px-2 py-1 text-xs' : 'px-2 py-1 text-xs'
-              }`}>
+              <span className={`px-2 py-1 text-xs font-medium bg-emerald-500/20 text-emerald-300 rounded-full ${gridColumns === 6 ? 'px-1.5 py-0.5 text-xs' : gridColumns === 4 ? 'px-2 py-1 text-xs' : 'px-2 py-1 text-xs'
+                }`}>
                 Aprobado
               </span>
             )}
-            <div className={`flex items-center gap-1 overflow-hidden ${
-              isPending ? 'text-xs' : gridColumns === 6 ? 'text-xs' : 'text-sm'
-            } ${variant === 'pending' ? 'text-lime-400' : 'text-emerald-400'}`}>
+            <div className={`flex items-center gap-1 overflow-hidden ${isPending ? 'text-xs' : gridColumns === 6 ? 'text-xs' : 'text-sm'
+              } ${variant === 'pending' ? 'text-lime-400' : 'text-emerald-400'}`}>
               <EyeIcon className={`${gridColumns === 6 ? 'w-3 h-3' : 'w-4 h-4'} flex-shrink-0`} />
               <span className={`truncate ${gridColumns === 6 ? 'hidden' : gridColumns === 4 ? 'hidden sm:inline' : 'inline'}`}>
                 {gridColumns === 6 || gridColumns === 4 ? 'Ver' : 'Ver Proyecto'}

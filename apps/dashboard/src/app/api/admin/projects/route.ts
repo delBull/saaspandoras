@@ -1,4 +1,4 @@
- 
+
 import { NextResponse } from "next/server";
 import { db } from "~/db";
 
@@ -108,6 +108,15 @@ export async function GET(_request: Request) {
           updateAuthorityAddress: true,
           applicantPosition: true,
           verificationAgreement: true,
+
+          // SCaaS / W2E Fields
+          licenseContractAddress: true,
+          utilityContractAddress: true,
+          loomContractAddress: true,
+          governorContractAddress: true,
+          chainId: true,
+          deploymentStatus: true,
+          w2eConfig: true,
         }
       });
       console.log(`📊 Admin API: Found ${projectsData.length} projects`);
@@ -314,7 +323,7 @@ export async function POST(request: Request) {
         linkedinUrl: data.linkedinUrl ?? null,
 
         // --- Sección 3: ¡LA CLAVE! Híbrido de Números y Strings ---
-        
+
         // Campos DECIMAL (decimal, numeric) -> van como STRING
         targetAmount: data.targetAmount.toString(), // Convertir a string
         totalValuationUsd: data.totalValuationUsd?.toString() ?? null, // Convertir a string

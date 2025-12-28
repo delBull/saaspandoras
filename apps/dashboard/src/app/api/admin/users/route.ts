@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import postgres from "postgres";
 import type { UserData } from "@/types/admin";
+import { getSuperAdminWallet } from "@/lib/constants";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -62,11 +63,7 @@ export async function GET() {
       return NextResponse.json({ message: "No autorizado" }, { status: 403 });
     }
 
-    if (!process.env.SUPER_ADMIN_WALLET) {
-      throw new Error("Missing env: SUPER_ADMIN_WALLET");
-    }
-
-    const SUPER_ADMIN_WALLETS = [process.env.SUPER_ADMIN_WALLET.toLowerCase()] as const;
+    const SUPER_ADMIN_WALLETS = [getSuperAdminWallet()] as const;
 
     const sql = getDatabaseConnection();
 

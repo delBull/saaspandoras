@@ -29,6 +29,12 @@ import { AnimatedBackground } from "@/components/apply/AnimatedBackground";
 import { PreFilterModal } from "@/components/apply/PreFilterModal";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { RestrictedApplicationModal } from "@/components/apply/RestrictedApplicationModal";
+import { useActiveAccount, useReadContract } from "thirdweb/react";
+import { getContract } from "thirdweb";
+import { client } from "@/lib/thirdweb-client";
+import { config } from "@/config";
+import { useEffect } from "react";
 
 export default function ApplyInfoPage() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -38,9 +44,60 @@ export default function ApplyInfoPage() {
   const { open } = useProjectModal();
   const { openModal } = useTermsModal();
 
+  // --- NFT GATE LOGIC ---
+  const account = useActiveAccount();
+  const [isGateEnabled, setIsGateEnabled] = useState(false);
+  const [showRestrictedModal, setShowRestrictedModal] = useState(false);
+
+  // 1. Check Global Setting
+  useEffect(() => {
+    const checkGateStatus = async () => {
+      try {
+        const res = await fetch("/api/settings?key=apply_gate_enabled");
+        if (res.ok) {
+          const data = await res.json();
+          setIsGateEnabled(data.value === "true");
+        }
+      } catch (e) {
+        console.error("Failed to check gate status", e);
+      }
+    };
+    checkGateStatus();
+  }, []);
+
+  // 2. Check NFT Balance
+  const contract = getContract({
+    client,
+    chain: config.chain,
+    address: config.applyPassNftAddress,
+  });
+
+  const { data: balance } = useReadContract({
+    contract,
+    method: "balanceOf",
+    params: [account?.address || "0x0000000000000000000000000000000000000000"],
+    queryOptions: { enabled: !!account && isGateEnabled }
+  });
+
+  const hasAccess = !isGateEnabled || (balance && Number(balance) > 0);
+
   // Función para manejar el clic en los botones
   const handleFormSelection = (formType: 'multi-step' | 'conversational') => {
     if (!acceptedTerms) return;
+
+    // Check Gate
+    if (isGateEnabled) {
+      if (!account) {
+        // If not connected, show restricted modal (which prompts connection)
+        setShowRestrictedModal(true);
+        return;
+      }
+      if (!hasAccess) {
+        setShowRestrictedModal(true);
+        return;
+      }
+    }
+
     setSelectedFormType(formType);
     setShowPreFilterModal(true);
   };
@@ -306,16 +363,16 @@ export default function ApplyInfoPage() {
                 className={cn(
                   "relative p-6 bg-gradient-to-br border rounded-xl backdrop-blur-sm transition-all duration-300 hover:scale-105",
                   index === 0 ? "from-lime-500/10 to-emerald-500/10 border-lime-500/30" :
-                  index === launchProcess.length - 1 ? "from-purple-500/10 to-pink-500/10 border-purple-500/30" :
-                  "from-zinc-900/50 to-zinc-800/50 border-zinc-700/50"
+                    index === launchProcess.length - 1 ? "from-purple-500/10 to-pink-500/10 border-purple-500/30" :
+                      "from-zinc-900/50 to-zinc-800/50 border-zinc-700/50"
                 )}
               >
                 <div className="flex items-center gap-4 mb-4">
                   <div className={cn(
                     "flex items-center justify-center w-12 h-12 rounded-full font-bold text-lg",
                     index === 0 ? "bg-lime-500 text-black" :
-                    index === launchProcess.length - 1 ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white" :
-                    "bg-zinc-800 text-lime-400"
+                      index === launchProcess.length - 1 ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white" :
+                        "bg-zinc-800 text-lime-400"
                   )}>
                     {step.step}
                   </div>
@@ -506,6 +563,13 @@ export default function ApplyInfoPage() {
         onClose={() => setShowPreFilterModal(false)}
         onProceed={handleProceedToForm}
         formType={selectedFormType}
+      />
+
+      <RestrictedApplicationModal
+        isOpen={showRestrictedModal}
+        onClose={() => setShowRestrictedModal(false)}
+        isWalletConnected={!!account}
+        hasAccess={hasAccess}
       />
 
       {/* Modal is now rendered globally in DashboardClientWrapper */}

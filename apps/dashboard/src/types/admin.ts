@@ -33,6 +33,15 @@ export interface Project {
   coverPhotoUrl?: string;
   tagline?: string;
   slug?: string;
+  // SCaaS / W2E Fields
+  licenseContractAddress?: string;
+  utilityContractAddress?: string;
+  loomContractAddress?: string;
+  governorContractAddress?: string;
+  chainId?: number;
+  deploymentStatus?: string;
+  w2eConfig?: any;
+  treasuryAddress?: string;
 }
 
 export interface AdminData {

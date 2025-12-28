@@ -22,14 +22,44 @@ export {
   useGamificationContext
 } from './components';
 
-// Export singleton instances
-export const gamificationEngine = GamificationEngine.getInstance();
-export const pointsManager = PointsManager.getInstance();
-export const achievementManager = AchievementManager.getInstance();
-export const rewardManager = RewardManager.getInstance();
-export const eventSystem = EventSystem.getInstance();
-export const leaderboardManager = LeaderboardManager.getInstance();
-export const tokenizationIntegration = TokenizationIntegration.getInstance();
+// Export singleton accessors (lazy initialization)
+export const getGamificationEngine = () => GamificationEngine.getInstance();
+export const getPointsManager = () => PointsManager.getInstance();
+export const getAchievementManager = () => AchievementManager.getInstance();
+export const getRewardManager = () => RewardManager.getInstance();
+export const getEventSystem = () => EventSystem.getInstance();
+export const getLeaderboardManager = () => LeaderboardManager.getInstance();
+export const getTokenizationIntegration = () => TokenizationIntegration.getInstance();
+
+// Deprecated: kept for backward compatibility but discouraged as they cause side effects
+// wrapped in getters to avoid immediate execution
+export const gamificationEngine = new Proxy({}, {
+  get: (_target, prop) => (GamificationEngine.getInstance() as any)[prop]
+}) as GamificationEngine;
+
+export const pointsManager = new Proxy({}, {
+  get: (_target, prop) => (PointsManager.getInstance() as any)[prop]
+}) as PointsManager;
+
+export const achievementManager = new Proxy({}, {
+  get: (_target, prop) => (AchievementManager.getInstance() as any)[prop]
+}) as AchievementManager;
+
+export const rewardManager = new Proxy({}, {
+  get: (_target, prop) => (RewardManager.getInstance() as any)[prop]
+}) as RewardManager;
+
+export const eventSystem = new Proxy({}, {
+  get: (_target, prop) => (EventSystem.getInstance() as any)[prop]
+}) as EventSystem;
+
+export const leaderboardManager = new Proxy({}, {
+  get: (_target, prop) => (LeaderboardManager.getInstance() as any)[prop]
+}) as LeaderboardManager;
+
+export const tokenizationIntegration = new Proxy({}, {
+  get: (_target, prop) => (TokenizationIntegration.getInstance() as any)[prop]
+}) as TokenizationIntegration;
 
 // Re-export commonly used types
 export type {

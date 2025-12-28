@@ -1,7 +1,19 @@
 'use client';
 
-import { Puzzle, Ticket } from "lucide-react";
+import Link from "next/link";
+import { useState } from 'react';
+import { Ticket, Lock, Unlock, Share2, Users, Heart, Check, Clock, Shield, Copy, MessageSquare } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { SimpleTooltip } from "../ui/simple-tooltip";
+import { toast } from "sonner";
 import type { ProjectData } from "@/app/()/projects/types";
+import AccessCardPurchaseModal from "../modals/AccessCardPurchaseModal";
+import ArtifactPurchaseModal from "../modals/ArtifactPurchaseModal"; // Unified Modal
+import type { UtilityPhase } from '@/types/deployment';
+import { useActiveAccount, useReadContract, TransactionButton, useWalletBalance } from "thirdweb/react";
+import { getContract, defineChain, prepareContractCall } from "thirdweb";
+import { client } from "@/lib/thirdweb-client";
+import { balanceOf } from "thirdweb/extensions/erc721";
 
 interface ProjectSidebarProps {
   project: ProjectData;
@@ -9,184 +21,470 @@ interface ProjectSidebarProps {
 }
 
 export default function ProjectSidebar({ project, targetAmount }: ProjectSidebarProps) {
-  const raisedAmount = Number(project.raised_amount ?? 0);
-  const raisedPercentage = (raisedAmount / targetAmount) * 100;
+  // Debug: Check status
+  // console.log("ProjectSidebar Debug:", { id: project.id, status: project.deploymentStatus });
+  // Robust Chain ID handling: Handle potential undefined/null/NaN/0 values from DB
+  const rawChainId = Number(project.chainId);
+  const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111; // Default Sepolia
+
+
+  // --- Access Gating Logic ---
+  const account = useActiveAccount();
+
+
+
+  // 1. Define License Contract safely
+  // Ensure address is a valid hex string AND not the zero address
+  const isValidAddress = (addr: string | null | undefined): boolean =>
+    !!addr && addr.startsWith("0x") && addr.length === 42 && addr !== "0x0000000000000000000000000000000000000000";
+
+  const licenseContract = isValidAddress(project.licenseContractAddress) ? getContract({
+    client,
+    chain: defineChain(safeChainId),
+    address: project.licenseContractAddress!
+  }) : undefined;
+
+  // Fallback to prevent hook crash if contract is undefined (even if disabled)
+  // Use the SAME chain to avoid mismatches
+  const dummyContract = getContract({
+    client,
+    chain: defineChain(safeChainId),
+    address: "0x0000000000000000000000000000000000000000"
+  });
+
+  // 2. Read Balance (Check if user holds Access NFT)
+  const { data: licenseBalance } = useReadContract({
+    contract: licenseContract || dummyContract,
+    queryOptions: { enabled: !!account && !!licenseContract },
+    method: "function balanceOf(address) view returns (uint256)",
+    params: [account?.address || "0x0000000000000000000000000000000000000000"]
+  });
+
+  const hasAccess = licenseBalance ? Number(licenseBalance) > 0 : false;
+  // For verification: If we are the creator, maybe bypass? No, stricter is better.
+
+  // --- Real Data Hooks (Moved Down) ---
+  const { data: treasuryBalance } = useWalletBalance({
+    client,
+    chain: defineChain(safeChainId),
+    address: project.treasuryAddress || "",
+  });
+
+  const { data: totalSupply } = useReadContract({
+    contract: licenseContract || dummyContract, // Safe now
+    queryOptions: { enabled: !!licenseContract },
+    method: "function totalSupply() view returns (uint256)",
+    params: []
+  });
+
+  const dbRaised = Number(project.raised_amount ?? 0);
+  const raisedAmount = treasuryBalance ? Number(treasuryBalance.displayValue) : dbRaised;
+
+  // Calculate Progress Logic
+  const price = Number(project.w2eConfig?.licenseToken?.price ?? 0);
+  const maxSupply = Number(project.w2eConfig?.licenseToken?.maxSupply ?? 0);
+
+  // Financial Progress
+  const financialProgress = targetAmount > 0 ? Math.min((raisedAmount / targetAmount) * 100, 100) : 0;
+
+  // Token Progress (For Free Mints)
+  const currentSupply = totalSupply ? Number(totalSupply) : 0;
+  const tokenProgress = maxSupply > 0 ? Math.min((currentSupply / maxSupply) * 100, 100) : 0;
+
+  // Effective Progress (Use Token Progress if Price is 0 or it's higher)
+  const progressPercent = price === 0 ? tokenProgress : Math.max(financialProgress, tokenProgress);
+
+  const raisedPercentage = progressPercent;
+
+  // Debug log (remove in prod)
+  // console.log("Gating Check:", { user: account?.address, hasAccess, balance: licenseBalance?.toString() });
+
+  // Modal State
+  const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
+  const [selectedPhase, setSelectedPhase] = useState<UtilityPhase | null>(null);
+  const [isArtifactModalOpen, setIsArtifactModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+
+  const handlePhaseClick = (phase: any) => {
+    setSelectedPhase(phase);
+    setIsArtifactModalOpen(true);
+  };
 
   return (
-    <div className="hidden lg:block absolute right-0 top-0 w-72 h-full">
-      {/* Non-sticky section - Investment & Creator cards */}
-      <div className="space-y-6 mb-6">
-        {/* Investment Card */}
-        <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
-          <div className="text-center mb-6">
-            <div className="text-3xl font-bold text-white mb-2">
-              ${raisedAmount.toLocaleString()}
-            </div>
-
-            <div className="w-full bg-zinc-800 rounded-full h-3 mb-4">
-              <div
-                className="bg-lime-400 h-full rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(raisedPercentage, 100)}%` }}
-              ></div>
-            </div>
-
-            <div className="flex justify-between text-sm mb-6">
-              <span className="text-gray-400">Meta: {targetAmount.toLocaleString()} tokens</span>
-              <span className="text-gray-400">30 días restantes</span>
-            </div>
-
-            <button className="w-full bg-lime-400 hover:bg-lime-500 text-black font-bold py-3 px-6 rounded-lg transition-colors mb-4">
-              ACCESO
-            </button>
-
-            <div className="flex justify-center gap-3 mb-4">
-              <button className="p-2 text-gray-400 hover:text-white transition-colors">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clipRule="evenodd" />
-                </svg>
-              </button>
-              <button className="p-2 text-gray-400 hover:text-white transition-colors">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"/>
-                </svg>
-              </button>
-              <button className="p-2 text-gray-400 hover:text-white transition-colors">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18.303 4.742a1 1 0 011.414 0l.707.707a1 1 0 010 1.414l-6.01 6.01a1 1 0 01-1.414 0l-3.536-3.536a1 1 0 010-1.414l.707-.707a1 1 0 011.414 0L14.95 10.05l5.353-5.308z" clipRule="evenodd" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="text-xs text-gray-400">
-              Todo o nada. Esta creación solo será activada si alcanza su meta antes de la fecha límite.
-            </div>
-          </div>
-        </div>
-
-        {/* Project Creator Card */}
-        <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
-          <h3 className="text-lg font-bold text-white mb-4">Creación Por</h3>
-          <div className="text-center">
-            <div className="w-16 h-16 bg-zinc-800 rounded-full mx-auto mb-3 flex items-center justify-center">
-              <span className="text-white font-bold text-lg">IMG</span>
-            </div>
-            <div className="text-white font-medium mb-1">{project.applicant_name ?? "Nombre del Creador"}</div>
-            <div className="text-gray-400 text-sm mb-3">
-              {(() => {
-                const createdDate = project.created_at ? new Date(project.created_at as string) : new Date();
-                const now = new Date();
-                const currentMonth = now.getMonth();
-                const currentYear = now.getFullYear();
-                const projectMonth = createdDate.getMonth();
-                const projectYear = createdDate.getFullYear();
-
-                if (projectMonth === currentMonth && projectYear === currentYear) {
-                  return "Creado recientemente";
-                } else {
-                  const monthNames = [
-                    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-                    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-                  ];
-                  return `${monthNames[projectMonth]} ${projectYear}`;
-                }
-              })()}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Sticky section - Tokenomics & Offers (from here down) */}
-      <div className="sticky top-6 space-y-6">
-        {/* Utility Protocol */}
-        {project.total_tokens && project.tokens_offered && (
-          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
-            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <Puzzle className="w-5 h-5 text-lime-400" /> {(() => {
-                const category = project.business_category;
-                if (!category) return "Protocolo de Utilidad";
-
-                // Convertir snake_case a Title Case
-                return category
-                  .split('_')
-                  .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                  .join(' ');
-              })()}
-            </h3>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-gray-400">Supply Total</span>
-                <span className="text-white font-mono">{Number(project.total_tokens).toLocaleString()}</span>
+    <>
+      <div className="hidden lg:block absolute right-0 top-0 w-72 h-full z-20">
+        {/* Non-sticky section - Investment & Creator cards */}
+        <div className="space-y-6 mb-6">
+          {/* Access / Investment Card */}
+          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6 relative overflow-hidden group">
+            {/* Access Card Background (Optional visual flair) */}
+            {project.w2eConfig?.accessCardImage && (
+              <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={project.w2eConfig.accessCardImage} alt="" className="w-full h-full object-cover blur-sm" />
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Tokens Ofrecidos</span>
-                <span className="text-white font-mono">{Number(project.tokens_offered).toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Meta de Tokens</span>
-                <span className="text-lime-400 font-mono">{targetAmount.toLocaleString()}</span>
-              </div>
-              {project.token_price_usd && (
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Costo de Acceso</span>
-                  <span className="text-lime-400 font-mono">${Number(project.token_price_usd) % 1 === 0 ? Number(project.token_price_usd).toFixed(0) : Number(project.token_price_usd).toFixed(2)}</span>
+            )}
+
+            <div className="text-center mb-6 relative z-10">
+              {project.w2eConfig?.accessCardImage ? (
+                <div className="mb-4 flex flex-col items-center">
+                  <div className="w-32 h-32 rounded-lg overflow-hidden border-2 border-lime-400/50 shadow-[0_0_20px_rgba(163,230,53,0.3)] mb-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={project.w2eConfig.accessCardImage} alt="Access NFT" className="w-full h-full object-cover" />
+                  </div>
+                  <h3 className="text-lime-400 font-bold text-sm tracking-wider uppercase">Access Card</h3>
+                </div>
+              ) : (
+                <div className="text-3xl font-bold text-white mb-2">
+                  {price === 0 ? (
+                    <span>{currentSupply} / {maxSupply > 0 ? maxSupply.toLocaleString() : '∞'}</span>
+                  ) : (
+                    <span>${raisedAmount.toLocaleString()}</span>
+                  )}
                 </div>
               )}
+
+              {!project.w2eConfig?.accessCardImage && (
+                <div className="w-full bg-zinc-800 rounded-full h-3 mb-4">
+                  <div
+                    className="bg-lime-400 h-full rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min(raisedPercentage, 100)}%` }}
+                  ></div>
+                </div>
+              )}
+
+              <div className="flex justify-between text-sm mb-6">
+                <span className="text-gray-400">Meta: {project.w2eConfig?.licenseToken?.maxSupply ? Number(project.w2eConfig.licenseToken.maxSupply).toLocaleString() : targetAmount.toLocaleString()} tokens</span>
+                <span className="text-gray-400">Status: {project.deploymentStatus === 'deployed' ? '🟢 Activo' : '🟡 Espera'}</span>
+              </div>
+
+              {hasAccess ? (
+                <div className="space-y-3 mb-4">
+                  <div className="w-full bg-zinc-800/80 border border-lime-500/50 text-lime-400 py-3 px-6 rounded-lg flex items-center justify-center gap-2">
+                    <Unlock className="w-3 h-3" />
+                    Acceso Verificado
+                  </div>
+                  <Link href={`/projects/${project.slug}/dao`} className="w-full hover:bg-zinc-700/20 text-white py-3 px-6 rounded-lg flex items-center justify-center gap-2 transition-colors">
+                    <Shield className="w-3 h-3 text-sm text-lime-400" />
+                    Ir al DAO
+                  </Link>
+                </div>
+              ) : project.deploymentStatus === 'deployed' && licenseContract && account ? (
+                <button
+                  onClick={() => setIsAccessModalOpen(true)}
+                  className="w-full bg-lime-400 hover:bg-lime-500 text-black font-bold py-3 px-2 rounded-lg mb-4 flex items-center justify-center gap-1 shadow-[0_0_15px_rgba(163,230,53,0.4)] text-sm whitespace-nowrap transition-all hover:scale-[1.02]"
+                >
+                  <Ticket className="w-4 h-4" />
+                  <span>Obtener Acceso (Gratis)</span>
+                </button>
+              ) : (
+                <button
+                  className="w-full font-bold py-3 px-6 rounded-lg transition-colors mb-4 flex items-center justify-center gap-2 bg-zinc-700 text-gray-500 cursor-not-allowed border border-zinc-600"
+                  disabled
+                >
+                  {project.deploymentStatus === 'deployed' ? (
+                    <>
+                      <Ticket className="w-5 h-5" />
+                      Conecta tu Wallet
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-5 h-5" />
+                      Próximamente
+                    </>
+                  )}
+                </button>
+              )}
+
+              <div className="flex justify-center gap-3 mb-4">
+                {/* 1. Share Project */}
+                <SimpleTooltip content="Compartir Proyecto">
+                  <button
+                    onClick={() => setIsShareModalOpen(true)}
+                    className="p-2 text-gray-400 hover:text-lime-400 transition-colors"
+                  >
+                    <Share2 className="w-3 h-3" />
+                  </button>
+                </SimpleTooltip>
+
+                {/* 2. Referral / Invite (Activator) */}
+                <SimpleTooltip content="Programa de Referidos (Próximamente)">
+                  <button className="p-2 text-gray-400 hover:text-white transition-colors cursor-not-allowed">
+                    <Users className="w-3 h-3" />
+                  </button>
+                </SimpleTooltip>
+
+                {/* 3. Support / Donate (Activator) */}
+                <SimpleTooltip content="Apoyar Creador (Donación)">
+                  <button className="p-2 text-gray-400 hover:text-pink-400 transition-colors cursor-not-allowed">
+                    <Heart className="w-3 h-3" />
+                  </button>
+                </SimpleTooltip>
+              </div>
+
+              <div className="text-xs text-gray-400">
+                {(project as any).deploymentStatus === 'deployed'
+                  ? "El acceso desbloquea utilidades exclusivas del protocolo."
+                  : "Esta creación solo será activada si alcanza su meta antes de la fecha límite."}
+              </div>
             </div>
+            <p className="mt-3 text-xs text-zinc-400 text-center">
+              Este NFT otorga acceso a la utilidad del protocolo.
+            </p>
           </div>
-        )}
 
-        {/* Utility Offers Panel */}
-        <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
-          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-            <Ticket className="w-5 h-5 text-blue-400" /> Ofertas de Utilidad
-          </h3>
-          <div className="space-y-4">
-            {/* Token Offer 1 */}
-            <div className="bg-zinc-800 rounded-lg p-4 border border-zinc-700">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <h4 className="text-white font-medium">Fase de Comunidad Inicial</h4>
-                  <p className="text-gray-400 text-sm">Mínimo 10,000 tokens</p>
-                </div>
-                <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded">Activa</span>
+          {/* Project Creator Card */}
+          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+            <h3 className="text-lg font-bold text-white mb-4">Creación Por</h3>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-zinc-800 rounded-full mx-auto mb-3 flex items-center justify-center">
+                <span className="text-white font-bold text-lg">IMG</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Valor:</span>
-                <span className="text-lime-400 font-mono">$0.0003</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Disponibles:</span>
-                <span className="text-white font-mono">500,000</span>
-              </div>
-              <button className="w-full mt-3 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors text-sm font-medium">
-                Participar
-              </button>
-            </div>
+              <div className="text-white font-medium mb-1">{project.applicant_name ?? "Nombre del Creador"}</div>
+              <div className="text-gray-400 text-sm mb-3">
+                {(() => {
+                  const createdDate = project.created_at ? new Date(project.created_at as string) : new Date();
+                  const now = new Date();
+                  const currentMonth = now.getMonth();
+                  const currentYear = now.getFullYear();
+                  const projectMonth = createdDate.getMonth();
+                  const projectYear = createdDate.getFullYear();
 
-            {/* Token Offer 2 */}
-            <div className="bg-zinc-800 rounded-lg p-4 border border-zinc-700">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <h4 className="text-white font-medium">Fase de Expansión</h4>
-                  <p className="text-gray-400 text-sm">Mínimo 1,000 tokens</p>
-                </div>
-                <span className="bg-green-500 text-white text-xs px-2 py-1 rounded">Próxima</span>
+                  if (projectMonth === currentMonth && projectYear === currentYear) {
+                    return "Creado recientemente";
+                  } else {
+                    const monthNames = [
+                      "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                      "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+                    ];
+                    return `${monthNames[projectMonth]} ${projectYear}`;
+                  }
+                })()}
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Valor:</span>
-                <span className="text-lime-400 font-mono">$0.0005</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Disponibles:</span>
-                <span className="text-white font-mono">1,000,000</span>
-              </div>
-              <button className="w-full mt-3 bg-zinc-700 text-gray-400 py-2 px-4 rounded-lg text-sm font-medium cursor-not-allowed">
-                Próximamente
-              </button>
             </div>
           </div>
         </div>
+
+        {/* Sticky section - Tokenomics & Offers (from here down) */}
+        <div className="sticky top-6 space-y-6">
+          {/* Investment Card (Move here if sticky desired, or keep logic separate) */}
+
+          {/* Utility Protocol Info (Already dynamic) */}
+
+          {/* Access Card Preview (New) */}
+          {project.w2eConfig?.accessCardImage && (
+            <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <Ticket className="w-5 h-5 text-amber-400" /> Tarjeta de Acceso
+              </h3>
+              <div className="rounded-lg overflow-hidden border border-zinc-700/50 aspect-square relative group">
+                <div className="relative w-full h-full">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={project.w2eConfig.accessCardImage}
+                    alt="Access Card"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                  <p className="text-white font-medium text-sm">NFT de Acceso Oficial</p>
+                </div>
+              </div>
+              <p className="mt-3 text-xs text-zinc-400 text-center">
+                Este NFT otorga acceso a la utilidad del protocolo.
+              </p>
+            </div>
+          )}
+
+          {/* Utility Offers Panel (Dynamic Phases) */}
+          {(project.w2eConfig?.phases && project.w2eConfig.phases.length > 0) ? (
+            <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <Ticket className="w-5 h-5 text-lime-400" /> Fases de Venta
+              </h3>
+              <div className="space-y-4">
+                {project.w2eConfig.phases.map((phase: any) => {
+                  // Calculate Status based on Time and Flags
+                  const now = new Date();
+                  let status = 'active'; // Default
+                  let statusLabel = 'Activo';
+                  let statusColor = 'bg-lime-500 text-black';
+
+                  // Check Date
+                  if (phase.startDate && new Date(phase.startDate) > now) {
+                    status = 'coming_soon';
+                    statusLabel = 'Próximamente';
+                    statusColor = 'bg-yellow-500 text-black';
+                  } else if (phase.isActive === false) {
+                    // Explicitly deactivated by admin
+                    status = 'paused';
+                    statusLabel = 'Próximamente'; // User requested "Próximamente" if waiting for admin
+                    statusColor = 'bg-zinc-600 text-gray-300';
+                  }
+
+                  const isActive = status === 'active';
+
+                  return (
+                    <div key={phase.id} className={`bg-zinc-800 rounded-lg overflow-hidden border ${isActive ? 'border-lime-500/30' : 'border-zinc-700'} group transition-all hover:border-lime-500/50`}>
+                      {/* Phase Image (Rich UI) */}
+                      {phase.image && (
+                        <div className="h-32 w-full relative overflow-hidden">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={phase.image} alt={phase.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 to-transparent opacity-90" />
+                          {/* Overlay Badge */}
+                          <div className="absolute bottom-2 left-3">
+                            <span className={`text-xs px-2 py-1 rounded font-bold uppercase ${statusColor}`}>
+                              {statusLabel}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex-1">
+                            <h4 className="text-white font-bold text-lg mb-1">{phase.name}</h4>
+                            <p className="text-gray-400 text-xs uppercase tracking-wide">
+                              {phase.type === 'amount' ? `Meta: $${Number(phase.limit).toLocaleString()}` : `Duración: ${phase.limit} días`}
+                            </p>
+                          </div>
+                          {!phase.image && (
+                            <span className={`text-xs px-2 py-1 rounded font-bold uppercase border border-white/10 ${statusColor.replace('bg-', 'text-').replace('text-black', 'bg-white/10')}`}>
+                              {statusLabel}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex justify-between text-sm mb-3 bg-zinc-900/50 p-2 rounded-lg border border-zinc-700/50">
+                          <span className="text-gray-500">Precio Token:</span>
+                          <span className="text-lime-400 font-mono font-bold">${phase.tokenPrice || project.w2eConfig.tokenomics?.price || 'N/A'}</span>
+                        </div>
+
+                        {/* Button Gated by Access */}
+                        {hasAccess ? (
+                          <button
+                            onClick={() => isActive && handlePhaseClick(phase)}
+                            className={`w-full py-3 px-4 rounded-lg transition-all text-sm font-bold flex items-center justify-center gap-2 ${isActive
+                              ? 'bg-lime-400 hover:bg-lime-500 text-black shadow-[0_0_15px_rgba(163,230,53,0.3)] hover:scale-[1.02]'
+                              : 'bg-zinc-700 text-gray-400 cursor-not-allowed opacity-70'
+                              }`}
+                            disabled={!isActive}
+                          >
+                            {status === 'coming_soon' || status === 'paused' ? (
+                              <>
+                                <Clock className="w-4 h-4" />
+                                Próximamente
+                              </>
+                            ) : isActive ? (
+                              <>
+                                <Ticket className="w-4 h-4" />
+                                Adquirir Artefactos
+                              </>
+                            ) : (
+                              'No Disponible'
+                            )}
+                          </button>
+                        ) : (
+                          <div className="relative group/lock w-full">
+                            <button
+                              className="w-full py-3 px-4 rounded-lg bg-zinc-800 text-gray-500 text-sm font-medium border border-zinc-700 border-dashed flex items-center justify-center gap-2 cursor-not-allowed hover:bg-zinc-750"
+                              disabled
+                            >
+                              <Lock className="w-4 h-4" />
+                              Bloqueado
+                            </button>
+                            {/* Tooltip */}
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-black text-white text-xs p-3 rounded-lg hidden group-hover/lock:block text-center border border-zinc-700 shadow-xl z-50">
+                              <p className="font-bold text-lime-400 mb-1">Acceso Restringido</p>
+                              Adquiere el NFT de Acceso para participar en esta fase.
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            // Fallback for projects without config
+            <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <Ticket className="w-5 h-5 text-zinc-600" /> Ofertas
+              </h3>
+              <p className="text-zinc-500 text-sm">No hay fases de venta activas configuradas.</p>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+
+      {/* Share Modal */}
+      <Dialog open={isShareModalOpen} onOpenChange={setIsShareModalOpen}>
+        <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Compartir Proyecto</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-3 gap-4 py-4">
+            <button
+              onClick={() => {
+                window.open(`https://twitter.com/intent/tweet?text=Check out ${project.title} on Pandoras!&url=${window.location.href}`, '_blank');
+                setIsShareModalOpen(false);
+              }}
+              className="flex flex-col items-center gap-2 p-4 bg-zinc-900 rounded-xl hover:bg-zinc-800 transition-colors border border-zinc-800"
+            >
+              <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center border border-zinc-700">
+                <span className="text-white font-bold text-lg">X</span>
+              </div>
+              <span className="text-xs text-zinc-400">Twitter / X</span>
+            </button>
+
+            <button
+              onClick={() => {
+                window.open(`https://wa.me/?text=Check out ${project.title} on Pandoras: ${window.location.href}`, '_blank');
+                setIsShareModalOpen(false);
+              }}
+              className="flex flex-col items-center gap-2 p-4 bg-zinc-900 rounded-xl hover:bg-zinc-800 transition-colors border border-zinc-800"
+            >
+              <div className="w-10 h-10 bg-[#25D366] rounded-full flex items-center justify-center">
+                <MessageSquare className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xs text-zinc-400">WhatsApp</span>
+            </button>
+
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(window.location.href);
+                toast.success("Enlace copiado");
+                setIsShareModalOpen(false);
+              }}
+              className="flex flex-col items-center gap-2 p-4 bg-zinc-900 rounded-xl hover:bg-zinc-800 transition-colors border border-zinc-800"
+            >
+              <div className="w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center border border-zinc-700">
+                <Copy className="w-5 h-5 text-lime-400" />
+              </div>
+              <span className="text-xs text-zinc-400">Copiar</span>
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modals */}
+      <AccessCardPurchaseModal
+        isOpen={isAccessModalOpen}
+        onClose={() => setIsAccessModalOpen(false)}
+        project={project}
+        licenseContract={licenseContract}
+      />
+
+      {/* Unified Artifact Modal */}
+      <ArtifactPurchaseModal
+        isOpen={isArtifactModalOpen}
+        onClose={() => setIsArtifactModalOpen(false)}
+        project={project}
+        utilityContract={{ address: project.utilityContractAddress }}
+        phase={selectedPhase}
+      />
+    </>
   );
 }

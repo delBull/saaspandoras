@@ -74,7 +74,7 @@ async function getEmailMetrics(timeRange: '24h' | '7d' | '30d' = '7d') {
         const openRate = delivered > 0 ? parseFloat(((opened / delivered) * 100).toFixed(1)) : 0;
         const clickRate = delivered > 0 ? parseFloat(((clicked / delivered) * 100).toFixed(1)) : 0;
 
-        console.log(`✅ Found real metrics from database: ${total} total, ${delivered} delivered, ${opened} opened, ${clicked} clicked`);
+        // console.log(`✅ Found real metrics from database: ${total} total, ${delivered} delivered, ${opened} opened, ${clicked} clicked`);
 
         return {
           timeRange,
@@ -118,65 +118,53 @@ async function getEmailMetrics(timeRange: '24h' | '7d' | '30d' = '7d') {
         };
       }
 
+      // If query succeeded but no data found, or if the if condition was not met
+      return {
+        timeRange,
+        total: 0,
+        delivered: 0,
+        bounced: 0,
+        opened: 0,
+        clicked: 0,
+        complained: 0,
+        deliveryRate: '0.0',
+        openRate: '0.0',
+        clickRate: '0.0',
+        uniqueEmails: 0,
+        byType: {},
+        lastEmail: null,
+        updated: new Date().toISOString(),
+        simulated: false, // Explicitly NOT simulated
+        source: 'database_empty'
+      };
+
     } catch (dbError) {
-      console.warn('⚠️ Database query failed, falling back to API:', dbError);
+      console.warn('⚠️ Database query failed:', dbError);
+      throw dbError; // Re-throw to be caught by outer catch
     }
-
-    // Fallback to Resend API if available
-    if (RESEND_API_KEY) {
-      console.log('📧 Fallback: Fetching from Resend API instead of database');
-
-      // Domain check to verify API works
-      const domainsResponse = await fetch('https://api.resend.com/v1/domains', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${RESEND_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (domainsResponse.ok) {
-        console.log('📧 Resend API connected but using simulated data (webhook data not available yet)');
-        return generateSimulatedMetrics(timeRange, false); // API configured but no webhook data yet
-      }
-    }
-
-    // Final fallback to simulated data
-    console.log('📧 No real data available, using fully simulated metrics');
-    return generateSimulatedMetrics(timeRange, true);
 
   } catch (error) {
     console.error('❌ Error getting email metrics:', error);
-    return generateSimulatedMetrics(timeRange, true);
+    // Return empty metrics on error
+    return {
+      timeRange,
+      total: 0,
+      delivered: 0,
+      bounced: 0,
+      opened: 0,
+      clicked: 0,
+      complained: 0,
+      deliveryRate: '0.0',
+      openRate: '0.0',
+      clickRate: '0.0',
+      uniqueEmails: 0,
+      byType: {},
+      lastEmail: null,
+      updated: new Date().toISOString(),
+      simulated: false,
+      source: 'error'
+    };
   }
-}
-
-/**
- * Generate simulated metrics for fallback
- */
-function generateSimulatedMetrics(timeRange: '24h' | '7d' | '30d', fullySimulated: boolean) {
-  return {
-    timeRange,
-    total: Math.floor(Math.random() * 100) + 50,
-    delivered: 42,
-    bounced: 3,
-    opened: 21,
-    clicked: 8,
-    complained: 0,
-    deliveryRate: '92.3',
-    openRate: '46.7',
-    clickRate: '18.6',
-    uniqueEmails: 25,
-    byType: {
-      creator_welcome: { sent: 28, delivered: 26, opened: 14, clicked: 6, bounced: 2 },
-      founders: { sent: 15, delivered: 13, opened: 7, clicked: 2, bounced: 2 },
-      utility: { sent: 12, delivered: 12, opened: 0, clicked: 0, bounced: 0 }
-    },
-    lastEmail: new Date().toISOString(),
-    updated: new Date().toISOString(),
-    simulated: fullySimulated,
-    source: fullySimulated ? 'simulated' : 'api_fallback'
-  };
 }
 
 // POST /api/admin/marketing/test-resend - Test Resend API connection and list emails
@@ -241,47 +229,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    console.log(`📊 [MARKETING-METRICS] Admin ${session.userId} accessing marketing metrics globally`);
+    // console.log(`📊 [MARKETING-METRICS] Admin ${session.userId} accessing marketing metrics globally`);
 
     const { searchParams } = new URL(request.url);
     const timeRange = (searchParams.get('range') as '24h' | '7d' | '30d') || '7d';
 
-    // Get email metrics from Resend
+    // Get email metrics from DB
     const emailMetrics = await getEmailMetrics(timeRange);
 
-    if (!emailMetrics) {
-      return NextResponse.json({
-        status: 'no_resend_integration',
-        message: 'Resend API not configured. Showing simulated data.',
-        timeRange,
-        timestamp: new Date().toISOString(),
-        email: {
-          timeRange,
-          total: 0,
-          delivered: 0,
-          bounced: 0,
-          opened: 0,
-          clicked: 0,
-          deliveryRate: '0.0',
-          openRate: '0.0',
-          clickRate: '0.0',
-          byType: {},
-          updated: new Date().toISOString(),
-          simulated: true
-        }
-      });
-    }
-
-    // Check if data is simulated
-    const isSimulated = emailMetrics.simulated || false;
-
     return NextResponse.json({
-      status: isSimulated ? 'simulated' : 'live',
+      status: 'live', // Always live now
       email: emailMetrics,
-      whatsapp: null, // Could be added later
+      whatsapp: null,
       timeRange,
       timestamp: new Date().toISOString(),
-      message: isSimulated ? 'Mostrando datos simulados. Configura RESEND_API_KEY para datos reales.' : null
+      message: null
     });
 
   } catch (error) {

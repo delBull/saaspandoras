@@ -62,13 +62,14 @@ function Hero({ onMethodSelect }: { onMethodSelect: (method: 'email' | 'whatsapp
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-tight mb-6">
           <StaggerText text="Founders Inner Circle" className="block" delay={0.4} />
           <span className="block text-2xl md:text-3xl text-zinc-300 mt-3">
-            Lanza tu protocolo, accede al capital estratégico y lanza con soporte experto.
+            El error que quema capital no es técnico.<br />
+            Es lanzar sin una estructura que el dinero respete.
           </span>
         </h1>
 
         <div className="max-w-3xl mx-auto mt-4">
           <TypewriterText
-            text="Solo 5 founders por semestre. Aceleración técnica, estrategia de lanzamiento y apoyo en capital selecto."
+            text="Ese punto donde ya invertiste demasiado como para improvisar."
             delay={1}
             speed={50}
             className="text-lg text-zinc-300"
@@ -123,17 +124,18 @@ function StoryBlock({ onMethodSelect }: { onMethodSelect: (method: 'email' | 'wh
       <div className="max-w-5xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
         <GlassCard>
           <div className="space-y-4">
-            <h3 className="text-2xl font-bold">El viaje del founder</h3>
+            <h3 className="text-2xl font-bold">La verdad incómoda</h3>
             <p className="text-zinc-300 leading-relaxed">
-              Has construido una audiencia, tienes visión y capital. Pandora's te ayuda a convertir esa visión en un
-              protocolo funcional que recompensa actividad real — no promesas vacías. Te acompañamos desde la arquitectura
-              técnica hasta el lanzamiento final.
+              Hay un momento muy específico. No es cuando tienes la idea, ni cuando levantas capital. Es el momento justo antes de lanzar.
+            </p>
+            <p className="text-zinc-300 leading-relaxed">
+              Cada advisor te dice algo distinto ("primero el token", "primero la comunidad"). Y nadie te dice lo que importa: <strong>Un protocolo no muere por bugs. Muere porque nadie sabe cómo convertirlo en una economía real.</strong>
             </p>
 
             <ul className="mt-4 space-y-2 text-sm text-zinc-400">
-              <li className="flex items-start gap-3"><CheckCircle className="w-4 h-4 text-green-400 mt-1" />Arquitectura a la medida</li>
-              <li className="flex items-start gap-3"><CheckCircle className="w-4 h-4 text-green-400 mt-1" />Roadmap de lanzamiento</li>
-              <li className="flex items-start gap-3"><CheckCircle className="w-4 h-4 text-green-400 mt-1" />Acceso a capital estratégico</li>
+              <li className="flex items-start gap-3"><CheckCircle className="w-4 h-4 text-red-400 mt-1" />Ya tienes capital comprometido</li>
+              <li className="flex items-start gap-3"><CheckCircle className="w-4 h-4 text-red-400 mt-1" />Tienes presión por resultados</li>
+              <li className="flex items-start gap-3"><CheckCircle className="w-4 h-4 text-green-400 mt-1" />Sabes que improvisar es peligroso</li>
             </ul>
           </div>
         </GlassCard>
@@ -141,21 +143,22 @@ function StoryBlock({ onMethodSelect }: { onMethodSelect: (method: 'email' | 'wh
         <motion.div initial={{ scale: 0.98 }} animate={{ scale: 1 }} transition={{ duration: 0.6 }}>
           <div className="p-6 bg-gradient-to-br from-zinc-900/40 to-zinc-800/30 rounded-xl border border-zinc-700">
             <div className="flex items-center gap-4 mb-4">
-              <Rocket className="w-8 h-8 text-pink-400" />
+              <Shield className="w-8 h-8 text-yellow-400" />
               <div>
-                <h4 className="text-lg font-semibold">Oferta Founders — Mediana & Premium</h4>
-                <p className="text-sm text-zinc-400">Programa acelerado con enfoque en capital y ejecución.</p>
+                <h4 className="text-lg font-semibold">Funders Inner Circle</h4>
+                <p className="text-sm text-zinc-400">Una mesa cerrada para reducir riesgo estructural.</p>
               </div>
             </div>
 
-            <div className="space-y-2 text-sm text-zinc-300">
-              <p><strong>Incluye:</strong></p>
-              <ul className="list-disc ml-5">
-                <li>Diagnóstico técnico y económico</li>
-                <li>Arquitectura work-to-earn personalizada</li>
-                <li>Soporte de lanzamiento y marketing técnico</li>
-                <li>Acceso a red de inversores y roadmap de funding</li>
+            <div className="space-y-4 text-sm text-zinc-300">
+              <p>No es una aceleradora. No es un curso. Es diseño de sistemas que sobreviven a la realidad.</p>
+              <p><strong>Alineamos lo que casi nunca encaja:</strong></p>
+              <ul className="list-disc ml-5 space-y-1">
+                <li>Capital Disponible</li>
+                <li>Arquitectura Técnica</li>
+                <li>Incentivos Económicos</li>
               </ul>
+              <p className="text-xs text-zinc-500 italic mt-2">"Lanzar mal una vez cuesta más que hacerlo bien desde el inicio."</p>
             </div>
 
             <div className="mt-6">
@@ -173,21 +176,21 @@ function WhyPandoras() {
     <motion.section initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="mb-10">
       <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-6">
         <GlassCard className="text-center">
-          <Shield className="w-10 h-10 mx-auto mb-3 text-cyan-400" />
-          <h4 className="font-bold">Arquitectura Segura</h4>
-          <p className="text-zinc-400 text-sm mt-2">Contratos auditados y Fuzz Testing continuo para minimizar riesgo.</p>
+          <Shield className="w-10 h-10 mx-auto mb-3 text-red-400" />
+          <h4 className="font-bold">Diagnóstico Real</h4>
+          <p className="text-zinc-400 text-sm mt-2">Revisamos tu caso, capital y timing. Si no tiene sentido, no avanzamos.</p>
         </GlassCard>
 
         <GlassCard className="text-center">
           <Users className="w-10 h-10 mx-auto mb-3 text-indigo-400" />
-          <h4 className="font-bold">Activación Real</h4>
-          <p className="text-zinc-400 text-sm mt-2">Modelos Work-to-Earn que convierten a tu audiencia en colaboradores activos.</p>
+          <h4 className="font-bold">Arquitectura Completa</h4>
+          <p className="text-zinc-400 text-sm mt-2">Tokenomics, Governance y Work-to-Earn como un sistema único.</p>
         </GlassCard>
 
         <GlassCard className="text-center">
           <FileText className="w-10 h-10 mx-auto mb-3 text-green-400" />
-          <h4 className="font-bold">Ejecución Rápida</h4>
-          <p className="text-zinc-400 text-sm mt-2">Deployment desde ModularFactory con plantillas pre-configuradas.</p>
+          <h4 className="font-bold">Lanzamiento con Soporte</h4>
+          <p className="text-zinc-400 text-sm mt-2">Deploy técnico + acompañamiento estratégico para no salir solo rápido, sino bien.</p>
         </GlassCard>
       </div>
     </motion.section>
@@ -196,9 +199,9 @@ function WhyPandoras() {
 
 function ProgramSteps() {
   const steps = [
-    { title: "Diagnóstico", desc: "Evaluamos tu caso de uso, comunidad y readiness técnica.", icon: Calendar },
-    { title: "Arquitectura", desc: "Diseñamos el protocolo, tokenomics y seguridad.", icon: Code },
-    { title: "Lanzamiento", desc: "Parametrizamos y lanzamos con soporte técnico y marketing." , icon: Rocket }
+    { title: "Diagnóstico Real", desc: "Revisión de capital y riesgo. Filtro de viabilidad.", icon: Calendar },
+    { title: "Arquitectura", desc: "Diseño del sistema económico y técnico.", icon: Code },
+    { title: "Lanzamiento", desc: "Deploy final y acompañamiento de salida.", icon: Rocket }
   ];
 
   return (
@@ -231,15 +234,16 @@ function SocialProof({ onMethodSelect }: { onMethodSelect: (method: 'email' | 'w
   return (
     <motion.section initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }} className="mb-10">
       <div className="max-w-6xl mx-auto px-4">
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between border-t border-zinc-800 pt-8">
           <div>
-            <p className="text-zinc-400 text-sm">Más de <strong className="text-white">50</strong> founders evaluando</p>
-            <p className="text-zinc-400 text-sm">Contratos auditados · Integraciones en Polygon & Ethereum</p>
+            <p className="text-white font-bold text-lg mb-1">¿Y si no entro?</p>
+            <p className="text-zinc-400 text-sm">Nada dramático. Seguirás haciendo lo que hace el 90%: gastar capital, coordinar freelancers y cruzar los dedos al lanzar.</p>
           </div>
 
           <div className="flex gap-3">
-            <Button onClick={() => onMethodSelect('whatsapp')} variant="outline">Hablar con un Estratega</Button>
-            <Button onClick={() => onMethodSelect('email')} variant="ghost">Enviar email</Button>
+            <Button onClick={() => onMethodSelect('whatsapp')} variant="outline" className="border-red-500/30 hover:bg-red-500/10 hover:text-red-400">
+              Prefiero validar mi caso
+            </Button>
           </div>
         </div>
       </div>
@@ -249,9 +253,9 @@ function SocialProof({ onMethodSelect }: { onMethodSelect: (method: 'email' | 'w
 
 function FAQ() {
   const faqs = [
-    { q: "¿Necesito una tech team?", a: "No. Podemos acompañarte en arquitectura y ejecución. Para integraciones complejas sugerimos 1 dev técnico disponible." },
-    { q: "¿Qué tipo de capital buscan?", a: "Buscamos founders con capital inicial para cubrir auditoría mínima, despliegue y marketing (cantidad negociable por caso)." },
-    { q: "¿Cómo se asegura que no es un security?", a: "Diseñamos modelos centrados en utilidad y recompensas por actividad. Revisamos legalmente cada caso antes del despliegue." }
+    { q: "¿Por qué solo 5 founders?", a: "Porque esto no escala. Sentarnos en la mesa contigo requiere foco. Preferimos resultados a volumen. Cuando se llena, se cierra." },
+    { q: "¿Es para mí?", a: "SÍ: Si tienes capital, urgencia y miedo a improvisar. NO: Si buscas validación eterna o quieres lanzar rápido sin pensar estructura." },
+    { q: "¿Garantizan inversión?", a: "No somos un fondo. Somos arquitectos de sistemas que hacen tu proyecto invertible y operativo." }
   ];
 
   return (
@@ -279,9 +283,9 @@ function FAQ() {
 function QuestionIcon() {
   return (
     <svg className="w-6 h-6 text-yellow-400" viewBox="0 0 24 24" fill="none">
-      <path d="M12 18h.01" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M9.09 9a3 3 0 115.82 0c0 2.2-3 2.8-3 4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M12 18h.01" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9.09 9a3 3 0 115.82 0c0 2.2-3 2.8-3 4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -413,7 +417,7 @@ function FoundersPageContent() {
                 </Link>
               </div>
 
-              <p className="text-zinc-500 text-xs mt-4">Aplicación inicial toma ~5-10 minutos. Nuestro equipo responde en 24-48h.</p>
+              <p className="text-zinc-500 text-xs mt-4">Aplicación toma 5–10 minutos. Respuesta en 24-48h.</p>
             </GlassCard>
           </motion.div>
         </div>
@@ -526,54 +530,54 @@ function FoundersPageContent() {
             </motion.div>
           )}
 
-        {/* WhatsApp Modal */}
-        <AnimatePresence key="whatsapp-modal">
-          {selectedMethod === 'whatsapp' && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-              onClick={() => setSelectedMethod(null)}
-            >
+          {/* WhatsApp Modal */}
+          <AnimatePresence key="whatsapp-modal">
+            {selectedMethod === 'whatsapp' && (
               <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="relative max-w-md w-full mx-4"
-                onClick={(e) => e.stopPropagation()}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+                onClick={() => setSelectedMethod(null)}
               >
-                <GlassCard className="p-6">
-                  {/* Close button */}
-                  <button
-                    onClick={() => setSelectedMethod(null)}
-                    className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-200 transition-colors"
-                  >
-                    ✕
-                  </button>
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.9, opacity: 0 }}
+                  className="relative max-w-md w-full mx-4"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <GlassCard className="p-6">
+                    {/* Close button */}
+                    <button
+                      onClick={() => setSelectedMethod(null)}
+                      className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-200 transition-colors"
+                    >
+                      ✕
+                    </button>
 
-                  <div className="text-center mb-6">
-                    <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Phone className="w-6 h-6 text-green-400" />
+                    <div className="text-center mb-6">
+                      <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Phone className="w-6 h-6 text-green-400" />
+                      </div>
+                      <h3 className="text-xl font-bold mb-2">
+                        Conectar con un Estratega Premium
+                      </h3>
+                      <p className="text-zinc-400 text-sm">
+                        Inicia una conversación personalizada para evaluar tu capacidad de capital y experiencia como founder.
+                      </p>
                     </div>
-                    <h3 className="text-xl font-bold mb-2">
-                      Conectar con un Estratega Premium
-                    </h3>
-                    <p className="text-zinc-400 text-sm">
-                      Inicia una conversación personalizada para evaluar tu capacidad de capital y experiencia como founder.
+
+                    <WhatsAppFoundersForm />
+
+                    <p className="text-zinc-500 text-xs text-center mt-4">
+                      Iremos directamente a WhatsApp con tu mensaje preparado 🎯
                     </p>
-                  </div>
-
-                  <WhatsAppFoundersForm />
-
-                  <p className="text-zinc-500 text-xs text-center mt-4">
-                    Iremos directamente a WhatsApp con tu mensaje preparado 🎯
-                  </p>
-                </GlassCard>
+                  </GlassCard>
+                </motion.div>
               </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            )}
+          </AnimatePresence>
         </AnimatePresence>
       </div>
     </Suspense>

@@ -11,8 +11,9 @@ export const runtime = "nodejs";
 
 export async function POST(
     req: Request,
-    { params }: { params: { slug: string } }
+    { params }: { params: Promise<{ slug: string }> }
 ) {
+    const { slug } = await params;
     try {
         // 1. Auth & Admin Check
         const headersObj = await headers();
@@ -28,7 +29,7 @@ export async function POST(
             return NextResponse.json({ error: "Forbidden: Super Admin access required" }, { status: 403 });
         }
 
-        const { slug } = params;
+
 
         // 2. Fetch Project
         const project = await db.query.projects.findFirst({

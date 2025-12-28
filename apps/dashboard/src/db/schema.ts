@@ -15,6 +15,7 @@ import {
 export const projectStatusEnum = pgEnum("project_status", [
   "draft",        // Borrador: Proyecto incompleto guardado por el solicitante
   "pending",      // Pendiente: Aplicación completa, esperando revisión
+  "active_client", // Cliente Activo: Pagó Tier 1, fase de análisis
   "approved",     // Aprobado: Aprobado por admin, listo para ir live
   "live",         // Live: Activo y aceptando inversiones
   "completed",    // Completed: Financiación completada exitosamente
@@ -43,6 +44,7 @@ export const administrators = pgTable("administrators", {
   role: varchar("role", { length: 50 }).default('admin').notNull(),
   addedBy: varchar("added_by", { length: 42 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  availability: jsonb("availability"), // Configuración de agenda (días, horas, etc)
 });
 
 // Tabla users existente en la base de datos
@@ -177,6 +179,10 @@ export const projects = pgTable("projects", {
   socials: jsonb("socials"), // Mantener para compatibilidad
   raisedAmount: decimal("raised_amount", { precision: 18, scale: 2 }).default("0.00"),
   returnsPaid: decimal("returns_paid", { precision: 18, scale: 2 }).default("0.00"),
+  // Deployment & Contracts (Refs above)
+  votingContractAddress: varchar("voting_contract_address", { length: 42 }), // For On-Chain Governance
+
+
   // --- AJUSTE 2: Estado por defecto corregido a 'draft' ---
   status: projectStatusEnum("status").default("draft").notNull(),
 
@@ -209,7 +215,16 @@ export const eventTypeEnum = pgEnum("event_type", [
   "streak_milestone",
   "beta_access",
   "feature_unlock",
-  "milestone_reached"
+  "milestone_reached",
+  "dao_activated",
+  "artifact_purchased",
+  "staking_deposit",
+  "proposal_vote",
+  "rewards_claimed",
+  "activity_completed",
+  "forum_post",
+  "access_card_acquired",
+  "artifact_acquired"
 ]);
 
 export const eventCategoryEnum = pgEnum("event_category", [
@@ -236,7 +251,12 @@ export const achievementTypeEnum = pgEnum("achievement_type", [
   "tokenization_expert",
   "early_adopter",
   "high_roller",
-  "creator"
+  "creator",
+  "dao_pioneer",
+  "artifact_collector",
+  "defi_starter",
+  "governor",
+  "yield_hunter"
 ]);
 
 export const rewardTypeEnum = pgEnum("reward_type", [
@@ -554,6 +574,38 @@ export type WhatsAppMessage = typeof whatsappMessages.$inferSelect;
 export type WhatsAppApplicationState = typeof whatsappApplicationStates.$inferSelect;
 export type WhatsAppPreapplyLead = typeof whatsappPreapplyLeads.$inferSelect;
 
+
+
+// --- GOVERNANCE CALENDAR TABLES ---
+
+export const governanceEventTypeEnum = pgEnum("governance_event_type", [
+  "on_chain_proposal", // Propuesta oficial on-chain
+  "off_chain_signal",  // Señalización off-chain (Snapshot, etc.)
+  "meeting",           // Reunión de gobernanza/AMA
+  "update"             // Actualización de protocolo
+]);
+
+export const governanceEventStatusEnum = pgEnum("governance_event_status", [
+  "scheduled", // Programado futuro
+  "active",    // Actualmente activo
+  "completed", // Finalizado
+  "cancelled"  // Cancelado
+]);
+
+export const governanceEvents = pgTable("governance_events", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  startDate: timestamp("start_date", { withTimezone: true }).notNull(),
+  endDate: timestamp("end_date", { withTimezone: true }),
+  type: governanceEventTypeEnum("type").default("on_chain_proposal").notNull(),
+  status: governanceEventStatusEnum("status").default("scheduled").notNull(),
+  externalLink: text("external_link"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 // --- EMAIL METRICS TABLES ---
 
 // Tabla para almacenar métricas de envío de emails desde Resend webhooks
@@ -561,7 +613,7 @@ export const emailMetrics = pgTable("email_metrics", {
   id: serial("id").primaryKey(),
   emailId: varchar("email_id", { length: 255 }).unique().notNull(),
   type: varchar("type", { length: 50 }).default('unknown').notNull(), // creator_welcome, founders, utility, etc.
-  status: varchar("status", { length: 50 }).default('unknown').notNull(), // sent, delivered, opened, clicked, bounced, etc.
+  status: varchar('status', { length: 20 }).default('pending').notNull(), // pending, approved, rejected, clicked, bounced, etc.
   recipient: varchar("recipient", { length: 255 }),
   emailSubject: text("email_subject"),
   clickedUrl: text("clicked_url"), // URL que se clickeó
@@ -591,3 +643,329 @@ export type ShortlinkEvent = typeof shortlinkEvents.$inferSelect;
 export type Shortlink = typeof shortlinks.$inferSelect;
 
 // Email Metrics Types
+export type EmailMetric = typeof emailMetrics.$inferSelect;
+
+// --- DAO ACTIVITIES & REWARDS TABLES ---
+
+export const daoActivityTypeEnum = pgEnum("dao_activity_type", [
+  "social",    // Retweet, Follow, Share
+  "on_chain",  // Vote, Delegate, Hold Token
+  "content",   // Write Article, Video
+  "custom"     // Manual task
+]);
+
+export const daoActivityStatusEnum = pgEnum("dao_activity_status", [
+  "active",
+  "paused",
+  "ended"
+]);
+
+export const daoActivitySubmissionStatusEnum = pgEnum("dao_activity_submission_status", [
+  "pending",
+  "approved",
+  "rejected"
+]);
+
+export const daoActivities = pgTable("dao_activities", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+
+  // Rewards
+  rewardAmount: decimal("reward_amount", { precision: 18, scale: 6 }).default("0").notNull(),
+  rewardTokenSymbol: varchar('reward_token_symbol', { length: 20 }).default('PBOX').notNull(), // PBOX, USDC, ETH
+  category: varchar('category', { length: 50 }).default('social'), // 'social', 'labor', 'governance'
+  requirements: jsonb('requirements').default({}), // For complex logic
+
+  // Config
+  type: daoActivityTypeEnum("type").default("custom").notNull(),
+  status: daoActivityStatusEnum("status").default("active").notNull(),
+  externalLink: text("external_link"),
+  startedAt: timestamp('started_at', { withTimezone: true }), // For staking start
+
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const daoActivitySubmissions = pgTable("dao_activity_submissions", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id"), // Optional denormalization or required if API relies on it
+  activityId: integer("activity_id").references(() => daoActivities.id).notNull(),
+  userWallet: varchar("user_wallet", { length: 42 }).notNull(), // Wallet for payout
+
+  // Proof
+  proofData: text("proof_data"), // URL or text explanation
+  status: daoActivitySubmissionStatusEnum("status").default("pending").notNull(),
+  feedback: text("feedback"), // Rejection reason or cheer
+
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  startedAt: timestamp("started_at", { withTimezone: true }), // For staking start
+  statusUpdatedAt: timestamp("status_updated_at", { withTimezone: true }), // When status changed
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+});
+
+
+// DAO Chat / Forum Tables
+
+export const daoThreads = pgTable("dao_threads", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").notNull(), // Assuming relation is managed manually or via ID for now to avoid circular deps if projects is defined earlier
+  authorAddress: varchar("author_address", { length: 42 }).notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  category: varchar('category', { length: 50 }).default('general'),
+  isOfficial: boolean('is_official').default(false),
+  isPinned: boolean('is_pinned').default(false),
+  isLocked: boolean("is_locked").default(false),
+  viewCount: integer("view_count").default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow()
+});
+
+export const daoPosts = pgTable("dao_posts", {
+  id: serial("id").primaryKey(),
+  threadId: integer("thread_id").notNull().references(() => daoThreads.id, { onDelete: 'cascade' }),
+  authorAddress: varchar("author_address", { length: 42 }).notNull(),
+  content: text("content").notNull(),
+  isSolution: boolean("is_solution").default(false),
+  likesCount: integer("likes_count").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow()
+});
+
+export const userBalances = pgTable("user_balances", {
+  walletAddress: varchar("wallet_address", { length: 42 }).primaryKey(),
+  pboxBalance: decimal("pbox_balance", { precision: 18, scale: 2 }).default("0").notNull(),
+  usdcBalance: decimal("usdc_balance", { precision: 18, scale: 6 }).default("0").notNull(),
+  ethBalance: decimal("eth_balance", { precision: 18, scale: 18 }).default("0").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// Platform Settings (Global Configuration)
+export const platformSettings = pgTable("platform_settings", {
+  id: serial("id").primaryKey(),
+  key: varchar("key", { length: 255 }).unique().notNull(), // e.g., 'apply_gate_enabled'
+  value: text("value"), // JSON string or text value
+  description: text("description"), // For admin UI context
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedBy: varchar("updated_by", { length: 42 }), // Admin wallet who changed it
+});
+
+
+// DAO Activities Types
+export type DaoActivity = typeof daoActivities.$inferSelect;
+export type DaoActivitySubmission = typeof daoActivitySubmissions.$inferSelect;
+
+export type DaoThread = typeof daoThreads.$inferSelect;
+export type DaoPost = typeof daoPosts.$inferSelect;
+export type UserBalance = typeof userBalances.$inferSelect;
+export type PlatformSetting = typeof platformSettings.$inferSelect;
+
+// =========================================================
+// MARKETING OS TABLES
+// =========================================================
+
+export const triggerTypeEnum = pgEnum("trigger_type", [
+  "manual",
+  "auto_registration",
+  "api_event",
+]);
+
+export const executionStatusEnum = pgEnum("execution_status", [
+  "active",
+  "paused",
+  "completed",
+  "intercepted",
+  "failed"
+]);
+
+export const marketingCampaigns = pgTable("marketing_campaigns", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  triggerType: triggerTypeEnum("trigger_type").default("manual").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  // Configuration for the campaign (flow steps, timing, messages)
+  // Format: { steps: [{ day: 0, type: 'whatsapp', content: '...', conditions: {} }] }
+  config: jsonb("config").notNull().default('{}'),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const marketingExecutions = pgTable("marketing_executions", {
+  id: varchar("id", { length: 36 }).primaryKey(), // using uuid string
+  userId: varchar("user_id", { length: 255 }), // Link to users table (optional)
+  leadId: varchar("lead_id", { length: 36 }),  // Link to whatsapp leads (optional) (using varchar mostly for flexible linking)
+  campaignId: integer("campaign_id").references(() => marketingCampaigns.id).notNull(),
+  status: executionStatusEnum("status").default("active").notNull(),
+  currentStageIndex: integer("current_stage_index").default(0).notNull(),
+  nextRunAt: timestamp("next_run_at"), // Critical for Cron
+
+  // History log: Array of events { timestamp, action, result }
+  historyLog: jsonb("history_log").default('[]'),
+
+  // Metadata: Store flow variations, priority answers, etc.
+  metadata: jsonb("metadata").default('{}'),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// =========================================================
+// SOVEREIGN SCHEDULER TABLES
+// =========================================================
+
+export const bookingStatusEnum = pgEnum("booking_status", [
+  "pending",
+  "confirmed",
+  "rejected",
+  "cancelled",
+  "rescheduled"
+]);
+
+export const schedulingSlots = pgTable("scheduling_slots", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: varchar("user_id", { length: 255 }).references(() => users.id).notNull(), // The host (Admin/Creator)
+  startTime: timestamp("start_time", { withTimezone: true }).notNull(),
+  endTime: timestamp("end_time", { withTimezone: true }).notNull(),
+  isBooked: boolean("is_booked").default(false).notNull(),
+  type: varchar("type", { length: 50 }).default("30_min").notNull(), // '15_min', '30_min', '60_min'
+
+  // Metadata
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const schedulingBookings = pgTable("scheduling_bookings", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  slotId: text("slot_id").references(() => schedulingSlots.id).notNull(),
+
+  // Lead Info
+  leadName: text("lead_name").notNull(),
+  leadEmail: text("lead_email").notNull(),
+  leadPhone: text("lead_phone"), // Optional if email preferred
+  notificationPreference: varchar("notification_preference", { length: 20 }).default("email").notNull(), // 'email', 'whatsapp', 'both'
+
+  // Status & Details
+  status: bookingStatusEnum("status").default("pending").notNull(),
+  meetingLink: text("meeting_link"), // Google Meet / Zoom generated or static
+  notes: text("notes"), // User's comments/questions
+
+  // Metadata
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+  cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+  cancellationReason: text("cancellation_reason"),
+});
+
+export type MarketingCampaign = typeof marketingCampaigns.$inferSelect;
+export type MarketingExecution = typeof marketingExecutions.$inferSelect;
+
+// Scheduler Types
+export type SchedulingSlot = typeof schedulingSlots.$inferSelect;
+export type SchedulingBooking = typeof schedulingBookings.$inferSelect;
+
+// =========================================================
+// CLIENTS & PAYMENTS SYSTEM (CRM LITE & PAYMENT BRIDGE)
+// =========================================================
+
+export const clientStatusEnum = pgEnum("client_status", [
+  "lead",         // Registered interest
+  "negotiating",  // In conversation / Payment Link Sent
+  "closed_won",   // Paid / Active
+  "closed_lost",  // Rejected / Ghosted
+  "churned"       // Former client
+]);
+
+export const paymentMethodEnum = pgEnum("payment_method", [
+  "stripe",
+  "crypto",
+  "wire"
+]);
+
+export const transactionStatusEnum = pgEnum("transaction_status", [
+  "pending",
+  "processing",
+  "completed",
+  "failed",
+  "refunded",
+  "rejected"
+]);
+
+// 1. CLIENTS (CRM IDENTITY)
+export const clients = pgTable("clients", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: varchar("user_id", { length: 255 }), // Link to platform user (optional initially)
+  email: varchar("email", { length: 255 }).notNull(),
+  phone: varchar("phone", { length: 50 }),
+  name: varchar("name", { length: 255 }),
+  walletAddress: varchar("wallet_address", { length: 42 }),
+
+  // Segmentation
+  source: varchar("source", { length: 50 }).default('manual'), // protocol, founders, manual
+  package: varchar("package", { length: 50 }), // starter, pro, enterprise, custom
+  status: clientStatusEnum("status").default("lead").notNull(),
+
+  // Metadata
+  metadata: jsonb("metadata").default('{}'),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// 2. PAYMENT LINKS (THE BRIDGE)
+export const paymentLinks = pgTable("payment_links", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()), // Public ID for URL
+  clientId: text("client_id").references(() => clients.id).notNull(),
+
+  // Configuration
+  title: varchar("title", { length: 255 }).notNull(), // "Protocol Deployment - Initial Batch"
+  description: text("description"),
+
+  // Financials
+  amount: decimal("amount", { precision: 18, scale: 2 }).notNull(), // USD
+  currency: varchar("currency", { length: 10 }).default("USD").notNull(),
+
+  // Methods Enabled
+  methods: jsonb("methods").default(['stripe', 'crypto', 'wire']).notNull(), // Array of enabled methods
+  destinationWallet: varchar("destination_wallet", { length: 42 }), // Override for Crypto Payments
+
+  // Lifecycle
+  isActive: boolean("is_active").default(true).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+
+  createdBy: varchar("created_by", { length: 255 }), // Admin who created it
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// 3. TRANSACTIONS (VALUE TRANSFER)
+export const transactions = pgTable("transactions", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  linkId: text("link_id").references(() => paymentLinks.id), // Optional: could be direct without link
+  clientId: text("client_id").references(() => clients.id),
+
+  amount: decimal("amount", { precision: 18, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 10 }).default("USD").notNull(),
+
+  method: paymentMethodEnum("method").notNull(),
+  status: transactionStatusEnum("status").default("pending").notNull(),
+
+  // Proof of Payment
+  processedAt: timestamp("processed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// 4. SOW TEMPLATES
+export const sowTemplates = pgTable("sow_templates", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  tier: varchar("tier", { length: 50 }).notNull(), // TIER_1, TIER_2, TIER_3
+  name: varchar("name", { length: 255 }).notNull(),
+  content: text("content").notNull(),
+  variables: jsonb("variables").default('[]'),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type SOWTemplate = typeof sowTemplates.$inferSelect;
