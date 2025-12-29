@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -114,7 +115,7 @@ export function PaymentCheckout({ link, client: clientData }: { link: any, clien
                 <div>
                     <div className="mb-8">
                         {/* Valid Logo */}
-                        <img src="/apple-touch-icon.png" alt="Pandora's Finance" className="w-12 h-12 mb-4 rounded-lg bg-zinc-900 p-1" />
+                        <Image src="/apple-touch-icon.png" alt="Pandora's Finance" width={48} height={48} className="mb-4 rounded-lg bg-zinc-900 p-1" />
                         <h1 className="text-xl font-bold text-zinc-500 uppercase tracking-widest">Pandora's Finance</h1>
                     </div>
 
