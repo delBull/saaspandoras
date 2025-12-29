@@ -60,7 +60,7 @@ export async function POST(req: Request) {
 
         // 2. Event Filtering (Crucial for Resource Optimization)
         // Only process specific events (e.g., Transfer)
-        const eventName = body.eventName || body.event || (body.logs && body.logs[0]?.eventName);
+        const eventName = body.eventName || body.event || body.logs?.[0]?.eventName;
 
         // If it's NOT a Transfer, ignore it immediately (200 OK)
         // Also allow specialized events if needed
@@ -77,8 +77,8 @@ export async function POST(req: Request) {
 
         // 3. Extract Transfer Data
         // Structure depends on webhook type. Assuming "Contract Event"
-        const log = body.logs && body.logs[0];
-        const txHash = body.transactionHash || (log && log.transactionHash) || "unknown";
+        const log = body.logs?.[0];
+        const txHash = body.transactionHash || log?.transactionHash || "unknown";
 
         // Decoded args from Transfer(from, to, value)
         // Thirdweb often sends decoded args in `args` or `decoded`
@@ -86,7 +86,7 @@ export async function POST(req: Request) {
         let toAddress = "unknown";
         let value = "0";
 
-        if (log && log.args) {
+        if (log?.args) {
             fromAddress = log.args.from || log.args[0] || "unknown";
             toAddress = log.args.to || log.args[1] || "unknown";
             value = log.args.value || log.args[2] || "0";

@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Plus, CreditCard, Link as LinkIcon, Copy, History, FileText, CheckCircle, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { getClients, createClient, createPaymentLink, getClientLinks, updatePaymentStatus, manualSendReceipt, sendProtocolSOW, advanceProtocolState } from "@/actions/clients";
-import { ProtocolMetadata } from "@/types/protocol-state";
+import type { ProtocolMetadata } from "@/types/protocol-state";
 import type { clients, paymentLinks } from "@/db/schema";
 import { SOWTemplateManager } from "../sow/SOWTemplateManager";
 import { getSOWTemplates } from "@/actions/sow";
