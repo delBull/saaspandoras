@@ -9,7 +9,7 @@ export async function GET() {
                     'Accept': 'application/json',
                     // Add API Key here if available in env, e.g. 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY
                 },
-                next: { revalidate: 60 } // Cache for 60 seconds
+                next: { revalidate: 300 } // Cache for 300 seconds (5 mins)
             }
         );
 
@@ -18,7 +18,13 @@ export async function GET() {
         }
 
         const data = await response.json();
-        return NextResponse.json(data);
+
+        // Return with Cache-Control header for Vercel Edge Cache
+        return NextResponse.json(data, {
+            headers: {
+                'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=59',
+            }
+        });
     } catch (error) {
         console.error('Error fetching token prices:', error);
         // Return default fallback data to prevent UI crash
