@@ -410,7 +410,7 @@ export default function DashboardPage() {
       <div className="text-left pt-6 ml-5 mb-6 pr-5">
         <TypewriterText
           text="La Infraestructura para el Acceso Digital."
-          className="text-3xl md:text-5xl font-bold text-white tracking-tighter leading-tight"
+          className="text-2xl md:text-3xl font-bold text-white tracking-tighter leading-tight"
           delay={500}
         />
       </div>
