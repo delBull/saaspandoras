@@ -55,22 +55,36 @@ export async function POST(req: Request) {
         const extension = file.name.split('.').pop() || 'png';
         const filename = `nft-pass-${timestamp}-${randomStr}.${extension}`;
 
-        // 5. Save File to Public Directory
+        // 5. Save File (Attempt Public Directory first, fallback to Data URI)
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
 
-        // Ensure directory exists
-        const uploadDir = path.join(process.cwd(), "public", "assets", "nft-passes");
-        await mkdir(uploadDir, { recursive: true });
+        let publicUrl = '';
 
-        const filePath = path.join(uploadDir, filename);
-        await writeFile(filePath, buffer);
+        try {
+            // Ensure directory exists
+            const uploadDir = path.join(process.cwd(), "public", "assets", "nft-passes");
+            await mkdir(uploadDir, { recursive: true });
 
-        // 6. Return Public URL
-        const publicUrl = `/assets/nft-passes/${filename}`;
+            const filePath = path.join(uploadDir, filename);
+            await writeFile(filePath, buffer);
 
-        console.log(`✅ Asset uploaded: ${publicUrl}`);
+            // Return Public URL if FS write succeeds
+            publicUrl = `/assets/nft-passes/${filename}`;
+            console.log(`✅ Asset saved to disk: ${publicUrl}`);
 
+        } catch (fsError: any) {
+            console.warn(`⚠️ Disk write failed (Read-only FS?): ${fsError.message}. Falling back to Data URI.`);
+
+            // Fallback: Convert to Base64 Data URI
+            const base64 = buffer.toString('base64');
+            const mimeType = file.type || 'image/png';
+            publicUrl = `data:${mimeType};base64,${base64}`;
+
+            console.log(`✅ Asset converted to Data URI (${publicUrl.substring(0, 50)}...)`);
+        }
+
+        // 6. Return Public URL (or Data URI)
         return NextResponse.json({
             success: true,
             url: publicUrl,
