@@ -40,16 +40,76 @@ export async function deployNFTPass(
         console.warn("⚠️ THIRDWEB_SECRET_KEY missing.");
     }
 
-    const defaultSepoliaRpc = "https://ethereum-sepolia-rpc.publicnode.com";
-    let rpcUrl = network === 'sepolia'
-        ? (process.env.SEPOLIA_RPC_URL || defaultSepoliaRpc)
-        : process.env.BASE_RPC_URL;
+    // Multi-RPC fallback system (same as deploy.ts)
+    const SEPOLIA_RPCS = [
+        "https://ethereum-sepolia-rpc.publicnode.com",
+        "https://rpc2.sepolia.org",
+        "https://sepolia.gateway.tenderly.co",
+        "https://ethereum-sepolia.blockpi.network/v1/rpc/public"
+    ];
 
-    if (network === 'sepolia' && (rpcUrl === "https://rpc.sepolia.org" || !rpcUrl)) {
-        rpcUrl = defaultSepoliaRpc;
+    const BASE_RPCS = [
+        "https://mainnet.base.org",
+        "https://base.llamarpc.com",
+        "https://base.blockpi.network/v1/rpc/public",
+        "https://base-rpc.publicnode.com"
+    ];
+
+    const rpcCandidates = network === 'sepolia' ? SEPOLIA_RPCS : BASE_RPCS;
+
+    // Try custom RPC first if provided
+    let customRpc = network === 'sepolia' ? process.env.SEPOLIA_RPC_URL : process.env.BASE_RPC_URL;
+    if (customRpc) {
+        customRpc = customRpc.trim().replace(/^["']|["']$/g, ''); // Remove quotes
+        if (customRpc !== "https://rpc.sepolia.org" && customRpc !== "0x0000000000000000000000000000000000000000") {
+            rpcCandidates.unshift(customRpc);
+        }
     }
 
-    if (!rpcUrl) throw new Error(`RPC URL not found for network: ${network}`);
+    console.log(`🌍 Attempting connection with ${rpcCandidates.length} RPC candidates...`);
+
+    let rpcUrl: string | null = null;
+    let lastError: Error | null = null;
+
+    for (const candidateRpc of rpcCandidates) {
+        try {
+            console.log(`📡 Testing RPC: ${candidateRpc}`);
+            const testRes = await fetch(candidateRpc, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_chainId', params: [], id: 1 })
+            });
+
+            if (!testRes.ok) {
+                console.warn(`❌ RPC Failed: ${candidateRpc} - ${testRes.status}`);
+                lastError = new Error(`${testRes.status} ${testRes.statusText}`);
+                continue;
+            }
+
+            const testJson = await testRes.json() as any;
+            if (!testJson.result) {
+                console.warn(`❌ Invalid response from: ${candidateRpc}`);
+                lastError = new Error(`Invalid response`);
+                continue;
+            }
+
+            console.log(`✅ RPC Connected: ${candidateRpc} (Chain: ${testJson.result})`);
+            rpcUrl = candidateRpc;
+            break;
+
+        } catch (e: any) {
+            console.warn(`❌ Connection failed: ${candidateRpc}`);
+            lastError = e;
+            continue;
+        }
+    }
+
+    if (!rpcUrl) {
+        throw new Error(
+            `Failed to connect to ANY ${network} RPC.\n` +
+            `Tried ${rpcCandidates.length} RPCs. Last error: ${lastError?.message || 'Unknown'}`
+        );
+    }
 
     // Connectivity Check (BLOCKING) - Same as deploy.ts
     try {
