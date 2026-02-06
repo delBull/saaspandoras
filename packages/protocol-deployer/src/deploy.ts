@@ -79,7 +79,7 @@ export async function deployW2EProtocol(
 
   if (!rpcUrl) throw new Error(`RPC URL not found for network: ${network}`);
 
-  // Connectivity Check
+  // Connectivity Check (BLOCKING)
   try {
     console.log(`📡 Testing connection to RPC: ${rpcUrl}`);
     // Simple POST to check if endpoint is alive (JSON-RPC 2.0 basic call)
@@ -90,20 +90,49 @@ export async function deployW2EProtocol(
     });
 
     if (!testRes.ok) {
-      console.error(`❌ RPC Connection Failed with Status: ${testRes.status} ${testRes.statusText}`);
       const body = await testRes.text();
+      console.error(`❌ RPC Connection Failed with Status: ${testRes.status} ${testRes.statusText}`);
       console.error(`❌ Response Body: ${body}`);
-      console.error(`❌ Response Body: ${body}`);
-      // Throwing error here to make it visible in the API response JSON
-      throw new Error(`RPC Unreachable: ${testRes.status} ${testRes.statusText} - Body: ${body.slice(0, 100)}...`);
-    } else {
-      const testJson = await testRes.json() as any;
-      console.log(`✅ RPC Connection OK. Chain ID: ${testJson.result}`);
+
+      // BLOCK deployment with clear error
+      throw new Error(
+        `RPC endpoint is unreachable or invalid.\n` +
+        `Network: ${network}\n` +
+        `RPC URL: ${rpcUrl}\n` +
+        `HTTP Status: ${testRes.status} ${testRes.statusText}\n` +
+        `Response: ${body.slice(0, 200)}...\n\n` +
+        `Possible causes:\n` +
+        `1. RPC endpoint is down or blocked by Vercel\n` +
+        `2. RPC URL is malformed (check SEPOLIA_RPC_URL or BASE_RPC_URL in Vercel env vars)\n` +
+        `3. RPC requires authentication that wasn't provided\n` +
+        `4. Network firewall rules blocking the request`
+      );
     }
 
+    const testJson = await testRes.json() as any;
+
+    if (!testJson.result) {
+      throw new Error(
+        `RPC response missing chain ID.\n` +
+        `Network: ${network}\n` +
+        `RPC URL: ${rpcUrl}\n` +
+        `Response: ${JSON.stringify(testJson)}`
+      );
+    }
+
+    console.log(`✅ RPC Connection OK. Chain ID: ${testJson.result}`);
+
   } catch (connError: any) {
-    console.warn(`⚠️ RPC Connectivity Check Failed: ${connError.message}`);
-    // We don't block here, we let Ethers try, but this log will be crucial.
+    console.error(`❌ RPC Connectivity Check FAILED (BLOCKING):`, connError.message);
+    // RE-THROW to block deployment
+    throw new Error(
+      `Failed to connect to ${network} RPC endpoint.\n\n` +
+      `Original error: ${connError.message}\n\n` +
+      `Please verify:\n` +
+      `1. Environment variable ${network === 'sepolia' ? 'SEPOLIA_RPC_URL' : 'BASE_RPC_URL'} is set correctly in Vercel\n` +
+      `2. The RPC endpoint is accessible from Vercel's infrastructure\n` +
+      `3. Try using a public RPC like https://ethereum-sepolia-rpc.publicnode.com for Sepolia`
+    );
   }
 
   const privateKey = process.env.PANDORA_ORACLE_PRIVATE_KEY || process.env.PRIVATE_KEY;
