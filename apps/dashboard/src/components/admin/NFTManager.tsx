@@ -50,11 +50,22 @@ export function NFTManager() {
     const [loadingSettings, setLoadingSettings] = useState(true);
     const [togglingGate, setTogglingGate] = useState(false);
 
-    // 2. Contract Stats (Thirdweb)
+    // 2. NFT Passes List (for airdrop selector)
+    const [availablePasses, setAvailablePasses] = useState<Array<{
+        id: string;
+        title: string;
+        contractAddress: string;
+        symbol: string;
+        imageUrl: string | null;
+    }>>([]);
+    const [loadingPasses, setLoadingPasses] = useState(true);
+    const [selectedPassAddress, setSelectedPassAddress] = useState<string>(config.applyPassNftAddress);
+
+    // 3. Contract Stats (Thirdweb) - Dynamic based on selected pass
     const contract = getContract({
         client,
         chain: config.chain,
-        address: config.applyPassNftAddress,
+        address: config.applyPassNftAddress, // Default to Apply Pass for stats
         abi: EXTENDED_ABI,
     });
 
@@ -71,7 +82,7 @@ export function NFTManager() {
         queryOptions: { enabled: !!account?.address }
     });
 
-    // 3. Airdrop Logic
+    // 4. Airdrop Logic
     const [airdropAddress, setAirdropAddress] = useState("");
     const { mutate: sendTransaction } = useSendTransaction();
     const [airdropStatus, setAirdropStatus] = useState<'idle' | 'checking' | 'confirm_overwrite' | 'minting' | 'success' | 'error'>('idle');
@@ -83,6 +94,7 @@ export function NFTManager() {
 
     useEffect(() => {
         fetchSettings();
+        fetchAvailablePasses();
     }, []);
 
     const fetchSettings = async () => {
@@ -96,6 +108,29 @@ export function NFTManager() {
             console.error(e);
         } finally {
             setLoadingSettings(false);
+        }
+    };
+
+    const fetchAvailablePasses = async () => {
+        try {
+            const res = await fetch("/api/admin/nft-passes");
+            if (res.ok) {
+                const passes = await res.json();
+                // Add the Apply Pass manually if not in list
+                const applyPass = {
+                    id: 'system-apply-pass',
+                    title: 'Apply Access Pass (Sistema)',
+                    contractAddress: config.applyPassNftAddress,
+                    symbol: 'APPLY',
+                    imageUrl: null
+                };
+                setAvailablePasses([applyPass, ...passes]);
+                console.log('✅ Loaded NFT Passes:', [applyPass, ...passes]);
+            }
+        } catch (e) {
+            console.error('❌ Error fetching NFT passes:', e);
+        } finally {
+            setLoadingPasses(false);
         }
     };
 
@@ -132,8 +167,15 @@ export function NFTManager() {
         if (!airdropAddress) return;
         setCheckingBalance(true);
         try {
+            // Use selected pass contract for balance check
+            const selectedContract = getContract({
+                client,
+                chain: config.chain,
+                address: selectedPassAddress,
+                abi: EXTENDED_ABI,
+            });
             const bal = await readContract({
-                contract,
+                contract: selectedContract,
                 method: "balanceOf",
                 params: [airdropAddress]
             });
@@ -151,18 +193,29 @@ export function NFTManager() {
     const executeMint = () => {
         setAirdropStatus('minting');
         try {
+            // Use selected pass contract for minting
+            const selectedContract = getContract({
+                client,
+                chain: config.chain,
+                address: selectedPassAddress,
+                abi: EXTENDED_ABI,
+            });
+
             const transaction = prepareContractCall({
-                contract,
+                contract: selectedContract,
                 method: "adminMint",
                 params: [airdropAddress]
             });
+
+            const selectedPass = availablePasses.find(p => p.contractAddress === selectedPassAddress);
+            const passTitle = selectedPass?.title || 'NFT Pass';
 
             sendTransaction(transaction, {
                 onSuccess: async () => {
                     setAirdropStatus('success');
                     toast({
-                        title: "Pase Enviado",
-                        description: `Apply Pass otorgado a ${airdropAddress}`,
+                        title: "✅ Pase Enviado",
+                        description: `${passTitle} otorgado a ${airdropAddress.substring(0, 8)}...`,
                     });
                     setAirdropAddress("");
                     setBalanceCheckValue(null);
@@ -302,6 +355,42 @@ export function NFTManager() {
 
                     {airdropStatus === 'idle' || airdropStatus === 'checking' ? (
                         <div className="space-y-4 py-4">
+                            {/* NFT Pass Selector */}
+                            <div className="space-y-2">
+                                <label htmlFor="pass-select" className="text-xs text-zinc-500 uppercase font-semibold flex items-center gap-2">
+                                    <span className="text-amber-500">🎫</span>
+                                    Selecciona el NFT Pass
+                                </label>
+                                {loadingPasses ? (
+                                    <div className="flex items-center gap-2 text-zinc-400 text-sm">
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                        Cargando NFT Passes...
+                                    </div>
+                                ) : (
+                                    <select
+                                        id="pass-select"
+                                        value={selectedPassAddress}
+                                        onChange={(e) => {
+                                            setSelectedPassAddress(e.target.value);
+                                            setBalanceCheckValue(null); // Reset balance check
+                                        }}
+                                        className="w-full px-3 py-2 bg-black/50 border border-zinc-700 rounded-md text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-lime-500/50"
+                                    >
+                                        {availablePasses.map((pass) => (
+                                            <option key={pass.contractAddress} value={pass.contractAddress}>
+                                                {pass.symbol} - {pass.title}
+                                            </option>
+                                        ))}
+                                    </select>
+                                )}
+                                {selectedPassAddress && (
+                                    <p className="text-xs text-zinc-500 font-mono">
+                                        Contrato: {selectedPassAddress.substring(0, 8)}...{selectedPassAddress.substring(36)}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Wallet Address Input */}
                             <div className="space-y-2">
                                 <label htmlFor="airdrop-wallet" className="text-xs text-zinc-500 uppercase font-semibold">Wallet Address</label>
                                 <div className="flex gap-2">
@@ -379,7 +468,17 @@ export function NFTManager() {
                 </DialogContent>
             </Dialog>
 
-            <CreateNFTPassModal isOpen={showCreateWizard} onClose={() => setShowCreateWizard(false)} />
+            <CreateNFTPassModal
+                isOpen={showCreateWizard}
+                onClose={() => setShowCreateWizard(false)}
+                onSuccess={() => {
+                    // Refresh contract stats after creation
+                    refetchSupply();
+                    refetchBalance();
+                    // Note: If you have a projects list in this component, trigger its refresh here
+                }}
+            />
+
         </div>
     );
 }
