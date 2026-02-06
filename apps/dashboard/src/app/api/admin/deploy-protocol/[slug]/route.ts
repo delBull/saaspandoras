@@ -71,20 +71,33 @@ export async function POST(
         }
 
         // 2. Prepare Configuration
-        // Determine network based on Domain (Host Header) - Most reliable for Vercel
+        // Determine network based on Domain (Host Header) + Git Branch
         host = req.headers.get("host") || "";
-        const isProductionDomain = host === "dash.pandoras.finance" || host === "www.dash.pandoras.finance";
+        branchName = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF || process.env.VERCEL_GIT_COMMIT_REF || 'unknown';
 
-        // Network Logic: Maintain Sepolia default unless explicitly Prod Domain
-        network = isProductionDomain ? 'base' : 'sepolia';
-        branchName = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF || 'unknown';
+        const isProductionDomain = host === "dash.pandoras.finance" || host === "www.dash.pandoras.finance";
+        const isMainBranch = branchName === 'main';
+        const isStagingBranch = branchName === 'staging';
+
+        // Network Logic: 
+        // 1st Priority: Domain name (most reliable for Vercel)
+        // 2nd Priority: Branch name (main = base, staging = sepolia)
+        // Default: Sepolia (safe fallback)
+        if (isProductionDomain || isMainBranch) {
+            network = 'base';
+        } else if (isStagingBranch) {
+            network = 'sepolia';
+        } else {
+            // Unknown environment, default to Sepolia for safety
+            network = 'sepolia';
+        }
 
         // Debug Env Vars (Safety Check)
         const hasSepoliaRPC = !!process.env.SEPOLIA_RPC_URL;
         const hasBaseRPC = !!process.env.BASE_RPC_URL;
 
         console.log(`🚀 API: Deploying ${slug}`);
-        console.log(`🌍 Network Decision: Host="${host}" -> Network="${network}"`);
+        console.log(`🌍 Network Decision: Host="${host}", Branch="${branchName}" → Network="${network}"`);
         console.log(`🔌 RPC Check: SEPOLIA_RPC_URL=${hasSepoliaRPC ? 'OK' : 'MISSING'}, BASE_RPC_URL=${hasBaseRPC ? 'OK' : 'MISSING'}`);
 
         // Mapping project data to W2EConfig
