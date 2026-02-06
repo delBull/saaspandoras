@@ -101,7 +101,23 @@ export function ProjectTableView({
             {projects.map((p) => (
               <React.Fragment key={p.id}>
                 <tr className="hover:bg-zinc-800">
-                  <td className="px-4 py-3 text-gray-200">{p.title}</td>
+                  <td className="px-4 py-3 text-gray-200">
+                    <div className="flex items-center gap-2">
+                      <span>{p.title}</span>
+                      {/* Badge for NFT Access Passes */}
+                      {p.businessCategory === 'infrastructure' && p.licenseContractAddress && !p.utilityContractAddress && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                          🎫 Access Pass
+                        </span>
+                      )}
+                      {/* Badge for Full Protocols */}
+                      {p.utilityContractAddress && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                          🔮 Full Protocol
+                        </span>
+                      )}
+                    </div>
+                  </td>
                   <td className="px-4 py-3 text-gray-200">
                     ${Number(p.targetAmount).toLocaleString()}
                   </td>
@@ -522,7 +538,10 @@ export function ProjectTableView({
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                             <div>
                               <span className="text-gray-400">Categoría de negocio: </span>
-                              <span className="text-white">{p.businessCategory ?? "Sin especificar"}</span>
+                              <span className="text-white">
+                                {p.businessCategory === 'infrastructure' ? '🏗️ ' : ''}
+                                {p.businessCategory ?? "Sin especificar"}
+                              </span>
                             </div>
                             <div>
                               <span className="text-gray-400">Estatus legal: </span>
