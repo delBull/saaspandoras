@@ -332,8 +332,9 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                         <div className="bg-zinc-800/30 p-4 rounded-xl border border-zinc-700/50 space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-400 mb-1">Nombre del Pase</label>
+                                    <label htmlFor="nft-pass-name" className="block text-xs font-medium text-gray-400 mb-1">Nombre del Pase</label>
                                     <input
+                                        id="nft-pass-name"
                                         name="name"
                                         type="text"
                                         value={formData.name}
@@ -343,8 +344,9 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-400 mb-1">Símbolo</label>
+                                    <label htmlFor="nft-pass-symbol" className="block text-xs font-medium text-gray-400 mb-1">Símbolo</label>
                                     <input
+                                        id="nft-pass-symbol"
                                         name="symbol"
                                         type="text"
                                         value={formData.symbol}
@@ -356,8 +358,9 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                             </div>
 
                             <div>
-                                <label className="block text-xs font-medium text-gray-400 mb-1">Descripción (Interno)</label>
+                                <label htmlFor="nft-pass-description" className="block text-xs font-medium text-gray-400 mb-1">Descripción (Interno)</label>
                                 <input
+                                    id="nft-pass-description"
                                     name="description"
                                     type="text"
                                     value={formData.description}
@@ -379,10 +382,11 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                         <div className="bg-zinc-800/30 p-4 rounded-xl border border-zinc-700/50 space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="group relative">
-                                    <label className="block text-xs font-medium text-gray-400 mb-1 flex items-center gap-1">
+                                    <label htmlFor="nft-pass-maxSupply" className="block text-xs font-medium text-gray-400 mb-1 flex items-center gap-1">
                                         Max Supply <InformationCircleIcon className="w-3 h-3" />
                                     </label>
                                     <input
+                                        id="nft-pass-maxSupply"
                                         name="maxSupply"
                                         type="number"
                                         value={formData.maxSupply}
@@ -395,8 +399,9 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-400 mb-1">Precio (ETH)</label>
+                                    <label htmlFor="nft-pass-price" className="block text-xs font-medium text-gray-400 mb-1">Precio (ETH)</label>
                                     <input
+                                        id="nft-pass-price"
                                         name="price"
                                         type="number"
                                         step="0.001"
@@ -408,8 +413,9 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                             </div>
 
                             <div>
-                                <label className="block text-xs font-medium text-gray-400 mb-1">Wallet Tesorería (Opcional)</label>
+                                <label htmlFor="nft-pass-treasury" className="block text-xs font-medium text-gray-400 mb-1">Wallet Tesorería (Opcional)</label>
                                 <input
+                                    id="nft-pass-treasury"
                                     name="treasury"
                                     type="text"
                                     value={formData.treasury}
