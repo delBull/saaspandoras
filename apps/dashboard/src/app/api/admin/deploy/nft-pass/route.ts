@@ -47,10 +47,17 @@ export async function POST(req: Request) {
 
         console.log(`🚀 API: Deploying NFT Pass: ${name} (${symbol}) for ${owner}`);
 
-        // 3. Deploy
-        // Determine network (Production -> Base, Dev -> Sepolia)
-        const isProduction = process.env.NODE_ENV === 'production';
-        const network = isProduction ? 'base' : 'sepolia';
+        // 3. Determine Network (same logic as deploy-protocol)
+        const host = req.headers.get("host") || "";
+        const branchName = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF || process.env.VERCEL_GIT_COMMIT_REF || 'unknown';
+
+        const isProductionDomain = host === "dash.pandoras.finance" || host === "www.dash.pandoras.finance";
+        const isMainBranch = branchName === 'main';
+
+        // Network: Production domain or main branch → Base, else Sepolia
+        const network = (isProductionDomain || isMainBranch) ? 'base' : 'sepolia';
+
+        console.log(`🌍 Network Decision: Host="${host}", Branch="${branchName}" → Network="${network}"`);
 
         const address = await deployNFTPass(config, network);
 
