@@ -41,97 +41,100 @@ export async function deployW2EProtocol(
     console.warn("⚠️ THIRDWEB_SECRET_KEY missing. Deployment might fail if using Thirdweb infrastructure.");
   }
 
-  // 1. Setup Provider & Wallet (Ethers v5)
-  // Priority: Secret Key (Backend) > Public RPC. Client ID is for frontend only.
-  const SECRET_KEY = process.env.THIRDWEB_SECRET_KEY;
+  // 1. Setup Provider & Wallet (Ethers v5) with AUTOMATIC FALLBACK
+  // Multiple public RPCs for reliability
+  const SEPOLIA_RPCS = [
+    "https://ethereum-sepolia-rpc.publicnode.com",
+    "https://rpc2.sepolia.org",
+    "https://sepolia.gateway.tenderly.co",
+    "https://ethereum-sepolia.blockpi.network/v1/rpc/public"
+  ];
 
-  const defaultSepoliaRpc = "https://ethereum-sepolia-rpc.publicnode.com";
+  const BASE_RPCS = [
+    "https://mainnet.base.org",
+    "https://base.llamarpc.com",
+    "https://base.blockpi.network/v1/rpc/public",
+    "https://base-rpc.publicnode.com"
+  ];
 
-  /* 
-  const defaultSepoliaRpc = SECRET_KEY 
-    ? `https://11155111.rpc.thirdweb.com/${SECRET_KEY}` 
-    : "https://ethereum-sepolia-rpc.publicnode.com";
-  */
+  const rpcCandidates = network === 'sepolia' ? SEPOLIA_RPCS : BASE_RPCS;
 
-  let rpcUrl = network === 'sepolia'
-    ? (process.env.SEPOLIA_RPC_URL || defaultSepoliaRpc)
+  // If user provided custom RPC via env var, try it first
+  let customRpc = network === 'sepolia'
+    ? process.env.SEPOLIA_RPC_URL
     : process.env.BASE_RPC_URL;
 
-  // Manual Sanitization for Vercel Env Vars (Remove accidental quotes/whitespace)
-  if (rpcUrl) {
-    rpcUrl = rpcUrl.trim();
-    if (rpcUrl.startsWith('"') && rpcUrl.endsWith('"')) {
-      rpcUrl = rpcUrl.slice(1, -1);
+  // Sanitize custom RPC
+  if (customRpc) {
+    customRpc = customRpc.trim();
+    if (customRpc.startsWith('"') && customRpc.endsWith('"')) {
+      customRpc = customRpc.slice(1, -1);
     }
-    if (rpcUrl.startsWith("'") && rpcUrl.endsWith("'")) {
-      rpcUrl = rpcUrl.slice(1, -1);
+    if (customRpc.startsWith("'") && customRpc.endsWith("'")) {
+      customRpc = customRpc.slice(1, -1);
+    }
+    // Avoid known bad RPCs
+    if (customRpc !== "https://rpc.sepolia.org" && customRpc !== "0x0000000000000000000000000000000000000000") {
+      rpcCandidates.unshift(customRpc); // Try custom first
     }
   }
 
-  console.log(`🌍 Connecting to RPC: ${rpcUrl}`);
+  console.log(`🌍 Attempting connection with ${rpcCandidates.length} RPC candidates for ${network}...`);
 
-  // Auto-fix: Avoid known bad RPCs if they come from env
-  if (network === 'sepolia' && (rpcUrl === "https://rpc.sepolia.org" || !rpcUrl)) {
-    console.warn("⚠️ Detected unstable or missing RPC. Switching to reliable fallback.");
-    rpcUrl = defaultSepoliaRpc;
-    console.log(`🌍 Switched to RPC: ${rpcUrl}`);
+  // Try each RPC until one works
+  let rpcUrl: string | null = null;
+  let lastError: Error | null = null;
+
+  for (const candidateRpc of rpcCandidates) {
+    try {
+      console.log(`📡 Testing RPC: ${candidateRpc}`);
+      const testRes = await fetch(candidateRpc, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_chainId', params: [], id: 1 })
+      });
+
+      if (!testRes.ok) {
+        const body = await testRes.text();
+        console.warn(`❌ RPC Failed: ${candidateRpc} - ${testRes.status} ${testRes.statusText}`);
+        lastError = new Error(`${testRes.status} ${testRes.statusText}: ${body.slice(0, 100)}`);
+        continue; // Try next RPC
+      }
+
+      const testJson = await testRes.json() as any;
+      if (!testJson.result) {
+        console.warn(`❌ RPC returned invalid response: ${candidateRpc}`);
+        lastError = new Error(`Invalid response: ${JSON.stringify(testJson)}`);
+        continue;
+      }
+
+      // SUCCESS!
+      console.log(`✅ RPC Connection OK: ${candidateRpc} (Chain ID: ${testJson.result})`);
+      rpcUrl = candidateRpc;
+      break;
+
+    } catch (e: any) {
+      console.warn(`❌ RPC Connection failed: ${candidateRpc} - ${e.message}`);
+      lastError = e;
+      continue; // Try next
+    }
   }
 
-  if (!rpcUrl) throw new Error(`RPC URL not found for network: ${network}`);
-
-  // Connectivity Check (BLOCKING)
-  try {
-    console.log(`📡 Testing connection to RPC: ${rpcUrl}`);
-    // Simple POST to check if endpoint is alive (JSON-RPC 2.0 basic call)
-    const testRes = await fetch(rpcUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_chainId', params: [], id: 1 })
-    });
-
-    if (!testRes.ok) {
-      const body = await testRes.text();
-      console.error(`❌ RPC Connection Failed with Status: ${testRes.status} ${testRes.statusText}`);
-      console.error(`❌ Response Body: ${body}`);
-
-      // BLOCK deployment with clear error
-      throw new Error(
-        `RPC endpoint is unreachable or invalid.\n` +
-        `Network: ${network}\n` +
-        `RPC URL: ${rpcUrl}\n` +
-        `HTTP Status: ${testRes.status} ${testRes.statusText}\n` +
-        `Response: ${body.slice(0, 200)}...\n\n` +
-        `Possible causes:\n` +
-        `1. RPC endpoint is down or blocked by Vercel\n` +
-        `2. RPC URL is malformed (check SEPOLIA_RPC_URL or BASE_RPC_URL in Vercel env vars)\n` +
-        `3. RPC requires authentication that wasn't provided\n` +
-        `4. Network firewall rules blocking the request`
-      );
-    }
-
-    const testJson = await testRes.json() as any;
-
-    if (!testJson.result) {
-      throw new Error(
-        `RPC response missing chain ID.\n` +
-        `Network: ${network}\n` +
-        `RPC URL: ${rpcUrl}\n` +
-        `Response: ${JSON.stringify(testJson)}`
-      );
-    }
-
-    console.log(`✅ RPC Connection OK. Chain ID: ${testJson.result}`);
-
-  } catch (connError: any) {
-    console.error(`❌ RPC Connectivity Check FAILED (BLOCKING):`, connError.message);
-    // RE-THROW to block deployment
+  // If ALL RPCs failed, throw comprehensive error
+  if (!rpcUrl) {
     throw new Error(
-      `Failed to connect to ${network} RPC endpoint.\n\n` +
-      `Original error: ${connError.message}\n\n` +
-      `Please verify:\n` +
-      `1. Environment variable ${network === 'sepolia' ? 'SEPOLIA_RPC_URL' : 'BASE_RPC_URL'} is set correctly in Vercel\n` +
-      `2. The RPC endpoint is accessible from Vercel's infrastructure\n` +
-      `3. Try using a public RPC like https://ethereum-sepolia-rpc.publicnode.com for Sepolia`
+      `Failed to connect to ANY ${network} RPC endpoint.\n\n` +
+      `Tried ${rpcCandidates.length} different RPCs:\n` +
+      `${rpcCandidates.map((rpc, i) => `  ${i + 1}. ${rpc}`).join('\n')}\n\n` +
+      `Last error: ${lastError?.message || 'Unknown'}\n\n` +
+      `Possible causes:\n` +
+      `1. All public RPCs are temporarily down\n` +
+      `2. Vercel is blocking RPC connections\n` +
+      `3. Network connectivity issues\n\n` +
+      `Recommended actions:\n` +
+      `1. Try again in a few minutes\n` +
+      `2. Check Vercel function logs for more details\n` +
+      `3. Consider using a dedicated RPC service (Alchemy, Infura)`
     );
   }
 
