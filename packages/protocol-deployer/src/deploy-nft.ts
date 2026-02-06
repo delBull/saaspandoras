@@ -146,41 +146,6 @@ export async function deployNFTPass(
         );
     }
 
-    // Connectivity Check (BLOCKING) - Same as deploy.ts
-    try {
-        console.log(`📡 Testing connection to RPC: ${rpcUrl}`);
-        const testRes = await fetch(rpcUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_chainId', params: [], id: 1 })
-        });
-
-        if (!testRes.ok) {
-            const body = await testRes.text();
-            console.error(`❌ RPC Connection Failed: ${testRes.status} ${testRes.statusText}`);
-            throw new Error(
-                `RPC endpoint unreachable.\n` +
-                `Network: ${network}\n` +
-                `RPC URL: ${rpcUrl}\n` +
-                `HTTP Status: ${testRes.status}\n` +
-                `Response: ${body.slice(0, 200)}`
-            );
-        }
-
-        const testJson = await testRes.json() as any;
-        if (!testJson.result) {
-            throw new Error(`RPC response missing chain ID: ${JSON.stringify(testJson)}`);
-        }
-        console.log(`✅ RPC Connection OK. Chain ID: ${testJson.result}`);
-    } catch (connError: any) {
-        console.error(`❌ RPC Connectivity Check FAILED:`, connError.message);
-        throw new Error(
-            `Failed to connect to ${network} RPC.\n` +
-            `Error: ${connError.message}\n\n` +
-            `Verify ${network === 'sepolia' ? 'SEPOLIA_RPC_URL' : 'BASE_RPC_URL'} in Vercel env vars.`
-        );
-    }
-
     const privateKey = process.env.PANDORA_ORACLE_PRIVATE_KEY || process.env.PRIVATE_KEY;
     if (!privateKey) throw new Error("Private Key not found");
 
