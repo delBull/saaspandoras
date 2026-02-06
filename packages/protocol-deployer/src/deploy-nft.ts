@@ -111,6 +111,8 @@ export async function deployNFTPass(
         );
     }
 
+    let detectedChainId: number | null = null;
+
     // Connectivity Check (BLOCKING) - Same as deploy.ts
     try {
         console.log(`📡 Testing connection to RPC: ${rpcUrl}`);
@@ -136,7 +138,9 @@ export async function deployNFTPass(
         if (!testJson.result) {
             throw new Error(`RPC response missing chain ID: ${JSON.stringify(testJson)}`);
         }
-        console.log(`✅ RPC Connection OK. Chain ID: ${testJson.result}`);
+
+        detectedChainId = parseInt(testJson.result, 16);
+        console.log(`✅ RPC Connection OK. Chain ID: ${detectedChainId} (${testJson.result})`);
     } catch (connError: any) {
         console.error(`❌ RPC Connectivity Check FAILED:`, connError.message);
         throw new Error(
@@ -157,7 +161,11 @@ export async function deployNFTPass(
     const ContractFactory = eth.ContractFactory;
     const parseEther = isV6 ? eth.parseEther : eth.utils.parseEther;
 
-    const provider = new JsonRpcProvider(rpcUrl);
+    // Explicitly pass network to avoid auto-detection failure
+    const provider = new JsonRpcProvider(rpcUrl, {
+        name: network,
+        chainId: detectedChainId
+    });
     const wallet = new Wallet(privateKey, provider);
 
     console.log(`📡 Connected to ${network} with wallet: ${wallet.address}`);
