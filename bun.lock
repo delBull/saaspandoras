@@ -270,9 +270,11 @@
       "name": "@pandoras/gamification",
       "version": "1.0.0",
       "dependencies": {
+        "clsx": "^2.1.0",
         "framer-motion": "^12.23.12",
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
+        "tailwind-merge": "^2.2.0",
       },
       "devDependencies": {
         "@saasfly/ui": "workspace:*",
@@ -5555,6 +5557,8 @@
     "@opentelemetry/sdk-metrics/@opentelemetry/resources": ["@opentelemetry/resources@1.24.1", "", { "dependencies": { "@opentelemetry/core": "1.24.1", "@opentelemetry/semantic-conventions": "1.24.1" }, "peerDependencies": { "@opentelemetry/api": ">=1.0.0 <1.9.0" } }, "sha512-cyv0MwAaPF7O86x5hk3NNgenMObeejZFLJJDVuSeSMIsknlsj3oOZzRv3qSzlwYomXsICfBeFFlxwHQte5mGXQ=="],
 
     "@opentelemetry/sdk-trace-base/@opentelemetry/semantic-conventions": ["@opentelemetry/semantic-conventions@1.28.0", "", {}, "sha512-lp4qAiMTD4sNWW4DbKLBkfiMZ4jbAboJIGOQr5DvciMRI494OapieI9qiODpOt0XBr1LjIDy1xAGAnVs5supTA=="],
+
+    "@pandoras/gamification/tailwind-merge": ["tailwind-merge@2.6.1", "", {}, "sha512-Oo6tHdpZsGpkKG88HJ8RR1rg/RdnEkQEfMoEk2x1XRI3F1AxeU+ijRXpiVUF4UbLfcxxRGw6TbUINKYdWVsQTQ=="],
 
     "@pandoras/protocol-deployer/@types/node": ["@types/node@20.19.25", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-ZsJzA5thDQMSQO788d7IocwwQbI8B5OPzmqNvpf3NY/+MHDAS759Wo0gd2WQeXYt5AAAQjzcrTVC6SKCuYgoCQ=="],
 

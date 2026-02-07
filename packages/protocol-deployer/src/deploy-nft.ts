@@ -50,7 +50,10 @@ export async function deployNFTPass(
         "https://rpc.ankr.com/eth_sepolia",
         "https://eth-sepolia.public.blastapi.io",
         "https://1rpc.io/sepolia",
-        "https://sepolia.drpc.org"
+        "https://sepolia.drpc.org",
+        "https://sepolia.infura.io/v3/46801ddf7514463493b8aa6fdd253322", // Public Infura key if available or general one
+        "https://gateway.tenderly.co/public/sepolia",
+        "https://sepolia.db3.app"
     ];
 
     const BASE_RPCS = [
@@ -60,7 +63,9 @@ export async function deployNFTPass(
         "https://base-rpc.publicnode.com",
         "https://1rpc.io/base",
         "https://base.drpc.org",
-        "https://base-mainnet.public.blastapi.io"
+        "https://base-mainnet.public.blastapi.io",
+        "https://base.gateway.tenderly.co",
+        "https://base.meowrpc.com"
     ];
 
     let rpcCandidates = network === 'sepolia' ? [...SEPOLIA_RPCS] : [...BASE_RPCS];
@@ -73,7 +78,10 @@ export async function deployNFTPass(
         if (customRpc.startsWith('http') && customRpc !== "https://rpc.sepolia.org") {
             // Add to front
             rpcCandidates.unshift(customRpc);
+            console.log(`🔹 Custom RPC configured for ${network}`);
         }
+    } else {
+        console.log(`🔹 No custom RPC found for ${network}, using extensive public fallback list.`);
     }
 
     // Shuffle public RPCs (excluding the custom one if it's first) to verify against "thundering herd"
@@ -183,7 +191,7 @@ export async function deployNFTPass(
         throw new Error(
             `Failed to connect to ${network} RPC.\n` +
             `Error: ${connError.message}\n\n` +
-            `Verify ${network === 'sepolia' ? 'SEPOLIA_RPC_URL' : 'BASE_RPC_URL'} in Vercel env vars.`
+            `Verify ${network === 'sepolia' ? 'SEPOLIA_RPC_URL' : 'BASE_RPC_URL'} in Vercel env vars, or check if public RPCs are congested.`
         );
     }
 
