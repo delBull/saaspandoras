@@ -63,7 +63,14 @@ export async function POST(req: Request) {
         // - Production/Fallback: Upload to IPFS via Thirdweb (persistent, decentralized)
 
         let publicUrl = '';
+        let fileUrl = "";
+        let storageType: "local_fs" | "base64_fallback";
 
+        // Define upload directory and file path
+        const uploadDir = path.join(process.cwd(), "public", "assets", "nft-passes");
+        const filePath = path.join(uploadDir, filename);
+
+        // Try to save to disk (works in local dev, fails in some serverless envs)
         try {
             // Only attempt FS write if explicitly enabled or in dev
             if (process.env.NODE_ENV !== 'development') {
