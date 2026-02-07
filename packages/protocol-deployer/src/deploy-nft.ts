@@ -40,29 +40,50 @@ export async function deployNFTPass(
         console.warn("⚠️ THIRDWEB_SECRET_KEY missing.");
     }
 
-    // Multi-RPC fallback system (same as deploy.ts)
+    // Multi-RPC fallback system with extensive public nodes
     const SEPOLIA_RPCS = [
+        "https://rpc.sepolia.org",
         "https://ethereum-sepolia-rpc.publicnode.com",
         "https://rpc2.sepolia.org",
         "https://sepolia.gateway.tenderly.co",
-        "https://ethereum-sepolia.blockpi.network/v1/rpc/public"
+        "https://ethereum-sepolia.blockpi.network/v1/rpc/public",
+        "https://rpc.ankr.com/eth_sepolia",
+        "https://eth-sepolia.public.blastapi.io",
+        "https://1rpc.io/sepolia",
+        "https://sepolia.drpc.org"
     ];
 
     const BASE_RPCS = [
         "https://mainnet.base.org",
         "https://base.llamarpc.com",
         "https://base.blockpi.network/v1/rpc/public",
-        "https://base-rpc.publicnode.com"
+        "https://base-rpc.publicnode.com",
+        "https://1rpc.io/base",
+        "https://base.drpc.org",
+        "https://base-mainnet.public.blastapi.io"
     ];
 
-    const rpcCandidates = network === 'sepolia' ? SEPOLIA_RPCS : BASE_RPCS;
+    let rpcCandidates = network === 'sepolia' ? [...SEPOLIA_RPCS] : [...BASE_RPCS];
 
-    // Try custom RPC first if provided
+    // Try custom RPC first if provided (and valid)
     let customRpc = network === 'sepolia' ? process.env.SEPOLIA_RPC_URL : process.env.BASE_RPC_URL;
     if (customRpc) {
-        customRpc = customRpc.trim().replace(/^["']|["']$/g, ''); // Remove quotes
-        if (customRpc !== "https://rpc.sepolia.org" && customRpc !== "0x0000000000000000000000000000000000000000") {
+        customRpc = customRpc.trim().replace(/^["']|["']$/g, '');
+        // Validate it's a real URL and not a localized placeholder or empty
+        if (customRpc.startsWith('http') && customRpc !== "https://rpc.sepolia.org") {
+            // Add to front
             rpcCandidates.unshift(customRpc);
+        }
+    }
+
+    // Shuffle public RPCs (excluding the custom one if it's first) to verify against "thundering herd"
+    // If we have a custom RPC at index 0, shuffle the rest. check index.
+    const startIndex = customRpc ? 1 : 0;
+    if (rpcCandidates.length > startIndex + 1) {
+        // Fisher-Yates shuffle for the public nodes
+        for (let i = rpcCandidates.length - 1; i > startIndex; i--) {
+            const j = startIndex + Math.floor(Math.random() * (i - startIndex + 1));
+            [rpcCandidates[i], rpcCandidates[j]] = [rpcCandidates[j], rpcCandidates[i]];
         }
     }
 
@@ -72,13 +93,19 @@ export async function deployNFTPass(
     let lastError: Error | null = null;
 
     for (const candidateRpc of rpcCandidates) {
+        let timeoutId: NodeJS.Timeout | undefined;
         try {
             console.log(`📡 Testing RPC: ${candidateRpc}`);
+            const controller = new AbortController();
+            timeoutId = setTimeout(() => controller.abort(), 3000); // 3s timeout
+
             const testRes = await fetch(candidateRpc, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_chainId', params: [], id: 1 })
+                body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_chainId', params: [], id: 1 }),
+                signal: controller.signal
             });
+            clearTimeout(timeoutId);
 
             if (!testRes.ok) {
                 console.warn(`❌ RPC Failed: ${candidateRpc} - ${testRes.status}`);
@@ -98,7 +125,8 @@ export async function deployNFTPass(
             break;
 
         } catch (e: any) {
-            console.warn(`❌ Connection failed: ${candidateRpc}`);
+            if (timeoutId) clearTimeout(timeoutId);
+            console.warn(`❌ Connection failed: ${candidateRpc} (${e.message})`);
             lastError = e;
             continue;
         }
@@ -114,13 +142,19 @@ export async function deployNFTPass(
     let detectedChainId: number | null = null;
 
     // Connectivity Check (BLOCKING) - Same as deploy.ts
+    let finalTimeoutId: NodeJS.Timeout | undefined;
     try {
         console.log(`📡 Testing connection to RPC: ${rpcUrl}`);
-        const testRes = await fetch(rpcUrl, {
+        const controller = new AbortController();
+        finalTimeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout for final check
+
+        const testRes = await fetch(rpcUrl!, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_chainId', params: [], id: 1 })
+            body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_chainId', params: [], id: 1 }),
+            signal: controller.signal
         });
+        clearTimeout(finalTimeoutId);
 
         if (!testRes.ok) {
             const body = await testRes.text();
@@ -142,6 +176,7 @@ export async function deployNFTPass(
         detectedChainId = parseInt(testJson.result, 16);
         console.log(`✅ RPC Connection OK. Chain ID: ${detectedChainId} (${testJson.result})`);
     } catch (connError: any) {
+        if (finalTimeoutId) clearTimeout(finalTimeoutId);
         console.error(`❌ RPC Connectivity Check FAILED:`, connError.message);
         throw new Error(
             `Failed to connect to ${network} RPC.\n` +
