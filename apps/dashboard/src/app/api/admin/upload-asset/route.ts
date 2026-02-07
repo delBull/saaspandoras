@@ -63,7 +63,6 @@ export async function POST(req: Request) {
         // - Production/Fallback: Upload to IPFS via Thirdweb (persistent, decentralized)
 
         let publicUrl = '';
-        let fileUrl = "";
         let storageType: "local_fs" | "base64_fallback";
 
         // Define upload directory and file path
