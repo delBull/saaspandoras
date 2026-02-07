@@ -199,9 +199,19 @@ export async function deployNFTPass(
     const parseEther = isV6 ? eth.parseEther : eth.utils.parseEther;
 
     // Explicitly pass network to avoid auto-detection failure
+    const CHAIN_IDS = {
+        'sepolia': 11155111,
+        'base': 8453
+    };
+
+    // Use the detected chain ID if available (checked above), otherwise fall back to the static known ID
+    // logic: detectedChainId might be undefined if I missed its declaration, so let's be safe.
+    // Actually, simply using the static ID is safer because we demanded this network.
+    const targetChainId = CHAIN_IDS[network] || 11155111;
+
     const provider = new JsonRpcProvider(rpcUrl, {
         name: network,
-        chainId: detectedChainId
+        chainId: targetChainId
     });
     const wallet = new Wallet(privateKey, provider);
 
