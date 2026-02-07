@@ -4,6 +4,8 @@ import { headers } from "next/headers";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
+import { client } from "@/lib/thirdweb-client";
+import { upload } from "thirdweb/storage";
 
 // Force Node.js runtime for file system access
 export const runtime = "nodejs";
@@ -55,9 +57,10 @@ export async function POST(req: Request) {
         const extension = file.name.split('.').pop() || 'png';
         const filename = `nft-pass-${timestamp}-${randomStr}.${extension}`;
 
-        // 5. Save File (Attempt Public Directory first, fallback to Data URI)
-        const bytes = await file.arrayBuffer();
-        const buffer = Buffer.from(bytes);
+        // 5. Save File
+        // Strategy:
+        // - Local Dev: Try local filesystem (fast, free)
+        // - Production/Fallback: Upload to IPFS via Thirdweb (persistent, decentralized)
 
         let publicUrl = '';
         let fileUrl = "";
@@ -69,25 +72,45 @@ export async function POST(req: Request) {
 
         // Try to save to disk (works in local dev, fails in some serverless envs)
         try {
-            // Ensure directory exists
+            // Only attempt FS write if explicitly enabled or in dev
+            if (process.env.NODE_ENV !== 'development') {
+                throw new Error("Production environment: skipping local FS write");
+            }
+
+            const uploadDir = path.join(process.cwd(), "public", "assets", "nft-passes");
+            const filePath = path.join(uploadDir, filename);
+
             await mkdir(uploadDir, { recursive: true });
 
-            // Write file
+            // We need to write the file buffer
+            const bytes = await file.arrayBuffer();
+            const buffer = Buffer.from(bytes);
+
             await writeFile(filePath, buffer);
-            fileUrl = `/assets/nft-passes/${filename}`; // Return relative public path
-            storageType = "local_fs";
-            console.log(`✅ Asset saved to disk: ${fileUrl}`);
+
+            publicUrl = `/assets/nft-passes/${filename}`;
+            console.log(`✅ Asset saved to disk: ${publicUrl}`);
 
         } catch (fsError: any) {
-            console.warn(`⚠️ Filesystem write failed (Read-only FS?): ${fsError.message}. Falling back to Data URI.`);
+            console.log(`ℹ️ Switching to IPFS upload (Reason: ${fsError.message})`);
 
-            // Fallback: Convert to Base64 Data URI
-            // Note: This increases DB payload size but ensures functionality without S3.
-            const base64 = buffer.toString('base64');
-            const mimeType = file.type || 'image/png';
-            publicUrl = `data:${mimeType};base64,${base64}`;
+            try {
+                // Upload to IPFS
+                // upload() from thirdweb/storage handles File objects directly
+                const uri = await upload({
+                    client,
+                    files: [file],
+                });
 
-            console.log(`✅ Asset converted to Data URI (${publicUrl.substring(0, 50)}...)`);
+                // Return the ipfs:// URI directly. 
+                // The frontend (if using MediaRenderer) handles this perfectly.
+                publicUrl = uri;
+
+                console.log(`✅ Asset uploaded to IPFS: ${publicUrl}`);
+            } catch (uploadError: any) {
+                console.error("❌ IPFS Upload failed:", uploadError);
+                throw new Error("Failed to store asset (FS and IPFS both failed)");
+            }
         }
 
         // 6. Return Public URL (or Data URI)
