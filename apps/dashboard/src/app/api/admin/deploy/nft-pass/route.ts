@@ -121,8 +121,12 @@ export async function POST(req: Request) {
                 branch: branchName
             },
             rpcStatus: {
-                sepolia: process.env.SEPOLIA_RPC_URL ? `Configured (Length: ${process.env.SEPOLIA_RPC_URL.length})` : 'MISSING',
-                base: process.env.BASE_RPC_URL ? `Configured (Length: ${process.env.BASE_RPC_URL.length})` : 'MISSING'
+                sepolia: process.env.SEPOLIA_RPC_URL ? `Configured (Custom)` : 'Using Internal Fallbacks',
+                base: process.env.BASE_RPC_URL ? `Configured (Custom)` : 'Using Internal Fallbacks'
+            },
+            rpcEnvVars: {
+                SEPOLIA_RPC_URL: process.env.SEPOLIA_RPC_URL ? 'Present' : 'Missing',
+                BASE_RPC_URL: process.env.BASE_RPC_URL ? 'Present' : 'Missing'
             },
             errorDetails: error?.message || error
         };
