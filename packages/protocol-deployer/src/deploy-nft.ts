@@ -83,7 +83,9 @@ export async function deployNFTPass(
         // Fisher-Yates shuffle for the public nodes
         for (let i = rpcCandidates.length - 1; i > startIndex; i--) {
             const j = startIndex + Math.floor(Math.random() * (i - startIndex + 1));
-            [rpcCandidates[i], rpcCandidates[j]] = [rpcCandidates[j], rpcCandidates[i]];
+            const temp = rpcCandidates[i];
+            rpcCandidates[i] = rpcCandidates[j] as string;
+            rpcCandidates[j] = temp as string;
         }
     }
 
