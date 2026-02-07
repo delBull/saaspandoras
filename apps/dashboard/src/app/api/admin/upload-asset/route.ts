@@ -60,23 +60,29 @@ export async function POST(req: Request) {
         const buffer = Buffer.from(bytes);
 
         let publicUrl = '';
+        let fileUrl = "";
+        let storageType: "local_fs" | "base64_fallback";
 
+        // Define upload directory and file path
+        const uploadDir = path.join(process.cwd(), "public", "assets", "nft-passes");
+        const filePath = path.join(uploadDir, filename);
+
+        // Try to save to disk (works in local dev, fails in some serverless envs)
         try {
             // Ensure directory exists
-            const uploadDir = path.join(process.cwd(), "public", "assets", "nft-passes");
             await mkdir(uploadDir, { recursive: true });
 
-            const filePath = path.join(uploadDir, filename);
+            // Write file
             await writeFile(filePath, buffer);
-
-            // Return Public URL if FS write succeeds
-            publicUrl = `/assets/nft-passes/${filename}`;
-            console.log(`✅ Asset saved to disk: ${publicUrl}`);
+            fileUrl = `/assets/nft-passes/${filename}`; // Return relative public path
+            storageType = "local_fs";
+            console.log(`✅ Asset saved to disk: ${fileUrl}`);
 
         } catch (fsError: any) {
-            console.warn(`⚠️ Disk write failed (Read-only FS?): ${fsError.message}. Falling back to Data URI.`);
+            console.warn(`⚠️ Filesystem write failed (Read-only FS?): ${fsError.message}. Falling back to Data URI.`);
 
             // Fallback: Convert to Base64 Data URI
+            // Note: This increases DB payload size but ensures functionality without S3.
             const base64 = buffer.toString('base64');
             const mimeType = file.type || 'image/png';
             publicUrl = `data:${mimeType};base64,${base64}`;
