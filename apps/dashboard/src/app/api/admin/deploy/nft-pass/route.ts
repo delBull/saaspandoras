@@ -10,6 +10,11 @@ import { deployNFTPass, type NFTPassConfig } from "@pandoras/protocol-deployer";
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
+    // Diagnostic Variables (Outer Scope for Error Handling)
+    let network: 'sepolia' | 'base' = 'sepolia';
+    let host = '';
+    let branchName = '';
+
     try {
         // 1. Auth & Admin Check
         const headersObj = await headers();
@@ -48,14 +53,26 @@ export async function POST(req: Request) {
         console.log(`🚀 API: Deploying NFT Pass: ${name} (${symbol}) for ${owner}`);
 
         // 3. Determine Network (same logic as deploy-protocol)
-        const host = req.headers.get("host") || "";
-        const branchName = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF || process.env.VERCEL_GIT_COMMIT_REF || 'unknown';
+        host = req.headers.get("host") || "";
+        branchName = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF || process.env.VERCEL_GIT_COMMIT_REF || 'unknown';
 
         const isProductionDomain = host === "dash.pandoras.finance" || host === "www.dash.pandoras.finance";
         const isMainBranch = branchName === 'main';
+        const isStagingBranch = branchName === 'staging';
 
         // Network: Production domain or main branch → Base, else Sepolia
-        const network = (isProductionDomain || isMainBranch) ? 'base' : 'sepolia';
+        // Logic: 
+        // 1st Priority: Domain name (most reliable for Vercel)
+        // 2nd Priority: Branch name (main = base, staging = sepolia)
+        // Default: Sepolia (safe fallback)
+        if (isProductionDomain || isMainBranch) {
+            network = 'base';
+        } else if (isStagingBranch) {
+            network = 'sepolia';
+        } else {
+            // Unknown environment, default to Sepolia for safety
+            network = 'sepolia';
+        }
 
         console.log(`🌍 Network Decision: Host="${host}", Branch="${branchName}" → Network="${network}"`);
 
@@ -92,10 +109,29 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ success: true, address, network, slug });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Deploy NFT API Error:", error);
+
+        // Diagnostic Info
+        const diagnostics = {
+            networkAttempted: network,
+            envDetection: {
+                host: host,
+                vercelEnv: process.env.NEXT_PUBLIC_VERCEL_ENV,
+                branch: branchName
+            },
+            rpcStatus: {
+                sepolia: process.env.SEPOLIA_RPC_URL ? `Configured (Length: ${process.env.SEPOLIA_RPC_URL.length})` : 'MISSING',
+                base: process.env.BASE_RPC_URL ? `Configured (Length: ${process.env.BASE_RPC_URL.length})` : 'MISSING'
+            },
+            errorDetails: error?.message || error
+        };
+
         return NextResponse.json(
-            { error: error instanceof Error ? error.message : "Internal Server Error" },
+            {
+                error: error instanceof Error ? error.message : "Internal Server Error",
+                details: diagnostics
+            },
             { status: 500 }
         );
     }
