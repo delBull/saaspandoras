@@ -9,7 +9,8 @@ import {
   jsonb,
   pgEnum,
   boolean,
-  uniqueIndex
+  uniqueIndex,
+  uuid
 } from "drizzle-orm/pg-core";
 
 export const projectStatusEnum = pgEnum("project_status", [
@@ -801,15 +802,102 @@ export const marketingExecutions = pgTable("marketing_executions", {
   currentStageIndex: integer("current_stage_index").default(0).notNull(),
   nextRunAt: timestamp("next_run_at"), // Critical for Cron
 
-  // History log: Array of events { timestamp, action, result }
-  historyLog: jsonb("history_log").default('[]'),
+  // Execution Data
+  data: jsonb("data").default({}).notNull(),
+  history: jsonb("history").default([]).notNull(),
 
-  // Metadata: Store flow variations, priority answers, etc.
-  metadata: jsonb("metadata").default('{}'),
+  error: text("error"),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+// =========================================================
+// PANDORA CORE INTEGRATIONS MODULE
+// =========================================================
+
+export const integrationEnvironmentEnum = pgEnum("integration_environment", [
+  "staging",
+  "production"
+]);
+
+export const integrationPermissionEnum = pgEnum("integration_permission", [
+  "deploy",
+  "read",
+  "governance",
+  "treasury"
+]);
+
+export const auditActorTypeEnum = pgEnum("audit_actor_type", [
+  "integration",
+  "admin",
+  "system"
+]);
+
+export const webhookStatusEnum = pgEnum("webhook_status", [
+  "pending",
+  "sent",
+  "failed"
+]);
+
+export const integrationClients = pgTable("integration_clients", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  environment: integrationEnvironmentEnum("environment").default("staging").notNull(),
+
+  // Security
+  apiKeyHash: text("api_key_hash").notNull(),
+  keyFingerprint: varchar("key_fingerprint", { length: 255 }).notNull(), // for UI display/audit
+
+  // Webhooks
+  callbackUrl: text("callback_url"),
+  callbackSecretHash: text("callback_secret_hash"),
+
+  // Permissions & State
+  permissions: jsonb("permissions").default([]).notNull(), // Array of permissions
+  isActive: boolean("is_active").default(true).notNull(),
+
+  // Audit
+  lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const auditLogs = pgTable("audit_logs", {
+  id: serial("id").primaryKey(),
+  actorType: auditActorTypeEnum("actor_type").notNull(),
+  actorId: varchar("actor_id", { length: 255 }).notNull(), // UUID or Wallet
+
+  action: varchar("action", { length: 255 }).notNull(),
+  resource: varchar("resource", { length: 255 }).notNull(),
+
+  metadata: jsonb("metadata").default({}),
+
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const webhookEvents = pgTable("webhook_events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  clientId: uuid("client_id").references(() => integrationClients.id).notNull(),
+
+  event: varchar("event", { length: 255 }).notNull(),
+  payload: jsonb("payload").notNull(),
+
+  status: webhookStatusEnum("status").default("pending").notNull(),
+  attempts: integer("attempts").default(0).notNull(),
+  nextRetryAt: timestamp("next_retry_at", { withTimezone: true }),
+
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// Integrations Types
+export type IntegrationClient = typeof integrationClients.$inferSelect;
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type WebhookEvent = typeof webhookEvents.$inferSelect;
+
+
 
 // =========================================================
 // SOVEREIGN SCHEDULER TABLES

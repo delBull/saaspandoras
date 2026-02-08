@@ -124,6 +124,7 @@ export default function AccessCardPurchaseModal({ isOpen, onClose, project, lice
                                                 })
                                             }
                                             theme="dark"
+                                            onTransactionSent={() => setStep('processing')}
                                             onTransactionConfirmed={handleSuccess}
                                             onError={(error) => toast.error(`Error: ${error.message}`)}
                                             className="!w-full !bg-lime-400 hover:!bg-lime-500 !text-black !font-bold !py-4 !rounded-xl !shadow-lg !shadow-lime-500/20"
@@ -143,6 +144,28 @@ export default function AccessCardPurchaseModal({ isOpen, onClose, project, lice
                                 </div>
                             )}
 
+                            {step === 'processing' && (
+                                <div className="text-center py-8">
+                                    <div className="relative w-20 h-20 mx-auto mb-6">
+                                        <motion.div
+                                            animate={{ rotate: 360 }}
+                                            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                                            className="w-full h-full border-4 border-zinc-800 border-t-lime-400 rounded-full"
+                                        />
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <ShieldCheck className="w-8 h-8 text-lime-400 animate-pulse" />
+                                        </div>
+                                    </div>
+                                    <h3 className="text-xl font-bold text-white mb-2">Procesando Transacción</h3>
+                                    <p className="text-lime-400 font-medium animate-pulse">
+                                        Espera, estamos construyendo tu acceso en la blockchain...
+                                    </p>
+                                    <p className="text-zinc-500 text-xs mt-4 max-w-[200px] mx-auto">
+                                        Por favor confirma la transacción en tu wallet y espera la confirmación.
+                                    </p>
+                                </div>
+                            )}
+
                             {step === 'success' && (
                                 <div className="text-center py-8">
                                     <motion.div
@@ -159,7 +182,7 @@ export default function AccessCardPurchaseModal({ isOpen, onClose, project, lice
                                         <ul className="space-y-2 text-sm text-gray-300">
                                             <li className="flex items-start gap-2">
                                                 <span className="text-lime-400 font-bold">1.</span>
-                                                <span>Adquiere <strong>Artefactos (Tokens)</strong> en la pestaña de Estrategia para tener poder de voto.</span>
+                                                <span>Adquiere <strong>Artefactos (Tokens)</strong> en las Fases de Venta para tener poder de voto.</span>
                                             </li>
                                             <li className="flex items-start gap-2">
                                                 <span className="text-lime-400 font-bold">2.</span>

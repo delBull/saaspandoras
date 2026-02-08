@@ -82,7 +82,7 @@ interface ProjectContentTabsProps {
 }
 
 export default function ProjectContentTabs({ project }: ProjectContentTabsProps) {
-  const [activeTab, setActiveTab] = useState("strategy");
+  const [activeTab, setActiveTab] = useState("campaign");
   const [selectedPhase, setSelectedPhase] = useState<any>(null);
   const [isArtifactModalOpen, setIsArtifactModalOpen] = useState(false);
   const [showHistorical, setShowHistorical] = useState(false);
@@ -153,7 +153,8 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
       raised: 0,
       percent: 0,
       participants: 0,
-      metric: 'USD'
+      metric: 'USD',
+      isSoldOut: false // Default to not sold out
     };
 
     if (price === 0) {
@@ -167,6 +168,9 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
       stats.raised = currentPhaseRaisedTokens;
       stats.percent = allocation > 0 ? (currentPhaseRaisedTokens / allocation) * 100 : 0;
       stats.participants = currentPhaseRaisedTokens; // 1 token = 1 participant usually
+
+      // Sold Out Logic
+      stats.isSoldOut = currentPhaseRaisedTokens >= allocation && allocation > 0;
 
       accumulatedTokens += allocation;
     } else {
@@ -187,6 +191,9 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
       stats.percent = phaseCapUSD > 0 ? (currentPhaseRaisedUSD / phaseCapUSD) * 100 : 0;
       // Estimate participants
       stats.participants = price > 0 ? Math.floor(currentPhaseRaisedUSD / price) : 0;
+
+      // Sold Out Logic
+      stats.isSoldOut = currentPhaseRaisedUSD >= phaseCapUSD && phaseCapUSD > 0;
 
       accumulatedUSD += phaseCapUSD;
     }
@@ -290,89 +297,100 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                 {/* Fases Activas */}
                 <div className="space-y-4">
                   {activePhasesWithStats
-                    .map((phase: any, index: number) => (
-                      <div
-                        key={`active-${index}`}
-                        onClick={() => {
-                          setSelectedPhase(phase);
-                          setIsArtifactModalOpen(true);
-                        }}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            setSelectedPhase(phase);
-                            setIsArtifactModalOpen(true);
-                          }
-                        }}
-                        className="bg-zinc-800/50 p-4 rounded-lg border border-zinc-700/50 hover:border-lime-500/50 cursor-pointer transition-all hover:bg-zinc-800 group"
-                      >
-                        <h4 className="font-bold text-white mb-2 flex items-center justify-between group-hover:text-lime-400 transition-colors">
-                          <div className="flex items-center gap-2">
-                            <span>{phase.name}</span>
-                            <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all text-lime-400" />
-                          </div>
-                          <span className="text-xs px-2 py-0.5 bg-zinc-700 rounded text-gray-300 uppercase">{phase.type === 'time' ? 'Tiempo' : 'Monto'}</span>
-                        </h4>
+                    .map((phase: any, index: number) => {
+                      // Status Logic
+                      const isSoldOut = phase.stats.isSoldOut;
+                      let statusLabel = isSoldOut ? 'Agotado' : (phase.type === 'time' ? 'Tiempo' : 'Monto');
+                      let statusBadgeColor = isSoldOut ? 'bg-red-500/20 text-red-400 border border-red-500/50' : 'bg-zinc-700 text-gray-300';
+                      let cardBorderColor = isSoldOut ? 'border-red-900/30' : 'border-zinc-700/50 hover:border-lime-500/50';
+                      let titleColor = isSoldOut ? 'text-zinc-500' : 'text-white group-hover:text-lime-400';
 
-                        {/* --- REAL DATA PROGRESS BAR (PHASE SPECIFIC) --- */}
-                        <div className="mb-4 bg-zinc-900/50 rounded-lg p-3 border border-zinc-800">
-                          <div className="flex justify-between items-end mb-1">
-                            <span className="text-xs text-zinc-400">Progreso Fase</span>
-                            <span className="text-lime-400 font-mono text-sm font-bold">
-                              {phase.stats.metric === 'Tokens' ?
-                                `${phase.stats.raised.toLocaleString()} / ${phase.stats.cap.toLocaleString()} Tokens` :
-                                `${formatCurrency(phase.stats.raised)} / ${formatCurrency(phase.stats.cap)}`
-                              }
-                            </span>
-                          </div>
-                          <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden mb-2">
-                            <div
-                              className="bg-lime-500 h-full rounded-full transition-all duration-1000"
-                              style={{ width: `${phase.stats.percent}%` }}
-                            />
-                          </div>
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="text-zinc-500">
-                              Faltan: <span className="text-zinc-300">
+                      return (
+                        <div
+                          key={`active-${index}`}
+                          onClick={() => {
+                            if (!isSoldOut) {
+                              setSelectedPhase(phase);
+                              setIsArtifactModalOpen(true);
+                            }
+                          }}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if ((e.key === 'Enter' || e.key === ' ') && !isSoldOut) {
+                              setSelectedPhase(phase);
+                              setIsArtifactModalOpen(true);
+                            }
+                          }}
+                          className={`bg-zinc-800/50 p-4 rounded-lg border ${cardBorderColor} ${!isSoldOut ? 'cursor-pointer hover:bg-zinc-800 group' : 'cursor-not-allowed opacity-75'} transition-all`}
+                        >
+                          <h4 className={`font-bold mb-2 flex items-center justify-between transition-colors ${titleColor}`}>
+                            <div className="flex items-center gap-2">
+                              <span>{phase.name}</span>
+                              {!isSoldOut && <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all text-lime-400" />}
+                            </div>
+                            <span className={`text-xs px-2 py-0.5 rounded uppercase ${statusBadgeColor}`}>{statusLabel}</span>
+                          </h4>
+
+                          {/* --- REAL DATA PROGRESS BAR (PHASE SPECIFIC) --- */}
+                          <div className="mb-4 bg-zinc-900/50 rounded-lg p-3 border border-zinc-800">
+                            <div className="flex justify-between items-end mb-1">
+                              <span className="text-xs text-zinc-400">Progreso Fase</span>
+                              <span className={`${isSoldOut ? 'text-red-400' : 'text-lime-400'} font-mono text-sm font-bold`}>
                                 {phase.stats.metric === 'Tokens' ?
-                                  `${Math.max(0, phase.stats.cap - phase.stats.raised).toLocaleString()} Tokens` :
-                                  formatCurrency(Math.max(0, phase.stats.cap - phase.stats.raised))
+                                  `${phase.stats.raised.toLocaleString()} / ${phase.stats.cap.toLocaleString()} Tokens` :
+                                  `${formatCurrency(phase.stats.raised)} / ${formatCurrency(phase.stats.cap)}`
                                 }
                               </span>
-                            </span>
-                            <span className="px-2 py-0.5 bg-lime-900/30 text-lime-400 rounded-full border border-lime-500/20">
-                              {phase.stats.participants.toLocaleString()} Partic.
-                            </span>
+                            </div>
+                            <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden mb-2">
+                              <div
+                                className={`${isSoldOut ? 'bg-red-500' : 'bg-lime-500'} h-full rounded-full transition-all duration-1000`}
+                                style={{ width: `${phase.stats.percent}%` }}
+                              />
+                            </div>
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-zinc-500">
+                                Faltan: <span className="text-zinc-300">
+                                  {phase.stats.metric === 'Tokens' ?
+                                    `${Math.max(0, phase.stats.cap - phase.stats.raised).toLocaleString()} Tokens` :
+                                    formatCurrency(Math.max(0, phase.stats.cap - phase.stats.raised))
+                                  }
+                                </span>
+                              </span>
+                              <span className="px-2 py-0.5 bg-lime-900/30 text-lime-400 rounded-full border border-lime-500/20">
+                                {phase.stats.participants.toLocaleString()} Partic.
+                              </span>
+                            </div>
                           </div>
-                        </div>
 
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                          {/* Token Price (Property: tokenPrice) */}
-                          <div>
-                            <span className="text-zinc-500 block text-xs">Precio Token</span>
-                            <span className="text-lime-400 font-mono">
-                              {Number(phase.tokenPrice) === 0 ? 'GRATIS' : `$${phase.tokenPrice}`}
-                            </span>
-                          </div>
-                          {/* Limit (Context sensitive) */}
-                          <div>
-                            <span className="text-zinc-500 block text-xs">Límite ({phase.type === 'time' ? 'Días' : (phase.stats.metric === 'Tokens' ? 'Tokens' : 'USD')})</span>
-                            <span className="text-white font-mono">{Number(phase.limit).toLocaleString()} {phase.type === 'time' ? 'd' : (phase.stats.metric === 'Tokens' ? 'T' : '$')}</span>
-                          </div>
-                          {/* Allocation (Property: tokenAllocation) */}
-                          <div>
-                            <span className="text-zinc-500 block text-xs">Asignación</span>
-                            <span className="text-white font-mono">{phase.tokenAllocation ? Number(phase.tokenAllocation).toLocaleString() : '∞'}</span>
-                          </div>
-                          {/* Status */}
-                          <div>
-                            <span className="text-zinc-500 block text-xs">Estado</span>
-                            <span className="text-lime-400">Activo</span>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            {/* Token Price (Property: tokenPrice) */}
+                            <div>
+                              <span className="text-zinc-500 block text-xs">Precio Token</span>
+                              <span className={`${isSoldOut ? 'text-zinc-400' : 'text-lime-400'} font-mono`}>
+                                {Number(phase.tokenPrice) === 0 ? 'GRATIS' : `$${phase.tokenPrice}`}
+                              </span>
+                            </div>
+                            {/* Limit (Context sensitive) */}
+                            <div>
+                              <span className="text-zinc-500 block text-xs">Límite ({phase.type === 'time' ? 'Días' : (phase.stats.metric === 'Tokens' ? 'Tokens' : 'USD')})</span>
+                              <span className="text-white font-mono">{Number(phase.limit).toLocaleString()} {phase.type === 'time' ? 'd' : (phase.stats.metric === 'Tokens' ? 'T' : '$')}</span>
+                            </div>
+                            {/* Allocation (Property: tokenAllocation) */}
+                            <div>
+                              <span className="text-zinc-500 block text-xs">Asignación</span>
+                              <span className="text-white font-mono">{phase.tokenAllocation ? Number(phase.tokenAllocation).toLocaleString() : '∞'}</span>
+                            </div>
+                            {/* Status */}
+                            <div>
+                              <span className="text-zinc-500 block text-xs">Estado</span>
+                              <span className={`${isSoldOut ? 'text-red-400' : 'text-lime-400'}`}>{isSoldOut ? 'Agotado' : 'Activo'}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
 
                   {project.w2eConfig.phases.filter((p: any) => p.isActive).length === 0 && (
                     <p className="text-zinc-400 italic text-sm">No hay fases activas en este momento.</p>
