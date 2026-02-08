@@ -54,7 +54,7 @@ const projectSchema = z.object({
   website: z.string().url("URL inválida.").optional().or(z.literal("")),
   businessCategory: z.string().optional(),
   targetAmount: z.coerce.number().min(0, "Debe ser un número positivo."),
-  status: z.enum(["draft", "pending", "active_client", "approved", "live", "completed", "incomplete", "rejected"]),
+  status: z.enum(["draft", "pending", "active_client", "approved", "completed", "incomplete", "rejected", "live"]), // Kept 'live' in zod for compatibility but removed from UI options
 });
 
 type ProjectFormData = z.infer<typeof projectSchema>;

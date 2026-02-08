@@ -179,6 +179,7 @@ export async function POST(
                 treasuryAddress: result.treasuryAddress,
                 chainId: result.chainId,
                 deploymentStatus: 'deployed',
+                status: 'live', // Auto-set to live on deployment (User Request)
                 w2eConfig: extendedConfig,
             })
             .where(eq(projects.slug, slug));
