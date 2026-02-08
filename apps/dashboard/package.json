@@ -85,7 +85,8 @@
     "tailwindcss-animate": "^1.0.7",
     "thirdweb": "5.106.0",
     "vaul": "0.9.0",
-    "viem": "2.33.2"
+    "viem": "2.33.2",
+    "@pandoras/core-webhooks": "workspace:*"
   },
   "devDependencies": {
     "@next/eslint-plugin-next": "14.0.1",

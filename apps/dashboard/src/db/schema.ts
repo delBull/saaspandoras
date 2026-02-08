@@ -805,6 +805,7 @@ export const marketingExecutions = pgTable("marketing_executions", {
   // Execution Data
   data: jsonb("data").default({}).notNull(),
   history: jsonb("history").default([]).notNull(),
+  metadata: jsonb("metadata").default({}).notNull(),
 
   error: text("error"),
 
