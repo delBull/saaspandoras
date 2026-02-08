@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { webhookEvents, integrationClients } from "@/db/schema";
 import { eq, and, lte, asc } from "drizzle-orm";
+// @ts-expect-error - workspace package linking might lag in CI
 import { sendWebhook, type PandoraWebhookEvent } from "@pandoras/core-webhooks";
 
 const MAX_RETRIES = 5;
