@@ -300,10 +300,10 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                     .map((phase: any, index: number) => {
                       // Status Logic
                       const isSoldOut = phase.stats.isSoldOut;
-                      let statusLabel = isSoldOut ? 'Agotado' : (phase.type === 'time' ? 'Tiempo' : 'Monto');
-                      let statusBadgeColor = isSoldOut ? 'bg-red-500/20 text-red-400 border border-red-500/50' : 'bg-zinc-700 text-gray-300';
-                      let cardBorderColor = isSoldOut ? 'border-red-900/30' : 'border-zinc-700/50 hover:border-lime-500/50';
-                      let titleColor = isSoldOut ? 'text-zinc-500' : 'text-white group-hover:text-lime-400';
+                      const statusLabel = isSoldOut ? 'Agotado' : (phase.type === 'time' ? 'Tiempo' : 'Monto');
+                      const statusBadgeColor = isSoldOut ? 'bg-red-500/20 text-red-400 border border-red-500/50' : 'bg-zinc-700 text-gray-300';
+                      const cardBorderColor = isSoldOut ? 'border-red-900/30' : 'border-zinc-700/50 hover:border-lime-500/50';
+                      const titleColor = isSoldOut ? 'text-zinc-500' : 'text-white group-hover:text-lime-400';
 
                       return (
                         <div

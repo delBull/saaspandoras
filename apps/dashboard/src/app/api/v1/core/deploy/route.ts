@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { auditLogs, integrationPermissionEnum } from "@/db/schema";
 import { IntegrationKeyService } from "@/lib/integrations/auth";
@@ -14,7 +15,7 @@ export const maxDuration = 300; // 5 minutes for deployment
 export async function POST(req: NextRequest) {
     // 1. AUTHENTICATION (Bearer Token)
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    if (!authHeader?.startsWith("Bearer ")) {
         return NextResponse.json({ error: "Unauthorized: Missing or invalid token" }, { status: 401 });
     }
 

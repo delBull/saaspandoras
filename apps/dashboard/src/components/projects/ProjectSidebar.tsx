@@ -125,7 +125,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
       accumulatedTokens += allocation;
     } else {
       // Paid Mint
-      let phaseCapUSD = phase.type === 'amount' ? Number(phase.limit) : (allocation * price);
+      const phaseCapUSD = phase.type === 'amount' ? Number(phase.limit) : (allocation * price);
       stats.cap = phaseCapUSD;
 
       const phaseStart = accumulatedUSD;
