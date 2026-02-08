@@ -236,7 +236,7 @@ export async function deployW2EProtocol(
   // Override options generator
   const getOverrides = (nonce: number) => ({
     nonce,
-    gasLimit: 3000000 // Safer gas limit for parallel deployment
+    gasLimit: 8000000 // Increased for heavy Governor contract
   });
 
   try {
