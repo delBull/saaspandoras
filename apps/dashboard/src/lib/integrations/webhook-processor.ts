@@ -1,8 +1,7 @@
 import { db } from "@/db";
 import { webhookEvents, integrationClients } from "@/db/schema";
 import { eq, and, lte, asc } from "drizzle-orm";
-// @ts-ignore - workspace package might not be fully linked in editor yet
-import { sendWebhook, PandoraWebhookEvent } from "@pandoras/core-webhooks";
+import { sendWebhook, type PandoraWebhookEvent } from "@pandoras/core-webhooks";
 
 const MAX_RETRIES = 5;
 
