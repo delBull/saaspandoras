@@ -342,33 +342,60 @@ export async function deployW2EProtocol(
     let wiringIndex = 0;
     const wiringPromises: Promise<any>[] = [];
 
-    // Helper for wiring tx
-    const pushWiringTx = (promise: Promise<any>) => {
-      wiringPromises.push(promise);
-      wiringIndex++;
+    // Helper for wiring tx with idempotency check
+    const pushWiringTx = async (contract: any, method: string, ...args: any[]) => {
+      try {
+        // Check if already transferred (Idempotency)
+        if (method === 'transferOwnership') {
+          const currentOwner = await contract.owner();
+          const targetOwner = args[0];
+          if (currentOwner.toLowerCase() === targetOwner.toLowerCase()) {
+            console.log(`⏩ Skipping transferOwnership for ${contract.address} (Already owned by ${targetOwner})`);
+            return;
+          }
+        } else if (method === 'setW2ELoomAddress') {
+          try {
+            // W2EUtility public getter
+            const currentLoom = await contract.w2eLoomAddress();
+            if (currentLoom && currentLoom !== "0x0000000000000000000000000000000000000000") {
+              console.log(`⏩ Skipping setW2ELoomAddress for ${contract.address} (Already set to ${currentLoom})`);
+              return;
+            }
+          } catch (ignored) {
+            console.warn("Could not check w2eLoomAddress, proceeding with write...");
+          }
+        }
+
+        // Execute
+        const tx = await contract[method](...args);
+        wiringPromises.push(tx);
+        wiringIndex++;
+      } catch (e) {
+        console.warn(`⚠️ Error preparing wiring tx for ${method}:`, e);
+      }
     };
 
     // a. Set Loom in Utility
-    pushWiringTx((utility as any).setW2ELoomAddress(loomAddress, getOverrides(wiringStartNonce + wiringIndex)));
+    await pushWiringTx(utility, 'setW2ELoomAddress', loomAddress, getOverrides(wiringStartNonce + wiringIndex));
 
     // b. Transfer Ownerships to Governor
-    pushWiringTx((license as any).transferOwnership(governorAddress, getOverrides(wiringStartNonce + wiringIndex))); // +1 from prev
-    pushWiringTx((utility as any).transferOwnership(governorAddress, getOverrides(wiringStartNonce + wiringIndex))); // +2
-    pushWiringTx((loom as any).transferOwnership(governorAddress, getOverrides(wiringStartNonce + wiringIndex)));    // +3
-    pushWiringTx((treasury as any).transferOwnership(governorAddress, getOverrides(wiringStartNonce + wiringIndex))); // +4
+    await pushWiringTx(license, 'transferOwnership', governorAddress, getOverrides(wiringStartNonce + wiringIndex));
+    await pushWiringTx(utility, 'transferOwnership', governorAddress, getOverrides(wiringStartNonce + wiringIndex));
+    await pushWiringTx(loom, 'transferOwnership', governorAddress, getOverrides(wiringStartNonce + wiringIndex));
+    await pushWiringTx(treasury, 'transferOwnership', governorAddress, getOverrides(wiringStartNonce + wiringIndex));
 
     // Config Optional
     if ((config as any).w2eConfig) {
       const w2e = (config as any).w2eConfig;
-      if (w2e.phase1APY) pushWiringTx((utility as any).setPhaseSchedule(1, w2e.phase1APY, getOverrides(wiringStartNonce + wiringIndex)));
-      if (w2e.phase2APY) pushWiringTx((utility as any).setPhaseSchedule(2, w2e.phase2APY, getOverrides(wiringStartNonce + wiringIndex)));
-      if (w2e.phase3APY) pushWiringTx((utility as any).setPhaseSchedule(3, w2e.phase3APY, getOverrides(wiringStartNonce + wiringIndex)));
-      if (w2e.royaltyBPS) pushWiringTx((license as any).setRoyaltyInfo(addrTreasury, w2e.royaltyBPS, getOverrides(wiringStartNonce + wiringIndex)));
+      if (w2e.phase1APY) await pushWiringTx(utility, 'setPhaseSchedule', 1, w2e.phase1APY, getOverrides(wiringStartNonce + wiringIndex));
+      if (w2e.phase2APY) await pushWiringTx(utility, 'setPhaseSchedule', 2, w2e.phase2APY, getOverrides(wiringStartNonce + wiringIndex));
+      if (w2e.phase3APY) await pushWiringTx(utility, 'setPhaseSchedule', 3, w2e.phase3APY, getOverrides(wiringStartNonce + wiringIndex));
+      if (w2e.royaltyBPS) await pushWiringTx(license, 'setRoyaltyInfo', addrTreasury, w2e.royaltyBPS, getOverrides(wiringStartNonce + wiringIndex));
     }
 
     console.log(`🚀 Sending ${wiringPromises.length} wiring transactions...`);
     const txs = await Promise.all(wiringPromises);
-    await Promise.all(txs.map(tx => tx.wait()));
+    await Promise.all(txs.map((tx: any) => tx.wait()));
     console.log("✅ All wiring complete!");
 
     return {

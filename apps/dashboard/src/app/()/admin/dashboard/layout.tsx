@@ -39,6 +39,13 @@ export default async function AdminDashboardLayout({
 
     const isAuthorized = userIsAdmin || userIsSuperAdmin;
 
+    console.log("🔒 [AdminLayout] Debug:");
+    console.log(`   - Cookie Wallet: ${walletFromCookies}`);
+    console.log(`   - Session Address: ${session?.userId}`);
+    console.log(`   - Is Admin: ${userIsAdmin}`);
+    console.log(`   - Is Super Admin: ${userIsSuperAdmin}`);
+    console.log(`   - AUTHORIZED: ${isAuthorized}`);
+
     // 3. Block unauthorized access
     if (!isAuthorized) {
         // If we have a session but no admin rights, showing specific error
