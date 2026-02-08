@@ -8,18 +8,26 @@ const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. Logging for debugging
-  // console.log("🛡️ Middleware: Intercepting", pathname);
-
-  // 2. Admin Routes: Permitir acceso inicial (Client-side verification)
-  //    Logic from original src/middleware.ts
+  // 1. Admin Route Protection (Strict)
   if (pathname.startsWith("/admin")) {
-    // console.log("🛡️ Middleware: Allowing admin route access");
-    return NextResponse.next();
+    // Check for wallet address in cookies
+    const walletCookie = request.cookies.get('wallet-address') ||
+      request.cookies.get('thirdweb:wallet-address') ||
+      request.cookies.get('x-wallet-address');
+
+    // If no wallet cookie exists, redirect immediately
+    if (!walletCookie?.value) {
+      console.log(`🛡️ Middleware: Blocking unauthorized access to ${pathname} (No Wallet Cookie)`);
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+
+    // Note: We cannot easily verify if the wallet is an admin in middleware 
+    // without a database call (which is limited in Edge middleware).
+    // We rely on layout.tsx for the granular "Is Admin?" check, 
+    // but this middleware layer prevents "no-wallet" access entirely.
   }
 
-  // 3. Rate Limiting Strategy (Only for API routes)
-  //    Logic from apps/dashboard/middleware.ts
+  // 2. Rate Limiting Strategy (Only for API routes)
   if (pathname.startsWith("/api")) {
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
       request.headers.get('x-real-ip') ||
@@ -73,7 +81,7 @@ export function middleware(request: NextRequest) {
     // Cleanup (simple)
     if (rateLimitMap.size > 5000) rateLimitMap.clear();
 
-    // 4. Security Headers (Only for API)
+    // 3. Security Headers (Only for API)
     const response = NextResponse.next();
     response.headers.set('X-Content-Type-Options', 'nosniff');
     response.headers.set('X-Frame-Options', 'DENY');
