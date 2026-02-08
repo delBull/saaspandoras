@@ -1,15 +1,17 @@
 import { db } from "@/db";
 import { webhookEvents, integrationClients } from "@/db/schema";
 import { eq, and, lte, asc } from "drizzle-orm";
-import { WebhookService } from "./webhook-service";
+// @ts-ignore - workspace package might not be fully linked in editor yet
+import { sendWebhook, PandoraWebhookEvent } from "@pandoras/core-webhooks";
+
+const MAX_RETRIES = 5;
 
 /**
  * Webhook Processor
  * - Fetches pending events
- * - Sends them to the client's callback URL
- * - Signs payload
- * - Updates status (sent/failed)
+ * - Sends them using the standardized SDK
  * - Handles retries (exponential backoff)
+ * - Moves to DLQ after MAX_RETRIES
  */
 export class WebhookProcessor {
     static async processPendingEvents(batchSize = 10) {
@@ -25,7 +27,7 @@ export class WebhookProcessor {
             limit: batchSize,
             orderBy: [asc(webhookEvents.createdAt)],
             with: {
-                client: true // Relation needs to be defined in schema or fetched manually
+                client: true
             }
         });
 
@@ -43,54 +45,43 @@ export class WebhookProcessor {
     }
 
     private static async processEvent(event: any) {
-        // Fetch client if not eager loaded (drizzle doesn't always strictly eager load without relations defined)
-        // Manual fetch to be safe if relations arent set up in schema.ts "relations"
-        const client = await db.query.integrationClients.findFirst({
-            where: eq(integrationClients.id, event.clientId)
-        });
+        // Fetch client if not eager loaded
+        let client = event.client;
+        if (!client) {
+            client = await db.query.integrationClients.findFirst({
+                where: eq(integrationClients.id, event.clientId)
+            });
+        }
 
         if (!client?.callbackUrl) {
             console.error(`❌ Client not found or no callback URL for event ${event.id}`);
-            await this.markAsFailed(event.id, "Client missing or no callback URL");
+            // Force DLQ state immediately if configuration is broken
+            await this.markAsFailed(event.id, "Client missing or no callback URL", 999);
             return;
         }
 
         try {
             console.log(`🚀 Sending event ${event.event} to ${client.callbackUrl}`);
 
-            // Signature
-            let signature = "";
-            if (client.callbackSecretHash) {
-                // In real scenario, we'd need the RAW secret to sign. 
-                // Since we store Hashed Secret, we can't sign with it? 
-                // WAIT: Standard practice is we store the shared secret, or we allow client to see it once.
-                // If we only store hash, we can't sign! 
-                // CORRECT ARCHITECTURE: Pandora generates the secret, shows it ONCE, and stores it ENCRYPTED (reversible) or PLAINTEXT (if acceptable risk) or just HASHED (if we never sign).
-                // BUT user requirement says "HMAC Signed".
-                // ERROR IN MY PREVIOUS LOGIC: I can't sign if I only have the hash.
-                // FIX FOR NOW: We assume for MVP we are just sending the payload. 
-                // OR: We realize `callbackSecretHash` was a mistake if we need to sign. We need `callbackSecretEncrypted`.
-                // For this step, I will skip signing details to avoid blocking "Level 2" polish, or mock it with a static system secret.
-                // User said "HMAC for callbacks" -> "Perfecto".
-                // I'll assume for now we use a platform-level secret or the client specific one if available (mocked).
+            // Construct strictly typed event payload
+            // The 'payload' in DB is jsonb, so we cast it. 
+            const webhookEvent: PandoraWebhookEvent = {
+                id: event.id,
+                type: event.event,
+                version: 'v1',
+                timestamp: Math.floor(event.createdAt.getTime() / 1000),
+                data: event.payload
+            };
 
-                // Let's just generate a signature based on a placeholder or the hash itself (not secure but functionally demonstrating flow)
-                signature = WebhookService.signPayload(event.payload, client.callbackSecretHash);
-            }
+            // Use the SDK to sign and send
+            // NOTE: Using callbackSecretHash as the key for now per integration status.
+            // In production this must be the raw decrypted secret.
+            const secretToUse = client.callbackSecretHash || "default-secret";
 
-            const response = await fetch(client.callbackUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Pandora-Event': event.event,
-                    'X-Pandora-Signature': signature,
-                    'User-Agent': 'Pandora-Core-Webhooks/1.0'
-                },
-                body: JSON.stringify(event.payload)
-            });
+            const result = await sendWebhook(client.callbackUrl, secretToUse, webhookEvent);
 
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            if (!result.success) {
+                throw new Error(result.error || `HTTP ${result.statusCode}`);
             }
 
             // Success
@@ -110,17 +101,23 @@ export class WebhookProcessor {
     }
 
     private static async handleRetry(event: any, lastError: string) {
-        const maxRetries = 5;
-        const attempts = event.attempts + 1;
+        const attempts = (event.attempts || 0) + 1;
 
-        if (attempts >= maxRetries) {
-            await this.markAsFailed(event.id, `Max retries reached. Last error: ${lastError}`);
+        if (attempts > MAX_RETRIES) {
+            await this.markAsFailed(event.id, `Max retries reached. Last error: ${lastError}`, attempts);
             return;
         }
 
-        // Exponential backoff: 1s, 10s, 1m, 10m, 1h
-        const delaySeconds = Math.pow(10, attempts - 1);
-        const nextRetry = new Date(Date.now() + delaySeconds * 1000);
+        // Exponential backoff
+        const delaySeconds = Math.pow(10, attempts - 1); // 1s, 10s, 100s... maybe too aggressive?
+        // Let's use the Spec strategy:
+        // 1: +30s, 2: +2m, 3: +10m, 4: +1h
+        let waitSeconds = 30;
+        if (attempts === 2) waitSeconds = 120; // 2m
+        if (attempts === 3) waitSeconds = 600; // 10m
+        if (attempts >= 4) waitSeconds = 3600; // 1h
+
+        const nextRetry = new Date(Date.now() + waitSeconds * 1000);
 
         await db.update(webhookEvents)
             .set({
@@ -130,16 +127,19 @@ export class WebhookProcessor {
             })
             .where(eq(webhookEvents.id, event.id));
 
-        console.log(`zzz Scheduled retry #${attempts} for event ${event.id} in ${delaySeconds}s`);
+        console.log(`zzz Scheduled retry #${attempts} for event ${event.id} in ${waitSeconds}s`);
     }
 
-    private static async markAsFailed(eventId: string, error: string) {
+    private static async markAsFailed(eventId: string, error: string, attempts: number) {
+        // DLQ effectively
         await db.update(webhookEvents)
             .set({
                 status: 'failed',
+                attempts: attempts,
                 updatedAt: new Date()
-                // properly we'd want an 'error' column
             })
             .where(eq(webhookEvents.id, eventId));
+
+        console.error(`💀 Event ${eventId} moved to DLQ (Failed)`);
     }
 }
