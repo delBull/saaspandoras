@@ -49,7 +49,7 @@ export class WebhookProcessor {
             where: eq(integrationClients.id, event.clientId)
         });
 
-        if (!client || !client.callbackUrl) {
+        if (!client?.callbackUrl) {
             console.error(`❌ Client not found or no callback URL for event ${event.id}`);
             await this.markAsFailed(event.id, "Client missing or no callback URL");
             return;

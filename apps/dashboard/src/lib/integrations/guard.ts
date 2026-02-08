@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { IntegrationKeyService } from "./auth";
 
 /**
@@ -9,7 +9,7 @@ import { IntegrationKeyService } from "./auth";
  */
 export async function integrationGuard(req: NextRequest) {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    if (!authHeader?.startsWith("Bearer ")) {
         return { error: "Unauthorized", status: 401 };
     }
 
