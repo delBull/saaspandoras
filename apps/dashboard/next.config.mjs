@@ -5,7 +5,7 @@ const nextConfig = {
   experimental: {
     // Note: serverComponentsExternalPackages has been moved to serverExternalPackages
   },
-  serverExternalPackages: ["drizzle-orm", "postgres"],
+  serverExternalPackages: ["drizzle-orm", "postgres", "@thirdweb-dev/sdk", "ethers"],
 
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
@@ -28,7 +28,7 @@ const nextConfig = {
     ],
   },
 
-  transpilePackages: ["@pandoras/gamification", "@pandoras/protocol-deployer"],
+  transpilePackages: ["@pandoras/gamification", "@pandoras/protocol-deployer", "ox"],
 
   webpack: (config, { isServer }) => {
     if (!isServer) {
