@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from 'react';
-import { Ticket, Lock, Unlock, Share2, Users, Heart, Check, Clock, Shield, Copy, MessageSquare } from "lucide-react";
+import { Ticket, Lock, Unlock, Share2, Users, Heart, Check, Clock, Shield, Copy, MessageSquare, ArrowDown, ArrowRight } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { SimpleTooltip } from "../ui/simple-tooltip";
 import { toast } from "sonner";
@@ -96,6 +96,51 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
 
   const raisedPercentage = progressPercent;
 
+  // --- Phase Stats Calculation (Replicated from Tabs for Robustness) ---
+  const allPhases = project.w2eConfig?.phases || [];
+  let accumulatedUSD = 0;
+  let accumulatedTokens = 0;
+
+  const phasesWithStats = allPhases.map((phase: any) => {
+    const price = Number(phase.tokenPrice || 0);
+    const allocation = Number(phase.tokenAllocation || 0); // Tokens
+
+    const stats = {
+      cap: 0,
+      raised: 0,
+      percent: 0,
+      isSoldOut: false
+    };
+
+    if (price === 0) {
+      // Free Mint
+      stats.cap = allocation;
+      const phaseStart = accumulatedTokens;
+      const currentPhaseRaisedTokens = Math.max(0, Math.min(allocation, currentSupply - phaseStart));
+
+      stats.raised = currentPhaseRaisedTokens;
+      stats.percent = allocation > 0 ? (currentPhaseRaisedTokens / allocation) * 100 : 0;
+      stats.isSoldOut = currentPhaseRaisedTokens >= allocation && allocation > 0;
+
+      accumulatedTokens += allocation;
+    } else {
+      // Paid Mint
+      let phaseCapUSD = phase.type === 'amount' ? Number(phase.limit) : (allocation * price);
+      stats.cap = phaseCapUSD;
+
+      const phaseStart = accumulatedUSD;
+      const currentPhaseRaisedUSD = Math.max(0, Math.min(phaseCapUSD, raisedAmount - phaseStart));
+
+      stats.raised = currentPhaseRaisedUSD;
+      stats.percent = phaseCapUSD > 0 ? (currentPhaseRaisedUSD / phaseCapUSD) * 100 : 0;
+      stats.isSoldOut = currentPhaseRaisedUSD >= phaseCapUSD && phaseCapUSD > 0;
+
+      accumulatedUSD += phaseCapUSD;
+    }
+
+    return { ...phase, stats };
+  });
+
   // Debug log (remove in prod)
   // console.log("Gating Check:", { user: account?.address, hasAccess, balance: licenseBalance?.toString() });
 
@@ -170,13 +215,23 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                   </Link>
                 </div>
               ) : project.deploymentStatus === 'deployed' && licenseContract && account ? (
-                <button
-                  onClick={() => setIsAccessModalOpen(true)}
-                  className="w-full bg-lime-400 hover:bg-lime-500 text-black font-bold py-3 px-2 rounded-lg mb-4 flex items-center justify-center gap-1 shadow-[0_0_15px_rgba(163,230,53,0.4)] text-sm whitespace-nowrap transition-all hover:scale-[1.02]"
-                >
-                  <Ticket className="w-4 h-4" />
-                  <span>Obtener Acceso (Gratis)</span>
-                </button>
+                <div className="flex gap-2 w-full mb-4">
+                  <button
+                    onClick={() => setIsAccessModalOpen(true)}
+                    className="flex-1 bg-lime-400 hover:bg-lime-500 text-black font-bold py-3 px-2 rounded-lg flex items-center justify-center gap-1 shadow-[0_0_15px_rgba(163,230,53,0.4)] text-sm whitespace-nowrap transition-all hover:scale-[1.02]"
+                  >
+                    <Ticket className="w-4 h-4" />
+                    <span>Obtener Acceso</span>
+                  </button>
+                  <SimpleTooltip content="Ir a Fases de Venta">
+                    <button
+                      onClick={() => document.getElementById('sidebar-phases')?.scrollIntoView({ behavior: 'smooth' })}
+                      className="px-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 rounded-lg flex items-center justify-center transition-colors"
+                    >
+                      <ArrowDown className="w-5 h-5" />
+                    </button>
+                  </SimpleTooltip>
+                </div>
               ) : (
                 <button
                   className="w-full font-bold py-3 px-6 rounded-lg transition-colors mb-4 flex items-center justify-center gap-2 bg-zinc-700 text-gray-500 cursor-not-allowed border border-zinc-600"
@@ -298,12 +353,12 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
 
           {/* Utility Offers Panel (Dynamic Phases) */}
           {(project.w2eConfig?.phases && project.w2eConfig.phases.length > 0) ? (
-            <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+            <div id="sidebar-phases" className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
               <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                 <Ticket className="w-5 h-5 text-lime-400" /> Fases de Venta
               </h3>
               <div className="space-y-4">
-                {project.w2eConfig.phases.map((phase: any) => {
+                {phasesWithStats.map((phase: any) => {
                   // Calculate Status based on Time and Flags
                   const now = new Date();
                   let status = 'active'; // Default
@@ -320,6 +375,10 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                     status = 'paused';
                     statusLabel = 'Próximamente'; // User requested "Próximamente" if waiting for admin
                     statusColor = 'bg-zinc-600 text-gray-300';
+                  } else if (phase.stats?.isSoldOut) {
+                    status = 'sold_out';
+                    statusLabel = 'Agotado';
+                    statusColor = 'bg-red-500/20 text-red-400 border border-red-500/50';
                   }
 
                   const isActive = status === 'active';
@@ -364,17 +423,22 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                         {/* Button Gated by Access */}
                         {hasAccess ? (
                           <button
-                            onClick={() => isActive && handlePhaseClick(phase)}
-                            className={`w-full py-3 px-4 rounded-lg transition-all text-sm font-bold flex items-center justify-center gap-2 ${isActive
+                            onClick={() => isActive && !phase.stats.isSoldOut && handlePhaseClick(phase)}
+                            className={`w-full py-3 px-4 rounded-lg transition-all text-sm font-bold flex items-center justify-center gap-2 ${isActive && !phase.stats.isSoldOut
                               ? 'bg-lime-400 hover:bg-lime-500 text-black shadow-[0_0_15px_rgba(163,230,53,0.3)] hover:scale-[1.02]'
                               : 'bg-zinc-700 text-gray-400 cursor-not-allowed opacity-70'
                               }`}
-                            disabled={!isActive}
+                            disabled={!isActive || phase.stats.isSoldOut}
                           >
                             {status === 'coming_soon' || status === 'paused' ? (
                               <>
                                 <Clock className="w-4 h-4" />
                                 Próximamente
+                              </>
+                            ) : status === 'sold_out' ? (
+                              <>
+                                <Lock className="w-4 h-4" />
+                                Agotado
                               </>
                             ) : isActive ? (
                               <>
