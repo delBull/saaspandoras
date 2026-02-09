@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 
 import { Trash2, PlusCircle, Loader2, Pencil } from "lucide-react";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
+import { OperationsPanel } from "./OperationsPanel";
 
 interface Admin {
   id: number;
@@ -187,10 +188,7 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
 
   return (
     <div className="space-y-8">
-
-      {/* --- PLATFORM SETTINGS SECTION --- */}
-
-
+      {/* --- ADMIN MANAGEMENT SECTION --- */}
       <div className="space-y-6">
         <div>
           <h3 className="text-lg font-semibold text-white">Añadir Nuevo Administrador</h3>
@@ -273,6 +271,11 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
             ))}
           </ul>
         </div>
+      </div>
+
+      {/* --- OPERATIONS CONTROL SECTION --- */}
+      <div className="border-t-2 border-zinc-700/50 pt-8 mt-8">
+        <OperationsPanel />
       </div>
     </div>
   );

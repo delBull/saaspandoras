@@ -15,7 +15,36 @@
 
 ---
 
-## 🚨 Rollback Plan (Emergency Procedures)
+## � Incident Ownership (Production)
+
+Define these roles clearly before Go-Live to avoid chaos.
+
+| Role | Responsibility | Contact |
+|------|----------------|---------|
+| **Incident Commander** | Lead response, communication, and final decisions. | `[Define User]` |
+| **On-Call Engineer** | First responder, investigation, mitigation execution. | `[Define User]` |
+| **Chain Guardian** | Holds keys/multisig access to pause contracts/funds. | `[Define Wallet/User]` |
+
+---
+
+## 📊 Observability (Primary Signals)
+
+In case of issues, check these metrics first:
+
+1.  **Webhook Error Rate**: `SELECT count(*) FROM webhook_events WHERE status = 'failed' AND updated_at > NOW() - INTERVAL '1 hour'`
+2.  **DLQ Size**: Total count of `status = 'failed'` events.
+3.  **Deployment Latency**: Time between `created_at` and `updated_at` (sent) for successful events.
+4.  **Failed by Client**: Group failures by `client_id` to identify specific integration breakages.
+
+---
+
+## ⚠️ Replay Safety Rules
+
+> **Replay Rule**: Only replay **idempotent** events. Never replay events with financial or on-chain side-effects without manual verification of the state.
+
+---
+
+## �🚨 Rollback Plan (Emergency Procedures)
 
 If a critical issue occurs in Production (especially with Core/Webhooks), follow these steps in order.
 
