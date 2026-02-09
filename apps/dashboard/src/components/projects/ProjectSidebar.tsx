@@ -98,7 +98,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
 
   // --- Phase Stats Calculation (Replicated from Tabs for Robustness) ---
   const allPhases = project.w2eConfig?.phases || [];
-  let accumulatedUSD = 0;
+  // let accumulatedUSD = 0; // Unused
   let accumulatedTokens = 0;
 
   const phasesWithStats = allPhases.map((phase: any) => {
