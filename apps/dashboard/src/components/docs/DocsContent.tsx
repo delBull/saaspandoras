@@ -55,8 +55,10 @@ export function DocsContent({ title, content }: DocsContentProps) {
                         thead: ({ node, ...props }) => <thead className="text-xs uppercase bg-zinc-800 text-gray-400" {...props} />,
                         th: ({ node, ...props }) => <th className="px-6 py-3 font-bold" {...props} />,
                         td: ({ node, ...props }) => <td className="px-6 py-4 border-t border-zinc-800" {...props} />,
-                        blockquote: ({ node, ...props }) => (
-                            <div className="border-l-4 border-lime-400 bg-lime-400/5 p-4 my-6 rounded-r-lg italic text-gray-300" {...props} />
+                        blockquote: ({ node, ...props }: any) => (
+                            <div className="border-l-4 border-lime-400 bg-lime-400/5 p-4 my-6 rounded-r-lg italic text-gray-300">
+                                {props.children}
+                            </div>
                         ),
                     }}
                 >
