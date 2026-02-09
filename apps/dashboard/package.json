@@ -25,6 +25,7 @@
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "3.3.4",
+    "@pandoras/core-webhooks": "workspace:*",
     "@pandoras/gamification": "workspace:*",
     "@pandoras/protocol-deployer": "workspace:*",
     "@radix-ui/react-dialog": "^1.1.15",
@@ -58,6 +59,7 @@
     "ethers": "5.7.2",
     "formidable": "^3.5.4",
     "framer-motion": "^12.23.12",
+    "fuse.js": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.561.0",
     "motion": "^12.23.12",
@@ -70,10 +72,13 @@
     "react": "^19.1.0",
     "react-confetti": "^6.4.0",
     "react-dom": "^19.1.0",
+    "react-markdown": "^10.1.0",
     "react-qr-code": "^2.0.18",
     "react-redux": "^9.2.0",
     "react-use": "^17.6.0",
     "recharts": "2.11.0",
+    "rehype-highlight": "^7.0.2",
+    "remark-gfm": "^4.0.1",
     "sharp": "^0.34.4",
     "slugify": "^1.6.6",
     "sonner": "^2.0.7",
@@ -85,8 +90,7 @@
     "tailwindcss-animate": "^1.0.7",
     "thirdweb": "5.106.0",
     "vaul": "0.9.0",
-    "viem": "2.33.2",
-    "@pandoras/core-webhooks": "workspace:*"
+    "viem": "2.33.2"
   },
   "devDependencies": {
     "@next/eslint-plugin-next": "14.0.1",
