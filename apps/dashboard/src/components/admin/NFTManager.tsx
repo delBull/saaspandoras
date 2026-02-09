@@ -19,10 +19,10 @@ import { Badge } from "@/components/ui/badge";
 const EXTENDED_ABI = [
     ...PANDORAS_KEY_ABI,
     {
-        "inputs": [{ "name": "to", "type": "address" }],
-        "name": "adminMint",
+        "inputs": [{ "name": "quantity", "type": "uint256" }],
+        "name": "mintWithPayment",
         "outputs": [],
-        "stateMutability": "nonpayable",
+        "stateMutability": "payable",
         "type": "function"
     },
     {
@@ -217,8 +217,9 @@ export function NFTManager() {
 
             const transaction = prepareContractCall({
                 contract: selectedContract,
-                method: "adminMint",
-                params: [airdropAddress]
+                method: "mintWithPayment",
+                params: [1n],
+                value: 0n
             });
 
             const selectedPass = availablePasses.find(p => p.contractAddress === selectedPassAddress);
