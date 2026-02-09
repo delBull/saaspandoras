@@ -1,28 +1,28 @@
 // Documentation content structure and data
 
 export interface DocSection {
-    id: string;
-    title: string;
-    content: string;
+  id: string;
+  title: string;
+  content: string;
 }
 
 export interface DocCategory {
-    id: string;
-    title: string;
-    icon: string;
-    sections: DocSection[];
+  id: string;
+  title: string;
+  icon: string;
+  sections: DocSection[];
 }
 
 export const docsData: DocCategory[] = [
-    {
-        id: "getting-started",
-        title: "Getting Started",
-        icon: "Rocket",
-        sections: [
-            {
-                id: "introduction",
-                title: "Introduction to Pandora's",
-                content: `# Introduction to Pandora's Platform
+  {
+    id: "getting-started",
+    title: "Getting Started",
+    icon: "Rocket",
+    sections: [
+      {
+        id: "introduction",
+        title: "Introduction to Pandora's",
+        content: `# Introduction to Pandora's Platform
 
 Pandora's is a blockchain-based platform that empowers creators to launch **Utility Protocols** with built-in monetization, governance, and community engagement features.
 
@@ -55,11 +55,11 @@ A Utility Protocol is a blockchain-deployed project that combines:
 - Explore [Platform Features](#platform-features) to understand capabilities
 - Review [Security & Trust](#security) for our commitment to your safety
 `
-            },
-            {
-                id: "quick-start",
-                title: "Quick Start Guide",
-                content: `# Quick Start Guide
+      },
+      {
+        id: "quick-start",
+        title: "Quick Start Guide",
+        content: `# Quick Start Guide
 
 Get started with Pandora's in 5 simple steps.
 
@@ -118,18 +118,18 @@ After deployment, use the **Admin Operations Panel** to:
 - Read [Detailed Documentation](#platform-features)
 - Contact [Support](#support)
 `
-            }
-        ]
-    },
-    {
-        id: "platform-features",
-        title: "Platform Features",
-        icon: "Zap",
-        sections: [
-            {
-                id: "protocol-deployment",
-                title: "Protocol Deployment",
-                content: `# Protocol Deployment
+      }
+    ]
+  },
+  {
+    id: "platform-features",
+    title: "Platform Features",
+    icon: "Zap",
+    sections: [
+      {
+        id: "protocol-deployment",
+        title: "Protocol Deployment",
+        content: `# Protocol Deployment
 
 Deploy production-ready Utility Protocols to EVM-compatible blockchains without writing code.
 
@@ -194,11 +194,11 @@ All deployments undergo:
 - ✅ Integration testing
 - ✅ Audit trail logging
 `
-            },
-            {
-                id: "access-control",
-                title: "Access Control (NFT Licenses)",
-                content: `# Access Control via NFT Licenses
+      },
+      {
+        id: "access-control",
+        title: "Access Control (NFT Licenses)",
+        content: `# Access Control via NFT Licenses
 
 Control access to your protocol's utility using blockchain-based NFT licenses.
 
@@ -260,11 +260,11 @@ const hasAccess = balance > 0;
 **Webhooks**:
 Listen for \`nft.minted\` events to trigger access grants in your app.
 `
-            },
-            {
-                id: "phases",
-                title: "Phase-Based Sales",
-                content: `# Phase-Based Sales
+      },
+      {
+        id: "phases",
+        title: "Phase-Based Sales",
+        content: `# Phase-Based Sales
 
 Launch your protocol with strategic, time-gated sale phases.
 
@@ -326,11 +326,11 @@ Admins can:
 - ✅ View phase statistics (raised, sold, %)
 - ❌ Cannot change price after deployment (immutable)
 `
-            },
-            {
-                id: "dao-governance",
-                title: "DAO Governance",
-                content: `# DAO Governance
+      },
+      {
+        id: "dao-governance",
+        title: "DAO Governance",
+        content: `# DAO Governance
 
 Enable decentralized decision-making for your protocol.
 
@@ -398,11 +398,11 @@ Access DAO features via:
 - **Smart Contracts**: Direct governance calls
 - **Webhooks**: \`governance.proposal_created\`, \`governance.vote_cast\`
 `
-            },
-            {
-                id: "webhooks",
-                title: "Webhook Integrations",
-                content: `# Webhook Integrations
+      },
+      {
+        id: "webhooks",
+        title: "Webhook Integrations",
+        content: `# Webhook Integrations
 
 Connect Pandora's events to your applications in real-time.
 
@@ -495,18 +495,18 @@ Use the **Admin Operations Panel** to:
 - Monitor error rates
 - Pause/resume webhook delivery (kill switch)
 `
-            }
-        ]
-    },
-    {
-        id: "security",
-        title: "Security & Trust",
-        icon: "Shield",
-        sections: [
-            {
-                id: "security-overview",
-                title: "Security Overview",
-                content: `# Security & Trust Overview
+      }
+    ]
+  },
+  {
+    id: "security",
+    title: "Security & Trust",
+    icon: "Shield",
+    sections: [
+      {
+        id: "security-overview",
+        title: "Security Overview",
+        content: `# Security & Trust Overview
 
 Pandora's is built with a **security-first, non-custodial architecture**.
 
@@ -633,19 +633,49 @@ If you believe you have found a security vulnerability, please contact us via ou
 - Acknowledging reports within 72 hours
 - Providing status updates on investigation and remediation
 - Recognizing responsible reporters (with permission)
+---
+
+## Trust Summary
+
+### Security Guarantees
+
+✔ **No custody** of funds or private keys  
+✔ **Cryptographically secure** integrations (HMAC, HTTPS)  
+✔ **Operational kill switches** and safe recovery  
+✔ **Environment isolation** (staging ≠ production)  
+✔ **Transparent security** posture (documented and auditable)
+
+### Operational Maturity
+
+✔ Real-time monitoring and alerting  
+✔ Documented incident response procedures  
+✔ Graceful degradation under load  
+✔ Immutable audit logging  
+✔ Quarterly incident simulations (drills)
+
+---
+
+## For Partners & Integrators
+
+**Pandora's is designed for safe, observable, and resilient integrations.**
+
+If you're evaluating Pandora's for integration:
+- Review our **Webhook Specification** for technical details
+- Request our **Security Questionnaire Response** for compliance reviews
+- Schedule a **technical walkthrough** with our engineering team
 `
-            }
-        ]
-    },
-    {
-        id: "legal",
-        title: "Legal & Compliance",
-        icon: "FileText",
-        sections: [
-            {
-                id: "terms-of-service",
-                title: "Terms of Service",
-                content: `# Terms of Service
+      }
+    ]
+  },
+  {
+    id: "legal",
+    title: "Legal & Compliance",
+    icon: "FileText",
+    sections: [
+      {
+        id: "terms-of-service",
+        title: "Terms of Service",
+        content: `# Terms of Service
 
 **Last Updated**: February 2026
 
@@ -729,11 +759,11 @@ For questions about these Terms:
 
 **By using Pandora's Platform, you acknowledge that you have read, understood, and agree to these Terms of Service.**
 `
-            },
-            {
-                id: "privacy-policy",
-                title: "Privacy Policy",
-                content: `# Privacy Policy
+      },
+      {
+        id: "privacy-policy",
+        title: "Privacy Policy",
+        content: `# Privacy Policy
 
 **Last Updated**: February 2026
 
@@ -836,11 +866,11 @@ For privacy inquiries:
 
 **By using Pandora's Platform, you acknowledge that you have read and understood this Privacy Policy.**
 `
-            },
-            {
-                id: "disclaimer",
-                title: "Non-Custodial Disclaimer",
-                content: `# Non-Custodial Disclaimer
+      },
+      {
+        id: "disclaimer",
+        title: "Non-Custodial Disclaimer",
+        content: `# Non-Custodial Disclaimer
 
 ## 🔐 Critical Understanding
 
@@ -927,18 +957,18 @@ You are 100% responsible for:
 
 **If you are not comfortable with non-custodial platforms, DO NOT USE PANDORA'S.**
 `
-            }
-        ]
-    },
-    {
-        id: "transparency",
-        title: "Transparency",
-        icon: "Eye",
-        sections: [
-            {
-                id: "platform-metrics",
-                title: "Platform Metrics",
-                content: `# Platform Metrics & Transparency
+      }
+    ]
+  },
+  {
+    id: "transparency",
+    title: "Transparency",
+    icon: "Eye",
+    sections: [
+      {
+        id: "platform-metrics",
+        title: "Platform Metrics",
+        content: `# Platform Metrics & Transparency
 
 Pandora's is committed to operational transparency.
 
@@ -1027,18 +1057,18 @@ For questions about platform operations:
 - Email: transparency@pandoras.finance (TBD)
 - Dashboard: [Operations Panel](/admin/operations) (Super Admin only)
 `
-            }
-        ]
-    },
-    {
-        id: "developer",
-        title: "Developer Resources",
-        icon: "Code",
-        sections: [
-            {
-                id: "api-docs",
-                title: "API Documentation",
-                content: `# API Documentation
+      }
+    ]
+  },
+  {
+    id: "developer",
+    title: "Developer Resources",
+    icon: "Code",
+    sections: [
+      {
+        id: "api-docs",
+        title: "API Documentation",
+        content: `# API Documentation
 
 Pandora's provides REST APIs for programmatic access to platform features.
 
@@ -1190,11 +1220,11 @@ Community contributions welcome!
 4. **Monitor usage**: Track API consumption
 5. **Test in staging**: Use testnet protocols first
 `
-            },
-            {
-                id: "code-examples",
-                title: "Code Examples",
-                content: `# Code Examples
+      },
+      {
+        id: "code-examples",
+        title: "Code Examples",
+        content: `# Code Examples
 
 Practical examples for common integration patterns.
 
@@ -1417,7 +1447,7 @@ Explore the [GitHub Repository](#) (coming soon) for:
 - Analytics dashboard
 - DAO governance client
 `
-            }
-        ]
-    }
+      }
+    ]
+  }
 ];
