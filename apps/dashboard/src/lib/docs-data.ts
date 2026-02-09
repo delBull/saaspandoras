@@ -499,6 +499,76 @@ Use the **Admin Operations Panel** to:
     ]
   },
   {
+    id: "gamification",
+    title: "Gamification & Rewards",
+    icon: "Trophy",
+    sections: [
+      {
+        id: "concept",
+        title: "Gamification System",
+        content: `# Gamification & Rewards
+                
+Pandora's integrates a deep gamification layer to drive engagement and reward loyal community members.
+
+## Core Concepts
+
+### Experience Points (XP)
+Users earn XP for nearly every positive action on the platform. XP determines a user's **Rank** and standing in the community.
+
+### Tokens & Rewards
+Some activities also award platform tokens or protocol-specific rewards (boosts, badges, or NFT traits).
+
+## User Ranks
+
+| Rank | Requirement | Perks |
+|------|-------------|-------|
+| **🥉 Bronze** | New User | Standard Access |
+| **🥈 Silver** | 1,000 XP | Priority Webhooks |
+| **🥇 Gold** | 5,000 XP | Early Phase Access |
+| **💎 Platinum** | 20,000 XP | Lower Platform Fees |
+| **🐋 Whale** | 100,000 XP | Governance Multiplier |
+| **🐙 Kraken** | Top 1% | Direct Support Channel |
+
+## Earning XP
+
+✅ **Daily Login**: Earn XP just for checking in.
+✅ **Protocol Launch**: Huge XP boost for creators.
+✅ **DAO Participation**: Vote on proposals to earn governance XP.
+✅ **Donations/Contributions**: Support protocols to climb the leaderboard.
+✅ **Referrals**: Bring new creators to the platform.
+`
+      }
+    ]
+  },
+  {
+    id: "referrals",
+    title: "Referral & Growth",
+    icon: "Users",
+    sections: [
+      {
+        id: "referral-program",
+        title: "Referral Program",
+        content: `# Referral Program
+
+Grow your protocol's community through our built-in, automated referral system.
+
+## How it Works
+
+1. **Unique Links**: Every user has a referral link tied to their wallet.
+2. **Automatic Detection**: When a new user visits via a referral link, the platform tracks the relationship.
+3. **On-Chain/Off-Chain Tracking**: Depending on the protocol config, rewards are triggered on-chain (tokens) or off-chain (XP).
+
+## Features
+
+- **No Manual Entry**: Users don't need to type codes; it's all in the URL.
+- **Creator Rewards**: Protocols can set a % of their sales to go to referrers.
+- **Sybil Protection**: Built-in logic to prevent self-referral and bot abuse.
+- **Dashboard Tracking**: See your referral stats, pending rewards, and conversion rates.
+`
+      }
+    ]
+  },
+  {
     id: "security",
     title: "Security & Trust",
     icon: "Shield",
@@ -976,21 +1046,20 @@ Pandora's is committed to operational transparency.
 
 Access live platform metrics via the **Admin Operations Panel**:
 
-### System Health
-- API uptime and availability
-- Error rates (rolling averages)
-- Response times (P50, P95, P99)
+### System Health (Layer 1)
+- **API Uptime**: % of time the platform is responding correctly.
+- **Error Rate (5xx)**: Frequency of server-side errors.
+- **P95 Latency**: Speed at which 95% of requests are handled.
 
-### Webhook Performance
-- Delivery success rate
-- Retry statistics
-- Dead Letter Queue size
+### Webhooks & Integrations (Layer 2)
+- **Success Ratio**: % of webhooks delivered successfully.
+- **Retry Count**: Average number of attempts per delivery.
+- **DLQ Size**: Count of failed events requiring manual intervention.
 
-### Protocol Statistics
-- Total protocols deployed
-- Active vs inactive protocols
-- Total value locked (TVL)
-- License NFTs minted
+### Security & Abuse (Layer 3)
+- **Invalid Signatures**: Failed HMAC verifications (attack detection).
+- **Rejected Timestamps**: Blocked replay attack attempts.
+- **Invalid API Key Hits**: Unauthorized access attempts.
 
 ## Audit Logs
 
@@ -1020,36 +1089,31 @@ Pandora's uses the following open-source technologies:
 
 Audit reports will be published upon completion.
 
-## Incident Reports
+## Roadmap 2026
 
-Any security incidents or outages will be disclosed:
-- **Incident Summary**: What happened
-- **Impact**: Who was affected
-- **Root Cause**: Technical details
-- **Resolution**: How it was fixed
-- **Prevention**: Steps to avoid recurrence
+### Q1: The Foundation
+- ✅ Multi-network deployment support (Base, Poly, Eth)
+- ✅ Webhook v2 with signing and DLQ
+- ✅ Operations Admin Dashboard
+- ✅ GitBook-style Whitepaper Portal
 
-## Roadmap Transparency
+### Q2: Security & Scale
+- [ ] External Security Audit
+- [ ] Multi-sig Treasury Integration
+- [ ] Advanced Referral Engine v2
+- [ ] Public API for Custom App Development
 
-Track upcoming features and improvements:
-- **Q1 2026**: Multi-sig treasury support
-- **Q2 2026**: External security audit
-- **Q3 2026**: Layer 2 network expansion
-- **Q4 2026**: DAO governance v2
+### Q3: Governance & Community
+- [ ] DAO Governance v2 (Delegation & Quadratic Voting)
+- [ ] Revenue Sharing Contracts
+- [ ] Protocol Analytics Dashboard for Creators
+- [ ] Community Grant Program
 
-## Community Governance
-
-Future platform decisions may be governed by:
-- Protocol creators (weighted by activity)
-- Token holders (if governance token launched)
-- Community voting (for non-critical features)
-
-## Financial Transparency
-
-Pandora's revenue model:
-- **Platform Fees**: % of protocol sales (configurable)
-- **Premium Features**: Advanced integrations (upcoming)
-- **No hidden fees**: All costs disclosed upfront
+### Q4: Ecosystem expansion
+- [ ] Mobile App (iOS/Android)
+- [ ] Cross-chain Protocol Bridging
+- [ ] Institutional Integration SDK
+- [ ] Launch of Platform Governance Token ($PBOX)
 
 ## Contact for Transparency Inquiries
 
