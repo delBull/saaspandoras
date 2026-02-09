@@ -5,9 +5,9 @@ import { toast } from "sonner";
 import { Input } from "@saasfly/ui/input";
 import { Button } from "@/components/ui/button";
 
-import { Trash2, PlusCircle, Loader2, Pencil } from "lucide-react";
+import { Trash2, PlusCircle, Loader2, Pencil, Activity, Power } from "lucide-react";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
-import { OperationsPanel } from "./OperationsPanel";
+import Link from "next/link";
 
 interface Admin {
   id: number;
@@ -273,9 +273,33 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
         </div>
       </div>
 
-      {/* --- OPERATIONS CONTROL SECTION --- */}
+      {/* --- OPERATIONS CONTROL LINK --- */}
       <div className="border-t-2 border-zinc-700/50 pt-8 mt-8">
-        <OperationsPanel />
+        <div className="bg-gradient-to-r from-red-950/20 to-orange-950/20 border-2 border-red-900/50 rounded-lg p-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="text-xl font-bold text-white flex items-center gap-2 mb-2">
+                <Activity className="w-6 h-6 text-red-400" />
+                Operations Control
+              </h3>
+              <p className="text-sm text-gray-400 mb-4">
+                Emergency controls, system monitoring, and infrastructure management.
+              </p>
+              <div className="flex gap-2 text-xs text-yellow-400">
+                <span>🔒 Super Admin Only</span>
+                <span>•</span>
+                <span>⚠️ High Risk Area</span>
+              </div>
+            </div>
+            <Link
+              href="/admin/operations"
+              className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors flex items-center gap-2 shadow-lg hover:shadow-red-900/50"
+            >
+              <Power className="w-4 h-4" />
+              Access Operations
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );
