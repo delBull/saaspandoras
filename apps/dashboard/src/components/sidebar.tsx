@@ -400,14 +400,6 @@ export function Sidebar({
           },
         ]
         : []),
-      {
-        label: "Whitepaper",
-        href: "/whitepaper",
-        icon: (
-          <BookOpen className="h-5 w-5 shrink-0 text-gray-400" />
-        ),
-        disabled: false,
-      },
     ],
     [isAdmin, account]
   );
@@ -740,7 +732,6 @@ export function Sidebar({
             </div>
 
             <div className="mb-4 flex flex-col gap-2">
-              {/* Show "Desatar tu Creación" button only when CONNECTED */}
               {isClient && account && (
                 <div
                   className={cn(
@@ -749,41 +740,68 @@ export function Sidebar({
                   )}
                 >
                   {!open ? (
-                    <Tooltip.Root>
-                      <Tooltip.Trigger asChild>
-                        <Link
-                          href="/apply"
-                          className="relative flex w-full items-center rounded-lg py-2 transition-all duration-200 text-gray-400 hover:bg-purple-800/20 justify-center"
-                        >
-                          <ShieldCheckIcon className="h-4 w-4 shrink-0" />
-                        </Link>
-                      </Tooltip.Trigger>
-                      <Tooltip.Portal>
-                        <Tooltip.Content
-                          className="z-50 rounded-md bg-zinc-900 ml-20 px-3 py-1.5 text-xs text-white shadow-md border border-zinc-700"
-                          sideOffset={3}
-                        >
-                          Desatar tu Creación
-                        </Tooltip.Content>
-                      </Tooltip.Portal>
-                    </Tooltip.Root>
+                    <div className="flex flex-col gap-2">
+                      <Tooltip.Root>
+                        <Tooltip.Trigger asChild>
+                          <Link
+                            href="/apply"
+                            className="relative flex w-full items-center rounded-lg py-2 transition-all duration-200 text-gray-400 hover:bg-purple-800/20 justify-center"
+                          >
+                            <ShieldCheckIcon className="h-4 w-4 shrink-0" />
+                          </Link>
+                        </Tooltip.Trigger>
+                        <Tooltip.Portal>
+                          <Tooltip.Content
+                            className="z-50 rounded-md bg-zinc-900 ml-20 px-3 py-1.5 text-xs text-white shadow-md border border-zinc-700"
+                            sideOffset={3}
+                          >
+                            Desatar tu Creación
+                          </Tooltip.Content>
+                        </Tooltip.Portal>
+                      </Tooltip.Root>
+
+                      <Tooltip.Root>
+                        <Tooltip.Trigger asChild>
+                          <Link
+                            href="/whitepaper"
+                            className="relative flex w-full items-center rounded-lg py-2 transition-all duration-200 text-gray-400 hover:bg-zinc-800/50 justify-center"
+                          >
+                            <BookOpen className="h-4 w-4 shrink-0" />
+                          </Link>
+                        </Tooltip.Trigger>
+                        <Tooltip.Portal>
+                          <Tooltip.Content
+                            className="z-50 rounded-md bg-zinc-900 ml-20 px-3 py-1.5 text-xs text-white shadow-md border border-zinc-700"
+                            sideOffset={3}
+                          >
+                            Whitepaper
+                          </Tooltip.Content>
+                        </Tooltip.Portal>
+                      </Tooltip.Root>
+                    </div>
                   ) : (
-                    <Link
-                      href="/apply"
-                      className="relative flex w-full items-center rounded-lg py-2 transition-all duration-200 text-gray-400 hover:bg-purple-800/20 px-4"
-                    >
-                      <ShieldCheckIcon className="h-4 w-4 shrink-0" />
-                      <motion.span
-                        animate={{
-                          opacity: open ? 1 : 0,
-                          width: open ? "auto" : 0,
-                          marginLeft: open ? "0.75rem" : "0",
-                        }}
-                        className="whitespace-nowrap text-xs italic"
+                    <div className="grid grid-cols-2 gap-2 px-2">
+                      <Link
+                        href="/apply"
+                        className="relative flex items-center justify-center gap-2 rounded-lg py-2 transition-all duration-200 text-gray-400 hover:bg-purple-800/20 bg-zinc-800/30 border border-gray-800"
+                        title="Desatar tu Creación"
                       >
-                        {open ? "Desatar tu Creación" : "🔗"}
-                      </motion.span>
-                    </Link>
+                        <ShieldCheckIcon className="h-4 w-4 shrink-0" />
+                        <span className="whitespace-nowrap text-[10px] uppercase font-bold tracking-tighter">
+                          Creación
+                        </span>
+                      </Link>
+                      <Link
+                        href="/whitepaper"
+                        className="relative flex items-center justify-center gap-2 rounded-lg py-2 transition-all duration-200 text-gray-400 hover:bg-zinc-800/80 bg-zinc-800/30 border border-gray-800"
+                        title="Whitepaper"
+                      >
+                        <BookOpen className="h-4 w-4 shrink-0" />
+                        <span className="whitespace-nowrap text-[10px] uppercase font-bold tracking-tighter">
+                          Docs
+                        </span>
+                      </Link>
+                    </div>
                   )}
                 </div>
               )}
@@ -1129,15 +1147,25 @@ export function Sidebar({
                 <div className="mb-4 flex flex-col gap-2">
                   {/* Show "Desatar tu Creación" button only when CONNECTED - MOBILE */}
                   {isClient && account && (
-                    <div className="border-t border-gray-800 pt-2">
+                    <div className="border-t border-gray-800 pt-2 grid grid-cols-2 gap-2 px-2">
                       <Link
                         href="/apply"
                         onClick={() => setMobileOpen(false)}
-                        className="relative flex w-full items-center rounded-lg py-2 px-4 transition-all duration-200 text-gray-400 hover:bg-purple-800/20"
+                        className="relative flex items-center justify-center gap-2 rounded-lg py-2 transition-all duration-200 text-gray-400 hover:bg-purple-800/20 bg-zinc-800/30 border border-gray-800"
                       >
                         <ShieldCheckIcon className="h-4 w-4 shrink-0" />
-                        <span className="ml-3 whitespace-nowrap text-xs italic">
-                          Desatar tu Creación
+                        <span className="whitespace-nowrap text-[10px] uppercase font-bold tracking-tighter">
+                          Creación
+                        </span>
+                      </Link>
+                      <Link
+                        href="/whitepaper"
+                        onClick={() => setMobileOpen(false)}
+                        className="relative flex items-center justify-center gap-2 rounded-lg py-2 transition-all duration-200 text-gray-400 hover:bg-zinc-800/80 bg-zinc-800/30 border border-gray-800"
+                      >
+                        <BookOpen className="h-4 w-4 shrink-0" />
+                        <span className="whitespace-nowrap text-[10px] uppercase font-bold tracking-tighter">
+                          Docs
                         </span>
                       </Link>
                     </div>
