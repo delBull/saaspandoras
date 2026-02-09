@@ -69,8 +69,8 @@ export function DocsSidebar({ activeSection, onSectionChange }: DocsSidebarProps
                                                 setMobileMenuOpen(false);
                                             }}
                                             className={`w-full text-left px-3 py-1.5 text-sm rounded transition-colors ${isActive
-                                                    ? 'text-lime-400 bg-lime-400/10 font-medium border-l-2 border-lime-400'
-                                                    : 'text-gray-400 hover:text-white hover:bg-zinc-800/50'
+                                                ? 'text-lime-400 bg-lime-400/10 font-medium border-l-2 border-lime-400'
+                                                : 'text-gray-400 hover:text-white hover:bg-zinc-800/50'
                                                 }`}
                                         >
                                             {section.title}
@@ -100,6 +100,10 @@ export function DocsSidebar({ activeSection, onSectionChange }: DocsSidebarProps
                 <div
                     className="lg:hidden fixed inset-0 bg-black/50 z-40"
                     onClick={() => setMobileMenuOpen(false)}
+                    onKeyDown={(e) => { if (e.key === 'Escape' || e.key === 'Enter') setMobileMenuOpen(false); }}
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Close menu"
                 />
             )}
 

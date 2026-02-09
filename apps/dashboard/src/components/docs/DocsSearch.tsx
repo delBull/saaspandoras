@@ -85,7 +85,14 @@ export function DocsSearch({ onSelect }: DocsSearchProps) {
             {/* Results Dropdown */}
             {isOpen && query && (
                 <>
-                    <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
+                    <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => setIsOpen(false)}
+                        onKeyDown={(e) => { if (e.key === 'Escape' || e.key === 'Enter') setIsOpen(false); }}
+                        role="button"
+                        tabIndex={0}
+                        aria-label="Close search"
+                    />
                     <div className="absolute top-full left-0 right-0 mt-2 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl z-20 overflow-hidden max-h-[400px] overflow-y-auto">
                         {results.length > 0 ? (
                             <div className="py-2">

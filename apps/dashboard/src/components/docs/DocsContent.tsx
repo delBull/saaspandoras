@@ -18,9 +18,9 @@ export function DocsContent({ title, content }: DocsContentProps) {
                     remarkPlugins={[remarkGfm]}
                     rehypePlugins={[rehypeHighlight]}
                     components={{
-                        h1: ({ node, ...props }) => <h1 className="text-4xl font-bold mb-8 scroll-mt-24" {...props} />,
-                        h2: ({ node, ...props }) => <h2 className="text-2xl font-bold mt-12 mb-4 border-b border-zinc-800 pb-2 scroll-mt-24" {...props} />,
-                        h3: ({ node, ...props }) => <h3 className="text-xl font-bold mt-8 mb-4 scroll-mt-24" {...props} />,
+                        h1: ({ node, children, ...props }) => <h1 className="text-4xl font-bold mb-8 scroll-mt-24" {...props}>{children}</h1>,
+                        h2: ({ node, children, ...props }) => <h2 className="text-2xl font-bold mt-12 mb-4 border-b border-zinc-800 pb-2 scroll-mt-24" {...props}>{children}</h2>,
+                        h3: ({ node, children, ...props }) => <h3 className="text-xl font-bold mt-8 mb-4 scroll-mt-24" {...props}>{children}</h3>,
                         p: ({ node, ...props }) => <p className="text-gray-300 leading-relaxed mb-4" {...props} />,
                         ul: ({ node, ...props }) => <ul className="list-disc list-inside space-y-2 mb-4 text-gray-300" {...props} />,
                         ol: ({ node, ...props }) => <ol className="list-decimal list-inside space-y-2 mb-4 text-gray-300" {...props} />,

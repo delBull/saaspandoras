@@ -110,6 +110,7 @@ export function DocsLayout() {
                             <a
                                 href="https://pandoras.finance"
                                 target="_blank"
+                                rel="noopener noreferrer"
                                 className="text-[11px] text-lime-400 font-bold hover:underline flex items-center gap-1"
                             >
                                 Go to official site
