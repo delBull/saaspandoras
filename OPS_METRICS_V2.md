@@ -19,6 +19,8 @@ These metrics exist to:
 - ✅ Measurable programmatically
 - ✅ Comparable over time (establish baseline)
 
+> **First 30 Days Policy**: During the first 30 days of production traffic, metrics are informational only and not tied to automated alerting, except for catastrophic thresholds (DLQ > 50, API uptime < 95%). This allows for baseline establishment without false positives.
+
 ---
 
 ## Metrics Layers

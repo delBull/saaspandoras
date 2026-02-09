@@ -40,11 +40,48 @@ In case of issues, check these metrics first:
 
 ## ⚠️ Replay Safety Rules
 
-> **Replay Rule**: Only replay **idempotent** events. Never replay events with financial or on-chain side-effects without manual verification of the state.
+> **Replay
+> [!CAUTION]
+> Only replay idempotent events. Never replay financial/on-chain events without manual verification of side-effects.
 
 ---
 
-## �🚨 Rollback Plan (Emergency Procedures)
+## 🔥 Incident Simulation & Preparedness
+
+**Purpose**: Validate incident response procedures before real emergencies.
+
+### Recommended Drills
+
+**Quarterly Kill Switch Dry-Run** (Staging):
+1. Pause webhooks via Operations panel
+2. Verify queue stops processing
+3. Send test event (should remain pending)
+4. Resume webhooks
+5. Verify event processes successfully
+
+**Semiannual Replay Exercise**:
+1. Manually fail a test webhook event
+2. Verify DLQ visibility in Operations dashboard
+3. Practice replay procedure
+4. Document time-to-recovery
+
+**Annual Full Incident Simulation**:
+- Simulate deployment failure
+- Execute rollback procedure
+- Test communication protocols
+- Review and update runbooks
+
+### Drill Checklist
+
+- [ ] All incident roles know their responsibilities
+- [ ] Kill switch accessible by on-call engineer
+- [ ] Vercel environment variable update process documented
+- [ ] Rollback git commands tested in staging
+- [ ] Communication channels (Slack/Discord) verified
+
+---
+
+## 🚨 Rollback Plan (Emergency Procedures)
 
 If a critical issue occurs in Production (especially with Core/Webhooks), follow these steps in order.
 

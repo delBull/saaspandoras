@@ -356,6 +356,12 @@ WHERE created_at > now() - interval '15 minutes';
 
 ---
 
+## Legal Disclaimer
+
+**Pandora's Platform provides infrastructure tooling and does not custody user funds nor act as a financial intermediary.** The platform facilitates the deployment and management of blockchain-based projects but does not control, hold, or transfer user assets. All on-chain transactions are executed by users directly through their self-custody wallets. Pandora's has no fiduciary relationship with users and does not provide financial advice or services subject to traditional financial regulation.
+
+---
+
 **Document Maintained By**: Pandora's Platform Team  
 **Review Cycle**: Quarterly or after major incidents  
 **Version Control**: GitHub repository `delBull/saaspandoras`
