@@ -57,3 +57,11 @@ package-lock.json
 # Internal documentation with sensitive information
 DOCUMENTACIÓN/
 README-DATA-SYNC.md
+
+# Operational & Security Documentation (Confidential)
+# These documents contain internal security details and should not be in public repos
+OPS_METRICS_V2.md
+PANDORAS_PLATFORM_SECURITY_AND_OPERATIONS_OVERVIEW.md
+SECURITY_QUESTIONNAIRE_RESPONSE.md
+WEBHOOK_SPEC.md
+DEPLOY.md
