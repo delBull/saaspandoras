@@ -14,6 +14,10 @@ import {
 
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { TransactionButton, useActiveAccount } from "thirdweb/react";
+import { prepareContractCall, getContract, defineChain } from "thirdweb";
+import { client } from "@/lib/thirdweb-client";
+import { toast } from "sonner";
 
 interface DAOSidebarProps {
     project: any;
@@ -93,9 +97,40 @@ export function DAOSidebar({
                     </div>
 
                     {needsDelegation && (
-                        <div className="p-2 bg-yellow-900/20 border border-yellow-500/30 rounded text-xs text-yellow-200 mb-2">
-                            Tienes {tokenBalance.toLocaleString()} tokens pero 0 VP.
-                            <span className="block font-bold mt-1">¡Debes delegar para votar!</span>
+                        <div className="p-3 bg-yellow-900/20 border border-yellow-500/30 rounded-xl text-xs text-yellow-200 mb-2 space-y-2">
+                            <p>Tienes {tokenBalance.toLocaleString()} tokens pero 0 VP.</p>
+                            <p className="font-bold">¡Debes delegar para votar!</p>
+                            <TransactionButton
+                                transaction={() => {
+                                    const rawChainId = Number((project as any).chainId);
+                                    const chainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
+                                    const govTokenAddress = project?.governance_token_address;
+
+                                    if (!govTokenAddress) throw new Error("No governance token found");
+
+                                    const contract = getContract({
+                                        client,
+                                        chain: defineChain(chainId),
+                                        address: govTokenAddress
+                                    });
+
+                                    return prepareContractCall({
+                                        contract,
+                                        method: "function delegate(address delegatee)",
+                                        params: [useActiveAccount()?.address || ""] // Delegate to self
+                                    });
+                                }}
+                                onTransactionSent={() => toast.info("Delegando poder de voto...")}
+                                onTransactionConfirmed={() => {
+                                    toast.success("¡Poder de voto activado!");
+                                    // ideally trigger revalidat or refetch
+                                }}
+                                onError={(err) => toast.error("Error al delegar: " + err.message)}
+                                theme="dark"
+                                className="!w-full !bg-yellow-500 !text-black !font-bold !py-2 !rounded-lg !text-xs !h-auto"
+                            >
+                                Activar mi Poder de Voto
+                            </TransactionButton>
                         </div>
                     )}
 

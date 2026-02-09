@@ -98,24 +98,35 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
                     <div className="flex items-center gap-3 mb-2">
-                        <Wallet className="w-5 h-5 text-lime-400" />
-                        <h3 className="text-zinc-400 text-sm font-medium">Tesorería</h3>
+                        <div className="p-2 bg-lime-500/10 rounded-lg">
+                            <WalletIcon className="w-5 h-5 text-lime-400" />
+                        </div>
+                        <div>
+                            <span className="text-zinc-400 text-sm font-medium">Tesorería DAO</span>
+                            <div className="flex items-center gap-2">
+                                <a
+                                    href={`https://${isBaseMainnet ? 'basescan.org' : 'sepolia.etherscan.io'}/address/${treasuryAddress}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[10px] text-zinc-500 hover:text-lime-400 transition-colors flex items-center gap-1"
+                                >
+                                    {treasuryAddress?.slice(0, 6)}...{treasuryAddress?.slice(-4)}
+                                    <ArrowUpRightIcon className="w-3 h-3" />
+                                </a>
+                            </div>
+                        </div>
                     </div>
-                    <div className="text-3xl font-bold text-white font-mono mb-2">
-                        {formattedBalance}
-                    </div>
-                    {treasuryAddress ? (
-                        <span className="text-xs text-zinc-500 break-all line-clamp-1 hover:text-zinc-300 transition-colors cursor-help" title={treasuryAddress}>
-                            {treasuryAddress.slice(0, 6)}...{treasuryAddress.slice(-4)}
-                        </span>
-                    ) : null}
-                    <div className="mt-2 flex items-center text-xs text-lime-400">
-                        <TrendingUpIcon className="w-3 h-3 mr-1" />
-                        Disponible (On-Chain)
+                    <div className="space-y-1">
+                        <span className="text-2xl font-bold text-white font-mono">{formattedBalance}</span>
+                        <p className="text-xs text-zinc-500">
+                            {isBaseMainnet ? 'Balance en USDC (Base)' : 'Balance Nativo (Sepolia)'}
+                        </p>
                     </div>
                 </div>
+            </div>
 
-                {/* DAO Members Metric */}
+            {/* DAO Members and Rewards Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {licenseContract ? (
                     <DAOMetrics licenseContract={licenseContract} />
                 ) : (
