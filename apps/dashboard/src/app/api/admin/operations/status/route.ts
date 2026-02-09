@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { db } from "@/db";
 import { webhookEvents, integrationClients } from "@/db/schema";
