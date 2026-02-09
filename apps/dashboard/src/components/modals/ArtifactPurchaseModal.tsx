@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Coins, ArrowRight, Wallet, CheckCircle, Loader2 } from 'lucide-react';
 import { useActiveAccount, TransactionButton, useReadContract } from "thirdweb/react";
-import { prepareContractCall, prepareTransaction, defineChain } from "thirdweb";
+import { prepareContractCall, prepareTransaction, defineChain, getContract } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { toast } from "sonner";
 import Link from 'next/link';
@@ -93,37 +93,82 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                             <div className="space-y-6">
                                 {/* Amount Input */}
                                 <div className="space-y-2">
-                                    <label htmlFor="artifact-amount" className="text-sm text-gray-400">Cantidad de Artefactos (Tokens)</label>
+                                    <div className="flex justify-between">
+                                        <label htmlFor="artifact-amount" className="text-sm text-gray-400">Cantidad de Artefactos (Tokens)</label>
+                                        <span className="text-xs text-lime-400">
+                                            Disponible: {phase?.stats?.remainingTokens?.toLocaleString() || '∞'}
+                                        </span>
+                                    </div>
                                     <div className="relative">
                                         <input
                                             id="artifact-amount"
                                             type="number"
                                             value={amount}
-                                            onChange={(e) => setAmount(e.target.value)}
-                                            className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-white font-mono text-lg focus:outline-none focus:border-lime-500/50 transition-colors"
+                                            onChange={(e) => {
+                                                const val = Number(e.target.value);
+                                                const max = phase?.stats?.remainingTokens || 0;
+                                                // Allow user to type, but visual warning. Or strict clamp? 
+                                                // User asked: "if they try to acquire more ... don't let them"
+                                                if (max > 0 && val > max) {
+                                                    // Strict clamp or just warning? 
+                                                    // "Don't let them" implies strict or disable button.
+                                                    // Let's warn and disable button, but maybe strict clamp input too to be safe?
+                                                    // Let's just set to max if they type more? No, that's annoying while typing "100".
+                                                    // Let's allow typing but show error.
+                                                    setAmount(e.target.value);
+                                                } else {
+                                                    setAmount(e.target.value);
+                                                }
+                                            }}
+                                            className={`w-full bg-zinc-950 border rounded-xl p-4 text-white font-mono text-lg focus:outline-none transition-colors ${Number(amount) > (phase?.stats?.remainingTokens || 0) && (phase?.stats?.remainingTokens > 0)
+                                                ? 'border-red-500/50 focus:border-red-500'
+                                                : 'border-zinc-800 focus:border-lime-500/50'
+                                                }`}
                                             placeholder="0"
                                         />
-                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-500">
-                                            {project.ticker || 'TOKENS'}
+                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                                            <button
+                                                onClick={() => setAmount(String(phase?.stats?.remainingTokens || 0))}
+                                                className="text-xs font-bold text-lime-400 hover:text-lime-300"
+                                            >
+                                                MAX
+                                            </button>
+                                            <span className="text-xs font-bold text-gray-500">
+                                                {project.ticker || 'TOKENS'}
+                                            </span>
                                         </div>
                                     </div>
+                                    {Number(amount) > (phase?.stats?.remainingTokens || 0) && (phase?.stats?.remainingTokens > 0) && (
+                                        <p className="text-xs text-red-400 mt-1">
+                                            Excedes la disponibilidad de esta fase ({phase?.stats?.remainingTokens?.toLocaleString()}).
+                                        </p>
+                                    )}
                                 </div>
 
                                 {/* Summary */}
                                 <div className="bg-zinc-800/50 rounded-xl p-4 space-y-3">
                                     <div className="flex justify-between items-center text-sm">
                                         <span className="text-gray-400">Precio por Unidad</span>
-                                        <span className="text-white font-mono">${price}</span>
+                                        <span className="text-white font-mono">{price} {(() => {
+                                            const rawChainId = Number((project as any).chainId);
+                                            const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
+                                            return safeChainId === 8453 ? 'USDC' : 'ETH';
+                                        })()}</span>
                                     </div>
                                     <div className="h-px bg-white/5" />
                                     <div className="flex justify-between items-center">
                                         <span className="text-gray-400">Total a Pagar</span>
-                                        <span className="text-lime-400 font-bold font-mono text-lg">${totalCost.toLocaleString()}</span>
+                                        <span className="text-lime-400 font-bold font-mono text-lg">{totalCost.toLocaleString()} {(() => {
+                                            const rawChainId = Number((project as any).chainId);
+                                            const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
+                                            return safeChainId === 8453 ? 'USDC' : 'ETH';
+                                        })()}</span>
                                     </div>
                                 </div>
 
                                 {/* Action */}
                                 {account ? (
+                                    // Check if Treasury is Configured
                                     // Check if Treasury is Configured
                                     (!project.treasuryAddress || project.treasuryAddress === "0x0000000000000000000000000000000000000000") ? (
                                         <div className="text-center">
@@ -135,42 +180,73 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                                             </p>
                                         </div>
                                     ) : (
-                                        <TransactionButton
-                                            transaction={() => {
-                                                // HYBRID FLOW:
-                                                // 1. User sends ETH/USDC to Project Treasury.
-                                                // 2. Oracle (Server) detects deposit and calls 'mint' on Utility Token via W2ELoom or directly if authorized.
-                                                // Since 'buy' doesn't exist on the ERC20 contract, we simulate the "Purchase" by sending funds to the Treasury.
+                                        // Validate Amount
+                                        (Number(amount) > (phase?.stats?.remainingTokens || 0) && (phase?.stats?.remainingTokens > 0)) ? (
+                                            <button disabled className="w-full bg-zinc-800 text-gray-500 font-bold py-4 rounded-xl cursor-not-allowed border border-red-500/20">
+                                                Excede Disponibilidad
+                                            </button>
+                                        ) : (
+                                            <TransactionButton
+                                                transaction={() => {
+                                                    // Determine Chain and Currency
+                                                    const rawChainId = Number((project as any).chainId);
+                                                    const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
+                                                    const isBase = safeChainId === 8453;
 
-                                                // Actual Logic for Demo:
-                                                // Scale down: 1 USD displayed = 0.001 ETH for safety in testnet.
-                                                const ethAmountToPay = totalCost * 0.001;
-                                                const weiAmount = BigInt(Math.floor(ethAmountToPay * 1e18));
+                                                    if (isBase) {
+                                                        // USDC on Base (ERC20 Transfer)
+                                                        // Price is treated as USDC (e.g. 0.1 = 0.1 USDC)
+                                                        // USDC has 6 decimals
+                                                        const usdcAmount = BigInt(Math.floor(totalCost * 1e6));
+                                                        const USDC_BASE_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 
-                                                // Prepare the Native Token Transfer (ETH)
-                                                return prepareTransaction({
-                                                    to: project.treasuryAddress,
-                                                    value: weiAmount,
-                                                    chain: defineChain(11155111), // Sepolia
-                                                    client: client
-                                                });
-                                            }}
-                                            onTransactionSent={() => {
-                                                setStep('processing');
-                                            }}
-                                            theme="dark"
-                                            onTransactionConfirmed={(tx) => {
-                                                console.log("Transaction confirmed:", tx);
-                                                handleSuccess();
-                                            }}
-                                            onError={(error) => {
-                                                console.error("Purchase failed", error);
-                                                toast.error(`Error: ${error.message}`);
-                                            }}
-                                            className="!w-full !bg-lime-400 hover:!bg-lime-500 !text-black !font-bold !py-4 !rounded-xl"
-                                        >
-                                            Adquirir Ahora ({(totalCost * 0.001).toFixed(4)} ETH)
-                                        </TransactionButton>
+                                                        const usdcContract = getContract({
+                                                            client,
+                                                            chain: defineChain(safeChainId),
+                                                            address: USDC_BASE_ADDRESS
+                                                        });
+
+                                                        return prepareContractCall({
+                                                            contract: usdcContract,
+                                                            method: "function transfer(address to, uint256 value)",
+                                                            params: [project.treasuryAddress, usdcAmount]
+                                                        });
+                                                    } else {
+                                                        // ETH on Sepolia/Other (Native Transfer)
+                                                        // Price is treated as ETH (e.g. 0.1 = 0.1 ETH)
+                                                        // ETH has 18 decimals
+                                                        const weiAmount = BigInt(Math.floor(totalCost * 1e18));
+
+                                                        return prepareTransaction({
+                                                            to: project.treasuryAddress,
+                                                            value: weiAmount,
+                                                            chain: defineChain(safeChainId),
+                                                            client: client
+                                                        });
+                                                    }
+                                                }}
+                                                onTransactionSent={() => {
+                                                    setStep('processing');
+                                                }}
+                                                theme="dark"
+                                                onTransactionConfirmed={(tx) => {
+                                                    console.log("Transaction confirmed:", tx);
+                                                    handleSuccess();
+                                                }}
+                                                onError={(error) => {
+                                                    console.error("Purchase failed", error);
+                                                    toast.error(`Error: ${error.message}`);
+                                                }}
+                                                className="!w-full !bg-lime-400 hover:!bg-lime-500 !text-black !font-bold !py-4 !rounded-xl"
+                                            >
+                                                {(() => {
+                                                    const rawChainId = Number((project as any).chainId);
+                                                    const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
+                                                    const isBase = safeChainId === 8453;
+                                                    return `Adquirir Ahora (${totalCost.toFixed(4)} ${isBase ? 'USDC' : 'ETH'})`;
+                                                })()}
+                                            </TransactionButton>
+                                        )
                                     )
                                 ) : (
                                     <button disabled className="w-full bg-zinc-700 text-gray-400 font-bold py-4 rounded-xl">

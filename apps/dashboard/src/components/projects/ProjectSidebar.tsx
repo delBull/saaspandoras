@@ -109,7 +109,10 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
       cap: 0,
       raised: 0,
       percent: 0,
-      isSoldOut: false
+      isSoldOut: false,
+      tokensAllocated: 0,
+      tokensSold: 0,
+      remainingTokens: 0
     };
 
     // UNIFIED LOGIC: Always track by Tokens First (Source of Truth) to determine Sold Out
@@ -143,8 +146,14 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
       stats.raised = inferredRaisedUSD;
 
       stats.percent = phaseCapUSD > 0 ? (inferredRaisedUSD / phaseCapUSD) * 100 : 0;
+      stats.percent = phaseCapUSD > 0 ? (inferredRaisedUSD / phaseCapUSD) * 100 : 0;
       stats.isSoldOut = currentPhaseRaisedTokens >= allocation && allocation > 0;
     }
+
+    // Add explicit token stats for Modal validation
+    stats.tokensAllocated = allocation;
+    stats.tokensSold = currentPhaseRaisedTokens;
+    stats.remainingTokens = Math.max(0, allocation - currentPhaseRaisedTokens);
 
     accumulatedTokens += allocation;
     // We don't really use accumulatedUSD for calculation anymore in this unified approach
