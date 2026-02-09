@@ -94,13 +94,19 @@ export function NFTManager() {
     // --- Functions ---
 
     useEffect(() => {
-        fetchSettings();
-        fetchAvailablePasses();
-    }, []);
+        if (account?.address) {
+            fetchSettings();
+            fetchAvailablePasses();
+        }
+    }, [account?.address]);
 
     const fetchSettings = async () => {
         try {
-            const res = await fetch("/api/settings?key=apply_gate_enabled");
+            const res = await fetch("/api/settings?key=apply_gate_enabled", {
+                headers: {
+                    "x-wallet-address": account?.address || ""
+                }
+            });
             if (res.ok) {
                 const data = await res.json();
                 setNftGateEnabled(data.value === "true");
@@ -114,7 +120,12 @@ export function NFTManager() {
 
     const fetchAvailablePasses = async () => {
         try {
-            const res = await fetch("/api/admin/nft-passes");
+            const res = await fetch("/api/admin/nft-passes", {
+                headers: {
+                    "x-wallet-address": account?.address || "",
+                    "x-thirdweb-address": account?.address || ""
+                }
+            });
             if (res.ok) {
                 const passes = await res.json();
                 // Add the Apply Pass manually if not in list
@@ -127,6 +138,8 @@ export function NFTManager() {
                 };
                 setAvailablePasses([applyPass, ...passes]);
                 console.log('✅ Loaded NFT Passes:', [applyPass, ...passes]);
+            } else {
+                console.error('❌ Failed to fetch NFT passes:', res.status, res.statusText);
             }
         } catch (e) {
             console.error('❌ Error fetching NFT passes:', e);
@@ -366,7 +379,7 @@ export function NFTManager() {
                         Tus NFT Passes Deployed
                     </h3>
                     <span className="text-xs text-zinc-500 font-mono">
-                        Total: {availablePasses.length}
+                        Adicionales: {availablePasses.filter(p => p.contractAddress !== config.applyPassNftAddress).length}
                     </span>
                 </div>
 

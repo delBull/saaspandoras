@@ -154,8 +154,12 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
       percent: 0,
       participants: 0,
       metric: price > 0 ? 'USD' : 'Tokens',
-      isSoldOut: false // Default to not sold out
+      isSoldOut: false, // Default to not sold out
+      hasStarted: false,
     };
+
+    const now = new Date();
+    stats.hasStarted = !phase.startDate || new Date(phase.startDate) <= now;
 
     // Calculate Phase Cap in Tokens (Allocation is usually reliable)
     // If allocation is 0/infinite, we can't easily calculate sold out unless we look at USD cap.
@@ -232,10 +236,6 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
               {project.description ?? 'No hay descripción disponible para este proyecto.'}
             </p>
           </SectionCard>
-
-
-          {/* Links removed from here, now displayed globally below */}
-
         </div>
       ),
     },
@@ -295,16 +295,46 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                     .map((phase: any, index: number) => {
                       // Status Logic
                       const isSoldOut = phase.stats.isSoldOut;
-                      const statusLabel = isSoldOut ? 'Agotado' : (phase.type === 'time' ? 'Tiempo' : 'Monto');
-                      const statusBadgeColor = isSoldOut ? 'bg-red-500/20 text-red-400 border border-red-500/50' : 'bg-zinc-700 text-gray-300';
-                      const cardBorderColor = isSoldOut ? 'border-red-900/30' : 'border-zinc-700/50 hover:border-lime-500/50';
-                      const titleColor = isSoldOut ? 'text-zinc-500' : 'text-white group-hover:text-lime-400';
+                      const hasStarted = phase.stats.hasStarted;
+                      const isNotPaused = phase.isActive !== false;
+
+                      let statusLabel = 'Monto';
+                      if (isSoldOut) statusLabel = 'Agotado';
+                      else if (!hasStarted) statusLabel = 'Próximamente';
+                      else if (!isNotPaused) statusLabel = 'Pausado';
+                      else if (phase.type === 'time') statusLabel = 'Tiempo';
+
+                      const isClickable = hasStarted && !isSoldOut && isNotPaused;
+
+                      const statusBadgeColor = isSoldOut
+                        ? 'bg-red-500/20 text-red-400 border border-red-500/50'
+                        : !hasStarted
+                          ? 'bg-blue-500/20 text-blue-400 border border-blue-500/50'
+                          : !isNotPaused
+                            ? 'bg-yellow-500/20 text-yellow-400'
+                            : 'bg-zinc-700 text-gray-300';
+
+                      const cardBorderColor = isSoldOut
+                        ? 'border-red-900/30'
+                        : !hasStarted
+                          ? 'border-blue-900/30'
+                          : isClickable
+                            ? 'border-zinc-700/50 hover:border-lime-500/50'
+                            : 'border-zinc-700/50';
+
+                      const titleColor = isSoldOut
+                        ? 'text-zinc-500'
+                        : !hasStarted
+                          ? 'text-zinc-400'
+                          : isClickable
+                            ? 'text-white group-hover:text-lime-400'
+                            : 'text-zinc-400';
 
                       return (
                         <div
                           key={`active-${index}`}
                           onClick={() => {
-                            if (!isSoldOut) {
+                            if (isClickable) {
                               setSelectedPhase(phase);
                               setIsArtifactModalOpen(true);
                             }
@@ -312,12 +342,12 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                           role="button"
                           tabIndex={0}
                           onKeyDown={(e) => {
-                            if ((e.key === 'Enter' || e.key === ' ') && !isSoldOut) {
+                            if ((e.key === 'Enter' || e.key === ' ') && isClickable) {
                               setSelectedPhase(phase);
                               setIsArtifactModalOpen(true);
                             }
                           }}
-                          className={`bg-zinc-800/50 p-4 rounded-lg border ${cardBorderColor} ${!isSoldOut ? 'cursor-pointer hover:bg-zinc-800 group' : 'cursor-not-allowed opacity-75'} transition-all`}
+                          className={`bg-zinc-800/50 p-4 rounded-lg border ${cardBorderColor} ${isClickable ? 'cursor-pointer hover:bg-zinc-800 group' : 'cursor-not-allowed opacity-75'} transition-all`}
                         >
                           <h4 className={`font-bold mb-2 flex items-center justify-between transition-colors ${titleColor}`}>
                             <div className="flex items-center gap-2">
@@ -340,7 +370,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                             </div>
                             <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden mb-2">
                               <div
-                                className={`${isSoldOut ? 'bg-red-500' : 'bg-lime-500'} h-full rounded-full transition-all duration-1000`}
+                                className={`${isSoldOut ? 'bg-red-500' : (!hasStarted ? 'bg-blue-500' : 'bg-lime-500')} h-full rounded-full transition-all duration-1000`}
                                 style={{ width: `${phase.stats.percent}%` }}
                               />
                             </div>
@@ -380,17 +410,19 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                             {/* Status */}
                             <div>
                               <span className="text-zinc-500 block text-xs">Estado</span>
-                              <span className={`${isSoldOut ? 'text-red-400' : 'text-lime-400'}`}>{isSoldOut ? 'Agotado' : 'Activo'}</span>
+                              <span className={`${isSoldOut ? 'text-red-400' : (!hasStarted ? 'text-blue-400' : 'text-lime-400')}`}>
+                                {isSoldOut ? 'Agotado' : (!hasStarted ? 'Próximamente' : 'Activo')}
+                              </span>
                             </div>
                           </div>
                         </div>
                       )
                     })}
-
-                  {project.w2eConfig.phases.filter((p: any) => p.isActive).length === 0 && (
-                    <p className="text-zinc-400 italic text-sm">No hay fases activas en este momento.</p>
-                  )}
                 </div>
+
+                {project.w2eConfig.phases.filter((p: any) => p.isActive).length === 0 && (
+                  <p className="text-zinc-400 italic text-sm">No hay fases activas en este momento.</p>
+                )}
 
                 {/* Botón Historial */}
                 {project.w2eConfig.phases.some((p: any) => !p.isActive) && (
@@ -452,9 +484,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
             ) : (
               <p className="text-zinc-400">No hay fases de artefactos definidas.</p>
             )}
-          </div >
-
-
+          </div>
 
           <ArtifactPurchaseModal
             isOpen={isArtifactModalOpen}
@@ -463,8 +493,6 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
             utilityContract={{ address: project.utilityContractAddress }}
             phase={selectedPhase}
           />
-
-
 
           {/* Estructura de Recompensa Recurrente */}
           <SectionCard title="Estructura de Recompensa Recurrente" icon={Star}>
@@ -481,11 +509,10 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                 // Formato JSON: mostrar estructura detallada
                 return (
                   <div className="space-y-3">
-                    {/* ... (Implement specific reward type rendering if needed, for now just basic check) ... */}
                     {Object.entries(rewardsData).map(([key, value]) => {
                       if (key.includes('Enabled') && value === true) {
                         const detailKey = key.replace('Enabled', 'Details');
-                        const detailValue = rewardsData[detailKey];
+                        const detailValue = (rewardsData as any)[detailKey];
                         return (
                           <div key={key} className="p-3 bg-zinc-700/50 rounded-lg">
                             <p className="font-semibold text-white text-sm">{key.replace('Enabled', '')}</p>
@@ -506,7 +533,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
               }
             })()}
           </SectionCard>
-        </div >
+        </div>
       ),
     },
     // --- TAB 2: ESTRATEGIA Y SOSTENIBILIDAD (EL PLAN DE NEGOCIO) ---
