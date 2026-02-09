@@ -15,6 +15,12 @@ const MAX_RETRIES = 5;
  */
 export class WebhookProcessor {
     static async processPendingEvents(batchSize = 10) {
+        // 🔴 KILL SWITCH: Level 1 Rollback Mechanism
+        if (process.env.WEBHOOKS_ENABLED === 'false') {
+            console.warn("🛑 Webhooks are DISABLED via WEBHOOKS_ENABLED=false. Skipping processing.");
+            return;
+        }
+
         console.log("🔄 Webhook Processor: Checking for pending events...");
 
         // 1. Fetch pending events ready for retry
