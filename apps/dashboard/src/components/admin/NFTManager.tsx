@@ -13,6 +13,7 @@ import { PANDORAS_KEY_ABI } from "@/lib/pandoras-key-abi";
 import { CreateNFTPassModal } from "./CreateNFTPassModal";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@saasfly/ui/switch";
+import { Badge } from "@/components/ui/badge";
 
 // Extend the ABI to include missing standard items + adminMint
 const EXTENDED_ABI = [
@@ -251,16 +252,26 @@ export function NFTManager() {
                         Gestión de Accesos
                     </h2>
                     <p className="text-zinc-400 text-sm">
-                        Administra el pase del sistema y crea nuevos contratos de acceso.
+                        Administra el pase del sistema y crea nuevos contratos de acceso para tu ecosistema.
                     </p>
                 </div>
-                <Button
-                    onClick={() => setShowCreateWizard(true)}
-                    className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white"
-                >
-                    <Wallet className="w-4 h-4 mr-2" />
-                    Crear Nuevo NFT Pass
-                </Button>
+                <div className="flex gap-2">
+                    <Button
+                        onClick={() => fetchAvailablePasses()}
+                        variant="outline"
+                        className="border-zinc-700 text-zinc-400 hover:text-white"
+                        title="Refrescar lista"
+                    >
+                        <Loader2 className={`w-4 h-4 ${loadingPasses ? 'animate-spin' : ''}`} />
+                    </Button>
+                    <Button
+                        onClick={() => setShowCreateWizard(true)}
+                        className="bg-lime-500 hover:bg-lime-400 text-black font-bold"
+                    >
+                        <Wallet className="w-4 h-4 mr-2" />
+                        Crear Nuevo NFT Pass
+                    </Button>
+                </div>
             </div>
 
             <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6 relative overflow-hidden">
@@ -334,7 +345,10 @@ export function NFTManager() {
 
                     <div className="flex gap-2">
                         <Button
-                            onClick={() => setShowAirdropModal(true)}
+                            onClick={() => {
+                                setSelectedPassAddress(config.applyPassNftAddress);
+                                setShowAirdropModal(true);
+                            }}
                             className="bg-lime-500 text-black hover:bg-lime-400"
                         >
                             <Send className="w-4 h-4 mr-2" />
@@ -342,6 +356,79 @@ export function NFTManager() {
                         </Button>
                     </div>
                 </div>
+            </div>
+
+            {/* List of Other NFT Passes */}
+            <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                        <ShieldCheck className="w-5 h-5 text-lime-500" />
+                        Tus NFT Passes Deployed
+                    </h3>
+                    <span className="text-xs text-zinc-500 font-mono">
+                        Total: {availablePasses.length}
+                    </span>
+                </div>
+
+                {loadingPasses ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className="bg-zinc-900/40 border border-zinc-800 rounded-xl p-4 h-32 animate-pulse" />
+                        ))}
+                    </div>
+                ) : availablePasses.length <= 1 ? (
+                    <div className="bg-zinc-900/20 border border-dashed border-zinc-800 rounded-xl p-12 text-center">
+                        <div className="w-12 h-12 bg-zinc-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Wallet className="w-6 h-6 text-zinc-600" />
+                        </div>
+                        <p className="text-zinc-500 text-sm">No has creado NFT Passes adicionales aún.</p>
+                        <Button
+                            variant="link"
+                            className="text-lime-500 hover:text-lime-400 mt-2"
+                            onClick={() => setShowCreateWizard(true)}
+                        >
+                            Comienza creando uno ahora →
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {availablePasses.map((pass) => {
+                            // Skip the system pass in the secondary list as it's already shown above
+                            if (pass.contractAddress === config.applyPassNftAddress) return null;
+
+                            return (
+                                <div key={pass.id} className="group bg-zinc-900/60 border border-zinc-800 hover:border-lime-500/30 rounded-xl p-5 transition-all hover:shadow-xl hover:shadow-lime-500/5">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="w-10 h-10 bg-gradient-to-br from-zinc-800 to-black rounded-lg flex items-center justify-center border border-zinc-700 text-lime-500 font-bold group-hover:border-lime-500/50 transition-colors">
+                                            {pass.symbol.charAt(0)}
+                                        </div>
+                                        <Badge variant="outline" className="bg-black/50 text-[10px] border-zinc-700 text-zinc-400">
+                                            {pass.symbol}
+                                        </Badge>
+                                    </div>
+
+                                    <h4 className="font-bold text-white mb-1 truncate">{pass.title}</h4>
+                                    <p className="text-xs text-zinc-500 font-mono mb-4 truncate" title={pass.contractAddress}>
+                                        {pass.contractAddress.substring(0, 10)}...{pass.contractAddress.substring(34)}
+                                    </p>
+
+                                    <div className="flex gap-2">
+                                        <Button
+                                            onClick={() => {
+                                                setSelectedPassAddress(pass.contractAddress);
+                                                setShowAirdropModal(true);
+                                            }}
+                                            className="w-full bg-zinc-800 hover:bg-lime-500 hover:text-black border border-zinc-700 text-sm py-1 h-8 transition-all"
+                                        >
+                                            <Send className="w-3 h-3 mr-2" />
+                                            Airdrop
+                                        </Button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
 
             <Dialog open={showAirdropModal} onOpenChange={setShowAirdropModal}>
@@ -475,7 +562,8 @@ export function NFTManager() {
                     // Refresh contract stats after creation
                     refetchSupply();
                     refetchBalance();
-                    // Note: If you have a projects list in this component, trigger its refresh here
+                    // Refresh available passes list
+                    fetchAvailablePasses();
                 }}
             />
 
