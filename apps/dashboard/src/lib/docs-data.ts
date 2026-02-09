@@ -118,6 +118,66 @@ After deployment, use the **Admin Operations Panel** to:
 - Read [Detailed Documentation](#platform-features)
 - Contact [Support](#support)
 `
+      },
+      {
+        id: "creator-journey",
+        title: "The Creator Journey",
+        content: `# The Creator's Journey
+
+Pandora's is designed to transform individual projects into sustainable, community-driven ecosystems.
+
+## From Vision to Protocol
+
+As a creator, your journey follows a strategic path from initial design to decentralized growth:
+
+### 1. Defining Utility
+Before deploying, identify the core value your protocol provides. Is it access to software? Governance power? Revenue sharing? A seat in a private community? 
+
+### 2. Community Building (The Seed)
+Use the **Alpha/Founder Phases** to attract your core believers. These early supporters aren't just "buyers"; they are the foundation of your future DAO.
+
+### 3. Progressive Decentralization
+Start with a centralized vision and slowly transition control to your members via **DAO Governance**. Use the Treasury to fund community-led initiatives, rewarding those who build alongside you.
+
+### 4. Sustainable Funding
+Phased sales ensure your project remains funded at every milestone. Instead of a single "dump" sale, you grow your treasury as you deliver value.
+
+## Achieving Your Goals
+- ✅ **Monetization**: Turn your labor into liquid value through NFT licenses.
+- ✅ **Autonomy**: Deploy immutable rules that protect your project from platform risk.
+- ✅ **Scale**: Leverage the Referrals and Gamification engines to grow organically.
+`
+      },
+      {
+        id: "member-journey",
+        title: "The Member Journey",
+        content: `# The Member's Journey
+
+In the Pandora's ecosystem, you are more than a consumer—you are a stakeholder and a contributor.
+
+## Your Role in the Community
+
+### 1. Discovery & Alignment
+Find protocols that align with your interests or values. Look for projects with clear utility and transparent roadmaps.
+
+### 2. Holding with Purpose
+Owning an **NFT License** is your "Proof of Believer." It grants you access to the protocol's utility and the right to participate in its future.
+
+### 3. Active Contribution (Labor)
+Participating in a protocol's success earns you rewards:
+- **Governance**: Vote on proposals to shape the protocol's direction.
+- **Referrals**: Bring new members and earn a share of the value created.
+- **Gamification**: Climb the ranks to unlock higher-tier perks and lower fees.
+
+## Rewards for Participation
+Tokens and XP are the mirrors of your contribution:
+- **Direct Rewards**: Protocol-specific tokens or fee rebates.
+- **Social Capital**: Ranks and badges that prove your expertise and loyalty.
+- **Ecosystem Perks**: Early access to every new protocol launched on Pandora's.
+
+## Value-Driven Participation
+The more value you help create for the community (through recruitment, feedback, or governance), the more the system rewards you. This is **Circular Utility**.
+`
       }
     ]
   },
