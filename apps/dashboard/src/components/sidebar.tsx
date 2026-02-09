@@ -25,7 +25,7 @@ import { ethereum } from "thirdweb/chains";
 import { WalletBalance, NetworkSelector, ConnectWalletButton } from "@/components/wallet";
 import { SUPPORTED_NETWORKS, DEFAULT_NETWORK } from "@/config/networks";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
-import { Hash, PackageCheckIcon } from "lucide-react";
+import { Hash, PackageCheckIcon, BookOpen } from "lucide-react";
 import { usePathname } from 'next/navigation';
 import * as Tooltip from "@radix-ui/react-tooltip";
 
@@ -400,6 +400,14 @@ export function Sidebar({
           },
         ]
         : []),
+      {
+        label: "Whitepaper",
+        href: "/whitepaper",
+        icon: (
+          <BookOpen className="h-5 w-5 shrink-0 text-gray-400" />
+        ),
+        disabled: false,
+      },
     ],
     [isAdmin, account]
   );
