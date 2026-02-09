@@ -53,15 +53,15 @@ export async function GET(req: NextRequest) {
             .from(webhookEvents)
             .where(gte(webhookEvents.updatedAt, oneHourAgo));
 
-        const errorRate = totalRecent[0]?.count > 0
-            ? (recentFailures[0]?.count / totalRecent[0]?.count) * 100
-            : 0;
+        const totalRecentCount = totalRecent[0]?.count || 0;
+        const recentFailCount = recentFailures[0]?.count || 0;
+        const errorRate = totalRecentCount > 0 ? (recentFailCount / totalRecentCount) * 100 : 0;
 
         return NextResponse.json({
             webhooksEnabled,
             pendingEvents: Number(pendingCount[0]?.count || 0),
             failedEvents: Number(failedCount[0]?.count || 0),
-            recentFailures: Number(recentFailures[0]?.count || 0),
+            recentFailures: Number(recentFailCount),
             lastProcessedAt: lastProcessed[0]?.updatedAt || null,
             errorRate: Math.round(errorRate * 100) / 100
         });
