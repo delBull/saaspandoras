@@ -215,21 +215,19 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
               </div>
 
               {hasAccess ? (
-                <div className="space-y-3 mb-4">
-                  <div className="flex gap-2 w-full mb-4">
-                    <div className="w-full bg-zinc-800/80 border border-lime-500/50 text-lime-400 py-3 px-6 rounded-lg flex items-center justify-center gap-2">
-                      <Unlock className="w-3 h-3" />
-                      Acceso Verificado
-                    </div>
-                    <button
-                      onClick={() => document.getElementById('sidebar-phases')?.scrollIntoView({ behavior: 'smooth' })}
-                      className="w-full py-1 text-xs text-zinc-500 hover:text-lime-400 hover:bg-zinc-800/50 rounded flex items-center justify-center gap-1 transition-colors"
-                    >
-                      <span>Ver Fases</span>
-                      <ArrowDown className="w-3 h-3" />
-                    </button>
+                <div className="space-y-2 w-full mb-4">
+                  <div className="w-full bg-zinc-800/80 border border-lime-500/50 text-lime-400 py-3 px-6 rounded-lg flex items-center justify-center gap-2">
+                    <Unlock className="w-3 h-3" />
+                    Acceso Verificado
                   </div>
-                  <Link href={`/projects/${project.slug}/dao`} className="w-full hover:bg-zinc-700/20 text-white py-3 px-6 rounded-lg flex items-center justify-center gap-2 transition-colors mb-4">
+                  <button
+                    onClick={() => document.getElementById('sidebar-phases')?.scrollIntoView({ behavior: 'smooth' })}
+                    className="w-full py-1 text-xs text-zinc-500 hover:text-lime-400 hover:bg-zinc-800/50 rounded flex items-center justify-center gap-1 transition-colors"
+                  >
+                    <span>Ver Fases</span>
+                    <ArrowDown className="w-3 h-3" />
+                  </button>
+                  <Link href={`/projects/${project.slug}/dao`} className="w-full hover:bg-zinc-700/20 text-white py-3 px-6 rounded-lg flex items-center justify-center gap-2 transition-colors">
                     <Shield className="w-3 h-3 text-sm text-lime-400" />
                     Ir al DAO
                   </Link>

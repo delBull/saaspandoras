@@ -2,9 +2,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { EyeIcon, ImageIcon } from "lucide-react";
 import type { Project } from "../../../hooks/applicants/useApplicantsData";
-import { useWalletBalance } from "thirdweb/react";
+import { useWalletBalance, useReadContract } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
 import { config } from "@/config";
+import { getContract } from "thirdweb";
 
 interface ProjectCardProps {
   project: Project;
@@ -21,17 +22,74 @@ export function ProjectCard({ project, variant = 'approved', gridColumns = 3 }: 
   const rawChainId = Number((project as any).chainId);
   const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
 
-  // Real Data Hook
+  // License Contract Setup
+  const isValidAddress = (addr: string | null | undefined): boolean =>
+    !!addr && addr.startsWith("0x") && addr.length === 42 && addr !== "0x0000000000000000000000000000000000000000";
+
+  const licenseContract = isValidAddress((project as any).licenseContractAddress) ? getContract({
+    client,
+    chain: defineChain(safeChainId),
+    address: (project as any).licenseContractAddress!
+  }) : undefined;
+
+  const dummyContract = getContract({
+    client,
+    chain: defineChain(safeChainId),
+    address: "0x0000000000000000000000000000000000000000"
+  });
+
+  // Real Data Hooks
   const { data: treasuryBalance } = useWalletBalance({
     client,
     chain: defineChain(safeChainId),
     address: (project as any).treasuryAddress || (project as any).treasuryContractAddress || "",
   });
 
+  const { data: totalSupply } = useReadContract({
+    contract: licenseContract || dummyContract,
+    queryOptions: { enabled: !!licenseContract },
+    method: "function totalSupply() view returns (uint256)",
+    params: []
+  });
+
+  // Calculate funding based on phases and real data
+  const config = (project as any).w2eConfig;
+  const price = Number(config?.licenseToken?.price ?? 0);
+  const maxSupply = Number(config?.licenseToken?.maxSupply ?? 0);
   const targetAmount = Number(project.targetAmount ?? 0);
-  // Use real balance if available, otherwise fallback to DB text (or 0)
-  const raisedAmount = treasuryBalance ? Number(treasuryBalance.displayValue) : Number(project.raisedAmount ?? 0);
-  const progress = targetAmount > 0 ? Math.min((raisedAmount / targetAmount) * 100, 100) : 0;
+
+  const dbRaised = Number((project as any).raised_amount ?? 0);
+  const raisedAmount = treasuryBalance ? Number(treasuryBalance.displayValue) : dbRaised;
+  const currentSupply = totalSupply ? Number(totalSupply) : 0;
+
+  // Financial Progress
+  const financialProgress = targetAmount > 0 ? Math.min((raisedAmount / targetAmount) * 100, 100) : 0;
+
+  // Token Progress (For Free Mints)
+  const tokenProgress = maxSupply > 0 ? Math.min((currentSupply / maxSupply) * 100, 100) : 0;
+
+  // Effective Progress (Use Token Progress if Price is 0 or it's higher)
+  const progress = price === 0 ? tokenProgress : Math.max(financialProgress, tokenProgress);
+
+  // Find actual active phase
+  const allPhases = config?.phases || [];
+  let accumulatedTokens = 0;
+  let activePhaseData = null;
+
+  for (const phase of allPhases) {
+    const allocation = Number(phase.tokenAllocation || 0);
+    const phaseStartTokens = accumulatedTokens;
+    const currentPhaseRaisedTokens = Math.max(0, Math.min(allocation, currentSupply - phaseStartTokens));
+    const isSoldOut = currentPhaseRaisedTokens >= allocation && allocation > 0;
+
+    if (!isSoldOut && !activePhaseData) {
+      activePhaseData = phase;
+    }
+
+    accumulatedTokens += allocation;
+  }
+
+  const activePhase = activePhaseData || allPhases[0];
 
   const isPending = project.status === 'pending';
 
@@ -142,19 +200,14 @@ export function ProjectCard({ project, variant = 'approved', gridColumns = 3 }: 
           {!isPending && project.status !== 'pending' && (
             <div className="mb-4">
               {/* Dynamic Phase Info */}
-              {(() => {
-                const config = (project as any).w2eConfig;
-                const activePhase = config?.phases?.find((p: any) => p.isActive);
-                const price = activePhase?.tokenPrice ?? config?.tokenomics?.price;
-                return (activePhase || price) ? (
-                  <div className="flex justify-between items-center text-xs mb-2 bg-zinc-800/50 p-2 rounded-lg border border-zinc-700/50">
-                    <span className="text-gray-400">{activePhase?.name ?? "Venta Pública"}</span>
-                    <span className="font-mono font-bold text-lime-400">
-                      {price ? `$${price}` : 'N/A'}
-                    </span>
-                  </div>
-                ) : null;
-              })()}
+              {activePhase ? (
+                <div className="flex justify-between items-center text-xs mb-2 bg-zinc-800/50 p-2 rounded-lg border border-zinc-700/50">
+                  <span className="text-gray-400">{activePhase.name ?? "Venta Pública"}</span>
+                  <span className="font-mono font-bold text-lime-400">
+                    {activePhase.tokenPrice ? `$${activePhase.tokenPrice}` : 'Gratis'}
+                  </span>
+                </div>
+              ) : null}
 
               <div className="flex justify-between items-center text-xs text-gray-600 dark:text-gray-400 mb-2">
                 <span>Progreso de Financiamiento</span>
