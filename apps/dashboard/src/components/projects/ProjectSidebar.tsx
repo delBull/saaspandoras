@@ -221,14 +221,13 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                       <Unlock className="w-3 h-3" />
                       Acceso Verificado
                     </div>
-                    <SimpleTooltip content="Ir a Fases de Venta">
-                      <button
-                        onClick={() => document.getElementById('sidebar-phases')?.scrollIntoView({ behavior: 'smooth' })}
-                        className="px-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 rounded-lg flex items-center justify-center transition-colors"
-                      >
-                        <ArrowDown className="w-5 h-5" />
-                      </button>
-                    </SimpleTooltip>
+                    <button
+                      onClick={() => document.getElementById('sidebar-phases')?.scrollIntoView({ behavior: 'smooth' })}
+                      className="w-full py-1 text-xs text-zinc-500 hover:text-lime-400 hover:bg-zinc-800/50 rounded flex items-center justify-center gap-1 transition-colors"
+                    >
+                      <span>Ver Fases</span>
+                      <ArrowDown className="w-3 h-3" />
+                    </button>
                   </div>
                   <Link href={`/projects/${project.slug}/dao`} className="w-full hover:bg-zinc-700/20 text-white py-3 px-6 rounded-lg flex items-center justify-center gap-2 transition-colors mb-4">
                     <Shield className="w-3 h-3 text-sm text-lime-400" />
@@ -236,22 +235,21 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                   </Link>
                 </div>
               ) : project.deploymentStatus === 'deployed' && licenseContract && account ? (
-                <div className="flex gap-2 w-full mb-4">
+                <div className="space-y-2 w-full mb-4">
                   <button
                     onClick={() => setIsAccessModalOpen(true)}
-                    className="flex-1 bg-lime-400 hover:bg-lime-500 text-black font-bold py-3 px-2 rounded-lg flex items-center justify-center gap-1 shadow-[0_0_15px_rgba(163,230,53,0.4)] text-sm whitespace-nowrap transition-all hover:scale-[1.02]"
+                    className="w-full bg-lime-400 hover:bg-lime-500 text-black font-bold py-3 px-2 rounded-lg flex items-center justify-center gap-1 shadow-[0_0_15px_rgba(163,230,53,0.4)] text-sm whitespace-nowrap transition-all hover:scale-[1.02]"
                   >
                     <Ticket className="w-4 h-4" />
                     <span>Obtener Acceso</span>
                   </button>
-                  <SimpleTooltip content="Ir a Fases de Venta">
-                    <button
-                      onClick={() => document.getElementById('sidebar-phases')?.scrollIntoView({ behavior: 'smooth' })}
-                      className="px-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 rounded-lg flex items-center justify-center transition-colors"
-                    >
-                      <ArrowDown className="w-5 h-5" />
-                    </button>
-                  </SimpleTooltip>
+                  <button
+                    onClick={() => document.getElementById('sidebar-phases')?.scrollIntoView({ behavior: 'smooth' })}
+                    className="w-full py-1 text-xs text-zinc-500 hover:text-white hover:bg-zinc-800/50 rounded flex items-center justify-center gap-1 transition-colors"
+                  >
+                    <span>Ver Fases</span>
+                    <ArrowDown className="w-3 h-3" />
+                  </button>
                 </div>
               ) : (
                 <button

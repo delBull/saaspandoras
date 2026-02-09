@@ -142,4 +142,26 @@ export class WebhookProcessor {
 
         console.error(`💀 Event ${eventId} moved to DLQ (Failed)`);
     }
+
+    /**
+     * Manually retry a failed event (Replay)
+     * Resets status to 'pending' and retries count to 0.
+     */
+    static async retryEvent(eventId: string) {
+        console.log(`🔄 Manual Replay requested for event ${eventId}`);
+
+        await db.update(webhookEvents)
+            .set({
+                status: 'pending',
+                attempts: 0,
+                nextRetryAt: new Date(), // Immediate retry
+                updatedAt: new Date()
+            })
+            .where(eq(webhookEvents.id, eventId));
+
+        console.log(`✅ Event ${eventId} reset to pending.`);
+
+        // Optionally trigger processing immediately
+        await this.processPendingEvents();
+    }
 }
