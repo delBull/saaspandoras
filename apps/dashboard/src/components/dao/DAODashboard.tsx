@@ -44,11 +44,16 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
     const { data: nativeBalance } = useWalletBalance({
         client,
         chain: defineChain(safeChainId),
-        address: project.treasuryAddress || project.treasuryContractAddress || "",
-        queryOptions: { enabled: !isBaseMainnet }
+        address: !isBaseMainnet ? (project.treasuryAddress || project.treasuryContractAddress || "") : "",
     });
 
     // Hook for USDC Balance (Base)
+    const dummyContract = getContract({
+        client,
+        chain: defineChain(safeChainId),
+        address: "0x0000000000000000000000000000000000000000"
+    });
+
     const usdcContract = isBaseMainnet ? getContract({
         client,
         chain: defineChain(safeChainId),
@@ -56,7 +61,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
     }) : undefined;
 
     const { data: usdcBalance } = useReadContract({
-        contract: usdcContract,
+        contract: usdcContract || dummyContract,
         method: "function balanceOf(address) view returns (uint256)",
         params: [project.treasuryAddress || project.treasuryContractAddress || "0x0000000000000000000000000000000000000000"],
         queryOptions: { enabled: isBaseMainnet }
