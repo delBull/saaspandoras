@@ -28,7 +28,7 @@ const nextConfig = {
     ],
   },
 
-  transpilePackages: ["@pandoras/gamification", "@pandoras/protocol-deployer", "ox"],
+  transpilePackages: ["@pandoras/gamification", "@pandoras/protocol-deployer", "ox", "@pandoras/core-webhooks"],
 
   webpack: (config, { isServer }) => {
     if (!isServer) {
