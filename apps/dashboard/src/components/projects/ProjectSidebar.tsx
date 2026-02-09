@@ -348,23 +348,54 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
 
                   // Status Logic
                   const now = new Date();
-                  let status = 'active'; // Default
-                  let statusLabel = 'Activo';
-                  let statusColor = 'bg-lime-500 text-black';
+                  let status = 'inactive'; // Default: not active
+                  let statusLabel = 'No Disponible';
+                  let statusColor = 'bg-zinc-600 text-gray-300';
 
-                  // Check Date
-                  if (phase.startDate && new Date(phase.startDate) > now) {
-                    status = 'coming_soon';
-                    statusLabel = 'Próximamente';
-                    statusColor = 'bg-yellow-500 text-black';
-                  } else if (phase.isActive === false) {
-                    status = 'paused';
-                    statusLabel = 'Próximamente';
-                    statusColor = 'bg-zinc-600 text-gray-300';
-                  } else if (phase.stats?.isSoldOut) {
+                  // Smart Phase Activation Logic
+                  // A phase is active if:
+                  // 1. It has started (startDate <= now)
+                  // 2. It hasn't ended (endDate >= now OR no endDate)
+                  // 3. It's not paused (isActive !== false)
+                  // 4. Previous phase is sold out (or this is the first phase)
+
+                  const hasStarted = !phase.startDate || new Date(phase.startDate) <= now;
+                  const hasEnded = phase.endDate && new Date(phase.endDate) < now;
+                  const isNotPaused = phase.isActive !== false;
+                  const isSoldOut = phase.stats?.isSoldOut || false;
+
+                  // Check if previous phase exists and is sold out
+                  const phaseIndex = phasesWithStats.findIndex((p: any) => p.id === phase.id);
+                  const previousPhase = phaseIndex > 0 ? phasesWithStats[phaseIndex - 1] : null;
+                  const previousIsSoldOut = previousPhase ? (previousPhase.stats?.isSoldOut || false) : true; // First phase always passes
+
+                  // Determine status
+                  if (isSoldOut) {
                     status = 'sold_out';
                     statusLabel = 'Agotado';
                     statusColor = 'bg-red-500/20 text-red-400 border border-red-500/50';
+                  } else if (!isNotPaused) {
+                    status = 'paused';
+                    statusLabel = 'Pausado';
+                    statusColor = 'bg-yellow-500/20 text-yellow-400';
+                  } else if (!hasStarted) {
+                    status = 'coming_soon';
+                    statusLabel = 'Próximamente';
+                    statusColor = 'bg-blue-500/20 text-blue-400';
+                  } else if (hasEnded) {
+                    status = 'ended';
+                    statusLabel = 'Finalizado';
+                    statusColor = 'bg-zinc-600 text-gray-400';
+                  } else if (!previousIsSoldOut) {
+                    // Current phase has started, but previous phase not sold out yet
+                    status = 'waiting';
+                    statusLabel = 'Esperando';
+                    statusColor = 'bg-orange-500/20 text-orange-400';
+                  } else {
+                    // All conditions met: phase is ACTIVE
+                    status = 'active';
+                    statusLabel = 'Activo';
+                    statusColor = 'bg-lime-500 text-black';
                   }
 
                   const isActive = status === 'active';
