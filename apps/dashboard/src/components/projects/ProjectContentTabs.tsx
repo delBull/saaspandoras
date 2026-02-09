@@ -141,7 +141,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
   // Actually, simplest is to track "Sold Tokens" for everything?
   // But legacy logic tracks USD.
 
-  let accumulatedUSD = 0;
+  // let accumulatedUSD = 0; // Unused
   let accumulatedTokens = 0;
 
   const phasesWithStats = allPhases.map((phase: any) => {
