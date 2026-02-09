@@ -153,29 +153,27 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
       raised: 0,
       percent: 0,
       participants: 0,
-      metric: 'USD',
+      metric: price > 0 ? 'USD' : 'Tokens',
       isSoldOut: false // Default to not sold out
     };
 
+    // Calculate Phase Cap in Tokens (Allocation is usually reliable)
+    // If allocation is 0/infinite, we can't easily calculate sold out unless we look at USD cap.
+
+    // Calculate Raised Tokens using Total Supply (On-chain Truth)
+    const phaseStartTokens = accumulatedTokens;
+    const currentPhaseRaisedTokens = Math.max(0, Math.min(allocation, totalSupply - phaseStartTokens));
+
+    stats.participants = currentPhaseRaisedTokens;
+
     if (price === 0) {
       // Free Mint -> Track by Tokens
-      stats.metric = 'Tokens';
-      stats.cap = allocation; // Cap in Tokens
-      // Determine raised tokens for this phase
-      const phaseStart = accumulatedTokens;
-      const currentPhaseRaisedTokens = Math.max(0, Math.min(allocation, totalSupply - phaseStart));
-
+      stats.cap = allocation;
       stats.raised = currentPhaseRaisedTokens;
       stats.percent = allocation > 0 ? (currentPhaseRaisedTokens / allocation) * 100 : 0;
-      stats.participants = currentPhaseRaisedTokens; // 1 token = 1 participant usually
-
-      // Sold Out Logic
       stats.isSoldOut = currentPhaseRaisedTokens >= allocation && allocation > 0;
-
-      accumulatedTokens += allocation;
     } else {
-      // Paid Mint -> Track by USD
-      stats.metric = 'USD';
+      // Paid Mint -> Display in USD, but Track Logic by Tokens (to match Sidebar)
       let phaseCapUSD = 0;
       if (phase.type === 'amount') {
         phaseCapUSD = Number(phase.limit);
@@ -184,19 +182,16 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
       }
       stats.cap = phaseCapUSD;
 
-      const phaseStart = accumulatedUSD;
-      const currentPhaseRaisedUSD = Math.max(0, Math.min(phaseCapUSD, fundsRaised - phaseStart));
+      // Infer USD raised from tokens (Stable)
+      const inferredRaisedUSD = currentPhaseRaisedTokens * price;
+      stats.raised = inferredRaisedUSD;
+      stats.percent = phaseCapUSD > 0 ? (inferredRaisedUSD / phaseCapUSD) * 100 : 0;
 
-      stats.raised = currentPhaseRaisedUSD;
-      stats.percent = phaseCapUSD > 0 ? (currentPhaseRaisedUSD / phaseCapUSD) * 100 : 0;
-      // Estimate participants
-      stats.participants = price > 0 ? Math.floor(currentPhaseRaisedUSD / price) : 0;
-
-      // Sold Out Logic
-      stats.isSoldOut = currentPhaseRaisedUSD >= phaseCapUSD && phaseCapUSD > 0;
-
-      accumulatedUSD += phaseCapUSD;
+      // Sold Out Logic (Token based)
+      stats.isSoldOut = currentPhaseRaisedTokens >= allocation && allocation > 0;
     }
+
+    accumulatedTokens += allocation;
 
     return {
       ...phase,
@@ -469,31 +464,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
             phase={selectedPhase}
           />
 
-          {/* Fases de Venta (Deployment Config) */}
-          {
-            project.w2eConfig?.phases && project.w2eConfig.phases.length > 0 && (
-              <SectionCard title="Fases de Venta Activas" icon={Crown}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {project.w2eConfig.phases.map((phase: any) => (
-                    <div key={phase.id} className={`p-4 rounded-lg border ${phase.isActive ? 'bg-lime-500/10 border-lime-500/30' : 'bg-zinc-800/50 border-zinc-700/50 opacity-60'}`}>
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-semibold text-white">{phase.name}</h4>
-                        {phase.isActive && <span className="px-2 py-0.5 rounded text-xs bg-lime-500/20 text-lime-400 border border-lime-500/30">Activa</span>}
-                      </div>
-                      <div className="text-sm text-zinc-400 space-y-1">
-                        <p>
-                          <span className="text-zinc-500">Condición:</span> {phase.type === 'time' ? 'Tiempo Limitado' : 'Monto Objetivo'}
-                        </p>
-                        <p>
-                          <span className="text-zinc-500">Límite:</span> {phase.limit} {phase.type === 'time' ? 'Días' : 'USD'}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </SectionCard>
-            )
-          }
+
 
           {/* Estructura de Recompensa Recurrente */}
           <SectionCard title="Estructura de Recompensa Recurrente" icon={Star}>

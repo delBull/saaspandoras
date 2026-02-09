@@ -112,31 +112,42 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
       isSoldOut: false
     };
 
+    // UNIFIED LOGIC: Always track by Tokens First (Source of Truth) to determine Sold Out
+    // If Price > 0, we can display USD, but the limit logic should respect the Token Allocation if present.
+    // NOTE: If phase.type === 'amount' (USD Limit), we track USD. If 'time', we track Tokens?
+    // Actually, usually allocations are in TOKENS.
+
+    // For this fix, we will prioritize Token Allocation check against Total Supply.
+
+    // Calculate Phase Cap in Tokens
+    const phaseCapTokens = allocation;
+
+    // Calculate Raised Tokens for this phase
+    const phaseStartTokens = accumulatedTokens;
+    const currentPhaseRaisedTokens = Math.max(0, Math.min(allocation, currentSupply - phaseStartTokens));
+
     if (price === 0) {
       // Free Mint
       stats.cap = allocation;
-      const phaseStart = accumulatedTokens;
-      const currentPhaseRaisedTokens = Math.max(0, Math.min(allocation, currentSupply - phaseStart));
-
       stats.raised = currentPhaseRaisedTokens;
       stats.percent = allocation > 0 ? (currentPhaseRaisedTokens / allocation) * 100 : 0;
       stats.isSoldOut = currentPhaseRaisedTokens >= allocation && allocation > 0;
-
-      accumulatedTokens += allocation;
     } else {
       // Paid Mint
+      // We still check Sold Out based on Token Allocation because checking USD wallet balance is flaky
       const phaseCapUSD = phase.type === 'amount' ? Number(phase.limit) : (allocation * price);
       stats.cap = phaseCapUSD;
 
-      const phaseStart = accumulatedUSD;
-      const currentPhaseRaisedUSD = Math.max(0, Math.min(phaseCapUSD, raisedAmount - phaseStart));
+      // Infer Raised USD from Raised Tokens (more stable than wallet balance)
+      const inferredRaisedUSD = currentPhaseRaisedTokens * price;
+      stats.raised = inferredRaisedUSD;
 
-      stats.raised = currentPhaseRaisedUSD;
-      stats.percent = phaseCapUSD > 0 ? (currentPhaseRaisedUSD / phaseCapUSD) * 100 : 0;
-      stats.isSoldOut = currentPhaseRaisedUSD >= phaseCapUSD && phaseCapUSD > 0;
-
-      accumulatedUSD += phaseCapUSD;
+      stats.percent = phaseCapUSD > 0 ? (inferredRaisedUSD / phaseCapUSD) * 100 : 0;
+      stats.isSoldOut = currentPhaseRaisedTokens >= allocation && allocation > 0;
     }
+
+    accumulatedTokens += allocation;
+    // We don't really use accumulatedUSD for calculation anymore in this unified approach
 
     return { ...phase, stats };
   });
@@ -205,11 +216,21 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
 
               {hasAccess ? (
                 <div className="space-y-3 mb-4">
-                  <div className="w-full bg-zinc-800/80 border border-lime-500/50 text-lime-400 py-3 px-6 rounded-lg flex items-center justify-center gap-2">
-                    <Unlock className="w-3 h-3" />
-                    Acceso Verificado
+                  <div className="flex gap-2 w-full mb-4">
+                    <div className="w-full bg-zinc-800/80 border border-lime-500/50 text-lime-400 py-3 px-6 rounded-lg flex items-center justify-center gap-2">
+                      <Unlock className="w-3 h-3" />
+                      Acceso Verificado
+                    </div>
+                    <SimpleTooltip content="Ir a Fases de Venta">
+                      <button
+                        onClick={() => document.getElementById('sidebar-phases')?.scrollIntoView({ behavior: 'smooth' })}
+                        className="px-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 rounded-lg flex items-center justify-center transition-colors"
+                      >
+                        <ArrowDown className="w-5 h-5" />
+                      </button>
+                    </SimpleTooltip>
                   </div>
-                  <Link href={`/projects/${project.slug}/dao`} className="w-full hover:bg-zinc-700/20 text-white py-3 px-6 rounded-lg flex items-center justify-center gap-2 transition-colors">
+                  <Link href={`/projects/${project.slug}/dao`} className="w-full hover:bg-zinc-700/20 text-white py-3 px-6 rounded-lg flex items-center justify-center gap-2 transition-colors mb-4">
                     <Shield className="w-3 h-3 text-sm text-lime-400" />
                     Ir al DAO
                   </Link>
@@ -288,32 +309,19 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
             </p>
           </div>
 
-          {/* Project Creator Card */}
-          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
-            <h3 className="text-lg font-bold text-white mb-4">Creación Por</h3>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-zinc-800 rounded-full mx-auto mb-3 flex items-center justify-center">
-                <span className="text-white font-bold text-lg">IMG</span>
-              </div>
-              <div className="text-white font-medium mb-1">{project.applicant_name ?? "Nombre del Creador"}</div>
-              <div className="text-gray-400 text-sm mb-3">
+          {/* Project Creator Card (Compact Redesign) */}
+          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4 flex items-center gap-4">
+            <div className="w-12 h-12 bg-zinc-800 rounded-full flex-shrink-0 flex items-center justify-center border border-zinc-700">
+              <span className="text-white font-bold text-xs">IMG</span>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <p className="text-xs text-zinc-500 uppercase tracking-wide mb-0.5">Creación Por</p>
+              <div className="text-white font-medium truncate">{project.applicant_name ?? "Creador"}</div>
+              <div className="text-gray-500 text-xs mt-0.5">
                 {(() => {
                   const createdDate = project.created_at ? new Date(project.created_at as string) : new Date();
-                  const now = new Date();
-                  const currentMonth = now.getMonth();
-                  const currentYear = now.getFullYear();
-                  const projectMonth = createdDate.getMonth();
-                  const projectYear = createdDate.getFullYear();
-
-                  if (projectMonth === currentMonth && projectYear === currentYear) {
-                    return "Creado recientemente";
-                  } else {
-                    const monthNames = [
-                      "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-                      "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-                    ];
-                    return `${monthNames[projectMonth]} ${projectYear}`;
-                  }
+                  const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+                  return `${monthNames[createdDate.getMonth()]} ${createdDate.getFullYear()}`;
                 })()}
               </div>
             </div>
@@ -322,34 +330,6 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
 
         {/* Sticky section - Tokenomics & Offers (from here down) */}
         <div className="sticky top-6 space-y-6">
-          {/* Investment Card (Move here if sticky desired, or keep logic separate) */}
-
-          {/* Utility Protocol Info (Already dynamic) */}
-
-          {/* Access Card Preview (New) */}
-          {project.w2eConfig?.accessCardImage && (
-            <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
-              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <Ticket className="w-5 h-5 text-amber-400" /> Tarjeta de Acceso
-              </h3>
-              <div className="rounded-lg overflow-hidden border border-zinc-700/50 aspect-square relative group">
-                <div className="relative w-full h-full">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={project.w2eConfig.accessCardImage}
-                    alt="Access Card"
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                  <p className="text-white font-medium text-sm">NFT de Acceso Oficial</p>
-                </div>
-              </div>
-              <p className="mt-3 text-xs text-zinc-400 text-center">
-                Este NFT otorga acceso a la utilidad del protocolo.
-              </p>
-            </div>
-          )}
 
           {/* Utility Offers Panel (Dynamic Phases) */}
           {(project.w2eConfig?.phases && project.w2eConfig.phases.length > 0) ? (
@@ -359,7 +339,18 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
               </h3>
               <div className="space-y-4">
                 {phasesWithStats.map((phase: any) => {
-                  // Calculate Status based on Time and Flags
+                  // Calculate Stats based on TOTAL SUPPLY (more reliable than treasury balance/USD)
+                  // Use same logic as free mint for consistency
+                  const allocation = Number(phase.tokenAllocation || 0);
+                  // Calculate accumulated tokens from previous phases
+                  // We need to find the index of this phase in the simplified way or just rely on the map order if it's sequential
+                  // Note: `phasesWithStats` map above already does accumulation but using Mixed Logic.
+                  // We should ideally fix the logic in the map, but we can't edit that easily without a huge block.
+                  // Let's rely on the props passed down if possible, or recalculate here if needed.
+                  // Actually, the map block IS accessible if we scroll up. I am replacing the render block.
+                  // Let's assume the stats are calculated correctly (we will fix the map logic in a separate call if needed).
+
+                  // Status Logic
                   const now = new Date();
                   let status = 'active'; // Default
                   let statusLabel = 'Activo';
@@ -371,9 +362,8 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                     statusLabel = 'Próximamente';
                     statusColor = 'bg-yellow-500 text-black';
                   } else if (phase.isActive === false) {
-                    // Explicitly deactivated by admin
                     status = 'paused';
-                    statusLabel = 'Próximamente'; // User requested "Próximamente" if waiting for admin
+                    statusLabel = 'Próximamente';
                     statusColor = 'bg-zinc-600 text-gray-300';
                   } else if (phase.stats?.isSoldOut) {
                     status = 'sold_out';
@@ -413,11 +403,6 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                               {statusLabel}
                             </span>
                           )}
-                        </div>
-
-                        <div className="flex justify-between text-sm mb-3 bg-zinc-900/50 p-2 rounded-lg border border-zinc-700/50">
-                          <span className="text-gray-500">Precio Token:</span>
-                          <span className="text-lime-400 font-mono font-bold">${phase.tokenPrice || project.w2eConfig.tokenomics?.price || 'N/A'}</span>
                         </div>
 
                         {/* Button Gated by Access */}
