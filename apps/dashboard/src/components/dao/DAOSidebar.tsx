@@ -40,6 +40,7 @@ export function DAOSidebar({
 }: DAOSidebarProps) {
 
     // ... (navItems remian same)
+    const account = useActiveAccount();
     const navItems = [
         { id: 'overview', label: 'Resumen DAO', icon: HomeIcon },
         { id: 'proposals', label: 'Propuestas y Votación', icon: VoteIcon },
@@ -117,7 +118,7 @@ export function DAOSidebar({
                                     return prepareContractCall({
                                         contract,
                                         method: "function delegate(address delegatee)",
-                                        params: [useActiveAccount()?.address || ""] // Delegate to self
+                                        params: [account?.address || ""] // Delegate to self
                                     });
                                 }}
                                 onTransactionSent={() => toast.info("Delegando poder de voto...")}
