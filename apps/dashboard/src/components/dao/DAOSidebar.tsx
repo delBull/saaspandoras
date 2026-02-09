@@ -38,6 +38,7 @@ export function DAOSidebar({
     tokenBalance = 0,
     className
 }: DAOSidebarProps) {
+    console.log("DEBUG: DAO Sidebar Props", { votingPower, tokenBalance, needsDelegation: tokenBalance > 0 && votingPower === 0 });
 
     // ... (navItems remian same)
     const account = useActiveAccount();

@@ -69,6 +69,8 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
 
     // Determine Display Value
     let formattedBalance = "$0.00";
+    console.log("DEBUG: DAO Dashboard Balance Check", { isBaseMainnet, usdcBalance: usdcBalance?.toString(), nativeBalance: nativeBalance?.displayValue, safeChainId });
+
     if (isBaseMainnet) {
         // USDC has 6 decimals
         const balanceVal = usdcBalance ? Number(usdcBalance) / 1000000 : 0;
@@ -96,6 +98,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
         <div className="space-y-8">
             {/* Key Metrics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Treasury Card */}
                 <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="p-2 bg-lime-500/10 rounded-lg">
@@ -123,10 +126,8 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                         </p>
                     </div>
                 </div>
-            </div>
 
-            {/* DAO Members and Rewards Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* DAO Members Metric */}
                 {licenseContract ? (
                     <DAOMetrics licenseContract={licenseContract} />
                 ) : (
@@ -143,6 +144,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                     </div>
                 )}
 
+                {/* Rewards Metric */}
                 <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                         <TrendingUpIcon className="w-24 h-24 text-blue-500" />
