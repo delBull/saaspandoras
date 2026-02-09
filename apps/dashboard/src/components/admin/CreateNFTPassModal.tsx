@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@saasfly/ui/use-toast";
-import { useActiveAccount } from "thirdweb/react";
+import { useActiveAccount, useSendTransaction } from "thirdweb/react";
+import { getContract, prepareContractCall } from "thirdweb";
+import { client } from "@/lib/thirdweb-client";
+import { config } from "@/config";
+import { PANDORAS_KEY_ABI } from "@/lib/pandoras-key-abi";
 import {
     PhotoIcon,
     InformationCircleIcon,
@@ -13,8 +17,21 @@ import {
     ServerStackIcon,
     CurrencyDollarIcon,
     RocketLaunchIcon,
-    CloudArrowUpIcon
+    CloudArrowUpIcon,
+    ArrowPathIcon
 } from "@heroicons/react/24/outline";
+
+// Extended ABI for adminMint
+const EXTENDED_ABI = [
+    ...PANDORAS_KEY_ABI,
+    {
+        "inputs": [{ "name": "to", "type": "address" }],
+        "name": "adminMint",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
+] as const;
 
 interface CreateNFTPassModalProps {
     isOpen: boolean;
@@ -27,17 +44,20 @@ const DEPLOYMENT_STEPS = [
     { id: 2, label: 'Desplegando Contrato NFT', icon: ServerStackIcon },
     { id: 3, label: 'Configurando Access Control', icon: CurrencyDollarIcon },
     { id: 4, label: 'Registrando en Sistema', icon: RocketLaunchIcon },
+    { id: 5, label: 'Enviando Pase de Acceso', icon: ArrowPathIcon },
 ];
 
 export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPassModalProps) {
     const { toast } = useToast();
     const account = useActiveAccount();
+    const { mutate: sendTransaction } = useSendTransaction();
 
     const [deploymentStatus, setDeploymentStatus] = useState<'idle' | 'deploying' | 'success' | 'error'>('idle');
     const [deploymentStep, setDeploymentStep] = useState(0);
     const [deployError, setDeployError] = useState<string>('');
     const [deployedAddress, setDeployedAddress] = useState<string | null>(null);
     const [uploadingImage, setUploadingImage] = useState(false);
+    const [isMinting, setIsMinting] = useState(false);
 
     const [formData, setFormData] = useState({
         name: "",
@@ -49,6 +69,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
         imagePreview: "",
         treasury: "",
     });
+    const [airdropToMe, setAirdropToMe] = useState(true);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -119,14 +140,14 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
         setDeploymentStatus('deploying');
         setDeploymentStep(0);
 
-        // Animate through steps
+        // Animate through first steps
         const stepInterval = setInterval(() => {
             setDeploymentStep(prev => {
-                if (prev < DEPLOYMENT_STEPS.length - 1) return prev + 1;
-                clearInterval(stepInterval);
+                // If we reach the airdrop step (4), we stop automatic animation and wait for transaction logic
+                if (prev < 3) return prev + 1;
                 return prev;
             });
-        }, 1500);
+        }, 2000);
 
         try {
             const payload = {
@@ -134,6 +155,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                 symbol: formData.symbol,
                 maxSupply: formData.maxSupply,
                 price: formData.price,
+                description: formData.description,
                 owner: account.address,
                 treasuryAddress: formData.treasury || account.address,
                 image: formData.imageUrl || formData.imagePreview || ''
@@ -154,6 +176,33 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
 
             clearInterval(stepInterval);
             setDeployedAddress(data.address);
+
+            // If airdrop is selected, perform the minting transaction
+            if (airdropToMe) {
+                setDeploymentStep(4); // "Enviando Pase de Acceso"
+                setIsMinting(true);
+
+                const contract = getContract({
+                    client,
+                    chain: config.chain,
+                    address: data.address,
+                    abi: EXTENDED_ABI,
+                });
+
+                const transaction = prepareContractCall({
+                    contract,
+                    method: "adminMint",
+                    params: [account.address]
+                });
+
+                await new Promise((resolve, reject) => {
+                    sendTransaction(transaction, {
+                        onSuccess: () => resolve(true),
+                        onError: (e) => reject(e)
+                    });
+                });
+            }
+
             setDeploymentStatus('success');
 
         } catch (err: unknown) {
@@ -161,26 +210,14 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
             const errorMessage = err instanceof Error ? err.message : String(err);
             setDeployError(errorMessage);
             setDeploymentStatus('error');
+        } finally {
+            setIsMinting(false);
         }
     };
 
     const reset = () => {
-        setDeploymentStatus('idle');
-        setDeploymentStep(0);
-        setDeployedAddress(null);
-        setDeployError('');
-        setFormData({
-            name: "",
-            symbol: "",
-            description: "",
-            maxSupply: "1000",
-            price: "0",
-            imageUrl: "",
-            imagePreview: "",
-            treasury: ""
-        });
-        onSuccess?.(); // Trigger refresh callback
-        onClose();
+        // Force refresh and redirect to specific tab
+        window.location.href = "/admin/dashboard?tab=nft-passes";
     };
 
     if (!isOpen) return null;
@@ -196,12 +233,10 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                         exit={{ opacity: 0, scale: 0.9 }}
                         className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden relative"
                     >
-                        {/* Background decorations */}
                         <div className="absolute top-0 right-0 -mt-16 -mr-16 w-32 h-32 bg-emerald-500/20 rounded-full blur-3xl"></div>
                         <div className="absolute bottom-0 left-0 -mb-16 -ml-16 w-32 h-32 bg-lime-500/20 rounded-full blur-3xl"></div>
 
                         <div className="p-8 relative z-10">
-                            {/* DEPLOYING */}
                             {deploymentStatus === 'deploying' && (
                                 <div className="text-center">
                                     <motion.div
@@ -223,8 +258,8 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                             return (
                                                 <div key={step.id} className="flex items-center gap-4">
                                                     <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500
-                                                        ${isCompleted ? 'bg-emerald-500 text-black' : isCurrent ? 'bg-zinc-800 text-emerald-400 border border-emerald-500/30' : 'bg-zinc-900 text-zinc-700'}
-                                                    `}>
+                                                            ${isCompleted ? 'bg-emerald-500 text-black' : isCurrent ? 'bg-zinc-800 text-emerald-400 border border-emerald-500/30' : 'bg-zinc-900 text-zinc-700'}
+                                                        `}>
                                                         {isCompleted ? <CheckCircleIcon className="w-5 h-5" /> : <Icon className="w-4 h-4" />}
                                                     </div>
                                                     <div className="flex-1">
@@ -252,7 +287,6 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                 </div>
                             )}
 
-                            {/* SUCCESS */}
                             {deploymentStatus === 'success' && (
                                 <div className="text-center py-4">
                                     <motion.div
@@ -280,7 +314,6 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                 </div>
                             )}
 
-                            {/* ERROR */}
                             {deploymentStatus === 'error' && (
                                 <div className="text-center py-4">
                                     <div className="w-20 h-20 mx-auto mb-6 bg-red-500/10 rounded-full flex items-center justify-center border border-red-500/20">
@@ -306,7 +339,6 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
         );
     }
 
-    // Main Configuration Modal
     return (
         <div className="fixed inset-0 z-[5000] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
             <div className="bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto flex flex-col">
@@ -425,6 +457,19 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                 />
                                 <p className="text-xs text-zinc-500 mt-1">Si se deja vacío, tú recibirás los pagos.</p>
                             </div>
+
+                            <div className="flex items-center gap-3 pt-2">
+                                <input
+                                    id="airdrop-me"
+                                    type="checkbox"
+                                    checked={airdropToMe}
+                                    onChange={(e) => setAirdropToMe(e.target.checked)}
+                                    className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-emerald-500 focus:ring-emerald-500/50"
+                                />
+                                <label htmlFor="airdrop-me" className="text-sm text-gray-300 cursor-pointer">
+                                    Enviar un Pase (Airdrop) a mi wallet automáticamente
+                                </label>
+                            </div>
                         </div>
                     </div>
 
@@ -501,7 +546,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                         onClick={handleDeploy}
                         disabled={!formData.name || !formData.symbol}
                         className={`px-6 py-2 rounded-lg font-bold shadow-lg flex items-center gap-2 transform transition-all 
-                            ${!formData.name || !formData.symbol
+                                ${!formData.name || !formData.symbol
                                 ? 'bg-zinc-700 text-gray-500 cursor-not-allowed'
                                 : 'bg-gradient-to-r from-lime-500 to-emerald-500 hover:from-lime-400 hover:to-emerald-400 text-black shadow-lime-500/20 hover:scale-[1.02]'
                             }`}

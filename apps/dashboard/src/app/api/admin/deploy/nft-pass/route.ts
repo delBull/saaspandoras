@@ -34,7 +34,7 @@ export async function POST(req: Request) {
 
         // 2. Parse Config
         const body = await req.json();
-        const { name, symbol, maxSupply, price, owner, treasuryAddress, oracleAddress, image } = body;
+        const { name, symbol, maxSupply, price, owner, treasuryAddress, oracleAddress, image, description } = body;
 
         if (!name || !symbol || !owner) {
             return NextResponse.json({ error: "Missing required fields (name, symbol, owner)" }, { status: 400 });
@@ -87,7 +87,7 @@ export async function POST(req: Request) {
         await db.insert(projects).values({
             title: name,
             slug: slug,
-            description: `System Access Pass: ${name}. Symbol: ${symbol}`,
+            description: description || `System Access Pass: ${name}. Symbol: ${symbol}`,
             // We use 'infrastructure' or 'other' as category
             businessCategory: 'infrastructure',
             // Set status to live or approved so it shows up? Or keep it specific.
