@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # Pandora Dashboard (Core + Edge) - Staging
+  dashboard-staging:
+    container_name: pandora-staging-dashboard
+    build:
+      context: .
+      dockerfile: apps/dashboard/Dockerfile
+    restart: always
+    ports:
+      - "3001:3000"
+    env_file:
+      - apps/dashboard/.env.staging
+    environment:
+      - NODE_ENV=staging
+      - PORT=3000
+    networks:
+      - pandora-staging-net
+    depends_on:
+      - db-staging
+      - redis-staging
+
+  # Database Staging
+  db-staging:
+    image: postgres:15-alpine
+    container_name: pandora-staging-db
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: pandora_staging_db
+    volumes:
+      - pgdata-staging:/var/lib/postgresql/data
+    networks:
+      - pandora-staging-net
+
+  # Redis Staging
+  redis-staging:
+    image: redis:alpine
+    container_name: pandora-staging-redis
+    restart: always
+    networks:
+      - pandora-staging-net
+
+networks:
+  pandora-staging-net:
+    driver: bridge
+
+volumes:
+  pgdata-staging:

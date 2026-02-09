@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # Pandora Dashboard (Core + Edge) - Production
+  dashboard-prod:
+    container_name: pandora-prod-dashboard
+    build:
+      context: .
+      dockerfile: apps/dashboard/Dockerfile
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file:
+      - apps/dashboard/.env.production
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    networks:
+      - pandora-prod-net
+    depends_on:
+      - db-prod
+      - redis-prod
+
+  # Database Production
+  db-prod:
+    image: postgres:15-alpine
+    container_name: pandora-prod-db
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: pandora_production_db
+    volumes:
+      - pgdata-prod:/var/lib/postgresql/data
+    networks:
+      - pandora-prod-net
+
+  # Redis Production
+  redis-prod:
+    image: redis:alpine
+    container_name: pandora-prod-redis
+    restart: always
+    networks:
+      - pandora-prod-net
+
+networks:
+  pandora-prod-net:
+    driver: bridge
+
+volumes:
+  pgdata-prod:
