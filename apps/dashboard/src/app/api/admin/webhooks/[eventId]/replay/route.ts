@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { WebhookProcessor } from "@/lib/integrations/webhook-processor";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { db } from "@/db";
 import { webhookEvents } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
-export async function POST(req: NextRequest, { params }: { params: { eventId: string } }) {
+export async function POST(req: NextRequest, segmentData: { params: Promise<{ eventId: string }> }) {
     try {
         // 1. Admin/Security Check
         const { session } = await getAuth();
@@ -17,6 +18,7 @@ export async function POST(req: NextRequest, { params }: { params: { eventId: st
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        const params = await segmentData.params;
         const eventId = params.eventId;
 
         // 2. Validate Event Exists & is Failed
