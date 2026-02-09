@@ -34,16 +34,45 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
     const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
 
     // --- Hooks for Real Data ---
+    // --- Hooks for Real Data ---
     // 1. Treasury Balance
-    const { data: treasuryBalance } = useWalletBalance({
+    // Base Mainnet USDC Address
+    const USDC_BASE_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+    const isBaseMainnet = safeChainId === 8453;
+
+    // Hook for Native Balance (Sepolia/ETH)
+    const { data: nativeBalance } = useWalletBalance({
         client,
         chain: defineChain(safeChainId),
         address: project.treasuryAddress || project.treasuryContractAddress || "",
+        queryOptions: { enabled: !isBaseMainnet }
     });
 
-    const formattedBalance = treasuryBalance ?
-        Number(treasuryBalance.displayValue).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
-        : "$0.00";
+    // Hook for USDC Balance (Base)
+    const usdcContract = isBaseMainnet ? getContract({
+        client,
+        chain: defineChain(safeChainId),
+        address: USDC_BASE_ADDRESS
+    }) : undefined;
+
+    const { data: usdcBalance } = useReadContract({
+        contract: usdcContract,
+        method: "function balanceOf(address) view returns (uint256)",
+        params: [project.treasuryAddress || project.treasuryContractAddress || "0x0000000000000000000000000000000000000000"],
+        queryOptions: { enabled: isBaseMainnet }
+    });
+
+    // Determine Display Value
+    let formattedBalance = "$0.00";
+    if (isBaseMainnet) {
+        // USDC has 6 decimals
+        const balanceVal = usdcBalance ? Number(usdcBalance) / 1000000 : 0;
+        formattedBalance = balanceVal.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+    } else {
+        // Native ETH
+        const balanceVal = nativeBalance ? Number(nativeBalance.displayValue) : 0;
+        formattedBalance = `${balanceVal.toFixed(4)} ${safeChainId === 11155111 ? 'SepoliaETH' : 'ETH'}`;
+    }
 
     const treasuryAddress = project.treasuryAddress || project.treasuryContractAddress;
 

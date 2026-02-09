@@ -61,8 +61,15 @@ export default function DAOPage({ params }: { params: Promise<{ slug: string }> 
         queryOptions: { enabled: !!tokenContract && !!account }
     });
 
-    const votingPower = votingPowerBigInt ? Number(votingPowerBigInt) / 1e18 : 0; // Assuming 18 decimals. Ideally read decimals too.
+    const { data: tokenBalanceBigInt } = useReadContract({
+        contract: tokenContract || dummyContract,
+        method: "function balanceOf(address) view returns (uint256)",
+        params: [account?.address || "0x0000000000000000000000000000000000000000"],
+        queryOptions: { enabled: !!tokenContract && !!account }
+    });
 
+    const votingPower = votingPowerBigInt ? Number(votingPowerBigInt) / 1e18 : 0; // Assuming 18 decimals. Ideally read decimals too.
+    const tokenBalance = tokenBalanceBigInt ? Number(tokenBalanceBigInt) / 1e18 : 0;
 
     if (isLoading) {
         return (
@@ -103,6 +110,7 @@ export default function DAOPage({ params }: { params: Promise<{ slug: string }> 
                         onViewChange={setActiveView}
                         isOwner={isOwner}
                         votingPower={votingPower}
+                        tokenBalance={tokenBalance}
                         className="lg:h-[calc(100vh-80px)]"
                     />
                 </div>

@@ -598,7 +598,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
             <SectionCard title="Tokenomics y Gobernanza (On-Chain)" icon={Briefcase}>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-4 bg-zinc-800/30 rounded-lg border border-zinc-700/50">
-                  <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Precio Inicial</p>
+                  <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Precio Inicial (Deployment)</p>
                   <p className="text-xl font-mono text-white">${project.w2eConfig.tokenomics.price}</p>
                 </div>
                 <div className="p-4 bg-zinc-800/30 rounded-lg border border-zinc-700/50">

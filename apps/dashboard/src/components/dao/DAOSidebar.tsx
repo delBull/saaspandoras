@@ -21,6 +21,7 @@ interface DAOSidebarProps {
     onViewChange: (view: string) => void;
     isOwner?: boolean;
     votingPower?: number;
+    tokenBalance?: number;
     className?: string;
 }
 
@@ -30,9 +31,11 @@ export function DAOSidebar({
     onViewChange,
     isOwner = false,
     votingPower = 0,
+    tokenBalance = 0,
     className
 }: DAOSidebarProps) {
 
+    // ... (navItems remian same)
     const navItems = [
         { id: 'overview', label: 'Resumen DAO', icon: HomeIcon },
         { id: 'proposals', label: 'Propuestas y Votación', icon: VoteIcon },
@@ -41,6 +44,8 @@ export function DAOSidebar({
         { id: 'members', label: 'Miembros', icon: UsersIcon },
         { id: 'info', label: 'Información y Ayuda', icon: HelpCircleIcon },
     ];
+
+    const needsDelegation = tokenBalance > 0 && votingPower === 0;
 
     return (
         <div className={cn("w-80 bg-zinc-900 border-l border-zinc-800 p-6 flex flex-col h-full sticky top-24", className)}>
@@ -80,16 +85,29 @@ export function DAOSidebar({
                 <div className="space-y-4 bg-zinc-950/50 p-4 rounded-xl border border-zinc-800/50">
                     <div className="flex justify-between items-center">
                         <span className="text-zinc-400 text-sm">Poder de Voto</span>
-                        <span className="text-white font-mono font-bold">{votingPower.toLocaleString()} VP</span>
+                        <div className="text-right">
+                            <span className={`font-mono font-bold ${needsDelegation ? 'text-yellow-400' : 'text-white'}`}>
+                                {votingPower.toLocaleString()} VP
+                            </span>
+                        </div>
                     </div>
+
+                    {needsDelegation && (
+                        <div className="p-2 bg-yellow-900/20 border border-yellow-500/30 rounded text-xs text-yellow-200 mb-2">
+                            Tienes {tokenBalance.toLocaleString()} tokens pero 0 VP.
+                            <span className="block font-bold mt-1">¡Debes delegar para votar!</span>
+                        </div>
+                    )}
+
                     <div className="flex justify-between items-center">
-                        <span className="text-zinc-400 text-sm">Delegado</span>
-                        <span className="text-zinc-500 font-mono">--</span>
+                        <span className="text-zinc-400 text-sm">Balance Token</span>
+                        <span className="text-white font-mono">{tokenBalance.toLocaleString()}</span>
                     </div>
+
                     <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden mt-2">
-                        <div className="bg-lime-500 h-full w-[0%]" />
+                        <div className={`h-full w-[${Math.min((votingPower / 1000) * 100, 100)}%] bg-lime-500`} />
                     </div>
-                    <p className="text-[10px] text-zinc-500 text-center">Nivel de Participación: Básico</p>
+                    <p className="text-[10px] text-zinc-500 text-center">Nivel de Participación: {votingPower > 1000 ? 'Experto' : 'Básico'}</p>
                 </div>
             </div>
 

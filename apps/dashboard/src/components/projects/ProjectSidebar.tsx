@@ -334,153 +334,151 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                 <Ticket className="w-5 h-5 text-lime-400" /> Fases de Venta
               </h3>
               <div className="space-y-4">
-                {phasesWithStats.map((phase: any) => {
-                  // Calculate Stats based on TOTAL SUPPLY (more reliable than treasury balance/USD)
-                  // Use same logic as free mint for consistency
-                  const allocation = Number(phase.tokenAllocation || 0);
-                  // Calculate accumulated tokens from previous phases
-                  // We need to find the index of this phase in the simplified way or just rely on the map order if it's sequential
-                  // Note: `phasesWithStats` map above already does accumulation but using Mixed Logic.
-                  // We should ideally fix the logic in the map, but we can't edit that easily without a huge block.
-                  // Let's rely on the props passed down if possible, or recalculate here if needed.
-                  // Actually, the map block IS accessible if we scroll up. I am replacing the render block.
-                  // Let's assume the stats are calculated correctly (we will fix the map logic in a separate call if needed).
+                {phasesWithStats
+                  .map((phase: any, index: number) => {
+                    // 1. Calculate Status for Sorting
+                    const now = new Date();
+                    const hasStarted = !phase.startDate || new Date(phase.startDate) <= now;
+                    const hasEnded = phase.endDate && new Date(phase.endDate) < now;
+                    const isNotPaused = phase.isActive !== false;
+                    const isSoldOut = phase.stats?.isSoldOut || false;
 
-                  // Status Logic
-                  const now = new Date();
-                  let status = 'inactive'; // Default: not active
-                  let statusLabel = 'No Disponible';
-                  let statusColor = 'bg-zinc-600 text-gray-300';
+                    // Check previous phase for sequential logic
+                    // Note: We use original index from phasesWithStats to check previous
+                    const previousPhase = index > 0 ? phasesWithStats[index - 1] : null;
+                    const previousIsSoldOut = previousPhase ? (previousPhase.stats?.isSoldOut || false) : true;
 
-                  // Smart Phase Activation Logic
-                  // A phase is active if:
-                  // 1. It has started (startDate <= now)
-                  // 2. It hasn't ended (endDate >= now OR no endDate)
-                  // 3. It's not paused (isActive !== false)
-                  // 4. Previous phase is sold out (or this is the first phase)
+                    let status = 'inactive';
+                    let statusPriority = 99; // Lower is better
+                    let statusLabel = 'No Disponible';
+                    let statusColor = 'bg-zinc-600 text-gray-300';
 
-                  const hasStarted = !phase.startDate || new Date(phase.startDate) <= now;
-                  const hasEnded = phase.endDate && new Date(phase.endDate) < now;
-                  const isNotPaused = phase.isActive !== false;
-                  const isSoldOut = phase.stats?.isSoldOut || false;
+                    if (isSoldOut) {
+                      status = 'sold_out';
+                      statusPriority = 3;
+                      statusLabel = 'Agotado';
+                      statusColor = 'bg-red-500/20 text-red-400 border border-red-500/50';
+                    } else if (!isNotPaused) {
+                      status = 'paused';
+                      statusPriority = 4;
+                      statusLabel = 'Pausado';
+                      statusColor = 'bg-yellow-500/20 text-yellow-400';
+                    } else if (!hasStarted) {
+                      status = 'coming_soon';
+                      statusPriority = 2; // Upcoming is second priority
+                      statusLabel = 'Próximamente';
+                      statusColor = 'bg-blue-500/20 text-blue-400';
+                    } else if (hasEnded) {
+                      status = 'ended';
+                      statusPriority = 5;
+                      statusLabel = 'Finalizado';
+                      statusColor = 'bg-zinc-600 text-gray-400';
+                    } else if (!previousIsSoldOut) {
+                      status = 'waiting';
+                      statusPriority = 2; // Treat as upcoming/waiting
+                      statusLabel = 'Esperando';
+                      statusColor = 'bg-orange-500/20 text-orange-400';
+                    } else {
+                      status = 'active';
+                      statusPriority = 1; // Highest priority
+                      statusLabel = 'Activo';
+                      statusColor = 'bg-lime-500 text-black';
+                    }
 
-                  // Check if previous phase exists and is sold out
-                  const phaseIndex = phasesWithStats.findIndex((p: any) => p.id === phase.id);
-                  const previousPhase = phaseIndex > 0 ? phasesWithStats[phaseIndex - 1] : null;
-                  const previousIsSoldOut = previousPhase ? (previousPhase.stats?.isSoldOut || false) : true; // First phase always passes
+                    return { ...phase, status, statusPriority, statusLabel, statusColor };
+                  })
+                  .sort((a: any, b: any) => {
+                    // Sort by Priority
+                    if (a.statusPriority !== b.statusPriority) return a.statusPriority - b.statusPriority;
+                    // Then by Original Order (implied by stability of sort or we can use ID/index if needed)
+                    return 0;
+                  })
+                  .map((phase: any) => {
+                    const isActive = phase.status === 'active';
+                    const hasAccess = true; // We use parent scope hasAccess, need to ensure it's captured or pass it. 
+                    // Actually 'hasAccess' is available in scope. 
 
-                  // Determine status
-                  if (isSoldOut) {
-                    status = 'sold_out';
-                    statusLabel = 'Agotado';
-                    statusColor = 'bg-red-500/20 text-red-400 border border-red-500/50';
-                  } else if (!isNotPaused) {
-                    status = 'paused';
-                    statusLabel = 'Pausado';
-                    statusColor = 'bg-yellow-500/20 text-yellow-400';
-                  } else if (!hasStarted) {
-                    status = 'coming_soon';
-                    statusLabel = 'Próximamente';
-                    statusColor = 'bg-blue-500/20 text-blue-400';
-                  } else if (hasEnded) {
-                    status = 'ended';
-                    statusLabel = 'Finalizado';
-                    statusColor = 'bg-zinc-600 text-gray-400';
-                  } else if (!previousIsSoldOut) {
-                    // Current phase has started, but previous phase not sold out yet
-                    status = 'waiting';
-                    statusLabel = 'Esperando';
-                    statusColor = 'bg-orange-500/20 text-orange-400';
-                  } else {
-                    // All conditions met: phase is ACTIVE
-                    status = 'active';
-                    statusLabel = 'Activo';
-                    statusColor = 'bg-lime-500 text-black';
-                  }
-
-                  const isActive = status === 'active';
-
-                  return (
-                    <div key={phase.id} className={`bg-zinc-800 rounded-lg overflow-hidden border ${isActive ? 'border-lime-500/30' : 'border-zinc-700'} group transition-all hover:border-lime-500/50`}>
-                      {/* Phase Image (Rich UI) */}
-                      {phase.image && (
-                        <div className="h-32 w-full relative overflow-hidden">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={phase.image} alt={phase.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 to-transparent opacity-90" />
-                          {/* Overlay Badge */}
-                          <div className="absolute bottom-2 left-3">
-                            <span className={`text-xs px-2 py-1 rounded font-bold uppercase ${statusColor}`}>
-                              {statusLabel}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="p-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="flex-1">
-                            <h4 className="text-white font-bold text-lg mb-1">{phase.name}</h4>
-                            <p className="text-gray-400 text-xs uppercase tracking-wide">
-                              {phase.type === 'amount' ? `Meta: $${Number(phase.limit).toLocaleString()}` : `Duración: ${phase.limit} días`}
-                            </p>
-                          </div>
-                          {!phase.image && (
-                            <span className={`text-xs px-2 py-1 rounded font-bold uppercase border border-white/10 ${statusColor.replace('bg-', 'text-').replace('text-black', 'bg-white/10')}`}>
-                              {statusLabel}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Button Gated by Access */}
-                        {hasAccess ? (
-                          <button
-                            onClick={() => isActive && !phase.stats.isSoldOut && handlePhaseClick(phase)}
-                            className={`w-full py-3 px-4 rounded-lg transition-all text-sm font-bold flex items-center justify-center gap-2 ${isActive && !phase.stats.isSoldOut
-                              ? 'bg-lime-400 hover:bg-lime-500 text-black shadow-[0_0_15px_rgba(163,230,53,0.3)] hover:scale-[1.02]'
-                              : 'bg-zinc-700 text-gray-400 cursor-not-allowed opacity-70'
-                              }`}
-                            disabled={!isActive || phase.stats.isSoldOut}
-                          >
-                            {status === 'coming_soon' || status === 'paused' ? (
-                              <>
-                                <Clock className="w-4 h-4" />
-                                Próximamente
-                              </>
-                            ) : status === 'sold_out' ? (
-                              <>
-                                <Lock className="w-4 h-4" />
-                                Agotado
-                              </>
-                            ) : isActive ? (
-                              <>
-                                <Ticket className="w-4 h-4" />
-                                Adquirir Artefactos
-                              </>
-                            ) : (
-                              'No Disponible'
-                            )}
-                          </button>
-                        ) : (
-                          <div className="relative group/lock w-full">
-                            <button
-                              className="w-full py-3 px-4 rounded-lg bg-zinc-800 text-gray-500 text-sm font-medium border border-zinc-700 border-dashed flex items-center justify-center gap-2 cursor-not-allowed hover:bg-zinc-750"
-                              disabled
-                            >
-                              <Lock className="w-4 h-4" />
-                              Bloqueado
-                            </button>
-                            {/* Tooltip */}
-                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-black text-white text-xs p-3 rounded-lg hidden group-hover/lock:block text-center border border-zinc-700 shadow-xl z-50">
-                              <p className="font-bold text-lime-400 mb-1">Acceso Restringido</p>
-                              Adquiere el NFT de Acceso para participar en esta fase.
+                    return (
+                      <div key={phase.id} className={`bg-zinc-800 rounded-lg overflow-hidden border ${isActive ? 'border-lime-500/30' : 'border-zinc-700'} group transition-all hover:border-lime-500/50`}>
+                        {/* Phase Image (Rich UI) */}
+                        {phase.image && (
+                          <div className="h-32 w-full relative overflow-hidden">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={phase.image} alt={phase.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 to-transparent opacity-90" />
+                            {/* Overlay Badge */}
+                            <div className="absolute bottom-2 left-3">
+                              <span className={`text-xs px-2 py-1 rounded font-bold uppercase ${phase.statusColor}`}>
+                                {phase.statusLabel}
+                              </span>
                             </div>
                           </div>
                         )}
+
+                        <div className="p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex-1">
+                              <h4 className="text-white font-bold text-lg mb-1">{phase.name}</h4>
+                              <p className="text-gray-400 text-xs uppercase tracking-wide">
+                                {phase.type === 'amount' ? `Meta: $${Number(phase.limit).toLocaleString()}` : `Duración: ${phase.limit} días`}
+                              </p>
+                            </div>
+                            {!phase.image && (
+                              <span className={`text-xs px-2 py-1 rounded font-bold uppercase border border-white/10 ${phase.statusColor.replace('bg-', 'text-').replace('text-black', 'bg-white/10')}`}>
+                                {phase.statusLabel}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Button Gated by Access */}
+                          {hasAccess ? (
+                            <button
+                              onClick={() => isActive && !phase.stats.isSoldOut && handlePhaseClick(phase)}
+                              className={`w-full py-3 px-4 rounded-lg transition-all text-sm font-bold flex items-center justify-center gap-2 ${isActive && !phase.stats.isSoldOut
+                                ? 'bg-lime-400 hover:bg-lime-500 text-black shadow-[0_0_15px_rgba(163,230,53,0.3)] hover:scale-[1.02]'
+                                : 'bg-zinc-700 text-gray-400 cursor-not-allowed opacity-70'
+                                }`}
+                              disabled={!isActive || phase.stats.isSoldOut}
+                            >
+                              {phase.status === 'coming_soon' || phase.status === 'paused' || phase.status === 'waiting' ? (
+                                <>
+                                  <Clock className="w-4 h-4" />
+                                  Próximamente
+                                </>
+                              ) : phase.status === 'sold_out' ? (
+                                <>
+                                  <Lock className="w-4 h-4" />
+                                  Agotado
+                                </>
+                              ) : isActive ? (
+                                <>
+                                  <Ticket className="w-4 h-4" />
+                                  Adquirir Artefactos
+                                </>
+                              ) : (
+                                'No Disponible'
+                              )}
+                            </button>
+                          ) : (
+                            <div className="relative group/lock w-full">
+                              <button
+                                className="w-full py-3 px-4 rounded-lg bg-zinc-800 text-gray-500 text-sm font-medium border border-zinc-700 border-dashed flex items-center justify-center gap-2 cursor-not-allowed hover:bg-zinc-750"
+                                disabled
+                              >
+                                <Lock className="w-4 h-4" />
+                                Bloqueado
+                              </button>
+                              {/* Tooltip */}
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-black text-white text-xs p-3 rounded-lg hidden group-hover/lock:block text-center border border-zinc-700 shadow-xl z-50">
+                                <p className="font-bold text-lime-400 mb-1">Acceso Restringido</p>
+                                Adquiere el NFT de Acceso para participar en esta fase.
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </div>
             </div>
           ) : (
