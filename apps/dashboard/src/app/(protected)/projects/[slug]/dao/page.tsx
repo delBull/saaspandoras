@@ -54,6 +54,15 @@ export default function DAOPage({ params }: { params: Promise<{ slug: string }> 
         address: govTokenAddress
     }) : undefined;
 
+    const { data: decimalsVal } = useReadContract({
+        contract: tokenContract || dummyContract,
+        method: "function decimals() view returns (uint8)",
+        params: [],
+        queryOptions: { enabled: !!tokenContract }
+    });
+
+    const decimals = decimalsVal ? Number(decimalsVal) : 18;
+
     const { data: votingPowerBigInt } = useReadContract({
         contract: tokenContract || dummyContract,
         method: "function getVotes(address) view returns (uint256)",
@@ -68,8 +77,17 @@ export default function DAOPage({ params }: { params: Promise<{ slug: string }> 
         queryOptions: { enabled: !!tokenContract && !!account }
     });
 
-    const votingPower = votingPowerBigInt ? Number(votingPowerBigInt) / 1e18 : 0; // Assuming 18 decimals. Ideally read decimals too.
-    const tokenBalance = tokenBalanceBigInt ? Number(tokenBalanceBigInt) / 1e18 : 0;
+    console.log("DEBUG: DAO Page Stats", {
+        govTokenAddress,
+        account: account?.address,
+        votingPowerRaw: votingPowerBigInt?.toString(),
+        tokenBalanceRaw: tokenBalanceBigInt?.toString(),
+        decimals
+    });
+
+    const divisor = Math.pow(10, decimals);
+    const votingPower = votingPowerBigInt ? Number(votingPowerBigInt) / divisor : 0;
+    const tokenBalance = tokenBalanceBigInt ? Number(tokenBalanceBigInt) / divisor : 0;
 
     if (isLoading) {
         return (
