@@ -6,6 +6,7 @@ import type { Project } from '@/types/admin';
 import { DeploymentConfigModal } from './admin/DeploymentConfigModal';
 import DeploymentProgressModal from './admin/DeploymentProgressModal';
 import type { DeploymentConfig } from '@/types/deployment';
+import { AdminPayouts } from './dao/AdminPayouts';
 
 interface ProjectTableViewProps {
   projects: Project[];
@@ -533,6 +534,39 @@ export function ProjectTableView({
                           </div>
                         )}
 
+                        {/* Protocol Safety Layer (Super Admin Override) */}
+                        {p.deploymentStatus === 'deployed' && (
+                          <div className="border-t border-red-900/30 pt-4 mt-4 bg-red-950/10 p-4 rounded-lg">
+                            <div className="flex justify-between items-center mb-4">
+                              <h4 className="font-semibold text-red-400 text-sm flex items-center gap-2">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                                Protocol Safety Layer (Super Admin Override)
+                              </h4>
+                              <button
+                                className="text-xs bg-red-900/30 hover:bg-red-800 text-red-300 px-2 py-1 rounded border border-red-800 transition-colors"
+                                onClick={() => fetch(`/api/admin/check-delays?force=true&projectId=${p.id}`).then(() => alert("Alert System Triggered"))}
+                              >
+                                🛠️ Test Alert System
+                              </button>
+                            </div>
+                            <div className="text-xs text-red-200/70 mb-4">
+                              <p>⚠️ <strong>Emergency Power:</strong> Use this panel to force-distribute funds if the Protocol Owner is unresponsive.</p>
+                              <p>Actions taken here use <strong>YOUR</strong> connected wallet (Super Admin). Ensure you have necessary authorization.</p>
+                            </div>
+
+                            <div className="bg-zinc-900 p-2 rounded border border-red-900/30">
+                              {/* Using the same component as the Owner Dashboard, but context is Super Admin */}
+                              <AdminPayouts
+                                projectId={Number(p.id)}
+                                project={p}
+                                safeChainId={p.chainId || 1} // Default to Mainnet if missing, though unlikely for deployed
+                              />
+                            </div>
+                          </div>
+                        )}
+
                         {/* Información adicional */}
                         <div className="border-t border-zinc-700 pt-4">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -570,16 +604,17 @@ export function ProjectTableView({
       </div >
 
       {/* Deployment Configuration Modal */}
-      <DeploymentConfigModal
+      < DeploymentConfigModal
         isOpen={isConfigModalOpen}
-        onClose={() => setIsConfigModalOpen(false)}
+        onClose={() => setIsConfigModalOpen(false)
+        }
         onConfirm={handleConfigConfirm}
         projectTitle={selectedProjectForDeployment?.title || ''}
         isLoading={false} // Loading handled by Progress Modal now
       />
 
       {/* Visual Deployment Progress Modal */}
-      <DeploymentProgressModal
+      < DeploymentProgressModal
         isOpen={isProgressModalOpen}
         onClose={() => {
           setIsProgressModalOpen(false);
