@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { BuildingLibraryIcon } from "@heroicons/react/24/outline";
+import { useActiveAccount } from "thirdweb/react";
 import type { ProjectData } from "@/app/()/projects/types";
 
 interface ProjectHeaderProps {
@@ -16,6 +19,11 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
   const logoUrl = projectObj.logoUrl || projectObj.logo_url || '/images/default-logo.jpg';
   const tagline = projectObj.tagline || projectObj.description || 'Sin descripción';
   const businessCategory = projectObj.business_category as string | undefined;
+
+  // Check ownership
+  const account = useActiveAccount();
+  const ownerWallet = (projectObj.applicantWalletAddress || projectObj.applicant_wallet_address) as string | undefined;
+  const isOwner = account?.address && ownerWallet && account.address.toLowerCase() === ownerWallet.toLowerCase();
 
   // Estados para controlar las animaciones
   const [showVideoHint, setShowVideoHint] = useState(false);
@@ -67,7 +75,7 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
                 <p className={`text-white text-xs italic mb-1 font-light ${!stopAnimations ? 'animate-pulse' : ''}`}>
                   Ver el video Pitch
                 </p>
-                
+
                 {/* Flecha apuntando hacia el icono - Solo se muestra si no se han detenido las animaciones */}
                 {!stopAnimations && (
                   <div className="relative">
@@ -76,7 +84,7 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
                       fill="currentColor"
                       viewBox="0 0 24 24"
                     >
-                      <path d="M12 2l-3 4h6l-3 4 3-4h-6l3-4zm0 8l-3 4h6l-3 4 3-4h-6l3-4z"/>
+                      <path d="M12 2l-3 4h6l-3 4 3-4h-6l3-4zm0 8l-3 4h6l-3 4 3-4h-6l3-4z" />
                     </svg>
                   </div>
                 )}
@@ -86,9 +94,8 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
             {/* Icono de Video con efecto de blink unificado */}
             <button
               onClick={handleVideoClick}
-              className={`bg-black/70 backdrop-blur-sm rounded-full p-3 border border-zinc-700 hover:bg-black/80 transition-all duration-300 cursor-pointer group hover:scale-110 hover:border-lime-400 ${
-                showVideoHint && !stopAnimations ? 'animate-pulse' : ''
-              }`}
+              className={`bg-black/70 backdrop-blur-sm rounded-full p-3 border border-zinc-700 hover:bg-black/80 transition-all duration-300 cursor-pointer group hover:scale-110 hover:border-lime-400 ${showVideoHint && !stopAnimations ? 'animate-pulse' : ''
+                }`}
               type="button"
             >
               <svg
@@ -96,7 +103,7 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
                 fill="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path d="M8 5v14l11-7z"/>
+                <path d="M8 5v14l11-7z" />
               </svg>
             </button>
           </div>
@@ -105,22 +112,36 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
 
       {/* Superposición Oscura y Contenido */}
       <div className="absolute inset-0 bg-black/60 flex items-end p-6 md:p-12">
-        <div className="flex items-end gap-6 w-full">
-          {/* Logo */}
-          <Image
-            src={logoUrl as string}
-            alt={`${project.title} logo`}
-            width={100}
-            height={100}
-            className="rounded-xl border-4 border-zinc-900 bg-zinc-800"
-          />
-          <div className="flex flex-col">
-            <h1 className="text-4xl font-bold text-white leading-tight">{project.title}</h1>
-            <p className="text-xl text-lime-400 mt-1">{tagline as string}</p>
-            <div className="mt-2 text-sm text-zinc-400">
-              {businessCategory ? businessCategory.toUpperCase().replace(/_/g, ' ') : 'Sin Categoría'}
+        <div className="flex items-end gap-6 w-full justify-between">
+          <div className="flex items-end gap-6">
+            {/* Logo */}
+            <Image
+              src={logoUrl as string}
+              alt={`${project.title} logo`}
+              width={100}
+              height={100}
+              className="rounded-xl border-4 border-zinc-900 bg-zinc-800"
+            />
+            <div className="flex flex-col">
+              <h1 className="text-4xl font-bold text-white leading-tight">{project.title}</h1>
+              <p className="text-xl text-lime-400 mt-1">{tagline as string}</p>
+              <div className="mt-2 text-sm text-zinc-400">
+                {businessCategory ? businessCategory.toUpperCase().replace(/_/g, ' ') : 'Sin Categoría'}
+              </div>
             </div>
           </div>
+
+          {/* Manage DAO Button for Owner */}
+          {isOwner && (
+            <div className="hidden md:block mb-2">
+              <Link href={`/admin/projects/${project.id}`}>
+                <button className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors shadow-lg shadow-purple-900/20 border border-purple-500/50">
+                  <BuildingLibraryIcon className="w-5 h-5" />
+                  <span>Gestionar DAO</span>
+                </button>
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </div>
