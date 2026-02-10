@@ -45,6 +45,15 @@ export async function GET(_request: Request) {
     try {
       const projectsData = await db.query.projects.findMany({
         orderBy: (projects, { desc }) => desc(projects.createdAt),
+        where: (projects, { ne, and, or, isNull }) =>
+          // Filter out 'infrastructure' category (NFT Passes)
+          // They have their own tab/view
+          and(
+            or(
+              ne(projects.businessCategory, 'infrastructure'),
+              isNull(projects.businessCategory)
+            )
+          ),
         columns: {
           // Basic info
           id: true,
@@ -119,7 +128,7 @@ export async function GET(_request: Request) {
           w2eConfig: true,
         }
       });
-      console.log(`📊 Admin API: Found ${projectsData.length} projects`);
+      console.log(`📊 Admin API: Found ${projectsData.length} projects (excluding infrastructure)`);
       console.log('📊 Admin API: First project sample:', projectsData[0] ? {
         id: projectsData[0].id,
         title: projectsData[0].title,
@@ -134,7 +143,9 @@ export async function GET(_request: Request) {
       // Fallback: Try to get all columns using raw SQL
       try {
         const fallbackProjects = await db.execute(sql`
-          SELECT * FROM projects ORDER BY created_at DESC
+          SELECT * FROM projects 
+          WHERE business_category IS DISTINCT FROM 'infrastructure'
+          ORDER BY created_at DESC
         `);
         console.log(`📊 Admin API: Fallback query found ${fallbackProjects.length} projects`);
 

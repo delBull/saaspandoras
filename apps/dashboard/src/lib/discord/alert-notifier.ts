@@ -30,7 +30,8 @@ export async function sendDelayedDistributionAlert(
     };
 
     try {
-        await fetch(DISCORD_ALERTS_WEBHOOK, {
+        console.log("🔔 Attempting to send Discord Alert to webhook...");
+        const response = await fetch(DISCORD_ALERTS_WEBHOOK, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -39,7 +40,14 @@ export async function sendDelayedDistributionAlert(
                 embeds: [embed],
             }),
         });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`❌ Discord Webhook Failed: ${response.status} ${response.statusText}`, errorText);
+        } else {
+            console.log("✅ Discord Alert sent successfully.");
+        }
     } catch (err) {
-        console.error("❌ Failed to send Discord alert:", err);
+        console.error("❌ Failed to send Discord alert (Network Error):", err);
     }
 }

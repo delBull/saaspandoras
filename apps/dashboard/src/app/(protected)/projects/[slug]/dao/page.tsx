@@ -41,8 +41,14 @@ export default function DAOPage({ params }: { params: Promise<{ slug: string }> 
 
     // Determine ownership
     const isOwner = account?.address && project?.applicant_wallet_address
-        ? account.address.toLowerCase() === project.applicant_wallet_address.toLowerCase()
+        ? account.address.toLowerCase() === project.applicant_wallet_address.toLowerCase().trim()
         : false;
+
+    console.log("DEBUG: DAO Ownership Check", {
+        account: account?.address,
+        stored: project?.applicant_wallet_address,
+        match: isOwner
+    });
 
     // -- Voting Power Fetching (Artifacts / Licenses) --
     // We use the License Contract for voting power, not the Utility Token.

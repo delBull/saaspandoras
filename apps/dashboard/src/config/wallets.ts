@@ -18,10 +18,6 @@ export const wallets = [
             ],
         },
         smartAccount: accountAbstractionConfig, // 🛡️ Explicit AA for Social
-        executionMode: {
-            mode: "EIP7702",
-            sponsorGas: true,
-        },
     }),
     // 🛡️ Explicitly listed wallets for Global Smart Account support
     // 🛡️ Explicitly listed wallets for Global Smart Account support
