@@ -257,7 +257,7 @@ export async function GET(
     // 4. Get available rewards (for now, return empty array)
     const rewardsData: Reward[] = [];
 
-    // 5. Get leaderboard (simplified - top 10 by totalPoints)
+    // 5. Get leaderboard (JOIN with users to get name and image)
     const leaderboardResult = await db
       .select({
         id: gamificationProfiles.id,
@@ -270,9 +270,13 @@ export async function GET(
         totalInvested: gamificationProfiles.totalInvested,
         communityRank: gamificationProfiles.communityRank,
         lastActivityDate: gamificationProfiles.lastActivityDate,
-        createdAt: gamificationProfiles.createdAt
+        createdAt: gamificationProfiles.createdAt,
+        // Added user details
+        name: users.name,
+        image: users.image,
       })
       .from(gamificationProfiles)
+      .leftJoin(users, eq(gamificationProfiles.userId, users.id))
       .orderBy(desc(gamificationProfiles.totalPoints))
       .limit(10);
 
@@ -283,6 +287,9 @@ export async function GET(
       totalPoints: item.totalPoints,
       currentLevel: item.currentLevel,
       walletAddress: item.walletAddress,
+      // Map user details - fallback to wallet abbreviation if no name
+      username: item.name || `${item.walletAddress.slice(0, 6)}...${item.walletAddress.slice(-4)}`,
+      avatarUrl: item.image || undefined,
       rank: index + 1,
       projectsApplied: item.projectsApplied,
       projectsApproved: item.projectsApproved,
