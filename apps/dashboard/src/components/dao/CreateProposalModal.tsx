@@ -1,13 +1,12 @@
-
 "use client";
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { XIcon } from "lucide-react";
-
+import { XIcon, BanknoteIcon, FileTextIcon } from "lucide-react";
 import { TransactionButton } from "thirdweb/react";
 import { prepareContractCall, getContract, defineChain } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
+import { encodeFunctionData, parseUnits } from "viem";
 
 interface CreateProposalModalProps {
     projectId: number;
@@ -21,8 +20,15 @@ interface CreateProposalModalProps {
 export function CreateProposalModal({ projectId, isOpen, onClose, onCreated, votingContractAddress, chainId }: CreateProposalModalProps) {
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
+
+    // Proposal Logic
+    const [actionType, setActionType] = useState<'text' | 'transfer'>('text');
+    const [recipient, setRecipient] = useState("");
+    const [amount, setAmount] = useState("");
+    const [tokenAddress, setTokenAddress] = useState(""); // Empty for native
+    const [decimals, setDecimals] = useState(18);
+
     // Mode: On-Chain vs Database
-    // For now, if votingContractAddress exists, we default to On-Chain.
     const isOffChain = !votingContractAddress;
     const [isLoading, setIsLoading] = useState(false);
 
@@ -47,7 +53,7 @@ export function CreateProposalModal({ projectId, isOpen, onClose, onCreated, vot
                     projectId,
                     title,
                     description,
-                    type: 'on_chain_proposal', // Keeping DB type for record
+                    type: 'on_chain_proposal',
                     startDate: new Date().toISOString(),
                     status: 'active'
                 }),
@@ -65,9 +71,51 @@ export function CreateProposalModal({ projectId, isOpen, onClose, onCreated, vot
         }
     };
 
+    const getProposalParams = () => {
+        if (actionType === 'text') {
+            return {
+                targets: [],
+                values: [],
+                calldatas: [],
+                description: `${title}\n\n${description}`
+            };
+        }
+
+        // Transfer Logic
+        try {
+            const val = parseUnits(amount, decimals);
+
+            if (!tokenAddress) {
+                // Native Transfer
+                return {
+                    targets: [recipient],
+                    values: [val],
+                    calldatas: ["0x"],
+                    description: `${title}\n\n${description}\n\n[Transfer: ${amount} Native to ${recipient}]`
+                };
+            } else {
+                // ERC20 Transfer
+                const calldata = encodeFunctionData({
+                    abi: [{ type: 'function', name: 'transfer', inputs: [{ name: 'to', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ type: 'bool' }] }],
+                    functionName: 'transfer',
+                    args: [recipient, val]
+                });
+                return {
+                    targets: [tokenAddress],
+                    values: [0n],
+                    calldatas: [calldata],
+                    description: `${title}\n\n${description}\n\n[Transfer: ${amount} ERC20 (${tokenAddress}) to ${recipient}]`
+                };
+            }
+        } catch (e) {
+            console.error("Error parsing proposal params", e);
+            throw new Error("Invalid proposal parameters");
+        }
+    };
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl w-full max-w-md p-6 relative">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl w-full max-w-md p-6 relative max-h-[90vh] overflow-y-auto">
                 <button onClick={onClose} className="absolute top-4 right-4 text-zinc-500 hover:text-white">
                     <XIcon className="w-5 h-5" />
                 </button>
@@ -75,6 +123,26 @@ export function CreateProposalModal({ projectId, isOpen, onClose, onCreated, vot
                 <h3 className="text-xl font-bold text-white mb-4">
                     {isOffChain ? "Nueva Propuesta / Evento" : "Nueva Propuesta On-Chain"}
                 </h3>
+
+                <div className="flex bg-zinc-950 p-1 rounded-lg mb-4">
+                    <button
+                        type="button"
+                        onClick={() => setActionType('text')}
+                        className={`flex-1 py-2 text-sm font-bold rounded-md transition-all flex items-center justify-center gap-2 ${actionType === 'text' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    >
+                        <FileTextIcon className="w-4 h-4" />
+                        Texto / Señal
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setActionType('transfer')}
+                        disabled={isOffChain}
+                        className={`flex-1 py-2 text-sm font-bold rounded-md transition-all flex items-center justify-center gap-2 ${actionType === 'transfer' ? 'bg-zinc-800 text-lime-400 shadow' : 'text-zinc-500 hover:text-zinc-300'} ${isOffChain ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                        <BanknoteIcon className="w-4 h-4" />
+                        Transferencia
+                    </button>
+                </div>
 
                 <form onSubmit={isOffChain ? handleSubmitOffChain : (e) => e.preventDefault()} className="space-y-4">
                     <div>
@@ -95,10 +163,58 @@ export function CreateProposalModal({ projectId, isOpen, onClose, onCreated, vot
                             value={description}
                             onChange={e => setDescription(e.target.value)}
                             rows={3}
-                            placeholder={isOffChain ? "" : "Detalles de la propuesta para votación on-chain..."}
+                            placeholder={isOffChain ? "" : "Detalles de la propuesta..."}
                             required
                         />
                     </div>
+
+                    {actionType === 'transfer' && !isOffChain && (
+                        <div className="bg-zinc-950/50 p-3 rounded-xl border border-zinc-800 space-y-3">
+                            <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Detalles de Transferencia</p>
+
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Destinatario (Wallet)</label>
+                                <input
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white text-xs font-mono outline-none focus:border-lime-500"
+                                    value={recipient}
+                                    onChange={e => setRecipient(e.target.value)}
+                                    placeholder="0x..."
+                                />
+                            </div>
+
+                            <div className="flex gap-2">
+                                <div className="flex-1">
+                                    <label className="block text-xs text-zinc-400 mb-1">Monto</label>
+                                    <input
+                                        type="number"
+                                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white text-sm outline-none focus:border-lime-500"
+                                        value={amount}
+                                        onChange={e => setAmount(e.target.value)}
+                                        placeholder="0.0"
+                                    />
+                                </div>
+                                <div className="w-1/3">
+                                    <label className="block text-xs text-zinc-400 mb-1">Decimals</label>
+                                    <input
+                                        type="number"
+                                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white text-sm outline-none"
+                                        value={decimals}
+                                        onChange={e => setDecimals(Number(e.target.value))}
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs text-zinc-400 mb-1">Token Address (Opcional - Vacío para ETH/Native)</label>
+                                <input
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white text-xs font-mono outline-none focus:border-lime-500"
+                                    value={tokenAddress}
+                                    onChange={e => setTokenAddress(e.target.value)}
+                                    placeholder="0x... (Vacío para Nativo)"
+                                />
+                            </div>
+                        </div>
+                    )}
 
                     {isOffChain ? (
                         <button
@@ -109,17 +225,21 @@ export function CreateProposalModal({ projectId, isOpen, onClose, onCreated, vot
                             {isLoading ? "Creando..." : "Publicar Evento"}
                         </button>
                     ) : (
+
                         <TransactionButton
-                            transaction={() => prepareContractCall({
-                                contract: contract!,
-                                method: "function propose(address[], uint256[], bytes[], string)",
-                                params: [
-                                    [], // targets
-                                    [], // values
-                                    [], // calldatas
-                                    `${title}\n\n${description}` // description
-                                ]
-                            })}
+                            transaction={() => {
+                                const params = getProposalParams();
+                                return prepareContractCall({
+                                    contract: contract!,
+                                    method: "function propose(address[] targets, uint256[] values, bytes[] calldatas, string description) returns (uint256)",
+                                    params: [
+                                        params.targets as `0x${string}`[],
+                                        params.values,
+                                        params.calldatas as `0x${string}`[],
+                                        params.description
+                                    ]
+                                });
+                            }}
                             onTransactionConfirmed={() => {
                                 toast.success("Propuesta On-Chain creada exitosamente!");
                                 onCreated();

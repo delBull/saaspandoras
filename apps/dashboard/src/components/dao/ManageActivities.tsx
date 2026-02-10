@@ -18,6 +18,7 @@ export function ManageActivities({ projectId }: ManageActivitiesProps) {
     const [frequency, setFrequency] = useState("once"); // once, daily, weekly, unlimited
     const [durationHours, setDurationHours] = useState("24");
     const [isLoading, setIsLoading] = useState(false);
+    const [maxParticipants, setMaxParticipants] = useState("");
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -37,7 +38,8 @@ export function ManageActivities({ projectId }: ManageActivitiesProps) {
                     category,
                     requirements: {
                         durationSeconds: category === 'labor' ? Number(durationHours) * 3600 : 0,
-                        frequency: frequency
+                        frequency: frequency,
+                        maxParticipants: maxParticipants ? Number(maxParticipants) : undefined
                     }
                 }),
             });
@@ -48,6 +50,7 @@ export function ManageActivities({ projectId }: ManageActivitiesProps) {
             setTitle("");
             setDescription("");
             setRewardAmount("0");
+            setMaxParticipants("");
         } catch (error) {
             toast.error("Error creating activity");
         } finally {
@@ -63,6 +66,7 @@ export function ManageActivities({ projectId }: ManageActivitiesProps) {
             setRewardToken("PBOX");
             setCategory("social");
             setFrequency("once");
+            setMaxParticipants("");
         } else if (type === 'labor') {
             setTitle("Compromiso Semanal");
             setDescription("Mantén tu staking activo durante 7 días consecutivos.");
@@ -71,6 +75,7 @@ export function ManageActivities({ projectId }: ManageActivitiesProps) {
             setCategory("labor");
             setDurationHours("168");
             setFrequency("weekly");
+            setMaxParticipants("");
         } else if (type === 'quick') {
             setTitle("Check-in Rápido");
             setDescription("Realiza una acción simple en la plataforma.");
@@ -78,6 +83,7 @@ export function ManageActivities({ projectId }: ManageActivitiesProps) {
             setRewardToken("PBOX");
             setCategory("social");
             setFrequency("daily");
+            setMaxParticipants("100");
         }
     };
 
@@ -144,22 +150,32 @@ export function ManageActivities({ projectId }: ManageActivitiesProps) {
                             </select>
                         </div>
 
-                        <div>
-                            <label htmlFor="activity-frequency" className="block text-sm font-medium text-zinc-300 mb-1.5">Frecuencia / Repetición</label>
-                            <select
-                                id="activity-frequency"
-                                className="w-full bg-black/40 border border-zinc-700 rounded-lg p-2.5 text-white outline-none focus:ring-2 focus:ring-lime-500/50"
-                                value={frequency}
-                                onChange={(e) => setFrequency(e.target.value)}
-                            >
-                                <option value="once">Una vez (Única)</option>
-                                <option value="daily">Diaria (Cada 24h)</option>
-                                <option value="weekly">Semanal (Cada 7 días)</option>
-                                <option value="unlimited">Ilimitada (Pruebas/Spam)</option>
-                            </select>
-                            <p className="text-[10px] text-zinc-500 mt-1 pl-1">
-                                Define qué tan seguido un usuario puede reclamar esta recompensa.
-                            </p>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label htmlFor="activity-frequency" className="block text-sm font-medium text-zinc-300 mb-1.5">Frecuencia</label>
+                                <select
+                                    id="activity-frequency"
+                                    className="w-full bg-black/40 border border-zinc-700 rounded-lg p-2.5 text-white outline-none focus:ring-2 focus:ring-lime-500/50"
+                                    value={frequency}
+                                    onChange={(e) => setFrequency(e.target.value)}
+                                >
+                                    <option value="once">Única</option>
+                                    <option value="daily">Diaria</option>
+                                    <option value="weekly">Semanal</option>
+                                    <option value="unlimited">Ilimitada</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label htmlFor="activity-limit" className="block text-sm font-medium text-zinc-300 mb-1.5">Cupo Máximo</label>
+                                <input
+                                    id="activity-limit"
+                                    type="number"
+                                    className="w-full bg-black/40 border border-zinc-700 rounded-lg p-2.5 text-white outline-none focus:ring-2 focus:ring-lime-500/50 placeholder:text-zinc-600"
+                                    value={maxParticipants}
+                                    onChange={(e) => setMaxParticipants(e.target.value)}
+                                    placeholder="Sin límite"
+                                />
+                            </div>
                         </div>
 
                         {category === 'labor' && (
@@ -217,6 +233,9 @@ export function ManageActivities({ projectId }: ManageActivitiesProps) {
                                     </select>
                                 </div>
                             </div>
+                            <p className="text-[10px] text-zinc-500 mt-2">
+                                Asegúrate de tener fondos suficientes en la tesorería del DAO para cubrir estas recompensas automáticamente.
+                            </p>
                         </div>
                     </div>
                 </div>

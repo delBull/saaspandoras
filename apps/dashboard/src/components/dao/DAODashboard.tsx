@@ -7,6 +7,7 @@ import { LaboresList } from "./LaboresList";
 import { CreateProposalModal } from "./CreateProposalModal";
 import { DAOMetrics } from "./DAOMetrics";
 import { DAOChat } from "./DAOChat";
+import { DAODocs } from "./DAODocs";
 import { VoteIcon, Wallet, WalletIcon, TrendingUpIcon, ActivityIcon, ArrowUpRightIcon, HelpCircleIcon, SettingsIcon, LockIcon, ListTodoIcon, TrophyIcon, UsersIcon, InfoIcon, ShieldCheckIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { useReadContract, useWalletBalance, useActiveAccount, TransactionButton } from "thirdweb/react";
@@ -118,23 +119,42 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                         <div className="bg-black/40 p-4 rounded-lg border border-zinc-800">
                             <h4 className="text-zinc-300 font-medium mb-2 text-sm">Recargar Recompensas</h4>
                             <p className="text-xs text-zinc-500 mb-4">Envía fondos a la tesorería para cubrir recompensas futuras.</p>
-                            <TransactionButton
-                                transaction={() => {
-                                    // Simple Deposit of 0.1 ETH/Native for demo/MVP
-                                    // Ideally this would have an input, but for "Safety Gaps" we provide the mechanism.
-                                    return prepareTransaction({
-                                        to: project.treasuryAddress || project.treasuryContractAddress,
-                                        value: BigInt(100000000000000000), // 0.1 ETH
-                                        chain: defineChain(safeChainId),
-                                        client: client
-                                    });
-                                }}
-                                onTransactionConfirmed={() => toast.success("Fondos depositados correctamente")}
-                                onError={(e) => toast.error("Error al depositar: " + e.message)}
-                                className="!w-full !bg-zinc-800 hover:!bg-zinc-700 !text-white !text-xs !py-3"
-                            >
-                                Depositar 0.1 {isBaseMainnet ? 'ETH' : 'ETH'} (Demo)
-                            </TransactionButton>
+                            <div className="space-y-3">
+                                <div className="relative">
+                                    <Input
+                                        type="number"
+                                        placeholder="0.0"
+                                        className="bg-zinc-900 border-zinc-700 text-white pr-16"
+                                        id="deposit-amount"
+                                    />
+                                    <span className="absolute right-3 top-2.5 text-xs text-zinc-500 font-bold">
+                                        {isBaseMainnet ? 'ETH' : 'ETH'}
+                                    </span>
+                                </div>
+                                <TransactionButton
+                                    transaction={() => {
+                                        const amountInput = document.getElementById('deposit-amount') as HTMLInputElement;
+                                        const amount = amountInput?.value || "0";
+                                        if (Number(amount) <= 0) throw new Error("Monto inválido");
+
+                                        return prepareTransaction({
+                                            to: project.treasuryAddress || project.treasuryContractAddress,
+                                            value: BigInt(Math.floor(Number(amount) * 1e18)),
+                                            chain: defineChain(safeChainId),
+                                            client: client
+                                        });
+                                    }}
+                                    onTransactionConfirmed={() => {
+                                        toast.success("Fondos depositados correctamente");
+                                        const amountInput = document.getElementById('deposit-amount') as HTMLInputElement;
+                                        if (amountInput) amountInput.value = "";
+                                    }}
+                                    onError={(e) => toast.error("Error al depositar: " + e.message)}
+                                    className="!w-full !bg-zinc-800 hover:!bg-zinc-700 !text-white !text-xs !py-3"
+                                >
+                                    Depositar Fondos (Real)
+                                </TransactionButton>
+                            </div>
                         </div>
 
                         {/* Withdraw Action */}
@@ -663,6 +683,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                 {activeView === 'proposals' && <ProposalsView />}
                 {activeView === 'info' && <InfoView />}
                 {activeView === 'manage' && <ManageView />}
+                {activeView === 'docs' && <DAODocs />}
 
                 {activeView === 'members' && (
                     <div className="flex flex-col items-center justify-center py-20 text-zinc-500">
