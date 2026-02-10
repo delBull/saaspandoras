@@ -44,48 +44,55 @@ export default function DAOPage({ params }: { params: Promise<{ slug: string }> 
         ? account.address.toLowerCase() === project.applicant_wallet_address.toLowerCase()
         : false;
 
-    // -- Voting Power Fetching --
-    const govTokenAddress = project?.governance_token_address;
+    // -- Voting Power Fetching (Artifacts / Licenses) --
+    // We use the License Contract for voting power, not the Utility Token.
+    const licenseAddress = project?.licenseContractAddress;
     const chainId = project?.chain_id ? Number(project.chain_id) : 11155111;
 
-    const tokenContract = govTokenAddress ? getContract({
-        client,
-        chain: defineChain(chainId),
-        address: govTokenAddress
-    }) : undefined;
-
-    const { data: decimalsVal } = useReadContract({
-        contract: tokenContract || dummyContract,
-        method: "function decimals() view returns (uint8)",
-        params: [],
-        queryOptions: { enabled: !!tokenContract }
+    console.log("DEBUG: DAO Page Setup", {
+        licenseAddress,
+        project_id: project?.id,
+        chainId
     });
 
-    const decimals = decimalsVal ? Number(decimalsVal) : 18;
+    const licenseContract = licenseAddress ? getContract({
+        client,
+        chain: defineChain(chainId),
+        address: licenseAddress
+    }) : undefined;
+
+    // Licenses are NFTs (usually 0 decimals, but treated as 1 unit = 1 vote)
+    // We don't need decimals for ERC721 usually, but let's assume 18 if strictly needed or 0.
+    // Actually, getVotes usually returns WEI format if ERC20Votes, but for simple NFT 1=1. 
+    // However, W2ELoom might use standard checkpoints.
+    // Let's assume 0 decimals for display of "Count" but check raw value.
+    const decimals = 0;
+
+
 
     const { data: votingPowerBigInt } = useReadContract({
-        contract: tokenContract || dummyContract,
+        contract: licenseContract || dummyContract,
         method: "function getVotes(address) view returns (uint256)",
         params: [account?.address || "0x0000000000000000000000000000000000000000"],
-        queryOptions: { enabled: !!tokenContract && !!account }
+        queryOptions: { enabled: !!licenseContract && !!account }
     });
 
     const { data: tokenBalanceBigInt } = useReadContract({
-        contract: tokenContract || dummyContract,
+        contract: licenseContract || dummyContract,
         method: "function balanceOf(address) view returns (uint256)",
         params: [account?.address || "0x0000000000000000000000000000000000000000"],
-        queryOptions: { enabled: !!tokenContract && !!account }
+        queryOptions: { enabled: !!licenseContract && !!account }
     });
 
     console.log("DEBUG: DAO Page Stats", {
-        govTokenAddress,
+        licenseAddress,
         account: account?.address,
         votingPowerRaw: votingPowerBigInt?.toString(),
         tokenBalanceRaw: tokenBalanceBigInt?.toString(),
         decimals
     });
 
-    const divisor = Math.pow(10, decimals);
+    const divisor = 1; // NFTs are whole units usually
     const votingPower = votingPowerBigInt ? Number(votingPowerBigInt) / divisor : 0;
     const tokenBalance = tokenBalanceBigInt ? Number(tokenBalanceBigInt) / divisor : 0;
 

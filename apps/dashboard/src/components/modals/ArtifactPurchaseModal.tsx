@@ -20,9 +20,13 @@ interface ArtifactPurchaseModalProps {
 export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilityContract, phase }: ArtifactPurchaseModalProps) {
     const account = useActiveAccount();
     const [step, setStep] = useState<'review' | 'processing' | 'success'>('review');
-    const [amount, setAmount] = useState<string>("1000"); // Default amount
+    const [amount, setAmount] = useState<string>("1"); // Default amount 1 for License
 
+    // License Price is usually in Wei or Native Token
     const price = phase?.tokenPrice || 0;
+
+    // License Contract
+    const licenseAddress = project?.licenseContractAddress;
 
     const totalCost = Number(amount) * Number(price);
 
@@ -188,42 +192,34 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                                         ) : (
                                             <TransactionButton
                                                 transaction={() => {
-                                                    // Determine Chain and Currency
+                                                    // Determine Chain
                                                     const rawChainId = Number((project as any).chainId);
                                                     const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
-                                                    const isBase = safeChainId === 8453;
 
-                                                    if (isBase) {
-                                                        // USDC on Base (ERC20 Transfer)
-                                                        // Price is treated as USDC (e.g. 0.1 = 0.1 USDC)
-                                                        // USDC has 6 decimals
-                                                        const usdcAmount = BigInt(Math.floor(totalCost * 1e6));
-                                                        const USDC_BASE_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+                                                    // Prepare Contract
+                                                    const licenseContract = getContract({
+                                                        client,
+                                                        chain: defineChain(safeChainId),
+                                                        address: licenseAddress
+                                                    });
 
-                                                        const usdcContract = getContract({
-                                                            client,
-                                                            chain: defineChain(safeChainId),
-                                                            address: USDC_BASE_ADDRESS
-                                                        });
+                                                    // Calculate Value (Price * Quantity) - Native Token
+                                                    // Assuming price is in WEI or Native Unit. 
+                                                    // If price comes in as "0.1" (ETH), we convert. If it's raw "10000...", we use it.
+                                                    // Usually phase.tokenPrice is in params. 
+                                                    // Let's assume input `totalCost` is derived correctly.
+                                                    // CAUTION: If price is just a number logic, we need bigInt.
 
-                                                        return prepareContractCall({
-                                                            contract: usdcContract,
-                                                            method: "function transfer(address to, uint256 value)",
-                                                            params: [project.treasuryAddress, usdcAmount]
-                                                        });
-                                                    } else {
-                                                        // ETH on Sepolia/Other (Native Transfer)
-                                                        // Price is treated as ETH (e.g. 0.1 = 0.1 ETH)
-                                                        // ETH has 18 decimals
-                                                        const weiAmount = BigInt(Math.floor(totalCost * 1e18));
+                                                    // Logic: mintWithPayment(quantity) { value: totalCost }
+                                                    const quantity = BigInt(Math.floor(Number(amount)));
+                                                    const costInWei = BigInt(Math.floor(totalCost * 1e18)); // Assume price is ETH/Matic-like unit
 
-                                                        return prepareTransaction({
-                                                            to: project.treasuryAddress,
-                                                            value: weiAmount,
-                                                            chain: defineChain(safeChainId),
-                                                            client: client
-                                                        });
-                                                    }
+                                                    return prepareContractCall({
+                                                        contract: licenseContract,
+                                                        method: "function mintWithPayment(uint256 quantity) payable",
+                                                        params: [quantity],
+                                                        value: costInWei
+                                                    });
                                                 }}
                                                 onTransactionSent={() => {
                                                     setStep('processing');

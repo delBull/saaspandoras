@@ -7,14 +7,15 @@ import { LaboresList } from "./LaboresList";
 import { CreateProposalModal } from "./CreateProposalModal";
 import { DAOMetrics } from "./DAOMetrics";
 import { DAOChat } from "./DAOChat";
-import { VoteIcon, Wallet, WalletIcon, TrendingUpIcon, ActivityIcon, ArrowUpRightIcon, HelpCircleIcon, SettingsIcon, LockIcon, ListTodoIcon, TrophyIcon, UsersIcon, InfoIcon } from "lucide-react";
+import { VoteIcon, Wallet, WalletIcon, TrendingUpIcon, ActivityIcon, ArrowUpRightIcon, HelpCircleIcon, SettingsIcon, LockIcon, ListTodoIcon, TrophyIcon, UsersIcon, InfoIcon, ShieldCheckIcon } from "lucide-react";
 import { motion } from "framer-motion";
-import { useReadContract, useWalletBalance, useActiveAccount } from "thirdweb/react";
+import { useReadContract, useWalletBalance, useActiveAccount, TransactionButton } from "thirdweb/react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { getContract, defineChain, sendTransaction } from "thirdweb";
+import { getContract, defineChain, sendTransaction, prepareTransaction, prepareContractCall } from "thirdweb";
+import { AdminPayouts } from "./AdminPayouts";
 import { mintWithSignature } from "thirdweb/extensions/erc20";
 import { usePBOXBalance } from "@/hooks/usePBOXBalance";
 import { client } from "@/lib/thirdweb-client";
@@ -92,10 +93,77 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
 
     const [isProposalModalOpen, setIsProposalModalOpen] = useState(false);
 
+    const loomContract = project.loom_contract_address ? getContract({
+        client,
+        chain: defineChain(safeChainId),
+        address: project.loom_contract_address
+    }) : undefined;
+
     // -- Sub-Views --
+
 
     const OverviewView = () => (
         <div className="space-y-8">
+            {/* Admin Financial Controls (Owner Only) */}
+            {isOwner && (
+                <div className="bg-zinc-900 border border-yellow-500/20 rounded-xl p-6 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                        <LockIcon className="w-32 h-32 text-yellow-500" />
+                    </div>
+                    <h3 className="text-yellow-500 font-bold text-lg mb-4 flex items-center gap-2 relative z-10">
+                        <ShieldCheckIcon className="w-5 h-5" /> Gestión Financiera (Admin)
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
+                        {/* Deposit Action */}
+                        <div className="bg-black/40 p-4 rounded-lg border border-zinc-800">
+                            <h4 className="text-zinc-300 font-medium mb-2 text-sm">Recargar Recompensas</h4>
+                            <p className="text-xs text-zinc-500 mb-4">Envía fondos a la tesorería para cubrir recompensas futuras.</p>
+                            <TransactionButton
+                                transaction={() => {
+                                    // Simple Deposit of 0.1 ETH/Native for demo/MVP
+                                    // Ideally this would have an input, but for "Safety Gaps" we provide the mechanism.
+                                    return prepareTransaction({
+                                        to: project.treasuryAddress || project.treasuryContractAddress,
+                                        value: BigInt(100000000000000000), // 0.1 ETH
+                                        chain: defineChain(safeChainId),
+                                        client: client
+                                    });
+                                }}
+                                onTransactionConfirmed={() => toast.success("Fondos depositados correctamente")}
+                                onError={(e) => toast.error("Error al depositar: " + e.message)}
+                                className="!w-full !bg-zinc-800 hover:!bg-zinc-700 !text-white !text-xs !py-3"
+                            >
+                                Depositar 0.1 {isBaseMainnet ? 'ETH' : 'ETH'} (Demo)
+                            </TransactionButton>
+                        </div>
+
+                        {/* Withdraw Action */}
+                        <div className="bg-black/40 p-4 rounded-lg border border-zinc-800">
+                            <h4 className="text-zinc-300 font-medium mb-2 text-sm">Retirar Capital Inicial</h4>
+                            <p className="text-xs text-zinc-500 mb-4">Libera fondos iniciales si se han cumplido los hitos de venta.</p>
+                            {loomContract ? (
+                                <TransactionButton
+                                    transaction={() => prepareContractCall({
+                                        contract: loomContract,
+                                        method: "function releaseInitialCapital()",
+                                        params: []
+                                    })}
+                                    onTransactionConfirmed={() => toast.success("Capital liberado (si era elegible)")}
+                                    onError={(e) => toast.error("Error: " + e.message)}
+                                    className="!w-full !bg-yellow-500/10 hover:!bg-yellow-500/20 !text-yellow-500 !border !border-yellow-500/50 !text-xs !py-3"
+                                >
+                                    Liberar Capital
+                                </TransactionButton>
+                            ) : (
+                                <button disabled className="w-full bg-zinc-800 text-zinc-500 text-xs py-3 rounded-lg cursor-not-allowed">
+                                    Contrato no disponible
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Key Metrics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Treasury Card */}
@@ -140,6 +208,14 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                         <div className="mt-4 flex items-center text-xs text-zinc-600">
                             <ActivityIcon className="w-3 h-3 mr-1" />
                             Holders de Access Cards
+                        </div>
+
+                        <div className="mt-4 relative z-10">
+                            <AdminPayouts
+                                projectId={project.id}
+                                project={project}
+                                safeChainId={safeChainId}
+                            />
                         </div>
                     </div>
                 )}
