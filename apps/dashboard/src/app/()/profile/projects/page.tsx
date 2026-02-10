@@ -626,7 +626,7 @@ export default function ProfileProjectsPage() {
                     {/* Show Manage DAO only if Approved/Live/Deployed */}
                     {/* Using /admin/projects/[id] as the management hub */}
                     {(project.status === 'approved' || project.status === 'live' || project.deploymentStatus === 'deployed') && (
-                      <Link href={`/admin/projects/${project.id}`} className="col-span-2">
+                      <Link href={`/projects/${project.slug || project.id}/dao`} className="col-span-2">
                         <Button size="sm" className="w-full bg-purple-600 hover:bg-purple-700 text-white border-none">
                           <BuildingLibraryIcon className="w-4 h-4 mr-2" />
                           Gestionar DAO

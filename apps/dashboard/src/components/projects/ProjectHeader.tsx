@@ -134,7 +134,7 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
           {/* Manage DAO Button for Owner */}
           {isOwner && (
             <div className="hidden md:block mb-2">
-              <Link href={`/admin/projects/${project.id}`}>
+              <Link href={`/projects/${project.slug || project.id}/dao`}>
                 <button className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors shadow-lg shadow-purple-900/20 border border-purple-500/50">
                   <BuildingLibraryIcon className="w-5 h-5" />
                   <span>Gestionar DAO</span>
