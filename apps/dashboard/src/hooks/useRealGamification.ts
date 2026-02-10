@@ -120,18 +120,18 @@ export function useRealGamification(userId?: string): RealTimeGamificationData {
       }
 
       // Refresh data after event tracking attempt
-      void refreshData();
+      refreshData();
       console.log('🎯 Event tracking attempted and data refreshed:', eventType);
     } catch (error) {
       console.error('❌ Error tracking gamification event:', error);
       // Still refresh data even if tracking failed
-      void refreshData();
+      refreshData();
     }
   }, [userId, refreshData]);
 
   // Load data on mount and user change
   useEffect(() => {
-    void refreshData();
+    refreshData();
   }, [refreshData]);
 
   return {

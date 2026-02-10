@@ -8,6 +8,7 @@ import { useThirdwebUserSync } from "@/hooks/useThirdwebUserSync";
 import { wallets, accountAbstractionConfig } from "@/config/wallets";
 // 🎮 IMPORTAR GAMIFICATION PROVIDER
 import { GamificationProvider } from "@pandoras/gamification";
+import { GamificationDebugger } from "@/components/debug/GamificationDebugger";
 
 function UserSyncWrapper() {
   useThirdwebUserSync();
@@ -68,6 +69,7 @@ export function Providers({
         />
         {/* 🎮 INTEGRAR GAMIFICATION WRAPPER */}
         <GamificationWrapper>
+          <GamificationDebugger />
           {children}
         </GamificationWrapper>
         {/* <UserSyncWrapper /> */}
