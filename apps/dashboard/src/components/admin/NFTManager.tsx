@@ -262,11 +262,11 @@ export function NFTManager() {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-500">
-                        Gestión de Accesos
+                    <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-lime-400 to-emerald-500">
+                        NFT Lab
                     </h2>
                     <p className="text-zinc-400 text-sm">
-                        Administra el pase del sistema y crea nuevos contratos de acceso para tu ecosistema.
+                        Crea Pases de Acceso, Identidades Digitales y QRs Dinámicos para tu ecosistema.
                     </p>
                 </div>
                 <div className="flex gap-2">
@@ -283,7 +283,7 @@ export function NFTManager() {
                         className="bg-lime-500 hover:bg-lime-400 text-black font-bold"
                     >
                         <Wallet className="w-4 h-4 mr-2" />
-                        Crear Nuevo NFT Pass
+                        Crear Nuevo NFT / QR
                     </Button>
                 </div>
             </div>
