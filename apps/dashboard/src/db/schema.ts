@@ -609,7 +609,7 @@ export const governanceEvents = pgTable("governance_events", {
 
 export const governanceVotes = pgTable("governance_votes", {
   id: serial("id").primaryKey(),
-  proposalId: integer("proposal_id").notNull().references(() => governanceEvents.id, { onDelete: 'cascade' }),
+  proposalId: integer("proposal_id").notNull(), // ID Referencia (On-Chain or DB), FK removed for hybrid support
   voterAddress: text("voter_address").notNull(),
   support: integer("support").notNull(), // 0=Against, 1=For, 2=Abstain
   signature: text("signature"),
