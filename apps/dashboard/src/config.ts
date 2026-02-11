@@ -9,7 +9,7 @@ const isStaging = branchName === 'staging';
 // In local development or staging, default to 'sepolia'. In production, 'base'.
 const defaultChain = (isStaging || process.env.NODE_ENV === 'development') ? 'sepolia' : 'base';
 
-// FORCE 'sepolia' in development to avoid .env.local mismatches causing cross-chain errors
+// FORCE 'base' in development (as per current behavior) or respect env var
 const chainName = process.env.NODE_ENV === 'development' ? 'base' : (process.env.NEXT_PUBLIC_CHAIN_NAME || defaultChain);
 const nftContractAddress = process.env.NEXT_PUBLIC_NFT_CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000";
 const poolContractAddress = process.env.NEXT_PUBLIC_POOL_CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000";
