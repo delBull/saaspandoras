@@ -570,16 +570,35 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                 <div className="bg-zinc-800/30 p-4 rounded-xl border border-zinc-700/50 space-y-4">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="group relative">
-                                            <label htmlFor="nft-pass-maxSupply" className="block text-xs font-medium text-gray-400 mb-1 flex items-center gap-1">
-                                                Max Supply <InformationCircleIcon className="w-3 h-3" />
-                                            </label>
+                                            <div className="flex justify-between items-center mb-1">
+                                                <label htmlFor="nft-pass-maxSupply" className="block text-xs font-medium text-gray-400 flex items-center gap-1">
+                                                    Max Supply <InformationCircleIcon className="w-3 h-3" />
+                                                </label>
+                                                <div className="flex items-center gap-1">
+                                                    <input
+                                                        type="checkbox"
+                                                        id="unlimited-supply"
+                                                        className="w-3 h-3 rounded border-zinc-700 bg-zinc-900 text-indigo-500 focus:ring-indigo-500/50"
+                                                        checked={formData.maxSupply === '115792089237316195423570985008687907853269984665640564039457584007913129639935'} // MAX_UINT256
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setFormData(prev => ({ ...prev, maxSupply: '115792089237316195423570985008687907853269984665640564039457584007913129639935' }));
+                                                            } else {
+                                                                setFormData(prev => ({ ...prev, maxSupply: '1000' }));
+                                                            }
+                                                        }}
+                                                    />
+                                                    <label htmlFor="unlimited-supply" className="text-[10px] text-zinc-500 cursor-pointer uppercase font-bold">Ilimitado</label>
+                                                </div>
+                                            </div>
                                             <input
                                                 id="nft-pass-maxSupply"
                                                 name="maxSupply"
-                                                type="number"
-                                                value={formData.maxSupply}
+                                                type="text" // Changed to text to handle large numbers visually or disable
+                                                disabled={formData.maxSupply === '115792089237316195423570985008687907853269984665640564039457584007913129639935'}
+                                                value={formData.maxSupply === '115792089237316195423570985008687907853269984665640564039457584007913129639935' ? '∞' : formData.maxSupply}
                                                 onChange={handleChange}
-                                                className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-indigo-500 outline-none"
+                                                className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-indigo-500 outline-none disabled:opacity-50 disabled:cursor-not-allowed font-mono"
                                             />
                                         </div>
 

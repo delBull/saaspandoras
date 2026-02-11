@@ -66,5 +66,6 @@ SECURITY_QUESTIONNAIRE_RESPONSE.md
 SECURITY_QUESTIONNAIRE_DELTA.md
 WEBHOOK_SPEC.md
 DEPLOY.md
+nft_lab.md
 
 # Note: PUBLIC_SECURITY_OVERVIEW.md is intentionally NOT ignored (safe for public)
