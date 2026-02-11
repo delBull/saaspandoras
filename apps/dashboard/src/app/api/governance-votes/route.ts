@@ -1,5 +1,6 @@
 
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { verifyMessage } from "viem";
 import { db } from "@/db";
 import { governanceVotes } from "@/db/schema";
