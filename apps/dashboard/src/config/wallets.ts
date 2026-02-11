@@ -20,6 +20,5 @@ export const wallets = [
         smartAccount: accountAbstractionConfig, // 🛡️ Explicit AA for Social
     }),
     // 🛡️ Explicitly listed wallets for Global Smart Account support
-    // 🛡️ Explicitly listed wallets for Global Smart Account support
     createWallet("io.metamask"),
 ];
