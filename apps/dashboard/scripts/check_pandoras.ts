@@ -15,7 +15,7 @@ async function main() {
 
     if (project) {
         console.log("Found Project:", project.title, "ID:", project.id, "Slug:", project.slug);
-        console.log("Address:", project.voting_contract_address);
+        console.log("Address:", project.votingContractAddress);
     } else {
         console.log("No Pandoras project found.");
     }
