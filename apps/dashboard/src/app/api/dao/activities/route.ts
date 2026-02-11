@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { daoActivities, projects } from '@/db/schema';
 import { eq, desc, and } from 'drizzle-orm';
+import { verifyMessage } from "viem";
 
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
@@ -34,13 +35,51 @@ export async function GET(req: Request) {
     }
 }
 
+
+
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { projectId, title, description, rewardAmount, rewardTokenSymbol, type, externalLink } = body;
+        const { projectId, title, description, rewardAmount, rewardTokenSymbol, type, externalLink, signature, signerAddress, message } = body;
 
-        // TODO: Verify user is owner/admin of project (skipping rigid auth for speed/prototype as per context, but should be added)
-        // Assuming component handles ownership check via UI or Middleware
+        // 1. Verify Signature
+        // Reconstruct message or use passed one if robust. Ideally reconstruct.
+        // Client sent: `Create Activity: ${title}\nReward: ${rewardAmount} ${rewardToken}\nDate: ...`
+        // Since date is dynamic, let's rely on passed message for now but verify it matches intent?
+        // Better pattern: Client sends a deterministic message payload. 
+        // For now, verification of "Authorized Signer" is key.
+
+        if (!signature || !signerAddress || !message) {
+            return NextResponse.json({ error: "Missing signature/auth" }, { status: 401 });
+        }
+
+        const isValid = await verifyMessage({
+            address: signerAddress,
+            message: message,
+            signature: signature
+        });
+
+        if (!isValid) return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+
+        // 2. Verify Ownership
+        // Only the project owner (applicant_wallet_address) can create activities.
+        const project = await db.query.projects.findFirst({
+            where: eq(projects.id, Number(projectId))
+        });
+
+        if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 });
+
+        // Normalize addresses
+        const owner = project.applicantWalletAddress?.toLowerCase();
+        const signer = signerAddress.toLowerCase();
+
+        // Allow if owner OR if it's the global admin (hardcoded for now or env)
+        const isOwner = owner === signer;
+        // const isAdmin = ...
+
+        if (!isOwner) {
+            return NextResponse.json({ error: "Unauthorized: Only project owner can manage activities" }, { status: 403 });
+        }
 
         let targetProjectId = Number(projectId);
 

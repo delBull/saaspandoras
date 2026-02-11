@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, use, Suspense } from "react";
+import { useState, use, Suspense, useEffect } from "react";
 import { notFound } from "next/navigation";
 import ProjectNavigationHeader from "@/components/projects/ProjectNavigationHeader"; // Verify import path
 import { DAOSidebar } from "@/components/dao/DAOSidebar";
@@ -18,7 +18,7 @@ import { Loader2 } from "lucide-react";
 // Let's adapt that pattern.
 
 import useSWR from "swr";
-import { useActiveAccount, useReadContract } from "thirdweb/react";
+import { useActiveAccount, useReadContract, useActiveWalletConnectionStatus } from "thirdweb/react";
 import { getContract, defineChain } from "thirdweb";
 import { client } from "@/lib/thirdweb-client"; // Verify client import path
 
@@ -38,11 +38,20 @@ export default function DAOPage({ params }: { params: Promise<{ slug: string }> 
     const { data: project, error, isLoading } = useSWR(`/api/projects/${slug}`, fetcher);
     const [activeView, setActiveView] = useState('overview');
     const account = useActiveAccount();
+    const connectionStatus = useActiveWalletConnectionStatus(); // "connected" | "connecting" | "disconnected"
+    const [isOwner, setIsOwner] = useState(false);
 
-    // Determine ownership
-    const isOwner = account?.address && project?.applicant_wallet_address
-        ? account.address.toLowerCase() === project.applicant_wallet_address.toLowerCase().trim()
-        : false;
+    // Initial check and effect for updates
+    useEffect(() => {
+        if (connectionStatus === 'connecting') return; // Wait
+
+        if (project?.applicant_wallet_address && account?.address) {
+            const isMatch = account.address.toLowerCase() === project.applicant_wallet_address.toLowerCase().trim();
+            setIsOwner(isMatch);
+        } else {
+            setIsOwner(false);
+        }
+    }, [account?.address, project?.applicant_wallet_address, connectionStatus]);
 
     console.log("DEBUG: DAO Ownership Check", {
         account: account?.address,

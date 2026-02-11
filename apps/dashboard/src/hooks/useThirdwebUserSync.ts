@@ -26,65 +26,70 @@ export function useThirdwebUserSync() {
           // Información básica por ahora
         }),
       })
-      .then((res) => {
-        if (res.ok) {
-          console.log('✅ Wallet sincronizada correctamente');
+        .then((res) => {
+          if (res.ok) {
+            console.log('✅ Wallet sincronizada correctamente');
 
-          // 🎮 TRIGGER EVENTO DE PRIMER LOGIN (SOLO PRIMERA VEZ)
-          if (!alreadyGotFirstLoginReward) {
-            console.log('🎯 Activando evento de primer login para:', account.address);
-            // Usar API en lugar de engine directo para evitar errores de dashboard service
-            fetch('/api/gamification/events', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-Wallet-Address': account.address,
-              },
-              body: JSON.stringify({
-                walletAddress: account.address.toLowerCase(),
-                eventType: 'DAILY_LOGIN',
-                metadata: {
-                  walletAddress: account.address,
-                  timestamp: new Date().toISOString(),
-                  firstLoginReward: true,
-                  description: 'Primer login del usuario - reward único'
+            // 🎮 TRIGGER EVENTO DE PRIMER LOGIN (SOLO PRIMERA VEZ)
+            if (!alreadyGotFirstLoginReward) {
+              console.log('🎯 Activando evento de primer login para:', account.address);
+              // Usar API en lugar de engine directo para evitar errores de dashboard service
+              fetch('/api/gamification/events', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'X-Wallet-Address': account.address,
+                },
+                body: JSON.stringify({
+                  walletAddress: account.address.toLowerCase(),
+                  eventType: 'DAILY_LOGIN',
+                  metadata: {
+                    walletAddress: account.address,
+                    timestamp: new Date().toISOString(),
+                    firstLoginReward: true,
+                    description: 'Primer login del usuario - reward único'
+                  }
+                })
+              }).then(async (response) => {
+                if (response.ok) {
+                  console.log('✅ Evento de primer login registrado exitosamente');
+                  // Marcar que ya recibió el reward de primer login inmediatamente
+                  localStorage.setItem(firstLoginKey, 'true');
+                  console.log('💾 Primer login marcado en localStorage');
+
+                  // 🚀 ACHIEVEMENT SERÁ DESBLOQUEADO AUTOMÁTICAMENTE POR LA API
+                  // No necesitamos hacer nada extra aquí - la API events ya desbloquea achievements
+                  console.log('🎉 Achievement "Primer Login" será desbloqueado automáticamente por la API');
+                } else {
+                  console.warn('❌ Failed to register first login event:', await response.text());
                 }
-              })
-            }).then(async (response) => {
-              if (response.ok) {
-                console.log('✅ Evento de primer login registrado exitosamente');
-                // Marcar que ya recibió el reward de primer login inmediatamente
-                localStorage.setItem(firstLoginKey, 'true');
-                console.log('💾 Primer login marcado en localStorage');
+              }).catch(err => console.warn('⚠️ Error al dar primer login reward:', err));
+            } else {
+              console.log('ℹ️ Usuario ya recibió reward de primer login anteriormente:', account.address);
+            }
 
-                // 🚀 ACHIEVEMENT SERÁ DESBLOQUEADO AUTOMÁTICAMENTE POR LA API
-                // No necesitamos hacer nada extra aquí - la API events ya desbloquea achievements
-                console.log('🎉 Achievement "Primer Login" será desbloqueado automáticamente por la API');
-              } else {
-                console.warn('❌ Failed to register first login event:', await response.text());
-              }
-            }).catch(err => console.warn('⚠️ Error al dar primer login reward:', err));
+            setHasSynced(true);
           } else {
-            console.log('ℹ️ Usuario ya recibió reward de primer login anteriormente:', account.address);
+            console.warn('⚠️ Error al sincronizar wallet:', res.status);
           }
-
-          setHasSynced(true);
-        } else {
-          console.warn('⚠️ Error al sincronizar wallet:', res.status);
-        }
-      })
-      .catch((error) => {
-        console.error('❌ Error al sincronizar wallet:', error);
-      });
+        })
+        .catch((error) => {
+          console.error('❌ Error al sincronizar wallet:', error);
+        });
     }
   }, [account?.address, hasSynced]);
 
   // Reset sync flag when wallet disconnects
+  // Reset sync flag when wallet disconnects (with debounce to prevent nav flicker)
   useEffect(() => {
+    let timeout: NodeJS.Timeout;
     if (!account?.address) {
-      setHasSynced(false);
-      _setHasSyncedProfile(false);
+      timeout = setTimeout(() => {
+        setHasSynced(false);
+        _setHasSyncedProfile(false);
+      }, 1000); // Wait 1s before considering strictly disconnected
     }
+    return () => clearTimeout(timeout);
   }, [account?.address]);
 
   return { address: account?.address, hasSynced };
