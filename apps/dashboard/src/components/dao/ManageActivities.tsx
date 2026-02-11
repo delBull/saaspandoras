@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import { useActiveAccount, useActiveWalletConnectionStatus } from "thirdweb/react";
 import { PlusIcon, CheckCircleIcon, XCircleIcon } from "lucide-react";
 import { toast } from "sonner";
 
@@ -20,11 +21,23 @@ export function ManageActivities({ projectId }: ManageActivitiesProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [maxParticipants, setMaxParticipants] = useState("");
 
+
+    // Using hook inside component body properly:
+    const activeAccount = useActiveAccount();
+
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!activeAccount) {
+            toast.error("Wallet not connected");
+            return;
+        }
         setIsLoading(true);
 
         try {
+            // Sign message to prove ownership
+            const message = `Create Activity: ${title}\nReward: ${rewardAmount} ${rewardToken}\nDate: ${new Date().toISOString().split('T')[0]}`;
+            const signature = await activeAccount.signMessage({ message });
+
             const res = await fetch("/api/dao/activities", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -40,7 +53,10 @@ export function ManageActivities({ projectId }: ManageActivitiesProps) {
                         durationSeconds: category === 'labor' ? Number(durationHours) * 3600 : 0,
                         frequency: frequency,
                         maxParticipants: maxParticipants ? Number(maxParticipants) : undefined
-                    }
+                    },
+                    signature,
+                    signerAddress: activeAccount.address,
+                    message // Send strictly for verification if needed, but we reconstruct server side to match
                 }),
             });
 
