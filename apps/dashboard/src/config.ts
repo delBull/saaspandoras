@@ -10,7 +10,7 @@ const isStaging = branchName === 'staging';
 const defaultChain = (isStaging || process.env.NODE_ENV === 'development') ? 'sepolia' : 'base';
 
 // FORCE 'sepolia' in development to avoid .env.local mismatches causing cross-chain errors
-const chainName = process.env.NODE_ENV === 'development' ? 'sepolia' : (process.env.NEXT_PUBLIC_CHAIN_NAME || defaultChain);
+const chainName = process.env.NODE_ENV === 'development' ? 'base' : (process.env.NEXT_PUBLIC_CHAIN_NAME || defaultChain);
 const nftContractAddress = process.env.NEXT_PUBLIC_NFT_CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000";
 const poolContractAddress = process.env.NEXT_PUBLIC_POOL_CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000";
 const superAdminAddress = process.env.NEXT_PUBLIC_SUPER_ADMIN || ""; // Off-chain Super Admin override
