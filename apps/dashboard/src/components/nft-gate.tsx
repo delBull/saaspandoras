@@ -57,7 +57,7 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
   const { data: hasKey, isLoading: isLoadingKey, refetch, error } = useReadContract({
     contract,
     method: "isGateHolder",
-    params: [account?.address as string],
+    params: [account?.address!],
     queryOptions: {
       enabled: !!account?.address && !!contract,
       retry: 3, // Retry failed requests (like 0x data)
