@@ -85,6 +85,26 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
             toast({ title: "Requerido", description: "Por favor completa los campos básicos.", variant: "destructive" });
             return;
         }
+        if (step === 1 && (!data.stage || !data.teamSize)) {
+            toast({ title: "Requerido", description: "Selecciona el estado del proyecto y el tamaño del equipo.", variant: "destructive" });
+            return;
+        }
+        if (step === 2 && (!data.users || !data.revenue)) {
+            toast({ title: "Requerido", description: "Selecciona el rango de usuarios e ingresos (o 0 si no tienes).", variant: "destructive" });
+            return;
+        }
+        if (step === 3 && !data.budget) {
+            toast({ title: "Requerido", description: "Por favor indica un rango de presupuesto.", variant: "destructive" });
+            return;
+        }
+        if (step === 4 && !data.model) {
+            toast({ title: "Requerido", description: "Selecciona un modelo de trabajo.", variant: "destructive" });
+            return;
+        }
+        if (step === 5 && !data.timeline) {
+            toast({ title: "Requerido", description: "Indica tu plazo de lanzamiento.", variant: "destructive" });
+            return;
+        }
         setStep((prev) => prev + 1);
     };
 
@@ -244,15 +264,24 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
                                     <div className="space-y-3 pt-2">
                                         <Label>Categoría / Vertical</Label>
                                         <RadioGroup value={data.vertical} onValueChange={(v: string) => updateData({ vertical: v })}>
-                                            <div className="flex items-center space-x-2 border border-zinc-800 p-3 rounded-lg hover:bg-zinc-900 cursor-pointer transition-colors">
+                                            <div
+                                                onClick={() => updateData({ vertical: "Tecnología / SaaS" })}
+                                                className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.vertical === "Tecnología / SaaS" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
+                                            >
                                                 <RadioGroupItem value="Tecnología / SaaS" id="v1" />
                                                 <Label htmlFor="v1" className="cursor-pointer flex-1">Tecnología / SaaS / Crypto</Label>
                                             </div>
-                                            <div className="flex items-center space-x-2 border border-zinc-800 p-3 rounded-lg hover:bg-zinc-900 cursor-pointer transition-colors">
+                                            <div
+                                                onClick={() => updateData({ vertical: "Servicios / Agencia" })}
+                                                className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.vertical === "Servicios / Agencia" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
+                                            >
                                                 <RadioGroupItem value="Servicios / Agencia" id="v2" />
                                                 <Label htmlFor="v2" className="cursor-pointer flex-1">Servicios / Agencia / Coaching</Label>
                                             </div>
-                                            <div className="flex items-center space-x-2 border border-zinc-800 p-3 rounded-lg hover:bg-zinc-900 cursor-pointer transition-colors">
+                                            <div
+                                                onClick={() => updateData({ vertical: "Tradicional / Físico" })}
+                                                className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.vertical === "Tradicional / Físico" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
+                                            >
                                                 <RadioGroupItem value="Tradicional / Físico" id="v3" />
                                                 <Label htmlFor="v3" className="cursor-pointer flex-1">Tradicional / E-commerce / Físico</Label>
                                             </div>
@@ -270,17 +299,26 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
                                     <div className="space-y-3">
                                         <Label>Estado actual del desarrollo</Label>
                                         <RadioGroup value={data.stage} onValueChange={(v: string) => updateData({ stage: v })}>
-                                            <div className="flex items-center space-x-2 border border-zinc-800 p-3 rounded-lg hover:bg-zinc-900 cursor-pointer transition-colors">
+                                            <div
+                                                onClick={() => updateData({ stage: "Solo Idea" })}
+                                                className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.stage === "Solo Idea" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
+                                            >
                                                 <RadioGroupItem value="Solo Idea" id="s1" />
-                                                <Label htmlFor="s1" className="cursor-pointer">Solo Idea (Pre-Product)</Label>
+                                                <Label htmlFor="s1" className="cursor-pointer flex-1">Solo Idea (Pre-Product)</Label>
                                             </div>
-                                            <div className="flex items-center space-x-2 border border-zinc-800 p-3 rounded-lg hover:bg-zinc-900 cursor-pointer transition-colors">
+                                            <div
+                                                onClick={() => updateData({ stage: "MVP / Prototipo" })}
+                                                className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.stage === "MVP / Prototipo" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
+                                            >
                                                 <RadioGroupItem value="MVP / Prototipo" id="s2" />
-                                                <Label htmlFor="s2" className="cursor-pointer">MVP / Prototipo (En construcción)</Label>
+                                                <Label htmlFor="s2" className="cursor-pointer flex-1">MVP / Prototipo (En construcción)</Label>
                                             </div>
-                                            <div className="flex items-center space-x-2 border border-zinc-800 p-3 rounded-lg hover:bg-zinc-900 cursor-pointer transition-colors">
+                                            <div
+                                                onClick={() => updateData({ stage: "En el mercado" })}
+                                                className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.stage === "En el mercado" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
+                                            >
                                                 <RadioGroupItem value="En el mercado" id="s3" />
-                                                <Label htmlFor="s3" className="cursor-pointer">En el mercado (Con usuarios)</Label>
+                                                <Label htmlFor="s3" className="cursor-pointer flex-1">En el mercado (Con usuarios)</Label>
                                             </div>
                                         </RadioGroup>
                                     </div>
@@ -288,17 +326,26 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
                                     <div className="space-y-3 pt-2">
                                         <Label>Estructura del Equipo</Label>
                                         <RadioGroup value={data.teamSize} onValueChange={(v: string) => updateData({ teamSize: v })}>
-                                            <div className="flex items-center space-x-2 border border-zinc-800 p-3 rounded-lg hover:bg-zinc-900 cursor-pointer transition-colors">
+                                            <div
+                                                onClick={() => updateData({ teamSize: "Solo Founder" })}
+                                                className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.teamSize === "Solo Founder" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
+                                            >
                                                 <RadioGroupItem value="Solo Founder" id="t1" />
-                                                <Label htmlFor="t1" className="cursor-pointer">Solo Founder (Yo)</Label>
+                                                <Label htmlFor="t1" className="cursor-pointer flex-1">Solo Founder (Yo)</Label>
                                             </div>
-                                            <div className="flex items-center space-x-2 border border-zinc-800 p-3 rounded-lg hover:bg-zinc-900 cursor-pointer transition-colors">
+                                            <div
+                                                onClick={() => updateData({ teamSize: "2-3 Co-founders" })}
+                                                className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.teamSize === "2-3 Co-founders" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
+                                            >
                                                 <RadioGroupItem value="2-3 Co-founders" id="t2" />
-                                                <Label htmlFor="t2" className="cursor-pointer">2-3 Co-founders</Label>
+                                                <Label htmlFor="t2" className="cursor-pointer flex-1">2-3 Co-founders</Label>
                                             </div>
-                                            <div className="flex items-center space-x-2 border border-zinc-800 p-3 rounded-lg hover:bg-zinc-900 cursor-pointer transition-colors">
+                                            <div
+                                                onClick={() => updateData({ teamSize: "Equipo Completo" })}
+                                                className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.teamSize === "Equipo Completo" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
+                                            >
                                                 <RadioGroupItem value="Equipo Completo" id="t3" />
-                                                <Label htmlFor="t3" className="cursor-pointer">Equipo Completo (+5 personas)</Label>
+                                                <Label htmlFor="t3" className="cursor-pointer flex-1">Equipo Completo (+5 personas)</Label>
                                             </div>
                                         </RadioGroup>
                                     </div>
@@ -401,7 +448,10 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
                                     <p className="text-zinc-400 text-sm">¿Cómo prefieres estructurar la colaboración con Pandora?</p>
 
                                     <RadioGroup value={data.model} onValueChange={(v: string) => updateData({ model: v })}>
-                                        <div className="border border-zinc-800 p-4 rounded-xl hover:bg-zinc-900/50 cursor-pointer space-y-2">
+                                        <div
+                                            onClick={() => updateData({ model: "Pago directo" })}
+                                            className={`border p-4 rounded-xl cursor-pointer space-y-2 transition-colors ${data.model === "Pago directo" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900/50"}`}
+                                        >
                                             <div className="flex items-center space-x-2">
                                                 <RadioGroupItem value="Pago directo" id="m1" />
                                                 <Label htmlFor="m1" className="cursor-pointer font-bold text-white">Pago Directo (Service Provider)</Label>
@@ -409,7 +459,10 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
                                             <p className="text-xs text-zinc-500 pl-6">Contratas servicios específicos. Sin equity share. Mayor control.</p>
                                         </div>
 
-                                        <div className="border border-zinc-800 p-4 rounded-xl hover:bg-zinc-900/50 cursor-pointer space-y-2">
+                                        <div
+                                            onClick={() => updateData({ model: "Sociedad / RevShare" })}
+                                            className={`border p-4 rounded-xl cursor-pointer space-y-2 transition-colors ${data.model === "Sociedad / RevShare" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900/50"}`}
+                                        >
                                             <div className="flex items-center space-x-2">
                                                 <RadioGroupItem value="Sociedad / RevShare" id="m2" />
                                                 <Label htmlFor="m2" className="cursor-pointer font-bold text-white">Partnership / Revenue Share</Label>
@@ -417,7 +470,10 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
                                             <p className="text-xs text-zinc-500 pl-6">Pandora invierte tecnología a cambio de % de éxito. Requiere alta validación.</p>
                                         </div>
 
-                                        <div className="border border-zinc-800 p-4 rounded-xl hover:bg-zinc-900/50 cursor-pointer space-y-2">
+                                        <div
+                                            onClick={() => updateData({ model: "Recomendación" })}
+                                            className={`border p-4 rounded-xl cursor-pointer space-y-2 transition-colors ${data.model === "Recomendación" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900/50"}`}
+                                        >
                                             <div className="flex items-center space-x-2">
                                                 <RadioGroupItem value="Recomendación" id="m3" />
                                                 <Label htmlFor="m3" className="cursor-pointer font-bold text-white">No lo tengo claro</Label>
@@ -472,9 +528,13 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
                                         <RadioGroup value={data.timeline} onValueChange={(v: string) => updateData({ timeline: v })}>
                                             <div className="flex flex-col gap-2">
                                                 {["Inmediatamente (0-30 días)", "1-3 meses", "3-6 meses", "Solo explorando"].map((t) => (
-                                                    <div key={t} className="flex items-center space-x-2">
+                                                    <div
+                                                        key={t}
+                                                        onClick={() => updateData({ timeline: t })}
+                                                        className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.timeline === t ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
+                                                    >
                                                         <RadioGroupItem value={t} id={t} />
-                                                        <Label htmlFor={t} className="cursor-pointer">{t}</Label>
+                                                        <Label htmlFor={t} className="cursor-pointer flex-1">{t}</Label>
                                                     </div>
                                                 ))}
                                             </div>
