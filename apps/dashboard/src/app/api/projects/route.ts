@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "~/db";
 import { projects } from "~/db/schema";
-import { inArray, desc } from "drizzle-orm";
+import { inArray, desc, ne, and } from "drizzle-orm";
 
 export const dynamic = 'force-dynamic'; // Asegura que la ruta sea siempre dinámica
 
@@ -95,7 +95,12 @@ export async function GET() {
           featuredButtonText: projects.featuredButtonText
         })
         .from(projects)
-        .where(inArray(projects.status, ['pending', 'approved', 'live', 'completed']))
+        .where(
+          and(
+            inArray(projects.status, ['pending', 'approved', 'live', 'completed']),
+            ne(projects.businessCategory, 'infrastructure') // Exclude NFT Passes/System contracts
+          )
+        )
         .orderBy(desc(projects.createdAt));
 
       console.log(`📊 Public API: Found ${projectsData.length} projects with Drizzle query`);
