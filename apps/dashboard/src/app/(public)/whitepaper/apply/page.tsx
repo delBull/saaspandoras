@@ -138,8 +138,9 @@ export default function ApplyPage() {
                         <h3 className="text-2xl font-bold mb-6 text-white">Aplicación Fast-Track</h3>
                         <form onSubmit={handleSubmit} className="space-y-5">
                             <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1">Nombre Completo</label>
+                                <label htmlFor="name" className="block text-sm font-medium text-gray-400 mb-1">Nombre Completo</label>
                                 <input
+                                    id="name"
                                     type="text"
                                     required
                                     className="w-full bg-black border border-zinc-700 rounded-lg px-4 py-3 text-white focus:border-lime-500 focus:outline-none transition-colors"
@@ -150,8 +151,9 @@ export default function ApplyPage() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1">Contacto (WhatsApp / Email)</label>
+                                <label htmlFor="contact" className="block text-sm font-medium text-gray-400 mb-1">Contacto (WhatsApp / Email)</label>
                                 <input
+                                    id="contact"
                                     type="text"
                                     required
                                     className="w-full bg-black border border-zinc-700 rounded-lg px-4 py-3 text-white focus:border-lime-500 focus:outline-none transition-colors"
@@ -162,8 +164,9 @@ export default function ApplyPage() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1">Concepto / Idea (Breve)</label>
+                                <label htmlFor="concept" className="block text-sm font-medium text-gray-400 mb-1">Concepto / Idea (Breve)</label>
                                 <textarea
+                                    id="concept"
                                     className="w-full bg-black border border-zinc-700 rounded-lg px-4 py-3 text-white focus:border-lime-500 focus:outline-none transition-colors h-24"
                                     placeholder="Real Estate DAO, Agencia de Marketing Web3..."
                                     value={formData.concept}
@@ -173,8 +176,9 @@ export default function ApplyPage() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">Capital Disponible</label>
+                                    <label htmlFor="capital" className="block text-sm font-medium text-gray-400 mb-1">Capital Disponible</label>
                                     <select
+                                        id="capital"
                                         required
                                         className="w-full bg-black border border-zinc-700 rounded-lg px-4 py-3 text-white focus:border-lime-500 focus:outline-none transition-colors"
                                         value={formData.capital}
@@ -187,8 +191,9 @@ export default function ApplyPage() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">Disponibilidad</label>
+                                    <label htmlFor="time" className="block text-sm font-medium text-gray-400 mb-1">Disponibilidad</label>
                                     <select
+                                        id="time"
                                         required
                                         className="w-full bg-black border border-zinc-700 rounded-lg px-4 py-3 text-white focus:border-lime-500 focus:outline-none transition-colors"
                                         value={formData.time}
