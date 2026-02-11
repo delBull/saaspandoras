@@ -21,14 +21,17 @@ async function main() {
             title: "Pandora's DAO",
             slug: "pandoras",
             description: "The official governance DAO for Pandora's Protocol.",
-            short_description: "Governance",
-            status: "published",
-            chain_id: 8453, // Base
-            category: "infrastructure", // or similar
-            // Add other required fields with defaults
+            tagline: "Governance",
+            status: "live",
+            chainId: 8453, // Base
+            businessCategory: "infrastructure",
         }).returning();
 
-        console.log("Created Project ID:", inserted.id);
+        if (inserted) {
+            console.log("Created Project ID:", inserted.id);
+        } else {
+            console.error("Failed to create project.");
+        }
     } catch (error) {
         console.error("Error:", error);
     }
