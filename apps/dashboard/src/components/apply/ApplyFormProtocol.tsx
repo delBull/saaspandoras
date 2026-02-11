@@ -264,38 +264,35 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
                                     <div className="space-y-3 pt-2">
                                         <div className="space-y-3 pt-2">
                                             <Label>Categoría / Vertical</Label>
-                                            <div className="space-y-2">
+                                            <RadioGroup
+                                                value={data.vertical}
+                                                onValueChange={(val) => updateData({ vertical: val })}
+                                                className="space-y-2"
+                                            >
                                                 <div
-                                                    role="button"
-                                                    tabIndex={0}
-                                                    onClick={() => updateData({ vertical: "Tecnología / SaaS" })}
-                                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ vertical: "Tecnología / SaaS" }); }}
                                                     className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.vertical === "Tecnología / SaaS" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
+                                                    onClick={() => updateData({ vertical: "Tecnología / SaaS" })}
                                                 >
-                                                    <RadioGroupItem value="Tecnología / SaaS" id="v1" checked={data.vertical === "Tecnología / SaaS"} />
+                                                    <RadioGroupItem value="Tecnología / SaaS" id="v1" />
                                                     <Label htmlFor="v1" className="cursor-pointer flex-1">Tecnología / SaaS / Crypto</Label>
                                                 </div>
+
                                                 <div
-                                                    role="button"
-                                                    tabIndex={0}
-                                                    onClick={() => updateData({ vertical: "Servicios / Agencia" })}
-                                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ vertical: "Servicios / Agencia" }); }}
                                                     className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.vertical === "Servicios / Agencia" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
+                                                    onClick={() => updateData({ vertical: "Servicios / Agencia" })}
                                                 >
-                                                    <RadioGroupItem value="Servicios / Agencia" id="v2" checked={data.vertical === "Servicios / Agencia"} />
+                                                    <RadioGroupItem value="Servicios / Agencia" id="v2" />
                                                     <Label htmlFor="v2" className="cursor-pointer flex-1">Servicios / Agencia / Coaching</Label>
                                                 </div>
+
                                                 <div
-                                                    role="button"
-                                                    tabIndex={0}
-                                                    onClick={() => updateData({ vertical: "Tradicional / Físico" })}
-                                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ vertical: "Tradicional / Físico" }); }}
                                                     className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.vertical === "Tradicional / Físico" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
+                                                    onClick={() => updateData({ vertical: "Tradicional / Físico" })}
                                                 >
-                                                    <RadioGroupItem value="Tradicional / Físico" id="v3" checked={data.vertical === "Tradicional / Físico"} />
+                                                    <RadioGroupItem value="Tradicional / Físico" id="v3" />
                                                     <Label htmlFor="v3" className="cursor-pointer flex-1">Tradicional / E-commerce / Físico</Label>
                                                 </div>
-                                            </div>
+                                            </RadioGroup>
                                         </div>
                                     </div>
                                 </div>
