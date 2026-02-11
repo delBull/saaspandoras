@@ -607,6 +607,17 @@ export const governanceEvents = pgTable("governance_events", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+export const governanceVotes = pgTable("governance_votes", {
+  id: serial("id").primaryKey(),
+  proposalId: integer("proposal_id").notNull().references(() => governanceEvents.id, { onDelete: 'cascade' }),
+  voterAddress: text("voter_address").notNull(),
+  support: integer("support").notNull(), // 0=Against, 1=For, 2=Abstain
+  signature: text("signature"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => ({
+  unq: uniqueIndex("unique_vote").on(t.proposalId, t.voterAddress),
+}));
+
 // --- EMAIL METRICS TABLES ---
 
 // Tabla para almacenar métricas de envío de emails desde Resend webhooks

@@ -29,7 +29,12 @@ export function CreateProposalModal({ projectId, isOpen, onClose, onCreated, vot
     const [decimals, setDecimals] = useState(18);
 
     // Mode: On-Chain vs Database
-    const isOffChain = !votingContractAddress;
+    // Default to Off-Chain (Free) if no contract, OR if user prefers.
+    // We initiate based on contract existence, but allow toggle.
+    const hasVotingContract = !!votingContractAddress;
+    const [submissionMode, setSubmissionMode] = useState<'onchain' | 'offchain'>(hasVotingContract ? 'onchain' : 'offchain');
+
+    const isOffChain = submissionMode === 'offchain';
     const [isLoading, setIsLoading] = useState(false);
 
     // On-Chain State
@@ -53,7 +58,7 @@ export function CreateProposalModal({ projectId, isOpen, onClose, onCreated, vot
                     projectId,
                     title,
                     description,
-                    type: 'on_chain_proposal',
+                    type: 'off_chain_signal', // Changed from on_chain_proposal for DB events
                     startDate: new Date().toISOString(),
                     status: 'active'
                 }),
@@ -61,7 +66,7 @@ export function CreateProposalModal({ projectId, isOpen, onClose, onCreated, vot
 
             if (!res.ok) throw new Error("Failed to create off-chain event");
 
-            toast.success("Evento creado");
+            toast.success("Evento creado (Off-Chain)");
             onCreated();
             onClose();
         } catch (error: any) {
@@ -121,13 +126,37 @@ export function CreateProposalModal({ projectId, isOpen, onClose, onCreated, vot
                 </button>
 
                 <h3 className="text-xl font-bold text-white mb-4">
-                    {isOffChain ? "Nueva Propuesta / Evento" : "Nueva Propuesta On-Chain"}
+                    {isOffChain ? "Nueva Propuesta (Gratis)" : "Nueva Propuesta On-Chain"}
                 </h3>
+
+                {/* Sub-Header / Mode Selection for Text Proposals */}
+                {hasVotingContract && actionType === 'text' && (
+                    <div className="flex items-center gap-2 mb-4 bg-zinc-950 p-1 rounded-lg border border-zinc-800">
+                        <button
+                            type="button"
+                            onClick={() => setSubmissionMode('offchain')}
+                            className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${submissionMode === 'offchain' ? 'bg-zinc-800 text-lime-400' : 'text-zinc-500 hover:text-zinc-300'}`}
+                        >
+                            Off-Chain (Gratis)
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setSubmissionMode('onchain')}
+                            className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${submissionMode === 'onchain' ? 'bg-zinc-800 text-purple-400' : 'text-zinc-500 hover:text-zinc-300'}`}
+                        >
+                            On-Chain (Gas)
+                        </button>
+                    </div>
+                )}
+
 
                 <div className="flex bg-zinc-950 p-1 rounded-lg mb-4">
                     <button
                         type="button"
-                        onClick={() => setActionType('text')}
+                        onClick={() => {
+                            setActionType('text');
+                            // If switching to text, default to offchain if intended for free, but let's keep current mode unless forced
+                        }}
                         className={`flex-1 py-2 text-sm font-bold rounded-md transition-all flex items-center justify-center gap-2 ${actionType === 'text' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-500 hover:text-zinc-300'}`}
                     >
                         <FileTextIcon className="w-4 h-4" />
@@ -135,9 +164,12 @@ export function CreateProposalModal({ projectId, isOpen, onClose, onCreated, vot
                     </button>
                     <button
                         type="button"
-                        onClick={() => setActionType('transfer')}
-                        disabled={isOffChain}
-                        className={`flex-1 py-2 text-sm font-bold rounded-md transition-all flex items-center justify-center gap-2 ${actionType === 'transfer' ? 'bg-zinc-800 text-lime-400 shadow' : 'text-zinc-500 hover:text-zinc-300'} ${isOffChain ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        onClick={() => {
+                            setActionType('transfer');
+                            setSubmissionMode('onchain'); // Transfers MUST be on-chain
+                        }}
+                        disabled={!hasVotingContract}
+                        className={`flex-1 py-2 text-sm font-bold rounded-md transition-all flex items-center justify-center gap-2 ${actionType === 'transfer' ? 'bg-zinc-800 text-lime-400 shadow' : 'text-zinc-500 hover:text-zinc-300'} ${!hasVotingContract ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         <BanknoteIcon className="w-4 h-4" />
                         Transferencia
@@ -163,11 +195,12 @@ export function CreateProposalModal({ projectId, isOpen, onClose, onCreated, vot
                             value={description}
                             onChange={e => setDescription(e.target.value)}
                             rows={3}
-                            placeholder={isOffChain ? "" : "Detalles de la propuesta..."}
+                            placeholder={isOffChain ? "Detalles de la discusión..." : "Detalles de la propuesta..."}
                             required
                         />
                     </div>
 
+                    {/* Only show Transfer Details if Transfer Mode AND OnChain */}
                     {actionType === 'transfer' && !isOffChain && (
                         <div className="bg-zinc-950/50 p-3 rounded-xl border border-zinc-800 space-y-3">
                             <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Detalles de Transferencia</p>
@@ -224,9 +257,9 @@ export function CreateProposalModal({ projectId, isOpen, onClose, onCreated, vot
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full bg-lime-500 hover:bg-lime-400 text-black font-bold py-3 rounded-xl mt-2 transition-colors"
+                            className="w-full bg-lime-500 hover:bg-lime-400 text-black font-bold py-3 rounded-xl mt-2 transition-colors flex items-center justify-center gap-2"
                         >
-                            {isLoading ? "Creando..." : "Publicar Evento"}
+                            {isLoading ? "Creando..." : "Publicar Discusión (Gratis)"}
                         </button>
                     ) : (
 
@@ -250,9 +283,9 @@ export function CreateProposalModal({ projectId, isOpen, onClose, onCreated, vot
                                 onClose();
                             }}
                             onError={(e) => toast.error("Error creating proposal: " + e.message)}
-                            className="w-full bg-lime-500 hover:bg-lime-400 text-black font-bold py-3 rounded-xl mt-2 transition-colors"
+                            className="w-full bg-purple-500 hover:bg-purple-400 text-white font-bold py-3 rounded-xl mt-2 transition-colors"
                         >
-                            Confirmar en Blockchain
+                            Confirmar en Blockchain (Gas)
                         </TransactionButton>
                     )}
                 </form>

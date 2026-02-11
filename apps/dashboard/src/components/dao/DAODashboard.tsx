@@ -8,7 +8,7 @@ import { CreateProposalModal } from "./CreateProposalModal";
 import { DAOMetrics } from "./DAOMetrics";
 import { DAOChat } from "./DAOChat";
 import { DAODocs } from "./DAODocs";
-import { VoteIcon, Wallet, WalletIcon, TrendingUpIcon, ActivityIcon, ArrowUpRightIcon, HelpCircleIcon, SettingsIcon, LockIcon, ListTodoIcon, TrophyIcon, UsersIcon, InfoIcon, ShieldCheckIcon } from "lucide-react";
+import { VoteIcon, Wallet, WalletIcon, TrendingUpIcon, ActivityIcon, ArrowUpRightIcon, HelpCircleIcon, SettingsIcon, LockIcon, ListTodoIcon, TrophyIcon, UsersIcon, InfoIcon, ShieldCheckIcon, MessageSquare } from "lucide-react";
 import { motion } from "framer-motion";
 import { useReadContract, useWalletBalance, useActiveAccount, TransactionButton } from "thirdweb/react";
 import { Input } from "@/components/ui/input";
@@ -285,9 +285,9 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
     );
 
     const ProposalsView = () => (
-        <div className="space-y-6">
+        <div className="space-y-8">
             <div className="flex justify-between items-center">
-                <h3 className="text-xl font-bold text-white">Todas las Propuestas</h3>
+                <h3 className="text-xl font-bold text-white">Gobernanza del DAO</h3>
                 {isOwner && (
                     <button
                         onClick={() => setIsProposalModalOpen(true)}
@@ -297,19 +297,31 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                     </button>
                 )}
             </div>
+
+            {/* 1. On-Chain Proposals (Formal) */}
             {project.voting_contract_address ? (
-                <OnChainProposalsList
-                    votingContractAddress={project.voting_contract_address}
-                    chainId={safeChainId}
-                />
-            ) : (
                 <div className="space-y-4">
-                    <div className="bg-yellow-900/20 border border-yellow-500/30 text-yellow-400 p-4 rounded-xl text-sm mb-4">
-                        Este proyecto no tiene un contrato de votación configurado. Las propuestas serán off-chain.
-                    </div>
-                    <UserGovernanceList projectIds={[Number(project.id)]} />
+                    <h4 className="text-sm font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2">
+                        <ShieldCheckIcon className="w-4 h-4" /> Propuestas On-Chain (Vinculantes)
+                    </h4>
+                    <OnChainProposalsList
+                        votingContractAddress={project.voting_contract_address}
+                        chainId={safeChainId}
+                    />
+                </div>
+            ) : (
+                <div className="bg-yellow-900/20 border border-yellow-500/30 text-yellow-400 p-4 rounded-xl text-sm">
+                    Este proyecto no tiene un contrato de votación configurado. Las propuestas serán off-chain.
                 </div>
             )}
+
+            {/* 2. Off-Chain / Signaling (Informal) */}
+            <div className="space-y-4">
+                <h4 className="text-sm font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4" /> Discusiones & Señalización (Gratis)
+                </h4>
+                <UserGovernanceList projectIds={[Number(project.id)]} />
+            </div>
         </div>
     );
 
