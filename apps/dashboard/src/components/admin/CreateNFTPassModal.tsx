@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@saasfly/ui/use-toast";
 import { useActiveAccount, useSendTransaction } from "thirdweb/react";
@@ -25,6 +25,7 @@ import {
     GiftIcon
 } from "@heroicons/react/24/outline";
 import QRCode from "react-qr-code";
+import QRCodeLib from "qrcode";
 
 // Extended ABI for adminMint
 const EXTENDED_ABI = [
@@ -175,6 +176,8 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
         }
     };
 
+    const preGeneratedSlugRef = useRef<string | null>(null);
+
     const handleDeploy = async () => {
         if (!account?.address) {
             toast({ title: "Error", description: "Conecta tu wallet primero", variant: "destructive" });
@@ -204,6 +207,35 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
         }, 2000);
 
         try {
+            let finalImage = formData.imageUrl || formData.imagePreview || '';
+
+            // Generate QR Code if needed
+            if (nftType === 'qr') {
+                try {
+                    const timestamp = Date.now().toString(36);
+                    const random = Math.random().toString(36).substring(2, 7);
+                    const slug = `qr-${timestamp}-${random}`;
+                    preGeneratedSlugRef.current = slug;
+
+                    const shortlinkUrl = `${window.location.origin}/${slug}`;
+                    console.log("Generating QR for:", shortlinkUrl);
+
+                    // Generate Data URI
+                    finalImage = await QRCodeLib.toDataURL(shortlinkUrl, {
+                        errorCorrectionLevel: 'H',
+                        margin: 2,
+                        width: 500,
+                        color: {
+                            dark: '#000000',
+                            light: '#ffffff'
+                        }
+                    });
+                } catch (e) {
+                    console.error("QR Generation failed", e);
+                    throw new Error("No se pudo generar el código QR");
+                }
+            }
+
             const payload = {
                 name: formData.name,
                 symbol: formData.symbol,
@@ -212,7 +244,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                 description: formData.description,
                 owner: account.address,
                 treasuryAddress: formData.treasury || account.address,
-                image: formData.imageUrl || formData.imagePreview || ''
+                image: finalImage
             };
 
             const res = await fetch("/api/admin/deploy/nft-pass", {
@@ -232,9 +264,9 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
             setDeployedAddress(data.address);
 
             // 4a. If "QR / Action", create the shortlink
-            if (nftType === 'qr') {
+            if (nftType === 'qr' && preGeneratedSlugRef.current) {
                 try {
-                    const slug = `qr-${data.address.slice(-8).toLowerCase()}`;
+                    const slug = preGeneratedSlugRef.current;
                     const fullUrl = `${window.location.origin}/${slug}`;
 
                     await fetch('/api/admin/shortlinks', {
@@ -247,7 +279,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                             description: `Smart QR for NFT ${data.address}`
                         })
                     });
-                    // Even if it fails (duplicate slug), we might want to handle it, but for now we assume success or ignore
+
                     setGeneratedShortlink(fullUrl);
                 } catch (e) {
                     console.error("Failed to create shortlink", e);
