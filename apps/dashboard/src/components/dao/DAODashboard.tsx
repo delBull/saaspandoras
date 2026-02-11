@@ -318,7 +318,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
             {/* 2. Off-Chain / Signaling (Informal) */}
             <div className="space-y-4">
                 <h4 className="text-sm font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4" /> Discusiones & Señalización (Gratis)
+                    <MessageSquare className="w-4 h-4" /> Discusiones & Señalización
                 </h4>
                 <UserGovernanceList projectIds={[Number(project.id)]} />
             </div>

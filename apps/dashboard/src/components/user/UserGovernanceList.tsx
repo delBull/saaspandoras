@@ -93,7 +93,10 @@ function GovernanceEventCard({ event, account }: { event: GovernanceEvent, accou
                 })
             });
 
-            if (!res.ok) throw new Error("Failed to submit vote");
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || "Failed to submit vote");
+            }
 
             toast.success("Voto registrado (Gratis)!", { id: toastId });
             refreshVotes();

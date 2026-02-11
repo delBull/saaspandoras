@@ -55,7 +55,7 @@ export function Providers({
         <AutoConnect
           client={client}
           wallets={wallets}
-          // accountAbstraction={accountAbstractionConfig} // ❌ DISABLED GLOBAL AA: Allows Metamask to stay EOA.
+          accountAbstraction={accountAbstractionConfig} // ✅ GLOBAL AA ENABLED for Gasless DAO
           timeout={15000}  // Increased to prevent premature timeout on navigation
           onConnect={(wallet) => {
             if (process.env.NODE_ENV === 'development') {
