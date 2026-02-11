@@ -57,8 +57,11 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
   const { data: hasKey, isLoading: isLoadingKey, refetch, error } = useReadContract({
     contract,
     method: "isGateHolder",
-    params: [account?.address || "0x0000000000000000000000000000000000000000"],
-    queryOptions: { enabled: !!account },
+    params: [account?.address as string],
+    queryOptions: {
+      enabled: !!account?.address && !!contract,
+      retry: 3, // Retry failed requests (like 0x data)
+    },
   });
 
 
@@ -289,8 +292,7 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
   // Fallback para estado indefinido o error en lectura
   if (!isLoadingKey && hasKey === undefined) {
     if (process.env.NODE_ENV === 'development') {
-      console.error("NFTGate Error:", {
-        error,
+      console.error("NFTGate Error:", error, {
         contractAddress: config.nftContractAddress,
         chainId: config.chain.id,
         chainName: config.chain.name,

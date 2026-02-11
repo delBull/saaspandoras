@@ -417,7 +417,7 @@ export default function WalletProPage() {
             >
               <div className="flex flex-wrap justify-center gap-4">
                 <Link href="/profile">
-                  <Button variant="outline" className="border-zinc-700 hover:border-orange-500/50">
+                  <Button variant="outline" className="border-zinc-700 text-gray-900 hover:border-orange-500/50">
                     <CogIcon className="w-4 h-4 mr-2" />
                     Ir al Perfil
                   </Button>

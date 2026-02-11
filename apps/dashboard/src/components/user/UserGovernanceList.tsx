@@ -43,7 +43,8 @@ export function UserGovernanceList({ projectIds }: { projectIds: number[] }) {
     };
 
     if (isLoading) return <div className="text-gray-500 text-sm animate-pulse">Checking for events...</div>;
-    if (!events || events.length === 0) return null; // Hide if no events
+    if (isLoading) return <div className="text-gray-500 text-sm animate-pulse">Checking for events...</div>;
+    if (!events || !Array.isArray(events) || events.length === 0) return null; // Hide if no valid events found
 
     return (
         <div className="space-y-4">

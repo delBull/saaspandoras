@@ -1,4 +1,5 @@
 import { sql } from "./database";
+import { randomUUID } from "crypto";
 
 export async function ensureUser(walletAddress: string) {
 
@@ -16,8 +17,8 @@ export async function ensureUser(walletAddress: string) {
 
     // If not found, create new user
     const newUsers = await sql`
-      INSERT INTO "users" ("walletAddress", "createdAt")
-      VALUES (LOWER(${walletAddress}), NOW())
+      INSERT INTO "users" ("id", "walletAddress", "createdAt")
+      VALUES (${randomUUID()}, LOWER(${walletAddress}), ${new Date().toISOString()})
       RETURNING "id"
     `;
 

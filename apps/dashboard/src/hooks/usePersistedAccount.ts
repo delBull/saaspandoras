@@ -47,7 +47,7 @@ export function usePersistedAccount() {
 
           if (isSocialWallet) {
             // Para social logins, mantener shouldReconnect pero marcar como social
-            const socialSession = { ...parsed, isSocial: true };
+            const socialSession = { ...parsed, isSocial: true, walletType: 'smart' as WalletId }; // 🛡️ Force upgrade to 'smart'
             setSession(socialSession);
             if (process.env.NODE_ENV === 'development') {
               console.log("🔄 Sesión social encontrada:", parsed.walletType);
@@ -94,7 +94,7 @@ export function usePersistedAccount() {
 
       const data: SavedSession = {
         address: account.address,
-        walletType: activeWallet.id,
+        walletType: isSocial ? 'smart' : activeWallet.id, // 🛡️ FORCE 'smart' type for Social Logins to ensure AutoConnect uses the wrapper
         // Permitir reconexión automática para TODAS las wallets usando sesión del servidor
         shouldReconnect: true,
         isSocial,

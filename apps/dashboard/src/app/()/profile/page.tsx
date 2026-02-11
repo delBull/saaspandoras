@@ -157,7 +157,7 @@ export default function ProfilePage() {
 
         {/* Panel Derecho - Gamificación */}
         <div className="space-y-6">
-          <Card>
+          <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BoltIcon className="w-5 h-5 text-yellow-400" />
@@ -250,7 +250,7 @@ export default function ProfilePage() {
               <ReferralsCard />
             </>
           ) : (
-            <Card className="bg-zinc-900 border-zinc-800">
+            <Card className="bg-zinc-900/50 border-zinc-800 backdrop-blur-sm">
               <CardContent className="text-center py-8">
                 <div className="text-cyan-400 text-lg mb-2">🔗 Compartir & Ganar</div>
                 <p className="text-sm text-gray-400">Conecta tu wallet para compartir y gestionar referidos</p>

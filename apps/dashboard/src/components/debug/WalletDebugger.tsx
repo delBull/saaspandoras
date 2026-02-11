@@ -12,6 +12,18 @@ export function WalletDebugger() {
     // Only show in dev or staging
     const shouldShow = process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF === 'staging';
 
+    useEffect(() => {
+        if (account || wallet) {
+            console.group("🐞 Wallet Debugger State");
+            console.log("Account Address:", account?.address);
+            console.log("Wallet ID:", wallet?.id);
+            console.log("Chain ID:", chain?.id);
+            console.log("Full Wallet Object:", wallet);
+            console.log("Full Account Object:", account);
+            console.groupEnd();
+        }
+    }, [account, wallet, chain]);
+
     if (!shouldShow) return null;
 
     if (!account) return null;

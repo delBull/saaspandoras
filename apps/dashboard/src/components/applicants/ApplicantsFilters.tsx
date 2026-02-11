@@ -99,27 +99,28 @@ export function ApplicantsFilters({
   return (
     <div className="space-y-4">
       {/* Desktop Filters Bar */}
-      <div className="hidden lg:flex items-center justify-between gap-4 p-4 bg-gray-50 dark:bg-zinc-900/50 rounded-xl border border-gray-200 dark:border-zinc-800 overflow-hidden">
+      {/* Desktop Filters Bar */}
+      <div className="hidden lg:flex items-center justify-between gap-4 p-4 bg-black/40 backdrop-blur-xl rounded-xl border border-white/10 overflow-hidden">
         <div className="flex items-center gap-4 flex-1">
           {/* Search */}
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-500" />
             <Input
               placeholder="Buscar protocolos..."
               value={filters.search}
               onChange={(e) => updateFilter('search', e.target.value)}
-              className="pl-10 bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-xs text-gray-900 dark:text-white placeholder-gray-400"
+              className="pl-10 bg-black/20 border-white/10 text-xs text-white placeholder-zinc-500 focus:border-lime-500/50 transition-colors"
             />
           </div>
 
           {/* Quick Filters */}
           <Select value={filters.category} onValueChange={(value) => updateFilter('category', value)}>
-            <SelectTrigger className="w-48 bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-xs text-gray-900 dark:text-white">
+            <SelectTrigger className="w-48 bg-black/20 border-white/10 text-xs text-zinc-300">
               <SelectValue placeholder="Categoría" />
             </SelectTrigger>
-            <SelectContent className="bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-700">
+            <SelectContent className="bg-zinc-900 border-zinc-800">
               {categories.map((category) => (
-                <SelectItem key={category.value} value={category.value} className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-zinc-700">
+                <SelectItem key={category.value} value={category.value} className="text-white hover:bg-zinc-800 focus:bg-zinc-800">
                   {category.label}
                 </SelectItem>
               ))}
@@ -131,12 +132,12 @@ export function ApplicantsFilters({
 
         <div className="flex items-center gap-2">
           {/* View Mode Toggle */}
-          <div className="flex items-center bg-gray-100 dark:bg-zinc-800 rounded-lg p-1">
+          <div className="flex items-center bg-black/20 rounded-lg p-1 border border-white/5">
             <Button
               variant={viewMode === 'grid' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => onViewModeChange('grid')}
-              className={`px-3 py-1 ${viewMode === 'grid' ? 'bg-lime-500 text-black' : 'text-gray-400'}`}
+              className={`px-3 py-1 ${viewMode === 'grid' ? 'bg-lime-500 text-black' : 'text-zinc-500 hover:text-white'}`}
             >
               <Grid3X3 className="w-4 h-4" />
             </Button>
@@ -144,7 +145,7 @@ export function ApplicantsFilters({
               variant={viewMode === 'list' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => onViewModeChange('list')}
-              className={`px-3 py-1 ${viewMode === 'list' ? 'bg-lime-500 text-black' : 'text-gray-400'}`}
+              className={`px-3 py-1 ${viewMode === 'list' ? 'bg-lime-500 text-black' : 'text-zinc-500 hover:text-white'}`}
             >
               <List className="w-4 h-4" />
             </Button>
@@ -152,14 +153,14 @@ export function ApplicantsFilters({
 
           {/* Grid Columns (only for grid view) */}
           {viewMode === 'grid' && (
-            <div className="flex items-center bg-gray-100 dark:bg-zinc-800 rounded-lg p-1">
+            <div className="flex items-center bg-black/20 rounded-lg p-1 border border-white/5">
               {[3, 4].map((cols) => (
                 <Button
                   key={cols}
                   variant={gridColumns === cols ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => onGridColumnsChange(cols as GridColumns)}
-                  className={`px-2 py-1 text-xs ${gridColumns === cols ? 'bg-lime-500 text-black' : 'text-gray-600 dark:text-gray-400'}`}
+                  className={`px-2 py-1 text-xs ${gridColumns === cols ? 'bg-lime-500 text-black' : 'text-zinc-500 hover:text-white'}`}
                 >
                   {cols}
                 </Button>
@@ -174,12 +175,12 @@ export function ApplicantsFilters({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {/* Mobile View Mode Toggle */}
-            <div className="flex items-center bg-gray-100 dark:bg-zinc-800 rounded-lg p-1">
+            <div className="flex items-center bg-zinc-900 rounded-lg p-1 border border-zinc-800">
               <Button
                 variant={viewMode === 'grid' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => onViewModeChange('grid')}
-                className={`px-3 py-1 ${viewMode === 'grid' ? 'bg-lime-500 text-black' : 'text-gray-600 dark:text-gray-400'}`}
+                className={`px-3 py-1 ${viewMode === 'grid' ? 'bg-lime-500 text-black' : 'text-zinc-500'}`}
               >
                 <Grid3X3 className="w-4 h-4" />
               </Button>
@@ -187,7 +188,7 @@ export function ApplicantsFilters({
                 variant={viewMode === 'list' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => onViewModeChange('list')}
-                className={`px-3 py-1 ${viewMode === 'list' ? 'bg-lime-500 text-black' : 'text-gray-600 dark:text-gray-400'}`}
+                className={`px-3 py-1 ${viewMode === 'list' ? 'bg-lime-500 text-black' : 'text-zinc-500'}`}
               >
                 <List className="w-4 h-4" />
               </Button>
@@ -201,7 +202,7 @@ export function ApplicantsFilters({
             )}
           </div>
 
-          <Button variant="outline" size="sm" className="border-gray-300 dark:border-zinc-600 text-gray-700 dark:text-gray-300">
+          <Button variant="outline" size="sm" className="border-zinc-700 bg-zinc-900 text-zinc-300">
             <Filter className="w-4 h-4 mr-2" />
             Filtros
             {hasActiveFilters && (
@@ -213,12 +214,12 @@ export function ApplicantsFilters({
         {/* Mobile Quick Filters */}
         <div className="flex gap-2 overflow-x-auto pb-2">
           <Select value={filters.category} onValueChange={(value) => updateFilter('category', value)}>
-            <SelectTrigger className="bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-white min-w-[140px]">
+            <SelectTrigger className="bg-zinc-900 border-zinc-800 text-white min-w-[140px]">
               <SelectValue placeholder="Categoría" />
             </SelectTrigger>
-            <SelectContent className="bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-700">
+            <SelectContent className="bg-zinc-900 border-zinc-800">
               {categories.slice(0, 4).map((category) => (
-                <SelectItem key={category.value} value={category.value} className="text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-zinc-700">
+                <SelectItem key={category.value} value={category.value} className="text-white hover:bg-zinc-800">
                   {category.label}
                 </SelectItem>
               ))}
