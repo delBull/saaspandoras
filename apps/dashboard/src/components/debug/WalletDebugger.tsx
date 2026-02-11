@@ -9,8 +9,8 @@ export function WalletDebugger() {
     const chain = useActiveWalletChain();
     const [isVisible, setIsVisible] = useState(false);
 
-    // Only show in dev or staging
-    const shouldShow = process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF === 'staging';
+    // Only show in dev (Localhost)
+    const shouldShow = process.env.NODE_ENV === 'development';
 
     useEffect(() => {
         if (account || wallet) {
