@@ -4,6 +4,7 @@ import { Toaster, toast } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThirdwebProvider, AutoConnect, useActiveAccount } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
+import { config as appConfig } from "@/config";
 import { useThirdwebUserSync } from "@/hooks/useThirdwebUserSync";
 import { wallets, accountAbstractionConfig } from "@/config/wallets";
 // 🎮 IMPORTAR GAMIFICATION PROVIDER
@@ -55,7 +56,7 @@ export function Providers({
           client={client}
           wallets={wallets}
           // accountAbstraction={accountAbstractionConfig} // ❌ DISABLED GLOBAL AA: Allows Metamask to stay EOA.
-          timeout={3000}  // Mucho menos agresivo para evitar spamming
+          timeout={15000}  // Increased to prevent premature timeout on navigation
           onConnect={(wallet) => {
             if (process.env.NODE_ENV === 'development') {
               console.log("🔗 AutoConnect: Wallet conectada automáticamente", wallet.id);
