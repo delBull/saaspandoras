@@ -320,7 +320,7 @@ export default function ProfileProjectsPage() {
   if (!walletAddress) {
     return (
       <div className="py-4 px-2 md:p-6">
-        <Card>
+        <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
           <CardHeader>
             <CardTitle>Acceso Denegado</CardTitle>
             <CardDescription>Necesitas estar conectado para ver tus protocolos.</CardDescription>
@@ -401,7 +401,7 @@ export default function ProfileProjectsPage() {
       {/* Summary Stats */}
       {userProjects.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card>
+          <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -421,7 +421,7 @@ export default function ProfileProjectsPage() {
           {/* Only show investment metrics for non-admin users or if user has personal projects */}
           {walletAddress?.toLowerCase() !== '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9' && userProjects.reduce((total, p) => total + calculateProjectMetrics(p).raisedAmount, 0) > 0 ? (
             <>
-              <Card>
+              <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -435,7 +435,7 @@ export default function ProfileProjectsPage() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -449,7 +449,7 @@ export default function ProfileProjectsPage() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -466,7 +466,7 @@ export default function ProfileProjectsPage() {
           ) : walletAddress?.toLowerCase() === '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9' ? (
             <>
               {/* Alternative metrics for admin dashboard */}
-              <Card>
+              <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -480,7 +480,7 @@ export default function ProfileProjectsPage() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -494,7 +494,7 @@ export default function ProfileProjectsPage() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -510,7 +510,7 @@ export default function ProfileProjectsPage() {
             </>
           ) : (
             <>
-              <Card>
+              <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -521,7 +521,7 @@ export default function ProfileProjectsPage() {
                   </div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -532,7 +532,7 @@ export default function ProfileProjectsPage() {
                   </div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -554,7 +554,7 @@ export default function ProfileProjectsPage() {
           userProjects.map((project) => {
             const metrics = calculateProjectMetrics(project);
             return (
-              <Card key={project.id} className="hover:bg-zinc-800/50 transition-colors border-zinc-700 flex flex-col h-full">
+              <Card key={project.id} className="bg-black/40 border-zinc-800 backdrop-blur-sm hover:bg-zinc-800/50 transition-colors flex flex-col h-full">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
@@ -639,7 +639,7 @@ export default function ProfileProjectsPage() {
             );
           })
         ) : (
-          <Card>
+          <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
             <CardContent className="p-12 text-center">
               <FolderIcon className="w-16 h-16 text-gray-500 mx-auto mb-4" />
               <h3 className="text-xl font-medium text-white mb-2">Sin Protocolos</h3>
@@ -660,7 +660,7 @@ export default function ProfileProjectsPage() {
       </div>
 
       {/* Coming Soon - Advanced Analytics */}
-      <Card className="border-dashed border-gray-600">
+      <Card className="bg-black/40 border-dashed border-gray-600 backdrop-blur-sm">
         <CardContent className="p-6 text-center">
           <ChartBarIcon className="w-12 h-12 text-gray-500 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-white mb-2">Analytics Avanzado Próximamente</h3>

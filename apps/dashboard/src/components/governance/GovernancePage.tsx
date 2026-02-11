@@ -252,7 +252,11 @@ export default function GovernancePage() {
                             <CardTitle>Actividad Reciente</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <UserGovernanceList projectIds={[Number(project.id)]} />
+                            {project.id && !isNaN(Number(project.id)) ? (
+                                <UserGovernanceList projectIds={[Number(project.id)]} />
+                            ) : (
+                                <div className="text-sm text-zinc-500">No events available.</div>
+                            )}
                         </CardContent>
                     </Card>
                 </div>

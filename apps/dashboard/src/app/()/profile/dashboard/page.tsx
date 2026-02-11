@@ -110,7 +110,7 @@ export default function PandoriansDashboardPage() {
   if (isError || !walletAddress) {
     return (
       <div className="py-4 px-2 md:p-6">
-        <Card>
+        <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm text-red-400">
           <CardHeader>
             <CardTitle>Acceso Denegado</CardTitle>
             <CardDescription>Necesitas estar conectado para ver tu dashboard.</CardDescription>
@@ -123,7 +123,7 @@ export default function PandoriansDashboardPage() {
   if (!profile) {
     return (
       <div className="py-4 px-2 md:p-6">
-        <Card>
+        <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
           <CardContent className="p-6">
             <p>No se encontró información de perfil.</p>
           </CardContent>
@@ -303,7 +303,7 @@ export default function PandoriansDashboardPage() {
         ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
         : 'grid-cols-1 md:grid-cols-3'
         }`}>
-        <Card>
+        <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -317,7 +317,7 @@ export default function PandoriansDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -333,7 +333,7 @@ export default function PandoriansDashboardPage() {
 
         {/* Proyectos Activos - Only for applicants */}
         {profile.role === 'applicant' && (
-          <Card>
+          <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -348,7 +348,7 @@ export default function PandoriansDashboardPage() {
           </Card>
         )}
 
-        <Card>
+        <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -365,7 +365,7 @@ export default function PandoriansDashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Activity */}
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 bg-black/40 border-zinc-800 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ClockIcon className="w-5 h-5" />
@@ -402,7 +402,7 @@ export default function PandoriansDashboardPage() {
         </Card>
 
         {/* Quick Actions */}
-        <Card>
+        <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
           <CardHeader>
             <CardTitle>Acciones Rápidas</CardTitle>
             <CardDescription>
@@ -467,7 +467,7 @@ export default function PandoriansDashboardPage() {
 
       {/* Project Status Overview (only for applicants with projects) */}
       {profile.role === 'applicant' && projects.length > 0 && (
-        <Card>
+        <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
           <CardHeader>
             <CardTitle>Estado de Protocolos</CardTitle>
             <CardDescription>
@@ -515,7 +515,7 @@ export default function PandoriansDashboardPage() {
       {/* 🎮 SECCIÓN DE GAMIFICACIÓN - DATA REAL */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Estadísticas de Gamificación */}
-        <Card>
+        <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrophyIcon className="w-5 h-5 text-yellow-400" />
@@ -556,7 +556,7 @@ export default function PandoriansDashboardPage() {
         </Card>
 
         {/* Logros Recientes */}
-        <Card>
+        <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrophyIcon className="w-5 h-5 text-yellow-400" />

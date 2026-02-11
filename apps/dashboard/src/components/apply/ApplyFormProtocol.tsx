@@ -262,39 +262,41 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
                                         />
                                     </div>
                                     <div className="space-y-3 pt-2">
-                                        <Label>Categoría / Vertical</Label>
-                                        <RadioGroup value={data.vertical} onValueChange={(v: string) => updateData({ vertical: v })}>
-                                            <div
-                                                role="button"
-                                                tabIndex={0}
-                                                onClick={() => updateData({ vertical: "Tecnología / SaaS" })}
-                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ vertical: "Tecnología / SaaS" }); }}
-                                                className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.vertical === "Tecnología / SaaS" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
-                                            >
-                                                <RadioGroupItem value="Tecnología / SaaS" id="v1" />
-                                                <Label htmlFor="v1" className="cursor-pointer flex-1">Tecnología / SaaS / Crypto</Label>
+                                        <div className="space-y-3 pt-2">
+                                            <Label>Categoría / Vertical</Label>
+                                            <div className="space-y-2">
+                                                <div
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onClick={() => updateData({ vertical: "Tecnología / SaaS" })}
+                                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ vertical: "Tecnología / SaaS" }); }}
+                                                    className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.vertical === "Tecnología / SaaS" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
+                                                >
+                                                    <RadioGroupItem value="Tecnología / SaaS" id="v1" checked={data.vertical === "Tecnología / SaaS"} />
+                                                    <Label htmlFor="v1" className="cursor-pointer flex-1">Tecnología / SaaS / Crypto</Label>
+                                                </div>
+                                                <div
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onClick={() => updateData({ vertical: "Servicios / Agencia" })}
+                                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ vertical: "Servicios / Agencia" }); }}
+                                                    className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.vertical === "Servicios / Agencia" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
+                                                >
+                                                    <RadioGroupItem value="Servicios / Agencia" id="v2" checked={data.vertical === "Servicios / Agencia"} />
+                                                    <Label htmlFor="v2" className="cursor-pointer flex-1">Servicios / Agencia / Coaching</Label>
+                                                </div>
+                                                <div
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onClick={() => updateData({ vertical: "Tradicional / Físico" })}
+                                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ vertical: "Tradicional / Físico" }); }}
+                                                    className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.vertical === "Tradicional / Físico" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
+                                                >
+                                                    <RadioGroupItem value="Tradicional / Físico" id="v3" checked={data.vertical === "Tradicional / Físico"} />
+                                                    <Label htmlFor="v3" className="cursor-pointer flex-1">Tradicional / E-commerce / Físico</Label>
+                                                </div>
                                             </div>
-                                            <div
-                                                role="button"
-                                                tabIndex={0}
-                                                onClick={() => updateData({ vertical: "Servicios / Agencia" })}
-                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ vertical: "Servicios / Agencia" }); }}
-                                                className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.vertical === "Servicios / Agencia" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
-                                            >
-                                                <RadioGroupItem value="Servicios / Agencia" id="v2" />
-                                                <Label htmlFor="v2" className="cursor-pointer flex-1">Servicios / Agencia / Coaching</Label>
-                                            </div>
-                                            <div
-                                                role="button"
-                                                tabIndex={0}
-                                                onClick={() => updateData({ vertical: "Tradicional / Físico" })}
-                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ vertical: "Tradicional / Físico" }); }}
-                                                className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.vertical === "Tradicional / Físico" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
-                                            >
-                                                <RadioGroupItem value="Tradicional / Físico" id="v3" />
-                                                <Label htmlFor="v3" className="cursor-pointer flex-1">Tradicional / E-commerce / Físico</Label>
-                                            </div>
-                                        </RadioGroup>
+                                        </div>
                                     </div>
                                 </div>
                             </>
@@ -306,75 +308,77 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
                                 <div className="space-y-4">
                                     <h3 className="text-2xl font-bold text-white">Estado y Equipo</h3>
                                     <div className="space-y-3">
-                                        <Label>Estado actual del desarrollo</Label>
-                                        <RadioGroup value={data.stage} onValueChange={(v: string) => updateData({ stage: v })}>
-                                            <div
-                                                role="button"
-                                                tabIndex={0}
-                                                onClick={() => updateData({ stage: "Solo Idea" })}
-                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ stage: "Solo Idea" }); }}
-                                                className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.stage === "Solo Idea" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
-                                            >
-                                                <RadioGroupItem value="Solo Idea" id="s1" />
-                                                <Label htmlFor="s1" className="cursor-pointer flex-1">Solo Idea (Pre-Product)</Label>
+                                        <div className="space-y-3">
+                                            <Label>Estado actual del desarrollo</Label>
+                                            <div className="space-y-2">
+                                                <div
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onClick={() => updateData({ stage: "Solo Idea" })}
+                                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ stage: "Solo Idea" }); }}
+                                                    className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.stage === "Solo Idea" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
+                                                >
+                                                    <RadioGroupItem value="Solo Idea" id="s1" checked={data.stage === "Solo Idea"} />
+                                                    <Label htmlFor="s1" className="cursor-pointer flex-1">Solo Idea (Pre-Product)</Label>
+                                                </div>
+                                                <div
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onClick={() => updateData({ stage: "MVP / Prototipo" })}
+                                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ stage: "MVP / Prototipo" }); }}
+                                                    className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.stage === "MVP / Prototipo" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
+                                                >
+                                                    <RadioGroupItem value="MVP / Prototipo" id="s2" checked={data.stage === "MVP / Prototipo"} />
+                                                    <Label htmlFor="s2" className="cursor-pointer flex-1">MVP / Prototipo (En construcción)</Label>
+                                                </div>
+                                                <div
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onClick={() => updateData({ stage: "En el mercado" })}
+                                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ stage: "En el mercado" }); }}
+                                                    className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.stage === "En el mercado" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
+                                                >
+                                                    <RadioGroupItem value="En el mercado" id="s3" checked={data.stage === "En el mercado"} />
+                                                    <Label htmlFor="s3" className="cursor-pointer flex-1">En el mercado (Con usuarios)</Label>
+                                                </div>
                                             </div>
-                                            <div
-                                                role="button"
-                                                tabIndex={0}
-                                                onClick={() => updateData({ stage: "MVP / Prototipo" })}
-                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ stage: "MVP / Prototipo" }); }}
-                                                className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.stage === "MVP / Prototipo" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
-                                            >
-                                                <RadioGroupItem value="MVP / Prototipo" id="s2" />
-                                                <Label htmlFor="s2" className="cursor-pointer flex-1">MVP / Prototipo (En construcción)</Label>
-                                            </div>
-                                            <div
-                                                role="button"
-                                                tabIndex={0}
-                                                onClick={() => updateData({ stage: "En el mercado" })}
-                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ stage: "En el mercado" }); }}
-                                                className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.stage === "En el mercado" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
-                                            >
-                                                <RadioGroupItem value="En el mercado" id="s3" />
-                                                <Label htmlFor="s3" className="cursor-pointer flex-1">En el mercado (Con usuarios)</Label>
-                                            </div>
-                                        </RadioGroup>
-                                    </div>
+                                        </div>
 
-                                    <div className="space-y-3 pt-2">
-                                        <Label>Estructura del Equipo</Label>
-                                        <RadioGroup value={data.teamSize} onValueChange={(v: string) => updateData({ teamSize: v })}>
-                                            <div
-                                                role="button"
-                                                tabIndex={0}
-                                                onClick={() => updateData({ teamSize: "Solo Founder" })}
-                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ teamSize: "Solo Founder" }); }}
-                                                className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.teamSize === "Solo Founder" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
-                                            >
-                                                <RadioGroupItem value="Solo Founder" id="t1" />
-                                                <Label htmlFor="t1" className="cursor-pointer flex-1">Solo Founder (Yo)</Label>
+                                        <div className="space-y-3 pt-2">
+                                            <Label>Estructura del Equipo</Label>
+                                            <div className="space-y-2">
+                                                <div
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onClick={() => updateData({ teamSize: "Solo Founder" })}
+                                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ teamSize: "Solo Founder" }); }}
+                                                    className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.teamSize === "Solo Founder" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
+                                                >
+                                                    <RadioGroupItem value="Solo Founder" id="t1" checked={data.teamSize === "Solo Founder"} />
+                                                    <Label htmlFor="t1" className="cursor-pointer flex-1">Solo Founder (Yo)</Label>
+                                                </div>
+                                                <div
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onClick={() => updateData({ teamSize: "2-3 Co-founders" })}
+                                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ teamSize: "2-3 Co-founders" }); }}
+                                                    className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.teamSize === "2-3 Co-founders" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
+                                                >
+                                                    <RadioGroupItem value="2-3 Co-founders" id="t2" checked={data.teamSize === "2-3 Co-founders"} />
+                                                    <Label htmlFor="t2" className="cursor-pointer flex-1">2-3 Co-founders</Label>
+                                                </div>
+                                                <div
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onClick={() => updateData({ teamSize: "Equipo Completo" })}
+                                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ teamSize: "Equipo Completo" }); }}
+                                                    className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.teamSize === "Equipo Completo" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
+                                                >
+                                                    <RadioGroupItem value="Equipo Completo" id="t3" checked={data.teamSize === "Equipo Completo"} />
+                                                    <Label htmlFor="t3" className="cursor-pointer flex-1">Equipo Completo (+5 personas)</Label>
+                                                </div>
                                             </div>
-                                            <div
-                                                role="button"
-                                                tabIndex={0}
-                                                onClick={() => updateData({ teamSize: "2-3 Co-founders" })}
-                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ teamSize: "2-3 Co-founders" }); }}
-                                                className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.teamSize === "2-3 Co-founders" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
-                                            >
-                                                <RadioGroupItem value="2-3 Co-founders" id="t2" />
-                                                <Label htmlFor="t2" className="cursor-pointer flex-1">2-3 Co-founders</Label>
-                                            </div>
-                                            <div
-                                                role="button"
-                                                tabIndex={0}
-                                                onClick={() => updateData({ teamSize: "Equipo Completo" })}
-                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ teamSize: "Equipo Completo" }); }}
-                                                className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.teamSize === "Equipo Completo" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
-                                            >
-                                                <RadioGroupItem value="Equipo Completo" id="t3" />
-                                                <Label htmlFor="t3" className="cursor-pointer flex-1">Equipo Completo (+5 personas)</Label>
-                                            </div>
-                                        </RadioGroup>
+                                        </div>
                                     </div>
 
                                     <div className="flex items-center space-x-2 pt-2">
@@ -474,7 +478,7 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
                                     <h3 className="text-2xl font-bold text-white">Modelo de Trabajo</h3>
                                     <p className="text-zinc-400 text-sm">¿Cómo prefieres estructurar la colaboración con Pandora?</p>
 
-                                    <RadioGroup value={data.model} onValueChange={(v: string) => updateData({ model: v })}>
+                                    <div className="space-y-2">
                                         <div
                                             role="button"
                                             tabIndex={0}
@@ -483,7 +487,7 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
                                             className={`border p-4 rounded-xl cursor-pointer space-y-2 transition-colors ${data.model === "Pago directo" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900/50"}`}
                                         >
                                             <div className="flex items-center space-x-2">
-                                                <RadioGroupItem value="Pago directo" id="m1" />
+                                                <RadioGroupItem value="Pago directo" id="m1" checked={data.model === "Pago directo"} />
                                                 <Label htmlFor="m1" className="cursor-pointer font-bold text-white">Pago Directo (Service Provider)</Label>
                                             </div>
                                             <p className="text-xs text-zinc-500 pl-6">Contratas servicios específicos. Sin equity share. Mayor control.</p>
@@ -497,7 +501,7 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
                                             className={`border p-4 rounded-xl cursor-pointer space-y-2 transition-colors ${data.model === "Sociedad / RevShare" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900/50"}`}
                                         >
                                             <div className="flex items-center space-x-2">
-                                                <RadioGroupItem value="Sociedad / RevShare" id="m2" />
+                                                <RadioGroupItem value="Sociedad / RevShare" id="m2" checked={data.model === "Sociedad / RevShare"} />
                                                 <Label htmlFor="m2" className="cursor-pointer font-bold text-white">Partnership / Revenue Share</Label>
                                             </div>
                                             <p className="text-xs text-zinc-500 pl-6">Pandora invierte tecnología a cambio de % de éxito. Requiere alta validación.</p>
@@ -511,12 +515,12 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
                                             className={`border p-4 rounded-xl cursor-pointer space-y-2 transition-colors ${data.model === "Recomendación" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900/50"}`}
                                         >
                                             <div className="flex items-center space-x-2">
-                                                <RadioGroupItem value="Recomendación" id="m3" />
+                                                <RadioGroupItem value="Recomendación" id="m3" checked={data.model === "Recomendación"} />
                                                 <Label htmlFor="m3" className="cursor-pointer font-bold text-white">No lo tengo claro</Label>
                                             </div>
                                             <p className="text-xs text-zinc-500 pl-6">Buscando asesoría para definir la mejor estructura.</p>
                                         </div>
-                                    </RadioGroup>
+                                    </div>
                                 </div>
                             </>
                         )}
@@ -561,23 +565,21 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
 
                                     <div className="space-y-3">
                                         <Label>¿En qué plazo te gustaría lanzar?</Label>
-                                        <RadioGroup value={data.timeline} onValueChange={(v: string) => updateData({ timeline: v })}>
-                                            <div className="flex flex-col gap-2">
-                                                {["Inmediatamente (0-30 días)", "1-3 meses", "3-6 meses", "Solo explorando"].map((t) => (
-                                                    <div
-                                                        key={t}
-                                                        role="button"
-                                                        tabIndex={0}
-                                                        onClick={() => updateData({ timeline: t })}
-                                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ timeline: t }); }}
-                                                        className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.timeline === t ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
-                                                    >
-                                                        <RadioGroupItem value={t} id={t} />
-                                                        <Label htmlFor={t} className="cursor-pointer flex-1">{t}</Label>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </RadioGroup>
+                                        <div className="flex flex-col gap-2">
+                                            {["Inmediatamente (0-30 días)", "1-3 meses", "3-6 meses", "Solo explorando"].map((t) => (
+                                                <div
+                                                    key={t}
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onClick={() => updateData({ timeline: t })}
+                                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ timeline: t }); }}
+                                                    className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.timeline === t ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
+                                                >
+                                                    <RadioGroupItem value={t} id={t} checked={data.timeline === t} />
+                                                    <Label htmlFor={t} className="cursor-pointer flex-1">{t}</Label>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
                             </>

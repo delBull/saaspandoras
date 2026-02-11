@@ -181,7 +181,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
         {/* Non-sticky section - Investment & Creator cards */}
         <div className="space-y-6 mb-6">
           {/* Access / Investment Card */}
-          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6 relative overflow-hidden group">
+          <div className="bg-black/40 backdrop-blur-xl rounded-xl border border-white/10 p-6 relative overflow-hidden group">
             {/* Access Card Background (Optional visual flair) */}
             {project.w2eConfig?.accessCardImage && (
               <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none">
@@ -210,7 +210,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
               )}
 
               {!project.w2eConfig?.accessCardImage && (
-                <div className="w-full bg-zinc-800 rounded-full h-3 mb-4">
+                <div className="w-full bg-zinc-800/50 rounded-full h-3 mb-4 overflow-hidden border border-white/5">
                   <div
                     className="bg-lime-400 h-full rounded-full transition-all duration-500"
                     style={{ width: `${Math.min(raisedPercentage, 100)}%` }}
@@ -219,24 +219,24 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
               )}
 
               <div className="flex justify-between text-sm mb-6">
-                <span className="text-gray-400">Meta: {project.w2eConfig?.licenseToken?.maxSupply ? Number(project.w2eConfig.licenseToken.maxSupply).toLocaleString() : targetAmount.toLocaleString()} tokens</span>
-                <span className="text-gray-400">Status: {project.deploymentStatus === 'deployed' ? '🟢 Activo' : '🟡 Espera'}</span>
+                <span className="text-zinc-400">Meta: {project.w2eConfig?.licenseToken?.maxSupply ? Number(project.w2eConfig.licenseToken.maxSupply).toLocaleString() : targetAmount.toLocaleString()} tokens</span>
+                <span className="text-zinc-400">Status: {project.deploymentStatus === 'deployed' ? '🟢 Activo' : '🟡 Espera'}</span>
               </div>
 
               {hasAccess ? (
                 <div className="space-y-2 w-full mb-4">
-                  <div className="w-full bg-zinc-800/80 border border-lime-500/50 text-lime-400 py-3 px-6 rounded-lg flex items-center justify-center gap-2">
+                  <div className="w-full bg-lime-500/10 border border-lime-500/30 text-lime-400 py-3 px-6 rounded-lg flex items-center justify-center gap-2 backdrop-blur-sm">
                     <Unlock className="w-3 h-3" />
                     Acceso Verificado
                   </div>
                   <button
                     onClick={() => document.getElementById('sidebar-phases')?.scrollIntoView({ behavior: 'smooth' })}
-                    className="w-full py-1 text-xs text-zinc-500 hover:text-lime-400 hover:bg-zinc-800/50 rounded flex items-center justify-center gap-1 transition-colors"
+                    className="w-full py-1 text-xs text-zinc-400 hover:text-lime-400 hover:bg-white/5 rounded flex items-center justify-center gap-1 transition-colors"
                   >
                     <span>Ver Fases</span>
                     <ArrowDown className="w-3 h-3" />
                   </button>
-                  <Link href={`/projects/${project.slug}/dao`} className="w-full hover:bg-zinc-700/20 text-white py-3 px-6 rounded-lg flex items-center justify-center gap-2 transition-colors">
+                  <Link href={`/projects/${project.slug}/dao`} className="w-full hover:bg-white/5 text-white py-3 px-6 rounded-lg flex items-center justify-center gap-2 transition-colors border border-white/5">
                     <Shield className="w-3 h-3 text-sm text-lime-400" />
                     Ir al DAO
                   </Link>
@@ -252,7 +252,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                   </button>
                   <button
                     onClick={() => document.getElementById('sidebar-phases')?.scrollIntoView({ behavior: 'smooth' })}
-                    className="w-full py-1 text-xs text-zinc-500 hover:text-white hover:bg-zinc-800/50 rounded flex items-center justify-center gap-1 transition-colors"
+                    className="w-full py-1 text-xs text-zinc-400 hover:text-white hover:bg-white/5 rounded flex items-center justify-center gap-1 transition-colors"
                   >
                     <span>Ver Fases</span>
                     <ArrowDown className="w-3 h-3" />
@@ -260,7 +260,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                 </div>
               ) : (
                 <button
-                  className="w-full font-bold py-3 px-6 rounded-lg transition-colors mb-4 flex items-center justify-center gap-2 bg-zinc-700 text-gray-500 cursor-not-allowed border border-zinc-600"
+                  className="w-full font-bold py-3 px-6 rounded-lg transition-colors mb-4 flex items-center justify-center gap-2 bg-zinc-800/50 text-zinc-500 cursor-not-allowed border border-zinc-700/50 backdrop-blur-sm"
                   disabled
                 >
                   {project.deploymentStatus === 'deployed' ? (
@@ -282,7 +282,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                 <SimpleTooltip content="Compartir Proyecto">
                   <button
                     onClick={() => setIsShareModalOpen(true)}
-                    className="p-2 text-gray-400 hover:text-lime-400 transition-colors"
+                    className="p-2 text-zinc-400 hover:text-lime-400 transition-colors"
                   >
                     <Share2 className="w-3 h-3" />
                   </button>
@@ -290,39 +290,39 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
 
                 {/* 2. Referral / Invite (Activator) */}
                 <SimpleTooltip content="Programa de Referidos (Próximamente)">
-                  <button className="p-2 text-gray-400 hover:text-white transition-colors cursor-not-allowed">
+                  <button className="p-2 text-zinc-400 hover:text-white transition-colors cursor-not-allowed">
                     <Users className="w-3 h-3" />
                   </button>
                 </SimpleTooltip>
 
                 {/* 3. Support / Donate (Activator) */}
                 <SimpleTooltip content="Apoyar Creador (Donación)">
-                  <button className="p-2 text-gray-400 hover:text-pink-400 transition-colors cursor-not-allowed">
+                  <button className="p-2 text-zinc-400 hover:text-pink-400 transition-colors cursor-not-allowed">
                     <Heart className="w-3 h-3" />
                   </button>
                 </SimpleTooltip>
               </div>
 
-              <div className="text-xs text-gray-400">
+              <div className="text-xs text-zinc-500">
                 {(project as any).deploymentStatus === 'deployed'
                   ? "El acceso desbloquea utilidades exclusivas del protocolo."
                   : "Esta creación solo será activada si alcanza su meta antes de la fecha límite."}
               </div>
             </div>
-            <p className="mt-3 text-xs text-zinc-400 text-center">
+            <p className="mt-3 text-xs text-zinc-500 text-center">
               Este NFT otorga acceso a la utilidad del protocolo.
             </p>
           </div>
 
           {/* Project Creator Card (Compact Redesign) */}
-          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4 flex items-center gap-4">
-            <div className="w-12 h-12 bg-zinc-800 rounded-full flex-shrink-0 flex items-center justify-center border border-zinc-700">
+          <div className="bg-black/40 backdrop-blur-xl rounded-xl border border-white/10 p-4 flex items-center gap-4">
+            <div className="w-12 h-12 bg-zinc-800/50 rounded-full flex-shrink-0 flex items-center justify-center border border-white/10">
               <span className="text-white font-bold text-xs">IMG</span>
             </div>
             <div className="flex-1 overflow-hidden">
               <p className="text-xs text-zinc-500 uppercase tracking-wide mb-0.5">Creación Por</p>
               <div className="text-white font-medium truncate">{project.applicant_name ?? "Creador"}</div>
-              <div className="text-gray-500 text-xs mt-0.5">
+              <div className="text-zinc-500 text-xs mt-0.5">
                 {(() => {
                   const createdDate = project.created_at ? new Date(project.created_at as string) : new Date();
                   const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
@@ -338,7 +338,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
 
           {/* Utility Offers Panel (Dynamic Phases) */}
           {(project.w2eConfig?.phases && project.w2eConfig.phases.length > 0) ? (
-            <div id="sidebar-phases" className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+            <div id="sidebar-phases" className="bg-black/40 backdrop-blur-xl rounded-xl border border-white/10 p-6">
               <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                 <Ticket className="w-5 h-5 text-lime-400" /> Fases de Venta
               </h3>

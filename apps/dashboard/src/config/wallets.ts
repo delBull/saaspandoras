@@ -7,18 +7,21 @@ export const accountAbstractionConfig = {
 };
 
 export const wallets = [
-    inAppWallet({
-        auth: {
-            options: [
-                "google",
-                "email",
-                "apple",
-                "facebook",
-                "passkey",
-            ],
-        },
-        smartAccount: accountAbstractionConfig, // 🛡️ Explicit AA for Social
-    }),
-    // 🛡️ Explicitly listed wallets for Global Smart Account support
+    // 🛡️ Explicitly wrapping inAppWallet with smartWallet to ENFORCE Account Abstraction
+    smartWallet(
+        inAppWallet({
+            auth: {
+                options: [
+                    "google",
+                    "email",
+                    "apple",
+                    "facebook",
+                    "passkey",
+                ],
+            },
+        }),
+        accountAbstractionConfig // ⚡ Configured for Base/Sepolia with correct Factory
+    ),
+    // 🛡️ Standard EOA wallets (can be wrapped later if we want Global Gasless for MetaMask too)
     createWallet("io.metamask"),
 ];

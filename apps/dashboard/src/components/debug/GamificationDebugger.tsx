@@ -10,7 +10,7 @@ export function GamificationDebugger() {
     if (process.env.NODE_ENV !== "development") return null;
 
     return (
-        <div className="fixed bottom-4 left-4 p-4 bg-black/90 border border-green-500 rounded-lg z-50 text-xs font-mono max-w-sm overflow-auto max-h-[300px] shadow-xl">
+        <div className="fixed bottom-4 right-4 p-4 bg-black/90 border border-green-500 rounded-lg z-50 text-xs font-mono max-w-sm overflow-auto max-h-[300px] shadow-xl">
             <h3 className="text-green-400 font-bold mb-2">Gamification Debugger</h3>
             <div className="space-y-1">
                 <div>User: {account?.address?.slice(0, 6)}...</div>
