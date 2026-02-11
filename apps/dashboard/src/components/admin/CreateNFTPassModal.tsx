@@ -18,8 +18,13 @@ import {
     CurrencyDollarIcon,
     RocketLaunchIcon,
     CloudArrowUpIcon,
-    ArrowPathIcon
+    ArrowPathIcon,
+    QrCodeIcon,
+    TicketIcon,
+    IdentificationIcon,
+    GiftIcon
 } from "@heroicons/react/24/outline";
+import QRCode from "react-qr-code";
 
 // Extended ABI for adminMint
 const EXTENDED_ABI = [
@@ -59,6 +64,10 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
     const [uploadingImage, setUploadingImage] = useState(false);
     const [isMinting, setIsMinting] = useState(false);
 
+    const [nftType, setNftType] = useState<'access' | 'identity' | 'coupon' | 'qr'>('access');
+    const [creationStep, setCreationStep] = useState<0 | 1>(0); // 0: Type Selection, 1: Form Details
+    const [generatedShortlink, setGeneratedShortlink] = useState<string | null>(null);
+
     const [formData, setFormData] = useState({
         name: "",
         symbol: "",
@@ -68,8 +77,48 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
         imageUrl: "",
         imagePreview: "",
         treasury: "",
+        targetUrl: "", // For QR/Action type
     });
     const [airdropToMe, setAirdropToMe] = useState(true);
+
+    const NFT_TYPES = [
+        {
+            id: 'access',
+            title: 'Access Pass',
+            description: 'Pase estándar para eventos, contenido o comunidades.',
+            icon: TicketIcon,
+            color: 'text-indigo-400',
+            bg: 'bg-indigo-500/10',
+            border: 'border-indigo-500/30'
+        },
+        {
+            id: 'qr',
+            title: 'Smart QR / Action',
+            description: 'Conecta el mundo físico. QR dinámico que ejecuta acciones.',
+            icon: QrCodeIcon,
+            color: 'text-lime-400',
+            bg: 'bg-lime-500/10',
+            border: 'border-lime-500/30'
+        },
+        {
+            id: 'identity',
+            title: 'Digital Identity (SBT)',
+            description: 'Credenciales intransferibles (Soulbound) para reputación.',
+            icon: IdentificationIcon,
+            color: 'text-cyan-400',
+            bg: 'bg-cyan-500/10',
+            border: 'border-cyan-500/30'
+        },
+        {
+            id: 'coupon',
+            title: 'Gift / Coupon',
+            description: 'Activos consumibles o canjeables (Burnable).',
+            icon: GiftIcon,
+            color: 'text-rose-400',
+            bg: 'bg-rose-500/10',
+            border: 'border-rose-500/30'
+        }
+    ];
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -137,6 +186,11 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
             return;
         }
 
+        if (nftType === 'qr' && !formData.targetUrl) {
+            toast({ title: "Error", description: "Debes definir una URL de destino para el QR.", variant: "destructive" });
+            return;
+        }
+
         setDeploymentStatus('deploying');
         setDeploymentStep(0);
 
@@ -177,7 +231,31 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
             clearInterval(stepInterval);
             setDeployedAddress(data.address);
 
-            // If airdrop is selected, perform the minting transaction
+            // 4a. If "QR / Action", create the shortlink
+            if (nftType === 'qr') {
+                try {
+                    const slug = `qr-${data.address.slice(-8).toLowerCase()}`;
+                    const fullUrl = `${window.location.origin}/${slug}`;
+
+                    await fetch('/api/admin/shortlinks', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            slug,
+                            destinationUrl: formData.targetUrl,
+                            title: `QR: ${formData.name}`,
+                            description: `Smart QR for NFT ${data.address}`
+                        })
+                    });
+                    // Even if it fails (duplicate slug), we might want to handle it, but for now we assume success or ignore
+                    setGeneratedShortlink(fullUrl);
+                } catch (e) {
+                    console.error("Failed to create shortlink", e);
+                    toast({ title: "⚠️ Advertencia", description: "El contrato se creó pero falló la generación del Shortlink automático." });
+                }
+            }
+
+            // 4b. If airdrop is selected, perform the minting transaction
             if (airdropToMe) {
                 setDeploymentStep(4); // "Enviando Pase de Acceso"
                 setIsMinting(true);
@@ -217,8 +295,22 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
     };
 
     const reset = () => {
-        // Force refresh and redirect to specific tab
-        window.location.href = "/admin/dashboard?tab=nft-passes";
+        setCreationStep(0);
+        setNftType('access');
+        setGeneratedShortlink(null);
+        setDeploymentStatus('idle');
+        setFormData({
+            name: "",
+            symbol: "",
+            description: "",
+            maxSupply: "1000",
+            price: "0",
+            imageUrl: "",
+            imagePreview: "",
+            treasury: "",
+            targetUrl: ""
+        });
+        window.location.href = "/admin/dashboard?tab=nft"; // Use 'nft' tab (updated name)
     };
 
     if (!isOpen) return null;
@@ -297,14 +389,24 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                     >
                                         <CheckCircleIcon className="w-10 h-10 text-black/80" />
                                     </motion.div>
-                                    <h2 className="text-3xl font-bold text-white mb-2">¡NFT Pass Creado!</h2>
+                                    <h2 className="text-3xl font-bold text-white mb-2">¡NFT Creado!</h2>
                                     <p className="text-gray-400 mb-4">
-                                        El pase <span className="text-white font-bold">{formData.name}</span> ha sido desplegado.
+                                        El contrato <span className="text-white font-bold">{formData.name}</span> ha sido desplegado.
                                     </p>
 
                                     <div className="bg-zinc-950 p-3 rounded-lg border border-zinc-800 mb-6 break-all font-mono text-xs text-zinc-400">
                                         {deployedAddress}
                                     </div>
+
+                                    {/* QR Code Display */}
+                                    {generatedShortlink && (
+                                        <div className="mb-6 bg-white p-4 rounded-xl inline-block">
+                                            <QRCode value={generatedShortlink} size={150} />
+                                            <p className="text-black text-xs font-bold mt-2 text-center break-all max-w-[150px]">
+                                                {generatedShortlink.replace('https://', '')}
+                                            </p>
+                                        </div>
+                                    )}
 
                                     <button
                                         onClick={reset}
@@ -347,195 +449,238 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                 <div className="p-6 border-b border-zinc-800 sticky top-0 bg-zinc-900 z-10 flex justify-between items-center">
                     <div>
                         <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                            🎫 Crear NFT Access Pass
+                            {creationStep === 0 ? "Selecciona Tipo de NFT" : (nftType === 'qr' ? "🚀 Crear Smart QR" : "🎫 Crear Access Pass")}
                         </h2>
-                        <p className="text-sm text-gray-400 mt-1">Configura y despliega un nuevo contrato de acceso SCaaS</p>
+                        <p className="text-sm text-gray-400 mt-1">
+                            {creationStep === 0 ? "Define el propósito de tu nuevo contrato inteligente" : "Configura los detalles del despliegue"}
+                        </p>
                     </div>
                     <button onClick={onClose} className="text-gray-400 hover:text-white p-2">✕</button>
                 </div>
 
                 <div className="p-6 overflow-y-auto flex-1 space-y-8">
-                    {/* Section 1: Identity */}
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-emerald-300 flex items-center gap-2">
-                            <span className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center text-sm">1</span>
-                            Identidad del Pase
-                        </h3>
 
-                        <div className="bg-zinc-800/30 p-4 rounded-xl border border-zinc-700/50 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label htmlFor="nft-pass-name" className="block text-xs font-medium text-gray-400 mb-1">Nombre del Pase</label>
-                                    <input
-                                        id="nft-pass-name"
-                                        name="name"
-                                        type="text"
-                                        value={formData.name}
-                                        onChange={handleChange}
-                                        placeholder="Ej. Premium Access Card"
-                                        className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-emerald-500 outline-none"
-                                    />
-                                </div>
-                                <div>
-                                    <label htmlFor="nft-pass-symbol" className="block text-xs font-medium text-gray-400 mb-1">Símbolo</label>
-                                    <input
-                                        id="nft-pass-symbol"
-                                        name="symbol"
-                                        type="text"
-                                        value={formData.symbol}
-                                        onChange={handleChange}
-                                        placeholder="Ej. PAC"
-                                        className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-emerald-500 outline-none"
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label htmlFor="nft-pass-description" className="block text-xs font-medium text-gray-400 mb-1">Descripción (Interno)</label>
-                                <input
-                                    id="nft-pass-description"
-                                    name="description"
-                                    type="text"
-                                    value={formData.description}
-                                    onChange={handleChange}
-                                    placeholder="Propósito del pase..."
-                                    className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-emerald-500 outline-none"
-                                />
-                            </div>
+                    {/* STEP 0: TYPE SELECTION */}
+                    {creationStep === 0 && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {NFT_TYPES.map((type) => {
+                                const Icon = type.icon;
+                                return (
+                                    <button
+                                        key={type.id}
+                                        onClick={() => {
+                                            setNftType(type.id as any);
+                                            setCreationStep(1);
+                                        }}
+                                        className={`group relative p-6 rounded-xl border border-zinc-700 hover:border-lime-500/50 bg-zinc-800/20 hover:bg-zinc-800/50 transition-all text-left flex flex-col gap-4`}
+                                    >
+                                        <div className={`w-12 h-12 rounded-lg ${type.bg} ${type.border} border flex items-center justify-center`}>
+                                            <Icon className={`w-6 h-6 ${type.color}`} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-bold text-white group-hover:text-lime-400 transition-colors">{type.title}</h3>
+                                            <p className="text-sm text-zinc-400 mt-1">{type.description}</p>
+                                        </div>
+                                    </button>
+                                );
+                            })}
                         </div>
-                    </div>
+                    )}
 
-                    {/* Section 2: Economics */}
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-indigo-300 flex items-center gap-2">
-                            <span className="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center text-sm">2</span>
-                            Economía del Pase
-                        </h3>
+                    {/* STEP 1: FORM DETAILS */}
+                    {creationStep === 1 && (
+                        <>
+                            {/* Section 1: Identity */}
+                            <div className="space-y-4">
+                                <h3 className="text-lg font-semibold text-emerald-300 flex items-center gap-2">
+                                    <span className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center text-sm">1</span>
+                                    Identidad del Contrato
+                                </h3>
 
-                        <div className="bg-zinc-800/30 p-4 rounded-xl border border-zinc-700/50 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="group relative">
-                                    <label htmlFor="nft-pass-maxSupply" className="block text-xs font-medium text-gray-400 mb-1 flex items-center gap-1">
-                                        Max Supply <InformationCircleIcon className="w-3 h-3" />
-                                    </label>
-                                    <input
-                                        id="nft-pass-maxSupply"
-                                        name="maxSupply"
-                                        type="number"
-                                        value={formData.maxSupply}
-                                        onChange={handleChange}
-                                        className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-indigo-500 outline-none"
-                                    />
-                                    <div className="absolute hidden group-hover:block z-20 bottom-full left-0 w-48 p-2 bg-black border border-zinc-700 text-xs text-gray-300 rounded mb-1">
-                                        Máximo de pases. 0 = ilimitado.
+                                <div className="bg-zinc-800/30 p-4 rounded-xl border border-zinc-700/50 space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label htmlFor="nft-pass-name" className="block text-xs font-medium text-gray-400 mb-1">Nombre</label>
+                                            <input
+                                                id="nft-pass-name"
+                                                name="name"
+                                                type="text"
+                                                value={formData.name}
+                                                onChange={handleChange}
+                                                placeholder="Ej. VIP Access o Promo QR"
+                                                className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-emerald-500 outline-none"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label htmlFor="nft-pass-symbol" className="block text-xs font-medium text-gray-400 mb-1">Símbolo</label>
+                                            <input
+                                                id="nft-pass-symbol"
+                                                name="symbol"
+                                                type="text"
+                                                value={formData.symbol}
+                                                onChange={handleChange}
+                                                placeholder="Ej. VIP, QR01"
+                                                className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-emerald-500 outline-none"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label htmlFor="nft-pass-description" className="block text-xs font-medium text-gray-400 mb-1">Descripción</label>
+                                        <input
+                                            id="nft-pass-description"
+                                            name="description"
+                                            type="text"
+                                            value={formData.description}
+                                            onChange={handleChange}
+                                            placeholder="Propósito del contrato..."
+                                            className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-emerald-500 outline-none"
+                                        />
+                                    </div>
+
+                                    {/* QR Target URL Input */}
+                                    {nftType === 'qr' && (
+                                        <div className="pt-2 border-t border-zinc-700/50 mt-2">
+                                            <label htmlFor="nft-target-url" className="block text-xs font-medium text-lime-400 mb-1 flex items-center gap-2">
+                                                <QrCodeIcon className="w-4 h-4" />
+                                                Target URL (Destino del QR)
+                                            </label>
+                                            <input
+                                                id="nft-target-url"
+                                                name="targetUrl"
+                                                type="url"
+                                                value={formData.targetUrl}
+                                                onChange={handleChange}
+                                                placeholder="https://tudominio.com/landing-page"
+                                                className="w-full bg-zinc-900 border border-lime-500/50 rounded px-3 py-2 text-white focus:border-lime-500 outline-none"
+                                            />
+                                            <p className="text-xs text-zinc-500 mt-1">Este será el destino al escanear el QR generado automáticamente.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Section 2: Economics */}
+                            <div className="space-y-4">
+                                <h3 className="text-lg font-semibold text-indigo-300 flex items-center gap-2">
+                                    <span className="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center text-sm">2</span>
+                                    Reglas y Economía
+                                </h3>
+
+                                <div className="bg-zinc-800/30 p-4 rounded-xl border border-zinc-700/50 space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="group relative">
+                                            <label htmlFor="nft-pass-maxSupply" className="block text-xs font-medium text-gray-400 mb-1 flex items-center gap-1">
+                                                Max Supply <InformationCircleIcon className="w-3 h-3" />
+                                            </label>
+                                            <input
+                                                id="nft-pass-maxSupply"
+                                                name="maxSupply"
+                                                type="number"
+                                                value={formData.maxSupply}
+                                                onChange={handleChange}
+                                                className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-indigo-500 outline-none"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label htmlFor="nft-pass-price" className="block text-xs font-medium text-gray-400 mb-1">Precio (ETH)</label>
+                                            <input
+                                                id="nft-pass-price"
+                                                name="price"
+                                                type="number"
+                                                step="0.001"
+                                                value={formData.price}
+                                                onChange={handleChange}
+                                                className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-indigo-500 outline-none"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label htmlFor="nft-pass-treasury" className="block text-xs font-medium text-gray-400 mb-1">Wallet Tesorería (Opcional)</label>
+                                        <input
+                                            id="nft-pass-treasury"
+                                            name="treasury"
+                                            type="text"
+                                            value={formData.treasury}
+                                            onChange={handleChange}
+                                            placeholder="0x..."
+                                            className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-indigo-500 outline-none"
+                                        />
+                                    </div>
+
+                                    <div className="flex items-center gap-3 pt-2">
+                                        <input
+                                            id="airdrop-me"
+                                            type="checkbox"
+                                            checked={airdropToMe}
+                                            onChange={(e) => setAirdropToMe(e.target.checked)}
+                                            className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-emerald-500 focus:ring-emerald-500/50"
+                                        />
+                                        <label htmlFor="airdrop-me" className="text-sm text-gray-300 cursor-pointer">
+                                            Mintar el primer token a mi wallet (Admin)
+                                        </label>
                                     </div>
                                 </div>
-
-                                <div>
-                                    <label htmlFor="nft-pass-price" className="block text-xs font-medium text-gray-400 mb-1">Precio (ETH)</label>
-                                    <input
-                                        id="nft-pass-price"
-                                        name="price"
-                                        type="number"
-                                        step="0.001"
-                                        value={formData.price}
-                                        onChange={handleChange}
-                                        className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-indigo-500 outline-none"
-                                    />
-                                </div>
                             </div>
 
-                            <div>
-                                <label htmlFor="nft-pass-treasury" className="block text-xs font-medium text-gray-400 mb-1">Wallet Tesorería (Opcional)</label>
-                                <input
-                                    id="nft-pass-treasury"
-                                    name="treasury"
-                                    type="text"
-                                    value={formData.treasury}
-                                    onChange={handleChange}
-                                    placeholder="0x..."
-                                    className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-indigo-500 outline-none"
-                                />
-                                <p className="text-xs text-zinc-500 mt-1">Si se deja vacío, tú recibirás los pagos.</p>
-                            </div>
+                            {/* Section 3: NFT Image */}
+                            <div className="space-y-4">
+                                <h3 className="text-lg font-semibold text-amber-300 flex items-center gap-2">
+                                    <span className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-sm">3</span>
+                                    Imagen del NFT
+                                </h3>
 
-                            <div className="flex items-center gap-3 pt-2">
-                                <input
-                                    id="airdrop-me"
-                                    type="checkbox"
-                                    checked={airdropToMe}
-                                    onChange={(e) => setAirdropToMe(e.target.checked)}
-                                    className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-emerald-500 focus:ring-emerald-500/50"
-                                />
-                                <label htmlFor="airdrop-me" className="text-sm text-gray-300 cursor-pointer">
-                                    Enviar un Pase (Airdrop) a mi wallet automáticamente
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Section 3: NFT Image */}
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-amber-300 flex items-center gap-2">
-                            <span className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-sm">3</span>
-                            Imagen del NFT
-                        </h3>
-
-                        <div className="bg-zinc-800/50 p-6 rounded-xl border border-zinc-700 flex flex-col md:flex-row gap-6 items-start">
-                            <div className="relative group w-full md:w-48 aspect-square bg-zinc-900 rounded-xl border-2 border-dashed border-zinc-600 hover:border-amber-500/50 transition-colors flex flex-col items-center justify-center overflow-hidden">
-                                {formData.imagePreview ? (
-                                    <>
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img src={formData.imagePreview} alt="NFT Preview" className="w-full h-full object-cover" />
-                                        {uploadingImage && (
-                                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                                                <CloudArrowUpIcon className="w-8 h-8 text-white animate-bounce" />
+                                <div className="bg-zinc-800/50 p-6 rounded-xl border border-zinc-700 flex flex-col md:flex-row gap-6 items-start">
+                                    <div className="relative group w-full md:w-48 aspect-square bg-zinc-900 rounded-xl border-2 border-dashed border-zinc-600 hover:border-amber-500/50 transition-colors flex flex-col items-center justify-center overflow-hidden">
+                                        {formData.imagePreview ? (
+                                            <>
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img src={formData.imagePreview} alt="NFT Preview" className="w-full h-full object-cover" />
+                                                {uploadingImage && (
+                                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                                        <CloudArrowUpIcon className="w-8 h-8 text-white animate-bounce" />
+                                                    </div>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <div className="text-center p-4">
+                                                <PhotoIcon className="w-12 h-12 text-zinc-600 mx-auto mb-2" />
+                                                <p className="text-sm text-gray-400">Subir Imagen</p>
+                                                <p className="text-xs text-gray-600 mt-1">PNG, JPG, GIF</p>
                                             </div>
                                         )}
-                                    </>
-                                ) : (
-                                    <div className="text-center p-4">
-                                        <PhotoIcon className="w-12 h-12 text-zinc-600 mx-auto mb-2" />
-                                        <p className="text-sm text-gray-400">Subir Imagen</p>
-                                        <p className="text-xs text-gray-600 mt-1">PNG, JPG, GIF</p>
-                                        <p className="text-xs text-gray-600">Max 5MB</p>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleImageUpload}
+                                            disabled={uploadingImage}
+                                            className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                                        />
                                     </div>
-                                )}
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleImageUpload}
-                                    disabled={uploadingImage}
-                                    className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
-                                />
-                            </div>
 
-                            <div className="flex-1 space-y-3">
-                                <div>
-                                    <h4 className="font-bold text-white">Access Card NFT</h4>
-                                    <p className="text-sm text-gray-400 mt-1">
-                                        Imagen que verán los usuarios al adquirir este pase de acceso.
-                                    </p>
-                                </div>
+                                    <div className="flex-1 space-y-3">
+                                        <div>
+                                            <h4 className="font-bold text-white">Visual del Token</h4>
+                                            <p className="text-sm text-gray-400 mt-1">
+                                                Imagen que representa este {nftType.toUpperCase()}.
+                                            </p>
+                                        </div>
 
-                                <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-lg">
-                                    <p className="text-amber-200 text-xs font-medium mb-1">💡 Tip</p>
-                                    <p className="text-amber-100/70 text-xs">
-                                        Recomendado: 600x600px o superior. Formatos PNG con transparencia funcionan mejor.
-                                    </p>
-                                </div>
-
-                                {formData.imageUrl && (
-                                    <div className="bg-emerald-500/10 border border-emerald-500/20 p-2 rounded">
-                                        <p className="text-emerald-400 text-xs flex items-center gap-1">
-                                            <CheckCircleIcon className="w-4 h-4" />
-                                            Imagen subida exitosamente
-                                        </p>
+                                        {formData.imageUrl && (
+                                            <div className="bg-emerald-500/10 border border-emerald-500/20 p-2 rounded">
+                                                <p className="text-emerald-400 text-xs flex items-center gap-1">
+                                                    <CheckCircleIcon className="w-4 h-4" />
+                                                    Imagen lista
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
-                                )}
+                                </div>
                             </div>
-                        </div>
-                    </div>
+                        </>
+                    )}
                 </div>
 
                 {/* Footer Actions */}
@@ -543,17 +688,24 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                     <button onClick={onClose} className="px-4 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-zinc-800 transition-colors">
                         Cancelar
                     </button>
-                    <button
-                        onClick={handleDeploy}
-                        disabled={!formData.name || !formData.symbol}
-                        className={`px-6 py-2 rounded-lg font-bold shadow-lg flex items-center gap-2 transform transition-all 
-                                ${!formData.name || !formData.symbol
-                                ? 'bg-zinc-700 text-gray-500 cursor-not-allowed'
-                                : 'bg-gradient-to-r from-lime-500 to-emerald-500 hover:from-lime-400 hover:to-emerald-400 text-black shadow-lime-500/20 hover:scale-[1.02]'
-                            }`}
-                    >
-                        🚀 Desplegar NFT Pass
-                    </button>
+                    {creationStep === 1 && (
+                        <button onClick={() => setCreationStep(0)} className="px-4 py-2 rounded-lg text-zinc-300 hover:bg-zinc-800 border border-zinc-700">
+                            Atrás
+                        </button>
+                    )}
+                    {creationStep === 1 ? (
+                        <button
+                            onClick={handleDeploy}
+                            disabled={!formData.name || !formData.symbol || (nftType === 'qr' && !formData.targetUrl)}
+                            className={`px-6 py-2 rounded-lg font-bold shadow-lg flex items-center gap-2 transform transition-all 
+                                    ${!formData.name || !formData.symbol || (nftType === 'qr' && !formData.targetUrl)
+                                    ? 'bg-zinc-700 text-gray-500 cursor-not-allowed'
+                                    : 'bg-gradient-to-r from-lime-500 to-emerald-500 hover:from-lime-400 hover:to-emerald-400 text-black shadow-lime-500/20 hover:scale-[1.02]'
+                                }`}
+                        >
+                            🚀 Desplegar {nftType === 'qr' ? 'QR & Contract' : 'Contrato'}
+                        </button>
+                    ) : null}
                 </div>
             </div>
         </div>

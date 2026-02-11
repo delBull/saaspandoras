@@ -57,7 +57,7 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
             Usuarios
           </button>
           <button onClick={() => setActiveTab('nft')} className={`pb-2 font-semibold ${activeTab === 'nft' ? 'text-lime-400 border-b-2 border-lime-400' : 'text-gray-400'} flex items-center gap-2`}>
-            NFT Passes
+            NFT Lab
           </button>
           <button onClick={() => setActiveTab('clients')} className={`pb-2 font-semibold ${activeTab === 'clients' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-400'} flex items-center gap-2`}>
             Clientes

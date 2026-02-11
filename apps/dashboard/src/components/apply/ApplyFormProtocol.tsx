@@ -265,21 +265,30 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
                                         <Label>Categoría / Vertical</Label>
                                         <RadioGroup value={data.vertical} onValueChange={(v: string) => updateData({ vertical: v })}>
                                             <div
+                                                role="button"
+                                                tabIndex={0}
                                                 onClick={() => updateData({ vertical: "Tecnología / SaaS" })}
+                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ vertical: "Tecnología / SaaS" }); }}
                                                 className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.vertical === "Tecnología / SaaS" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
                                             >
                                                 <RadioGroupItem value="Tecnología / SaaS" id="v1" />
                                                 <Label htmlFor="v1" className="cursor-pointer flex-1">Tecnología / SaaS / Crypto</Label>
                                             </div>
                                             <div
+                                                role="button"
+                                                tabIndex={0}
                                                 onClick={() => updateData({ vertical: "Servicios / Agencia" })}
+                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ vertical: "Servicios / Agencia" }); }}
                                                 className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.vertical === "Servicios / Agencia" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
                                             >
                                                 <RadioGroupItem value="Servicios / Agencia" id="v2" />
                                                 <Label htmlFor="v2" className="cursor-pointer flex-1">Servicios / Agencia / Coaching</Label>
                                             </div>
                                             <div
+                                                role="button"
+                                                tabIndex={0}
                                                 onClick={() => updateData({ vertical: "Tradicional / Físico" })}
+                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ vertical: "Tradicional / Físico" }); }}
                                                 className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.vertical === "Tradicional / Físico" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
                                             >
                                                 <RadioGroupItem value="Tradicional / Físico" id="v3" />
@@ -300,21 +309,30 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
                                         <Label>Estado actual del desarrollo</Label>
                                         <RadioGroup value={data.stage} onValueChange={(v: string) => updateData({ stage: v })}>
                                             <div
+                                                role="button"
+                                                tabIndex={0}
                                                 onClick={() => updateData({ stage: "Solo Idea" })}
+                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ stage: "Solo Idea" }); }}
                                                 className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.stage === "Solo Idea" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
                                             >
                                                 <RadioGroupItem value="Solo Idea" id="s1" />
                                                 <Label htmlFor="s1" className="cursor-pointer flex-1">Solo Idea (Pre-Product)</Label>
                                             </div>
                                             <div
+                                                role="button"
+                                                tabIndex={0}
                                                 onClick={() => updateData({ stage: "MVP / Prototipo" })}
+                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ stage: "MVP / Prototipo" }); }}
                                                 className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.stage === "MVP / Prototipo" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
                                             >
                                                 <RadioGroupItem value="MVP / Prototipo" id="s2" />
                                                 <Label htmlFor="s2" className="cursor-pointer flex-1">MVP / Prototipo (En construcción)</Label>
                                             </div>
                                             <div
+                                                role="button"
+                                                tabIndex={0}
                                                 onClick={() => updateData({ stage: "En el mercado" })}
+                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ stage: "En el mercado" }); }}
                                                 className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.stage === "En el mercado" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
                                             >
                                                 <RadioGroupItem value="En el mercado" id="s3" />
@@ -327,21 +345,30 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
                                         <Label>Estructura del Equipo</Label>
                                         <RadioGroup value={data.teamSize} onValueChange={(v: string) => updateData({ teamSize: v })}>
                                             <div
+                                                role="button"
+                                                tabIndex={0}
                                                 onClick={() => updateData({ teamSize: "Solo Founder" })}
+                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ teamSize: "Solo Founder" }); }}
                                                 className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.teamSize === "Solo Founder" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
                                             >
                                                 <RadioGroupItem value="Solo Founder" id="t1" />
                                                 <Label htmlFor="t1" className="cursor-pointer flex-1">Solo Founder (Yo)</Label>
                                             </div>
                                             <div
+                                                role="button"
+                                                tabIndex={0}
                                                 onClick={() => updateData({ teamSize: "2-3 Co-founders" })}
+                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ teamSize: "2-3 Co-founders" }); }}
                                                 className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.teamSize === "2-3 Co-founders" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
                                             >
                                                 <RadioGroupItem value="2-3 Co-founders" id="t2" />
                                                 <Label htmlFor="t2" className="cursor-pointer flex-1">2-3 Co-founders</Label>
                                             </div>
                                             <div
+                                                role="button"
+                                                tabIndex={0}
                                                 onClick={() => updateData({ teamSize: "Equipo Completo" })}
+                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ teamSize: "Equipo Completo" }); }}
                                                 className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.teamSize === "Equipo Completo" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
                                             >
                                                 <RadioGroupItem value="Equipo Completo" id="t3" />
@@ -449,7 +476,10 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
 
                                     <RadioGroup value={data.model} onValueChange={(v: string) => updateData({ model: v })}>
                                         <div
+                                            role="button"
+                                            tabIndex={0}
                                             onClick={() => updateData({ model: "Pago directo" })}
+                                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ model: "Pago directo" }); }}
                                             className={`border p-4 rounded-xl cursor-pointer space-y-2 transition-colors ${data.model === "Pago directo" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900/50"}`}
                                         >
                                             <div className="flex items-center space-x-2">
@@ -460,7 +490,10 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
                                         </div>
 
                                         <div
+                                            role="button"
+                                            tabIndex={0}
                                             onClick={() => updateData({ model: "Sociedad / RevShare" })}
+                                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ model: "Sociedad / RevShare" }); }}
                                             className={`border p-4 rounded-xl cursor-pointer space-y-2 transition-colors ${data.model === "Sociedad / RevShare" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900/50"}`}
                                         >
                                             <div className="flex items-center space-x-2">
@@ -471,7 +504,10 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
                                         </div>
 
                                         <div
+                                            role="button"
+                                            tabIndex={0}
                                             onClick={() => updateData({ model: "Recomendación" })}
+                                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ model: "Recomendación" }); }}
                                             className={`border p-4 rounded-xl cursor-pointer space-y-2 transition-colors ${data.model === "Recomendación" ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900/50"}`}
                                         >
                                             <div className="flex items-center space-x-2">
@@ -530,7 +566,10 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
                                                 {["Inmediatamente (0-30 días)", "1-3 meses", "3-6 meses", "Solo explorando"].map((t) => (
                                                     <div
                                                         key={t}
+                                                        role="button"
+                                                        tabIndex={0}
                                                         onClick={() => updateData({ timeline: t })}
+                                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') updateData({ timeline: t }); }}
                                                         className={`flex items-center space-x-2 border p-3 rounded-lg cursor-pointer transition-colors ${data.timeline === t ? "border-purple-500 bg-purple-500/10" : "border-zinc-800 hover:bg-zinc-900"}`}
                                                     >
                                                         <RadioGroupItem value={t} id={t} />
