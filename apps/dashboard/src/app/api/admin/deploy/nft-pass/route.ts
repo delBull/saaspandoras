@@ -40,17 +40,21 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Missing required fields (name, symbol, owner)" }, { status: 400 });
         }
 
+        // 3. Configure Deployment
+        const MAX_UINT256 = "115792089237316195423570985008687907853269984665640564039457584007913129639935";
+        const isInfiniteSupply = String(maxSupply) === MAX_UINT256;
+
         const config: NFTPassConfig = {
             name,
             symbol,
-            maxSupply: Number(maxSupply) || 1000,
+            maxSupply: maxSupply, // Pass string directly to deployer (which now supports string | number)
             price: price ? String(price) : "0",
             owner,
             treasuryAddress,
             oracleAddress
         };
 
-        console.log(`🚀 API: Deploying NFT Pass: ${name} (${symbol}) for ${owner}`);
+        console.log(`🚀 API: Deploying NFT Pass: ${name} (${symbol}) for ${owner}. Supply: ${isInfiniteSupply ? "UNLIMITED" : maxSupply}`);
 
         // 3. Determine Network (same logic as deploy-protocol)
         host = req.headers.get("host") || "";
@@ -97,12 +101,17 @@ export async function POST(req: Request) {
             applicantWalletAddress: owner,
             treasuryAddress: treasuryAddress || owner,
             w2eConfig: {
-                licenseToken: { name, symbol, maxSupply: Number(maxSupply), price: price || "0" },
+                licenseToken: {
+                    name,
+                    symbol,
+                    maxSupply: isInfiniteSupply ? "Unlimited" : Number(maxSupply), // Store clearer string for JSON or Number if finite
+                    price: price || "0"
+                },
                 accessCardImage: image || null // Store the image for metadata!
             },
             status: 'live', // Active by default
             isMintable: true,
-            totalTokens: Number(maxSupply),
+            totalTokens: isInfiniteSupply ? -1 : Number(maxSupply), // -1 for Unlimited to avoid Integer Overflow in DB
             // Minimal required fields
             targetAmount: "0",
         });

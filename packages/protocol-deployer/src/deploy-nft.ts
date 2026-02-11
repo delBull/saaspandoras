@@ -23,7 +23,7 @@ envPaths.forEach(p => {
 export interface NFTPassConfig {
     name: string;
     symbol: string;
-    maxSupply: number;
+    maxSupply: string | number; // String to support MAX_UINT256
     price: string; // Ether string, e.g. "0.1"
     owner: string;
     treasuryAddress?: string; // Optional, defaults to owner if not set
@@ -36,6 +36,11 @@ export async function deployNFTPass(
 ): Promise<string> {
     console.log(`🚀 Starting NFT Pass Deployment: ${config.name} (${config.symbol})`);
 
+    // ... (RPC Logic omitted for brevity, assuming existing structure remains)
+    // We need to keep the RPC selection logic intact.
+    // I will use a targeted replacement for the function signature and the usage of maxSupply.
+
+    // RE-INSERTING FULL FUNCTION CONTENT TO BE SAFE with correct handling
     if (!process.env.THIRDWEB_SECRET_KEY) {
         console.warn("⚠️ THIRDWEB_SECRET_KEY missing.");
     }
@@ -240,12 +245,15 @@ export async function deployNFTPass(
     const treasury = config.treasuryAddress || wallet.address;
     const priceWei = parseEther(config.price || "0");
 
+    // Ensure maxSupply is treated as BigInt/String for the contract call to avoid JS number overflow
+    const maxSupplyBigInt = config.maxSupply.toString();
+
     console.log("Creating transaction...");
 
     const contract = await LicenseFactory.deploy(
         config.name,
         config.symbol,
-        config.maxSupply,
+        maxSupplyBigInt,
         priceWei,
         oracle,
         treasury,
