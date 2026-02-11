@@ -20,7 +20,6 @@ export function GamificationDebugger() {
                 <div>Achievements: {gamification.achievements.length}</div>
                 <div>Leaderboard: {gamification.leaderboard.length} entries</div>
                 {gamification.leaderboard.slice(0, 3).map((entry, i) => {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const e = entry as any;
                     return (
                         <div key={i} className="pl-2 text-[10px] text-gray-400">

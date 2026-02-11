@@ -173,8 +173,9 @@ export function CreateProposalModal({ projectId, isOpen, onClose, onCreated, vot
                             <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Detalles de Transferencia</p>
 
                             <div>
-                                <label className="block text-xs text-zinc-400 mb-1">Destinatario (Wallet)</label>
+                                <label htmlFor="transfer-recipient" className="block text-xs text-zinc-400 mb-1">Destinatario (Wallet)</label>
                                 <input
+                                    id="transfer-recipient"
                                     className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white text-xs font-mono outline-none focus:border-lime-500"
                                     value={recipient}
                                     onChange={e => setRecipient(e.target.value)}
@@ -184,8 +185,9 @@ export function CreateProposalModal({ projectId, isOpen, onClose, onCreated, vot
 
                             <div className="flex gap-2">
                                 <div className="flex-1">
-                                    <label className="block text-xs text-zinc-400 mb-1">Monto</label>
+                                    <label htmlFor="transfer-amount" className="block text-xs text-zinc-400 mb-1">Monto</label>
                                     <input
+                                        id="transfer-amount"
                                         type="number"
                                         className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white text-sm outline-none focus:border-lime-500"
                                         value={amount}
@@ -194,8 +196,9 @@ export function CreateProposalModal({ projectId, isOpen, onClose, onCreated, vot
                                     />
                                 </div>
                                 <div className="w-1/3">
-                                    <label className="block text-xs text-zinc-400 mb-1">Decimals</label>
+                                    <label htmlFor="transfer-decimals" className="block text-xs text-zinc-400 mb-1">Decimals</label>
                                     <input
+                                        id="transfer-decimals"
                                         type="number"
                                         className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white text-sm outline-none"
                                         value={decimals}
@@ -205,8 +208,9 @@ export function CreateProposalModal({ projectId, isOpen, onClose, onCreated, vot
                             </div>
 
                             <div>
-                                <label className="block text-xs text-zinc-400 mb-1">Token Address (Opcional - Vacío para ETH/Native)</label>
+                                <label htmlFor="transfer-token" className="block text-xs text-zinc-400 mb-1">Token Address (Opcional - Vacío para ETH/Native)</label>
                                 <input
+                                    id="transfer-token"
                                     className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-white text-xs font-mono outline-none focus:border-lime-500"
                                     value={tokenAddress}
                                     onChange={e => setTokenAddress(e.target.value)}

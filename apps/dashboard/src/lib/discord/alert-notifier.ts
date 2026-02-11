@@ -1,5 +1,5 @@
 
-import { Project } from "@/types/admin";
+import type { Project } from "@/types/admin";
 
 const DISCORD_ALERTS_WEBHOOK = process.env.DISCORD_ALERTS_WEBHOOK;
 
