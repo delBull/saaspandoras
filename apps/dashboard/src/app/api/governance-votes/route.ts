@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
         });
 
         if (!isValid) {
+            console.error(`[VOTE_ERROR] Invalid signature for ${voterAddress}`);
             return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
         }
 
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest) {
         await db.insert(governanceVotes)
             .values({
                 proposalId,
-                voterAddress,
+                voterAddress: voterAddress.toLowerCase(), // Normalize casing
                 support,
                 signature
             })
@@ -45,8 +46,8 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({ success: true });
     } catch (error: any) {
-        console.error("Error submitting vote:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error("[VOTE_ERROR] Error submitting vote:", error);
+        return NextResponse.json({ error: error.message || "Unknown error" }, { status: 500 });
     }
 }
 
@@ -83,12 +84,13 @@ export async function GET(req: NextRequest) {
 
         let userVote = null;
         if (voterAddress) {
+            const normalizedAddress = voterAddress.toLowerCase();
             const userRes = await db
                 .select({ support: governanceVotes.support })
                 .from(governanceVotes)
                 .where(and(
                     eq(governanceVotes.proposalId, proposalId),
-                    eq(governanceVotes.voterAddress, voterAddress)
+                    eq(governanceVotes.voterAddress, normalizedAddress)
                 ))
                 .limit(1);
 

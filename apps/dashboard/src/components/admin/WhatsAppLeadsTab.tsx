@@ -186,6 +186,7 @@ export default function WhatsAppLeadsTab() {
       case 'support': return 'bg-red-500';
       case 'human': return 'bg-blue-500';
       case 'protocol_application': return 'bg-violet-500';
+      case 'creator': return 'bg-indigo-500'; // New Creator Flow
       default: return 'bg-gray-500';
     }
   };
@@ -198,6 +199,7 @@ export default function WhatsAppLeadsTab() {
       case 'support': return '🆘';
       case 'human': return '👨‍💼';
       case 'protocol_application': return '📜';
+      case 'creator': return '🎨'; // New Creator Flow
       default: return '💬';
     }
   };
@@ -399,6 +401,7 @@ export default function WhatsAppLeadsTab() {
               <option value="support">Soporte</option>
               <option value="human">Agentes</option>
               <option value="protocol_application">Protocol App</option>
+              <option value="creator">Creator (Start)</option>
             </select>
 
             {/* Priority Filter */}
