@@ -54,13 +54,21 @@ export function Providers({
       enableSystem={false}
     >
       <ThirdwebProvider>
+        {/* 🔄 AUTO CONNECT: Restores session on refresh */}
+        <AutoConnect
+          client={client}
+          wallets={wallets}
+          accountAbstraction={accountAbstractionConfig}
+          timeout={15000}
+        />
+
         {/* 🎮 INTEGRAR GAMIFICATION WRAPPER */}
         <GamificationWrapper>
-          <SmartWalletGuard>
-            <GamificationDebugger />
-            <WalletDebugger />
-            {children}
-          </SmartWalletGuard>
+          {/* <SmartWalletGuard> */}
+          <GamificationDebugger />
+          <WalletDebugger />
+          {children}
+          {/* </SmartWalletGuard> */}
         </GamificationWrapper>
         {/* <UserSyncWrapper /> */}
         <Toaster

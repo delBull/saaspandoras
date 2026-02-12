@@ -686,10 +686,11 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                     <div className="pt-2 border-t border-zinc-700/50 mt-2 space-y-3">
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <label className="text-sm font-medium text-gray-300 block">Transferible</label>
+                                                <label htmlFor="switch-transferable" className="text-sm font-medium text-gray-300 block">Transferible</label>
                                                 <p className="text-xs text-zinc-500">¿Se puede enviar a otros usuarios?</p>
                                             </div>
                                             <Switch
+                                                id="switch-transferable"
                                                 checked={formData.transferable}
                                                 onCheckedChange={(checked) => setFormData(prev => ({ ...prev, transferable: checked }))}
                                                 className="data-[state=checked]:bg-emerald-500"
@@ -698,10 +699,11 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
 
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <label className="text-sm font-medium text-gray-300 block">Burnable (Quemable)</label>
+                                                <label htmlFor="switch-burnable" className="text-sm font-medium text-gray-300 block">Burnable (Quemable)</label>
                                                 <p className="text-xs text-zinc-500">¿Se puede destruir para canjear?</p>
                                             </div>
                                             <Switch
+                                                id="switch-burnable"
                                                 checked={formData.burnable}
                                                 onCheckedChange={(checked) => setFormData(prev => ({ ...prev, burnable: checked }))}
                                                 className="data-[state=checked]:bg-rose-500"
