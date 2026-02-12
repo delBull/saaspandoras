@@ -105,7 +105,11 @@ export async function POST(req: Request) {
                     name,
                     symbol,
                     maxSupply: isInfiniteSupply ? "Unlimited" : Number(maxSupply), // Store clearer string for JSON or Number if finite
-                    price: price || "0"
+                    price: price || "0",
+                    // New traits
+                    transferable: body.transferable ?? true,
+                    burnable: body.burnable ?? false,
+                    validUntil: body.validUntil || null
                 },
                 accessCardImage: image || null // Store the image for metadata!
             },

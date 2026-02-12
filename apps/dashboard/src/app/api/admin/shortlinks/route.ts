@@ -146,8 +146,66 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+// PATCH /api/admin/shortlinks - Update a shortlink
+export async function PATCH(req: NextRequest) {
+  try {
+    // Auth check
+    const { session } = await getAuth(await headers());
+    if (!session?.userId || !await isAdmin(session.userId)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
 
-// DELETE /api/admin/shortlinks - Delete a shortlink
+    const body = await req.json();
+    const { id, destinationUrl, title, isActive } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: "ID is required" }, { status: 400 });
+    }
+
+    // Validate URL if provided
+    if (destinationUrl) {
+      try {
+        new URL(destinationUrl);
+      } catch {
+        return NextResponse.json(
+          { error: "Invalid destination URL format" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Build update object
+    const updates: any = { updatedAt: new Date() };
+    if (destinationUrl !== undefined) updates.destinationUrl = destinationUrl;
+    if (title !== undefined) updates.title = title;
+    if (isActive !== undefined) updates.isActive = isActive;
+
+    const result = await db
+      .update(shortlinks)
+      .set(updates)
+      .where(eq(shortlinks.id, id))
+      .returning();
+
+    if (result.length === 0) {
+      return NextResponse.json({ error: "Shortlink not found" }, { status: 404 });
+    }
+
+    console.log(`📝 Updated shortlink ID: ${id}`);
+
+    return NextResponse.json({
+      data: result[0],
+      message: "Shortlink updated successfully"
+    });
+
+  } catch (error) {
+    console.error("Shortlinks update API error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(req: NextRequest) {
   try {
     // Auth check
