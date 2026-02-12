@@ -34,7 +34,7 @@ export async function POST(req: Request) {
 
         // 2. Parse Config
         const body = await req.json();
-        const { name, symbol, maxSupply, price, owner, treasuryAddress, oracleAddress, image, description } = body;
+        const { name, symbol, maxSupply, price, owner, treasuryAddress, oracleAddress, image, description, nftType = 'access' } = body;
 
         if (!name || !symbol || !owner) {
             return NextResponse.json({ error: "Missing required fields (name, symbol, owner)" }, { status: 400 });
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
             oracleAddress
         };
 
-        console.log(`🚀 API: Deploying NFT Pass: ${name} (${symbol}) for ${owner}. Supply: ${isInfiniteSupply ? "UNLIMITED" : maxSupply}`);
+        console.log(`🚀 API: Deploying NFT Pass: ${name} (${symbol}) for ${owner}. Supply: ${isInfiniteSupply ? "UNLIMITED" : maxSupply}. Type: ${nftType}`);
 
         // 3. Determine Network (same logic as deploy-protocol)
         host = req.headers.get("host") || "";
@@ -104,6 +104,7 @@ export async function POST(req: Request) {
                 licenseToken: {
                     name,
                     symbol,
+                    type: nftType, // Store the type ('qr', 'access', 'identity', etc.)
                     maxSupply: isInfiniteSupply ? "Unlimited" : Number(maxSupply), // Store clearer string for JSON or Number if finite
                     price: price || "0",
                     // New traits

@@ -56,9 +56,10 @@ export async function GET(_request: Request) {
                 id: pass.id,
                 title: pass.title,
                 contractAddress: pass.licenseContractAddress,
-                symbol: w2eConfig.symbol || 'PASS',
+                symbol: w2eConfig.licenseToken?.symbol || 'PASS',
                 imageUrl: w2eConfig.accessCardImage || null,
                 chainId: pass.chainId || null,
+                nftType: w2eConfig.licenseToken?.type || 'access' // Default to 'access'
             };
         });
 

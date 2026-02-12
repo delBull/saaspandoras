@@ -45,8 +45,8 @@ export function WalletRehydrator() {
             // 1) Intentar desconectar cualquier wallet que esté parcialmente conectada
             try {
                 console.debug("[WalletRehydrator] Attempting disconnect to clear any EOA");
-                if (disconnect) {
-                    await disconnect(activeWallet!);
+                if (disconnect && activeWallet) { // Add null check for activeWallet
+                    disconnect(activeWallet);
                 }
             } catch (e) {
                 console.debug("[WalletRehydrator] disconnect() threw:", e);
@@ -92,8 +92,7 @@ export function WalletRehydrator() {
 
             console.debug("[WalletRehydrator] Rehydration finished. Target Wallet Account:", targetWallet.getAccount()?.address);
         })();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, []); // ejecutar solo una vez al montar
 
     return null;
 }

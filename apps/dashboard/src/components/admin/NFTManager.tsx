@@ -91,12 +91,31 @@ export function NFTManager() {
     const [balanceCheckValue, setBalanceCheckValue] = useState<bigint | null>(null);
     const [checkingBalance, setCheckingBalance] = useState(false);
 
-    // --- Functions ---
+    // 5. Dynamic QRs Logic (Lifted State)
+    const [shortlinks, setShortlinks] = useState<any[]>([]);
+    const [loadingShortlinks, setLoadingShortlinks] = useState(true);
+
+    const fetchShortlinks = async () => {
+        try {
+            const res = await fetch("/api/admin/shortlinks?show_all=true", {
+                headers: { "x-wallet-address": account?.address || "" }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setShortlinks(data.data || []);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoadingShortlinks(false);
+        }
+    };
 
     useEffect(() => {
         if (account?.address) {
             fetchSettings();
             fetchAvailablePasses();
+            fetchShortlinks();
         }
     }, [account?.address]);
 
@@ -134,7 +153,8 @@ export function NFTManager() {
                     title: 'Apply Access Pass (Sistema)',
                     contractAddress: config.applyPassNftAddress,
                     symbol: 'APPLY',
-                    imageUrl: null
+                    imageUrl: null,
+                    nftType: 'access'
                 };
                 setAvailablePasses([applyPass, ...passes]);
                 console.log('✅ Loaded NFT Passes:', [applyPass, ...passes]);
@@ -258,6 +278,9 @@ export function NFTManager() {
         }
     };
 
+    // Filter passes to show only valid Access Passes (not QRs)
+    const displayPasses = availablePasses.filter(p => p.contractAddress === config.applyPassNftAddress || (p as any).nftType !== 'qr');
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -271,7 +294,7 @@ export function NFTManager() {
                 </div>
                 <div className="flex gap-2">
                     <Button
-                        onClick={() => fetchAvailablePasses()}
+                        onClick={() => { fetchAvailablePasses(); fetchShortlinks(); }}
                         variant="outline"
                         className="border-zinc-700 text-zinc-400 hover:text-white"
                         title="Refrescar lista"
@@ -380,7 +403,7 @@ export function NFTManager() {
                         Tus NFT Passes Deployed
                     </h3>
                     <span className="text-xs text-zinc-500 font-mono">
-                        Adicionales: {availablePasses.filter(p => p.contractAddress !== config.applyPassNftAddress).length}
+                        Adicionales: {displayPasses.filter(p => p.contractAddress !== config.applyPassNftAddress).length}
                     </span>
                 </div>
 
@@ -390,7 +413,7 @@ export function NFTManager() {
                             <div key={i} className="bg-zinc-900/40 border border-zinc-800 rounded-xl p-4 h-32 animate-pulse" />
                         ))}
                     </div>
-                ) : availablePasses.length <= 1 ? (
+                ) : displayPasses.length <= 1 ? (
                     <div className="bg-zinc-900/20 border border-dashed border-zinc-800 rounded-xl p-12 text-center">
                         <div className="w-12 h-12 bg-zinc-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
                             <Wallet className="w-6 h-6 text-zinc-600" />
@@ -406,7 +429,7 @@ export function NFTManager() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {availablePasses.map((pass) => {
+                        {displayPasses.map((pass) => {
                             // Skip the system pass in the secondary list as it's already shown above
                             if (pass.contractAddress === config.applyPassNftAddress) return null;
 
@@ -446,7 +469,12 @@ export function NFTManager() {
             </div>
 
             {/* Dynamic QRs Section */}
-            <DynamicQRSection account={account} />
+            <DynamicQRSection
+                account={account}
+                shortlinks={shortlinks}
+                loading={loadingShortlinks}
+                onRefresh={fetchShortlinks}
+            />
 
             <Dialog open={showAirdropModal} onOpenChange={setShowAirdropModal}>
                 <DialogContent className="sm:max-w-md bg-zinc-900 border-zinc-800 text-white">
@@ -581,6 +609,8 @@ export function NFTManager() {
                     refetchBalance();
                     // Refresh available passes list
                     fetchAvailablePasses();
+                    // Refresh shortlinks
+                    fetchShortlinks();
                 }}
             />
 
@@ -589,33 +619,11 @@ export function NFTManager() {
 }
 
 // --- Subcomponent for Dynamic QRs ---
-function DynamicQRSection({ account }: { account: any }) {
+function DynamicQRSection({ account, shortlinks, loading, onRefresh }: { account: any, shortlinks: any[], loading: boolean, onRefresh: () => void }) {
     const { toast } = useToast();
-    const [shortlinks, setShortlinks] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
     const [editingLink, setEditingLink] = useState<any>(null);
     const [editUrl, setEditUrl] = useState("");
     const [saving, setSaving] = useState(false);
-
-    useEffect(() => {
-        if (account?.address) fetchShortlinks();
-    }, [account?.address]);
-
-    const fetchShortlinks = async () => {
-        try {
-            const res = await fetch("/api/admin/shortlinks?show_all=true", {
-                headers: { "x-wallet-address": account?.address || "" }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setShortlinks(data.data || []);
-            }
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleEdit = (link: any) => {
         setEditingLink(link);
@@ -636,7 +644,7 @@ function DynamicQRSection({ account }: { account: any }) {
 
             toast({ title: "QR Actualizado", description: "La URL de destino ha sido modificada." });
             setEditingLink(null);
-            fetchShortlinks();
+            onRefresh();
         } catch (e) {
             toast({ title: "Error", description: "No se pudo actualizar el QR.", variant: "destructive" });
         } finally {
@@ -669,7 +677,7 @@ function DynamicQRSection({ account }: { account: any }) {
                     </div>
                     QRs Dinámicos (Smart Links)
                 </h3>
-                <Button variant="ghost" size="sm" onClick={fetchShortlinks} disabled={loading}>
+                <Button variant="ghost" size="sm" onClick={onRefresh} disabled={loading}>
                     <RefreshCwIcon className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                 </Button>
             </div>
@@ -688,8 +696,13 @@ function DynamicQRSection({ account }: { account: any }) {
                     {shortlinks.map(link => (
                         <div key={link.id} className="bg-zinc-900/60 border border-zinc-800 p-4 rounded-xl hover:border-lime-500/20 transition-all group">
                             <div className="flex justify-between items-start mb-3">
-                                <Badge variant="outline" className="bg-lime-500/10 text-lime-400 border-lime-500/20 font-mono text-[10px]">
+                                <Badge
+                                    variant="outline"
+                                    className="bg-lime-500/10 text-lime-400 border-lime-500/20 font-mono text-[10px] cursor-pointer hover:bg-lime-500/20"
+                                    onClick={() => window.open(`${window.location.origin}/${link.slug}`, '_blank')}
+                                >
                                     /{link.slug}
+                                    <ArrowRightIcon className="w-3 h-3 ml-1 inline-block" />
                                 </Badge>
                                 <div className="flex gap-1">
                                     <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => downloadQR(link.slug)} title="Descargar PNG">
@@ -732,7 +745,7 @@ function DynamicQRSection({ account }: { account: any }) {
                                 id="qr-destination-url"
                                 value={editUrl}
                                 onChange={(e) => setEditUrl(e.target.value)}
-                                className="bg-zinc-800 border-zinc-700 font-mono text-sm"
+                                className="bg-zinc-800 text-white border-zinc-700 font-mono text-sm"
                                 placeholder="https://..."
                             />
                         </div>
