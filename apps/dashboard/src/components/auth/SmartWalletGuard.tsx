@@ -57,7 +57,7 @@ export function SmartWalletGuard({ children }: { children: React.ReactNode }) {
                 <Loader2 className="w-10 h-10 animate-spin text-purple-500" />
                 <div className="text-center">
                     <h3 className="text-white font-medium text-lg">Verificando Credenciales</h3>
-                    <p className="text-zinc-400 text-sm mt-1">Asegurando sesión Account Abstraction...</p>
+                    <p className="text-zinc-400 text-sm mt-1">Aguarda un momento...</p>
                 </div>
             </div>
         </div>

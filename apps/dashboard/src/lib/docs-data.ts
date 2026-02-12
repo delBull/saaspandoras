@@ -1573,5 +1573,126 @@ Explore the [GitHub Repository](#) (coming soon) for:
 `
       }
     ]
+  },
+  {
+    id: "roadmap",
+    title: "Roadmap & Future",
+    icon: "Map",
+    sections: [
+      {
+        id: "2025-vision",
+        title: "2025 Strategic Vision",
+        content: `# Roadmap of Evolution
+        
+Our vision to democratize investment in real-world assets globally.
+
+## Q4 2024: Beta Launch (Completed)
+- **Status**: ✅ Completed
+- **Focus**: Initial platform with basic tokenization features.
+- **Key Features**:
+  - Basic Asset Tokenization
+  - Wallet Integration
+  - Administrative Panel
+  - Initial KYC System
+
+## Q1 2025: Multi-Asset Expansion (Completed)
+- **Status**: ✅ Completed
+- **Focus**: Support for diverse real-world asset types.
+- **Key Features**:
+  - Startup Tokenization
+  - Art & Collectibles
+  - Intellectual Property
+  - Renewable Energy Assets
+
+## Q2 2025: Full Gamification (In Progress)
+- **Status**: 🔄 In Development
+- **Focus**: Advanced engagement and reward systems.
+- **Key Features**:
+  - XP & Leveling System
+  - Achievements & Badges
+  - Global Leaderboard
+  - Exclusive Rewards
+
+## Q3 2025: Internationalization (Upcoming)
+- **Status**: 📅 Planned
+- **Focus**: Global expansion and multi-language support.
+- **Key Features**:
+  - Full Multi-language Support
+  - International Regulatory Compliance
+  - Local Strategic Partners
+  - 24/7 Multi-zone Support
+
+## Q4 2025: Advanced Web3 (Upcoming)
+- **Status**: 📅 Planned
+- **Focus**: DeFi integration and DAO Governance.
+- **Key Features**:
+  - Decentralized Governance
+  - Staking & Yield Farming
+  - Dynamic NFTs
+  - Cross-chain Compatibility
+`
+      },
+      {
+        id: "nft-lab-future",
+        title: "NFT Lab 2.0",
+        content: `# NFT Lab 2.0: Scalability & Future Roadmap
+
+We are scaling the **NFT Lab** into a comprehensive ecosystem for Phygital interaction and on-chain loyalty.
+
+## 1. Smart Actions (Dynamic Interactions)
+Currently, "Smart QR" redirects to a URL. The evolution is for the QR to **execute on-chain logic** or update NFT state.
+
+- **Proof of Presence (POAP 2.0)**: Scanning QR at a physical event updates metadata to prove attendance.
+- **Burn-to-Redeem**: For coupons/gifts. Authenticated owners can "Burn" the NFT to redeem physical products.
+- **Dynamic Shortlinks**: Destination URL changes based on NFT state (e.g., Info -> Check-in -> Photo Gallery).
+
+## 2. Physical-Digital Twins (NFC Integration)
+Bringing "NFT Lab" to the physical world via NFC chips (IYK, HaLo) embedded in merch or cards.
+
+- **Chip Linking**: Link a unique physical chip ID to a specific NFT in the dashboard.
+- **Tap-to-Verify**: Verify authenticity/ownership by tapping a phone against the object.
+- **Superpowered Merch**: Wearables that grant VIP access only if the wearer holds the linked NFT.
+
+## 3. Token Gated Commerce & Perks
+Turning NFTs into master keys for content and commerce.
+
+- **Shopify Integration**: Auto-discounts for holders of specific "Identity NFTs".
+- **Exclusive Content**: Dashboard sections or videos unlocked by wallet verification.
+
+## 4. Gamification & Loyalty (XP System)
+Integration with the existing Gamification ecosystem.
+
+- **Level Up**: "Digital Identity" NFTs accumulate XP based on user activity (voting, donating, attending).
+- **Soulbound Reputation**: Visual upgrades to the NFT art reflecting user rank and reputation.
+
+## 5. Account Abstraction (Invisible Onboarding)
+Removing the "Connect Wallet" barrier for mass adoption.
+
+- **Gasless Minting**: Admins sponsor gas for new users.
+- **Email Wallets**: Invisible wallets linked to email/phone.
+- **Magic Links**: Airdrops via email links that auto-create wallets.
+
+---
+
+### Architecture Overview
+
+\`\`\`mermaid
+graph TD
+    User[End User]
+    Physical[Physical World (QR/NFC)]
+    Lab[NFT Lab Dashboard]
+    Contract[Smart Contracts]
+    
+    User -- Scan/Tap --> Physical
+    Physical -- Trigger --> API[API Actions Layer]
+    Lab -- Configure --> API
+    Lab -- Deploy --> Contract
+    API -- Read State --> Contract
+    API -- Exec Tx (Gasless) --> Contract
+    Contract -- Update Metadata --> User
+\`\`\`
+`
+      }
+    ]
   }
 ];
