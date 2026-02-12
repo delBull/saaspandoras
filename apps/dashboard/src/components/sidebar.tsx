@@ -621,14 +621,15 @@ export function Sidebar({
                             {/* Thirdweb ConnectButton - Maneja automáticamente conectar vs gestionar */}
                             <div className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full">
                               <ConnectWalletButton
-                                className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full"
+                                className="w-full justify-start pl-0 bg-transparent text-white hover:bg-transparent shadow-none font-normal"
                                 onConnect={() => {
-                                  // Don't close dropdown on connect - let user stay in dropdown
-                                  console.log('🔗 Wallet connected - keeping dropdown open');
+                                  console.log('🔗 Wallet connected');
                                 }}
                                 onDisconnect={() => {
-                                  // Don't close dropdown on disconnect - let user stay in dropdown
-                                  console.log('🔌 Wallet disconnected - keeping dropdown open');
+                                  console.log('🔌 Wallet disconnected');
+                                  // Close dropdowns on disconnect
+                                  setProfileDropdown(false);
+                                  setMobileOpen(false);
                                 }}
                               />
                             </div>

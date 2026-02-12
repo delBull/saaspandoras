@@ -2,48 +2,23 @@
 
 import { Toaster, toast } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
-import { ThirdwebProvider, useActiveAccount } from "thirdweb/react";
-import { WalletRehydrator } from "@/components/wallet/WalletRehydrator";
+import { ThirdwebProvider, AutoConnect } from "thirdweb/react";
+import { client } from "@/lib/thirdweb-client";
+import { wallets, accountAbstractionConfig } from "@/lib/wallets";
 import { GamificationProvider } from "@pandoras/gamification";
 import { GamificationDebugger } from "@/components/debug/GamificationDebugger";
 import { WalletDebugger } from "@/components/debug/WalletDebugger";
 import { SmartWalletGuard } from "@/components/auth/SmartWalletGuard";
-import { useThirdwebUserSync } from "@/hooks/useThirdwebUserSync";
-
-function UserSyncWrapper() {
-  useThirdwebUserSync();
-  return null;
-}
-
-// 🎮 COMPONENTE PARA INTEGRAR GAMIFICACIÓN
-function GamificationWrapper({ children }: { children: React.ReactNode }) {
-  // Hook para obtener el userId del contexto de autenticación
-  const account = useActiveAccount();
-  const userId = account?.address;
-
-  // Solo mostrar gamificación si hay usuario logueado
-  if (!userId) return <>{children}</>;
-
-  return (
-    <GamificationProvider
-      userId={userId}
-      showHUD={true}
-      hudPosition="top-right"
-      onLevelUp={(level) => toast.success(`¡Nivel ${level} Alcanzado! 🎉`, {
-        description: "Has desbloqueado nuevas capacidades en la plataforma.",
-        duration: 5000,
-      })}
-    >
-      {children}
-    </GamificationProvider>
-  );
-}
 
 export function Providers({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const autoConnectDisabled =
+    typeof window !== "undefined" &&
+    localStorage.getItem("wallet-logged-out") === "true";
+
   return (
     <ThemeProvider
       attribute="class"
@@ -51,23 +26,25 @@ export function Providers({
       enableSystem={false}
     >
       <ThirdwebProvider>
-        {/* 🔄 MANUAL REHYDRATION: Strictly enforcing Smart Account on load */}
-        <WalletRehydrator />
+        {!autoConnectDisabled && (
+          <AutoConnect
+            client={client}
+            wallets={wallets}
+            accountAbstraction={accountAbstractionConfig}
+            timeout={15000}
+          />
+        )}
 
-        {/* 🎮 INTEGRAR GAMIFICATION WRAPPER */}
-        <GamificationWrapper>
-          {/* <SmartWalletGuard> */}
-          <GamificationDebugger />
-          <WalletDebugger />
-          {children}
-          {/* </SmartWalletGuard> */}
-        </GamificationWrapper>
-        {/* <UserSyncWrapper /> */}
-        <Toaster
-          theme="dark"
-          richColors
-          position="top-center"
-        />
+        <SmartWalletGuard>
+          {/* Only render Gamification if we have a valid userId, or handle it inside */}
+          <GamificationProvider userId={undefined as unknown as string} showHUD={false}>
+            <GamificationDebugger />
+            <WalletDebugger />
+            {children}
+          </GamificationProvider>
+        </SmartWalletGuard>
+
+        <Toaster theme="dark" richColors position="top-center" />
       </ThirdwebProvider>
     </ThemeProvider>
   );
