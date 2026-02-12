@@ -57,8 +57,7 @@ export function Providers({
         <AutoConnect
           client={client}
           wallets={wallets}
-          accountAbstraction={accountAbstractionConfig} // ⚡ ENFORCING Global Account Abstraction for AutoConnect
-          timeout={15000}  // Increased to prevent premature timeout on navigation
+          timeout={15000}
           onConnect={(wallet) => {
             if (process.env.NODE_ENV === 'development') {
               console.log("🔗 AutoConnect: Wallet conectada automáticamente", wallet.id);
