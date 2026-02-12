@@ -8,56 +8,82 @@ export function SmartWalletGuard({ children }: { children: React.ReactNode }) {
     const account = useActiveAccount();
     const wallet = useActiveWallet();
     const [isTimeOut, setIsTimeOut] = useState(false);
+    const [showLongWaitMessage, setShowLongWaitMessage] = useState(false);
+    const timerRef = React.useRef<NodeJS.Timeout | null>(null);
 
-    // 🛡️ GUARD LOGIC:
-    // We only want to block the UI if we detect a Social Login (inApp/embedded) 
-    // that hasn't upgraded to a Smart Wallet yet.
-    //
-    // If the wallet.id is 'inApp' or 'embedded', it implies we are using the EOA signer directly, 
-    // OR we are in the process of upgrading to the Smart Account (since our config enforces AA).
-    // The user reported that it "starts as EOA" and then "switches to Smart Account".
-    // 
-    // So, while wallet.id is 'inApp', we BLOCK and show a loader.
-    // When wallet.id becomes 'smart' (or we timeout), we let it through.
+    // 🛡️ GUARD LOGIC (STRICT MODE):
+    // Only allow specific "Trustworthy" final states.
+    // If it's anything else (like 'inApp', 'embedded', or a social provider ID), we BLOCK and wait for 'smart'.
 
-    // Effect to handle the timeout "escape hatch"
+    const ALLOWED_WALLETS = [
+        "smart",
+        "io.metamask",
+        "com.coinbase.wallet",
+        "me.rainbow",
+        "io.rabby",
+        "walletConnect"
+    ];
+
+    const isAllowed = wallet && ALLOWED_WALLETS.includes(wallet.id);
+
     useEffect(() => {
-        let timer: NodeJS.Timeout;
-
-        if (wallet && (wallet.id === "inApp" || wallet.id === "embedded")) {
-            // Start a 5-second timer to allow passing through even if it stays 'inApp'
-            // (Just in case the upgrade fails or isn't configured, so we don't block forever)
-            timer = setTimeout(() => {
-                setIsTimeOut(true);
-            }, 5000);
+        // If allowed or timed out, clean up
+        if (isTimeOut || isAllowed || !wallet) {
+            if (timerRef.current) {
+                clearTimeout(timerRef.current);
+                timerRef.current = null;
+            }
+            return;
         }
 
-        return () => {
-            if (timer) clearTimeout(timer);
-        };
-    }, [wallet]);
+        // If connected but NOT allowed (e.g. inApp), start timer
+        if (wallet && !isAllowed && !timerRef.current) {
+            console.log("🛡️ SmartWalletGuard: Blocking wallet ID:", wallet.id);
+
+            const longWaitTimer = setTimeout(() => {
+                setShowLongWaitMessage(true);
+            }, 5000);
+
+            timerRef.current = setTimeout(() => {
+                console.warn("🛡️ SmartWalletGuard: Timeout reached. Forcing unblock.");
+                setIsTimeOut(true);
+            }, 15000);
+
+            return () => {
+                clearTimeout(longWaitTimer);
+                if (timerRef.current) clearTimeout(timerRef.current);
+            };
+        }
+    }, [wallet, isTimeOut, isAllowed]);
 
     // 1. If no wallet connected, pass through.
     if (!wallet) return <>{children}</>;
 
-    // 2. If it's a Smart Wallet properly identified, pass through.
-    if (wallet.id === "smart") return <>{children}</>;
+    // 2. If valid/allowed wallet, pass through.
+    if (isAllowed) return <>{children}</>;
 
-    // 3. If it's a standard external wallet (Metamask, Coinbase, etc), pass through.
-    if (wallet.id !== "inApp" && wallet.id !== "embedded") return <>{children}</>;
-
-    // 4. If we timed out waiting, pass through (Fail open).
+    // 3. If timeout, pass through (Fail open).
     if (isTimeOut) return <>{children}</>;
 
-    // 5. If we are here, it is an "inApp" wallet that is NOT yet "smart" and hasn't timed out.
-    // BLOCK and show loader.
+    // 4. BLOCK EVERYTHING ELSE (inApp, social, etc.)
     return (
         <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/95 backdrop-blur-md p-4">
-            <div className="bg-zinc-900 border border-purple-500/30 rounded-xl p-8 flex flex-col items-center space-y-4 shadow-2xl animate-in fade-in zoom-in duration-300">
+            <div className="bg-zinc-900 border border-purple-500/30 rounded-xl p-8 flex flex-col items-center space-y-4 shadow-2xl animate-in fade-in zoom-in duration-300 max-w-sm w-full">
                 <Loader2 className="w-10 h-10 animate-spin text-purple-500" />
                 <div className="text-center">
                     <h3 className="text-white font-medium text-lg">Verificando Credenciales</h3>
-                    <p className="text-zinc-400 text-sm mt-1">Aguarda un momento...</p>
+                    <p className="text-zinc-400 text-sm mt-1">Asegurando sesión Account Abstraction...</p>
+
+                    {/* Debug Info */}
+                    <p className="text-zinc-600 text-[10px] uppercase tracking-widest mt-4 font-mono">
+                        ID: {wallet.id}
+                    </p>
+
+                    {showLongWaitMessage && (
+                        <p className="text-yellow-500/80 text-xs mt-2 animate-pulse">
+                            Finalizando conexión segura...
+                        </p>
+                    )}
                 </div>
             </div>
         </div>
