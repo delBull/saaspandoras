@@ -21,8 +21,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { InformationCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { usePathname } from "next/navigation";
 
+import { useEOAIdentity } from "@/hooks/useEOAIdentity";
+
 export function NFTGate({ children }: { children: React.ReactNode }) {
   const account = useActiveAccount();
+  const eoaAddress = useEOAIdentity();
   const pathname = usePathname();
 
 
@@ -57,9 +60,9 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
   const { data: hasKey, isLoading: isLoadingKey, refetch, error } = useReadContract({
     contract,
     method: "isGateHolder",
-    params: [account?.address || ""],
+    params: [eoaAddress || ""], // 🛡️ Check against EOA (Identity), not Smart Account (Execution)
     queryOptions: {
-      enabled: !!account?.address && !!contract,
+      enabled: !!eoaAddress && !!contract,
       retry: 3, // Retry failed requests (like 0x data)
     },
   });

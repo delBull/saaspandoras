@@ -54,21 +54,6 @@ export function Providers({
       enableSystem={false}
     >
       <ThirdwebProvider>
-        <AutoConnect
-          client={client}
-          wallets={wallets}
-          timeout={15000}
-          onConnect={(wallet) => {
-            if (process.env.NODE_ENV === 'development') {
-              console.log("🔗 AutoConnect: Wallet conectada automáticamente", wallet.id);
-            }
-          }}
-          onTimeout={() => {
-            if (process.env.NODE_ENV === 'development') {
-              console.log("⏰ AutoConnect: Timeout alcanzado, sin modal forzoso");
-            }
-          }}
-        />
         {/* 🎮 INTEGRAR GAMIFICATION WRAPPER */}
         <GamificationWrapper>
           <SmartWalletGuard>
