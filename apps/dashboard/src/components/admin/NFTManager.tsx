@@ -593,7 +593,7 @@ function DynamicQRSection({ account }: { account: any }) {
     const { toast } = useToast();
     const [shortlinks, setShortlinks] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [editingLink, setEditingLink] = useState<any | null>(null);
+    const [editingLink, setEditingLink] = useState<any>(null);
     const [editUrl, setEditUrl] = useState("");
     const [saving, setSaving] = useState(false);
 
@@ -727,8 +727,9 @@ function DynamicQRSection({ account }: { account: any }) {
                             <Badge variant="outline" className="text-[10px]">QR Code</Badge>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs text-zinc-500 uppercase font-bold">Nueva URL de Destino</label>
+                            <label htmlFor="qr-destination-url" className="text-xs text-zinc-500 uppercase font-bold">Nueva URL de Destino</label>
                             <Input
+                                id="qr-destination-url"
                                 value={editUrl}
                                 onChange={(e) => setEditUrl(e.target.value)}
                                 className="bg-zinc-800 border-zinc-700 font-mono text-sm"
