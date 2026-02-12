@@ -2,16 +2,13 @@
 
 import { Toaster, toast } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
-import { ThirdwebProvider, AutoConnect, useActiveAccount } from "thirdweb/react";
-import { client } from "@/lib/thirdweb-client";
-import { config as appConfig } from "@/config";
-import { useThirdwebUserSync } from "@/hooks/useThirdwebUserSync";
-import { wallets, accountAbstractionConfig } from "@/config/wallets";
-// 🎮 IMPORTAR GAMIFICATION PROVIDER
+import { ThirdwebProvider, useActiveAccount } from "thirdweb/react";
+import { WalletRehydrator } from "@/components/wallet/WalletRehydrator";
 import { GamificationProvider } from "@pandoras/gamification";
 import { GamificationDebugger } from "@/components/debug/GamificationDebugger";
 import { WalletDebugger } from "@/components/debug/WalletDebugger";
 import { SmartWalletGuard } from "@/components/auth/SmartWalletGuard";
+import { useThirdwebUserSync } from "@/hooks/useThirdwebUserSync";
 
 function UserSyncWrapper() {
   useThirdwebUserSync();
@@ -54,13 +51,8 @@ export function Providers({
       enableSystem={false}
     >
       <ThirdwebProvider>
-        {/* 🔄 AUTO CONNECT: Restores session on refresh */}
-        <AutoConnect
-          client={client}
-          wallets={wallets}
-          accountAbstraction={accountAbstractionConfig}
-          timeout={15000}
-        />
+        {/* 🔄 MANUAL REHYDRATION: Strictly enforcing Smart Account on load */}
+        <WalletRehydrator />
 
         {/* 🎮 INTEGRAR GAMIFICATION WRAPPER */}
         <GamificationWrapper>
