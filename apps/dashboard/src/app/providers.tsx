@@ -11,6 +11,7 @@ import { wallets, accountAbstractionConfig } from "@/config/wallets";
 import { GamificationProvider } from "@pandoras/gamification";
 import { GamificationDebugger } from "@/components/debug/GamificationDebugger";
 import { WalletDebugger } from "@/components/debug/WalletDebugger";
+import { SmartWalletGuard } from "@/components/auth/SmartWalletGuard";
 
 function UserSyncWrapper() {
   useThirdwebUserSync();
@@ -71,9 +72,11 @@ export function Providers({
         />
         {/* 🎮 INTEGRAR GAMIFICATION WRAPPER */}
         <GamificationWrapper>
-          <GamificationDebugger />
-          <WalletDebugger />
-          {children}
+          <SmartWalletGuard>
+            <GamificationDebugger />
+            <WalletDebugger />
+            {children}
+          </SmartWalletGuard>
         </GamificationWrapper>
         {/* <UserSyncWrapper /> */}
         <Toaster
