@@ -264,11 +264,7 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
                                     <div className="space-y-3 pt-2">
                                         <div className="space-y-3 pt-2">
                                             <Label>Categoría / Vertical</Label>
-                                            <RadioGroup
-                                                value={data.vertical}
-                                                onValueChange={(val) => updateData({ vertical: val })}
-                                                className="space-y-2"
-                                            >
+                                            <div className="space-y-2">
                                                 <div
                                                     role="button"
                                                     tabIndex={0}
@@ -281,7 +277,7 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
                                                         }
                                                     }}
                                                 >
-                                                    <RadioGroupItem value="Tecnología / SaaS" id="v1" />
+                                                    <RadioGroupItem value="Tecnología / SaaS" id="v1" checked={data.vertical === "Tecnología / SaaS"} />
                                                     <Label htmlFor="v1" className="cursor-pointer flex-1">Tecnología / SaaS / Crypto</Label>
                                                 </div>
 
@@ -297,7 +293,7 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
                                                         }
                                                     }}
                                                 >
-                                                    <RadioGroupItem value="Servicios / Agencia" id="v2" />
+                                                    <RadioGroupItem value="Servicios / Agencia" id="v2" checked={data.vertical === "Servicios / Agencia"} />
                                                     <Label htmlFor="v2" className="cursor-pointer flex-1">Servicios / Agencia / Coaching</Label>
                                                 </div>
 
@@ -313,10 +309,10 @@ export function ApplyFormProtocol({ onClose }: { onClose?: () => void }) {
                                                         }
                                                     }}
                                                 >
-                                                    <RadioGroupItem value="Tradicional / Físico" id="v3" />
+                                                    <RadioGroupItem value="Tradicional / Físico" id="v3" checked={data.vertical === "Tradicional / Físico"} />
                                                     <Label htmlFor="v3" className="cursor-pointer flex-1">Tradicional / E-commerce / Físico</Label>
                                                 </div>
-                                            </RadioGroup>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
