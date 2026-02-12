@@ -56,7 +56,7 @@ export function Providers({
         <AutoConnect
           client={client}
           wallets={wallets}
-          // accountAbstraction={accountAbstractionConfig} // 🛑 REMOVED: Conflict with explicit smartWallet wrapper in wallets.ts
+          accountAbstraction={accountAbstractionConfig} // ⚡ ENFORCING Global Account Abstraction for AutoConnect
           timeout={15000}  // Increased to prevent premature timeout on navigation
           onConnect={(wallet) => {
             if (process.env.NODE_ENV === 'development') {
