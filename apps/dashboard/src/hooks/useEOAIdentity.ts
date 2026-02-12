@@ -30,7 +30,7 @@ export function useEOAIdentity() {
 
         // @ts-expect-error - 'type' and 'getEOA' might not be on the base Account interface but present on the runtime object for Smart Accounts
         if (account.type === "smart" && typeof account.getEOA === "function") {
-            // @ts-expect-error
+            // @ts-expect-error - getEOA is not in the base type definition
             return account.getEOA()?.address || account.getEOA();  // Adapt based on what getEOA returns (Address or Account)
         }
 
