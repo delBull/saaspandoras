@@ -265,7 +265,8 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                 image: finalImage,
                 transferable: formData.transferable,
                 burnable: formData.burnable,
-                validUntil: formData.validUntil
+                validUntil: formData.validUntil,
+                nftType: nftType // Send type to API
             };
 
             const res = await fetch("/api/admin/deploy/nft-pass", {
@@ -287,10 +288,13 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
             // 4a. If "QR / Action", create the shortlink
             if (nftType === 'qr' && preGeneratedSlugRef.current) {
                 try {
-                    const slug = preGeneratedSlugRef.current;
+                    // Ensure slug is clean (lowercase, alphanumeric, hyphens)
+                    const rawSlug = preGeneratedSlugRef.current;
+                    const slug = rawSlug.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+
                     const fullUrl = `${window.location.origin}/${slug}`;
 
-                    await fetch('/api/admin/shortlinks', {
+                    const shortlinkRes = await fetch('/api/admin/shortlinks', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -301,10 +305,20 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                         })
                     });
 
+                    if (!shortlinkRes.ok) {
+                        const errData = await shortlinkRes.json();
+                        console.error("Shortlink creation error:", errData);
+                        throw new Error(errData.error || "Fallo creación de enlace");
+                    }
+
                     setGeneratedShortlink(fullUrl);
                 } catch (e) {
                     console.error("Failed to create shortlink", e);
-                    toast({ title: "⚠️ Advertencia", description: "El contrato se creó pero falló la generación del Shortlink automático." });
+                    toast({
+                        title: "⚠️ Advertencia",
+                        description: "El contrato se creó pero falló la generación del Shortlink. Intenta crearlo manualmente en Dashboard.",
+                        variant: "destructive"
+                    });
                 }
             }
 
@@ -347,6 +361,11 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
         }
     };
 
+    const handleSuccessClose = () => {
+        if (onSuccess) onSuccess();
+        onClose();
+    };
+
     const reset = () => {
         setCreationStep(0);
         setNftType('access');
@@ -366,7 +385,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
             burnable: false,
             validUntil: null
         });
-        window.location.href = "/admin/dashboard?tab=nft"; // Use 'nft' tab (updated name)
+        // Removed page reload
     };
 
     if (!isOpen) return null;
@@ -465,10 +484,10 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                     )}
 
                                     <button
-                                        onClick={reset}
+                                        onClick={handleSuccessClose}
                                         className="w-full py-3 px-4 bg-white text-black font-bold rounded-xl hover:bg-gray-100 transition-colors shadow-lg"
                                     >
-                                        Continuar al Dashboard
+                                        Continuar
                                     </button>
                                 </div>
                             )}
