@@ -445,6 +445,9 @@ export function NFTManager() {
                 )}
             </div>
 
+            {/* Dynamic QRs Section */}
+            <DynamicQRSection account={account} />
+
             <Dialog open={showAirdropModal} onOpenChange={setShowAirdropModal}>
                 <DialogContent className="sm:max-w-md bg-zinc-900 border-zinc-800 text-white">
                     <DialogHeader>
@@ -583,4 +586,195 @@ export function NFTManager() {
 
         </div>
     );
+}
+
+// --- Subcomponent for Dynamic QRs ---
+function DynamicQRSection({ account }: { account: any }) {
+    const { toast } = useToast();
+    const [shortlinks, setShortlinks] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [editingLink, setEditingLink] = useState<any | null>(null);
+    const [editUrl, setEditUrl] = useState("");
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        if (account?.address) fetchShortlinks();
+    }, [account?.address]);
+
+    const fetchShortlinks = async () => {
+        try {
+            const res = await fetch("/api/admin/shortlinks?show_all=true", {
+                headers: { "x-wallet-address": account?.address || "" }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setShortlinks(data.data || []);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleEdit = (link: any) => {
+        setEditingLink(link);
+        setEditUrl(link.destinationUrl);
+    };
+
+    const saveEdit = async () => {
+        if (!editingLink) return;
+        setSaving(true);
+        try {
+            const res = await fetch("/api/admin/shortlinks", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json", "x-wallet-address": account?.address || "" },
+                body: JSON.stringify({ id: editingLink.id, destinationUrl: editUrl })
+            });
+
+            if (!res.ok) throw new Error("Failed to update");
+
+            toast({ title: "QR Actualizado", description: "La URL de destino ha sido modificada." });
+            setEditingLink(null);
+            fetchShortlinks();
+        } catch (e) {
+            toast({ title: "Error", description: "No se pudo actualizar el QR.", variant: "destructive" });
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const downloadQR = async (slug: string) => {
+        try {
+            const QRCodeLib = (await import("qrcode")).default;
+            const url = `${window.location.origin}/${slug}`;
+            const dataUrl = await QRCodeLib.toDataURL(url, { width: 1000, margin: 2 });
+            const link = document.createElement("a");
+            link.href = dataUrl;
+            link.download = `qr-${slug}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (e) {
+            console.error("QR Download failed", e);
+        }
+    };
+
+    return (
+        <div className="space-y-4 mt-8 pt-8 border-t border-zinc-800">
+            <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-lime-500/10 flex items-center justify-center border border-lime-500/20">
+                        <QrCodeIcon className="w-5 h-5 text-lime-400" />
+                    </div>
+                    QRs Dinámicos (Smart Links)
+                </h3>
+                <Button variant="ghost" size="sm" onClick={fetchShortlinks} disabled={loading}>
+                    <RefreshCwIcon className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                </Button>
+            </div>
+
+            {loading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="h-24 bg-zinc-900/40 rounded-xl animate-pulse" />
+                    <div className="h-24 bg-zinc-900/40 rounded-xl animate-pulse" />
+                </div>
+            ) : shortlinks.length === 0 ? (
+                <div className="bg-zinc-900/20 border border-dashed border-zinc-800 rounded-xl p-8 text-center">
+                    <p className="text-zinc-500 text-sm">No tienes QRs dinámicos activos.</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {shortlinks.map(link => (
+                        <div key={link.id} className="bg-zinc-900/60 border border-zinc-800 p-4 rounded-xl hover:border-lime-500/20 transition-all group">
+                            <div className="flex justify-between items-start mb-3">
+                                <Badge variant="outline" className="bg-lime-500/10 text-lime-400 border-lime-500/20 font-mono text-[10px]">
+                                    /{link.slug}
+                                </Badge>
+                                <div className="flex gap-1">
+                                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => downloadQR(link.slug)} title="Descargar PNG">
+                                        <DownloadIcon className="w-3 h-3" />
+                                    </Button>
+                                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleEdit(link)} title="Editar Destino">
+                                        <EditIcon className="w-3 h-3" />
+                                    </Button>
+                                </div>
+                            </div>
+                            <div className="mb-3">
+                                <h4 className="text-sm font-bold text-white truncate">{link.title || "Sin Título"}</h4>
+                                <div className="flex items-center gap-1 text-xs text-zinc-500 mt-1 truncate">
+                                    <ArrowRightIcon className="w-3 h-3 text-zinc-600" />
+                                    <span className="truncate">{link.destinationUrl}</span>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 text-[10px] text-zinc-600 font-mono">
+                                <span>Creado: {new Date(link.createdAt).toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            <Dialog open={!!editingLink} onOpenChange={(o) => !o && setEditingLink(null)}>
+                <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
+                    <DialogHeader>
+                        <DialogTitle>Editar QR Dinámico</DialogTitle>
+                        <DialogDescription>Cambia la URL de destino sin modificar el código QR impreso.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        <div className="p-3 bg-black/40 rounded-lg flex items-center justify-between">
+                            <code className="text-lime-400 text-sm">pandoras.finance/{editingLink?.slug}</code>
+                            <Badge variant="outline" className="text-[10px]">QR Code</Badge>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs text-zinc-500 uppercase font-bold">Nueva URL de Destino</label>
+                            <Input
+                                value={editUrl}
+                                onChange={(e) => setEditUrl(e.target.value)}
+                                className="bg-zinc-800 border-zinc-700 font-mono text-sm"
+                                placeholder="https://..."
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setEditingLink(null)}>Cancelar</Button>
+                        <Button onClick={saveEdit} disabled={saving} className="bg-lime-500 text-black hover:bg-lime-400">
+                            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Guardar Cambios"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </div>
+    );
+}
+
+// Icons specific to this file to avoid import clutter
+function QrCodeIcon(props: any) {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="5" height="5" x="3" y="3" rx="1" /><rect width="5" height="5" x="16" y="3" rx="1" /><rect width="5" height="5" x="3" y="16" rx="1" /><path d="M21 16h-3a2 2 0 0 0-2 2v3" /><path d="M21 21v.01" /><path d="M12 7v3a2 2 0 0 1-2 2H7" /><path d="M3 12h.01" /><path d="M12 3h.01" /><path d="M12 16v.01" /><path d="M16 12h1" /><path d="M21 12v.01" /><path d="M12 21v-1" /></svg>
+    )
+}
+
+function RefreshCwIcon(props: any) {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></svg>
+    )
+}
+
+function DownloadIcon(props: any) {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></svg>
+    )
+}
+
+function EditIcon(props: any) {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /><path d="m15 5 4 4" /></svg>
+    )
+}
+
+function ArrowRightIcon(props: any) {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
+    )
 }

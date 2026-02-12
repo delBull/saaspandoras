@@ -8,6 +8,7 @@ import { getContract, prepareContractCall } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { config } from "@/config";
 import { PANDORAS_KEY_ABI } from "@/lib/pandoras-key-abi";
+import { Switch } from "@saasfly/ui/switch";
 import {
     PhotoIcon,
     InformationCircleIcon,
@@ -79,6 +80,9 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
         imagePreview: "",
         treasury: "",
         targetUrl: "", // For QR/Action type
+        transferable: true,
+        burnable: false,
+        validUntil: null as string | null
     });
     const [airdropToMe, setAirdropToMe] = useState(true);
 
@@ -123,6 +127,20 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    // Update defaults when type changes
+    const handleTypeSelect = (typeId: string) => {
+        setNftType(typeId as any);
+        setCreationStep(1);
+
+        // Set intelligent defaults based on type
+        setFormData(prev => ({
+            ...prev,
+            transferable: typeId !== 'identity', // Identity is non-transferable by default
+            burnable: typeId === 'coupon',       // Coupons are burnable by default
+            maxSupply: typeId === 'identity' ? '1000000' : '1000' // Identity usually high supply
+        }));
     };
 
     // Image Upload Handler
@@ -244,7 +262,10 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                 description: formData.description,
                 owner: account.address,
                 treasuryAddress: formData.treasury || account.address,
-                image: finalImage
+                image: finalImage,
+                transferable: formData.transferable,
+                burnable: formData.burnable,
+                validUntil: formData.validUntil
             };
 
             const res = await fetch("/api/admin/deploy/nft-pass", {
@@ -340,7 +361,10 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
             imageUrl: "",
             imagePreview: "",
             treasury: "",
-            targetUrl: ""
+            targetUrl: "",
+            transferable: true,
+            burnable: false,
+            validUntil: null
         });
         window.location.href = "/admin/dashboard?tab=nft"; // Use 'nft' tab (updated name)
     };
@@ -500,10 +524,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                 return (
                                     <button
                                         key={type.id}
-                                        onClick={() => {
-                                            setNftType(type.id as any);
-                                            setCreationStep(1);
-                                        }}
+                                        onClick={() => handleTypeSelect(type.id)}
                                         className={`group relative p-6 rounded-xl border border-zinc-700 hover:border-lime-500/50 bg-zinc-800/20 hover:bg-zinc-800/50 transition-all text-left flex flex-col gap-4`}
                                     >
                                         <div className={`w-12 h-12 rounded-lg ${type.bg} ${type.border} border flex items-center justify-center`}>
@@ -661,7 +682,34 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                         />
                                     </div>
 
-                                    <div className="flex items-center gap-3 pt-2">
+                                    {/* Advanced Traits Toggles */}
+                                    <div className="pt-2 border-t border-zinc-700/50 mt-2 space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <label className="text-sm font-medium text-gray-300 block">Transferible</label>
+                                                <p className="text-xs text-zinc-500">¿Se puede enviar a otros usuarios?</p>
+                                            </div>
+                                            <Switch
+                                                checked={formData.transferable}
+                                                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, transferable: checked }))}
+                                                className="data-[state=checked]:bg-emerald-500"
+                                            />
+                                        </div>
+
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <label className="text-sm font-medium text-gray-300 block">Burnable (Quemable)</label>
+                                                <p className="text-xs text-zinc-500">¿Se puede destruir para canjear?</p>
+                                            </div>
+                                            <Switch
+                                                checked={formData.burnable}
+                                                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, burnable: checked }))}
+                                                className="data-[state=checked]:bg-rose-500"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 pt-2 border-t border-zinc-700/50 mt-2">
                                         <input
                                             id="airdrop-me"
                                             type="checkbox"
