@@ -6,7 +6,7 @@ import { config } from "@/config";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { accountAbstractionConfig } from "@/lib/wallets";
+
 
 interface ConnectWalletButtonProps {
   className?: string;
@@ -34,7 +34,6 @@ export function ConnectWalletButton({
         client,
         chain: config.chain,
         showThirdwebBranding: false,
-        accountAbstraction: accountAbstractionConfig,
       });
       onConnect?.();
     } catch (e) {

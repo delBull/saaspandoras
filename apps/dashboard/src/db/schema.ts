@@ -607,6 +607,19 @@ export const governanceEvents = pgTable("governance_events", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+// --- AUTH CHALLENGES TABLE ---
+// Stores ephemeral nonces for SIWE authentication
+export const authChallenges = pgTable("auth_challenges", {
+  id: serial("id").primaryKey(),
+  address: varchar("address", { length: 42 }).notNull(), // User's wallet address
+  nonce: varchar("nonce", { length: 255 }).notNull().unique(), // The strict nonce
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  // Enforce 1 active nonce per address to prevent race conditions and clutter
+  addressIndex: uniqueIndex("auth_challenges_address_idx").on(table.address),
+}));
+
 export const governanceVotes = pgTable("governance_votes", {
   id: serial("id").primaryKey(),
   proposalId: integer("proposal_id").notNull(), // ID Referencia (On-Chain or DB), FK removed for hybrid support
@@ -773,6 +786,7 @@ export type DaoThread = typeof daoThreads.$inferSelect;
 export type DaoPost = typeof daoPosts.$inferSelect;
 export type UserBalance = typeof userBalances.$inferSelect;
 export type PlatformSetting = typeof platformSettings.$inferSelect;
+export type AuthChallenge = typeof authChallenges.$inferSelect;
 
 // =========================================================
 // MARKETING OS TABLES

@@ -9,6 +9,19 @@ import { GamificationProvider } from "@pandoras/gamification";
 import { GamificationDebugger } from "@/components/debug/GamificationDebugger";
 import { WalletDebugger } from "@/components/debug/WalletDebugger";
 import { SmartWalletGuard } from "@/components/auth/SmartWalletGuard";
+import { AuthProvider, useAuth } from "@/components/auth/AuthProvider";
+
+function ConnectedProviders({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+
+  return (
+    <GamificationProvider userId={user?.address || "guest"} showHUD={!!user}>
+      <GamificationDebugger />
+      <WalletDebugger />
+      {children}
+    </GamificationProvider>
+  );
+}
 
 export function Providers({
   children,
@@ -30,22 +43,21 @@ export function Providers({
           <AutoConnect
             client={client}
             wallets={wallets}
-            accountAbstraction={accountAbstractionConfig}
             timeout={15000}
           />
         )}
 
-        <SmartWalletGuard>
-          {/* Only render Gamification if we have a valid userId, or handle it inside */}
-          <GamificationProvider userId={undefined as unknown as string} showHUD={false}>
-            <GamificationDebugger />
-            <WalletDebugger />
-            {children}
-          </GamificationProvider>
-        </SmartWalletGuard>
+        <AuthProvider>
+          <SmartWalletGuard>
+            <ConnectedProviders>
+              {children}
+            </ConnectedProviders>
+          </SmartWalletGuard>
+        </AuthProvider>
 
         <Toaster theme="dark" richColors position="top-center" />
       </ThirdwebProvider>
     </ThemeProvider>
   );
 }
+
