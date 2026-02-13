@@ -38,7 +38,11 @@ app.use("/auth", authRoutes);
 app.use("/webhooks", webhookRoutes);
 
 app.get("/", (req: Request, res: Response) => {
-    res.json({ message: "Pandoras API Core v1" });
+    res.json({
+        message: "Pandoras API Core v1",
+        version: "1.1.0-CORS-FIX-DEBUG",
+        timestamp: new Date().toISOString()
+    });
 });
 
 export default app;
