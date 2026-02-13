@@ -39,7 +39,7 @@ router.post("/railway", async (req, res) => {
                 ]
             };
 
-            const DISCORD_WEBHOOK_URL = process.env.DISCORD_ALERTS_WEBHOOK_URL;
+            const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_ALERTS;
             if (DISCORD_WEBHOOK_URL) {
                 await fetch(DISCORD_WEBHOOK_URL, {
                     method: "POST",
