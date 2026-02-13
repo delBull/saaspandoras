@@ -7,7 +7,12 @@ import morgan from "morgan";
 const app = express();
 
 // 🛡️ Security Headers
-app.use(helmet());
+// 🛡️ Security Headers
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginOpenerPolicy: { policy: "unsafe-none" }, // Required for Social Login Popups
+    contentSecurityPolicy: false, // Let Vercel/Next.js handle CSP for now
+}));
 
 // 📝 Logging
 app.use(morgan("dev"));
@@ -29,6 +34,7 @@ app.use((req, res, next) => {
 const allowedOrigins = [
     "https://app.pandoras.org",
     "https://staging.dash.pandoras.finance",
+    "https://www.staging.dash.pandoras.finance",
     "https://saaspandoras-production.up.railway.app",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
