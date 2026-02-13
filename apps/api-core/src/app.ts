@@ -63,11 +63,13 @@ app.get("/health", (req: Request, res: Response) => {
 });
 
 import authRoutes from "./routes/auth.js";
+import webhookRoutes from "./routes/webhooks.js";
 
 // ...
 
 // 🚀 Routes
 app.use("/auth", authRoutes);
+app.use("/webhooks", webhookRoutes);
 
 app.get("/", (req: Request, res: Response) => {
     res.json({ message: "Pandoras API Core v1" });
