@@ -49,7 +49,7 @@ export async function middleware(request: NextRequest) {
       // Enforce JWT Version (Kill Switch)
       const EXPECTED_VERSION = Number(process.env.JWT_VERSION || 1);
       if (Number(payload.v) !== EXPECTED_VERSION) {
-        console.warn(`🔒 Middleware: Token version mismatch (Got ${payload.v}, Expected ${EXPECTED_VERSION})`);
+        console.warn(`🔒 Middleware: Token version mismatch (Got ${String(payload.v)}, Expected ${EXPECTED_VERSION})`);
         return NextResponse.redirect(new URL("/", request.url));
       }
 
