@@ -28,7 +28,8 @@ app.use((req, res, next) => {
 // Critical for HttpOnly cookies to work cross-origin
 const allowedOrigins = [
     "https://app.pandoras.org",
-    "https://staging.pandoras.org",
+    "https://staging.dash.pandoras.finance",
+    "https://saaspandoras-production.up.railway.app",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ];
