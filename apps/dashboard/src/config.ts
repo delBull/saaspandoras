@@ -9,8 +9,8 @@ const isStaging = branchName === 'staging';
 // In local development or staging, default to 'sepolia'. In production, 'base'.
 const defaultChain = (isStaging || process.env.NODE_ENV === 'development') ? 'sepolia' : 'base';
 
-// FORCE 'base' in development ONLY if no env var is present
-const chainName = process.env.NEXT_PUBLIC_CHAIN_NAME || (process.env.NODE_ENV === 'development' ? 'base' : defaultChain);
+// FORCE 'base' in development ONLY if explicitly requested, otherwise use defaultChain (Sepolia)
+const chainName = process.env.NEXT_PUBLIC_CHAIN_NAME || defaultChain;
 const nftContractAddress = process.env.NEXT_PUBLIC_NFT_CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000";
 const poolContractAddress = process.env.NEXT_PUBLIC_POOL_CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000";
 const superAdminAddress = process.env.NEXT_PUBLIC_SUPER_ADMIN || ""; // Off-chain Super Admin override
@@ -50,6 +50,12 @@ const governanceChain = activeChainObject.id === base.id ? base : sepolia;
 
 const applyPassNftAddress = process.env.NEXT_PUBLIC_APPLY_PASS_NFT_ADDRESS || "0xDBb729113F95C7Be1e6Aa976f5584ea0246e1cFE"; // Fallback to main NFT for now if not set
 
+// Security: Expected Domain & Origin for SIWE
+// In production, these should be set via env vars.
+// In dev (localhost), they can be inferred or set to localhost.
+const expectedDomain = process.env.NEXT_PUBLIC_DOMAIN || (process.env.NODE_ENV === 'development' ? 'localhost:3000' : 'app.pandoras.org');
+const expectedOrigin = process.env.NEXT_PUBLIC_ORIGIN || (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://app.pandoras.org');
+
 // --- 5. Exporta la configuración final con tipos 100% seguros ---
 export const config = {
   chain: activeChainObject,
@@ -59,4 +65,6 @@ export const config = {
   governanceChain: governanceChain,
   superAdminAddress: superAdminAddress,
   applyPassNftAddress: applyPassNftAddress,
+  domain: expectedDomain,
+  origin: expectedOrigin,
 };
