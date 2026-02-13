@@ -63,8 +63,8 @@ export async function POST(req: Request) {
         // - Production/Fallback: Upload to IPFS via Thirdweb (persistent, decentralized)
 
         // Define upload directory and file path
-        const uploadDir = path.join(process.cwd(), "public", "assets", "nft-passes");
-        const filePath = path.join(uploadDir, filename);
+        // const uploadDir = path.join(process.cwd(), "public", "assets", "nft-passes");
+        // const filePath = path.join(uploadDir, filename);
 
         let publicUrl = '';
 
