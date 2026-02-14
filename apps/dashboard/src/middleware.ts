@@ -116,12 +116,12 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // 4. Global Security Headers (Force COOP/COEP for Social Login)
-  const response = NextResponse.next();
-  response.headers.set('Cross-Origin-Opener-Policy', 'unsafe-none');
-  response.headers.set('Cross-Origin-Embedder-Policy', 'unsafe-none');
+  // 4. Global Security Headers -> MOVED TO next.config.mjs to avoid conflicts
+  // const response = NextResponse.next();
+  // response.headers.set('Cross-Origin-Opener-Policy', 'unsafe-none');
+  // response.headers.set('Cross-Origin-Embedder-Policy', 'unsafe-none');
 
-  return response;
+  return NextResponse.next();
 }
 
 export const config = {
