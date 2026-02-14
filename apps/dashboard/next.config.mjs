@@ -49,6 +49,15 @@ const nextConfig = {
         postgres: "postgres",
         "drizzle-orm": "drizzle-orm",
       });
+
+      // 🛡️ SES / Lockdown Nuke
+      // Prevent these packages from being bundled in the client
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'ses': false,
+        'lockdown': false,
+        '@endo/env-options': false,
+      };
     }
 
     return config;
@@ -60,7 +69,7 @@ const nextConfig = {
         headers: [
           {
             key: "Cross-Origin-Opener-Policy",
-            value: "same-origin-allow-popups",
+            value: "unsafe-none",
           },
           {
             key: "Cross-Origin-Embedder-Policy",
