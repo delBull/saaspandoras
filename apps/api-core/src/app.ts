@@ -28,6 +28,34 @@ app.use((req, res, next) => {
     next();
 });
 
+// 🔑 STARTUP KEY CHECK
+try {
+    const priv = process.env.JWT_PRIVATE_KEY;
+    const pub = process.env.JWT_PUBLIC_KEY;
+    if (priv && pub) {
+        const privateKey = Buffer.from(priv, "base64").toString("utf-8");
+        const publicKey = Buffer.from(pub, "base64").toString("utf-8");
+        const crypto = require("crypto"); // dynamic import for check
+        const sign = crypto.createSign('RSA-SHA256');
+        sign.update('test');
+        const sig = sign.sign(privateKey, 'base64');
+        const verify = crypto.createVerify('RSA-SHA256');
+        verify.update('test');
+        const isValid = verify.verify(publicKey, sig, 'base64');
+        if (isValid) {
+            console.log("✅ JWT Key Pair Integrity Verified: MATCH");
+        } else {
+            console.error("❌ JWT Key Pair Integrity Verified: MISMATCH - Public key cannot verify Private key signature!");
+        }
+    } else {
+        console.warn("⚠️ JWT Keys missing, skipping integrity check");
+    }
+} catch (e) {
+    console.error("❌ Key Integrity Check Failed:", e);
+}
+
+// ...
+
 // ...
 
 // ... (CORS is now at the top)

@@ -229,8 +229,9 @@ router.get("/me", async (req: Request, res: Response) => {
             hasAccess: decoded.hasAccess,
         });
     } catch (error) {
-        // Return 401 silently for "not logged in" state
-        return res.status(401).json({ error: "Invalid token" });
+        console.error("❌ /auth/me Token Verification Failed:", error);
+        // Return 401 for "not logged in" state
+        return res.status(401).json({ error: "Invalid token", details: String(error) });
     }
 });
 
