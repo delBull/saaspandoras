@@ -5,7 +5,7 @@ const nextConfig = {
   experimental: {
     // Note: serverComponentsExternalPackages has been moved to serverExternalPackages
   },
-  serverExternalPackages: ["drizzle-orm", "postgres", "@thirdweb-dev/sdk", "ethers"],
+  serverExternalPackages: ["drizzle-orm", "postgres"],
 
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
