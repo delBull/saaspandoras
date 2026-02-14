@@ -483,7 +483,7 @@ export function Sidebar({
                     animate={{ width: open ? "auto" : "2rem" }}
                     className="overflow-hidden whitespace-nowrap font-mono text-xs text-gray-400 flex-shrink-0"
                   >
-                    {open ? "C:\\PANDORAS\\" : "C:\\"}
+                    {open ? "C:\\PANDORAS v1.5\\" : "C:\\"}
                   </motion.span>
                   <motion.span
                     animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0 }}
