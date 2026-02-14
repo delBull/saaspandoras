@@ -29,11 +29,14 @@ const nextConfig = {
   },
 
   transpilePackages: [
-    "@pandoras/gamification",
-    "@pandoras/protocol-deployer",
-    "ox",
     "@pandoras/core-webhooks",
-    "@saasfly/ui" // Ensure UI components are transpiled
+    "@saasfly/ui",
+    "react-markdown",
+    "remark-gfm",
+    "rehype-highlight",
+    "jose",
+    "viem",
+    "thirdweb"
   ],
 
   webpack: (config, { isServer }) => {
