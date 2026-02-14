@@ -28,7 +28,14 @@ const nextConfig = {
     ],
   },
 
-  transpilePackages: ["@pandoras/gamification", "@pandoras/protocol-deployer", "ox", "@pandoras/core-webhooks"],
+  transpilePackages: [
+    "@pandoras/gamification",
+    "@pandoras/protocol-deployer",
+    "ox",
+    "@pandoras/core-webhooks",
+    "@saasfly/ui", // Ensure UI components are transpiled
+    "thirdweb"     // Ensure Thirdweb SDK is transpiled
+  ],
 
   webpack: (config, { isServer }) => {
     if (!isServer) {
