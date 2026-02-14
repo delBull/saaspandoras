@@ -6,6 +6,14 @@ import morgan from "morgan";
 
 const app = express();
 
+// 🌐 CORS Configuration (MUST BE FIRST)
+app.use(
+    cors({
+        origin: true, // Allow ANY origin (Reflects the request origin)
+        credentials: true, // Required for cookies
+    })
+);
+
 // 🛡️ Security Headers
 app.use(helmet({
     crossOriginResourcePolicy: false,
@@ -15,13 +23,7 @@ app.use(helmet({
 
 // ...
 
-// 🌐 CORS Configuration
-app.use(
-    cors({
-        origin: true, // Allow ANY origin (Reflects the request origin)
-        credentials: true, // Required for cookies
-    })
-);
+// ... (CORS is now at the top)
 
 // 🏥 Healthcheck (Railway)
 app.get("/health", (req: Request, res: Response) => {

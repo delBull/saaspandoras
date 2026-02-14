@@ -34,7 +34,8 @@ const nextConfig = {
     "ox",
     "@pandoras/core-webhooks",
     "@saasfly/ui", // Ensure UI components are transpiled
-    "thirdweb"     // Ensure Thirdweb SDK is transpiled
+    "thirdweb",    // Ensure Thirdweb SDK is transpiled
+    "viem"         // Thirdweb v5 depends on viem
   ],
 
   webpack: (config, { isServer }) => {
