@@ -18,6 +18,10 @@ app.use(
     })
 );
 
+// 📦 Body Parsers (MUST BE AFTER CORS)
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 app.use(cookieParser());
 
 // 🛡️ Security Headers
