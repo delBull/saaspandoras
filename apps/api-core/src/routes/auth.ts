@@ -210,7 +210,11 @@ router.post("/logout", (req: Request, res: Response) => {
 router.get("/me", async (req: Request, res: Response) => {
     try {
         const token = req.cookies.auth_token;
+
+        // 🔍 DEBUG: Log detailed request info if token is missing
         if (!token) {
+            console.log(`⚠️ /auth/me: No token found. Origin: ${req.headers.origin}`);
+            console.log(`🍪 Cookies present: ${Object.keys(req.cookies).join(", ")}`);
             return res.status(401).json({ error: "Unauthorized" });
         }
 
