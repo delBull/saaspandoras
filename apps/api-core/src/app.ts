@@ -73,12 +73,14 @@ app.get("/health", (req: Request, res: Response) => {
 
 import authRoutes from "./routes/auth.js";
 import webhookRoutes from "./routes/webhooks.js";
+import debugRoutes from "./routes/debug.js";
 
-// ...
+//...
 
 // 🚀 Routes
 app.use("/auth", authRoutes);
 app.use("/webhooks", webhookRoutes);
+app.use("/debug", debugRoutes); // DEBUG ONLY - Remove in production
 
 app.get("/", (req: Request, res: Response) => {
     res.json({
