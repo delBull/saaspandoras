@@ -69,7 +69,7 @@ const nextConfig = {
         headers: [
           {
             key: "Cross-Origin-Opener-Policy",
-            value: "unsafe-none",
+            value: "same-origin-allow-popups", // 🔧 Fixed: Allows social login popups
           },
           {
             key: "Cross-Origin-Embedder-Policy",
