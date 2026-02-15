@@ -354,15 +354,35 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
 
                     const fullUrl = `${window.location.origin}/${slug}`;
 
+                    // Prepare payload with optional landing config
+                    const shortlinkPayload: any = {
+                        slug,
+                        destinationUrl: formData.targetUrl,
+                        title: `QR: ${formData.name}`,
+                        description: `Smart QR for NFT ${data.address}`
+                    };
+
+                    // Add landing config if enabled
+                    if (createLanding) {
+                        shortlinkPayload.type = 'landing';
+                        shortlinkPayload.landingConfig = {
+                            title: landingConfig.title || formData.name,
+                            slogan: landingConfig.slogan || '',
+                            logoUrl: formData.imageUrl || '',
+                            links: landingConfig.links.filter(link => link.url && link.label),
+                            socials: Object.entries(landingConfig.socials)
+                                .filter(([_, url]) => url)
+                                .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {}),
+                            whatsapp: landingConfig.whatsapp || '',
+                        };
+                    } else {
+                        shortlinkPayload.type = 'redirect';
+                    }
+
                     const shortlinkRes = await fetch('/api/admin/shortlinks', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            slug,
-                            destinationUrl: formData.targetUrl,
-                            title: `QR: ${formData.name}`,
-                            description: `Smart QR for NFT ${data.address}`
-                        })
+                        body: JSON.stringify(shortlinkPayload)
                     });
 
                     if (!shortlinkRes.ok) {
