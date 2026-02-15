@@ -82,9 +82,9 @@ export async function getAuth(headers?: MinimalHeaders, userAddress?: string) {
       // Basic headers access - compatible with both Node.js and Edge runtime
       // Try multiple header names in case Vercel filters some
       const headerAddress = headers.get('x-thirdweb-address') ??
-                          headers.get('x-wallet-address') ??
-                          headers.get('x-user-address') ??
-                          headers.get('x-address');
+        headers.get('x-wallet-address') ??
+        headers.get('x-user-address') ??
+        headers.get('x-address');
       if (headerAddress) {
         address = headerAddress;
         console.log('✅ [Auth] Found address in headers:', address.substring(0, 10) + '...');
@@ -101,8 +101,25 @@ export async function getAuth(headers?: MinimalHeaders, userAddress?: string) {
       // Intentar obtener desde cookies - this works in both runtimes
       const cookieStore = await cookies();
 
-      // First try the simple wallet-address cookie
-      address = cookieStore.get('wallet-address')?.value ?? null;
+      // 1. Priority: Check for 'auth_token' (Set by API Core)
+      const authToken = cookieStore.get('auth_token')?.value;
+      if (authToken) {
+        try {
+          const decoded = jwt.decode(authToken) as JWTPayload | null;
+          if (decoded?.sub) {
+            address = decoded.sub;
+            console.log('✅ [Auth] Found legitimate auth_token:', address.substring(0, 10) + '...');
+          }
+        } catch (e) {
+          console.error('❌ [Auth] Failed to decode auth_token:', e);
+        }
+      }
+
+      // 2. Fallback: Standard Thirdweb cookies
+      if (!address) {
+        // First try the simple wallet-address cookie
+        address = cookieStore.get('wallet-address')?.value ?? null;
+      }
 
       // If not found, try ThirdWeb specific cookies
       if (!address) {
@@ -124,47 +141,28 @@ export async function getAuth(headers?: MinimalHeaders, userAddress?: string) {
         }
       }
 
-      // If not found, try to decode the JWT token
+      // If not found, try to decode the JWT token (Vercel / Old)
       if (!address) {
         const jwtToken = cookieStore.get('_vercel_jwt')?.value;
         if (jwtToken) {
           try {
-            console.log('🔍 [Auth] Attempting to decode JWT token');
+            console.log('🔍 [Auth] Attempting to decode Vercel JWT token');
             const decoded = jwt.decode(jwtToken) as JWTPayload | null;
             if (decoded) {
-              console.log('🔍 [Auth] JWT decoded payload:', sanitizeLogData({
-                userId: decoded.userId?.substring(0, 10) + '...',
-                sub: decoded.sub?.substring(0, 10) + '...',
-                username: decoded.username
-              }));
-
               // The userId in the JWT is NOT the wallet address - it's an internal Thirdweb identifier
               // We need to find the actual wallet address associated with this user
               // For now, return null and let the application handle this case
-              console.log('❌ [Auth] JWT userId is not a wallet address:', decoded.userId);
+              // console.log('❌ [Auth] JWT userId is not a wallet address:', decoded.userId);
               address = null;
-
-              if (address) {
-                console.log('✅ [Auth] Successfully extracted address from JWT:', address);
-              } else {
-                console.log('❌ [Auth] No address found in JWT payload');
-              }
-            } else {
-              console.log('❌ [Auth] Failed to decode JWT token');
             }
           } catch (jwtError) {
-            console.error('❌ [Auth] Error decoding JWT:', jwtError);
-          }
-        } else {
-          // Only log in development and reduce frequency
-          if (process.env.NODE_ENV === 'development') {
-            console.log('❌ [Auth] No JWT token found in cookies');
+            console.error('❌ [Auth] Error decoding Vercel JWT:', jwtError);
           }
         }
       }
 
       if (address) {
-        console.log('✅ [Auth] Found address in cookies:', address.substring(0, 10) + '...');
+        console.log('✅ [Auth] Final Address Resolved:', address.substring(0, 10) + '...');
       }
     } catch (error) {
       console.error('Error accessing cookies:', error);

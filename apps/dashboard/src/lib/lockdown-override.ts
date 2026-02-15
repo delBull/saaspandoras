@@ -12,7 +12,7 @@ if (typeof window !== 'undefined') {
             get: function () {
                 // If we operate in a popup, this might throw if cross-origin, but we try-catch
                 try {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                     
                     return (window as any)._originalClosed || false;
                 } catch {
                     return true; // Assume closed if we can't access
@@ -30,7 +30,7 @@ if (typeof window !== 'undefined') {
 
 // 3. Attempt to stop SES from running if possible (Thirdweb specific)
 // Set a global flag that might be respected by some SES shims
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 (globalThis as any).SES_LOCKDOWN_DISABLED = true;
 
 export { };
