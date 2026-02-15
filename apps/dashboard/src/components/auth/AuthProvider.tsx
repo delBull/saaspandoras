@@ -32,19 +32,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Load session on mount
     useEffect(() => {
+        console.log('[AuthProvider] Mounting - checking session');
         checkSession();
     }, []);
 
     // Check session when account changes
     useEffect(() => {
+        console.log('[AuthProvider] Account/User changed:', { hasAccount: !!account, hasUser: !!user });
         if (account && !user) {
             // User connected wallet but has no session -> Auto Login (SIWE)
             const hasRequestedLogin = sessionStorage.getItem(`login-requested-${account.address}`);
+            console.log('[AuthProvider] Auto-login check:', { hasRequestedLogin });
             if (!hasRequestedLogin) {
+                console.log('[AuthProvider] 🚀 Triggering auto-login for:', account.address);
                 sessionStorage.setItem(`login-requested-${account.address}`, "true");
                 login().catch(console.error);
             } else {
                 // Already requested, check session again just in case
+                console.log('[AuthProvider] Login already requested, rechecking session');
                 checkSession();
             }
         } else if (!account && user) {
@@ -76,7 +81,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const login = async () => {
-        if (!account) return;
+        console.log('[AuthProvider] 🔐 Login function called');
+        if (!account) {
+            console.warn('[AuthProvider] ❌ No account connected, aborting login');
+            return;
+        }
 
         try {
             setIsLoading(true);
