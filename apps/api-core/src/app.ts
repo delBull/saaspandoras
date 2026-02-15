@@ -3,6 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import morgan from "morgan";
+import crypto from "crypto";
 
 const app = express();
 
@@ -13,6 +14,8 @@ app.use(
         credentials: true, // Required for cookies
     })
 );
+
+app.use(cookieParser());
 
 // 🛡️ Security Headers
 app.use(helmet({
@@ -35,7 +38,7 @@ try {
     if (priv && pub) {
         const privateKey = Buffer.from(priv, "base64").toString("utf-8");
         const publicKey = Buffer.from(pub, "base64").toString("utf-8");
-        const crypto = require("crypto"); // dynamic import for check
+
         const sign = crypto.createSign('RSA-SHA256');
         sign.update('test');
         const sig = sign.sign(privateKey, 'base64');
