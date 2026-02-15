@@ -7,6 +7,9 @@ import crypto from "crypto";
 
 const app = express();
 
+// ☁️ Trust Proxy (Railway / Vercel Load Balancers)
+app.set("trust proxy", 1);
+
 // 🌐 CORS Configuration (MUST BE FIRST)
 app.use(
     cors({
