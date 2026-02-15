@@ -7,6 +7,7 @@ import { db } from '~/db';
 import { shortlinks, shortlinkEvents } from '~/db/schema';
 import { headers } from 'next/headers';
 import { NextRequest } from 'next/server';
+import { SmartQRLanding } from '@/components/SmartQRLanding';
 
 // Force dynamic to prevent caching of 404s/redirects
 export const dynamic = 'force-dynamic';
@@ -101,6 +102,12 @@ async function handleShortlink(slug: string, searchParams: URLSearchParams, head
     }).catch(error => {
       console.error('Failed to track shortlink event:', error);
     });
+
+    // 🚀 NEW: Smart QR Landing Page Logic
+    if (link.type === 'landing' && link.landingConfig) {
+      console.log(`🎨 Rendering Landing Page for: ${slug}`);
+      return <SmartQRLanding config={link.landingConfig} slug={slug} />;
+    }
 
     // Redirect to destination URL with shortlink tracking parameters
     const destinationUrl = new URL(link.destinationUrl);

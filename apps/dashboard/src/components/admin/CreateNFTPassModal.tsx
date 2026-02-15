@@ -70,16 +70,76 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
     const [creationStep, setCreationStep] = useState<0 | 1>(0); // 0: Type Selection, 1: Form Details
     const [generatedShortlink, setGeneratedShortlink] = useState<string | null>(null);
 
+    // Smart QR Landing State
+    const [createLanding, setCreateLanding] = useState(false);
+    const [landingConfig, setLandingConfig] = useState({
+        title: '',
+        slogan: '',
+        whatsapp: '',
+        socials: {
+            instagram: '',
+            twitter: '',
+            facebook: '',
+            linkedin: '',
+            youtube: '',
+            tiktok: '',
+            discord: '',
+            telegram: ''
+        } as Record<string, string>,
+        links: [] as { label: string; url: string }[]
+    });
+
+    // Helper to update landing config
+    const updateLandingConfig = (key: string, value: any) => {
+        setLandingConfig(prev => ({
+            ...prev,
+            [key]: value
+        }));
+    };
+
+    const updateSocial = (network: string, value: string) => {
+        setLandingConfig(prev => ({
+            ...prev,
+            socials: {
+                ...prev.socials,
+                [network]: value
+            }
+        }));
+    };
+
+    const addLink = () => {
+        setLandingConfig(prev => ({
+            ...prev,
+            links: [...prev.links, { label: '', url: '' }]
+        }));
+    };
+
+    const updateLink = (index: number, field: 'label' | 'url', value: string) => {
+        setLandingConfig(prev => {
+            const newLinks = [...prev.links];
+            newLinks[index] = { ...newLinks[index], [field]: value } as { label: string; url: string };
+            return { ...prev, links: newLinks };
+        });
+    };
+
+    const removeLink = (index: number) => {
+        setLandingConfig(prev => ({
+            ...prev,
+            links: prev.links.filter((_, i) => i !== index)
+        }));
+    };
+
     const [formData, setFormData] = useState({
         name: "",
         symbol: "",
         description: "",
         maxSupply: "1000",
         price: "0",
+        owner: "",
         imageUrl: "",
         imagePreview: "",
-        treasury: "",
-        targetUrl: "", // For QR/Action type
+        treasuryAddress: "", // Changed from treasury to treasuryAddress to match API usage
+        targetUrl: "",
         transferable: true,
         burnable: false,
         validUntil: null as string | null
@@ -261,7 +321,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                 price: formData.price,
                 description: formData.description,
                 owner: account.address,
-                treasuryAddress: formData.treasury || account.address,
+                treasuryAddress: formData.treasuryAddress || account.address,
                 image: finalImage,
                 transferable: formData.transferable,
                 burnable: formData.burnable,
@@ -377,9 +437,10 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
             description: "",
             maxSupply: "1000",
             price: "0",
+            owner: "",
             imageUrl: "",
             imagePreview: "",
-            treasury: "",
+            treasuryAddress: "",
             targetUrl: "",
             transferable: true,
             burnable: false,
@@ -612,21 +673,138 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
 
                                     {/* QR Target URL Input */}
                                     {nftType === 'qr' && (
-                                        <div className="pt-2 border-t border-zinc-700/50 mt-2">
-                                            <label htmlFor="nft-target-url" className="block text-xs font-medium text-lime-400 mb-1 flex items-center gap-2">
-                                                <QrCodeIcon className="w-4 h-4" />
-                                                Target URL (Destino del QR)
-                                            </label>
-                                            <input
-                                                id="nft-target-url"
-                                                name="targetUrl"
-                                                type="url"
-                                                value={formData.targetUrl}
-                                                onChange={handleChange}
-                                                placeholder="https://tudominio.com/landing-page"
-                                                className="w-full bg-zinc-900 border border-lime-500/50 rounded px-3 py-2 text-white focus:border-lime-500 outline-none"
-                                            />
-                                            <p className="text-xs text-zinc-500 mt-1">Este será el destino al escanear el QR generado automáticamente.</p>
+                                        <div className="pt-4 border-t border-zinc-700/50 mt-4">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <label className="flex items-center gap-2 text-sm font-medium text-lime-400 cursor-pointer">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={createLanding}
+                                                        onChange={(e) => setCreateLanding(e.target.checked)}
+                                                        className="w-4 h-4 rounded border-gray-600 text-lime-500 focus:ring-lime-500 bg-zinc-800"
+                                                    />
+                                                    <span>¿Crear Landing Page?</span>
+                                                </label>
+                                            </div>
+
+                                            {!createLanding ? (
+                                                <div className="animate-in fade-in slide-in-from-top-2">
+                                                    <label htmlFor="nft-target-url" className="block text-xs font-medium text-lime-400 mb-1 flex items-center gap-2">
+                                                        <QrCodeIcon className="w-4 h-4" />
+                                                        Target URL (Destino del QR)
+                                                    </label>
+                                                    <input
+                                                        id="nft-target-url"
+                                                        name="targetUrl"
+                                                        type="url"
+                                                        value={formData.targetUrl}
+                                                        onChange={handleChange}
+                                                        placeholder="https://tudominio.com/landing-page"
+                                                        className="w-full bg-zinc-900 border border-lime-500/50 rounded px-3 py-2 text-white focus:border-lime-500 outline-none"
+                                                    />
+                                                    <p className="text-xs text-zinc-500 mt-1">Este será el destino al escanear el QR.</p>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-4 animate-in fade-in slide-in-from-top-2 bg-zinc-800/30 p-4 rounded-xl border border-zinc-700">
+                                                    <h4 className="font-bold text-sm text-white mb-2">Configuración de Landing Page</h4>
+
+                                                    {/* Init with Name/Desc */}
+                                                    <div className="grid grid-cols-1 gap-3">
+                                                        <div>
+                                                            <label htmlFor="landing-title" className="text-xs text-gray-400">Título</label>
+                                                            <input
+                                                                id="landing-title"
+                                                                type="text"
+                                                                value={landingConfig.title}
+                                                                onChange={(e) => updateLandingConfig('title', e.target.value)}
+                                                                placeholder={formData.name || "Título de la Landing"}
+                                                                className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-white focus:border-lime-500 outline-none"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label htmlFor="landing-slogan" className="text-xs text-gray-400">Eslogan / Subtítulo</label>
+                                                            <input
+                                                                id="landing-slogan"
+                                                                type="text"
+                                                                value={landingConfig.slogan}
+                                                                onChange={(e) => updateLandingConfig('slogan', e.target.value)}
+                                                                placeholder="Tu frase impactante aquí"
+                                                                className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-white focus:border-lime-500 outline-none"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label htmlFor="landing-whatsapp" className="text-xs text-gray-400 flex items-center gap-1">
+                                                                <QrCodeIcon className="w-3 h-3" /> WhatsApp (Obligatorio para CTA principal)
+                                                            </label>
+                                                            <input
+                                                                id="landing-whatsapp"
+                                                                type="text"
+                                                                value={landingConfig.whatsapp}
+                                                                onChange={(e) => updateLandingConfig('whatsapp', e.target.value)}
+                                                                placeholder="521..."
+                                                                className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-white focus:border-lime-500 outline-none"
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Redes Sociales */}
+                                                    <div>
+                                                        <h5 className="text-xs font-bold text-gray-300 mb-2 mt-2">Redes Sociales</h5>
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            {Object.keys(landingConfig.socials).map((network) => (
+                                                                <input
+                                                                    key={network}
+                                                                    type="text"
+                                                                    value={landingConfig.socials[network]}
+                                                                    onChange={(e) => updateSocial(network, e.target.value)}
+                                                                    placeholder={network.charAt(0).toUpperCase() + network.slice(1)}
+                                                                    className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs text-white focus:border-lime-500 outline-none"
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Links Extras */}
+                                                    <div>
+                                                        <div className="flex items-center justify-between mb-2 mt-2">
+                                                            <h5 className="text-xs font-bold text-gray-300">Enlaces Adicionales</h5>
+                                                            <button
+                                                                type="button"
+                                                                onClick={addLink}
+                                                                className="text-xs bg-zinc-700 hover:bg-zinc-600 px-2 py-1 rounded text-white"
+                                                            >
+                                                                + Agregar Link
+                                                            </button>
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            {landingConfig.links.map((link, index) => (
+                                                                <div key={index} className="flex gap-2">
+                                                                    <input
+                                                                        type="text"
+                                                                        placeholder="Label"
+                                                                        value={link.label}
+                                                                        onChange={(e) => updateLink(index, 'label', e.target.value)}
+                                                                        className="w-1/3 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-white"
+                                                                    />
+                                                                    <input
+                                                                        type="text"
+                                                                        placeholder="URL"
+                                                                        value={link.url}
+                                                                        onChange={(e) => updateLink(index, 'url', e.target.value)}
+                                                                        className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-white"
+                                                                    />
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => removeLink(index)}
+                                                                        className="text-red-400 hover:text-red-300 px-1"
+                                                                    >
+                                                                        &times;
+                                                                    </button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -692,9 +870,9 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                         <label htmlFor="nft-pass-treasury" className="block text-xs font-medium text-gray-400 mb-1">Wallet Tesorería (Opcional)</label>
                                         <input
                                             id="nft-pass-treasury"
-                                            name="treasury"
+                                            name="treasuryAddress"
                                             type="text"
-                                            value={formData.treasury}
+                                            value={formData.treasuryAddress}
                                             onChange={handleChange}
                                             placeholder="0x..."
                                             className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-indigo-500 outline-none"

@@ -34,7 +34,7 @@ export async function POST(req: Request) {
 
         // 2. Parse Config
         const body = await req.json();
-        const { name, symbol, maxSupply, price, owner, treasuryAddress, oracleAddress, image, description, nftType = 'access' } = body;
+        const { name, symbol, maxSupply, price, owner, treasuryAddress, oracleAddress, image, description, nftType = 'access', createLanding, landingConfig } = body;
 
         if (!name || !symbol || !owner) {
             return NextResponse.json({ error: "Missing required fields (name, symbol, owner)" }, { status: 400 });
@@ -87,6 +87,7 @@ export async function POST(req: Request) {
         // 4. Create Project Record (for Metadata API integration)
         // Generate a slug from name + random suffix to avoid collisions
         const slug = `pass-${name.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${Date.now().toString().slice(-4)}`;
+        const shortlinkType = createLanding ? 'landing' : 'redirect';
 
         await db.insert(projects).values({
             title: name,
@@ -110,7 +111,10 @@ export async function POST(req: Request) {
                     // New traits
                     transferable: body.transferable ?? true,
                     burnable: body.burnable ?? false,
-                    validUntil: body.validUntil || null
+                    validUntil: body.validUntil || null,
+                    // New fields for shortlink creation
+                    shortlinkType: shortlinkType || null, // 'landing' or 'redirect'
+                    landingConfig: landingConfig || null // Configuration for landing page if shortlinkType is 'landing'
                 },
                 accessCardImage: image || null // Store the image for metadata!
             },

@@ -458,12 +458,19 @@ export const userReferrals = pgTable("user_referrals", {
 // Estado conversacional para usuarios usando el formulario por WhatsApp
 // --- SHORTLINKS MANAGEMENT TABLES ---
 // Shortlinks personalizados creados por admins
+export const shortlinkTypeEnum = pgEnum("shortlink_type", ["redirect", "landing"]);
+
 export const shortlinks = pgTable("shortlinks", {
   id: serial("id").primaryKey(),
   slug: varchar("slug", { length: 100 }).notNull().unique(),
-  destinationUrl: text("destination_url").notNull(),
+  destinationUrl: text("destination_url").notNull(), // Primary URL or Fallback
   title: varchar("title", { length: 255 }),
   description: text("description"),
+
+  // Smart QR / Landing Page Features
+  type: shortlinkTypeEnum("type").default("redirect").notNull(),
+  landingConfig: jsonb("landing_config"), // { logo, slogan, links: [], social: {}, footer: {} }
+
   isActive: boolean("is_active").default(true).notNull(),
   createdBy: varchar("created_by", { length: 255 }).references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
