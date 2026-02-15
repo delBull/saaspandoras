@@ -42,6 +42,10 @@ router.get("/nonce", async (req: Request, res: Response) => {
 
 // POST /auth/login
 router.post("/login", async (req: Request, res: Response) => {
+    console.log("🔐 [LOGIN] ========== REQUEST RECEIVED ==========");
+    console.log("🔐 [LOGIN] Body keys:", Object.keys(req.body));
+    console.log("🔐 [LOGIN] Origin:", req.headers.origin);
+
     try {
         // 🛡️ SECURITY: RS256 Signing
         const PRIVATE_KEY = process.env.JWT_PRIVATE_KEY;
@@ -111,9 +115,10 @@ router.post("/login", async (req: Request, res: Response) => {
         });
 
         if (!isValid) {
-            console.error(`❌ Invalid Signature for ${payloadAddress}`);
+            console.error(`❌ [LOGIN] FAIL: Invalid Signature for ${payloadAddress}`);
             return res.status(401).json({ error: "Invalid signature" });
         }
+        console.log("✅ [LOGIN] Step 3: Signature verified");
 
         // 4. Nonce Validation
         // Ensure the signed message actually contains the nonce we issued
@@ -137,9 +142,10 @@ router.post("/login", async (req: Request, res: Response) => {
         });
 
         if (!challenge) {
-            console.error(`❌ Nonce not found or expired in DB: ${nonce}`);
+            console.error(`❌ [LOGIN] FAIL: Nonce not found or expired in DB: ${nonce}`);
             return res.status(401).json({ error: "Invalid or expired nonce" });
         }
+        console.log("✅ [LOGIN] Step 4: Nonce validated");
 
         // 5. Invalidate Nonce
         await db.delete(authChallenges).where(eq(authChallenges.nonce, nonce));
@@ -190,6 +196,7 @@ router.post("/login", async (req: Request, res: Response) => {
             maxAge: 1000 * 60 * 60 * 24 // 24 hours
         });
 
+        console.log("✅ [LOGIN] SUCCESS: Cookie set for", payloadAddress, "| hasAccess:", hasAccess);
         return res.status(200).json({ success: true, hasAccess });
 
     } catch (error) {
