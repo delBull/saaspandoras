@@ -179,10 +179,13 @@ router.post("/login", async (req: Request, res: Response) => {
         // 8. Set Cookie
         // Cross-subdomain (api.x -> app.x) requires SameSite=None + Secure in production
         const isProd = process.env.NODE_ENV === "production";
+        const cookieDomain = process.env.COOKIE_DOMAIN || undefined; // e.g. ".pandoras.finance"
+
         res.cookie("auth_token", token, {
             httpOnly: true,
             secure: isProd, // Must be true for SameSite=None
             sameSite: isProd ? "none" : "lax",
+            domain: cookieDomain,
             path: "/",
             maxAge: 1000 * 60 * 60 * 24 // 24 hours
         });
