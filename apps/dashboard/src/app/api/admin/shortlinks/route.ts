@@ -73,12 +73,20 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { slug, destinationUrl, title, description } = body;
+    const { slug, destinationUrl, title, description, type, landingConfig } = body;
 
     // Validation
     if (!slug || !destinationUrl) {
       return NextResponse.json(
         { error: "Slug and destination URL are required" },
+        { status: 400 }
+      );
+    }
+
+    // Validate landing type has config
+    if (type === 'landing' && !landingConfig) {
+      return NextResponse.json(
+        { error: "Landing config required for landing type" },
         { status: 400 }
       );
     }
@@ -125,11 +133,13 @@ export async function POST(req: NextRequest) {
         destinationUrl,
         title: title || null,
         description: description || null,
+        type: type || 'redirect',
+        landingConfig: landingConfig || null,
         createdBy: session.userId,
       })
       .returning();
 
-    console.log(`📝 Created shortlink: /${cleanSlug} -> ${destinationUrl}`);
+    console.log(`📝 Created shortlink: /${cleanSlug} -> ${destinationUrl} (type: ${type || 'redirect'})`);
 
     return NextResponse.json({
       data: result[0],
@@ -143,6 +153,7 @@ export async function POST(req: NextRequest) {
         error: "Internal server error",
         details: error instanceof Error ? error.message : String(error)
       },
+      { status: 500 }
     );
   }
 }
@@ -156,7 +167,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { id, destinationUrl, title, isActive } = body;
+    const { id, destinationUrl, title, isActive, type, landingConfig } = body;
 
     if (!id) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
@@ -174,11 +185,21 @@ export async function PATCH(req: NextRequest) {
       }
     }
 
+    // Validate landing type has config
+    if (type === 'landing' && landingConfig === undefined) {
+      return NextResponse.json(
+        { error: "Landing config required when setting type to 'landing'" },
+        { status: 400 }
+      );
+    }
+
     // Build update object
     const updates: any = { updatedAt: new Date() };
     if (destinationUrl !== undefined) updates.destinationUrl = destinationUrl;
     if (title !== undefined) updates.title = title;
     if (isActive !== undefined) updates.isActive = isActive;
+    if (type !== undefined) updates.type = type;
+    if (landingConfig !== undefined) updates.landingConfig = landingConfig;
 
     const result = await db
       .update(shortlinks)
