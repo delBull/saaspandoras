@@ -71,7 +71,7 @@ export function DocsContent({ title, content }: DocsContentProps) {
                 <span className="text-gray-500">© 2026 Pandora's Platform Documentation</span>
                 <div className="flex gap-4">
                     <a href="https://pandoras.finance" className="text-gray-400 hover:text-white transition-colors">Official Site</a>
-                    <a href="/dashboard" className="text-gray-400 hover:text-white transition-colors">Dashboard</a>
+                    <a href="https://dash.pandoras.finance" className="text-gray-400 hover:text-white transition-colors">Dashboard</a>
                 </div>
             </div>
         </div>
