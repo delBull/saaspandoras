@@ -5,16 +5,16 @@ import { db } from "../lib/db.js";
 import { authChallenges } from "../db/schema.js";
 import { eq, and, gt } from "drizzle-orm";
 import jwt from "jsonwebtoken";
-import { getContract, readContract } from "thirdweb";
 import { config } from "../config.js";
-import { PANDORAS_KEY_ABI } from "../lib/pandoras-key-abi.js";
 import crypto from "crypto";
 import { createSession, getSession, rotateRefreshToken, invalidateSession } from "../lib/session.js";
+import { getGateHolderStatus } from "../lib/nft-cache.js";
+import { authLimiter, nonceLimiter, refreshLimiter } from "../middleware/rate-limit.js";
 
 const router = Router();
 
-// GET /auth/nonce
-router.get("/nonce", async (req: Request, res: Response) => {
+// GET /auth/nonce - with rate limiting
+router.get("/nonce", nonceLimiter, async (req: Request, res: Response) => {
     try {
         const { address } = req.query;
         if (!address || typeof address !== "string") {
@@ -22,9 +22,8 @@ router.get("/nonce", async (req: Request, res: Response) => {
         }
 
         const nonce = crypto.randomUUID();
-        const expiresAt = new Date(Date.now() + 1000 * 60 * 5); // 5 minutes
+        const expiresAt = new Date(Date.now() + 1000 * 60 * 5);
 
-        // Store in DB (upsert) - Use nonce as conflict target since it's unique
         await db.insert(authChallenges).values({
             address: address,
             nonce: nonce,
@@ -45,43 +44,33 @@ router.get("/nonce", async (req: Request, res: Response) => {
     }
 });
 
-// POST /auth/login
-router.post("/login", async (req: Request, res: Response) => {
+// POST /auth/login - with rate limiting
+router.post("/login", authLimiter, async (req: Request, res: Response) => {
     console.log("🔐 [LOGIN] ========== REQUEST RECEIVED ==========");
     console.log("🔐 [LOGIN] Body keys:", Object.keys(req.body));
     console.log("🔐 [LOGIN] Origin:", req.headers.origin);
 
     try {
-        // 🛡️ SECURITY: RS256 Signing
         const PRIVATE_KEY = process.env.JWT_PRIVATE_KEY;
         if (!PRIVATE_KEY) {
             console.error("❌ CRITICAL: JWT_PRIVATE_KEY not set");
             return res.status(500).json({ error: "Configuration Error" });
         }
 
-        // Decode Base64 Key
         const privateKey = Buffer.from(PRIVATE_KEY, "base64").toString("utf-8");
-
         const { payload, signature } = req.body;
 
         console.log("🔹 Login Request Received");
 
-        // 1. Validate Structure
         if (!payload || !signature) {
             console.error("❌ Missing payload or signature");
             return res.status(400).json({ error: "Missing payload or signature" });
         }
 
-        // Destructure Payload
         const {
             domain,
             address: payloadAddress,
-            statement,
-            uri,
-            version,
-            chainId,
             nonce,
-            issuedAt,
             expirationTime,
             message: messageString
         } = payload;
@@ -94,13 +83,11 @@ router.post("/login", async (req: Request, res: Response) => {
             return res.status(400).json({ error: "Missing SIWE message" });
         }
 
-        // 2. Strict SIWE Validation - Domain
         if (domain !== config.domain) {
             console.error(`❌ Domain mismatch: Received ${domain}, Expected ${config.domain}`);
             return res.status(401).json({ error: "Invalid domain" });
         }
 
-        // 3. Verify Time
         const now = new Date();
         const expirationDate = new Date(expirationTime);
         if (now > expirationDate) {
@@ -108,7 +95,6 @@ router.post("/login", async (req: Request, res: Response) => {
             return res.status(401).json({ error: "Expired signature" });
         }
 
-        // 4. Verify Signature
         const isValid = await verifySignature({
             client,
             message: messageString,
@@ -122,7 +108,6 @@ router.post("/login", async (req: Request, res: Response) => {
         }
         console.log("✅ [LOGIN] Step 3: Signature verified");
 
-        // 5. Nonce Validation
         if (!messageString.includes(nonce)) {
             console.error(`❌ Nonce mismatch in message string`);
             return res.status(401).json({ error: "Nonce mismatch in message" });
@@ -147,76 +132,53 @@ router.post("/login", async (req: Request, res: Response) => {
         }
         console.log("✅ [LOGIN] Step 4: Nonce validated");
 
-        // 6. Invalidate Nonce
         await db.delete(authChallenges).where(eq(authChallenges.nonce, nonce));
 
-        // 7. Gate Check (Server-Side)
-        const contract = getContract({
-            client,
-            chain: config.chain,
-            address: config.nftContractAddress,
-            abi: PANDORAS_KEY_ABI
-        });
+        // Gate Check - WITH CACHING
+        const hasAccess = await getGateHolderStatus(payloadAddress);
+        console.log(`🔐 [LOGIN] Gate Check: ${hasAccess ? 'GRANTED' : 'DENIED'}`);
 
-        let hasAccess = false;
-        try {
-            hasAccess = await readContract({
-                contract,
-                method: "isGateHolder",
-                params: [payloadAddress]
-            });
-        } catch (e) {
-            console.error("Gate check error:", e);
-            hasAccess = false;
-        }
-
-        // 8. Create Session with Refresh Tokens
         const tokens = await createSession(payloadAddress, hasAccess);
 
-        // 9. Issue JWT (short-lived, for backwards compatibility)
         const jwtToken = jwt.sign({
             sub: payloadAddress,
             hasAccess,
-            sid: tokens.accessToken, // Session ID
+            sid: tokens.accessToken,
             v: Number(process.env.JWT_VERSION || 1),
             iat: Math.floor(Date.now() / 1000),
         }, privateKey, {
             algorithm: "RS256",
-            expiresIn: '15m' // Short-lived: 15 minutes
+            expiresIn: '15m'
         });
 
-        // 10. Set Cookies (both access token and refresh token)
         const isProd = process.env.NODE_ENV === "production";
         const cookieDomain = process.env.COOKIE_DOMAIN || undefined;
 
-        // Access Token Cookie (short-lived, for API validation)
         res.cookie("access_token", tokens.accessToken, {
             httpOnly: true,
             secure: isProd,
             sameSite: isProd ? "none" : "lax",
             domain: cookieDomain,
             path: "/",
-            maxAge: 15 * 60 * 1000 // 15 minutes
+            maxAge: 15 * 60 * 1000
         });
 
-        // Refresh Token Cookie (long-lived, for session renewal)
         res.cookie("refresh_token", tokens.refreshToken, {
             httpOnly: true,
             secure: isProd,
             sameSite: isProd ? "strict" : "lax",
             domain: cookieDomain,
-            path: "/auth/refresh", // Only sent to refresh endpoint
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+            path: "/auth/refresh",
+            maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
-        // Also keep the JWT for backwards compatibility
         res.cookie("auth_token", jwtToken, {
             httpOnly: true,
             secure: isProd,
             sameSite: isProd ? "none" : "lax",
             domain: cookieDomain,
             path: "/",
-            maxAge: 15 * 60 * 1000 // 15 minutes
+            maxAge: 15 * 60 * 1000
         });
 
         console.log("✅ [LOGIN] SUCCESS: Session created for", payloadAddress, "| hasAccess:", hasAccess);
@@ -232,8 +194,8 @@ router.post("/login", async (req: Request, res: Response) => {
     }
 });
 
-// POST /auth/refresh - Rotate refresh token and get new access token
-router.post("/refresh", async (req: Request, res: Response) => {
+// POST /auth/refresh - with rate limiting
+router.post("/refresh", refreshLimiter, async (req: Request, res: Response) => {
     console.log("🔄 [REFRESH] ========== REQUEST RECEIVED ==========");
     
     try {
@@ -244,7 +206,6 @@ router.post("/refresh", async (req: Request, res: Response) => {
             return res.status(401).json({ error: "No refresh token" });
         }
 
-        // Rotate refresh token (invalidates old, creates new)
         const newTokens = await rotateRefreshToken(refreshToken);
         
         if (!newTokens) {
@@ -252,7 +213,6 @@ router.post("/refresh", async (req: Request, res: Response) => {
             return res.status(401).json({ error: "Invalid refresh token" });
         }
 
-        // Get session data
         const session = await getSession(newTokens.accessToken);
         
         if (!session) {
@@ -260,7 +220,6 @@ router.post("/refresh", async (req: Request, res: Response) => {
             return res.status(401).json({ error: "Session expired" });
         }
 
-        // Update cookies with new tokens
         const isProd = process.env.NODE_ENV === "production";
         const cookieDomain = process.env.COOKIE_DOMAIN || undefined;
 
@@ -303,12 +262,10 @@ router.post("/logout", async (req: Request, res: Response) => {
         const accessToken = req.cookies.access_token;
         const refreshToken = req.cookies.refresh_token;
 
-        // Invalidate session in Redis
         if (accessToken) {
             await invalidateSession(accessToken, refreshToken);
         }
 
-        // Clear all cookies
         const isProd = process.env.NODE_ENV === "production";
         const cookieDomain = process.env.COOKIE_DOMAIN || undefined;
 
@@ -348,7 +305,6 @@ router.post("/logout", async (req: Request, res: Response) => {
 // GET /auth/me
 router.get("/me", async (req: Request, res: Response) => {
     try {
-        // Try to get session from Redis first (new system)
         const accessToken = req.cookies.access_token;
         
         if (accessToken) {
@@ -361,7 +317,6 @@ router.get("/me", async (req: Request, res: Response) => {
             }
         }
 
-        // Fallback to JWT verification (backwards compatibility)
         const token = req.cookies.auth_token;
 
         if (!token) {
@@ -377,7 +332,6 @@ router.get("/me", async (req: Request, res: Response) => {
         }
 
         const publicKey = Buffer.from(PUBLIC_KEY, "base64").toString("utf-8");
-
         const decoded = jwt.verify(token, publicKey, { algorithms: ["RS256"] }) as any;
 
         return res.status(200).json({
