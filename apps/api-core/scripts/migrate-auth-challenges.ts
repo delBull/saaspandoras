@@ -35,7 +35,7 @@ async function migrate() {
         console.log('📝 Creating indexes...');
 
         await sql`CREATE INDEX IF NOT EXISTS idx_auth_challenges_nonce ON auth_challenges(nonce)`;
-        await sql`CREATE INDEX IF NOT EXISTS idx_auth_challenges_address ON auth_challenges(address)`;
+        await sql`CREATE UNIQUE INDEX IF NOT EXISTS auth_challenges_address_idx ON auth_challenges(address)`;
         await sql`CREATE INDEX IF NOT EXISTS idx_auth_challenges_expires_at ON auth_challenges(expires_at)`;
 
         console.log('✅ Indexes created successfully');
