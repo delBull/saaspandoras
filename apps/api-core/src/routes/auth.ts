@@ -23,14 +23,18 @@ router.get("/nonce", async (req: Request, res: Response) => {
         const nonce = crypto.randomUUID();
         const expiresAt = new Date(Date.now() + 1000 * 60 * 5); // 5 minutes
 
-        // Store in DB (upsert)
+        // Store in DB (upsert) - Use nonce as conflict target since it's unique
         await db.insert(authChallenges).values({
             address: address,
             nonce: nonce,
             expiresAt: expiresAt,
         }).onConflictDoUpdate({
-            target: authChallenges.address,
-            set: { nonce, expiresAt }
+            target: authChallenges.nonce, // Changed from address to nonce (unique constraint)
+            set: { 
+                nonce: nonce,
+                expiresAt: expiresAt,
+                address: address // Also update address in case it changed
+            }
         });
 
         return res.status(200).json({ nonce });
@@ -67,7 +71,7 @@ router.post("/login", async (req: Request, res: Response) => {
             return res.status(400).json({ error: "Missing payload or signature" });
         }
 
-        // Destructure Payload
+        // Destructure Payload - Filter out undefined values
         const {
             domain,
             address: payloadAddress,
@@ -150,7 +154,6 @@ router.post("/login", async (req: Request, res: Response) => {
         // 5. Invalidate Nonce
         await db.delete(authChallenges).where(eq(authChallenges.nonce, nonce));
 
-        // 6. Gate Check (Server-Side)
         // 6. Gate Check (Server-Side)
         const contract = getContract({
             client,
