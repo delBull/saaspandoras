@@ -1014,19 +1014,35 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                             Atrás
                         </button>
                     )}
-                    {creationStep === 1 ? (
+                    {creationStep === 1 && (
                         <button
-                            onClick={handleDeploy}
-                            disabled={!formData.name || !formData.symbol || (nftType === 'qr' && !createLanding && !formData.targetUrl)}
-                            className={`px-6 py-2 rounded-lg font-bold shadow-lg flex items-center gap-2 transform transition-all 
-                                    ${!formData.name || !formData.symbol || (nftType === 'qr' && !createLanding && !formData.targetUrl)
-                                    ? 'bg-zinc-700 text-gray-500 cursor-not-allowed'
-                                    : 'bg-gradient-to-r from-lime-500 to-emerald-500 hover:from-lime-400 hover:to-emerald-400 text-black shadow-lime-500/20 hover:scale-[1.02]'
-                                }`}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                console.log("🔵 Deploy button clicked, checking conditions...");
+                                console.log("  - name:", formData.name);
+                                console.log("  - symbol:", formData.symbol);
+                                console.log("  - nftType:", nftType);
+                                console.log("  - createLanding:", createLanding);
+                                console.log("  - targetUrl:", formData.targetUrl);
+                                
+                                // Manual validation check
+                                if (!formData.name || !formData.symbol) {
+                                    toast({ title: "Error", description: "Nombre y Símbolo son obligatorios", variant: "destructive" });
+                                    return;
+                                }
+                                if (nftType === 'qr' && !createLanding && !formData.targetUrl) {
+                                    toast({ title: "Error", description: "Debes definir una URL de destino para el QR.", variant: "destructive" });
+                                    return;
+                                }
+                                
+                                handleDeploy();
+                            }}
+                            className="px-6 py-2 rounded-lg font-bold shadow-lg flex items-center gap-2 transform transition-all bg-gradient-to-r from-lime-500 to-emerald-500 hover:from-lime-400 hover:to-emerald-400 text-black shadow-lime-500/20 hover:scale-[1.02]"
                         >
                             🚀 Desplegar {nftType === 'qr' ? 'QR & Contract' : 'Contrato'}
                         </button>
-                    ) : null}
+                    )}
                 </div>
             </div>
         </div>

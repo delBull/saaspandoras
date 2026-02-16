@@ -359,6 +359,39 @@ function MultiTenantSection() {
   const [newTenantId, setNewTenantId] = useState("");
   const [newTenantName, setNewTenantName] = useState("");
   const [newTenantDescription, setNewTenantDescription] = useState("");
+  const [tenantSearchQuery, setTenantSearchQuery] = useState("");
+  const [showTenantSuggestions, setShowTenantSuggestions] = useState(false);
+  
+  // Filtered tenants based on search
+  const filteredTenants = tenants.filter(t => 
+    t.id.toLowerCase().includes(tenantSearchQuery.toLowerCase()) ||
+    t.name.toLowerCase().includes(tenantSearchQuery.toLowerCase())
+  );
+  
+  // Handle selecting a tenant from the list
+  const handleSelectTenant = (tenant: Tenant) => {
+    setNewTenantId(tenant.id);
+    setNewTenantName(tenant.name);
+    setNewTenantDescription(tenant.description || "");
+    setTenantSearchQuery(tenant.name);
+    setShowTenantSuggestions(false);
+  };
+  
+  // Handle typing in the search field
+  const handleTenantSearchChange = (value: string) => {
+    setTenantSearchQuery(value);
+    setShowTenantSuggestions(true);
+    // Also update the form fields if we find a match
+    const matchedTenant = tenants.find(t => t.id === value || t.name.toLowerCase() === value.toLowerCase());
+    if (matchedTenant) {
+      setNewTenantId(matchedTenant.id);
+      setNewTenantName(matchedTenant.name);
+      setNewTenantDescription(matchedTenant.description || "");
+    } else {
+      // It's a new tenant, keep the ID from input
+      setNewTenantId(value.toLowerCase().replace(/\s+/g, '-'));
+    }
+  };
   
   // Form state for editing
   const [editConfig, setEditConfig] = useState<{
@@ -423,6 +456,7 @@ function MultiTenantSection() {
         setNewTenantId("");
         setNewTenantName("");
         setNewTenantDescription("");
+        setTenantSearchQuery("");
       } else {
         const err = await response.json();
         toast.error(err.message || "Error al crear tenant");
@@ -526,13 +560,50 @@ function MultiTenantSection() {
         </div>
       </div>
 
-      {/* Create New Tenant Form */}
+      {/* Create New Tenant Form with Autocomplete */}
       <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
         <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
           <PlusCircle className="w-4 h-4" />
           Crear Nuevo Tenant
           <InfoTooltip content="Un tenant representa una DAO, proyecto o comunidad separada. Cada tenant puede tener sus propias reglas de acceso basadas en NFTs, roles y direcciones whitelisteadas." />
         </h4>
+        
+        {/* Search/Select Existing or Create New */}
+        <div className="relative mb-3">
+          <label htmlFor="tenant-search" className="text-xs text-gray-400 block mb-1">Buscar tenant existente o crear nuevo</label>
+          <Input
+            id="tenant-search"
+            placeholder="Escribe para buscar tenants existentes..."
+            value={tenantSearchQuery}
+            onChange={(e) => handleTenantSearchChange(e.target.value)}
+            onFocus={() => setShowTenantSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowTenantSuggestions(false), 200)}
+            className="bg-zinc-900 border-zinc-700"
+          />
+          {/* Autocomplete Suggestions */}
+          {showTenantSuggestions && filteredTenants.length > 0 && (
+            <div className="absolute z-50 w-full mt-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+              {filteredTenants.map((tenant) => (
+                <button
+                  key={tenant.id}
+                  type="button"
+                  onClick={() => handleSelectTenant(tenant)}
+                  className="w-full px-3 py-2 text-left hover:bg-zinc-700 flex items-center justify-between border-b border-zinc-700 last:border-0"
+                >
+                  <div>
+                    <span className="text-white font-medium">{tenant.name}</span>
+                    <span className="text-gray-400 text-xs ml-2">({tenant.id})</span>
+                  </div>
+                  <span className={`text-xs ${tenant.isActive ? 'text-lime-400' : 'text-gray-500'}`}>
+                    {tenant.isActive ? 'Activo' : 'Inactivo'}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Selected Tenant Details */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div>
             <Input
@@ -557,8 +628,8 @@ function MultiTenantSection() {
           />
           <Button 
             onClick={handleCreateTenant} 
-            disabled={isSaving}
-            className="bg-lime-500 hover:bg-lime-600 text-zinc-900"
+            disabled={isSaving || !newTenantId || !newTenantName}
+            className="bg-lime-500 hover:bg-lime-600 text-zinc-900 disabled:opacity-50"
           >
             {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Crear"}
           </Button>
