@@ -10,6 +10,7 @@ import crypto from "crypto";
 import { createSession, getSession, rotateRefreshToken, invalidateSession } from "../lib/session.js";
 import { getGateHolderStatus } from "../lib/nft-cache.js";
 import { authLimiter, nonceLimiter, refreshLimiter } from "../middleware/rate-limit.js";
+import { checkTenantAccess, getTenantId } from "../middleware/tenant-gate.js";
 
 const router = Router();
 
@@ -341,6 +342,37 @@ router.get("/me", async (req: Request, res: Response) => {
     } catch (error) {
         console.error("❌ /auth/me Token Verification Failed:", error);
         return res.status(401).json({ error: "Invalid token", details: String(error) });
+    }
+});
+
+// POST /auth/tenant-access - Check tenant-specific access
+router.post("/tenant-access", async (req: Request, res: Response) => {
+    try {
+        const { address, tenantId } = req.body;
+        
+        if (!address) {
+            return res.status(400).json({ error: "Missing address" });
+        }
+        
+        // Get tenant ID from header or use default
+        const resolvedTenantId = tenantId || getTenantId(req);
+        
+        console.log(`🏢 [TenantAccess] Checking access for ${address} on tenant ${resolvedTenantId}`);
+        
+        const result = await checkTenantAccess(address.toLowerCase(), resolvedTenantId);
+        
+        console.log(`🏢 [TenantAccess] Result: ${result.hasAccess ? 'GRANTED' : 'DENIED'}`);
+        
+        return res.status(200).json({
+            hasAccess: result.hasAccess,
+            error: result.reason,
+            requirements: result.requirements,
+            tenantId: resolvedTenantId
+        });
+    } catch (error) {
+        console.error("❌ [TenantAccess] Error:", error);
+        // Fail open - allow access on error
+        return res.status(200).json({ hasAccess: true });
     }
 });
 
