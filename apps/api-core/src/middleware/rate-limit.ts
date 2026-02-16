@@ -1,14 +1,20 @@
-import rateLimit, { type RateLimitRequestHandler } from 'express-rate-limit';
+import rateLimit, { type RateLimitRequestHandler, ipKeyGenerator } from 'express-rate-limit';
 import { getRedis } from '../lib/redis.js';
+
+// Helper to combine IP with other identifiers safely for IPv6
+const createKeyGenerator = (prefix: string, getExtra?: (req: any) => string) => {
+    return (req: any, res: any) => {
+        const ip = ipKeyGenerator(req, res); // Uses express-rate-limit's built-in IPv6-safe key generator
+        const extra = getExtra ? getExtra(req) : '';
+        return extra ? `${prefix}:${ip}:${extra}` : `${prefix}:${ip}`;
+    };
+};
 
 // Middleware for general API rate limiting
 export const apiLimiter: RateLimitRequestHandler = rateLimit({
     windowMs: 60 * 1000, // 1 minute
     limit: 100, // 100 requests per minute
-    keyGenerator: (req) => {
-        const ip = req.ip || req.socket?.remoteAddress || 'unknown';
-        return ip;
-    },
+    keyGenerator: createKeyGenerator('api'),
     standardHeaders: true,
     legacyHeaders: false,
     message: {
@@ -25,11 +31,7 @@ export const apiLimiter: RateLimitRequestHandler = rateLimit({
 export const authLimiter: RateLimitRequestHandler = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     limit: 5, // 5 attempts per window
-    keyGenerator: (req) => {
-        const ip = req.ip || req.socket?.remoteAddress || 'unknown';
-        const address = req.body?.address || 'unknown';
-        return `auth:${ip}:${address}`;
-    },
+    keyGenerator: createKeyGenerator('auth', (req) => req.body?.address || 'unknown'),
     standardHeaders: true,
     legacyHeaders: false,
     message: {
@@ -43,11 +45,7 @@ export const authLimiter: RateLimitRequestHandler = rateLimit({
 export const nonceLimiter: RateLimitRequestHandler = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     limit: 3, // Only 3 nonces per 15 minutes
-    keyGenerator: (req) => {
-        const ip = req.ip || req.socket?.remoteAddress || 'unknown';
-        const address = req.query?.address || 'unknown';
-        return `nonce:${ip}:${address}`;
-    },
+    keyGenerator: createKeyGenerator('nonce', (req) => String(req.query?.address || 'unknown')),
     standardHeaders: true,
     legacyHeaders: false,
     message: {
@@ -61,10 +59,7 @@ export const nonceLimiter: RateLimitRequestHandler = rateLimit({
 export const refreshLimiter: RateLimitRequestHandler = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     limit: 20, // 20 refreshes per 15 minutes
-    keyGenerator: (req) => {
-        const ip = req.ip || req.socket?.remoteAddress || 'unknown';
-        return `refresh:${ip}`;
-    },
+    keyGenerator: createKeyGenerator('refresh'),
     standardHeaders: true,
     legacyHeaders: false,
     message: {

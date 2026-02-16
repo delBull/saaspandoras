@@ -33,29 +33,38 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  // If loading auth state, show loader
-  if (isAuthLoading) {
+  // If loading auth state AND account is connected, show loader (auto-login in progress)
+  if (isAuthLoading && account) {
     return (
-      <div className="flex items-center justify-center h-full min-h-[50vh]">
+      <div className="flex flex-col items-center justify-center h-full min-h-[50vh] space-y-4">
         <Loader2 className="w-8 h-8 animate-spin text-lime-400" />
+        <p className="text-gray-300">Verifying your access...</p>
       </div>
     );
   }
 
-  // If not logged in, but account is connected, try to login automatically or show button?
-  // AuthProvider handles auto-check, but if user is null here, it means we are not logged in.
-  // We should encourage login.
-  if (account && !user) {
+  // If not logged in, but account is connected, try to login automatically
+  // Only show manual button if auto-login failed (account exists but user is null and not loading)
+  if (account && !user && !isAuthLoading) {
     // User connected wallet but didn't sign SIWE yet (or session invalid)
     return (
       <div className="flex flex-col items-center justify-center h-full space-y-4">
-        <p className="text-gray-300">Please sign in to verify your access.</p>
+        <p className="text-gray-300">Ups! Please sign in to verify your access.</p>
         <button
           onClick={() => login()}
           className="bg-lime-400 text-black px-6 py-2 rounded font-bold hover:bg-lime-500 transition"
         >
-          Sign In with Wallet
+          Sign In again
         </button>
+      </div>
+    );
+  }
+  
+  // If loading auth but no account connected, show guest mode loader
+  if (isAuthLoading && !account) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-[50vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-lime-400" />
       </div>
     );
   }
