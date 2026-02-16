@@ -14,9 +14,13 @@ const iconMap: Record<string, any> = {
     'Rocket': () => <span className="text-xl">🚀</span>,
     'Zap': () => <span className="text-xl">⚡</span>,
     'Shield': () => <span className="text-xl">🛡️</span>,
+    'ShieldCheck': () => <span className="text-xl">✅</span>,
     'FileText': () => <span className="text-xl">📄</span>,
     'Eye': () => <span className="text-xl">👁️</span>,
     'Code': () => <span className="text-xl">💻</span>,
+    'Trophy': () => <span className="text-xl">🏆</span>,
+    'Users': () => <span className="text-xl">👥</span>,
+    'Lock': () => <span className="text-xl">🔒</span>,
 };
 
 export function DocsSidebar({ activeSection, onSectionChange }: DocsSidebarProps) {

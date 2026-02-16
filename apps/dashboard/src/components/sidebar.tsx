@@ -25,7 +25,7 @@ import { ethereum } from "thirdweb/chains";
 import { WalletBalance, NetworkSelector, ConnectWalletButton } from "@/components/wallet";
 import { SUPPORTED_NETWORKS, DEFAULT_NETWORK } from "@/config/networks";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
-import { Hash, PackageCheckIcon, BookOpen } from "lucide-react";
+import { Hash, PackageCheckIcon, BookOpen, Lock } from "lucide-react";
 import { usePathname } from 'next/navigation';
 import * as Tooltip from "@radix-ui/react-tooltip";
 
@@ -779,6 +779,25 @@ export function Sidebar({
                           </Tooltip.Content>
                         </Tooltip.Portal>
                       </Tooltip.Root>
+
+                      <Tooltip.Root>
+                        <Tooltip.Trigger asChild>
+                          <Link
+                            href="/whitepaper#seguridad"
+                            className="relative flex w-full items-center rounded-lg py-2 transition-all duration-200 text-gray-400 hover:bg-green-900/20 justify-center"
+                          >
+                            <Lock className="h-4 w-4 shrink-0" />
+                          </Link>
+                        </Tooltip.Trigger>
+                        <Tooltip.Portal>
+                          <Tooltip.Content
+                            className="z-50 rounded-md bg-zinc-900 ml-20 px-3 py-1.5 text-xs text-white shadow-md border border-zinc-700"
+                            sideOffset={3}
+                          >
+                            Seguridad
+                          </Tooltip.Content>
+                        </Tooltip.Portal>
+                      </Tooltip.Root>
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 gap-2 px-2">
@@ -800,6 +819,16 @@ export function Sidebar({
                         <BookOpen className="h-4 w-4 shrink-0" />
                         <span className="whitespace-nowrap text-[10px] uppercase font-bold tracking-tighter">
                           Docs
+                        </span>
+                      </Link>
+                      <Link
+                        href="/whitepaper#seguridad"
+                        className="relative flex items-center justify-center gap-2 rounded-lg py-2 transition-all duration-200 text-gray-400 hover:bg-green-900/20 bg-zinc-800/30 border border-gray-800"
+                        title="Seguridad"
+                      >
+                        <Lock className="h-4 w-4 shrink-0" />
+                        <span className="whitespace-nowrap text-[10px] uppercase font-bold tracking-tighter">
+                          Seguridad
                         </span>
                       </Link>
                     </div>
@@ -1148,7 +1177,7 @@ export function Sidebar({
                 <div className="mb-4 flex flex-col gap-2">
                   {/* Show "Desatar tu Creación" button only when CONNECTED - MOBILE */}
                   {isClient && account && (
-                    <div className="border-t border-gray-800 pt-2 grid grid-cols-2 gap-2 px-2">
+                    <div className="border-t border-gray-800 pt-2 grid grid-cols-3 gap-2 px-2">
                       <Link
                         href="/apply"
                         onClick={() => setMobileOpen(false)}
@@ -1167,6 +1196,16 @@ export function Sidebar({
                         <BookOpen className="h-4 w-4 shrink-0" />
                         <span className="whitespace-nowrap text-[10px] uppercase font-bold tracking-tighter">
                           Docs
+                        </span>
+                      </Link>
+                      <Link
+                        href="/whitepaper#seguridad"
+                        onClick={() => setMobileOpen(false)}
+                        className="relative flex items-center justify-center gap-2 rounded-lg py-2 transition-all duration-200 text-gray-400 hover:bg-green-900/20 bg-zinc-800/30 border border-gray-800"
+                      >
+                        <Lock className="h-4 w-4 shrink-0" />
+                        <span className="whitespace-nowrap text-[10px] uppercase font-bold tracking-tighter">
+                          Seguridad
                         </span>
                       </Link>
                     </div>

@@ -34,7 +34,21 @@ export async function POST(req: Request) {
 
         // 2. Parse Config
         const body = await req.json();
-        const { name, symbol, maxSupply, price, owner, treasuryAddress, oracleAddress, image, description, nftType = 'access', createLanding, landingConfig } = body;
+        const { 
+            name, 
+            symbol, 
+            maxSupply, 
+            price, 
+            owner, 
+            treasuryAddress, 
+            oracleAddress, 
+            image, 
+            description, 
+            nftType = 'access', 
+            targetUrl = null,
+            createLanding = false, 
+            landingConfig = null 
+        } = body;
 
         if (!name || !symbol || !owner) {
             return NextResponse.json({ error: "Missing required fields (name, symbol, owner)" }, { status: 400 });
@@ -114,9 +128,11 @@ export async function POST(req: Request) {
                     validUntil: body.validUntil || null,
                     // New fields for shortlink creation
                     shortlinkType: shortlinkType || null, // 'landing' or 'redirect'
-                    landingConfig: landingConfig || null // Configuration for landing page if shortlinkType is 'landing'
+                    landingConfig: landingConfig || null, // Configuration for landing page if shortlinkType is 'landing'
+                    targetUrl: targetUrl // Target URL for Smart QR redirects
                 },
-                accessCardImage: image || null // Store the image for metadata!
+                accessCardImage: image || null, // Store the image for metadata!
+                smartQRDestination: targetUrl // Store Smart QR destination separately for easy access
             },
             status: 'live', // Active by default
             isMintable: true,
