@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Input } from "@saasfly/ui/input";
 import { Button } from "@/components/ui/button";
 
-import { Trash2, PlusCircle, Loader2, Pencil, Activity, Power, Building2, Users, Key, Settings } from "lucide-react";
+import { Trash2, PlusCircle, Loader2, Pencil, Activity, Power, Building2, Users, Key, Settings, Info } from "lucide-react";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 import Link from "next/link";
 
@@ -322,6 +322,31 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
 }
 
 // ============================================
+// INFO TOOLTIP COMPONENT
+// ============================================
+function InfoTooltip({ content }: { content: string }) {
+  const [show, setShow] = useState(false);
+  
+  return (
+    <div className="relative inline-flex">
+      <button
+        type="button"
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+        className="ml-1 w-4 h-4 rounded-full bg-zinc-600 hover:bg-zinc-500 text-white text-xs flex items-center justify-center"
+      >
+        i
+      </button>
+      {show && (
+        <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-2 bg-zinc-800 border border-zinc-600 rounded-lg text-xs text-gray-300 shadow-xl">
+          {content}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================
 // MULTI-TENANT CONFIGURATION COMPONENT
 // ============================================
 function MultiTenantSection() {
@@ -506,14 +531,18 @@ function MultiTenantSection() {
         <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
           <PlusCircle className="w-4 h-4" />
           Crear Nuevo Tenant
+          <InfoTooltip content="Un tenant representa una DAO, proyecto o comunidad separada. Cada tenant puede tener sus propias reglas de acceso basadas en NFTs, roles y direcciones whitelisteadas." />
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <Input
-            placeholder="Tenant ID (ej: mi-dao)"
-            value={newTenantId}
-            onChange={(e) => setNewTenantId(e.target.value)}
-            className="bg-zinc-900 border-zinc-700"
-          />
+          <div>
+            <Input
+              placeholder="Tenant ID (ej: mi-dao)"
+              value={newTenantId}
+              onChange={(e) => setNewTenantId(e.target.value)}
+              className="bg-zinc-900 border-zinc-700"
+            />
+            <p className="text-xs text-gray-500 mt-1">ID único (sin espacios)</p>
+          </div>
           <Input
             placeholder="Nombre del Tenant"
             value={newTenantName}
@@ -632,9 +661,9 @@ function MultiTenantSection() {
               </div>
 
               <div>
-                <label htmlFor="nft-contracts" className="text-sm text-gray-400 block mb-1">
-                  NFT Contracts (JSON Array)
-                  <span className="text-xs text-gray-500 ml-2">{`[{"address", "chainId", "minBalance"}]`}</span>
+                <label htmlFor="nft-contracts" className="text-sm text-gray-400 flex items-center gap-1 mb-1">
+                  NFT Contracts
+                  <InfoTooltip content="Direcciones de contratos NFT que dan acceso. Formato: [{'address': '0x...', 'chainId': 11155111, 'minBalance': 1}]" />
                 </label>
                 <textarea
                   id="nft-contracts"
@@ -642,13 +671,14 @@ function MultiTenantSection() {
                   onChange={(e) => setEditConfig({...editConfig, nftContracts: e.target.value})}
                   className="w-full h-24 bg-zinc-800 border border-zinc-700 rounded p-2 text-sm font-mono text-lime-400"
                   aria-label="NFT Contracts JSON"
+                  placeholder='[{"address": "0x...", "chainId": 11155111, "minBalance": 1}]'
                 />
               </div>
 
               <div>
-                <label htmlFor="required-roles" className="text-sm text-gray-400 block mb-1">
-                  Required Roles (JSON Array)
-                  <span className="text-xs text-gray-500 ml-2">["admin", "member"]</span>
+                <label htmlFor="required-roles" className="text-sm text-gray-400 flex items-center gap-1 mb-1">
+                  Required Roles
+                  <InfoTooltip content="Roles requeridos para acceder. Los usuarios con estos roles en la tabla tenant_users tendrán acceso automático." />
                 </label>
                 <textarea
                   id="required-roles"
@@ -656,13 +686,14 @@ function MultiTenantSection() {
                   onChange={(e) => setEditConfig({...editConfig, requiredRoles: e.target.value})}
                   className="w-full h-20 bg-zinc-800 border border-zinc-700 rounded p-2 text-sm font-mono text-lime-400"
                   aria-label="Required Roles JSON"
+                  placeholder='["admin", "member", "contributor"]'
                 />
               </div>
 
               <div>
-                <label htmlFor="whitelist-addresses" className="text-sm text-gray-400 block mb-1">
-                  Whitelisted Addresses (JSON Array)
-                  <span className="text-xs text-gray-500 ml-2">["0x..."]</span>
+                <label htmlFor="whitelist-addresses" className="text-sm text-gray-400 flex items-center gap-1 mb-1">
+                  Whitelisted Addresses
+                  <InfoTooltip content="Direcciones de wallet que tendrán acceso sin importar NFTs o roles. Formato: ['0x1234...', '0xabcd...']" />
                 </label>
                 <textarea
                   id="whitelist-addresses"
@@ -670,6 +701,7 @@ function MultiTenantSection() {
                   onChange={(e) => setEditConfig({...editConfig, whitelistedAddresses: e.target.value})}
                   className="w-full h-20 bg-zinc-800 border border-zinc-700 rounded p-2 text-sm font-mono text-lime-400"
                   aria-label="Whitelisted Addresses JSON"
+                  placeholder='["0x1234...", "0xabcd..."]'
                 />
               </div>
 

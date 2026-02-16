@@ -8,6 +8,7 @@ import { useActiveAccount, useActiveWalletChain } from "thirdweb/react";
 import { useToast } from "@saasfly/ui/use-toast";
 import { config } from "@/config";
 import { client } from "@/lib/thirdweb-client";
+import { useEOAIdentity } from "@/hooks/useEOAIdentity";
 
 interface User {
     address: string;
@@ -29,6 +30,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const account = useActiveAccount();
     const chain = useActiveWalletChain();
     const { toast } = useToast();
+    
+    // 🆕 Smart Account Support: Get the real EOA identity
+    // This handles both EOA wallets and Smart Wallets (AA)
+    const eoaIdentity = useEOAIdentity();
 
     // Load session on mount
     useEffect(() => {
@@ -89,8 +94,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         try {
             setIsLoading(true);
-            // 1. Get Nonce
-            const nonceRes = await fetch(`${API_URL}/auth/nonce?address=${account.address}`, { credentials: "include" });
+            
+            // 🆕 Smart Account Support: Use EOA as identity, not Smart Account address
+            // This ensures sessions persist even when the smart wallet changes
+            const identityAddress = eoaIdentity || account.address;
+            console.log('[AuthProvider] 🆔 Identity Address (EOA):', identityAddress);
+            console.log('[AuthProvider] 📱 Execution Address:', account.address);
+            
+            // 1. Get Nonce for the EOA identity
+            const nonceRes = await fetch(`${API_URL}/auth/nonce?address=${identityAddress}`, { credentials: "include" });
             const { nonce } = await nonceRes.json();
 
             // 2. Create SIWE Message
@@ -102,9 +114,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const issuedAt = new Date().toISOString();
             const expirationTime = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 min validity for sig
 
+            // 🆕 Include both addresses in the message for Smart Wallet support
+            const executionAddress = account.address;
+            
             // Construct EIP-4361 message
             const message = `${domain} wants you to sign in with your Ethereum account:
-${account.address}
+${identityAddress}
 
 ${statement}
 
@@ -113,15 +128,18 @@ Version: ${version}
 Chain ID: ${chainId}
 Nonce: ${nonce}
 Issued At: ${issuedAt}
-Expiration Time: ${expirationTime}`;
+Expiration Time: ${expirationTime}
+${executionAddress !== identityAddress ? `\nExecution Address: ${executionAddress}` : ''}`;
 
-            // 3. Sign
+            // 3. Sign (the user signs with their wallet, could be EOA or Smart Wallet)
             const signature = await account.signMessage({ message });
 
-            // 4. Verify
+            // 4. Verify & Create Session
+            // 🆕 Send both addresses: identity (EOA) for session, execution for display
             const payload = {
                 domain,
-                address: account.address,
+                address: identityAddress, // Use EOA as the identity
+                executionAddress: executionAddress !== identityAddress ? executionAddress : undefined, // Smart Wallet address
                 statement,
                 uri,
                 version,
@@ -135,14 +153,16 @@ Expiration Time: ${expirationTime}`;
             const loginRes = await fetch(`${API_URL}/auth/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ payload, signature }), // sending structured payload for parsing
+                body: JSON.stringify({ payload, signature }),
                 credentials: "include",
             });
 
             if (!loginRes.ok) throw new Error("Login failed");
 
             const data = await loginRes.json();
-            setUser({ address: account.address, hasAccess: data.hasAccess });
+            
+            // 🆕 Store EOA identity in session for persistent login across smart wallet changes
+            setUser({ address: identityAddress, hasAccess: data.hasAccess });
             toast({ title: "Welcome back!", description: "Successfully logged in." });
 
         } catch (e) {
