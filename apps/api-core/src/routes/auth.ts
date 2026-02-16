@@ -9,6 +9,7 @@ import { getContract, readContract } from "thirdweb";
 import { config } from "../config.js";
 import { PANDORAS_KEY_ABI } from "../lib/pandoras-key-abi.js";
 import crypto from "crypto";
+import { createSession, getSession, rotateRefreshToken, invalidateSession } from "../lib/session.js";
 
 const router = Router();
 
@@ -29,11 +30,11 @@ router.get("/nonce", async (req: Request, res: Response) => {
             nonce: nonce,
             expiresAt: expiresAt,
         }).onConflictDoUpdate({
-            target: authChallenges.nonce, // Changed from address to nonce (unique constraint)
+            target: authChallenges.nonce,
             set: { 
                 nonce: nonce,
                 expiresAt: expiresAt,
-                address: address // Also update address in case it changed
+                address: address
             }
         });
 
@@ -71,7 +72,7 @@ router.post("/login", async (req: Request, res: Response) => {
             return res.status(400).json({ error: "Missing payload or signature" });
         }
 
-        // Destructure Payload - Filter out undefined values
+        // Destructure Payload
         const {
             domain,
             address: payloadAddress,
@@ -82,9 +83,7 @@ router.post("/login", async (req: Request, res: Response) => {
             nonce,
             issuedAt,
             expirationTime,
-            invalidBefore,
-            resources,
-            message: messageString // Raw SIWE String
+            message: messageString
         } = payload;
 
         console.log(`🔐 Login Attempt: ${payloadAddress}`);
@@ -95,14 +94,13 @@ router.post("/login", async (req: Request, res: Response) => {
             return res.status(400).json({ error: "Missing SIWE message" });
         }
 
-        // 2. Strict SIWE Validation
-        // Verify Domain
+        // 2. Strict SIWE Validation - Domain
         if (domain !== config.domain) {
-            console.error(`❌ Domain mismatch: Recieved ${domain}, Expected ${config.domain}`);
+            console.error(`❌ Domain mismatch: Received ${domain}, Expected ${config.domain}`);
             return res.status(401).json({ error: "Invalid domain" });
         }
 
-        // Verify Time
+        // 3. Verify Time
         const now = new Date();
         const expirationDate = new Date(expirationTime);
         if (now > expirationDate) {
@@ -110,10 +108,10 @@ router.post("/login", async (req: Request, res: Response) => {
             return res.status(401).json({ error: "Expired signature" });
         }
 
-        // 3. Verify Signature (Strict)
+        // 4. Verify Signature
         const isValid = await verifySignature({
             client,
-            message: messageString, // Use RAW message from frontend
+            message: messageString,
             signature,
             address: payloadAddress,
         });
@@ -124,14 +122,12 @@ router.post("/login", async (req: Request, res: Response) => {
         }
         console.log("✅ [LOGIN] Step 3: Signature verified");
 
-        // 4. Nonce Validation
-        // Ensure the signed message actually contains the nonce we issued
+        // 5. Nonce Validation
         if (!messageString.includes(nonce)) {
             console.error(`❌ Nonce mismatch in message string`);
             return res.status(401).json({ error: "Nonce mismatch in message" });
         }
 
-        // Ensure the signed message contains the domain we expect
         if (!messageString.includes(config.domain)) {
             console.error(`❌ Domain mismatch in message string: Expected ${config.domain}`);
             return res.status(401).json({ error: "Domain mismatch in message" });
@@ -140,7 +136,7 @@ router.post("/login", async (req: Request, res: Response) => {
         const challenge = await db.query.authChallenges.findFirst({
             where: and(
                 eq(authChallenges.nonce, nonce),
-                eq(authChallenges.address, payloadAddress), // Atomic check
+                eq(authChallenges.address, payloadAddress),
                 gt(authChallenges.expiresAt, now)
             )
         });
@@ -151,10 +147,10 @@ router.post("/login", async (req: Request, res: Response) => {
         }
         console.log("✅ [LOGIN] Step 4: Nonce validated");
 
-        // 5. Invalidate Nonce
+        // 6. Invalidate Nonce
         await db.delete(authChallenges).where(eq(authChallenges.nonce, nonce));
 
-        // 6. Gate Check (Server-Side)
+        // 7. Gate Check (Server-Side)
         const contract = getContract({
             client,
             chain: config.chain,
@@ -174,33 +170,61 @@ router.post("/login", async (req: Request, res: Response) => {
             hasAccess = false;
         }
 
-        // 7. Issue JWT (RS256)
-        const token = jwt.sign({
+        // 8. Create Session with Refresh Tokens
+        const tokens = await createSession(payloadAddress, hasAccess);
+
+        // 9. Issue JWT (short-lived, for backwards compatibility)
+        const jwtToken = jwt.sign({
             sub: payloadAddress,
             hasAccess,
+            sid: tokens.accessToken, // Session ID
             v: Number(process.env.JWT_VERSION || 1),
             iat: Math.floor(Date.now() / 1000),
         }, privateKey, {
             algorithm: "RS256",
-            expiresIn: '24h'
+            expiresIn: '15m' // Short-lived: 15 minutes
         });
 
-        // 8. Set Cookie
-        // Cross-subdomain (api.x -> app.x) requires SameSite=None + Secure in production
+        // 10. Set Cookies (both access token and refresh token)
         const isProd = process.env.NODE_ENV === "production";
-        const cookieDomain = process.env.COOKIE_DOMAIN || undefined; // e.g. ".pandoras.finance"
+        const cookieDomain = process.env.COOKIE_DOMAIN || undefined;
 
-        res.cookie("auth_token", token, {
+        // Access Token Cookie (short-lived, for API validation)
+        res.cookie("access_token", tokens.accessToken, {
             httpOnly: true,
-            secure: isProd, // Must be true for SameSite=None
+            secure: isProd,
             sameSite: isProd ? "none" : "lax",
             domain: cookieDomain,
             path: "/",
-            maxAge: 1000 * 60 * 60 * 24 // 24 hours
+            maxAge: 15 * 60 * 1000 // 15 minutes
         });
 
-        console.log("✅ [LOGIN] SUCCESS: Cookie set for", payloadAddress, "| hasAccess:", hasAccess);
-        return res.status(200).json({ success: true, hasAccess });
+        // Refresh Token Cookie (long-lived, for session renewal)
+        res.cookie("refresh_token", tokens.refreshToken, {
+            httpOnly: true,
+            secure: isProd,
+            sameSite: isProd ? "strict" : "lax",
+            domain: cookieDomain,
+            path: "/auth/refresh", // Only sent to refresh endpoint
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
+
+        // Also keep the JWT for backwards compatibility
+        res.cookie("auth_token", jwtToken, {
+            httpOnly: true,
+            secure: isProd,
+            sameSite: isProd ? "none" : "lax",
+            domain: cookieDomain,
+            path: "/",
+            maxAge: 15 * 60 * 1000 // 15 minutes
+        });
+
+        console.log("✅ [LOGIN] SUCCESS: Session created for", payloadAddress, "| hasAccess:", hasAccess);
+        return res.status(200).json({ 
+            success: true, 
+            hasAccess,
+            expiresIn: tokens.expiresIn
+        });
 
     } catch (error) {
         console.error("Login Error:", error);
@@ -208,23 +232,138 @@ router.post("/login", async (req: Request, res: Response) => {
     }
 });
 
+// POST /auth/refresh - Rotate refresh token and get new access token
+router.post("/refresh", async (req: Request, res: Response) => {
+    console.log("🔄 [REFRESH] ========== REQUEST RECEIVED ==========");
+    
+    try {
+        const refreshToken = req.cookies.refresh_token;
+        
+        if (!refreshToken) {
+            console.warn("⚠️ [REFRESH] No refresh token found");
+            return res.status(401).json({ error: "No refresh token" });
+        }
+
+        // Rotate refresh token (invalidates old, creates new)
+        const newTokens = await rotateRefreshToken(refreshToken);
+        
+        if (!newTokens) {
+            console.warn("⚠️ [REFRESH] Invalid refresh token");
+            return res.status(401).json({ error: "Invalid refresh token" });
+        }
+
+        // Get session data
+        const session = await getSession(newTokens.accessToken);
+        
+        if (!session) {
+            console.warn("⚠️ [REFRESH] Session not found");
+            return res.status(401).json({ error: "Session expired" });
+        }
+
+        // Update cookies with new tokens
+        const isProd = process.env.NODE_ENV === "production";
+        const cookieDomain = process.env.COOKIE_DOMAIN || undefined;
+
+        res.cookie("access_token", newTokens.accessToken, {
+            httpOnly: true,
+            secure: isProd,
+            sameSite: isProd ? "none" : "lax",
+            domain: cookieDomain,
+            path: "/",
+            maxAge: 15 * 60 * 1000
+        });
+
+        res.cookie("refresh_token", newTokens.refreshToken, {
+            httpOnly: true,
+            secure: isProd,
+            sameSite: isProd ? "strict" : "lax",
+            domain: cookieDomain,
+            path: "/auth/refresh",
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+
+        console.log("✅ [REFRESH] SUCCESS: Token rotated for", session.address);
+        
+        return res.status(200).json({
+            success: true,
+            expiresIn: newTokens.expiresIn,
+            address: session.address,
+            hasAccess: session.hasAccess
+        });
+
+    } catch (error) {
+        console.error("Refresh Error:", error);
+        return res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
 // POST /auth/logout
-router.post("/logout", (req: Request, res: Response) => {
-    res.clearCookie("auth_token", {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-        path: "/",
-    });
-    return res.status(200).json({ success: true });
+router.post("/logout", async (req: Request, res: Response) => {
+    try {
+        const accessToken = req.cookies.access_token;
+        const refreshToken = req.cookies.refresh_token;
+
+        // Invalidate session in Redis
+        if (accessToken) {
+            await invalidateSession(accessToken, refreshToken);
+        }
+
+        // Clear all cookies
+        const isProd = process.env.NODE_ENV === "production";
+        const cookieDomain = process.env.COOKIE_DOMAIN || undefined;
+
+        res.clearCookie("access_token", {
+            httpOnly: true,
+            secure: isProd,
+            sameSite: isProd ? "none" : "lax",
+            domain: cookieDomain,
+            path: "/",
+        });
+
+        res.clearCookie("refresh_token", {
+            httpOnly: true,
+            secure: isProd,
+            sameSite: isProd ? "strict" : "lax",
+            domain: cookieDomain,
+            path: "/auth/refresh",
+        });
+
+        res.clearCookie("auth_token", {
+            httpOnly: true,
+            secure: isProd,
+            sameSite: isProd ? "none" : "lax",
+            domain: cookieDomain,
+            path: "/",
+        });
+
+        console.log("✅ [LOGOUT] Session invalidated");
+        
+        return res.status(200).json({ success: true });
+    } catch (error) {
+        console.error("Logout Error:", error);
+        return res.status(500).json({ error: "Internal Server Error" });
+    }
 });
 
 // GET /auth/me
 router.get("/me", async (req: Request, res: Response) => {
     try {
+        // Try to get session from Redis first (new system)
+        const accessToken = req.cookies.access_token;
+        
+        if (accessToken) {
+            const session = await getSession(accessToken);
+            if (session) {
+                return res.status(200).json({
+                    address: session.address,
+                    hasAccess: session.hasAccess,
+                });
+            }
+        }
+
+        // Fallback to JWT verification (backwards compatibility)
         const token = req.cookies.auth_token;
 
-        // 🔍 DEBUG: Log detailed request info if token is missing
         if (!token) {
             console.log(`⚠️ /auth/me: No token found. Origin: ${req.headers.origin}`);
             console.log(`🍪 Cookies present: ${Object.keys(req.cookies).join(", ")}`);
@@ -247,7 +386,6 @@ router.get("/me", async (req: Request, res: Response) => {
         });
     } catch (error) {
         console.error("❌ /auth/me Token Verification Failed:", error);
-        // Return 401 for "not logged in" state
         return res.status(401).json({ error: "Invalid token", details: String(error) });
     }
 });
