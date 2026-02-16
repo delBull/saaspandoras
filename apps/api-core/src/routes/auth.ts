@@ -71,12 +71,16 @@ router.post("/login", authLimiter, async (req: Request, res: Response) => {
         const {
             domain,
             address: payloadAddress,
+            executionAddress,
             nonce,
             expirationTime,
             message: messageString
         } = payload;
 
         console.log(`🔐 Login Attempt: ${payloadAddress}`);
+        if (executionAddress) {
+            console.log(`📱 Execution Address (Smart Wallet): ${executionAddress}`);
+        }
         console.log(`📦 Payload Domain: ${domain}, Setup Domain: ${config.domain}`);
 
         if (!messageString) {
