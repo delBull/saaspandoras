@@ -1016,26 +1016,49 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                     )}
                     {creationStep === 1 && (
                         <button
-                            onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                console.log("🔵 Deploy button clicked, checking conditions...");
-                                console.log("  - name:", formData.name);
-                                console.log("  - symbol:", formData.symbol);
-                                console.log("  - nftType:", nftType);
-                                console.log("  - createLanding:", createLanding);
-                                console.log("  - targetUrl:", formData.targetUrl);
-                                
-                                // Manual validation check
-                                if (!formData.name || !formData.symbol) {
-                                    toast({ title: "Error", description: "Nombre y Símbolo son obligatorios", variant: "destructive" });
+                            type="button"
+                            onClick={() => {
+                                // Validar wallet conectada
+                                if (!account?.address) {
+                                    toast({ 
+                                        title: "Wallet No Conectada", 
+                                        description: "Por favor conecta tu wallet antes de desplegar", 
+                                        variant: "destructive" 
+                                    });
                                     return;
                                 }
+                                
+                                // Validar nombre
+                                if (!formData.name?.trim()) {
+                                    toast({ 
+                                        title: "Error de Validación", 
+                                        description: "El nombre del NFT es obligatorio", 
+                                        variant: "destructive" 
+                                    });
+                                    return;
+                                }
+                                
+                                // Validar símbolo
+                                if (!formData.symbol?.trim()) {
+                                    toast({ 
+                                        title: "Error de Validación", 
+                                        description: "El símbolo del NFT es obligatorio", 
+                                        variant: "destructive" 
+                                    });
+                                    return;
+                                }
+                                
+                                // Validar URL para QR
                                 if (nftType === 'qr' && !createLanding && !formData.targetUrl) {
-                                    toast({ title: "Error", description: "Debes definir una URL de destino para el QR.", variant: "destructive" });
+                                    toast({ 
+                                        title: "Error de Validación", 
+                                        description: "Debes definir una URL de destino para el QR", 
+                                        variant: "destructive" 
+                                    });
                                     return;
                                 }
                                 
+                                // Ejecutar despliegue
                                 handleDeploy();
                             }}
                             className="px-6 py-2 rounded-lg font-bold shadow-lg flex items-center gap-2 transform transition-all bg-gradient-to-r from-lime-500 to-emerald-500 hover:from-lime-400 hover:to-emerald-400 text-black shadow-lime-500/20 hover:scale-[1.02]"
