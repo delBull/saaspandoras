@@ -326,7 +326,10 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                 transferable: formData.transferable,
                 burnable: formData.burnable,
                 validUntil: formData.validUntil,
-                nftType: nftType // Send type to API
+                nftType: nftType, // Send type to API
+                targetUrl: formData.targetUrl || null, // Required for Smart QR
+                createLanding: createLanding,
+                landingConfig: createLanding ? landingConfig : null
             };
 
             const res = await fetch("/api/admin/deploy/nft-pass", {

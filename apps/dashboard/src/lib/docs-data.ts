@@ -1694,5 +1694,176 @@ graph TD
 `
       }
     ]
+  },
+  {
+    id: "seguridad",
+    title: "Seguridad",
+    icon: "Lock",
+    sections: [
+      {
+        id: "seguridad-essencial",
+        title: "Lo que Debes Saber",
+        content: `# Seguridad: Lo que Debes Saber
+
+Aquí te explicamos de forma clara cómo protegemos tu información y tus activos en Pandora's.
+
+## 🔒 Tu Wallet, Tu Control
+
+**Pandora's nunca tiene acceso a tu wallet.**
+
+- ✅ Conectas tu wallet para firmar transacciones
+- ✅ Nunca nos das tus claves privadas o seed phrase
+- ✅ Todas las transacciones son firmadas por ti directamente
+- ✅ Nosotros solo ejecutamos lo que tú autorices
+
+## 🛡️ Cómo Protegemos Tu Información
+
+### Lo que almacenamos (de forma segura):
+- 📧 Tu email (solo si lo proporcionas para notificaciones)
+- 📊 Metadatos públicos de tus proyectos
+- 🔑 Llaves API (encriptadas con SHA-256, nunca visibles)
+- 📝 Logs de operaciones para auditoría
+
+### Lo que NUNCA almacenamos:
+- ❌ Claves privadas o seed phrases
+- ❌ Fondos o criptomonedas
+- ❌ Datos personales sensibles (INE,-passaporte)
+- ❌ Información financiera bancaria
+
+## ⚡ Transacciones Seguras
+
+### Firmas Criptográficas
+Cada acción importante requiere una firma válida de tu wallet:
+- Login con mensaje SIWE (Sign-In with Ethereum)
+- Despliegue de protocolos
+- Cambios de configuración
+
+### Protección contra Ataques
+- ✅ Rate limiting (límite de peticiones)
+- ✅ Validación de dominio (previene ataques de phishing)
+- ✅ Nonces únicos (previene replay attacks)
+- ✅ Timestamps con expiración
+
+## 🌐 Webhooks Seguros
+
+Si usas webhooks para integrar Pandora's con tu app:
+
+\`\`\`typescript
+// Siempre verifica la firma HMAC
+import crypto from 'crypto';
+
+function verifyWebhook(payload: string, signature: string, secret: string) {
+  const hash = crypto
+    .createHmac('sha256', secret)
+    .update(payload)
+    .digest('hex');
+  
+  return \`sha256=\${hash}\` === signature;
+}
+\`\`\`
+
+## 🚨 Kill Switches
+
+Tenemos mecanismos de emergencia para proteger la plataforma:
+- ✅ Pausar entrega de webhooks si hay incidentes
+- ✅ Doble confirmación (escribe "CONFIRM") para acciones críticas
+- ✅ Logs inmutables de todas las acciones
+
+## 📱 Mejores Prácticas de Seguridad
+
+### Tu Wallet
+1. **Nunca compartas tu seed phrase** con nadie
+2. Usa hardware wallet (Ledger, Trezor) para grandes cantidades
+3. Confirma siempre la URL antes de firmar
+4. Revisa el dominio: debe ser \`pandoras.finance\` o \`dashboard.pandoras.finance\`
+
+### Tu Cuenta
+1. Usa API keys únicas para cada integración
+2. No compartas keys en código público (GitHub)
+3. Rota tus keys periódicamente
+4. Usa el panel de operaciones para monitorear
+
+## 🔍 Cómo Verificar que es Seguro
+
+1. **Revisa la URL**: Debe terminar en \`pandoras.finance\`
+2. **Conexión HTTPS**: Always usa SSL válido
+3. **Firma correcta**: El mensaje SIWE siempre muestra el dominio exacto
+4. **Wallet conectado**: Nunca pedimos tus claves
+
+## 📞 ¿Algo Sospechoso?
+
+Si notas algo extraño:
+- ❌ Emails pedindo tu seed phrase
+- ❌ Sitios que parecen Pandora's pero con dominio diferente
+- ❌ Transacciones no autorizadas en tu wallet
+
+**Contáctanos inmediatamente** y reporta el incidente.
+
+---
+
+## Resumen Visual
+
+| Lo que sí hacemos | Lo que NO hacemos |
+|-------------------|-------------------|
+| ✅ Cifrado de datos | ❌ Custodia de fondos |
+| ✅ Autenticación wallet | ❌ Acceso a claves privadas |
+| ✅ Logs de auditoría | ❌ Almacenamiento de PII |
+| ✅ Kill switches | ❌ Reversión de transacciones |
+| ✅ HTTPS obligatorio | ❌ Compartir datos a terceros |
+
+**Tu seguridad es nuestra prioridad.**
+`
+      },
+      {
+        id: "recursos-seguridad",
+        title: "Recursos y Ayuda",
+        content: `# Recursos de Seguridad
+
+Enlaces y herramientas para mantenerte seguro en Pandora's.
+
+## 🔗 Enlaces Oficiales
+
+- 🌐 **Web Principal**: https://pandoras.finance
+- 📊 **Dashboard**: https://dashboard.pandoras.finance
+- 📚 **Documentación**: https://pandoras.finance/whitepaper
+- 📧 **Contacto**: support@pandoras.finance
+
+## ⚠️ NUNCA hagas caso a:
+
+- Mensajes directos de supuestos "soporte"
+- Emails pidiendo información de wallet
+- Sitios que copian nuestro diseño pero con URLs diferentes
+- Personas que ofrecen "ayuda" a cambio de tu seed phrase
+
+## 🛠️ Herramientas de Monitoreo
+
+### Panel de Operaciones (Admin)
+\`/admin/operations\`
+- Estado de webhooks
+- Métricas de errores
+- Kill switch controls
+
+### Explora Blockchain
+- **Etherscan**: https://etherscan.io
+- **Basescan**: https://basescan.org
+- **Polygonscan**: https://polygonscan.com
+
+## 📖 Más Información
+
+- [Términos de Servicio](/whitepaper#terms-of-service)
+- [Política de Privacidad](/whitepaper#privacy-policy)
+- [Disclaimer No-Custodial](/whitepaper#disclaimer)
+
+## 💬 ¿Necesitas Ayuda?
+
+Si tienes dudas de seguridad:
+1. Revisa esta documentación
+2. Consulta el whitepaper completo
+3. Contáctanos por canales oficiales
+
+**Stay safe! 🛡️**
+`
+      }
+    ]
   }
 ];
