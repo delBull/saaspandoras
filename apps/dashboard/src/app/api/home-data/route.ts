@@ -25,6 +25,7 @@ export async function GET(request: Request) {
         }).from(projects).where(and(eq(projects.featured, true), inArray(projects.status, ['approved', 'live', 'completed'])));
 
         // 2. Fetch Strictly LIVE & DEPLOYED projects for Access/Artifacts
+        // EXCLUDE NFT Passes from NFT Lab (business_category = 'infrastructure' means it's a standalone NFT Pass)
         const liveProjects = await db.select({
             id: projects.id,
             title: projects.title,
@@ -36,8 +37,17 @@ export async function GET(request: Request) {
             contractAddress: projects.contractAddress,
             licenseContractAddress: projects.licenseContractAddress,
             status: projects.status,
-            deploymentStatus: projects.deploymentStatus
-        }).from(projects).where(and(eq(projects.status, 'live'), eq(projects.deploymentStatus, 'deployed')));
+            deploymentStatus: projects.deploymentStatus,
+            businessCategory: projects.businessCategory
+        }).from(projects).where(
+            and(
+                eq(projects.status, 'live'), 
+                eq(projects.deploymentStatus, 'deployed'),
+                // Exclude standalone NFT Passes (infrastructure category = NFT Lab passes)
+                // Only include projects that have utilityContractAddress (full projects) or are not infrastructure
+                sql`(${projects.utilityContractAddress} IS NOT NULL OR ${projects.businessCategory} != 'infrastructure' OR ${projects.businessCategory} IS NULL)`
+            )
+        );
 
         // 3. Fetch Notifications (Recent Events) if wallet provided
         let notifications: any[] = [];

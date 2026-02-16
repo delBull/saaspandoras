@@ -708,7 +708,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
 
                                             {!createLanding ? (
                                                 <div className="animate-in fade-in slide-in-from-top-2">
-                                                    <label htmlFor="nft-target-url" className="block text-xs font-medium text-lime-400 mb-1 flex items-center gap-2">
+                                                    <label htmlFor="nft-target-url" className="text-xs font-medium text-lime-400 mb-1 flex items-center gap-2">
                                                         <QrCodeIcon className="w-4 h-4" />
                                                         Target URL (Destino del QR)
                                                     </label>
@@ -841,7 +841,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="group relative">
                                             <div className="flex justify-between items-center mb-1">
-                                                <label htmlFor="nft-pass-maxSupply" className="block text-xs font-medium text-gray-400 flex items-center gap-1">
+                                                <label htmlFor="nft-pass-maxSupply" className="text-xs font-medium text-gray-400 flex items-center gap-1">
                                                     Max Supply <InformationCircleIcon className="w-3 h-3" />
                                                 </label>
                                                 <div className="flex items-center gap-1">
@@ -1014,9 +1014,9 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                     {creationStep === 1 ? (
                         <button
                             onClick={handleDeploy}
-                            disabled={!formData.name || !formData.symbol || (nftType === 'qr' && !formData.targetUrl)}
+                            disabled={!formData.name || !formData.symbol || (nftType === 'qr' && !createLanding && !formData.targetUrl)}
                             className={`px-6 py-2 rounded-lg font-bold shadow-lg flex items-center gap-2 transform transition-all 
-                                    ${!formData.name || !formData.symbol || (nftType === 'qr' && !formData.targetUrl)
+                                    ${!formData.name || !formData.symbol || (nftType === 'qr' && !createLanding && !formData.targetUrl)
                                     ? 'bg-zinc-700 text-gray-500 cursor-not-allowed'
                                     : 'bg-gradient-to-r from-lime-500 to-emerald-500 hover:from-lime-400 hover:to-emerald-400 text-black shadow-lime-500/20 hover:scale-[1.02]'
                                 }`}
