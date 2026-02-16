@@ -3,9 +3,12 @@ import { getContract, readContract } from "thirdweb";
 import { client } from "./thirdweb-client.js";
 import { config } from "../config.js";
 import { PANDORAS_KEY_ABI } from "./pandoras-key-abi.js";
+import { Chain } from "thirdweb/chains";
 
 const ACCESS_CACHE_PREFIX = 'nft:access:';
 const ACCESS_CACHE_TTL = 10 * 60; // 10 minutes in seconds
+const NFT_BALANCE_CACHE_PREFIX = 'nft:balance:';
+const NFT_BALANCE_CACHE_TTL = 10 * 60; // 10 minutes
 
 /**
  * Get NFT gate status with caching
@@ -90,4 +93,69 @@ export async function prewarmCache(addresses: string[]): Promise<void> {
     await Promise.all(promises);
     
     console.log(`[NFT Cache] Pre-warming complete`);
+}
+
+/**
+ * Get NFT balance for any contract with caching
+ * Used by tenant-gate for multi-contract gating
+ * 
+ * Note: This uses isGateHolder as the primary method for compatibility
+ * For other contracts, you would need to add their ABIs
+ */
+export async function getNFTBalanceCached(
+    contractAddress: string,
+    chainId: number,
+    holder: string
+): Promise<number> {
+    const redis = getRedis();
+    const cacheKey = `${NFT_BALANCE_CACHE_PREFIX}${contractAddress.toLowerCase()}:${chainId}:${holder.toLowerCase()}`;
+    
+    try {
+        // Check cache first
+        const cached = await redis.get(cacheKey);
+        if (cached !== null) {
+            console.log(`[NFT Balance Cache] HIT for ${holder} on ${contractAddress}`);
+            return parseInt(cached, 10);
+        }
+        
+        console.log(`[NFT Balance Cache] MISS for ${holder} on ${contractAddress}`);
+        
+        // Use config chain for all contracts for now
+        const chain = config.chain;
+        
+        // Check if this is the main Pandoras Key contract
+        const isMainContract = contractAddress.toLowerCase() === config.nftContractAddress.toLowerCase();
+        const abi = isMainContract ? PANDORAS_KEY_ABI : PANDORAS_KEY_ABI;
+        
+        // Fetch from chain
+        const contract = getContract({
+            client,
+            chain,
+            address: contractAddress,
+            abi
+        });
+        
+        let balance = 0;
+        try {
+            // Use isGateHolder - returns true/false (1/0)
+            const hasAccess = await readContract({
+                contract,
+                method: "isGateHolder",
+                params: [holder]
+            });
+            balance = hasAccess ? 1 : 0;
+        } catch (e) {
+            console.error("[NFT Balance Cache] Contract call failed:", e);
+            balance = 0;
+        }
+        
+        // Cache the result
+        await redis.setex(cacheKey, NFT_BALANCE_CACHE_TTL, balance.toString());
+        
+        return balance;
+    } catch (error) {
+        console.error("[NFT Balance Cache] Error:", error);
+        // On error, return 0 (fail closed)
+        return 0;
+    }
 }
