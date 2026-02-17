@@ -1017,48 +1017,52 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                     {creationStep === 1 && (
                         <button
                             type="button"
-                            onClick={() => {
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                console.log("🚀 Button clicked - starting deployment check");
                                 // Validar wallet conectada
                                 if (!account?.address) {
-                                    toast({ 
-                                        title: "Wallet No Conectada", 
-                                        description: "Por favor conecta tu wallet antes de desplegar", 
-                                        variant: "destructive" 
+                                    toast({
+                                        title: "Wallet No Conectada",
+                                        description: "Por favor conecta tu wallet antes de desplegar",
+                                        variant: "destructive"
                                     });
                                     return;
                                 }
-                                
+
                                 // Validar nombre
                                 if (!formData.name?.trim()) {
-                                    toast({ 
-                                        title: "Error de Validación", 
-                                        description: "El nombre del NFT es obligatorio", 
-                                        variant: "destructive" 
+                                    toast({
+                                        title: "Error de Validación",
+                                        description: "El nombre del NFT es obligatorio",
+                                        variant: "destructive"
                                     });
                                     return;
                                 }
-                                
+
                                 // Validar símbolo
                                 if (!formData.symbol?.trim()) {
-                                    toast({ 
-                                        title: "Error de Validación", 
-                                        description: "El símbolo del NFT es obligatorio", 
-                                        variant: "destructive" 
+                                    toast({
+                                        title: "Error de Validación",
+                                        description: "El símbolo del NFT es obligatorio",
+                                        variant: "destructive"
                                     });
                                     return;
                                 }
-                                
+
                                 // Validar URL para QR
                                 if (nftType === 'qr' && !createLanding && !formData.targetUrl) {
-                                    toast({ 
-                                        title: "Error de Validación", 
-                                        description: "Debes definir una URL de destino para el QR", 
-                                        variant: "destructive" 
+                                    toast({
+                                        title: "Error de Validación",
+                                        description: "Debes definir una URL de destino para el QR",
+                                        variant: "destructive"
                                     });
                                     return;
                                 }
-                                
+
                                 // Ejecutar despliegue
+                                console.log("✅ Validation passed, calling handleDeploy");
                                 handleDeploy();
                             }}
                             className="px-6 py-2 rounded-lg font-bold shadow-lg flex items-center gap-2 transform transition-all bg-gradient-to-r from-lime-500 to-emerald-500 hover:from-lime-400 hover:to-emerald-400 text-black shadow-lime-500/20 hover:scale-[1.02]"
