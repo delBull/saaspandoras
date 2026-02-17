@@ -198,7 +198,7 @@ export async function deployW2EProtocol(
         provider: p,
         priority: 1,
         weight: 1,
-        stallTimeout: 4000 // Increased to 4s
+        stallTimeout: 10000 // Increased to 10s
       });
     } catch (e) {
       // ignore
