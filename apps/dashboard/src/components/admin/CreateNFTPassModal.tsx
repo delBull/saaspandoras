@@ -496,7 +496,11 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                         transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
                                         className="w-16 h-16 mx-auto mb-6 rounded-full border-4 border-zinc-800 border-t-emerald-500"
                                     />
-                                    <h2 className="text-2xl font-bold text-white mb-2">Desplegando NFT Pass</h2>
+                                    <h2 className="text-2xl font-bold text-white mb-2">
+                                        {nftType === 'access' ? 'Desplegando Access Card' :
+                                            nftType === 'qr' ? 'Desplegando Smart QR' :
+                                                'Desplegando Artefacto'}
+                                    </h2>
                                     <p className="text-gray-400 mb-8 max-w-[250px] mx-auto">
                                         Creando contrato de acceso <span className="text-emerald-400 font-semibold">{formData.name}</span>...
                                     </p>
@@ -548,7 +552,11 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                     >
                                         <CheckCircleIcon className="w-10 h-10 text-black/80" />
                                     </motion.div>
-                                    <h2 className="text-3xl font-bold text-white mb-2">¡NFT Creado!</h2>
+                                    <h2 className="text-2xl font-bold text-white mb-2">
+                                        {nftType === 'access' ? 'Access Card Creada!' :
+                                            nftType === 'qr' ? 'Smart QR Creado!' :
+                                                'Artefacto Creado!'}
+                                    </h2>
                                     <p className="text-gray-400 mb-4">
                                         El contrato <span className="text-white font-bold">{formData.name}</span> ha sido desplegado.
                                     </p>
