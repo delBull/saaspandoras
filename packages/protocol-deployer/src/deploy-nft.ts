@@ -223,7 +223,7 @@ export async function deployNFTPass(
     const targetChainId = CHAIN_IDS[network] || 11155111;
 
     const provider = new JsonRpcProvider(rpcUrl, {
-        name: network,
+        name: 'custom',
         chainId: targetChainId
     });
     const wallet = new Wallet(privateKey, provider);
