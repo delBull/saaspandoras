@@ -207,6 +207,7 @@ export async function deployNFTPass(
     const eth = ethers as any;
     const isV6 = !!eth.JsonRpcProvider;
     const JsonRpcProvider = isV6 ? eth.JsonRpcProvider : eth.providers.JsonRpcProvider;
+    const StaticJsonRpcProvider = isV6 ? eth.JsonRpcProvider : eth.providers.StaticJsonRpcProvider;
     const Wallet = eth.Wallet;
     const ContractFactory = eth.ContractFactory;
     const parseEther = isV6 ? eth.parseEther : eth.utils.parseEther;
@@ -222,7 +223,9 @@ export async function deployNFTPass(
     // Actually, simply using the static ID is safer because we demanded this network.
     const targetChainId = CHAIN_IDS[network] || 11155111;
 
-    const provider = new JsonRpcProvider(rpcUrl, {
+    // Use StaticJsonRpcProvider to avoid "could not detect network" errors from internal eth_chainId checks
+    // We already verified the RPC connection manually above.
+    const provider = new StaticJsonRpcProvider(rpcUrl, {
         name: 'custom',
         chainId: targetChainId
     });
