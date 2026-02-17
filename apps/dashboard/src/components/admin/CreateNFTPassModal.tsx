@@ -267,7 +267,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
             return;
         }
 
-        if (nftType === 'qr' && !formData.targetUrl) {
+        if (nftType === 'qr' && !createLanding && !formData.targetUrl) {
             toast({ title: "Error", description: "Debes definir una URL de destino para el QR.", variant: "destructive" });
             return;
         }
@@ -1020,7 +1020,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                             onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                console.log("🚀 Button clicked - starting deployment check");
+
                                 // Validar wallet conectada
                                 if (!account?.address) {
                                     toast({
@@ -1062,7 +1062,6 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                 }
 
                                 // Ejecutar despliegue
-                                console.log("✅ Validation passed, calling handleDeploy");
                                 handleDeploy();
                             }}
                             className="px-6 py-2 rounded-lg font-bold shadow-lg flex items-center gap-2 transform transition-all bg-gradient-to-r from-lime-500 to-emerald-500 hover:from-lime-400 hover:to-emerald-400 text-black shadow-lime-500/20 hover:scale-[1.02]"
