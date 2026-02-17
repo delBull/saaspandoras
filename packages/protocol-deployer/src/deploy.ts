@@ -149,6 +149,8 @@ export async function deployW2EProtocol(
   console.log(`🔧 Ethers Compatibility Mode: ${isV6 ? 'v6' : 'v5'}`);
 
   const JsonRpcProvider = isV6 ? eth.JsonRpcProvider : eth.providers.JsonRpcProvider;
+  const StaticJsonRpcProvider = isV6 ? eth.JsonRpcProvider : eth.providers.StaticJsonRpcProvider;
+  const FallbackProvider = isV6 ? eth.FallbackProvider : eth.providers.FallbackProvider;
   const Wallet = eth.Wallet;
   const ContractFactory = eth.ContractFactory;
 
@@ -157,8 +159,59 @@ export async function deployW2EProtocol(
   const isAddress = isV6 ? eth.isAddress : eth.utils.isAddress;
   const getCreateAddress = isV6 ? eth.getCreateAddress : eth.utils.getContractAddress;
 
+  // Explicitly pass network to avoid auto-detection failure
+  const CHAIN_IDS = {
+    'sepolia': 11155111,
+    'base': 8453
+  };
+
+  const targetChainId = CHAIN_IDS[network] || 11155111;
+
   // Implementation
-  const provider = new JsonRpcProvider(rpcUrl);
+  // --- FallbackProvider Implementation (v2) ---
+  console.log(`🌍 Checking ${rpcCandidates.length} RPC candidates for ${network}...`);
+
+  const validRpcProviders: any[] = [];
+
+  // We check them to ensure they are at least responsive and on the right chain
+  for (const candidateRpc of rpcCandidates) {
+    try {
+      // console.log(`📡 Testing RPC: ${candidateRpc}`);
+      const testRes = await fetch(candidateRpc, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_chainId', params: [], id: 1 })
+      });
+
+      if (!testRes.ok) continue;
+      const testJson = await testRes.json() as any;
+      if (!testJson.result) continue; // Invalid
+
+      // console.log(`✅ Valid: ${candidateRpc}`);
+
+      const p = new StaticJsonRpcProvider(candidateRpc, {
+        name: 'custom',
+        chainId: targetChainId
+      });
+
+      validRpcProviders.push({
+        provider: p,
+        priority: 1,
+        weight: 1,
+        stallTimeout: 2000
+      });
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  if (validRpcProviders.length === 0) {
+    throw new Error(`Failed to find ANY valid ${network} RPC endpoint for FallbackProvider.`);
+  }
+
+  console.log(`🛡️ Using FallbackProvider with ${validRpcProviders.length} nodes.`);
+
+  const provider = new FallbackProvider(validRpcProviders, 1);
   const wallet = new Wallet(privateKey, provider);
 
   console.log(`📡 Conectado a ${network} con wallet: ${wallet.address}`);
