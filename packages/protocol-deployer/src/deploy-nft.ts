@@ -256,7 +256,7 @@ export async function deployNFTPass(
                 provider: p,
                 priority: 1,
                 weight: 1,
-                stallTimeout: 4000 // Increased to 4s to handle slow public RPCs
+                stallTimeout: 10000 // Increased to 10s to handle extremely slow public RPCs
             });
 
         } catch (e) {
