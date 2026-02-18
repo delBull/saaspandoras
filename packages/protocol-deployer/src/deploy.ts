@@ -41,20 +41,33 @@ export async function deployW2EProtocol(
     console.warn("⚠️ THIRDWEB_SECRET_KEY missing. Deployment might fail if using Thirdweb infrastructure.");
   }
 
+  // --- Universal Ethers Shim & Setup ---
+  const privateKey = process.env.PANDORA_ORACLE_PRIVATE_KEY || process.env.PRIVATE_KEY;
+  if (!privateKey) throw new Error("Private Key not found in environment (PANDORA_ORACLE_PRIVATE_KEY)");
+
+  const eth = ethers as any;
+  const isV6 = !!eth.JsonRpcProvider;
+  const StaticJsonRpcProvider = isV6 ? eth.JsonRpcProvider : eth.providers.StaticJsonRpcProvider;
+  const FallbackProvider = isV6 ? eth.FallbackProvider : eth.providers.FallbackProvider;
+  const Wallet = eth.Wallet;
+  const ContractFactory = eth.ContractFactory;
+  const parseEther = isV6 ? eth.parseEther : eth.utils.parseEther;
+  const isAddress = isV6 ? eth.isAddress : eth.utils.isAddress;
+  const getCreateAddress = isV6 ? eth.getCreateAddress : eth.utils.getContractAddress;
+
   // 1. Setup Provider & Wallet (Ethers v5) with AUTOMATIC FALLBACK
-  // Multiple public RPCs for reliability
+
+  // OPTIMIZED: Top 3 Reliable RPCs only
   const SEPOLIA_RPCS = [
-    "https://ethereum-sepolia-rpc.publicnode.com",
-    "https://rpc2.sepolia.org",
-    "https://sepolia.gateway.tenderly.co",
-    "https://ethereum-sepolia.blockpi.network/v1/rpc/public"
+    "https://rpc.ankr.com/eth_sepolia",
+    "https://sepolia.drpc.org",
+    "https://1rpc.io/sepolia"
   ];
 
   const BASE_RPCS = [
     "https://mainnet.base.org",
     "https://base.llamarpc.com",
-    "https://base.blockpi.network/v1/rpc/public",
-    "https://base-rpc.publicnode.com"
+    "https://base.drpc.org"
   ];
 
   const rpcCandidates = network === 'sepolia' ? SEPOLIA_RPCS : BASE_RPCS;
@@ -66,98 +79,16 @@ export async function deployW2EProtocol(
 
   // Sanitize custom RPC
   if (customRpc) {
-    customRpc = customRpc.trim();
-    if (customRpc.startsWith('"') && customRpc.endsWith('"')) {
-      customRpc = customRpc.slice(1, -1);
-    }
-    if (customRpc.startsWith("'") && customRpc.endsWith("'")) {
-      customRpc = customRpc.slice(1, -1);
-    }
-    // Avoid known bad RPCs
-    if (customRpc !== "https://rpc.sepolia.org" && customRpc !== "0x0000000000000000000000000000000000000000") {
-      rpcCandidates.unshift(customRpc); // Try custom first
+    customRpc = customRpc.trim().replace(/^["']|["']$/g, '');
+    if (customRpc.startsWith('http') && customRpc !== "https://rpc.sepolia.org") {
+      // Add to front
+      rpcCandidates.unshift(customRpc);
+      // Keep max 4 to avoid timeouts
+      if (rpcCandidates.length > 4) rpcCandidates.length = 4;
     }
   }
 
-  console.log(`🌍 Attempting connection with ${rpcCandidates.length} RPC candidates for ${network}...`);
-
-  // Try each RPC until one works
-  let rpcUrl: string | null = null;
-  let lastError: Error | null = null;
-
-  for (const candidateRpc of rpcCandidates) {
-    try {
-      console.log(`📡 Testing RPC: ${candidateRpc}`);
-      const testRes = await fetch(candidateRpc, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_chainId', params: [], id: 1 })
-      });
-
-      if (!testRes.ok) {
-        const body = await testRes.text();
-        console.warn(`❌ RPC Failed: ${candidateRpc} - ${testRes.status} ${testRes.statusText}`);
-        lastError = new Error(`${testRes.status} ${testRes.statusText}: ${body.slice(0, 100)}`);
-        continue; // Try next RPC
-      }
-
-      const testJson = await testRes.json() as any;
-      if (!testJson.result) {
-        console.warn(`❌ RPC returned invalid response: ${candidateRpc}`);
-        lastError = new Error(`Invalid response: ${JSON.stringify(testJson)}`);
-        continue;
-      }
-
-      // SUCCESS!
-      console.log(`✅ RPC Connection OK: ${candidateRpc} (Chain ID: ${testJson.result})`);
-      rpcUrl = candidateRpc;
-      break;
-
-    } catch (e: any) {
-      console.warn(`❌ RPC Connection failed: ${candidateRpc} - ${e.message}`);
-      lastError = e;
-      continue; // Try next
-    }
-  }
-
-  // If ALL RPCs failed, throw comprehensive error
-  if (!rpcUrl) {
-    throw new Error(
-      `Failed to connect to ANY ${network} RPC endpoint.\n\n` +
-      `Tried ${rpcCandidates.length} different RPCs:\n` +
-      `${rpcCandidates.map((rpc, i) => `  ${i + 1}. ${rpc}`).join('\n')}\n\n` +
-      `Last error: ${lastError?.message || 'Unknown'}\n\n` +
-      `Possible causes:\n` +
-      `1. All public RPCs are temporarily down\n` +
-      `2. Vercel is blocking RPC connections\n` +
-      `3. Network connectivity issues\n\n` +
-      `Recommended actions:\n` +
-      `1. Try again in a few minutes\n` +
-      `2. Check Vercel function logs for more details\n` +
-      `3. Consider using a dedicated RPC service (Alchemy, Infura)`
-    );
-  }
-
-  const privateKey = process.env.PANDORA_ORACLE_PRIVATE_KEY || process.env.PRIVATE_KEY;
-  if (!privateKey) throw new Error("Private Key not found in environment (PANDORA_ORACLE_PRIVATE_KEY)");
-
-  // --- Universal Ethers Shim (v5/v6 Compatibility) ---
-  // This handles the discrepancy between Local (v6) and Vercel/CI (v5) environments
-  const eth = ethers as any;
-  const isV6 = !!eth.JsonRpcProvider;
-
-  console.log(`🔧 Ethers Compatibility Mode: ${isV6 ? 'v6' : 'v5'}`);
-
-  const JsonRpcProvider = isV6 ? eth.JsonRpcProvider : eth.providers.JsonRpcProvider;
-  const StaticJsonRpcProvider = isV6 ? eth.JsonRpcProvider : eth.providers.StaticJsonRpcProvider;
-  const FallbackProvider = isV6 ? eth.FallbackProvider : eth.providers.FallbackProvider;
-  const Wallet = eth.Wallet;
-  const ContractFactory = eth.ContractFactory;
-
-  // Utils
-  const parseEther = isV6 ? eth.parseEther : eth.utils.parseEther;
-  const isAddress = isV6 ? eth.isAddress : eth.utils.isAddress;
-  const getCreateAddress = isV6 ? eth.getCreateAddress : eth.utils.getContractAddress;
+  console.log(`🌍 Configuring fast FallbackProvider with ${rpcCandidates.length} RPC candidates for ${network}...`);
 
   // Explicitly pass network to avoid auto-detection failure
   const CHAIN_IDS = {
@@ -167,13 +98,7 @@ export async function deployW2EProtocol(
 
   const targetChainId = CHAIN_IDS[network] || 11155111;
 
-  // Implementation
-  // --- FallbackProvider Implementation (v2) ---
-  console.log(`🌍 Configuring FallbackProvider with ${rpcCandidates.length} RPC candidates for ${network}...`);
-
-  // OPTIMIZATION: Removed sequential fetch checks to improve startup speed.
-
-  const validRpcProviders = rpcCandidates.map(candidateRpc => {
+  const validRpcProviders = rpcCandidates.map((candidateRpc, index) => {
     const p = new StaticJsonRpcProvider(candidateRpc, {
       name: 'custom',
       chainId: targetChainId
@@ -181,9 +106,9 @@ export async function deployW2EProtocol(
 
     return {
       provider: p,
-      priority: 1,
+      priority: index === 0 ? 1 : 2,
       weight: 1,
-      stallTimeout: 10000 // 10s
+      stallTimeout: 2500 // 2.5s fast timeout
     };
   });
 
