@@ -34,20 +34,20 @@ export async function POST(req: Request) {
 
         // 2. Parse Config
         const body = await req.json();
-        const { 
-            name, 
-            symbol, 
-            maxSupply, 
-            price, 
-            owner, 
-            treasuryAddress, 
-            oracleAddress, 
-            image, 
-            description, 
-            nftType = 'access', 
+        const {
+            name,
+            symbol,
+            maxSupply,
+            price,
+            owner,
+            treasuryAddress,
+            oracleAddress,
+            image,
+            description,
+            nftType = 'access',
             targetUrl = null,
-            createLanding = false, 
-            landingConfig = null 
+            createLanding = false,
+            landingConfig = null
         } = body;
 
         if (!name || !symbol || !owner) {
@@ -78,25 +78,54 @@ export async function POST(req: Request) {
         const isMainBranch = branchName === 'main';
         const isStagingBranch = branchName === 'staging';
 
-        // Network: Production domain or main branch → Base, else Sepolia
-        // Logic: 
-        // 1st Priority: Domain name (most reliable for Vercel)
-        // 2nd Priority: Branch name (main = base, staging = sepolia)
-        // Default: Sepolia (safe fallback)
         if (isProductionDomain || isMainBranch) {
             network = 'base';
         } else if (isStagingBranch) {
             network = 'sepolia';
         } else {
-            // Unknown environment, default to Sepolia for safety
             network = 'sepolia';
         }
 
         console.log(`🌍 Network Decision: Host="${host}", Branch="${branchName}" → Network="${network}"`);
 
-        const address = await deployNFTPass(config, network);
+        // 🚀 DEPLOYMENT SERVICE INTEGRATION
+        // We now delegate the actual deployment to a persistent service on Railway
+        // to avoid Vercel timeouts and "missing response" errors from public RPCs.
 
-        console.log("✅ Deployment Result:", address);
+        const DEPLOY_SERVICE_URL = process.env.DEPLOY_SERVICE_URL || "http://localhost:3000"; // Fallback for local dev
+        const DEPLOY_SECRET = process.env.DEPLOY_SECRET;
+
+        if (!DEPLOY_SECRET) {
+            throw new Error("Missing DEPLOY_SECRET in environment variables");
+        }
+
+        console.log(`📡 Forwarding deployment to: ${DEPLOY_SERVICE_URL}/deploy/nft-pass`);
+
+        const deployResponse = await fetch(`${DEPLOY_SERVICE_URL}/deploy/nft-pass`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "x-deploy-secret": DEPLOY_SECRET
+            },
+            body: JSON.stringify({
+                config,
+                network
+            })
+        });
+
+        if (!deployResponse.ok) {
+            const errorText = await deployResponse.text();
+            throw new Error(`Deployment Service failed: ${deployResponse.status} ${deployResponse.statusText} - ${errorText}`);
+        }
+
+        const deployResult = await deployResponse.json();
+
+        if (!deployResult.success || !deployResult.address) {
+            throw new Error(`Deployment Service returned failure: ${deployResult.error || "Unknown error"}`);
+        }
+
+        const address = deployResult.address;
+        console.log("✅ Deployment Result (from Service):", address);
 
         // 4. Create Project Record (for Metadata API integration)
         // Generate a slug from name + random suffix to avoid collisions

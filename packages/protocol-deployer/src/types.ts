@@ -15,6 +15,17 @@ export interface TokenConfig {
   feeRecipient?: string;          // Address that receives transaction fees
 }
 
+
+export interface NFTPassConfig {
+  name: string;
+  symbol: string;
+  maxSupply: string | number;
+  price: string;
+  owner: string;
+  treasuryAddress?: string;
+  oracleAddress?: string;
+}
+
 export interface W2EConfig {
   // Configuración general del protocolo
   protocolName: string;           // Nombre del protocolo/creación
