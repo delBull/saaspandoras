@@ -36,6 +36,18 @@ export async function deployNFTPass(
 ): Promise<string> {
     console.log(`🚀 Starting NFT Pass Deployment: ${config.name} (${config.symbol})`);
 
+    // --- Universal Ethers Shim & Setup ---
+    const privateKey = process.env.PANDORA_ORACLE_PRIVATE_KEY || process.env.PRIVATE_KEY;
+    if (!privateKey) throw new Error("Private Key not found");
+
+    const eth = ethers as any;
+    const isV6 = !!eth.JsonRpcProvider;
+    const StaticJsonRpcProvider = isV6 ? eth.JsonRpcProvider : eth.providers.StaticJsonRpcProvider;
+    const FallbackProvider = isV6 ? eth.FallbackProvider : eth.providers.FallbackProvider;
+    const Wallet = eth.Wallet;
+    const ContractFactory = eth.ContractFactory;
+    const parseEther = isV6 ? eth.parseEther : eth.utils.parseEther;
+
     // ... (RPC Logic omitted for brevity, assuming existing structure remains)
     // We need to keep the RPC selection logic intact.
     // I will use a targeted replacement for the function signature and the usage of maxSupply.
@@ -102,136 +114,33 @@ export async function deployNFTPass(
         }
     }
 
-    console.log(`🌍 Attempting connection with ${rpcCandidates.length} RPC candidates...`);
+    // Optimized RPC Selection: No pre-checks to save time.
+    // We strictly use the top 3 most reliable public RPCs + 1 custom if provided.
 
-    let rpcUrl: string | null = null;
-    let lastError: Error | null = null;
+    // 1. Filter candidates to top 3 to avoid long "stallTimeout" chains
+    const PREFERRED_SEPOLIA_RPCS = [
+        "https://rpc.ankr.com/eth_sepolia",
+        "https://sepolia.drpc.org",
+        "https://1rpc.io/sepolia"
+    ];
 
-    for (const candidateRpc of rpcCandidates) {
-        let timeoutId: NodeJS.Timeout | undefined;
-        try {
-            console.log(`📡 Testing RPC: ${candidateRpc}`);
-            const controller = new AbortController();
-            timeoutId = setTimeout(() => controller.abort(), 3000); // 3s timeout
+    let activeCandidates = [...PREFERRED_SEPOLIA_RPCS];
 
-            const testRes = await fetch(candidateRpc, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_chainId', params: [], id: 1 }),
-                signal: controller.signal
-            });
-            clearTimeout(timeoutId);
-
-            if (!testRes.ok) {
-                console.warn(`❌ RPC Failed: ${candidateRpc} - ${testRes.status}`);
-                lastError = new Error(`${testRes.status} ${testRes.statusText}`);
-                continue;
-            }
-
-            const testJson = await testRes.json() as any;
-            if (!testJson.result) {
-                console.warn(`❌ Invalid response from: ${candidateRpc}`);
-                lastError = new Error(`Invalid response`);
-                continue;
-            }
-
-            console.log(`✅ RPC Connected: ${candidateRpc} (Chain: ${testJson.result})`);
-            rpcUrl = candidateRpc;
-            break;
-
-        } catch (e: any) {
-            if (timeoutId) clearTimeout(timeoutId);
-            console.warn(`❌ Connection failed: ${candidateRpc} (${e.message})`);
-            lastError = e;
-            continue;
-        }
+    if (customRpc) {
+        activeCandidates.unshift(customRpc);
+        // Keep max 4
+        if (activeCandidates.length > 4) activeCandidates.length = 4;
     }
 
-    if (!rpcUrl) {
-        throw new Error(
-            `Failed to connect to ANY ${network} RPC.\n` +
-            `Tried ${rpcCandidates.length} RPCs. Last error: ${lastError?.message || 'Unknown'}`
-        );
-    }
+    console.log(`🛡️ Initializing fast FallbackProvider with ${activeCandidates.length} nodes.`);
 
-    let detectedChainId: number | null = null;
-
-    // Connectivity Check (BLOCKING) - Same as deploy.ts
-    let finalTimeoutId: NodeJS.Timeout | undefined;
-    try {
-        console.log(`📡 Testing connection to RPC: ${rpcUrl}`);
-        const controller = new AbortController();
-        finalTimeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout for final check
-
-        const testRes = await fetch(rpcUrl!, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_chainId', params: [], id: 1 }),
-            signal: controller.signal
-        });
-        clearTimeout(finalTimeoutId);
-
-        if (!testRes.ok) {
-            const body = await testRes.text();
-            console.error(`❌ RPC Connection Failed: ${testRes.status} ${testRes.statusText}`);
-            throw new Error(
-                `RPC endpoint unreachable.\n` +
-                `Network: ${network}\n` +
-                `RPC URL: ${rpcUrl}\n` +
-                `HTTP Status: ${testRes.status}\n` +
-                `Response: ${body.slice(0, 200)}`
-            );
-        }
-
-        const testJson = await testRes.json() as any;
-        if (!testJson.result) {
-            throw new Error(`RPC response missing chain ID: ${JSON.stringify(testJson)}`);
-        }
-
-        detectedChainId = parseInt(testJson.result, 16);
-        console.log(`✅ RPC Connection OK. Chain ID: ${detectedChainId} (${testJson.result})`);
-    } catch (connError: any) {
-        if (finalTimeoutId) clearTimeout(finalTimeoutId);
-        console.error(`❌ RPC Connectivity Check FAILED:`, connError.message);
-        throw new Error(
-            `Failed to connect to ${network} RPC.\n` +
-            `Error: ${connError.message}\n\n` +
-            `Verify ${network === 'sepolia' ? 'SEPOLIA_RPC_URL' : 'BASE_RPC_URL'} in Vercel env vars, or check if public RPCs are congested.`
-        );
-    }
-
-    const privateKey = process.env.PANDORA_ORACLE_PRIVATE_KEY || process.env.PRIVATE_KEY;
-    if (!privateKey) throw new Error("Private Key not found");
-
-    // Ethers v5/v6 Shim
-    const eth = ethers as any;
-    const isV6 = !!eth.JsonRpcProvider;
-    const JsonRpcProvider = isV6 ? eth.JsonRpcProvider : eth.providers.JsonRpcProvider;
-    const StaticJsonRpcProvider = isV6 ? eth.JsonRpcProvider : eth.providers.StaticJsonRpcProvider;
-    const FallbackProvider = isV6 ? eth.FallbackProvider : eth.providers.FallbackProvider;
-    const Wallet = eth.Wallet;
-    const ContractFactory = eth.ContractFactory;
-    const parseEther = isV6 ? eth.parseEther : eth.utils.parseEther;
-
-    // Explicitly pass network to avoid auto-detection failure
     const CHAIN_IDS = {
         'sepolia': 11155111,
         'base': 8453
     };
-
-    // Use the detected chain ID if available (checked above), otherwise fall back to the static known ID
     const targetChainId = CHAIN_IDS[network] || 11155111;
 
-    // --- FallbackProvider Implementation ---
-    // Instead of picking one, we collect ALL valid RPCs and use them in redundancy.
-
-    // 1. Identify valid RPCs
-    // OPTIMIZATION: We do NOT pre-check RPCs with fetch anymore to save 5-10s of startup time.
-    // We let FallbackProvider handle the redundancy and timeouts natively.
-
-    console.log(`🛡️ Constructing FallbackProvider with ${rpcCandidates.length} potential nodes.`);
-
-    const validRpcProviders = rpcCandidates.map((rpc) => {
+    const validRpcProviders = activeCandidates.map((rpc, index) => {
         const p = new StaticJsonRpcProvider(rpc, {
             name: 'custom',
             chainId: targetChainId
@@ -239,9 +148,9 @@ export async function deployNFTPass(
 
         return {
             provider: p,
-            priority: 1,
+            priority: index === 0 ? 1 : 2, // Prefer first one
             weight: 1,
-            stallTimeout: 10000 // 10s timeout to handle slow public keys
+            stallTimeout: 2500 // 2.5s timeout - Fail fast, try next
         };
     });
 
