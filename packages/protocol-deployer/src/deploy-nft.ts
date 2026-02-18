@@ -114,50 +114,59 @@ export async function deployNFTPass(
         }
     }
 
-    // Optimized RPC Selection: No pre-checks to save time.
-    // We strictly use the top 3 most reliable public RPCs + 1 custom if provided.
-
-    // 1. Filter candidates to top 3 to avoid long "stallTimeout" chains
-    const PREFERRED_SEPOLIA_RPCS = [
-        "https://rpc.ankr.com/eth_sepolia",
-        "https://sepolia.drpc.org",
-        "https://1rpc.io/sepolia",
-        "https://rpc2.sepolia.org",
-        "https://sepolia.gateway.tenderly.co"
-    ];
-
-    let activeCandidates = [...PREFERRED_SEPOLIA_RPCS];
-
-    if (customRpc) {
-        activeCandidates.unshift(customRpc);
-        // Keep max 4
-        if (activeCandidates.length > 6) activeCandidates.length = 6;
-    }
-
-    console.log(`🛡️ Initializing fast FallbackProvider with ${activeCandidates.length} nodes.`);
-
     const CHAIN_IDS = {
         'sepolia': 11155111,
         'base': 8453
     };
     const targetChainId = CHAIN_IDS[network] || 11155111;
 
-    const validRpcProviders = activeCandidates.map((rpc, index) => {
-        const p = new StaticJsonRpcProvider(rpc, {
+    // Optimized RPC Selection
+    // STRATEGY: 
+    // 1. Direct Connection: If a custom RPC is provided, use it DIRECTLY (no FallbackProvider overhead).
+    // 2. Parallel Fallback: If no custom RPC, use FallbackProvider with all nodes at priority 1 for speed.
+
+    let provider: ethers.providers.Provider;
+
+    if (customRpc) {
+        console.log(`🔹 Using Direct Custom RPC: ${customRpc}`);
+        provider = new StaticJsonRpcProvider(customRpc, {
             name: 'custom',
             chainId: targetChainId
         });
+    } else {
+        // Fallback Strategy (Public Nodes)
+        const PREFERRED_SEPOLIA_RPCS = [
+            "https://rpc.ankr.com/eth_sepolia",
+            "https://sepolia.drpc.org",
+            "https://1rpc.io/sepolia",
+            "https://rpc2.sepolia.org",
+            "https://sepolia.gateway.tenderly.co"
+        ];
 
-        return {
-            provider: p,
-            priority: index === 0 ? 1 : 2, // Prefer first one
-            weight: 1,
-            stallTimeout: 5000 // 5s timeout - More lenient for Vercel
-        };
-    });
+        let activeCandidates = [...PREFERRED_SEPOLIA_RPCS];
+        // Shuffle to distribute load
+        activeCandidates = activeCandidates.sort(() => Math.random() - 0.5);
 
-    // 2. Create FallbackProvider
-    const provider = new FallbackProvider(validRpcProviders, 1);
+        console.log(`🛡️ Initializing FallbackProvider with ${activeCandidates.length} public nodes.`);
+
+        const validRpcProviders = activeCandidates.map((rpc) => {
+            const p = new StaticJsonRpcProvider(rpc, {
+                name: 'custom',
+                chainId: targetChainId
+            });
+
+            return {
+                provider: p,
+                priority: 1, // All priority 1 to allow parallel attempts if needed
+                weight: 1,
+                stallTimeout: 4000
+            };
+        });
+
+        provider = new FallbackProvider(validRpcProviders, 1);
+    }
+
+    // Ensure wallet is connected to the chosen provider
     const wallet = new Wallet(privateKey, provider);
 
     console.log(`📡 Connected to ${network} with wallet: ${wallet.address}`);
