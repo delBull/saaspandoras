@@ -57,22 +57,13 @@ export async function deployW2EProtocol(
 
   // 1. Setup Provider & Wallet (Ethers v5) with AUTOMATIC FALLBACK
 
-  // OPTIMIZED: Top 3 Reliable RPCs only
-  const SEPOLIA_RPCS = [
-    "https://rpc.ankr.com/eth_sepolia",
-    "https://sepolia.drpc.org",
-    "https://1rpc.io/sepolia",
-    "https://rpc2.sepolia.org",
-    "https://sepolia.gateway.tenderly.co"
-  ];
+  // Explicitly pass network to avoid auto-detection failure
+  const CHAIN_IDS = {
+    'sepolia': 11155111,
+    'base': 8453
+  };
 
-  const BASE_RPCS = [
-    "https://mainnet.base.org",
-    "https://base.llamarpc.com",
-    "https://base.drpc.org"
-  ];
-
-  const rpcCandidates = network === 'sepolia' ? SEPOLIA_RPCS : BASE_RPCS;
+  const targetChainId = CHAIN_IDS[network] || 11155111;
 
   // If user provided custom RPC via env var, try it first
   let customRpc = network === 'sepolia'
@@ -82,41 +73,61 @@ export async function deployW2EProtocol(
   // Sanitize custom RPC
   if (customRpc) {
     customRpc = customRpc.trim().replace(/^["']|["']$/g, '');
-    if (customRpc.startsWith('http') && customRpc !== "https://rpc.sepolia.org") {
-      // Add to front
-      rpcCandidates.unshift(customRpc);
-      // Keep max 4 to avoid timeouts
-      if (rpcCandidates.length > 6) rpcCandidates.length = 6;
+    if (!customRpc.startsWith('http')) {
+      customRpc = undefined; // Invalidate if not a valid http/https URL
     }
   }
 
-  console.log(`🌍 Configuring fast FallbackProvider with ${rpcCandidates.length} RPC candidates for ${network}...`);
+  // Optimized RPC Selection
+  // STRATEGY: 
+  // 1. Direct Connection: If a custom RPC is provided, use it DIRECTLY (no FallbackProvider overhead).
+  // 2. Parallel Fallback: If no custom RPC, use FallbackProvider with all nodes at priority 1 for speed.
 
-  // Explicitly pass network to avoid auto-detection failure
-  const CHAIN_IDS = {
-    'sepolia': 11155111,
-    'base': 8453
-  };
+  let provider: ethers.providers.Provider;
 
-  const targetChainId = CHAIN_IDS[network] || 11155111;
-
-  const validRpcProviders = rpcCandidates.map((candidateRpc, index) => {
-    const p = new StaticJsonRpcProvider(candidateRpc, {
+  if (customRpc) {
+    console.log(`🔹 Using Direct Custom RPC: ${customRpc}`);
+    provider = new StaticJsonRpcProvider(customRpc, {
       name: 'custom',
       chainId: targetChainId
     });
+  } else {
+    // Fallback Strategy
+    const SEPOLIA_RPCS = [
+      "https://rpc.ankr.com/eth_sepolia",
+      "https://sepolia.drpc.org",
+      "https://1rpc.io/sepolia",
+      "https://rpc2.sepolia.org",
+      "https://sepolia.gateway.tenderly.co"
+    ];
 
-    return {
-      provider: p,
-      priority: index === 0 ? 1 : 2,
-      weight: 1,
-      stallTimeout: 5000 // 5s fast timeout
-    };
-  });
+    const BASE_RPCS = [
+      "https://mainnet.base.org",
+      "https://base.llamarpc.com",
+      "https://base.drpc.org"
+    ];
 
-  console.log(`🛡️ Using FallbackProvider with ${validRpcProviders.length} nodes.`);
+    let rpcCandidates = network === 'sepolia' ? [...SEPOLIA_RPCS] : [...BASE_RPCS];
 
-  const provider = new FallbackProvider(validRpcProviders, 1);
+    console.log(`🛡️ Initializing FallbackProvider with ${rpcCandidates.length} public nodes.`);
+
+    const validRpcProviders = rpcCandidates.map((candidateRpc) => {
+      const p = new StaticJsonRpcProvider(candidateRpc, {
+        name: 'custom',
+        chainId: targetChainId
+      });
+
+      return {
+        provider: p,
+        priority: 1, // Parallel attempt
+        weight: 1,
+        stallTimeout: 4000
+      };
+    });
+
+    provider = new FallbackProvider(validRpcProviders, 1);
+  }
+
   const wallet = new Wallet(privateKey, provider);
 
   console.log(`📡 Conectado a ${network} con wallet: ${wallet.address}`);
