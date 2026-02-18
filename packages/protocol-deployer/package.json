@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "node scripts/fix-ethers.js && tsc",
+    "build": "node scripts/fix-ethers.js && tsc && cp -r src/artifacts dist/",
     "dev": "tsc --watch",
     "lint": "eslint src --ext .ts",
     "test": "jest",
