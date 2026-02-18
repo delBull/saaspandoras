@@ -226,52 +226,26 @@ export async function deployNFTPass(
     // Instead of picking one, we collect ALL valid RPCs and use them in redundancy.
 
     // 1. Identify valid RPCs
-    const validRpcProviders: any[] = [];
+    // OPTIMIZATION: We do NOT pre-check RPCs with fetch anymore to save 5-10s of startup time.
+    // We let FallbackProvider handle the redundancy and timeouts natively.
 
-    for (const candidateRpc of rpcCandidates) {
-        try {
-            // Quick check to ensure it's alive and on correct chain
-            // We do this sequentially to build the list, but we could do it in parallel.
-            // Since this is deployment, safety > speed.
-            console.log(`📡 Testing RPC for Fallback: ${candidateRpc}`);
-            const testRes = await fetch(candidateRpc, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_chainId', params: [], id: 1 })
-            });
+    console.log(`🛡️ Constructing FallbackProvider with ${rpcCandidates.length} potential nodes.`);
 
-            if (!testRes.ok) continue;
-            const testJson = await testRes.json() as any;
-            if (!testJson.result) continue; // Invalid
+    const validRpcProviders = rpcCandidates.map((rpc) => {
+        const p = new StaticJsonRpcProvider(rpc, {
+            name: 'custom',
+            chainId: targetChainId
+        });
 
-            // If we are here, it works.
-            console.log(`✅ Adding RPC to Fallback Pool: ${candidateRpc}`);
-
-            const p = new StaticJsonRpcProvider(candidateRpc, {
-                name: 'custom',
-                chainId: targetChainId
-            });
-
-            validRpcProviders.push({
-                provider: p,
-                priority: 1,
-                weight: 1,
-                stallTimeout: 10000 // Increased to 10s to handle extremely slow public RPCs
-            });
-
-        } catch (e) {
-            console.warn(`⚠️ RPC failed check: ${candidateRpc}`);
-        }
-    }
-
-    if (validRpcProviders.length === 0) {
-        throw new Error(`Failed to find ANY valid ${network} RPC endpoint for FallbackProvider.`);
-    }
-
-    console.log(`🛡️ Constructing FallbackProvider with ${validRpcProviders.length} active nodes.`);
+        return {
+            provider: p,
+            priority: 1,
+            weight: 1,
+            stallTimeout: 10000 // 10s timeout to handle slow public keys
+        };
+    });
 
     // 2. Create FallbackProvider
-    // Quorum = 1 (we just need 1 to answer, but if it fails, it tries others)
     const provider = new FallbackProvider(validRpcProviders, 1);
     const wallet = new Wallet(privateKey, provider);
 
