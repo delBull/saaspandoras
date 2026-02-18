@@ -121,7 +121,9 @@ export async function deployNFTPass(
     const PREFERRED_SEPOLIA_RPCS = [
         "https://rpc.ankr.com/eth_sepolia",
         "https://sepolia.drpc.org",
-        "https://1rpc.io/sepolia"
+        "https://1rpc.io/sepolia",
+        "https://rpc2.sepolia.org",
+        "https://sepolia.gateway.tenderly.co"
     ];
 
     let activeCandidates = [...PREFERRED_SEPOLIA_RPCS];
@@ -129,7 +131,7 @@ export async function deployNFTPass(
     if (customRpc) {
         activeCandidates.unshift(customRpc);
         // Keep max 4
-        if (activeCandidates.length > 4) activeCandidates.length = 4;
+        if (activeCandidates.length > 6) activeCandidates.length = 6;
     }
 
     console.log(`🛡️ Initializing fast FallbackProvider with ${activeCandidates.length} nodes.`);
@@ -150,7 +152,7 @@ export async function deployNFTPass(
             provider: p,
             priority: index === 0 ? 1 : 2, // Prefer first one
             weight: 1,
-            stallTimeout: 2500 // 2.5s timeout - Fail fast, try next
+            stallTimeout: 5000 // 5s timeout - More lenient for Vercel
         };
     });
 

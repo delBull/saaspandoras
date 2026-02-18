@@ -61,7 +61,9 @@ export async function deployW2EProtocol(
   const SEPOLIA_RPCS = [
     "https://rpc.ankr.com/eth_sepolia",
     "https://sepolia.drpc.org",
-    "https://1rpc.io/sepolia"
+    "https://1rpc.io/sepolia",
+    "https://rpc2.sepolia.org",
+    "https://sepolia.gateway.tenderly.co"
   ];
 
   const BASE_RPCS = [
@@ -84,7 +86,7 @@ export async function deployW2EProtocol(
       // Add to front
       rpcCandidates.unshift(customRpc);
       // Keep max 4 to avoid timeouts
-      if (rpcCandidates.length > 4) rpcCandidates.length = 4;
+      if (rpcCandidates.length > 6) rpcCandidates.length = 6;
     }
   }
 
@@ -108,7 +110,7 @@ export async function deployW2EProtocol(
       provider: p,
       priority: index === 0 ? 1 : 2,
       weight: 1,
-      stallTimeout: 2500 // 2.5s fast timeout
+      stallTimeout: 5000 // 5s fast timeout
     };
   });
 
