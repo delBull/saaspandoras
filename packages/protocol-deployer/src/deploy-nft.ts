@@ -122,18 +122,29 @@ export async function deployNFTPass(
 
     // Optimized RPC Selection
     // STRATEGY: 
-    // 1. Direct Connection: If a custom RPC is provided, use it DIRECTLY (no FallbackProvider overhead).
-    // 2. Parallel Fallback: If no custom RPC, use FallbackProvider with all nodes at priority 1 for speed.
+    // 1. Direct Connection: If a custom RPC is provided, try it first.
+    // 2. Fallback: If custom RPC fails or is missing, use public nodes in parallel.
 
-    let provider: ethers.providers.Provider;
+    let provider: ethers.providers.Provider | undefined;
 
     if (customRpc) {
-        console.log(`🔹 Using Direct Custom RPC: ${customRpc}`);
-        provider = new StaticJsonRpcProvider(customRpc, {
-            name: 'custom',
-            chainId: targetChainId
-        });
-    } else {
+        console.log(`🔹 Attempting Direct Connection to Custom RPC: ${customRpc}`);
+        try {
+            const tempProvider = new StaticJsonRpcProvider(customRpc, {
+                name: 'custom',
+                chainId: targetChainId
+            });
+            // Lightweight check to ensure connection works before committing
+            await tempProvider.getNetwork();
+            provider = tempProvider;
+            console.log(`✅ Custom RPC connected successfully.`);
+        } catch (e) {
+            console.warn("⚠️ Custom RPC failed or unreachable, switching to Public Fallback.", e);
+            provider = undefined; // Trigger fallback
+        }
+    }
+
+    if (!provider) {
         // Fallback Strategy (Public Nodes)
         const PREFERRED_SEPOLIA_RPCS = [
             "https://rpc.ankr.com/eth_sepolia",
@@ -157,13 +168,17 @@ export async function deployNFTPass(
 
             return {
                 provider: p,
-                priority: 1, // All priority 1 to allow parallel attempts if needed
+                priority: 1, // All priority 1 to allow parallel attempts
                 weight: 1,
                 stallTimeout: 4000
             };
         });
 
         provider = new FallbackProvider(validRpcProviders, 1);
+    }
+
+    if (!provider) {
+        throw new Error("❌ Failed to initialize any RPC provider (Custom or Fallback).");
     }
 
     // Ensure wallet is connected to the chosen provider
