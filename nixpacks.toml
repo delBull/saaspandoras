@@ -4,8 +4,8 @@ nixPkgs = ["bun", "nodejs"]
 [phases.install]
 cmds = ["bun install"]
 
-[phases.build]
-cmds = ["bun run build:railway"]
+[build]
+cmd = "bun run build:railway"
 
 [phases.start]
 cmd = "cd apps/deployment-service && node dist/index.js"
