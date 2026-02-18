@@ -7,5 +7,5 @@ cmds = ["bun install"]
 [phases.build]
 cmds = ["bun run build --filter=deployment-service"]
 
-[start]
+[phases.start]
 cmd = "cd apps/deployment-service && node dist/index.js"
