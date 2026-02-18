@@ -169,45 +169,23 @@ export async function deployW2EProtocol(
 
   // Implementation
   // --- FallbackProvider Implementation (v2) ---
-  console.log(`🌍 Checking ${rpcCandidates.length} RPC candidates for ${network}...`);
+  console.log(`🌍 Configuring FallbackProvider with ${rpcCandidates.length} RPC candidates for ${network}...`);
 
-  const validRpcProviders: any[] = [];
+  // OPTIMIZATION: Removed sequential fetch checks to improve startup speed.
 
-  // We check them to ensure they are at least responsive and on the right chain
-  for (const candidateRpc of rpcCandidates) {
-    try {
-      // console.log(`📡 Testing RPC: ${candidateRpc}`);
-      const testRes = await fetch(candidateRpc, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_chainId', params: [], id: 1 })
-      });
+  const validRpcProviders = rpcCandidates.map(candidateRpc => {
+    const p = new StaticJsonRpcProvider(candidateRpc, {
+      name: 'custom',
+      chainId: targetChainId
+    });
 
-      if (!testRes.ok) continue;
-      const testJson = await testRes.json() as any;
-      if (!testJson.result) continue; // Invalid
-
-      // console.log(`✅ Valid: ${candidateRpc}`);
-
-      const p = new StaticJsonRpcProvider(candidateRpc, {
-        name: 'custom',
-        chainId: targetChainId
-      });
-
-      validRpcProviders.push({
-        provider: p,
-        priority: 1,
-        weight: 1,
-        stallTimeout: 10000 // Increased to 10s
-      });
-    } catch (e) {
-      // ignore
-    }
-  }
-
-  if (validRpcProviders.length === 0) {
-    throw new Error(`Failed to find ANY valid ${network} RPC endpoint for FallbackProvider.`);
-  }
+    return {
+      provider: p,
+      priority: 1,
+      weight: 1,
+      stallTimeout: 10000 // 10s
+    };
+  });
 
   console.log(`🛡️ Using FallbackProvider with ${validRpcProviders.length} nodes.`);
 
