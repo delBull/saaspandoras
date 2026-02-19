@@ -296,10 +296,9 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
             //    or at least define the slug.
             if (nftType === 'qr' && isDynamic) {
                 try {
-                    const timestamp = Date.now().toString(36);
-                    const random = Math.random().toString(36).substring(2, 7);
-                    // Create a deterministic slug now
-                    shortlinkSlug = `qr-${formData.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${timestamp}`;
+                    const timestamp = Date.now();
+                    const nameSlug = formData.name.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 80);
+                    shortlinkSlug = `qr-${nameSlug}-${timestamp}`.substring(0, 100);
                     preGeneratedSlugRef.current = shortlinkSlug;
 
                     // The QR will point to THIS shortlink
