@@ -289,7 +289,7 @@ export function NFTManager() {
                         NFT Lab
                     </h2>
                     <p className="text-zinc-400 text-sm">
-                        Crea Pases de Acceso, Identidades Digitales y QRs Dinámicos para tu ecosistema.
+                        Crea Pases de Acceso, Identidades Digitales y QRs Dinámicos con *Landings para tu ecosistema.
                     </p>
                 </div>
                 <div className="flex gap-2">
