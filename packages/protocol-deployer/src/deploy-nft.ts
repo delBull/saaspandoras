@@ -57,129 +57,66 @@ export async function deployNFTPass(
         console.warn("⚠️ THIRDWEB_SECRET_KEY missing.");
     }
 
-    // Multi-RPC fallback system with extensive public nodes
-    const SEPOLIA_RPCS = [
-        "https://rpc.sepolia.org",
-        "https://ethereum-sepolia-rpc.publicnode.com",
-        "https://rpc2.sepolia.org",
-        "https://sepolia.gateway.tenderly.co",
-        "https://ethereum-sepolia.blockpi.network/v1/rpc/public",
-        "https://rpc.ankr.com/eth_sepolia",
-        "https://eth-sepolia.public.blastapi.io",
-        "https://1rpc.io/sepolia",
-        "https://sepolia.drpc.org",
-        "https://sepolia.infura.io/v3/46801ddf7514463493b8aa6fdd253322", // Public Infura key if available or general one
-        "https://gateway.tenderly.co/public/sepolia",
-        "https://sepolia.db3.app"
-    ];
-
-    const BASE_RPCS = [
-        "https://mainnet.base.org",
-        "https://base.llamarpc.com",
-        "https://base.blockpi.network/v1/rpc/public",
-        "https://base-rpc.publicnode.com",
-        "https://1rpc.io/base",
-        "https://base.drpc.org",
-        "https://base-mainnet.public.blastapi.io",
-        "https://base.gateway.tenderly.co",
-        "https://base.meowrpc.com"
-    ];
-
-    let rpcCandidates = network === 'sepolia' ? [...SEPOLIA_RPCS] : [...BASE_RPCS];
-
-    // Try custom RPC first if provided (and valid)
-    let customRpc = network === 'sepolia' ? process.env.SEPOLIA_RPC_URL : process.env.BASE_RPC_URL;
-    if (customRpc) {
-        customRpc = customRpc.trim().replace(/^["']|["']$/g, '');
-        // Validate it's a real URL and not a localized placeholder or empty
-        if (customRpc.startsWith('http') && customRpc !== "https://rpc.sepolia.org") {
-            // Add to front
-            rpcCandidates.unshift(customRpc);
-            console.log(`🔹 Custom RPC configured for ${network}`);
-        }
-    } else {
-        console.log(`🔹 No custom RPC found for ${network}, using extensive public fallback list.`);
-    }
-
-    // Shuffle public RPCs (excluding the custom one if it's first) to verify against "thundering herd"
-    // If we have a custom RPC at index 0, shuffle the rest. check index.
-    const startIndex = customRpc ? 1 : 0;
-    if (rpcCandidates.length > startIndex + 1) {
-        // Fisher-Yates shuffle for the public nodes
-        for (let i = rpcCandidates.length - 1; i > startIndex; i--) {
-            const j = startIndex + Math.floor(Math.random() * (i - startIndex + 1));
-            const temp = rpcCandidates[i];
-            rpcCandidates[i] = rpcCandidates[j] as string;
-            rpcCandidates[j] = temp as string;
-        }
-    }
-
     const CHAIN_IDS = {
         'sepolia': 11155111,
         'base': 8453
     };
     const targetChainId = CHAIN_IDS[network] || 11155111;
 
-    // Optimized RPC Selection
-    // STRATEGY: 
-    // 1. Direct Connection: If a custom RPC is provided, try it first.
-    // 2. Fallback: If custom RPC fails or is missing, use public nodes in parallel.
-
-    let provider: ethers.providers.Provider | undefined;
-
+    let customRpc = network === 'sepolia' ? process.env.SEPOLIA_RPC_URL : process.env.BASE_RPC_URL;
     if (customRpc) {
-        console.log(`🔹 Attempting Direct Connection to Custom RPC: ${customRpc}`);
-        try {
-            const tempProvider = new StaticJsonRpcProvider(customRpc, {
-                name: 'custom',
-                chainId: targetChainId
-            });
-            // Lightweight check to ensure connection works before committing
-            await tempProvider.getNetwork();
-            provider = tempProvider;
-            console.log(`✅ Custom RPC connected successfully.`);
-        } catch (e) {
-            console.warn("⚠️ Custom RPC failed or unreachable, switching to Public Fallback.", e);
-            provider = undefined; // Trigger fallback
+        customRpc = customRpc.trim().replace(/^["']|["']$/g, '');
+        if (!customRpc.startsWith('http')) {
+            customRpc = undefined;
         }
     }
 
-    if (!provider) {
-        // Fallback Strategy (Public Nodes)
-        const PREFERRED_SEPOLIA_RPCS = [
-            "https://rpc.ankr.com/eth_sepolia",
-            "https://sepolia.drpc.org",
-            "https://1rpc.io/sepolia",
-            "https://rpc2.sepolia.org",
-            "https://sepolia.gateway.tenderly.co"
-        ];
+    // Optimized RPC Selection
+    // STRATEGY: 
+    // 1. FallbackProvider: Use multiple reliable public nodes + custom RPC in parallel.
+    // 2. Weights: Custom RPC (if any) gets higher priority/weight.
 
-        let activeCandidates = [...PREFERRED_SEPOLIA_RPCS];
-        // Shuffle to distribute load
-        activeCandidates = activeCandidates.sort(() => Math.random() - 0.5);
+    const SEPOLIA_RPCS = [
+        "https://rpc.ankr.com/eth_sepolia",
+        "https://sepolia.drpc.org",
+        "https://1rpc.io/sepolia",
+        "https://rpc2.sepolia.org",
+        "https://sepolia.gateway.tenderly.co",
+        "https://ethereum-sepolia-rpc.publicnode.com"
+    ];
 
-        console.log(`🛡️ Initializing FallbackProvider with ${activeCandidates.length} public nodes.`);
+    const BASE_RPCS = [
+        "https://mainnet.base.org",
+        "https://base.llamarpc.com",
+        "https://base.drpc.org",
+        "https://1rpc.io/base"
+    ];
 
-        const validRpcProviders = activeCandidates.map((rpc) => {
-            const p = new StaticJsonRpcProvider(rpc, {
-                name: 'custom',
-                chainId: targetChainId
-            });
+    const rpcUrls = network === 'sepolia' ? [...SEPOLIA_RPCS] : [...BASE_RPCS];
 
-            return {
-                provider: p,
-                priority: 1, // All priority 1 to allow parallel attempts
-                weight: 1,
-                stallTimeout: 4000
-            };
+    // If user provided custom RPC, add it to the front
+    if (customRpc) {
+        console.log(`🔹 Incorporating Custom RPC into Fallback Strategy: ${customRpc}`);
+        rpcUrls.unshift(customRpc);
+    }
+
+    console.log(`🛡️ Initializing FallbackProvider with ${rpcUrls.length} nodes for ${network}.`);
+
+    const providers = rpcUrls.map((url) => {
+        const p = new StaticJsonRpcProvider(url, {
+            name: 'custom',
+            chainId: targetChainId
         });
 
-        provider = new FallbackProvider(validRpcProviders, 1);
-    }
+        return {
+            provider: p,
+            priority: url === customRpc ? 1 : 2, // Custom RPC gets priority 1
+            weight: 1,
+            stallTimeout: 3000
+        };
+    });
 
-    if (!provider) {
-        throw new Error("❌ Failed to initialize any RPC provider (Custom or Fallback).");
-    }
+    const provider = new FallbackProvider(providers, 1);
 
     // Ensure wallet is connected to the chosen provider
     const wallet = new Wallet(privateKey, provider);
