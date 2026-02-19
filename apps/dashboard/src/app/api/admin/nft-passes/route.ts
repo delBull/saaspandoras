@@ -61,7 +61,8 @@ export async function GET(_request: Request) {
                 chainId: pass.chainId || null,
                 nftType: w2eConfig.licenseToken?.type || 'access', // Default to 'access'
                 shortlinkSlug: w2eConfig.licenseToken?.shortlinkSlug || null,
-                targetUrl: w2eConfig.licenseToken?.targetUrl || null
+                targetUrl: w2eConfig.licenseToken?.targetUrl || null,
+                shortlinkType: w2eConfig.licenseToken?.shortlinkType || null
             };
         });
 
