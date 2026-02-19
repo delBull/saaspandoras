@@ -60,6 +60,9 @@ export function NFTManager() {
         contractAddress: string;
         symbol: string;
         imageUrl: string | null;
+        nftType?: string;
+        shortlinkSlug?: string;
+        targetUrl?: string;
     }>>([]);
     const [loadingPasses, setLoadingPasses] = useState(true);
     const [selectedPassAddress, setSelectedPassAddress] = useState<string>(config.applyPassNftAddress);
@@ -277,6 +280,73 @@ export function NFTManager() {
             console.error(e);
             setAirdropStatus('error');
             toast({ title: "Error", description: "Fallo al preparar transacción", variant: "destructive" });
+        }
+    };
+
+    // 6. QR Management Logic
+    const [viewingQR, setViewingQR] = useState<any>(null);
+    const [editingQR, setEditingQR] = useState<any>(null);
+    const [editTargetUrl, setEditTargetUrl] = useState("");
+    const [savingQR, setSavingQR] = useState(false);
+
+    const handleViewQR = (pass: any) => {
+        setViewingQR(pass);
+    };
+
+    const handleEditQR = (pass: any) => {
+        setEditingQR(pass);
+        // Find existing link data if dynamic
+        if (pass.shortlinkSlug) {
+            const link = shortlinks.find((sl: any) => sl.slug === pass.shortlinkSlug);
+            if (link) {
+                setEditTargetUrl(link.destinationUrl);
+            }
+        }
+    };
+
+    const handleSaveQREdit = async () => {
+        if (!editingQR?.shortlinkSlug) return;
+        setSavingQR(true);
+        try {
+            // Find the ID of the shortlink to update
+            const link = shortlinks.find((sl: any) => sl.slug === editingQR.shortlinkSlug);
+            if (!link) throw new Error("Shortlink not found");
+
+            const res = await fetch("/api/admin/shortlinks", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json", "x-wallet-address": account?.address || "" },
+                body: JSON.stringify({ id: link.id, destinationUrl: editTargetUrl })
+            });
+
+            if (!res.ok) throw new Error("Failed to update");
+
+            toast({ title: "QR Actualizado", description: "La URL de destino ha sido modificada." });
+            setEditingQR(null);
+            fetchShortlinks(); // Refresh data
+        } catch (e) {
+            console.error(e);
+            toast({ title: "Error", description: "No se pudo actualizar el QR.", variant: "destructive" });
+        } finally {
+            setSavingQR(false);
+        }
+    };
+
+    const downloadQR = async (slugOrUrl: string, isSlug: boolean) => {
+        try {
+            const QRCodeLib = (await import("qrcode")).default;
+            const url = isSlug ? `${window.location.origin}/${slugOrUrl}` : slugOrUrl;
+            const filename = isSlug ? `qr-${slugOrUrl}.png` : `qr-static.png`;
+
+            const dataUrl = await QRCodeLib.toDataURL(url, { width: 1000, margin: 2 });
+            const link = document.createElement("a");
+            link.href = dataUrl;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (e) {
+            console.error("QR Download failed", e);
+            toast({ title: "Error", description: "Fallo al generar imagen del QR.", variant: "destructive" });
         }
     };
 
@@ -498,14 +568,21 @@ export function NFTManager() {
                 ))}
 
                 <TabsContent value="qr" className="space-y-8">
-                    {/* 1. QR Contracts (Assets) */}
+                    {/* QR Contracts (Assets) */}
                     <div>
                         <h4 className="text-sm font-bold text-zinc-400 mb-4 uppercase tracking-wider">Contratos Smart QR</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {availablePasses
                                 .filter(p => (p as any).nftType === 'qr')
                                 .map((pass) => (
-                                    <div key={pass.id} className="group bg-zinc-900/60 border border-zinc-800 hover:border-lime-500/30 rounded-xl p-5 transition-all">
+                                    <div key={pass.id} className="group bg-zinc-900/60 border border-zinc-800 hover:border-lime-500/30 rounded-xl p-5 transition-all relative overflow-hidden">
+                                        {/* Dynamic Badge */}
+                                        {(pass as any).shortlinkSlug && (
+                                            <div className="absolute top-0 right-0 bg-lime-500 text-black text-[9px] font-bold px-2 py-1 rounded-bl-lg z-10">
+                                                DINÁMICO
+                                            </div>
+                                        )}
+
                                         <div className="flex justify-between items-start mb-4">
                                             <div className="w-10 h-10 rounded-lg bg-lime-500/10 text-lime-400 border border-lime-500/30 flex items-center justify-center font-bold">
                                                 <QrCodeIcon className="w-5 h-5" />
@@ -514,19 +591,59 @@ export function NFTManager() {
                                                 {pass.symbol}
                                             </Badge>
                                         </div>
+
                                         <h4 className="font-bold text-white mb-1 truncate">{pass.title}</h4>
-                                        <p className="text-xs text-zinc-500 font-mono mb-4 truncate">{pass.contractAddress}</p>
-                                        <div className="flex gap-2">
-                                            <Button
-                                                onClick={() => {
-                                                    setSelectedPassAddress(pass.contractAddress);
-                                                    setShowAirdropModal(true);
-                                                }}
-                                                className="w-full bg-zinc-800 hover:bg-lime-500 hover:text-black border border-zinc-700 text-sm py-1 h-8"
-                                            >
-                                                <Send className="w-3 h-3 mr-2" />
-                                                AirDrop
-                                            </Button>
+                                        <p className="text-xs text-zinc-500 font-mono mb-4 truncate" title={pass.contractAddress}>{pass.contractAddress}</p>
+
+                                        <div className="flex flex-col gap-2">
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    onClick={() => handleViewQR(pass)}
+                                                    className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 text-xs h-8"
+                                                >
+                                                    <QrCodeIcon className="w-3 h-3 mr-2" />
+                                                    Ver QR
+                                                </Button>
+                                                <Button
+                                                    onClick={() => {
+                                                        const isDynamic = !!(pass as any).shortlinkSlug;
+                                                        const target = isDynamic ? (pass as any).shortlinkSlug : (pass as any).targetUrl;
+                                                        if (target) downloadQR(target, isDynamic);
+                                                    }}
+                                                    className="w-8 h-8 px-0 bg-zinc-900 border border-zinc-700 hover:bg-zinc-800"
+                                                    title="Descargar PNG"
+                                                >
+                                                    <DownloadIcon className="w-3 h-3" />
+                                                </Button>
+                                            </div>
+
+                                            <div className="flex gap-2">
+                                                {(pass as any).shortlinkSlug ? (
+                                                    <Button
+                                                        onClick={() => handleEditQR(pass)}
+                                                        className="flex-1 bg-lime-500/10 text-lime-400 hover:bg-lime-500/20 border border-lime-500/30 text-xs h-8"
+                                                    >
+                                                        <EditIcon className="w-3 h-3 mr-2" />
+                                                        Editar Destino
+                                                    </Button>
+                                                ) : (
+                                                    <Button disabled className="flex-1 bg-zinc-900 text-zinc-600 border border-zinc-800 text-xs h-8 cursor-not-allowed">
+                                                        <ShieldCheck className="w-3 h-3 mr-2" />
+                                                        Estático
+                                                    </Button>
+                                                )}
+
+                                                <Button
+                                                    onClick={() => {
+                                                        setSelectedPassAddress(pass.contractAddress);
+                                                        setShowAirdropModal(true);
+                                                    }}
+                                                    className="w-8 h-8 px-0 bg-zinc-900 border border-zinc-700 hover:bg-zinc-800"
+                                                    title="Airdrop Token"
+                                                >
+                                                    <Send className="w-3 h-3" />
+                                                </Button>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
@@ -536,17 +653,6 @@ export function NFTManager() {
                                 </div>
                             )}
                         </div>
-                    </div>
-
-                    {/* 2. Management Section */}
-                    <div>
-                        <h4 className="text-sm font-bold text-zinc-400 mb-4 uppercase tracking-wider border-t border-zinc-800 pt-8">Gestión de Enlaces (Shortlinks)</h4>
-                        <DynamicQRSection
-                            account={account}
-                            shortlinks={shortlinks}
-                            loading={loadingShortlinks}
-                            onRefresh={fetchShortlinks}
-                        />
                     </div>
                 </TabsContent>
             </Tabs>
@@ -675,6 +781,74 @@ export function NFTManager() {
                 </DialogContent>
             </Dialog>
 
+            {/* View QR Dialog */}
+            <Dialog open={!!viewingQR} onOpenChange={(o) => !o && setViewingQR(null)}>
+                <DialogContent className="bg-zinc-900 border-zinc-800 text-white sm:max-w-sm">
+                    <DialogHeader>
+                        <DialogTitle>Código QR: {viewingQR?.title}</DialogTitle>
+                        <DialogDescription className="text-zinc-400">
+                            {(viewingQR as any)?.shortlinkSlug ? "QR Dinámico" : "QR Estático"} - Escanea para probar.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex flex-col items-center justify-center p-6 bg-white rounded-xl">
+                        {viewingQR && (
+                            <QRGenerator
+                                value={
+                                    (viewingQR as any).shortlinkSlug
+                                        ? `${window.location.origin}/${(viewingQR as any).shortlinkSlug}`
+                                        : (viewingQR as any).targetUrl || "https://example.com"
+                                }
+                            />
+                        )}
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            onClick={() => {
+                                const isDynamic = !!(viewingQR as any).shortlinkSlug;
+                                const target = isDynamic ? (viewingQR as any).shortlinkSlug : (viewingQR as any).targetUrl;
+                                if (target) downloadQR(target, isDynamic);
+                            }}
+                            className="w-full bg-lime-500 text-black hover:bg-lime-400"
+                        >
+                            <DownloadIcon className="w-4 h-4 mr-2" />
+                            Descargar PNG
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Edit QR Dialog */}
+            <Dialog open={!!editingQR} onOpenChange={(o) => !o && setEditingQR(null)}>
+                <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
+                    <DialogHeader>
+                        <DialogTitle>Editar Destino</DialogTitle>
+                        <DialogDescription>Cambia la URL de destino del QR dinámico.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        <div className="p-3 bg-black/40 rounded-lg flex items-center justify-between">
+                            <code className="text-lime-400 text-sm">pandoras.finance/{editingQR?.shortlinkSlug}</code>
+                            <Badge variant="outline" className="text-[10px]">QR Code</Badge>
+                        </div>
+                        <div className="space-y-2">
+                            <label htmlFor="edit-url" className="text-xs text-zinc-500 uppercase font-bold">Nueva URL de Destino</label>
+                            <Input
+                                id="edit-url"
+                                value={editTargetUrl}
+                                onChange={(e) => setEditTargetUrl(e.target.value)}
+                                className="bg-zinc-800 text-white border-zinc-700 font-mono text-sm"
+                                placeholder="https://..."
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setEditingQR(null)}>Cancelar</Button>
+                        <Button onClick={handleSaveQREdit} disabled={savingQR} className="bg-lime-500 text-black hover:bg-lime-400">
+                            {savingQR ? <Loader2 className="w-4 h-4 animate-spin" /> : "Guardar Cambios"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             <CreateNFTPassModal
                 isOpen={showCreateWizard}
                 onClose={() => setShowCreateWizard(false)}
@@ -693,148 +867,20 @@ export function NFTManager() {
     );
 }
 
-// --- Subcomponent for Dynamic QRs ---
-function DynamicQRSection({ account, shortlinks, loading, onRefresh }: { account: any, shortlinks: any[], loading: boolean, onRefresh: () => void }) {
-    const { toast } = useToast();
-    const [editingLink, setEditingLink] = useState<any>(null);
-    const [editUrl, setEditUrl] = useState("");
-    const [saving, setSaving] = useState(false);
+function QRGenerator({ value }: { value: string }) {
+    const [src, setSrc] = useState("");
 
-    const handleEdit = (link: any) => {
-        setEditingLink(link);
-        setEditUrl(link.destinationUrl);
-    };
+    useEffect(() => {
+        if (!value) return;
+        import("qrcode").then(QRCode => {
+            QRCode.toDataURL(value, { width: 400, margin: 2 })
+                .then(setSrc)
+                .catch(console.error);
+        });
+    }, [value]);
 
-    const saveEdit = async () => {
-        if (!editingLink) return;
-        setSaving(true);
-        try {
-            const res = await fetch("/api/admin/shortlinks", {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json", "x-wallet-address": account?.address || "" },
-                body: JSON.stringify({ id: editingLink.id, destinationUrl: editUrl })
-            });
-
-            if (!res.ok) throw new Error("Failed to update");
-
-            toast({ title: "QR Actualizado", description: "La URL de destino ha sido modificada." });
-            setEditingLink(null);
-            onRefresh();
-        } catch (e) {
-            toast({ title: "Error", description: "No se pudo actualizar el QR.", variant: "destructive" });
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const downloadQR = async (slug: string) => {
-        try {
-            const QRCodeLib = (await import("qrcode")).default;
-            const url = `${window.location.origin}/${slug}`;
-            const dataUrl = await QRCodeLib.toDataURL(url, { width: 1000, margin: 2 });
-            const link = document.createElement("a");
-            link.href = dataUrl;
-            link.download = `qr-${slug}.png`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        } catch (e) {
-            console.error("QR Download failed", e);
-        }
-    };
-
-    return (
-        <div className="space-y-4 mt-8 pt-8 border-t border-zinc-800">
-            <div className="flex items-center justify-between">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-lime-500/10 flex items-center justify-center border border-lime-500/20">
-                        <QrCodeIcon className="w-5 h-5 text-lime-400" />
-                    </div>
-                    QRs Dinámicos (Smart Links)
-                </h3>
-                <Button variant="ghost" size="sm" onClick={onRefresh} disabled={loading}>
-                    <RefreshCwIcon className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                </Button>
-            </div>
-
-            {loading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="h-24 bg-zinc-900/40 rounded-xl animate-pulse" />
-                    <div className="h-24 bg-zinc-900/40 rounded-xl animate-pulse" />
-                </div>
-            ) : shortlinks.length === 0 ? (
-                <div className="bg-zinc-900/20 border border-dashed border-zinc-800 rounded-xl p-8 text-center">
-                    <p className="text-zinc-500 text-sm">No tienes QRs dinámicos activos.</p>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {shortlinks.map(link => (
-                        <div key={link.id} className="bg-zinc-900/60 border border-zinc-800 p-4 rounded-xl hover:border-lime-500/20 transition-all group">
-                            <div className="flex justify-between items-start mb-3">
-                                <Badge
-                                    variant="outline"
-                                    className="bg-lime-500/10 text-lime-400 border-lime-500/20 font-mono text-[10px] cursor-pointer hover:bg-lime-500/20"
-                                    onClick={() => window.open(`${window.location.origin}/${link.slug}`, '_blank')}
-                                >
-                                    /{link.slug}
-                                    <ArrowRightIcon className="w-3 h-3 ml-1 inline-block" />
-                                </Badge>
-                                <div className="flex gap-1">
-                                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => downloadQR(link.slug)} title="Descargar PNG">
-                                        <DownloadIcon className="w-3 h-3" />
-                                    </Button>
-                                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleEdit(link)} title="Editar Destino">
-                                        <EditIcon className="w-3 h-3" />
-                                    </Button>
-                                </div>
-                            </div>
-                            <div className="mb-3">
-                                <h4 className="text-sm font-bold text-white truncate">{link.title || "Sin Título"}</h4>
-                                <div className="flex items-center gap-1 text-xs text-zinc-500 mt-1 truncate">
-                                    <ArrowRightIcon className="w-3 h-3 text-zinc-600" />
-                                    <span className="truncate">{link.destinationUrl}</span>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2 text-[10px] text-zinc-600 font-mono">
-                                <span>Creado: {new Date(link.createdAt).toLocaleDateString()}</span>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
-
-            <Dialog open={!!editingLink} onOpenChange={(o) => !o && setEditingLink(null)}>
-                <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
-                    <DialogHeader>
-                        <DialogTitle>Editar QR Dinámico</DialogTitle>
-                        <DialogDescription>Cambia la URL de destino sin modificar el código QR impreso.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                        <div className="p-3 bg-black/40 rounded-lg flex items-center justify-between">
-                            <code className="text-lime-400 text-sm">pandoras.finance/{editingLink?.slug}</code>
-                            <Badge variant="outline" className="text-[10px]">QR Code</Badge>
-                        </div>
-                        <div className="space-y-2">
-                            <label htmlFor="qr-destination-url" className="text-xs text-zinc-500 uppercase font-bold">Nueva URL de Destino</label>
-                            <Input
-                                id="qr-destination-url"
-                                value={editUrl}
-                                onChange={(e) => setEditUrl(e.target.value)}
-                                className="bg-zinc-800 text-white border-zinc-700 font-mono text-sm"
-                                placeholder="https://..."
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="ghost" onClick={() => setEditingLink(null)}>Cancelar</Button>
-                        <Button onClick={saveEdit} disabled={saving} className="bg-lime-500 text-black hover:bg-lime-400">
-                            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Guardar Cambios"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-        </div>
-    );
+    if (!src) return <div className="w-64 h-64 bg-zinc-100 animate-pulse rounded-lg" />;
+    return <img src={src} alt="QR Code" className="w-64 h-64" />;
 }
 
 // Icons specific to this file to avoid import clutter

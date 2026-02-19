@@ -59,7 +59,9 @@ export async function GET(_request: Request) {
                 symbol: w2eConfig.licenseToken?.symbol || 'PASS',
                 imageUrl: w2eConfig.accessCardImage || null,
                 chainId: pass.chainId || null,
-                nftType: w2eConfig.licenseToken?.type || 'access' // Default to 'access'
+                nftType: w2eConfig.licenseToken?.type || 'access', // Default to 'access'
+                shortlinkSlug: w2eConfig.licenseToken?.shortlinkSlug || null,
+                targetUrl: w2eConfig.licenseToken?.targetUrl || null
             };
         });
 
