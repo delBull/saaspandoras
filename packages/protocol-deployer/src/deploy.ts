@@ -81,8 +81,8 @@ export async function deployW2EProtocol(
   // Optimized RPC Selection
   // STRATEGY: 
   // 1. FallbackProvider: Use multiple reliable public nodes + custom RPC in parallel.
-  // 2. Weights: All Priority 1. We trust Ethers to pick a working one, rather than forcing a potentially bad "custom" one.
-  //    This is crucial because Vercel often has generic/bad RPCs set in SEPOLIA_RPC_URL.
+  // 2. Weights: All Priority 1.
+  // 3. Network Strictness: We must ensure all providers are explicitly configured for the same network to avoid "provider mismatch".
 
   const SEPOLIA_RPCS = [
     "https://rpc.ankr.com/eth_sepolia",
@@ -110,22 +110,25 @@ export async function deployW2EProtocol(
     console.log(`🔹 Custom RPC ${customRpc} is already in the public list. Treated normally.`);
   }
 
-  console.log(`🛡️ Initializing FallbackProvider with ${rpcUrls.length} nodes for ${network}.`);
+  console.log(`🛡️ Initializing FallbackProvider with ${rpcUrls.length} nodes for ${network} (ChainID: ${targetChainId}).`);
 
+  // Ethers v5 FallbackProvider requires all providers to have the same Network object.
+  // We enforce this by creating a StaticJsonRpcProvider with the specific chainId AND explicitly passing the network object.
   const providers = rpcUrls.map((url) => {
     const p = new StaticJsonRpcProvider(url, {
-      name: 'provider-' + url.substring(8, 20), // helpful debug name
-      chainId: targetChainId
+      chainId: targetChainId,
+      name: network === 'sepolia' ? 'sepolia' : 'base'
     });
 
     return {
       provider: p,
-      priority: 1, // ALL Equal priority. Let them race/failover naturally.
+      priority: 1,
       weight: 1,
-      stallTimeout: 3000
+      stallTimeout: 2500 // 2.5s stall timeout to allow faster failover
     };
   });
 
+  // Pass 1 as quorum, but Ethers might need explicit network check
   const provider = new FallbackProvider(providers, 1);
 
   const wallet = new Wallet(privateKey, provider);
