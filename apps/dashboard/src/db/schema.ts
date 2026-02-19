@@ -472,7 +472,7 @@ export const shortlinks = pgTable("shortlinks", {
   landingConfig: jsonb("landing_config"), // { logo, slogan, links: [], social: {}, footer: {} }
 
   isActive: boolean("is_active").default(true).notNull(),
-  createdBy: varchar("created_by", { length: 255 }).references(() => users.id),
+  createdBy: varchar("created_by", { length: 255 }).references(() => users.walletAddress),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
