@@ -18,7 +18,7 @@
     "check-deps:ci": "check-dependency-version-consistency . || echo '⚠️  Version mismatches detected - continuing for CI/CD compatibility'",
     "fix-deps": "check-dependency-version-consistency . --fix",
     "gen": "turbo gen --config 'turbo/generators/config.ts'",
-    "start": "cd apps/deployment-service && node dist/index.js"
+    "start": "cd apps/deployment-service && bun dist/index.js"
   },
   "devDependencies": {
     "@turbo/gen": "1.13.3",
