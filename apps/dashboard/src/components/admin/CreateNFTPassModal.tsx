@@ -290,7 +290,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
 
             // Generate QR Code if needed
             let shortlinkSlug: string | null = null;
-            let finalTargetUrl = formData.targetUrl;
+            const finalTargetUrl = formData.targetUrl;
 
             // 1. If Dynamic, we MUST create the shortlink BEFORE generating the QR image (to point to the shortlink)
             //    or at least define the slug.
@@ -924,249 +924,251 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                                     </div>
                                                 )}
                                             </div>
-            )}
                                         </div>
-
-                                            {/* Section 2: Economics */}
-                                    <div className="space-y-4">
-                                        <h3 className="text-lg font-semibold text-indigo-300 flex items-center gap-2">
-                                            <span className="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center text-sm">2</span>
-                                            Reglas y Economía
-                                        </h3>
-
-                                        <div className="bg-zinc-800/30 p-4 rounded-xl border border-zinc-700/50 space-y-4">
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="group relative">
-                                                    <div className="flex justify-between items-center mb-1">
-                                                        <label htmlFor="nft-pass-maxSupply" className="text-xs font-medium text-gray-400 flex items-center gap-1">
-                                                            Max Supply <InformationCircleIcon className="w-3 h-3" />
-                                                        </label>
-                                                        <div className="flex items-center gap-1">
-                                                            <input
-                                                                type="checkbox"
-                                                                id="unlimited-supply"
-                                                                className="w-3 h-3 rounded border-zinc-700 bg-zinc-900 text-indigo-500 focus:ring-indigo-500/50"
-                                                                checked={formData.maxSupply === '115792089237316195423570985008687907853269984665640564039457584007913129639935'} // MAX_UINT256
-                                                                onChange={(e) => {
-                                                                    if (e.target.checked) {
-                                                                        setFormData(prev => ({ ...prev, maxSupply: '115792089237316195423570985008687907853269984665640564039457584007913129639935' }));
-                                                                    } else {
-                                                                        setFormData(prev => ({ ...prev, maxSupply: '1000' }));
-                                                                    }
-                                                                }}
-                                                            />
-                                                            <label htmlFor="unlimited-supply" className="text-[10px] text-zinc-500 cursor-pointer uppercase font-bold">Ilimitado</label>
-                                                        </div>
-                                                    </div>
-                                                    <input
-                                                        id="nft-pass-maxSupply"
-                                                        name="maxSupply"
-                                                        type="text" // Changed to text to handle large numbers visually or disable
-                                                        disabled={formData.maxSupply === '115792089237316195423570985008687907853269984665640564039457584007913129639935'}
-                                                        value={formData.maxSupply === '115792089237316195423570985008687907853269984665640564039457584007913129639935' ? '∞' : formData.maxSupply}
-                                                        onChange={handleChange}
-                                                        className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-indigo-500 outline-none disabled:opacity-50 disabled:cursor-not-allowed font-mono"
-                                                    />
-                                                </div>
-
-                                                <div>
-                                                    <label htmlFor="nft-pass-price" className="block text-xs font-medium text-gray-400 mb-1">Precio (ETH)</label>
-                                                    <input
-                                                        id="nft-pass-price"
-                                                        name="price"
-                                                        type="number"
-                                                        step="0.001"
-                                                        value={formData.price}
-                                                        onChange={handleChange}
-                                                        className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-indigo-500 outline-none"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div>
-                                                <label htmlFor="nft-pass-treasury" className="block text-xs font-medium text-gray-400 mb-1">Wallet Tesorería (Opcional)</label>
-                                                <input
-                                                    id="nft-pass-treasury"
-                                                    name="treasuryAddress"
-                                                    type="text"
-                                                    value={formData.treasuryAddress}
-                                                    onChange={handleChange}
-                                                    placeholder="0x..."
-                                                    className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-indigo-500 outline-none"
-                                                />
-                                            </div>
-
-                                            {/* Advanced Traits Toggles */}
-                                            <div className="pt-2 border-t border-zinc-700/50 mt-2 space-y-3">
-                                                <div className="flex items-center justify-between">
-                                                    <div>
-                                                        <label htmlFor="switch-transferable" className="text-sm font-medium text-gray-300 block">Transferible</label>
-                                                        <p className="text-xs text-zinc-500">¿Se puede enviar a otros usuarios?</p>
-                                                    </div>
-                                                    <Switch
-                                                        id="switch-transferable"
-                                                        checked={formData.transferable}
-                                                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, transferable: checked }))}
-                                                        className="data-[state=checked]:bg-emerald-500"
-                                                    />
-                                                </div>
-
-                                                <div className="flex items-center justify-between">
-                                                    <div>
-                                                        <label htmlFor="switch-burnable" className="text-sm font-medium text-gray-300 block">Burnable (Quemable)</label>
-                                                        <p className="text-xs text-zinc-500">¿Se puede destruir para canjear?</p>
-                                                    </div>
-                                                    <Switch
-                                                        id="switch-burnable"
-                                                        checked={formData.burnable}
-                                                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, burnable: checked }))}
-                                                        className="data-[state=checked]:bg-rose-500"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="flex items-center gap-3 pt-2 border-t border-zinc-700/50 mt-2">
-                                                <input
-                                                    id="airdrop-me"
-                                                    type="checkbox"
-                                                    checked={airdropToMe}
-                                                    onChange={(e) => setAirdropToMe(e.target.checked)}
-                                                    className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-emerald-500 focus:ring-emerald-500/50"
-                                                />
-                                                <label htmlFor="airdrop-me" className="text-sm text-gray-300 cursor-pointer">
-                                                    Mintar el primer token a mi wallet (Admin)
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Section 3: NFT Image */}
-                                    <div className="space-y-4">
-                                        <h3 className="text-lg font-semibold text-amber-300 flex items-center gap-2">
-                                            <span className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-sm">3</span>
-                                            Imagen del NFT
-                                        </h3>
-
-                                        <div className="bg-zinc-800/50 p-6 rounded-xl border border-zinc-700 flex flex-col md:flex-row gap-6 items-start">
-                                            <div className="relative group w-full md:w-48 aspect-square bg-zinc-900 rounded-xl border-2 border-dashed border-zinc-600 hover:border-amber-500/50 transition-colors flex flex-col items-center justify-center overflow-hidden">
-                                                {formData.imagePreview ? (
-                                                    <>
-                                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                        <img src={formData.imagePreview} alt="NFT Preview" className="w-full h-full object-cover" />
-                                                        {uploadingImage && (
-                                                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                                                                <CloudArrowUpIcon className="w-8 h-8 text-white animate-bounce" />
-                                                            </div>
-                                                        )}
-                                                    </>
-                                                ) : (
-                                                    <div className="text-center p-4">
-                                                        <PhotoIcon className="w-12 h-12 text-zinc-600 mx-auto mb-2" />
-                                                        <p className="text-sm text-gray-400">Subir Imagen</p>
-                                                        <p className="text-xs text-gray-600 mt-1">PNG, JPG, GIF</p>
-                                                    </div>
-                                                )}
-                                                <input
-                                                    type="file"
-                                                    accept="image/*"
-                                                    onChange={handleImageUpload}
-                                                    disabled={uploadingImage}
-                                                    className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
-                                                />
-                                            </div>
-
-                                            <div className="flex-1 space-y-3">
-                                                <div>
-                                                    <h4 className="font-bold text-white">Visual del Token</h4>
-                                                    <p className="text-sm text-gray-400 mt-1">
-                                                        Imagen que representa este {nftType.toUpperCase()}.
-                                                    </p>
-                                                </div>
-
-                                                {formData.imageUrl && (
-                                                    <div className="bg-emerald-500/10 border border-emerald-500/20 p-2 rounded">
-                                                        <p className="text-emerald-400 text-xs flex items-center gap-1">
-                                                            <CheckCircleIcon className="w-4 h-4" />
-                                                            Imagen lista
-                                                        </p>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                        </div>
-                                    </div>
-                                </>
                                     )}
-                                <div className="p-6 border-t border-zinc-800 bg-zinc-900 z-10 sticky bottom-0 flex justify-end gap-3" >
-                                    <button onClick={onClose} className="px-4 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-zinc-800 transition-colors">
-                                        Cancelar
-                                    </button>
-                                    {
-                                        creationStep === 1 && (
-                                            <button onClick={() => setCreationStep(0)} className="px-4 py-2 rounded-lg text-zinc-300 hover:bg-zinc-800 border border-zinc-700">
-                                                Atrás
-                                            </button>
-                                        )
-                                    }
-                                    {
-                                        creationStep === 1 && (
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-
-                                                    // Validar wallet conectada
-                                                    if (!account?.address) {
-                                                        toast({
-                                                            title: "Wallet No Conectada",
-                                                            description: "Por favor conecta tu wallet antes de desplegar",
-                                                            variant: "destructive"
-                                                        });
-                                                        return;
-                                                    }
-
-                                                    // Validar nombre
-                                                    if (!formData.name?.trim()) {
-                                                        toast({
-                                                            title: "Error de Validación",
-                                                            description: "El nombre del NFT es obligatorio",
-                                                            variant: "destructive"
-                                                        });
-                                                        return;
-                                                    }
-
-                                                    // Validar símbolo
-                                                    if (!formData.symbol?.trim()) {
-                                                        toast({
-                                                            title: "Error de Validación",
-                                                            description: "El símbolo del NFT es obligatorio",
-                                                            variant: "destructive"
-                                                        });
-                                                        return;
-                                                    }
-
-                                                    // Validar URL para QR
-                                                    if (nftType === 'qr' && !createLanding && !formData.targetUrl) {
-                                                        toast({
-                                                            title: "Error de Validación",
-                                                            description: "Debes definir una URL de destino para el QR",
-                                                            variant: "destructive"
-                                                        });
-                                                        return;
-                                                    }
-
-                                                    // Ejecutar despliegue
-                                                    handleDeploy();
-                                                }}
-                                                className="px-6 py-2 rounded-lg font-bold shadow-lg flex items-center gap-2 transform transition-all bg-gradient-to-r from-lime-500 to-emerald-500 hover:from-lime-400 hover:to-emerald-400 text-black shadow-lime-500/20 hover:scale-[1.02]"
-                                            >
-                                                🚀 Desplegar {nftType === 'qr' ? 'QR & Contract' : 'Contrato'}
-                                            </button>
-                                        )
-                                    }
                                 </div>
                             </div>
-                        </div>
-                    );
+
+                            {/* Section 2: Economics */}
+                            <div className="space-y-4">
+                                <h3 className="text-lg font-semibold text-indigo-300 flex items-center gap-2">
+                                    <span className="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center text-sm">2</span>
+                                    Reglas y Economía
+                                </h3>
+
+                                <div className="bg-zinc-800/30 p-4 rounded-xl border border-zinc-700/50 space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="group relative">
+                                            <div className="flex justify-between items-center mb-1">
+                                                <label htmlFor="nft-pass-maxSupply" className="text-xs font-medium text-gray-400 flex items-center gap-1">
+                                                    Max Supply <InformationCircleIcon className="w-3 h-3" />
+                                                </label>
+                                                <div className="flex items-center gap-1">
+                                                    <input
+                                                        type="checkbox"
+                                                        id="unlimited-supply"
+                                                        className="w-3 h-3 rounded border-zinc-700 bg-zinc-900 text-indigo-500 focus:ring-indigo-500/50"
+                                                        checked={formData.maxSupply === '115792089237316195423570985008687907853269984665640564039457584007913129639935'} // MAX_UINT256
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setFormData(prev => ({ ...prev, maxSupply: '115792089237316195423570985008687907853269984665640564039457584007913129639935' }));
+                                                            } else {
+                                                                setFormData(prev => ({ ...prev, maxSupply: '1000' }));
+                                                            }
+                                                        }}
+                                                    />
+                                                    <label htmlFor="unlimited-supply" className="text-[10px] text-zinc-500 cursor-pointer uppercase font-bold">Ilimitado</label>
+                                                </div>
+                                            </div>
+                                            <input
+                                                id="nft-pass-maxSupply"
+                                                name="maxSupply"
+                                                type="text" // Changed to text to handle large numbers visually or disable
+                                                disabled={formData.maxSupply === '115792089237316195423570985008687907853269984665640564039457584007913129639935'}
+                                                value={formData.maxSupply === '115792089237316195423570985008687907853269984665640564039457584007913129639935' ? '∞' : formData.maxSupply}
+                                                onChange={handleChange}
+                                                className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-indigo-500 outline-none disabled:opacity-50 disabled:cursor-not-allowed font-mono"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label htmlFor="nft-pass-price" className="block text-xs font-medium text-gray-400 mb-1">Precio (ETH)</label>
+                                            <input
+                                                id="nft-pass-price"
+                                                name="price"
+                                                type="number"
+                                                step="0.001"
+                                                value={formData.price}
+                                                onChange={handleChange}
+                                                className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-indigo-500 outline-none"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label htmlFor="nft-pass-treasury" className="block text-xs font-medium text-gray-400 mb-1">Wallet Tesorería (Opcional)</label>
+                                        <input
+                                            id="nft-pass-treasury"
+                                            name="treasuryAddress"
+                                            type="text"
+                                            value={formData.treasuryAddress}
+                                            onChange={handleChange}
+                                            placeholder="0x..."
+                                            className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-indigo-500 outline-none"
+                                        />
+                                    </div>
+
+                                    {/* Advanced Traits Toggles */}
+                                    <div className="pt-2 border-t border-zinc-700/50 mt-2 space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <label htmlFor="switch-transferable" className="text-sm font-medium text-gray-300 block">Transferible</label>
+                                                <p className="text-xs text-zinc-500">¿Se puede enviar a otros usuarios?</p>
+                                            </div>
+                                            <Switch
+                                                id="switch-transferable"
+                                                checked={formData.transferable}
+                                                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, transferable: checked }))}
+                                                className="data-[state=checked]:bg-emerald-500"
+                                            />
+                                        </div>
+
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <label htmlFor="switch-burnable" className="text-sm font-medium text-gray-300 block">Burnable (Quemable)</label>
+                                                <p className="text-xs text-zinc-500">¿Se puede destruir para canjear?</p>
+                                            </div>
+                                            <Switch
+                                                id="switch-burnable"
+                                                checked={formData.burnable}
+                                                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, burnable: checked }))}
+                                                className="data-[state=checked]:bg-rose-500"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 pt-2 border-t border-zinc-700/50 mt-2">
+                                        <input
+                                            id="airdrop-me"
+                                            type="checkbox"
+                                            checked={airdropToMe}
+                                            onChange={(e) => setAirdropToMe(e.target.checked)}
+                                            className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-emerald-500 focus:ring-emerald-500/50"
+                                        />
+                                        <label htmlFor="airdrop-me" className="text-sm text-gray-300 cursor-pointer">
+                                            Mintar el primer token a mi wallet (Admin)
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Section 3: NFT Image */}
+                            <div className="space-y-4">
+                                <h3 className="text-lg font-semibold text-amber-300 flex items-center gap-2">
+                                    <span className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-sm">3</span>
+                                    Imagen del NFT
+                                </h3>
+
+                                <div className="bg-zinc-800/50 p-6 rounded-xl border border-zinc-700 flex flex-col md:flex-row gap-6 items-start">
+                                    <div className="relative group w-full md:w-48 aspect-square bg-zinc-900 rounded-xl border-2 border-dashed border-zinc-600 hover:border-amber-500/50 transition-colors flex flex-col items-center justify-center overflow-hidden">
+                                        {formData.imagePreview ? (
+                                            <>
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img src={formData.imagePreview} alt="NFT Preview" className="w-full h-full object-cover" />
+                                                {uploadingImage && (
+                                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                                        <CloudArrowUpIcon className="w-8 h-8 text-white animate-bounce" />
+                                                    </div>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <div className="text-center p-4">
+                                                <PhotoIcon className="w-12 h-12 text-zinc-600 mx-auto mb-2" />
+                                                <p className="text-sm text-gray-400">Subir Imagen</p>
+                                                <p className="text-xs text-gray-600 mt-1">PNG, JPG, GIF</p>
+                                            </div>
+                                        )}
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleImageUpload}
+                                            disabled={uploadingImage}
+                                            className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                                        />
+                                    </div>
+
+                                    <div className="flex-1 space-y-3">
+                                        <div>
+                                            <h4 className="font-bold text-white">Visual del Token</h4>
+                                            <p className="text-sm text-gray-400 mt-1">
+                                                Imagen que representa este {nftType.toUpperCase()}.
+                                            </p>
+                                        </div>
+
+                                        {formData.imageUrl && (
+                                            <div className="bg-emerald-500/10 border border-emerald-500/20 p-2 rounded">
+                                                <p className="text-emerald-400 text-xs flex items-center gap-1">
+                                                    <CheckCircleIcon className="w-4 h-4" />
+                                                    Imagen lista
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </div>
+                <div className="p-6 border-t border-zinc-800 bg-zinc-900 z-10 sticky bottom-0 flex justify-end gap-3" >
+                    <button onClick={onClose} className="px-4 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-zinc-800 transition-colors">
+                        Cancelar
+                    </button>
+                    {
+                        creationStep === 1 && (
+                            <button onClick={() => setCreationStep(0)} className="px-4 py-2 rounded-lg text-zinc-300 hover:bg-zinc-800 border border-zinc-700">
+                                Atrás
+                            </button>
+                        )
+                    }
+                    {
+                        creationStep === 1 && (
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+
+                                    // Validar wallet conectada
+                                    if (!account?.address) {
+                                        toast({
+                                            title: "Wallet No Conectada",
+                                            description: "Por favor conecta tu wallet antes de desplegar",
+                                            variant: "destructive"
+                                        });
+                                        return;
+                                    }
+
+                                    // Validar nombre
+                                    if (!formData.name?.trim()) {
+                                        toast({
+                                            title: "Error de Validación",
+                                            description: "El nombre del NFT es obligatorio",
+                                            variant: "destructive"
+                                        });
+                                        return;
+                                    }
+
+                                    // Validar símbolo
+                                    if (!formData.symbol?.trim()) {
+                                        toast({
+                                            title: "Error de Validación",
+                                            description: "El símbolo del NFT es obligatorio",
+                                            variant: "destructive"
+                                        });
+                                        return;
+                                    }
+
+                                    // Validar URL para QR
+                                    if (nftType === 'qr' && !createLanding && !formData.targetUrl) {
+                                        toast({
+                                            title: "Error de Validación",
+                                            description: "Debes definir una URL de destino para el QR",
+                                            variant: "destructive"
+                                        });
+                                        return;
+                                    }
+
+                                    // Ejecutar despliegue
+                                    handleDeploy();
+                                }}
+                                className="px-6 py-2 rounded-lg font-bold shadow-lg flex items-center gap-2 transform transition-all bg-gradient-to-r from-lime-500 to-emerald-500 hover:from-lime-400 hover:to-emerald-400 text-black shadow-lime-500/20 hover:scale-[1.02]"
+                            >
+                                🚀 Desplegar {nftType === 'qr' ? 'QR & Contract' : 'Contrato'}
+                            </button>
+                        )
+                    }
+                </div>
+            </div>
+        </div>
+    );
 }
