@@ -79,10 +79,8 @@ export async function deployW2EProtocol(
   }
 
   // Optimized RPC Selection
-  // STRATEGY: 
-  // 1. FallbackProvider: Use multiple reliable public nodes + custom RPC in parallel.
-  // 2. Weights: All Priority 1.
-  // 3. Network Strictness: We must ensure all providers are explicitly configured for the same network to avoid "provider mismatch".
+  // STRATEGY: Sequential Rotation (Simpler & More Robust than FallbackProvider for this specific error)
+  // We will iterate through the list and try to connect/getNetwork. The first one that works wins.
 
   const SEPOLIA_RPCS = [
     "https://rpc.ankr.com/eth_sepolia",
@@ -100,36 +98,46 @@ export async function deployW2EProtocol(
     "https://1rpc.io/base"
   ];
 
-  // Filter out duplicates if customRpc is already in the list
+  // Filter out duplicates
   const rpcUrls = network === 'sepolia' ? [...SEPOLIA_RPCS] : [...BASE_RPCS];
 
   if (customRpc && !rpcUrls.includes(customRpc)) {
-    console.log(`🔹 Incorporating Custom RPC into Fallback Strategy: ${customRpc}`);
-    rpcUrls.unshift(customRpc);
-  } else if (customRpc) {
-    console.log(`🔹 Custom RPC ${customRpc} is already in the public list. Treated normally.`);
+    console.log(`🔹 Custom RPC config found: ${customRpc}`);
+    rpcUrls.unshift(customRpc); // Try custom first
   }
 
-  console.log(`🛡️ Initializing FallbackProvider with ${rpcUrls.length} nodes for ${network} (ChainID: ${targetChainId}).`);
+  console.log(`🛡️ Starting Sequential RPC Connection Strategy (Nodes: ${rpcUrls.length})`);
 
-  // Ethers v5 FallbackProvider requires all providers to have the same Network object.
-  // We enforce this by creating a StaticJsonRpcProvider with the specific chainId AND explicitly passing the network object.
-  const providers = rpcUrls.map((url) => {
-    const p = new StaticJsonRpcProvider(url, {
-      chainId: targetChainId,
-      name: network === 'sepolia' ? 'sepolia' : 'base'
-    });
+  let provider: ethers.providers.StaticJsonRpcProvider | undefined; // Using explicit type or any if Sensitive not exported
+  // Actually, StaticJsonRpcProvider is fine.
 
-    return {
-      provider: p,
-      priority: 1,
-      weight: 1,
-      stallTimeout: 2500 // 2.5s stall timeout to allow faster failover
-    };
-  });
+  for (const url of rpcUrls) {
+    try {
+      console.log(`Trying RPC: ${url}`);
+      const p = new StaticJsonRpcProvider(url, {
+        chainId: targetChainId,
+        name: network === 'sepolia' ? 'sepolia' : 'base'
+      });
 
-  // Pass 1 as quorum, but Ethers might need explicit network check
-  const provider = new FallbackProvider(providers, 1);
+      // Test the connection
+      await p.getNetwork();
+
+      // Double check block number to ensure it's not stale/erroring
+      const block = await p.getBlockNumber();
+      console.log(`✅ Connected to ${url} (Block: ${block})`);
+
+      provider = p;
+      break; // Found a working one, stop.
+    } catch (e: any) {
+      console.warn(`⚠️ Failed to connect to ${url}: ${e.message || e}`);
+      // Continue to next
+    }
+  }
+
+  if (!provider) {
+    console.error("❌ All RPCs failed.");
+    throw new Error("Failed to initialize any RPC provider after trying all candidates.");
+  }
 
   const wallet = new Wallet(privateKey, provider);
 
