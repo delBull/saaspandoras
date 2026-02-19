@@ -12,8 +12,10 @@ import { config } from "@/config";
 import { PANDORAS_KEY_ABI } from "@/lib/pandoras-key-abi";
 import { CreateNFTPassModal } from "./CreateNFTPassModal";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@saasfly/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { IdentificationIcon, GiftIcon } from "@heroicons/react/24/outline";
 
 // Extend the ABI to include missing standard items + adminMint
 const EXTENDED_ABI = [
@@ -395,86 +397,159 @@ export function NFTManager() {
                 </div>
             </div>
 
-            {/* List of Other NFT Passes */}
-            <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                        <ShieldCheck className="w-5 h-5 text-lime-500" />
-                        Tus NFT Passes Deployed
-                    </h3>
+            {/* Tabs Organization */}
+            <Tabs defaultValue="all" className="w-full">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                    <TabsList className="bg-zinc-900 border border-zinc-800">
+                        <TabsTrigger value="all">Todo</TabsTrigger>
+                        <TabsTrigger value="access">Access Passes</TabsTrigger>
+                        <TabsTrigger value="identity">Identidad (SBT)</TabsTrigger>
+                        <TabsTrigger value="coupon">Cupones</TabsTrigger>
+                        <TabsTrigger value="qr" className="flex items-center gap-2">
+                            <QrCodeIcon className="w-4 h-4" />
+                            Smart QRs
+                        </TabsTrigger>
+                    </TabsList>
+
                     <span className="text-xs text-zinc-500 font-mono">
-                        Adicionales: {displayPasses.filter(p => p.contractAddress !== config.applyPassNftAddress).length}
+                        Total Assets: {availablePasses.filter(p => p.contractAddress !== config.applyPassNftAddress).length}
                     </span>
                 </div>
 
-                {loadingPasses ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {[1, 2, 3].map(i => (
-                            <div key={i} className="bg-zinc-900/40 border border-zinc-800 rounded-xl p-4 h-32 animate-pulse" />
-                        ))}
-                    </div>
-                ) : displayPasses.length <= 1 ? (
-                    <div className="bg-zinc-900/20 border border-dashed border-zinc-800 rounded-xl p-12 text-center">
-                        <div className="w-12 h-12 bg-zinc-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Wallet className="w-6 h-6 text-zinc-600" />
-                        </div>
-                        <p className="text-zinc-500 text-sm">No has creado NFT Passes adicionales aún.</p>
-                        <Button
-                            variant="link"
-                            className="text-lime-500 hover:text-lime-400 mt-2"
-                            onClick={() => setShowCreateWizard(true)}
-                        >
-                            Comienza creando uno ahora →
-                        </Button>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {displayPasses.map((pass) => {
-                            // Skip the system pass in the secondary list as it's already shown above
-                            if (pass.contractAddress === config.applyPassNftAddress) return null;
+                {/* Helper to render pass list */}
+                {['all', 'access', 'identity', 'coupon'].map((tabValue) => (
+                    <TabsContent key={tabValue} value={tabValue} className="space-y-4">
+                        {loadingPasses ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {[1, 2, 3].map(i => (
+                                    <div key={i} className="bg-zinc-900/40 border border-zinc-800 rounded-xl p-4 h-32 animate-pulse" />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {availablePasses
+                                    .filter(p => {
+                                        if (p.contractAddress === config.applyPassNftAddress) return false; // Hide system pass
+                                        if (tabValue === 'all') return true;
+                                        return (p as any).nftType === tabValue;
+                                    })
+                                    .map((pass) => (
+                                        <div key={pass.id} className="group bg-zinc-900/60 border border-zinc-800 hover:border-lime-500/30 rounded-xl p-5 transition-all hover:shadow-xl hover:shadow-lime-500/5">
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center border border-zinc-700 font-bold transition-colors
+                                                    ${(pass as any).nftType === 'qr' ? 'bg-lime-500/10 text-lime-400 border-lime-500/30' :
+                                                        (pass as any).nftType === 'identity' ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30' :
+                                                            (pass as any).nftType === 'coupon' ? 'bg-rose-500/10 text-rose-400 border-rose-500/30' :
+                                                                'bg-gradient-to-br from-zinc-800 to-black text-indigo-400'
+                                                    }`}>
+                                                    {(pass as any).nftType === 'qr' ? <QrCodeIcon className="w-5 h-5" /> :
+                                                        (pass as any).nftType === 'identity' ? <IdentificationIcon className="w-5 h-5" /> :
+                                                            (pass as any).nftType === 'coupon' ? <GiftIcon className="w-5 h-5" /> :
+                                                                pass.symbol.charAt(0)}
+                                                </div>
+                                                <Badge variant="outline" className="bg-black/50 text-[10px] border-zinc-700 text-zinc-400">
+                                                    {pass.symbol}
+                                                </Badge>
+                                            </div>
 
-                            return (
-                                <div key={pass.id} className="group bg-zinc-900/60 border border-zinc-800 hover:border-lime-500/30 rounded-xl p-5 transition-all hover:shadow-xl hover:shadow-lime-500/5">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div className="w-10 h-10 bg-gradient-to-br from-zinc-800 to-black rounded-lg flex items-center justify-center border border-zinc-700 text-lime-500 font-bold group-hover:border-lime-500/50 transition-colors">
-                                            {pass.symbol.charAt(0)}
+                                            <h4 className="font-bold text-white mb-1 truncate">{pass.title}</h4>
+                                            <div className="flex items-center justify-between mb-4">
+                                                <p className="text-xs text-zinc-500 font-mono truncate max-w-[120px]" title={pass.contractAddress}>
+                                                    {pass.contractAddress.substring(0, 6)}...{pass.contractAddress.substring(38)}
+                                                </p>
+                                                <Badge variant="secondary" className="text-[10px] h-5 bg-zinc-800 text-zinc-400 hover:bg-zinc-700">
+                                                    {(pass as any).nftType?.toUpperCase() || 'ACCESS'}
+                                                </Badge>
+                                            </div>
+
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    onClick={() => {
+                                                        setSelectedPassAddress(pass.contractAddress);
+                                                        setShowAirdropModal(true);
+                                                    }}
+                                                    className="w-full bg-zinc-800 hover:bg-lime-500 hover:text-black border border-zinc-700 text-sm py-1 h-8 transition-all"
+                                                >
+                                                    <Send className="w-3 h-3 mr-2" />
+                                                    Airdrop
+                                                </Button>
+                                                <Button
+                                                    onClick={() => navigator.clipboard.writeText(pass.contractAddress)}
+                                                    variant="ghost"
+                                                    className="h-8 w-8 p-0 border border-zinc-700 bg-zinc-900/50"
+                                                    title="Copiar Address"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-400"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                                </Button>
+                                            </div>
                                         </div>
-                                        <Badge variant="outline" className="bg-black/50 text-[10px] border-zinc-700 text-zinc-400">
-                                            {pass.symbol}
-                                        </Badge>
+                                    ))}
+                                {availablePasses.filter(p => p.contractAddress !== config.applyPassNftAddress && (tabValue === 'all' || (p as any).nftType === tabValue)).length === 0 && (
+                                    <div className="col-span-full bg-zinc-900/20 border border-dashed border-zinc-800 rounded-xl p-12 text-center">
+                                        <div className="w-12 h-12 bg-zinc-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <Wallet className="w-6 h-6 text-zinc-600" />
+                                        </div>
+                                        <p className="text-zinc-500 text-sm">No hay Assets de tipo {tabValue === 'all' ? '' : tabValue.toUpperCase()} aún.</p>
                                     </div>
+                                )}
+                            </div>
+                        )}
+                    </TabsContent>
+                ))}
 
-                                    <h4 className="font-bold text-white mb-1 truncate">{pass.title}</h4>
-                                    <p className="text-xs text-zinc-500 font-mono mb-4 truncate" title={pass.contractAddress}>
-                                        {pass.contractAddress.substring(0, 10)}...{pass.contractAddress.substring(34)}
-                                    </p>
-
-                                    <div className="flex gap-2">
-                                        <Button
-                                            onClick={() => {
-                                                setSelectedPassAddress(pass.contractAddress);
-                                                setShowAirdropModal(true);
-                                            }}
-                                            className="w-full bg-zinc-800 hover:bg-lime-500 hover:text-black border border-zinc-700 text-sm py-1 h-8 transition-all"
-                                        >
-                                            <Send className="w-3 h-3 mr-2" />
-                                            Airdrop
-                                        </Button>
+                <TabsContent value="qr" className="space-y-8">
+                    {/* 1. QR Contracts (Assets) */}
+                    <div>
+                        <h4 className="text-sm font-bold text-zinc-400 mb-4 uppercase tracking-wider">Contratos Smart QR</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {availablePasses
+                                .filter(p => (p as any).nftType === 'qr')
+                                .map((pass) => (
+                                    <div key={pass.id} className="group bg-zinc-900/60 border border-zinc-800 hover:border-lime-500/30 rounded-xl p-5 transition-all">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div className="w-10 h-10 rounded-lg bg-lime-500/10 text-lime-400 border border-lime-500/30 flex items-center justify-center font-bold">
+                                                <QrCodeIcon className="w-5 h-5" />
+                                            </div>
+                                            <Badge variant="outline" className="bg-black/50 text-[10px] border-zinc-700 text-zinc-400">
+                                                {pass.symbol}
+                                            </Badge>
+                                        </div>
+                                        <h4 className="font-bold text-white mb-1 truncate">{pass.title}</h4>
+                                        <p className="text-xs text-zinc-500 font-mono mb-4 truncate">{pass.contractAddress}</p>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                onClick={() => {
+                                                    setSelectedPassAddress(pass.contractAddress);
+                                                    setShowAirdropModal(true);
+                                                }}
+                                                className="w-full bg-zinc-800 hover:bg-lime-500 hover:text-black border border-zinc-700 text-sm py-1 h-8"
+                                            >
+                                                <Send className="w-3 h-3 mr-2" />
+                                                AirDrop
+                                            </Button>
+                                        </div>
                                     </div>
+                                ))}
+                            {availablePasses.filter(p => (p as any).nftType === 'qr').length === 0 && (
+                                <div className="col-span-full text-center py-8 text-zinc-500 text-sm italic border border-dashed border-zinc-800 rounded-lg">
+                                    No tienes contratos de tipo QR desplegados.
                                 </div>
-                            );
-                        })}
+                            )}
+                        </div>
                     </div>
-                )}
-            </div>
 
-            {/* Dynamic QRs Section */}
-            <DynamicQRSection
-                account={account}
-                shortlinks={shortlinks}
-                loading={loadingShortlinks}
-                onRefresh={fetchShortlinks}
-            />
+                    {/* 2. Management Section */}
+                    <div>
+                        <h4 className="text-sm font-bold text-zinc-400 mb-4 uppercase tracking-wider border-t border-zinc-800 pt-8">Gestión de Enlaces (Shortlinks)</h4>
+                        <DynamicQRSection
+                            account={account}
+                            shortlinks={shortlinks}
+                            loading={loadingShortlinks}
+                            onRefresh={fetchShortlinks}
+                        />
+                    </div>
+                </TabsContent>
+            </Tabs>
 
             <Dialog open={showAirdropModal} onOpenChange={setShowAirdropModal}>
                 <DialogContent className="sm:max-w-md bg-zinc-900 border-zinc-800 text-white">

@@ -561,8 +561,24 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                         El contrato <span className="text-white font-bold">{formData.name}</span> ha sido desplegado.
                                     </p>
 
-                                    <div className="bg-zinc-950 p-3 rounded-lg border border-zinc-800 mb-6 break-all font-mono text-xs text-zinc-400">
-                                        {deployedAddress}
+                                    <div className="bg-zinc-950 p-3 rounded-lg border border-zinc-800 mb-6 flex items-center justify-between gap-2 group">
+                                        <code className="font-mono text-xs text-zinc-400 break-all">
+                                            {deployedAddress}
+                                        </code>
+                                        <button
+                                            onClick={() => {
+                                                if (deployedAddress) {
+                                                    navigator.clipboard.writeText(deployedAddress);
+                                                    toast({ title: "Copiado", description: "Dirección copiada al portapapeles" });
+                                                }
+                                            }}
+                                            className="p-1.5 rounded-md hover:bg-zinc-800 text-zinc-500 hover:text-emerald-400 transition-colors"
+                                            title="Copiar dirección"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                                                <path fillRule="evenodd" d="M17.663 3.118c.225.015.45.032.673.05C19.876 3.298 21 4.604 21 6.109v9.642a3 3 0 0 1-3 3V16.5c0-5.922-4.576-10.775-10.384-12.193.371-.24.79-.444 1.229-.533 2.875-.589 5.86-1.026 8.818-.656ZM19.5 6.47a1.5 1.5 0 0 0-1.5-1.5H6.25c-.246 0-.482.029-.71.082l-.071.02c-1.347.331-2.47 1.46-2.47 2.928v9.916A1.5 1.5 0 0 0 4.5 19.416h10.5a1.5 1.5 0 0 0 1.5-1.5V6.47Z" clipRule="evenodd" />
+                                            </svg>
+                                        </button>
                                     </div>
 
                                     {/* QR Code Display */}
