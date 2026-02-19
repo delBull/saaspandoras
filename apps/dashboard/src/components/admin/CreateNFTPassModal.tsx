@@ -369,6 +369,9 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
 
                 if (!shortlinkRes.ok) throw new Error("Fallo al reservar el enlace corto (Slug tomado o error). Intenta con otro nombre.");
                 setGeneratedShortlink(`${window.location.origin}/${shortlinkSlug}`);
+            } else if (nftType === 'qr' && !isDynamic && formData.targetUrl) {
+                // Para QR Estático, usamos la URL de destino como link a compartir
+                setGeneratedShortlink(formData.targetUrl);
             }
 
 
@@ -753,13 +756,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                                     <span className="text-xs text-zinc-400">Si activas esto, podrás cambiar el destino del QR después.</span>
                                                 </div>
                                                 <Switch
-                                                    checked={createLanding} // Reusing createLanding state as "isDynamic" for now, or rename it? Better rename logic or just use a new state.
-                                                    // Wait, user asked for "toggle button en la creación para confirmar el dinamismo".
-                                                    // Let's use a new state `isDynamic` but I don't want to break existing logic.
-                                                    // Actually, the previous logic was "Create Landing" -> Dynamic.
-                                                    // Now "Dynamic" -> Can be Redirect OR Landing.
-                                                    // So I should separate them.
-                                                    // Let's add `isDynamic` state in the component.
+                                                    checked={isDynamic}
                                                     onCheckedChange={(checked) => setIsDynamic(checked)}
                                                     className="data-[state=checked]:bg-lime-500"
                                                 />
@@ -1149,10 +1146,20 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                     }
 
                                     // Validar URL para QR
-                                    if (nftType === 'qr' && !createLanding && !formData.targetUrl) {
+                                    if (nftType === 'qr' && !isDynamic && !formData.targetUrl) {
                                         toast({
                                             title: "Error de Validación",
-                                            description: "Debes definir una URL de destino para el QR",
+                                            description: "Debes definir una URL de destino para el QR estático",
+                                            variant: "destructive"
+                                        });
+                                        return;
+                                    }
+
+                                    // Validar Wallet de Tesorería (si se provee)
+                                    if (formData.treasuryAddress && !/^0x[a-fA-F0-9]{40}$/.test(formData.treasuryAddress)) {
+                                        toast({
+                                            title: "Wallet Inválida",
+                                            description: "La dirección de tesorería no es una wallet válida",
                                             variant: "destructive"
                                         });
                                         return;

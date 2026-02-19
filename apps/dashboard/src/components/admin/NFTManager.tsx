@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@saasfly/ui/use-toast";
-import { Loader2, ShieldCheck, Send, BarChart2, CheckCircle2, AlertTriangle, Wallet } from "lucide-react";
+import { Loader2, ShieldCheck, Send, BarChart2, CheckCircle2, AlertTriangle, Wallet, Download, ExternalLink, Pencil, QrCode as LucideQrCode } from "lucide-react";
 import { useActiveAccount, useReadContract, useSendTransaction } from "thirdweb/react";
 import { getContract, prepareContractCall, readContract } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@saasfly/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { IdentificationIcon, GiftIcon } from "@heroicons/react/24/outline";
+import { IdentificationIcon, GiftIcon, TicketIcon, QrCodeIcon } from "@heroicons/react/24/outline";
 
 // Extend the ABI to include missing standard items + adminMint
 const EXTENDED_ABI = [
@@ -578,15 +578,19 @@ export function NFTManager() {
                                     <div key={pass.id} className="group bg-zinc-900/60 border border-zinc-800 hover:border-lime-500/30 rounded-xl p-5 transition-all relative overflow-hidden">
                                         {/* Dynamic Badge */}
                                         {(pass as any).shortlinkSlug && (
-                                            <div className="absolute top-0 right-0 bg-lime-500 text-black text-[9px] font-bold px-2 py-1 rounded-bl-lg z-10">
-                                                DINÁMICO
+                                            <div className={`absolute top-0 right-0 ${(pass as any).shortlinkType === 'landing' ? 'bg-indigo-500 text-white' : 'bg-lime-500 text-black'} text-[9px] font-bold px-2 py-1 rounded-bl-lg z-10`}>
+                                                {(pass as any).shortlinkType === 'landing' ? 'LANDING' : 'DINÁMICO'}
                                             </div>
                                         )}
 
                                         <div className="flex justify-between items-start mb-4">
-                                            <div className="w-10 h-10 rounded-lg bg-lime-500/10 text-lime-400 border border-lime-500/30 flex items-center justify-center font-bold">
+                                            <button
+                                                onClick={() => handleViewQR(pass)}
+                                                className="w-10 h-10 rounded-lg bg-lime-500/10 text-lime-400 border border-lime-500/30 flex items-center justify-center font-bold hover:bg-lime-500/20 transition-colors"
+                                                title="Ver Código QR"
+                                            >
                                                 <QrCodeIcon className="w-5 h-5" />
-                                            </div>
+                                            </button>
                                             <Badge variant="outline" className="bg-black/50 text-[10px] border-zinc-700 text-zinc-400">
                                                 {pass.symbol}
                                             </Badge>
@@ -598,36 +602,44 @@ export function NFTManager() {
                                         <div className="flex flex-col gap-2">
                                             <div className="flex gap-2">
                                                 <Button
-                                                    onClick={() => handleViewQR(pass)}
-                                                    className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 text-xs h-8"
-                                                >
-                                                    <QrCodeIcon className="w-3 h-3 mr-2" />
-                                                    Ver QR
-                                                </Button>
-                                                <Button
                                                     onClick={() => {
                                                         const isDynamic = !!(pass as any).shortlinkSlug;
                                                         const target = isDynamic ? (pass as any).shortlinkSlug : (pass as any).targetUrl;
                                                         if (target) downloadQR(target, isDynamic);
                                                     }}
-                                                    className="w-8 h-8 px-0 bg-zinc-900 border border-zinc-700 hover:bg-zinc-800"
+                                                    className="flex-1 bg-lime-500/10 text-lime-400 border border-lime-500/30 hover:bg-lime-500/20 text-xs h-8 font-bold"
                                                     title="Descargar PNG"
                                                 >
-                                                    <DownloadIcon className="w-3 h-3" />
+                                                    <Download className="w-3 h-3 mr-2" />
+                                                    Descargar
                                                 </Button>
+
+                                                {(pass as any).shortlinkSlug && (
+                                                    <Button
+                                                        onClick={() => {
+                                                            const url = `${window.location.origin}/${(pass as any).shortlinkSlug}`;
+                                                            window.open(url, '_blank');
+                                                        }}
+                                                        className={`flex-1 ${(pass as any).shortlinkType === 'landing' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30 hover:bg-indigo-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/30 hover:bg-blue-500/20'} text-[10px] h-8 font-bold border`}
+                                                        title={(pass as any).shortlinkType === 'landing' ? "Ver Landing Page" : "Ver Enlace Corto"}
+                                                    >
+                                                        <ExternalLink className="w-3 h-3 mr-1" />
+                                                        {(pass as any).shortlinkType === 'landing' ? 'Landing' : 'Ver Link'}
+                                                    </Button>
+                                                )}
                                             </div>
 
                                             <div className="flex gap-2">
                                                 {(pass as any).shortlinkSlug ? (
                                                     <Button
                                                         onClick={() => handleEditQR(pass)}
-                                                        className="flex-1 bg-lime-500/10 text-lime-400 hover:bg-lime-500/20 border border-lime-500/30 text-xs h-8"
+                                                        className="flex-1 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/30 text-xs h-8 font-bold"
                                                     >
-                                                        <EditIcon className="w-3 h-3 mr-2" />
+                                                        <Pencil className="w-3 h-3 mr-2" />
                                                         Editar Destino
                                                     </Button>
                                                 ) : (
-                                                    <Button disabled className="flex-1 bg-zinc-900 text-zinc-600 border border-zinc-800 text-xs h-8 cursor-not-allowed">
+                                                    <Button disabled className="flex-1 bg-zinc-800 text-zinc-500 border border-zinc-700 text-xs h-8 cursor-not-allowed opacity-50 font-bold" title="QR Estático (No editable)">
                                                         <ShieldCheck className="w-3 h-3 mr-2" />
                                                         Estático
                                                     </Button>
@@ -638,10 +650,10 @@ export function NFTManager() {
                                                         setSelectedPassAddress(pass.contractAddress);
                                                         setShowAirdropModal(true);
                                                     }}
-                                                    className="w-8 h-8 px-0 bg-zinc-900 border border-zinc-700 hover:bg-zinc-800"
-                                                    title="Airdrop Token"
+                                                    className="flex-1 bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 border border-purple-500/40 text-xs h-8 font-bold"
                                                 >
-                                                    <Send className="w-3 h-3" />
+                                                    <Send className="w-3 h-3 mr-2" />
+                                                    Enviar
                                                 </Button>
                                             </div>
                                         </div>
@@ -757,12 +769,45 @@ export function NFTManager() {
                     )}
 
                     {airdropStatus === 'success' && (
-                        <div className="flex flex-col items-center py-8">
+                        <div className="flex flex-col items-center py-6">
                             <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mb-6 border border-green-500/20">
                                 <CheckCircle2 className="w-8 h-8 text-green-500" />
                             </div>
                             <h3 className="text-xl font-bold text-white mb-2">¡Pase Enviado!</h3>
-                            <p className="text-zinc-400 text-sm">El usuario ha recibido su Apply Pass correctamente.</p>
+                            <p className="text-zinc-400 text-sm mb-6 text-center px-4">El usuario ha recibido su Apply Pass correctamente.</p>
+
+                            <div className="flex gap-2 w-full mt-4">
+                                <Button
+                                    onClick={() => {
+                                        const msg = `¡Acabo de enviarte un Pase de Acceso! Revísalo aquí: ${window.location.origin}`;
+                                        window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+                                    }}
+                                    className="flex-1 bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/30 hover:bg-[#25D366]/30 font-bold"
+                                >
+                                    <Send className="w-4 h-4 mr-2" />
+                                    WhatsApp
+                                </Button>
+                                <Button
+                                    onClick={() => {
+                                        const url = `${window.location.origin}`;
+                                        navigator.clipboard.writeText(url);
+                                        toast({ title: "Copiado", description: "Enlace copiado al portapapeles" });
+                                    }}
+                                    variant="outline"
+                                    className="flex-1 border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                                >
+                                    <ExternalLink className="w-4 h-4 mr-2" />
+                                    Copiar Link
+                                </Button>
+                            </div>
+
+                            <Button
+                                variant="ghost"
+                                className="w-full mt-2 text-zinc-500 hover:text-white"
+                                onClick={() => { setAirdropStatus('idle'); setShowAirdropModal(false); }}
+                            >
+                                Cerrar
+                            </Button>
                         </div>
                     )}
 
@@ -810,7 +855,7 @@ export function NFTManager() {
                             }}
                             className="w-full bg-lime-500 text-black hover:bg-lime-400"
                         >
-                            <DownloadIcon className="w-4 h-4 mr-2" />
+                            <Download className="w-4 h-4 mr-2" />
                             Descargar PNG
                         </Button>
                     </DialogFooter>
@@ -883,33 +928,4 @@ function QRGenerator({ value }: { value: string }) {
     return <img src={src} alt="QR Code" className="w-64 h-64" />;
 }
 
-// Icons specific to this file to avoid import clutter
-function QrCodeIcon(props: any) {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="5" height="5" x="3" y="3" rx="1" /><rect width="5" height="5" x="16" y="3" rx="1" /><rect width="5" height="5" x="3" y="16" rx="1" /><path d="M21 16h-3a2 2 0 0 0-2 2v3" /><path d="M21 21v.01" /><path d="M12 7v3a2 2 0 0 1-2 2H7" /><path d="M3 12h.01" /><path d="M12 3h.01" /><path d="M12 16v.01" /><path d="M16 12h1" /><path d="M21 12v.01" /><path d="M12 21v-1" /></svg>
-    )
-}
 
-function RefreshCwIcon(props: any) {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></svg>
-    )
-}
-
-function DownloadIcon(props: any) {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></svg>
-    )
-}
-
-function EditIcon(props: any) {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /><path d="m15 5 4 4" /></svg>
-    )
-}
-
-function ArrowRightIcon(props: any) {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
-    )
-}
