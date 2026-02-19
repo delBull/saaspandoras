@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@saasfly/ui/use-toast";
-import { Loader2, ShieldCheck, Send, BarChart2, CheckCircle2, AlertTriangle, Wallet, Download, ExternalLink, Pencil, QrCode as LucideQrCode } from "lucide-react";
+import { Loader2, ShieldCheck, Send, BarChart2, CheckCircle2, AlertTriangle, Wallet, Download, ExternalLink, Pencil, QrCode as LucideQrCode, Copy } from "lucide-react";
+import { FaWhatsapp } from "react-icons/fa";
 import { useActiveAccount, useReadContract, useSendTransaction } from "thirdweb/react";
 import { getContract, prepareContractCall, readContract } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
@@ -334,8 +335,16 @@ export function NFTManager() {
     const downloadQR = async (slugOrUrl: string, isSlug: boolean) => {
         try {
             const QRCodeLib = (await import("qrcode")).default;
-            const url = isSlug ? `${window.location.origin}/${slugOrUrl}` : slugOrUrl;
-            const filename = isSlug ? `qr-${slugOrUrl}.png` : `qr-static.png`;
+            const getExplorerUrl = (address: string) => {
+                const chainId = config.chain.id;
+                if (chainId === 8453) return `https://basescan.org/address/${address}`;
+                if (chainId === 11155111) return `https://sepolia.etherscan.io/address/${address}`;
+                if (chainId === 84532) return `https://sepolia.basescan.org/address/${address}`;
+                return `https://etherscan.io/address/${address}`;
+            };
+
+            const url = isSlug ? `${window.location.origin}/${slugOrUrl}` : (slugOrUrl.startsWith('0x') ? getExplorerUrl(slugOrUrl) : slugOrUrl);
+            const filename = isSlug ? `qr-${slugOrUrl}.png` : `qr-redirect.png`;
 
             const dataUrl = await QRCodeLib.toDataURL(url, { width: 1000, margin: 2 });
             const link = document.createElement("a");
@@ -604,8 +613,8 @@ export function NFTManager() {
                                                 <Button
                                                     onClick={() => {
                                                         const isDynamic = !!(pass as any).shortlinkSlug;
-                                                        const target = isDynamic ? (pass as any).shortlinkSlug : (pass as any).targetUrl;
-                                                        if (target) downloadQR(target, isDynamic);
+                                                        const target = isDynamic ? (pass as any).shortlinkSlug : ((pass as any).targetUrl || pass.contractAddress);
+                                                        downloadQR(target, isDynamic);
                                                     }}
                                                     className="flex-1 bg-lime-500/10 text-lime-400 border border-lime-500/30 hover:bg-lime-500/20 text-xs h-8 font-bold"
                                                     title="Descargar PNG"
@@ -750,13 +759,51 @@ export function NFTManager() {
                                 <Button variant="ghost" onClick={() => setShowAirdropModal(false)}>Cancelar</Button>
                                 <Button
                                     onClick={() => executeMint()}
-                                    disabled={!airdropAddress}
-                                    className="bg-lime-500 text-black hover:bg-lime-400"
+                                    disabled={!/^0x[a-fA-F0-9]{40}$/.test(airdropAddress)}
+                                    className="bg-purple-500 text-white hover:bg-purple-600 font-bold"
                                 >
                                     <Send className="w-4 h-4 mr-2" />
                                     Enviar Pase
                                 </Button>
                             </DialogFooter>
+
+                            {/* Sharing Options even before success if they want to share the link */}
+                            <div className="pt-4 border-t border-zinc-800">
+                                <p className="text-[10px] text-zinc-500 uppercase font-bold mb-3">Compartir Enlace del Proyecto</p>
+                                <div className="flex gap-2">
+                                    <Button
+                                        onClick={() => {
+                                            const pass = availablePasses.find(p => p.contractAddress === selectedPassAddress);
+                                            const slug = (pass as any)?.shortlinkSlug;
+                                            const url = slug ? `${window.location.origin}/${slug}` : (pass as any)?.targetUrl || window.location.origin;
+                                            const msg = `¡Mira este NFT! Revísalo aquí: ${url}`;
+                                            window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+                                        }}
+                                        size="sm"
+                                        className="flex-1 bg-[#25D366]/10 text-[#25D366] border border-[#25D366]/20 hover:bg-[#25D366]/20 text-[11px]"
+                                    >
+                                        <div className="flex items-center gap-1">
+                                            <FaWhatsapp className="w-3 h-3" />
+                                            WhatsApp
+                                        </div>
+                                    </Button>
+                                    <Button
+                                        onClick={() => {
+                                            const pass = availablePasses.find(p => p.contractAddress === selectedPassAddress);
+                                            const slug = (pass as any)?.shortlinkSlug;
+                                            const url = slug ? `${window.location.origin}/${slug}` : (pass as any)?.targetUrl || window.location.origin;
+                                            navigator.clipboard.writeText(url);
+                                            toast({ title: "Copiado", description: "Enlace copiado" });
+                                        }}
+                                        size="sm"
+                                        variant="outline"
+                                        className="flex-1 border-zinc-700 text-zinc-400 text-[11px]"
+                                    >
+                                        <Copy className="w-3 h-3 mr-1" />
+                                        Copiar Link
+                                    </Button>
+                                </div>
+                            </div>
                         </div>
                     ) : null}
 
@@ -841,7 +888,12 @@ export function NFTManager() {
                                 value={
                                     (viewingQR as any).shortlinkSlug
                                         ? `${window.location.origin}/${(viewingQR as any).shortlinkSlug}`
-                                        : (viewingQR as any).targetUrl || "https://example.com"
+                                        : ((viewingQR as any).targetUrl || (
+                                            config.chain.id === 8453 ? `https://basescan.org/address/${viewingQR.contractAddress}` :
+                                                config.chain.id === 11155111 ? `https://sepolia.etherscan.io/address/${viewingQR.contractAddress}` :
+                                                    config.chain.id === 84532 ? `https://sepolia.basescan.org/address/${viewingQR.contractAddress}` :
+                                                        `https://etherscan.io/address/${viewingQR.contractAddress}`
+                                        ))
                                 }
                             />
                         )}
@@ -850,10 +902,10 @@ export function NFTManager() {
                         <Button
                             onClick={() => {
                                 const isDynamic = !!(viewingQR as any).shortlinkSlug;
-                                const target = isDynamic ? (viewingQR as any).shortlinkSlug : (viewingQR as any).targetUrl;
-                                if (target) downloadQR(target, isDynamic);
+                                const target = isDynamic ? (viewingQR as any).shortlinkSlug : ((viewingQR as any).targetUrl || viewingQR.contractAddress);
+                                downloadQR(target, isDynamic);
                             }}
-                            className="w-full bg-lime-500 text-black hover:bg-lime-400"
+                            className="w-full bg-lime-500 text-black hover:bg-lime-400 font-bold"
                         >
                             <Download className="w-4 h-4 mr-2" />
                             Descargar PNG
