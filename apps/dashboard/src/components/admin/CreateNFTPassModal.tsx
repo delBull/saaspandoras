@@ -69,6 +69,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
     const [nftType, setNftType] = useState<'access' | 'identity' | 'coupon' | 'qr'>('access');
     const [creationStep, setCreationStep] = useState<0 | 1>(0); // 0: Type Selection, 1: Form Details
     const [generatedShortlink, setGeneratedShortlink] = useState<string | null>(null);
+    const [isDynamic, setIsDynamic] = useState(true); // Default to dynamic for QR types as per improved UX
 
     // Smart QR Landing State
     const [createLanding, setCreateLanding] = useState(false);
@@ -288,31 +289,88 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
             let finalImage = formData.imageUrl || formData.imagePreview || '';
 
             // Generate QR Code if needed
-            if (nftType === 'qr') {
+            let shortlinkSlug: string | null = null;
+            let finalTargetUrl = formData.targetUrl;
+
+            // 1. If Dynamic, we MUST create the shortlink BEFORE generating the QR image (to point to the shortlink)
+            //    or at least define the slug.
+            if (nftType === 'qr' && isDynamic) {
                 try {
                     const timestamp = Date.now().toString(36);
                     const random = Math.random().toString(36).substring(2, 7);
-                    const slug = `qr-${timestamp}-${random}`;
-                    preGeneratedSlugRef.current = slug;
+                    // Create a deterministic slug now
+                    shortlinkSlug = `qr-${formData.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${timestamp}`;
+                    preGeneratedSlugRef.current = shortlinkSlug;
 
-                    const shortlinkUrl = `${window.location.origin}/${slug}`;
-                    console.log("Generating QR for:", shortlinkUrl);
+                    // The QR will point to THIS shortlink
+                    const shortlinkUrl = `${window.location.origin}/${shortlinkSlug}`;
+                    console.log("Generating Dynamic QR for:", shortlinkUrl);
 
-                    // Generate Data URI
+                    // Generate QR Image pointing to the Shortlink
                     finalImage = await QRCodeLib.toDataURL(shortlinkUrl, {
                         errorCorrectionLevel: 'H',
                         margin: 2,
                         width: 500,
-                        color: {
-                            dark: '#000000',
-                            light: '#ffffff'
-                        }
+                        color: { dark: '#000000', light: '#ffffff' }
+                    });
+
+                    // Update finalTargetUrl to be the Shortlink (so metadata has it? or keep targetUrl as destination?)
+                    // Logic: Metadata 'image' is the QR. Metadata 'external_url' usually points to the item.
+                    // For our API, targetUrl is the destination. 
+                } catch (e) {
+                    throw new Error("No se pudo generar el código QR Dinámico");
+                }
+            } else if (nftType === 'qr' && !isDynamic) {
+                // Static QR: Point directly to targetUrl
+                if (!formData.targetUrl) throw new Error("URL de destino requerida para QR estático");
+                try {
+                    console.log("Generating Static QR for:", formData.targetUrl);
+                    finalImage = await QRCodeLib.toDataURL(formData.targetUrl, {
+                        errorCorrectionLevel: 'H',
+                        margin: 2,
+                        width: 500,
+                        color: { dark: '#000000', light: '#ffffff' }
                     });
                 } catch (e) {
-                    console.error("QR Generation failed", e);
-                    throw new Error("No se pudo generar el código QR");
+                    throw new Error("No se pudo generar el código QR Estático");
                 }
             }
+
+            // 2. Register Shortlink in Database if Dynamic (Before or After deploy? Ideally before to secure slug)
+            // But if deploy fails, we have an orphan shortlink. 
+            // Better to do it in parallel or optimistic. Let's do it BEFORE to ensure we have the slug registered.
+            if (nftType === 'qr' && isDynamic && shortlinkSlug) {
+                const shortlinkPayload: any = {
+                    slug: shortlinkSlug,
+                    destinationUrl: formData.targetUrl,
+                    title: `QR: ${formData.name}`,
+                    description: `Smart QR for NFT (Pending Deploy)`
+                };
+
+                if (createLanding) {
+                    shortlinkPayload.type = 'landing';
+                    shortlinkPayload.landingConfig = {
+                        title: landingConfig.title || formData.name,
+                        slogan: landingConfig.slogan || '',
+                        logoUrl: formData.imageUrl || '',
+                        links: landingConfig.links.filter(link => link.url && link.label),
+                        socials: Object.entries(landingConfig.socials).filter(([_, url]) => url).reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {}),
+                        whatsapp: landingConfig.whatsapp || '',
+                    };
+                } else {
+                    shortlinkPayload.type = 'redirect';
+                }
+
+                const shortlinkRes = await fetch('/api/admin/shortlinks', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(shortlinkPayload)
+                });
+
+                if (!shortlinkRes.ok) throw new Error("Fallo al reservar el enlace corto (Slug tomado o error). Intenta con otro nombre.");
+                setGeneratedShortlink(`${window.location.origin}/${shortlinkSlug}`);
+            }
+
 
             const payload = {
                 name: formData.name,
@@ -326,10 +384,11 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                 transferable: formData.transferable,
                 burnable: formData.burnable,
                 validUntil: formData.validUntil,
-                nftType: nftType, // Send type to API
-                targetUrl: formData.targetUrl || null, // Required for Smart QR
+                nftType: nftType,
+                targetUrl: formData.targetUrl || null,
                 createLanding: createLanding,
-                landingConfig: createLanding ? landingConfig : null
+                landingConfig: createLanding ? landingConfig : null,
+                shortlinkSlug: shortlinkSlug // Pass the slug to API
             };
 
             const res = await fetch("/api/admin/deploy/nft-pass", {
@@ -341,6 +400,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
             const data = await res.json();
 
             if (!res.ok) {
+                // TODO: Rollback shortlink if needed, but low priority
                 clearInterval(stepInterval);
                 throw new Error(data.error || "Error en despliegue");
             }
@@ -348,66 +408,9 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
             clearInterval(stepInterval);
             setDeployedAddress(data.address);
 
-            // 4a. If "QR / Action", create the shortlink
-            if (nftType === 'qr' && preGeneratedSlugRef.current) {
-                try {
-                    // Ensure slug is clean (lowercase, alphanumeric, hyphens)
-                    const rawSlug = preGeneratedSlugRef.current;
-                    const slug = rawSlug.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-
-                    const fullUrl = `${window.location.origin}/${slug}`;
-
-                    // Prepare payload with optional landing config
-                    const shortlinkPayload: any = {
-                        slug,
-                        destinationUrl: formData.targetUrl,
-                        title: `QR: ${formData.name}`,
-                        description: `Smart QR for NFT ${data.address}`
-                    };
-
-                    // Add landing config if enabled
-                    if (createLanding) {
-                        shortlinkPayload.type = 'landing';
-                        shortlinkPayload.landingConfig = {
-                            title: landingConfig.title || formData.name,
-                            slogan: landingConfig.slogan || '',
-                            logoUrl: formData.imageUrl || '',
-                            links: landingConfig.links.filter(link => link.url && link.label),
-                            socials: Object.entries(landingConfig.socials)
-                                .filter(([_, url]) => url)
-                                .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {}),
-                            whatsapp: landingConfig.whatsapp || '',
-                        };
-                    } else {
-                        shortlinkPayload.type = 'redirect';
-                    }
-
-                    const shortlinkRes = await fetch('/api/admin/shortlinks', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(shortlinkPayload)
-                    });
-
-                    if (!shortlinkRes.ok) {
-                        const errData = await shortlinkRes.json();
-                        console.error("Shortlink creation error:", errData);
-                        throw new Error(errData.error || "Fallo creación de enlace");
-                    }
-
-                    setGeneratedShortlink(fullUrl);
-                } catch (e) {
-                    console.error("Failed to create shortlink", e);
-                    toast({
-                        title: "⚠️ Advertencia",
-                        description: "El contrato se creó pero falló la generación del Shortlink. Intenta crearlo manualmente en Dashboard.",
-                        variant: "destructive"
-                    });
-                }
-            }
-
             // 4b. If airdrop is selected, perform the minting transaction
             if (airdropToMe) {
-                setDeploymentStep(4); // "Enviando Pase de Acceso"
+                setDeploymentStep(4);
                 setIsMinting(true);
 
                 const contract = getContract({
@@ -420,8 +423,8 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                 const transaction = prepareContractCall({
                     contract,
                     method: "mintWithPayment",
-                    params: [1n], // Mint 1 pass
-                    value: 0n // Price is assumed 0 for admin setup
+                    params: [1n],
+                    value: 0n
                 });
 
                 await new Promise((resolve, reject) => {
@@ -452,6 +455,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
     const reset = () => {
         setCreationStep(0);
         setNftType('access');
+        setIsDynamic(true);
         setGeneratedShortlink(null);
         setDeploymentStatus('idle');
         setFormData({
@@ -469,7 +473,6 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
             burnable: false,
             validUntil: null
         });
-        // Removed page reload
     };
 
     if (!isOpen) return null;
@@ -553,14 +556,8 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                         <CheckCircleIcon className="w-10 h-10 text-black/80" />
                                     </motion.div>
                                     <h2 className="text-2xl font-bold text-white mb-2">
-                                        {nftType === 'access' ? 'Access Card Creada!' :
-                                            nftType === 'qr' ? 'Smart QR Creado!' :
-                                                'Artefacto Creado!'}
+                                        {nftType === 'access' ? 'Access Card Creada!' : 'Contrato Desplegado!'}
                                     </h2>
-                                    <p className="text-gray-400 mb-4">
-                                        El contrato <span className="text-white font-bold">{formData.name}</span> ha sido desplegado.
-                                    </p>
-
                                     <div className="bg-zinc-950 p-3 rounded-lg border border-zinc-800 mb-6 flex items-center justify-between gap-2 group">
                                         <code className="font-mono text-xs text-zinc-400 break-all">
                                             {deployedAddress}
@@ -581,15 +578,37 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                         </button>
                                     </div>
 
-                                    {/* QR Code Display */}
+                                    {/* QR and Share Actions */}
                                     {generatedShortlink && (
-                                        <div className="mb-6 bg-white p-4 rounded-xl inline-block">
-                                            <QRCode value={generatedShortlink} size={150} />
-                                            <p className="text-black text-xs font-bold mt-2 text-center break-all max-w-[150px]">
-                                                {generatedShortlink.replace('https://', '')}
-                                            </p>
+                                        <div className="mb-6 space-y-4">
+                                            <div className="bg-white p-4 rounded-xl inline-block">
+                                                <QRCode value={generatedShortlink} size={150} />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <button
+                                                    onClick={() => {
+                                                        const msg = `Mira mi nuevo NFT/QR Dinámico: ${generatedShortlink}`;
+                                                        window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+                                                    }}
+                                                    className="flex items-center justify-center gap-2 py-2 px-3 bg-[#25D366]/20 text-[#25D366] text-sm font-bold rounded-lg border border-[#25D366]/30 hover:bg-[#25D366]/30 transition-colors"
+                                                >
+                                                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.592 2.654-.698c1.005.572 1.903.87 3.05.87 3.197 0 5.772-2.587 5.772-5.766.001-3.18-2.575-5.766-5.766-5.766zm9.839 5.719c.001 5.542-4.502 10.046-10.047 10.046-5.542 0-10.045-4.503-10.045-10.046S6.331 1.846 11.875 1.846c5.542 0 10.045 4.503 10.046 10.046zm-5.023 2.768c-.282-.142-1.67-.822-1.928-.916-.258-.094-.447-.142-.635.141-.188.283-.733.916-.897 1.105-.165.188-.329.212-.612.07-.282-.141-1.192-.44-2.27-1.401-.837-.747-1.402-1.669-1.566-1.952-.165-.283-.018-.436.124-.577.129-.129.282-.33.423-.494.141-.165.188-.282.282-.47.094-.188.047-.353-.024-.494-.07-.141-.635-1.531-.87-2.095-.229-.55-.461-.475-.635-.484-.165-.009-.353-.01-.541-.01-.188 0-.494.07-.752.353-.259.282-.988.966-.988 2.355 0 1.389 1.011 2.731 1.152 2.919.141.188 1.99 3.038 4.823 4.261 1.889.816 2.274.654 2.684.614.675-.065 1.67-.682 1.905-1.341.235-.659.235-1.224.165-1.341-.07-.118-.259-.189-.541-.33z" /></svg>
+                                                    WhatsApp
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(generatedShortlink);
+                                                        toast({ title: "Enlace Copiado", description: generatedShortlink });
+                                                    }}
+                                                    className="flex items-center justify-center gap-2 py-2 px-3 bg-zinc-800 text-zinc-300 text-sm font-bold rounded-lg border border-zinc-700 hover:bg-zinc-700 transition-colors"
+                                                >
+                                                    <ArrowPathIcon className="w-4 h-4" />
+                                                    Copiar Link
+                                                </button>
+                                            </div>
                                         </div>
                                     )}
+
 
                                     <button
                                         onClick={handleSuccessClose}
@@ -599,6 +618,8 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                     </button>
                                 </div>
                             )}
+
+
 
                             {deploymentStatus === 'error' && (
                                 <div className="text-center py-4">
@@ -718,26 +739,47 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                         />
                                     </div>
 
-                                    {/* QR Target URL Input */}
+                                    {/* QR Configuration */}
                                     {nftType === 'qr' && (
-                                        <div className="pt-4 border-t border-zinc-700/50 mt-4">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <label className="flex items-center gap-2 text-sm font-medium text-lime-400 cursor-pointer">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={createLanding}
-                                                        onChange={(e) => setCreateLanding(e.target.checked)}
-                                                        className="w-4 h-4 rounded border-gray-600 text-lime-500 focus:ring-lime-500 bg-zinc-800"
-                                                    />
-                                                    <span>¿Crear Landing Page?</span>
-                                                </label>
+                                        <div className="pt-4 border-t border-zinc-700/50 mt-4 space-y-4">
+
+                                            {/* Dynamic Toggle */}
+                                            <div className="flex items-center justify-between bg-zinc-800/50 p-3 rounded-lg border border-zinc-700">
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-semibold text-white flex items-center gap-2">
+                                                        <RocketLaunchIcon className="w-4 h-4 text-lime-400" />
+                                                        ¿Es un QR Dinámico?
+                                                    </span>
+                                                    <span className="text-xs text-zinc-400">Si activas esto, podrás cambiar el destino del QR después.</span>
+                                                </div>
+                                                <Switch
+                                                    checked={createLanding} // Reusing createLanding state as "isDynamic" for now, or rename it? Better rename logic or just use a new state.
+                                                    // Wait, user asked for "toggle button en la creación para confirmar el dinamismo".
+                                                    // Let's use a new state `isDynamic` but I don't want to break existing logic.
+                                                    // Actually, the previous logic was "Create Landing" -> Dynamic.
+                                                    // Now "Dynamic" -> Can be Redirect OR Landing.
+                                                    // So I should separate them.
+                                                    // Let's add `isDynamic` state in the component.
+                                                    onCheckedChange={(checked) => setIsDynamic(checked)}
+                                                    className="data-[state=checked]:bg-lime-500"
+                                                />
                                             </div>
 
-                                            {!createLanding ? (
-                                                <div className="animate-in fade-in slide-in-from-top-2">
+                                            {/* Logic: 
+                                                If Dynamic:
+                                                  - Show Landing Toggle (Optional)
+                                                  - Show Target URL (Initial destination)
+                                                If Static:
+                                                  - Show Target URL (Permanent)
+                                            */}
+
+                                            <div className="animate-in fade-in slide-in-from-top-2 space-y-4">
+
+                                                {/* Target URL is always needed as initial destination */}
+                                                <div>
                                                     <label htmlFor="nft-target-url" className="text-xs font-medium text-lime-400 mb-1 flex items-center gap-2">
                                                         <QrCodeIcon className="w-4 h-4" />
-                                                        Target URL (Destino del QR)
+                                                        URL de Destino {isDynamic ? "(Inicial)" : "(Permanente)"}
                                                     </label>
                                                     <input
                                                         id="nft-target-url"
@@ -745,356 +787,386 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                                         type="url"
                                                         value={formData.targetUrl}
                                                         onChange={handleChange}
-                                                        placeholder="https://tudominio.com/landing-page"
+                                                        placeholder="https://tudominio.com"
                                                         className="w-full bg-zinc-900 border border-lime-500/50 rounded px-3 py-2 text-white focus:border-lime-500 outline-none"
                                                     />
-                                                    <p className="text-xs text-zinc-500 mt-1">Este será el destino al escanear el QR.</p>
+                                                    <p className="text-xs text-zinc-500 mt-1">
+                                                        {isDynamic
+                                                            ? "Al ser dinámico, se creará un enlace corto (pandoras.finance/...) que redirigirá aquí. Podrás cambiar esta URL luego."
+                                                            : "Al ser estático, el QR apuntará DIRECTAMENTE a esta URL. No podrás cambiarla después."
+                                                        }
+                                                    </p>
                                                 </div>
-                                            ) : (
-                                                <div className="space-y-4 animate-in fade-in slide-in-from-top-2 bg-zinc-800/30 p-4 rounded-xl border border-zinc-700">
-                                                    <h4 className="font-bold text-sm text-white mb-2">Configuración de Landing Page</h4>
 
-                                                    {/* Init with Name/Desc */}
-                                                    <div className="grid grid-cols-1 gap-3">
-                                                        <div>
-                                                            <label htmlFor="landing-title" className="text-xs text-gray-400">Título</label>
-                                                            <input
-                                                                id="landing-title"
-                                                                type="text"
-                                                                value={landingConfig.title}
-                                                                onChange={(e) => updateLandingConfig('title', e.target.value)}
-                                                                placeholder={formData.name || "Título de la Landing"}
-                                                                className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-white focus:border-lime-500 outline-none"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <label htmlFor="landing-slogan" className="text-xs text-gray-400">Eslogan / Subtítulo</label>
-                                                            <input
-                                                                id="landing-slogan"
-                                                                type="text"
-                                                                value={landingConfig.slogan}
-                                                                onChange={(e) => updateLandingConfig('slogan', e.target.value)}
-                                                                placeholder="Tu frase impactante aquí"
-                                                                className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-white focus:border-lime-500 outline-none"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <label htmlFor="landing-whatsapp" className="text-xs text-gray-400 flex items-center gap-1">
-                                                                <QrCodeIcon className="w-3 h-3" /> WhatsApp (Obligatorio para CTA principal)
-                                                            </label>
-                                                            <input
-                                                                id="landing-whatsapp"
-                                                                type="text"
-                                                                value={landingConfig.whatsapp}
-                                                                onChange={(e) => updateLandingConfig('whatsapp', e.target.value)}
-                                                                placeholder="521..."
-                                                                className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-white focus:border-lime-500 outline-none"
-                                                            />
-                                                        </div>
-                                                    </div>
+                                                {/* Landing Configuration (Only if Dynamic?) OR can Static have landing? 
+                                                    Technically Static QR pointing to a Dynamic Landing is possible but complex.
+                                                    Let's restrict Landing to Dynamic for simplicity as per "con Landings" description in Dynamic QRs.
+                                                */}
 
-                                                    {/* Redes Sociales */}
-                                                    <div>
-                                                        <h5 className="text-xs font-bold text-gray-300 mb-2 mt-2">Redes Sociales</h5>
-                                                        <div className="grid grid-cols-2 gap-2">
-                                                            {Object.keys(landingConfig.socials).map((network) => (
-                                                                <input
-                                                                    key={network}
-                                                                    type="text"
-                                                                    value={landingConfig.socials[network]}
-                                                                    onChange={(e) => updateSocial(network, e.target.value)}
-                                                                    placeholder={network.charAt(0).toUpperCase() + network.slice(1)}
-                                                                    className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs text-white focus:border-lime-500 outline-none"
-                                                                />
-                                                            ))}
-                                                        </div>
-                                                    </div>
+                                                {isDynamic && (
+                                                    <div className="pt-2 border-t border-zinc-800">
+                                                        <label className="flex items-center gap-2 text-sm font-medium text-white cursor-pointer mb-2">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={createLanding}
+                                                                onChange={(e) => setCreateLanding(e.target.checked)}
+                                                                className="w-4 h-4 rounded border-gray-600 text-lime-500 focus:ring-lime-500 bg-zinc-800"
+                                                            />
+                                                            <span>¿Generar Landing Page Automática?</span>
+                                                        </label>
 
-                                                    {/* Links Extras */}
-                                                    <div>
-                                                        <div className="flex items-center justify-between mb-2 mt-2">
-                                                            <h5 className="text-xs font-bold text-gray-300">Enlaces Adicionales</h5>
-                                                            <button
-                                                                type="button"
-                                                                onClick={addLink}
-                                                                className="text-xs bg-zinc-700 hover:bg-zinc-600 px-2 py-1 rounded text-white"
-                                                            >
-                                                                + Agregar Link
-                                                            </button>
-                                                        </div>
-                                                        <div className="space-y-2">
-                                                            {landingConfig.links.map((link, index) => (
-                                                                <div key={index} className="flex gap-2">
-                                                                    <input
-                                                                        type="text"
-                                                                        placeholder="Label"
-                                                                        value={link.label}
-                                                                        onChange={(e) => updateLink(index, 'label', e.target.value)}
-                                                                        className="w-1/3 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-white"
-                                                                    />
-                                                                    <input
-                                                                        type="text"
-                                                                        placeholder="URL"
-                                                                        value={link.url}
-                                                                        onChange={(e) => updateLink(index, 'url', e.target.value)}
-                                                                        className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-white"
-                                                                    />
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => removeLink(index)}
-                                                                        className="text-red-400 hover:text-red-300 px-1"
-                                                                    >
-                                                                        &times;
-                                                                    </button>
+                                                        <p className="text-xs text-zinc-500 mb-4 pl-6">
+                                                            Si activas esto, el QR abrirá una micro-page con tu branding y enlaces en lugar de redirigir directo.
+                                                        </p>
+
+                                                        {createLanding && (
+                                                            <div className="space-y-4 animate-in fade-in slide-in-from-top-2 bg-zinc-800/30 p-4 rounded-xl border border-zinc-700">
+                                                                <h4 className="font-bold text-sm text-white mb-2">Configuración de Landing Page</h4>
+                                                                {/* ... existing landing fields ... */}
+                                                                <div className="grid grid-cols-1 gap-3">
+                                                                    <div>
+                                                                        <label htmlFor="landing-title" className="text-xs text-gray-400">Título</label>
+                                                                        <input
+                                                                            id="landing-title"
+                                                                            type="text"
+                                                                            value={landingConfig.title}
+                                                                            onChange={(e) => updateLandingConfig('title', e.target.value)}
+                                                                            placeholder={formData.name || "Título de la Landing"}
+                                                                            className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-white focus:border-lime-500 outline-none"
+                                                                        />
+                                                                    </div>
+                                                                    <div>
+                                                                        <label htmlFor="landing-slogan" className="text-xs text-gray-400">Eslogan / Subtítulo</label>
+                                                                        <input
+                                                                            id="landing-slogan"
+                                                                            type="text"
+                                                                            value={landingConfig.slogan}
+                                                                            onChange={(e) => updateLandingConfig('slogan', e.target.value)}
+                                                                            placeholder="Tu frase impactante aquí"
+                                                                            className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-white focus:border-lime-500 outline-none"
+                                                                        />
+                                                                    </div>
+                                                                    <div>
+                                                                        <label htmlFor="landing-whatsapp" className="text-xs text-gray-400 flex items-center gap-1">
+                                                                            <QrCodeIcon className="w-3 h-3" /> WhatsApp (Obligatorio para CTA principal)
+                                                                        </label>
+                                                                        <input
+                                                                            id="landing-whatsapp"
+                                                                            type="text"
+                                                                            value={landingConfig.whatsapp}
+                                                                            onChange={(e) => updateLandingConfig('whatsapp', e.target.value)}
+                                                                            placeholder="521..."
+                                                                            className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-white focus:border-lime-500 outline-none"
+                                                                        />
+                                                                    </div>
                                                                 </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
 
-                            {/* Section 2: Economics */}
-                            <div className="space-y-4">
-                                <h3 className="text-lg font-semibold text-indigo-300 flex items-center gap-2">
-                                    <span className="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center text-sm">2</span>
-                                    Reglas y Economía
-                                </h3>
+                                                                {/* Redes Sociales */}
+                                                                <div>
+                                                                    <h5 className="text-xs font-bold text-gray-300 mb-2 mt-2">Redes Sociales</h5>
+                                                                    <div className="grid grid-cols-2 gap-2">
+                                                                        {Object.keys(landingConfig.socials).map((network) => (
+                                                                            <input
+                                                                                key={network}
+                                                                                type="text"
+                                                                                value={landingConfig.socials[network]}
+                                                                                onChange={(e) => updateSocial(network, e.target.value)}
+                                                                                placeholder={network.charAt(0).toUpperCase() + network.slice(1)}
+                                                                                className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs text-white focus:border-lime-500 outline-none"
+                                                                            />
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
 
-                                <div className="bg-zinc-800/30 p-4 rounded-xl border border-zinc-700/50 space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="group relative">
-                                            <div className="flex justify-between items-center mb-1">
-                                                <label htmlFor="nft-pass-maxSupply" className="text-xs font-medium text-gray-400 flex items-center gap-1">
-                                                    Max Supply <InformationCircleIcon className="w-3 h-3" />
-                                                </label>
-                                                <div className="flex items-center gap-1">
-                                                    <input
-                                                        type="checkbox"
-                                                        id="unlimited-supply"
-                                                        className="w-3 h-3 rounded border-zinc-700 bg-zinc-900 text-indigo-500 focus:ring-indigo-500/50"
-                                                        checked={formData.maxSupply === '115792089237316195423570985008687907853269984665640564039457584007913129639935'} // MAX_UINT256
-                                                        onChange={(e) => {
-                                                            if (e.target.checked) {
-                                                                setFormData(prev => ({ ...prev, maxSupply: '115792089237316195423570985008687907853269984665640564039457584007913129639935' }));
-                                                            } else {
-                                                                setFormData(prev => ({ ...prev, maxSupply: '1000' }));
-                                                            }
-                                                        }}
-                                                    />
-                                                    <label htmlFor="unlimited-supply" className="text-[10px] text-zinc-500 cursor-pointer uppercase font-bold">Ilimitado</label>
-                                                </div>
-                                            </div>
-                                            <input
-                                                id="nft-pass-maxSupply"
-                                                name="maxSupply"
-                                                type="text" // Changed to text to handle large numbers visually or disable
-                                                disabled={formData.maxSupply === '115792089237316195423570985008687907853269984665640564039457584007913129639935'}
-                                                value={formData.maxSupply === '115792089237316195423570985008687907853269984665640564039457584007913129639935' ? '∞' : formData.maxSupply}
-                                                onChange={handleChange}
-                                                className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-indigo-500 outline-none disabled:opacity-50 disabled:cursor-not-allowed font-mono"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label htmlFor="nft-pass-price" className="block text-xs font-medium text-gray-400 mb-1">Precio (ETH)</label>
-                                            <input
-                                                id="nft-pass-price"
-                                                name="price"
-                                                type="number"
-                                                step="0.001"
-                                                value={formData.price}
-                                                onChange={handleChange}
-                                                className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-indigo-500 outline-none"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label htmlFor="nft-pass-treasury" className="block text-xs font-medium text-gray-400 mb-1">Wallet Tesorería (Opcional)</label>
-                                        <input
-                                            id="nft-pass-treasury"
-                                            name="treasuryAddress"
-                                            type="text"
-                                            value={formData.treasuryAddress}
-                                            onChange={handleChange}
-                                            placeholder="0x..."
-                                            className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-indigo-500 outline-none"
-                                        />
-                                    </div>
-
-                                    {/* Advanced Traits Toggles */}
-                                    <div className="pt-2 border-t border-zinc-700/50 mt-2 space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <label htmlFor="switch-transferable" className="text-sm font-medium text-gray-300 block">Transferible</label>
-                                                <p className="text-xs text-zinc-500">¿Se puede enviar a otros usuarios?</p>
-                                            </div>
-                                            <Switch
-                                                id="switch-transferable"
-                                                checked={formData.transferable}
-                                                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, transferable: checked }))}
-                                                className="data-[state=checked]:bg-emerald-500"
-                                            />
-                                        </div>
-
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <label htmlFor="switch-burnable" className="text-sm font-medium text-gray-300 block">Burnable (Quemable)</label>
-                                                <p className="text-xs text-zinc-500">¿Se puede destruir para canjear?</p>
-                                            </div>
-                                            <Switch
-                                                id="switch-burnable"
-                                                checked={formData.burnable}
-                                                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, burnable: checked }))}
-                                                className="data-[state=checked]:bg-rose-500"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-3 pt-2 border-t border-zinc-700/50 mt-2">
-                                        <input
-                                            id="airdrop-me"
-                                            type="checkbox"
-                                            checked={airdropToMe}
-                                            onChange={(e) => setAirdropToMe(e.target.checked)}
-                                            className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-emerald-500 focus:ring-emerald-500/50"
-                                        />
-                                        <label htmlFor="airdrop-me" className="text-sm text-gray-300 cursor-pointer">
-                                            Mintar el primer token a mi wallet (Admin)
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Section 3: NFT Image */}
-                            <div className="space-y-4">
-                                <h3 className="text-lg font-semibold text-amber-300 flex items-center gap-2">
-                                    <span className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-sm">3</span>
-                                    Imagen del NFT
-                                </h3>
-
-                                <div className="bg-zinc-800/50 p-6 rounded-xl border border-zinc-700 flex flex-col md:flex-row gap-6 items-start">
-                                    <div className="relative group w-full md:w-48 aspect-square bg-zinc-900 rounded-xl border-2 border-dashed border-zinc-600 hover:border-amber-500/50 transition-colors flex flex-col items-center justify-center overflow-hidden">
-                                        {formData.imagePreview ? (
-                                            <>
-                                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                <img src={formData.imagePreview} alt="NFT Preview" className="w-full h-full object-cover" />
-                                                {uploadingImage && (
-                                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                                                        <CloudArrowUpIcon className="w-8 h-8 text-white animate-bounce" />
+                                                                {/* Links Extras */}
+                                                                <div>
+                                                                    <div className="flex items-center justify-between mb-2 mt-2">
+                                                                        <h5 className="text-xs font-bold text-gray-300">Enlaces Adicionales</h5>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={addLink}
+                                                                            className="text-xs bg-zinc-700 hover:bg-zinc-600 px-2 py-1 rounded text-white"
+                                                                        >
+                                                                            + Agregar Link
+                                                                        </button>
+                                                                    </div>
+                                                                    <div className="space-y-2">
+                                                                        {landingConfig.links.map((link, index) => (
+                                                                            <div key={index} className="flex gap-2">
+                                                                                <input
+                                                                                    type="text"
+                                                                                    placeholder="Label"
+                                                                                    value={link.label}
+                                                                                    onChange={(e) => updateLink(index, 'label', e.target.value)}
+                                                                                    className="w-1/3 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-white"
+                                                                                />
+                                                                                <input
+                                                                                    type="text"
+                                                                                    placeholder="URL"
+                                                                                    value={link.url}
+                                                                                    onChange={(e) => updateLink(index, 'url', e.target.value)}
+                                                                                    className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-white"
+                                                                                />
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => removeLink(index)}
+                                                                                    className="text-red-400 hover:text-red-300 px-1"
+                                                                                >
+                                                                                    &times;
+                                                                                </button>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                                {/* End of Landing Config */}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )}
-                                            </>
-                                        ) : (
-                                            <div className="text-center p-4">
-                                                <PhotoIcon className="w-12 h-12 text-zinc-600 mx-auto mb-2" />
-                                                <p className="text-sm text-gray-400">Subir Imagen</p>
-                                                <p className="text-xs text-gray-600 mt-1">PNG, JPG, GIF</p>
                                             </div>
-                                        )}
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handleImageUpload}
-                                            disabled={uploadingImage}
-                                            className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
-                                        />
-                                    </div>
-
-                                    <div className="flex-1 space-y-3">
-                                        <div>
-                                            <h4 className="font-bold text-white">Visual del Token</h4>
-                                            <p className="text-sm text-gray-400 mt-1">
-                                                Imagen que representa este {nftType.toUpperCase()}.
-                                            </p>
+            )}
                                         </div>
 
-                                        {formData.imageUrl && (
-                                            <div className="bg-emerald-500/10 border border-emerald-500/20 p-2 rounded">
-                                                <p className="text-emerald-400 text-xs flex items-center gap-1">
-                                                    <CheckCircleIcon className="w-4 h-4" />
-                                                    Imagen lista
-                                                </p>
+                                            {/* Section 2: Economics */}
+                                    <div className="space-y-4">
+                                        <h3 className="text-lg font-semibold text-indigo-300 flex items-center gap-2">
+                                            <span className="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center text-sm">2</span>
+                                            Reglas y Economía
+                                        </h3>
+
+                                        <div className="bg-zinc-800/30 p-4 rounded-xl border border-zinc-700/50 space-y-4">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="group relative">
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <label htmlFor="nft-pass-maxSupply" className="text-xs font-medium text-gray-400 flex items-center gap-1">
+                                                            Max Supply <InformationCircleIcon className="w-3 h-3" />
+                                                        </label>
+                                                        <div className="flex items-center gap-1">
+                                                            <input
+                                                                type="checkbox"
+                                                                id="unlimited-supply"
+                                                                className="w-3 h-3 rounded border-zinc-700 bg-zinc-900 text-indigo-500 focus:ring-indigo-500/50"
+                                                                checked={formData.maxSupply === '115792089237316195423570985008687907853269984665640564039457584007913129639935'} // MAX_UINT256
+                                                                onChange={(e) => {
+                                                                    if (e.target.checked) {
+                                                                        setFormData(prev => ({ ...prev, maxSupply: '115792089237316195423570985008687907853269984665640564039457584007913129639935' }));
+                                                                    } else {
+                                                                        setFormData(prev => ({ ...prev, maxSupply: '1000' }));
+                                                                    }
+                                                                }}
+                                                            />
+                                                            <label htmlFor="unlimited-supply" className="text-[10px] text-zinc-500 cursor-pointer uppercase font-bold">Ilimitado</label>
+                                                        </div>
+                                                    </div>
+                                                    <input
+                                                        id="nft-pass-maxSupply"
+                                                        name="maxSupply"
+                                                        type="text" // Changed to text to handle large numbers visually or disable
+                                                        disabled={formData.maxSupply === '115792089237316195423570985008687907853269984665640564039457584007913129639935'}
+                                                        value={formData.maxSupply === '115792089237316195423570985008687907853269984665640564039457584007913129639935' ? '∞' : formData.maxSupply}
+                                                        onChange={handleChange}
+                                                        className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-indigo-500 outline-none disabled:opacity-50 disabled:cursor-not-allowed font-mono"
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <label htmlFor="nft-pass-price" className="block text-xs font-medium text-gray-400 mb-1">Precio (ETH)</label>
+                                                    <input
+                                                        id="nft-pass-price"
+                                                        name="price"
+                                                        type="number"
+                                                        step="0.001"
+                                                        value={formData.price}
+                                                        onChange={handleChange}
+                                                        className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-indigo-500 outline-none"
+                                                    />
+                                                </div>
                                             </div>
-                                        )}
+
+                                            <div>
+                                                <label htmlFor="nft-pass-treasury" className="block text-xs font-medium text-gray-400 mb-1">Wallet Tesorería (Opcional)</label>
+                                                <input
+                                                    id="nft-pass-treasury"
+                                                    name="treasuryAddress"
+                                                    type="text"
+                                                    value={formData.treasuryAddress}
+                                                    onChange={handleChange}
+                                                    placeholder="0x..."
+                                                    className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-indigo-500 outline-none"
+                                                />
+                                            </div>
+
+                                            {/* Advanced Traits Toggles */}
+                                            <div className="pt-2 border-t border-zinc-700/50 mt-2 space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <label htmlFor="switch-transferable" className="text-sm font-medium text-gray-300 block">Transferible</label>
+                                                        <p className="text-xs text-zinc-500">¿Se puede enviar a otros usuarios?</p>
+                                                    </div>
+                                                    <Switch
+                                                        id="switch-transferable"
+                                                        checked={formData.transferable}
+                                                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, transferable: checked }))}
+                                                        className="data-[state=checked]:bg-emerald-500"
+                                                    />
+                                                </div>
+
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <label htmlFor="switch-burnable" className="text-sm font-medium text-gray-300 block">Burnable (Quemable)</label>
+                                                        <p className="text-xs text-zinc-500">¿Se puede destruir para canjear?</p>
+                                                    </div>
+                                                    <Switch
+                                                        id="switch-burnable"
+                                                        checked={formData.burnable}
+                                                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, burnable: checked }))}
+                                                        className="data-[state=checked]:bg-rose-500"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-3 pt-2 border-t border-zinc-700/50 mt-2">
+                                                <input
+                                                    id="airdrop-me"
+                                                    type="checkbox"
+                                                    checked={airdropToMe}
+                                                    onChange={(e) => setAirdropToMe(e.target.checked)}
+                                                    className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-emerald-500 focus:ring-emerald-500/50"
+                                                />
+                                                <label htmlFor="airdrop-me" className="text-sm text-gray-300 cursor-pointer">
+                                                    Mintar el primer token a mi wallet (Admin)
+                                                </label>
+                                            </div>
+                                        </div>
                                     </div>
+
+                                    {/* Section 3: NFT Image */}
+                                    <div className="space-y-4">
+                                        <h3 className="text-lg font-semibold text-amber-300 flex items-center gap-2">
+                                            <span className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-sm">3</span>
+                                            Imagen del NFT
+                                        </h3>
+
+                                        <div className="bg-zinc-800/50 p-6 rounded-xl border border-zinc-700 flex flex-col md:flex-row gap-6 items-start">
+                                            <div className="relative group w-full md:w-48 aspect-square bg-zinc-900 rounded-xl border-2 border-dashed border-zinc-600 hover:border-amber-500/50 transition-colors flex flex-col items-center justify-center overflow-hidden">
+                                                {formData.imagePreview ? (
+                                                    <>
+                                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                        <img src={formData.imagePreview} alt="NFT Preview" className="w-full h-full object-cover" />
+                                                        {uploadingImage && (
+                                                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                                                <CloudArrowUpIcon className="w-8 h-8 text-white animate-bounce" />
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                ) : (
+                                                    <div className="text-center p-4">
+                                                        <PhotoIcon className="w-12 h-12 text-zinc-600 mx-auto mb-2" />
+                                                        <p className="text-sm text-gray-400">Subir Imagen</p>
+                                                        <p className="text-xs text-gray-600 mt-1">PNG, JPG, GIF</p>
+                                                    </div>
+                                                )}
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={handleImageUpload}
+                                                    disabled={uploadingImage}
+                                                    className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                                                />
+                                            </div>
+
+                                            <div className="flex-1 space-y-3">
+                                                <div>
+                                                    <h4 className="font-bold text-white">Visual del Token</h4>
+                                                    <p className="text-sm text-gray-400 mt-1">
+                                                        Imagen que representa este {nftType.toUpperCase()}.
+                                                    </p>
+                                                </div>
+
+                                                {formData.imageUrl && (
+                                                    <div className="bg-emerald-500/10 border border-emerald-500/20 p-2 rounded">
+                                                        <p className="text-emerald-400 text-xs flex items-center gap-1">
+                                                            <CheckCircleIcon className="w-4 h-4" />
+                                                            Imagen lista
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </>
+                                    )}
+                                <div className="p-6 border-t border-zinc-800 bg-zinc-900 z-10 sticky bottom-0 flex justify-end gap-3" >
+                                    <button onClick={onClose} className="px-4 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-zinc-800 transition-colors">
+                                        Cancelar
+                                    </button>
+                                    {
+                                        creationStep === 1 && (
+                                            <button onClick={() => setCreationStep(0)} className="px-4 py-2 rounded-lg text-zinc-300 hover:bg-zinc-800 border border-zinc-700">
+                                                Atrás
+                                            </button>
+                                        )
+                                    }
+                                    {
+                                        creationStep === 1 && (
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+
+                                                    // Validar wallet conectada
+                                                    if (!account?.address) {
+                                                        toast({
+                                                            title: "Wallet No Conectada",
+                                                            description: "Por favor conecta tu wallet antes de desplegar",
+                                                            variant: "destructive"
+                                                        });
+                                                        return;
+                                                    }
+
+                                                    // Validar nombre
+                                                    if (!formData.name?.trim()) {
+                                                        toast({
+                                                            title: "Error de Validación",
+                                                            description: "El nombre del NFT es obligatorio",
+                                                            variant: "destructive"
+                                                        });
+                                                        return;
+                                                    }
+
+                                                    // Validar símbolo
+                                                    if (!formData.symbol?.trim()) {
+                                                        toast({
+                                                            title: "Error de Validación",
+                                                            description: "El símbolo del NFT es obligatorio",
+                                                            variant: "destructive"
+                                                        });
+                                                        return;
+                                                    }
+
+                                                    // Validar URL para QR
+                                                    if (nftType === 'qr' && !createLanding && !formData.targetUrl) {
+                                                        toast({
+                                                            title: "Error de Validación",
+                                                            description: "Debes definir una URL de destino para el QR",
+                                                            variant: "destructive"
+                                                        });
+                                                        return;
+                                                    }
+
+                                                    // Ejecutar despliegue
+                                                    handleDeploy();
+                                                }}
+                                                className="px-6 py-2 rounded-lg font-bold shadow-lg flex items-center gap-2 transform transition-all bg-gradient-to-r from-lime-500 to-emerald-500 hover:from-lime-400 hover:to-emerald-400 text-black shadow-lime-500/20 hover:scale-[1.02]"
+                                            >
+                                                🚀 Desplegar {nftType === 'qr' ? 'QR & Contract' : 'Contrato'}
+                                            </button>
+                                        )
+                                    }
                                 </div>
                             </div>
-                        </>
-                    )}
-                </div>
-
-                {/* Footer Actions */}
-                <div className="p-6 border-t border-zinc-800 bg-zinc-900 z-10 sticky bottom-0 flex justify-end gap-3">
-                    <button onClick={onClose} className="px-4 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-zinc-800 transition-colors">
-                        Cancelar
-                    </button>
-                    {creationStep === 1 && (
-                        <button onClick={() => setCreationStep(0)} className="px-4 py-2 rounded-lg text-zinc-300 hover:bg-zinc-800 border border-zinc-700">
-                            Atrás
-                        </button>
-                    )}
-                    {creationStep === 1 && (
-                        <button
-                            type="button"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-
-                                // Validar wallet conectada
-                                if (!account?.address) {
-                                    toast({
-                                        title: "Wallet No Conectada",
-                                        description: "Por favor conecta tu wallet antes de desplegar",
-                                        variant: "destructive"
-                                    });
-                                    return;
-                                }
-
-                                // Validar nombre
-                                if (!formData.name?.trim()) {
-                                    toast({
-                                        title: "Error de Validación",
-                                        description: "El nombre del NFT es obligatorio",
-                                        variant: "destructive"
-                                    });
-                                    return;
-                                }
-
-                                // Validar símbolo
-                                if (!formData.symbol?.trim()) {
-                                    toast({
-                                        title: "Error de Validación",
-                                        description: "El símbolo del NFT es obligatorio",
-                                        variant: "destructive"
-                                    });
-                                    return;
-                                }
-
-                                // Validar URL para QR
-                                if (nftType === 'qr' && !createLanding && !formData.targetUrl) {
-                                    toast({
-                                        title: "Error de Validación",
-                                        description: "Debes definir una URL de destino para el QR",
-                                        variant: "destructive"
-                                    });
-                                    return;
-                                }
-
-                                // Ejecutar despliegue
-                                handleDeploy();
-                            }}
-                            className="px-6 py-2 rounded-lg font-bold shadow-lg flex items-center gap-2 transform transition-all bg-gradient-to-r from-lime-500 to-emerald-500 hover:from-lime-400 hover:to-emerald-400 text-black shadow-lime-500/20 hover:scale-[1.02]"
-                        >
-                            🚀 Desplegar {nftType === 'qr' ? 'QR & Contract' : 'Contrato'}
-                        </button>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
+                        </div>
+                    );
 }

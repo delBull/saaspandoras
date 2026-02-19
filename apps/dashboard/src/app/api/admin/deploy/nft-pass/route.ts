@@ -47,7 +47,8 @@ export async function POST(req: Request) {
             nftType = 'access',
             targetUrl = null,
             createLanding = false,
-            landingConfig = null
+            landingConfig = null,
+            shortlinkSlug = null // New field for dynamic QR slug
         } = body;
 
         if (!name || !symbol || !owner) {
@@ -158,7 +159,8 @@ export async function POST(req: Request) {
                     // New fields for shortlink creation
                     shortlinkType: shortlinkType || null, // 'landing' or 'redirect'
                     landingConfig: landingConfig || null, // Configuration for landing page if shortlinkType is 'landing'
-                    targetUrl: targetUrl // Target URL for Smart QR redirects
+                    targetUrl: targetUrl, // Target URL for Smart QR redirects
+                    shortlinkSlug: shortlinkSlug // Store the dynamic shortlink slug
                 },
                 accessCardImage: image || null, // Store the image for metadata!
                 smartQRDestination: targetUrl // Store Smart QR destination separately for easy access
