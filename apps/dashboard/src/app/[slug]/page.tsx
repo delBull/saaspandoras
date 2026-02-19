@@ -105,8 +105,8 @@ async function handleShortlink(slug: string, searchParams: URLSearchParams, head
 
     // 🚀 NEW: Smart QR Landing Page Logic
     if (link.type === 'landing' && link.landingConfig) {
-      console.log(`🎨 Rendering Landing Page for: ${slug}`);
-      return <SmartQRLanding config={link.landingConfig} slug={slug} />;
+      console.log(`🎨 Found Landing Page config for: ${slug}`);
+      return { type: 'landing', config: link.landingConfig };
     }
 
     // Redirect to destination URL with shortlink tracking parameters
@@ -167,11 +167,15 @@ export default async function ShortlinkPage({ params, searchParams }: PageProps)
   }
 
   try {
-    // Call handleShortlink - this will redirect if successful or throw error if not
-    await handleShortlink(slug, urlSearchParams, headersData);
+    // Call handleShortlink - this will redirect if successful or return landing config
+    const result = await handleShortlink(slug, urlSearchParams, headersData);
 
-    // If we reach this point, handleShortlink should have redirected
-    // This is a fallback in case something goes wrong
+    if (result?.type === 'landing') {
+      return <SmartQRLanding config={result.config} slug={slug} />;
+    }
+
+    // If we reach this point and no redirect happened (which throws), 
+    // it's a fallback for non-landing results
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="max-w-md w-full space-y-4 p-8 bg-white rounded-lg shadow-lg">
