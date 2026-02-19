@@ -10,4 +10,4 @@ cmds = ["bun install"]
 cmd = "bun run build:railway"
 
 [phases.start]
-cmd = "cd apps/deployment-service && node dist/index.js"
+cmd = "cd apps/deployment-service && bun dist/index.js"
