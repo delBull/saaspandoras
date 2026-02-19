@@ -81,7 +81,8 @@ export async function deployW2EProtocol(
   // Optimized RPC Selection
   // STRATEGY: 
   // 1. FallbackProvider: Use multiple reliable public nodes + custom RPC in parallel.
-  // 2. Weights: Custom RPC (if any) gets higher priority/weight.
+  // 2. Weights: All Priority 1. We trust Ethers to pick a working one, rather than forcing a potentially bad "custom" one.
+  //    This is crucial because Vercel often has generic/bad RPCs set in SEPOLIA_RPC_URL.
 
   const SEPOLIA_RPCS = [
     "https://rpc.ankr.com/eth_sepolia",
@@ -99,25 +100,27 @@ export async function deployW2EProtocol(
     "https://1rpc.io/base"
   ];
 
+  // Filter out duplicates if customRpc is already in the list
   const rpcUrls = network === 'sepolia' ? [...SEPOLIA_RPCS] : [...BASE_RPCS];
 
-  // If user provided custom RPC, add it to the front
-  if (customRpc) {
+  if (customRpc && !rpcUrls.includes(customRpc)) {
     console.log(`🔹 Incorporating Custom RPC into Fallback Strategy: ${customRpc}`);
     rpcUrls.unshift(customRpc);
+  } else if (customRpc) {
+    console.log(`🔹 Custom RPC ${customRpc} is already in the public list. Treated normally.`);
   }
 
   console.log(`🛡️ Initializing FallbackProvider with ${rpcUrls.length} nodes for ${network}.`);
 
-  const providers = rpcUrls.map((url, index) => {
+  const providers = rpcUrls.map((url) => {
     const p = new StaticJsonRpcProvider(url, {
-      name: 'custom',
+      name: 'provider-' + url.substring(8, 20), // helpful debug name
       chainId: targetChainId
     });
 
     return {
       provider: p,
-      priority: url === customRpc ? 1 : 2, // Custom RPC gets priority 1
+      priority: 1, // ALL Equal priority. Let them race/failover naturally.
       weight: 1,
       stallTimeout: 3000
     };
