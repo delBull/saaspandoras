@@ -117,7 +117,11 @@ export async function deployNFTPass(
             // 2. Deep Check: Try a real call that requires state access (simulating nonce check)
             // We intentionally use a random address to be safe, just checking if the node RESPONDS to state queries.
             const testAddr = "0x0000000000000000000000000000000000000000";
-            const nonce = await tempProvider.getTransactionCount(testAddr);
+
+            const nonce = await Promise.race([
+                tempProvider.getTransactionCount(testAddr),
+                new Promise((_, reject) => setTimeout(() => reject(new Error("RPC Timeout 4s")), 4000))
+            ]);
 
             console.log(`✅ Deep Verified ${url} (Nonce: ${nonce})`);
             provider = tempProvider;
