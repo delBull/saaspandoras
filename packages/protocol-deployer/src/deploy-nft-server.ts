@@ -27,30 +27,64 @@ export async function deployNFTPassServer(
     const privateKey = process.env.DEPLOYER_PRIVATE_KEY || process.env.PRIVATE_KEY;
     if (!privateKey) throw new Error("DEPLOYER_PRIVATE_KEY or PRIVATE_KEY missing");
 
-    const rpcUrl =
-        network === "sepolia"
-            ? process.env.SEPOLIA_RPC_URL
-            : process.env.BASE_RPC_URL;
+    const ALCHEMY_FALLBACK = "https://eth-sepolia.g.alchemy.com/v2/demo";
+    const SEPOLIA_RPCS = [
+        ALCHEMY_FALLBACK,
+        "https://sepolia.drpc.org",
+        "https://rpc.ankr.com/eth_sepolia",
+        "https://1rpc.io/sepolia",
+        "https://ethereum-sepolia-rpc.publicnode.com",
+        "https://rpc2.sepolia.org"
+    ];
 
-    if (!rpcUrl) throw new Error(`RPC URL missing for ${network}`);
+    const BASE_RPCS = [
+        "https://mainnet.base.org",
+        "https://base.llamarpc.com",
+        "https://base.drpc.org",
+        "https://1rpc.io/base"
+    ];
+
+    const rpcUrls = network === 'sepolia' ? [...SEPOLIA_RPCS] : [...BASE_RPCS];
+
+    let customRpc = network === 'sepolia' ? process.env.SEPOLIA_RPC_URL : process.env.BASE_RPC_URL;
+    if (customRpc) {
+        customRpc = customRpc.trim().replace(/^["']|["']$/g, '');
+        if (customRpc.startsWith('http')) {
+            const idx = rpcUrls.indexOf(customRpc);
+            if (idx > -1) rpcUrls.splice(idx, 1);
+            rpcUrls.unshift(customRpc);
+        }
+    }
 
     const chainId = network === "sepolia" ? 11155111 : 8453;
+    console.log(`🌍 [SERVER-MODE] Connecting to ${network} (ChainId: ${chainId}) via Deep Verification Strategy`);
 
-    console.log(`🌍 [SERVER-MODE] Connecting to ${network} (ChainId: ${chainId}) via Premium RPC`);
+    let provider: StaticJsonRpcProvider | undefined;
 
-    // 3. Initialize Provider (StaticJsonRpcProvider is best for single endpoint)
-    const provider = new StaticJsonRpcProvider(rpcUrl, {
-        name: network,
-        chainId: chainId
-    });
+    for (const url of rpcUrls) {
+        console.log(`[SERVER-MODE] Testing RPC: ${url}`);
+        try {
+            const tempProvider = new StaticJsonRpcProvider(url, {
+                name: network,
+                chainId: chainId
+            });
 
-    // 4. Sanity Check (Fail Fast)
-    try {
-        const blockNumber = await provider.getBlockNumber();
-        console.log(`✅ [SERVER-MODE] Connected. Current Block: ${blockNumber}`);
-    } catch (e) {
-        console.error("❌ [SERVER-MODE] RPC Connection Failed", e);
-        throw new Error("Failed to connect to RPC provider. Check URL or Rate Limits.");
+            // Deep Check: simulate nonce check
+            const testAddr = "0x0000000000000000000000000000000000000000";
+            const nonce = await tempProvider.getTransactionCount(testAddr);
+
+            console.log(`✅ [SERVER-MODE] Deep Verified ${url} (Nonce: ${nonce})`);
+            provider = tempProvider;
+            break;
+        } catch (e: any) {
+            const msg = e.message || String(e);
+            console.warn(`⚠️ [SERVER-MODE] Failed Deep Check for ${url}: ${msg.substring(0, 200)}...`);
+        }
+    }
+
+    if (!provider) {
+        console.error("❌ [SERVER-MODE] All RPCs failed deep health check.");
+        throw new Error(`Critical: No working RPC provider found. Please check network restrictions.`);
     }
 
     // 5. Setup Wallet & Factory
