@@ -29,19 +29,16 @@ export async function deployNFTPassServer(
 
     const ALCHEMY_FALLBACK = "https://eth-sepolia.g.alchemy.com/v2/demo";
     const SEPOLIA_RPCS = [
-        ALCHEMY_FALLBACK,
-        "https://sepolia.drpc.org",
-        "https://rpc.ankr.com/eth_sepolia",
-        "https://1rpc.io/sepolia",
         "https://ethereum-sepolia-rpc.publicnode.com",
+        "https://sepolia.drpc.org",
+        ALCHEMY_FALLBACK, // Move Alchemy down since it hangs often
         "https://rpc2.sepolia.org"
     ];
 
     const BASE_RPCS = [
         "https://mainnet.base.org",
         "https://base.llamarpc.com",
-        "https://base.drpc.org",
-        "https://1rpc.io/base"
+        "https://base.drpc.org"
     ];
 
     const rpcUrls = network === 'sepolia' ? [...SEPOLIA_RPCS] : [...BASE_RPCS];
