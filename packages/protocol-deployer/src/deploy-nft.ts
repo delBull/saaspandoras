@@ -72,16 +72,19 @@ export async function deployNFTPass(
     }
 
     // Optimized RPC Selection
-    // STRATEGY: Sequential Rotation (Simpler & More Robust than FallbackProvider for this specific error)
-    // We will iterate through the list and try to connect/getNetwork. The first one that works wins.
+    // STRATEGY: Alchemy-First + Aggressive Fallback
+    // Vercel IPs are often blocked by public nodes (Ankr, Drpc). Alchemy is the most reliable.
+    // We prioritize Alchemy, then custom, then public.
+
+    const ALCHEMY_SEPOLIA = "https://eth-sepolia.g.alchemy.com/v2/demo"; // Public demo key
 
     const SEPOLIA_RPCS = [
+        ALCHEMY_SEPOLIA,
         "https://rpc.ankr.com/eth_sepolia",
         "https://sepolia.drpc.org",
         "https://1rpc.io/sepolia",
-        "https://rpc2.sepolia.org",
-        "https://sepolia.gateway.tenderly.co",
-        "https://ethereum-sepolia-rpc.publicnode.com"
+        "https://ethereum-sepolia-rpc.publicnode.com",
+        "https://rpc2.sepolia.org"
     ];
 
     const BASE_RPCS = [
@@ -93,17 +96,19 @@ export async function deployNFTPass(
 
     const rpcUrls = network === 'sepolia' ? [...SEPOLIA_RPCS] : [...BASE_RPCS];
 
-    // Filter out duplicates if customRpc is already in the list
-    if (customRpc && !rpcUrls.includes(customRpc)) {
-        console.log(`🔹 Incorporating Custom RPC into Fallback Strategy: ${customRpc}`);
+    if (customRpc) {
+        // If custom RPC is provided, IT MUST BE GOOD. Place it FIRST.
+        // But we remove it from the list if it's already there to avoid dupes.
+        const idx = rpcUrls.indexOf(customRpc);
+        if (idx > -1) rpcUrls.splice(idx, 1);
         rpcUrls.unshift(customRpc);
-    } else if (customRpc) {
-        console.log(`🔹 Custom RPC ${customRpc} is already in the public list. Treated normally.`);
     }
 
-    console.log(`🛡️ Starting Sequential RPC Connection Strategy (Nodes: ${rpcUrls.length})`);
+    console.log(`🛡️ Starting Robust RPC Strategy (Nodes: ${rpcUrls.length})`);
 
     let provider: ethers.providers.StaticJsonRpcProvider | undefined;
+
+    const errors: any[] = [];
 
     for (const url of rpcUrls) {
         try {
@@ -113,24 +118,25 @@ export async function deployNFTPass(
                 name: network === 'sepolia' ? 'sepolia' : 'base'
             });
 
-            // Test the connection
-            await p.getNetwork();
+            // Aggressive check: Block Number
+            // We set a short timeout for this specific check to fail fast
+            const blockPromise = p.getBlockNumber();
+            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout getting block")), 4000));
 
-            // Double check block number to ensure it's not stale/erroring
-            const block = await p.getBlockNumber();
+            const block = await Promise.race([blockPromise, timeoutPromise]);
+
             console.log(`✅ Connected to ${url} (Block: ${block})`);
-
             provider = p;
-            break; // Found a working one, stop.
+            break;
         } catch (e: any) {
-            console.warn(`⚠️ Failed to connect to ${url}: ${e.message || e}`);
-            // Continue to next
+            console.warn(`⚠️ Connection failed to ${url}: ${e.message}`);
+            errors.push({ url, error: e.message });
         }
     }
 
     if (!provider) {
-        console.error("❌ All RPCs failed.");
-        throw new Error("Failed to initialize any RPC provider after trying all candidates.");
+        console.error("❌ All RPCs failed. Detailed errors:", JSON.stringify(errors, null, 2));
+        throw new Error(`Failed to initialize any RPC provider. Tried ${rpcUrls.length} candidates. Errors: ${errors.map(e => e.error).join(', ')}`);
     }
 
     // Ensure wallet is connected to the chosen provider
