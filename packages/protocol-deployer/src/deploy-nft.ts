@@ -123,7 +123,8 @@ export async function deployNFTPass(
             provider = tempProvider;
             break;
         } catch (e: any) {
-            console.warn(`⚠️ Failed Deep Check for ${url}: ${e.message}`);
+            const msg = e.message || String(e);
+            console.warn(`⚠️ Failed Deep Check for ${url}: ${msg.substring(0, 200)}...`);
             // Continue to next candidate
         }
     }
