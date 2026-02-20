@@ -79,13 +79,15 @@ export async function deployW2EProtocol(
   }
 
   // Optimized RPC Selection
-  // STRATEGY: Native Fetch Race
-  // Ethers v5 providers might be failing due to specific header/request configurations in this environment.
-  // We will use native `fetch` to find a working RPC first, then initialize Ethers with the winner.
+  // STRATEGY: Deep Verification + Hardcoded Alchemy Backup
+  // Ethers v5 on Vercel is failing with "missing response". We must verify the connection deeply.
+
+  const ALCHEMY_FALLBACK = "https://eth-sepolia.g.alchemy.com/v2/demo";
 
   const SEPOLIA_RPCS = [
-    "https://eth-sepolia.g.alchemy.com/v2/demo",
+    ALCHEMY_FALLBACK,
     "https://sepolia.drpc.org",
+    "https://rpc.ankr.com/eth_sepolia",
     "https://rpc.ankr.com/eth_sepolia",
     "https://1rpc.io/sepolia",
     "https://ethereum-sepolia-rpc.publicnode.com",
@@ -107,65 +109,40 @@ export async function deployW2EProtocol(
     rpcUrls.unshift(customRpc);
   }
 
-  console.log(`🛡️ Starting Native Fetch RPC Strategy (Nodes: ${rpcUrls.length})`);
+  console.log(`🛡️ Starting Deep Verification RPC Strategy (Nodes: ${rpcUrls.length})`);
 
-  let bestRpcUrl: string | undefined;
+  let provider: ethers.providers.StaticJsonRpcProvider | undefined;
 
-  // Helper to test connection with native fetch
-  const checkRpcConnection = async (url: string): Promise<boolean> => {
+  for (const url of rpcUrls) {
+    console.log(`Testing RPC: ${url}`);
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
-
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: "2.0",
-          method: "eth_blockNumber",
-          params: [],
-          id: 1
-        }),
-        signal: controller.signal
+      // 1. Create a clean StaticJsonRpcProvider with minimal config to avoid header issues
+      const tempProvider = new StaticJsonRpcProvider(url, {
+        chainId: targetChainId,
+        name: network === 'sepolia' ? 'sepolia' : 'base'
       });
 
-      clearTimeout(timeoutId);
+      // 2. Deep Check: Try a real call that requires state access (simulating nonce check)
+      // We intentionally use a random address to be safe, just checking if the node RESPONDS to state queries.
+      const testAddr = "0x0000000000000000000000000000000000000000";
+      const nonce = await tempProvider.getTransactionCount(testAddr);
 
-      if (!res.ok) return false;
-
-      const data: any = await res.json();
-      if (data && data.result) {
-        console.log(`✅ Verified via Fetch: ${url}`);
-        return true;
-      }
-      return false;
-    } catch (e) {
-      return false;
-    }
-  };
-
-  // Iterate sequentially (to be safe) or use Promise.any logic
-  for (const url of rpcUrls) {
-    console.log(`Testing RPC via fetch: ${url}`);
-    const isWorking = await checkRpcConnection(url);
-    if (isWorking) {
-      bestRpcUrl = url;
+      console.log(`✅ Deep Verified ${url} (Nonce: ${nonce})`);
+      provider = tempProvider;
       break;
+    } catch (e: any) {
+      console.warn(`⚠️ Failed Deep Check for ${url}: ${e.message}`);
+      // Continue to next candidate
     }
   }
 
-  if (!bestRpcUrl) {
-    console.error("❌ All RPCs failed raw connectivity check.");
-    throw new Error(`Failed to find any reachable RPC endpoint via fetch.`);
+  if (!provider) {
+    console.error("❌ All RPCs failed deep health check.");
+    throw new Error(`Critical: No working RPC provider found. Please check network restrictions.`);
   }
 
-  console.log(`🏆 Selected RPC: ${bestRpcUrl}`);
+  console.log(`🏆 Selected Verified Provider.`);
 
-  // Initialize Provider with the WINNER
-  const provider = new StaticJsonRpcProvider(bestRpcUrl, {
-    chainId: targetChainId,
-    name: network === 'sepolia' ? 'sepolia' : 'base'
-  });
 
   const wallet = new Wallet(privateKey, provider);
 
