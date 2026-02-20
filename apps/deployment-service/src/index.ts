@@ -1,6 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
-import { deployNFTPassServer, NetworkType, NFTPassConfig } from "@pandoras/protocol-deployer";
+import { deployNFTPassServer, deployW2EProtocol, NetworkType, NFTPassConfig, W2EConfig } from "@pandoras/protocol-deployer";
 
 dotenv.config();
 
@@ -46,6 +46,34 @@ app.post("/deploy/nft-pass", async (req, res) => {
     }
 });
 
+app.post("/deploy/protocol", async (req, res) => {
+    res.setTimeout(300_000); // 5 minutes timeout for 5 contracts
+
+    if (req.headers["x-deploy-secret"] !== DEPLOY_SECRET) {
+        return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    try {
+        const { slug, config, network } = req.body as {
+            slug: string;
+            config: W2EConfig;
+            network: NetworkType;
+        };
+
+        if (!slug || !config || !network) {
+            return res.status(400).json({ error: "Invalid payload for protocol deploy" });
+        }
+
+        const result = await deployW2EProtocol(slug, config, network);
+        return res.json({ success: true, deployment: result });
+    } catch (err: any) {
+        console.error("❌ Protocol Deploy failed:", err);
+        return res.status(500).json({
+            success: false,
+            error: err.message || "Protocol Deployment failed"
+        });
+    }
+});
 app.listen(PORT, () => {
     console.log(`🚀 Deployment Service running on port ${PORT}`);
 });
