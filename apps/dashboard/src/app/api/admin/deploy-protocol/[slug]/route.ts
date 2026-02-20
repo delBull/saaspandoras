@@ -153,12 +153,40 @@ export async function POST(
         // console.log(`🌍 Environment Detect: BRANCH=${branchName}...`); // Removed to avoid lint error
         // Already logged above at "Network Decision"
 
-        console.log(`🚀 API: Proceeding with config:`, config);
+        console.log(`🚀 API: Proceeding with config (via Railway Service):`, config);
 
-        // 4. Call Deployer
-        const result = await deployW2EProtocol(slug, config, network);
+        // 4. Delegate to Deployment Service
+        const DEPLOY_SERVICE_URL = process.env.DEPLOY_SERVICE_URL || "http://localhost:3000";
+        const DEPLOY_SECRET = process.env.DEPLOY_SECRET;
 
-        console.log("✅ Deployment Result:", result);
+        if (!DEPLOY_SECRET) {
+            throw new Error("Missing DEPLOY_SECRET in environment variables");
+        }
+
+        console.log(`📡 Forwarding deployment to: ${DEPLOY_SERVICE_URL}/deploy/protocol`);
+
+        const deployResponse = await fetch(`${DEPLOY_SERVICE_URL}/deploy/protocol`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "x-deploy-secret": DEPLOY_SECRET
+            },
+            body: JSON.stringify({ slug, config, network })
+        });
+
+        if (!deployResponse.ok) {
+            const errorText = await deployResponse.text();
+            throw new Error(`Deployment Service failed: ${deployResponse.status} ${deployResponse.statusText} - ${errorText}`);
+        }
+
+        const deployResult = await deployResponse.json();
+
+        if (!deployResult.success || !deployResult.deployment) {
+            throw new Error(`Deployment Service returned failure: ${deployResult.error || "Unknown error"}`);
+        }
+
+        const result = deployResult.deployment;
+        console.log("✅ Deployment Result (from Service):", result);
 
         // Prepare Extended Config for DB (includes UI-specific fields not used by deployer)
         const extendedConfig = {
