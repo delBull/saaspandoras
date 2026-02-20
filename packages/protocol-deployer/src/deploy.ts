@@ -79,17 +79,14 @@ export async function deployW2EProtocol(
   }
 
   // Optimized RPC Selection
-  // STRATEGY: Alchemy-First + Aggressive Fallback
-  // Vercel IPs are often blocked by public nodes (Ankr, Drpc). Alchemy is the most reliable.
-  // We prioritize Alchemy, then custom, then public.
-
-  const ALCHEMY_SEPOLIA = "https://eth-sepolia.g.alchemy.com/v2/demo"; // Public demo key, often more reliable than generic valid keys restricted by IP.
-  // Ideally user provides their own via SEPOLIA_RPC_URL
+  // STRATEGY: Native Fetch Race
+  // Ethers v5 providers might be failing due to specific header/request configurations in this environment.
+  // We will use native `fetch` to find a working RPC first, then initialize Ethers with the winner.
 
   const SEPOLIA_RPCS = [
-    ALCHEMY_SEPOLIA,
-    "https://rpc.ankr.com/eth_sepolia",
+    "https://eth-sepolia.g.alchemy.com/v2/demo",
     "https://sepolia.drpc.org",
+    "https://rpc.ankr.com/eth_sepolia",
     "https://1rpc.io/sepolia",
     "https://ethereum-sepolia-rpc.publicnode.com",
     "https://rpc2.sepolia.org"
@@ -102,51 +99,73 @@ export async function deployW2EProtocol(
     "https://1rpc.io/base"
   ];
 
-  // Filter out duplicates
   const rpcUrls = network === 'sepolia' ? [...SEPOLIA_RPCS] : [...BASE_RPCS];
 
   if (customRpc) {
-    // If custom RPC is provided, IT MUST BE GOOD. Place it FIRST.
-    // But we remove it from the list if it's already there to avoid dupes.
     const idx = rpcUrls.indexOf(customRpc);
     if (idx > -1) rpcUrls.splice(idx, 1);
     rpcUrls.unshift(customRpc);
   }
 
-  console.log(`🛡️ Starting Robust RPC Strategy (Nodes: ${rpcUrls.length})`);
+  console.log(`🛡️ Starting Native Fetch RPC Strategy (Nodes: ${rpcUrls.length})`);
 
-  let provider: ethers.providers.StaticJsonRpcProvider | undefined;
+  let bestRpcUrl: string | undefined;
 
-  const errors: any[] = [];
-
-  for (const url of rpcUrls) {
+  // Helper to test connection with native fetch
+  const checkRpcConnection = async (url: string): Promise<boolean> => {
     try {
-      console.log(`Trying RPC: ${url}`);
-      const p = new StaticJsonRpcProvider(url, {
-        chainId: targetChainId,
-        name: network === 'sepolia' ? 'sepolia' : 'base'
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "eth_blockNumber",
+          params: [],
+          id: 1
+        }),
+        signal: controller.signal
       });
 
-      // Aggressive check: Block Number
-      // We set a short timeout for this specific check to fail fast
-      const blockPromise = p.getBlockNumber();
-      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout getting block")), 4000));
+      clearTimeout(timeoutId);
 
-      const block = await Promise.race([blockPromise, timeoutPromise]);
+      if (!res.ok) return false;
 
-      console.log(`✅ Connected to ${url} (Block: ${block})`);
-      provider = p;
+      const data: any = await res.json();
+      if (data && data.result) {
+        console.log(`✅ Verified via Fetch: ${url}`);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  // Iterate sequentially (to be safe) or use Promise.any logic
+  for (const url of rpcUrls) {
+    console.log(`Testing RPC via fetch: ${url}`);
+    const isWorking = await checkRpcConnection(url);
+    if (isWorking) {
+      bestRpcUrl = url;
       break;
-    } catch (e: any) {
-      console.warn(`⚠️ Connection failed to ${url}: ${e.message}`);
-      errors.push({ url, error: e.message });
     }
   }
 
-  if (!provider) {
-    console.error("❌ All RPCs failed. Detailed errors:", JSON.stringify(errors, null, 2));
-    throw new Error(`Failed to initialize any RPC provider. Tried ${rpcUrls.length} candidates. Errors: ${errors.map(e => e.error).join(', ')}`);
+  if (!bestRpcUrl) {
+    console.error("❌ All RPCs failed raw connectivity check.");
+    throw new Error(`Failed to find any reachable RPC endpoint via fetch.`);
   }
+
+  console.log(`🏆 Selected RPC: ${bestRpcUrl}`);
+
+  // Initialize Provider with the WINNER
+  const provider = new StaticJsonRpcProvider(bestRpcUrl, {
+    chainId: targetChainId,
+    name: network === 'sepolia' ? 'sepolia' : 'base'
+  });
 
   const wallet = new Wallet(privateKey, provider);
 
