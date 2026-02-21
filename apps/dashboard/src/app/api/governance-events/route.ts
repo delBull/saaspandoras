@@ -29,10 +29,13 @@ export async function GET(req: Request) {
         let whereCondition;
 
         if (projectIds) {
-            const ids = projectIds.split(',').map(Number);
+            const ids = projectIds.split(',').map(Number).filter(id => !isNaN(id));
+            if (ids.length === 0) return NextResponse.json([]);
             whereCondition = inArray(governanceEvents.projectId, ids);
         } else if (projectId) {
-            whereCondition = eq(governanceEvents.projectId, Number(projectId));
+            const id = Number(projectId);
+            if (isNaN(id)) return NextResponse.json([]);
+            whereCondition = eq(governanceEvents.projectId, id);
         }
 
         const events = await db.select()

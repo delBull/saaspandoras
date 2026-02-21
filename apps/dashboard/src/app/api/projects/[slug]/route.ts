@@ -84,69 +84,78 @@ export async function GET(
     });
 
     if (projectResult) {
-      console.log('✅ API: Project found in database');
+      console.log('✅ API: Project found:', (projectResult as any).title);
 
-      // Map Drizzle ORM's camelCase to the snake_case expected by frontend ProjectData interface
-      const mappedProject = {
-        ...projectResult,
-        logo_url: projectResult.logoUrl,
-        cover_photo_url: projectResult.coverPhotoUrl,
-        business_category: projectResult.businessCategory,
-        video_pitch: projectResult.videoPitch,
-        whitepaper_url: projectResult.whitepaperUrl,
-        twitter_url: projectResult.twitterUrl,
-        discord_url: projectResult.discordUrl,
-        telegram_url: projectResult.telegramUrl,
-        linkedin_url: projectResult.linkedinUrl,
-        target_amount: projectResult.targetAmount,
-        total_valuation_usd: projectResult.totalValuationUsd,
-        token_type: projectResult.tokenType,
-        total_tokens: projectResult.totalTokens,
-        tokens_offered: projectResult.tokensOffered,
-        token_price_usd: projectResult.tokenPriceUsd,
-        estimated_apy: projectResult.estimatedApy,
-        yield_source: projectResult.yieldSource,
-        lockup_period: projectResult.lockupPeriod,
-        fund_usage: projectResult.fundUsage,
-        team_members: projectResult.teamMembers,
-        token_distribution: projectResult.tokenDistribution,
-        contract_address: projectResult.contractAddress,
-        legal_status: projectResult.legalStatus,
-        valuation_document_url: projectResult.valuationDocumentUrl,
-        fiduciary_entity: projectResult.fiduciaryEntity,
-        due_diligence_report_url: projectResult.dueDiligenceReportUrl,
-        is_mintable: projectResult.isMintable,
-        is_mutable: projectResult.isMutable,
-        update_authority_address: projectResult.updateAuthorityAddress,
-        applicant_name: projectResult.applicantName,
-        applicant_position: projectResult.applicantPosition,
-        applicant_email: projectResult.applicantEmail,
-        applicant_phone: projectResult.applicantPhone,
-        applicant_wallet_address: projectResult.applicantWalletAddress,
-        verification_agreement: projectResult.verificationAgreement,
-        integration_details: projectResult.integrationDetails,
-        legal_entity_help: projectResult.legalEntityHelp,
-        image_url: projectResult.imageUrl,
-        raised_amount: projectResult.raisedAmount,
-        returns_paid: projectResult.returnsPaid,
-        featured_button_text: projectResult.featuredButtonText,
-        created_at: projectResult.createdAt,
-        w2eConfig: projectResult.w2eConfig,
-        // Explicitly map all addresses to ensure frontend gets them in both formats if needed
-        registryContractAddress: (projectResult as any).registryContractAddress ?? null,
-        governorContractAddress: (projectResult as any).governorContractAddress ?? null,
-        tokenContractAddress: (projectResult as any).contractAddress ?? null,
-        timelockContractAddress: (projectResult as any).loomContractAddress ?? null, // Often loom is used as timelock-ish in this context
+      try {
+        // Map Drizzle ORM's camelCase to the snake_case expected by frontend ProjectData interface
+        const mappedProject = {
+          ...projectResult,
+          logo_url: projectResult.logoUrl,
+          cover_photo_url: projectResult.coverPhotoUrl,
+          business_category: projectResult.businessCategory,
+          video_pitch: projectResult.videoPitch,
+          whitepaper_url: projectResult.whitepaperUrl,
+          twitter_url: projectResult.twitterUrl,
+          discord_url: projectResult.discordUrl,
+          telegram_url: projectResult.telegramUrl,
+          linkedin_url: projectResult.linkedinUrl,
+          target_amount: projectResult.targetAmount,
+          total_valuation_usd: projectResult.totalValuationUsd,
+          token_type: projectResult.tokenType,
+          total_tokens: projectResult.totalTokens,
+          tokens_offered: projectResult.tokensOffered,
+          token_price_usd: projectResult.tokenPriceUsd,
+          estimated_apy: projectResult.estimatedApy,
+          yield_source: projectResult.yieldSource,
+          lockup_period: projectResult.lockupPeriod,
+          fund_usage: projectResult.fundUsage,
+          team_members: projectResult.teamMembers,
+          token_distribution: projectResult.tokenDistribution,
+          contract_address: projectResult.contractAddress,
+          legal_status: projectResult.legalStatus,
+          valuation_document_url: projectResult.valuationDocumentUrl,
+          fiduciary_entity: projectResult.fiduciaryEntity,
+          due_diligence_report_url: projectResult.dueDiligenceReportUrl,
+          is_mintable: projectResult.isMintable,
+          is_mutable: projectResult.isMutable,
+          update_authority_address: projectResult.updateAuthorityAddress,
+          applicant_name: projectResult.applicantName,
+          applicant_position: projectResult.applicantPosition,
+          applicant_email: projectResult.applicantEmail,
+          applicant_phone: projectResult.applicantPhone,
+          applicant_wallet_address: projectResult.applicantWalletAddress,
+          verification_agreement: projectResult.verificationAgreement,
+          integration_details: projectResult.integrationDetails,
+          legal_entity_help: projectResult.legalEntityHelp,
+          image_url: projectResult.imageUrl,
+          raised_amount: projectResult.raisedAmount,
+          returns_paid: projectResult.returnsPaid,
+          featured_button_text: projectResult.featuredButtonText,
+          created_at: projectResult.createdAt,
+          w2eConfig: projectResult.w2eConfig,
 
-        // V2 Protocol Fields
-        protocol_version: (projectResult as any).protocolVersion
-          ?? ((projectResult.w2eConfig as any)?.artifacts?.length > 0 ? 2 : 1),
-        artifacts: (projectResult as any).artifacts ?? (projectResult.w2eConfig as any)?.artifacts ?? [],
-        pageLayoutType: (projectResult as any).pageLayoutType ?? (projectResult.w2eConfig as any)?.pageLayoutType ?? 'access',
+          // Technical / Governance Addresses
+          registryContractAddress: (projectResult as any).registryContractAddress ?? null,
+          governorContractAddress: (projectResult as any).governorContractAddress ?? (projectResult as any).votingContractAddress ?? null,
+          tokenContractAddress: (projectResult as any).contractAddress ?? null,
+          timelockContractAddress: (projectResult as any).loomContractAddress ?? null,
 
-      };
+          // V2 Protocol Fields
+          protocol_version: (projectResult as any).protocolVersion
+            ?? ((projectResult.w2eConfig as any)?.artifacts?.length > 0 ? 2 : 1),
+          artifacts: (projectResult as any).artifacts ?? (projectResult.w2eConfig as any)?.artifacts ?? [],
+          pageLayoutType: (() => {
+            const raw = (projectResult as any).pageLayoutType ?? (projectResult.w2eConfig as any)?.pageLayoutType ?? 'Access';
+            // Capitalize first letter to match ProtocolLayoutType
+            return (raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase()) as any;
+          })(),
+        };
 
-      return NextResponse.json(mappedProject);
+        return NextResponse.json(mappedProject);
+      } catch (mappingError) {
+        console.error('❌ API: Error mapping project data:', mappingError);
+        return NextResponse.json({ error: 'Data mapping error', details: String(mappingError) }, { status: 500 });
+      }
     }
 
     console.log('⚠️ API: Project not found for slug:', slug);
