@@ -142,6 +142,7 @@ interface LeaderboardUser {
   badge: string;
   streak: number;
   trending: string;
+  isSandboxPioneer?: boolean;
 }
 
 const getRankIcon = (rank: number) => {
@@ -165,6 +166,8 @@ const getBadgeColor = (badge: string) => {
       return 'bg-gradient-to-r from-gray-400 to-gray-600 text-white';
     case 'Bronze':
       return 'bg-gradient-to-r from-amber-600 to-amber-800 text-white';
+    case 'Sandbox':
+      return 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-[0_0_10px_rgba(99,102,241,0.3)]';
     default:
       return 'bg-gradient-to-r from-blue-400 to-purple-500 text-white';
   }
@@ -207,10 +210,11 @@ export default function LeaderboardPage() {
               currentLevel: user.currentLevel ?? user.level ?? 1,
               achievementsUnlocked: 0, // Simplified
               level: user.currentLevel ?? user.level ?? 1,
-              badge: 'Rising',
+              badge: user.points > 1000 ? 'Gold' : user.points > 500 ? 'Silver' : 'Rising',
               streak: user.currentStreak ?? 0,
               recentActivity: 'Hoy',
-              trending: 'stable'
+              trending: 'stable',
+              isSandboxPioneer: (user.points % 10 === 0) // Mock logic: if points end in 0, they tested sandbox
             };
           });
 
@@ -451,49 +455,53 @@ export default function LeaderboardPage() {
                   </div>
                 ) : (
                   sortedData.map((user, index) => (
-                  <motion.div
-                    key={user.userId}
-                    initial={{ opacity: 0, x: index < 3 ? 0 : -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 1.3 + index * 0.05 }}
-                    className={`flex items-center gap-4 p-4 rounded-lg transition-all duration-300 hover:scale-[1.02] ${
-                      index < 3
-                        ? `bg-gradient-to-r ${user.rank === 1 ? 'from-yellow-900/20 to-yellow-800/20 border border-yellow-500/30' :
-                                                user.rank === 2 ? 'from-gray-700/20 to-gray-600/20 border border-gray-500/30' :
-                                                'from-amber-900/20 to-orange-900/20 border border-amber-500/30'}`
-                        : 'bg-zinc-800/30 border border-zinc-700/50'
-                    }`}
-                  >
-                    {/* Rank */}
-                    <div className="flex-shrink-0 w-12 flex justify-center">
-                      {getRankIcon(user.rank)}
-                    </div>
-
-                    {/* Avatar */}
-                    <div className="flex-shrink-0">
-                      <UserAvatar userId={user.userId} size={12} />
-                    </div>
-
-                    {/* User Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-white text-sm md:text-lg truncate">{user.displayName}</h3>
-                        <span className={`px-1.5 py-0.5 md:px-2 md:py-1 rounded-full text-xs ${getBadgeColor(user.badge)}`}>
-                          {user.badge}
-                        </span>
+                    <motion.div
+                      key={user.userId}
+                      initial={{ opacity: 0, x: index < 3 ? 0 : -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 1.3 + index * 0.05 }}
+                      className={`flex items-center gap-4 p-4 rounded-lg transition-all duration-300 hover:scale-[1.02] ${index < 3
+                          ? `bg-gradient-to-r ${user.rank === 1 ? 'from-yellow-900/20 to-yellow-800/20 border border-yellow-500/30' :
+                            user.rank === 2 ? 'from-gray-700/20 to-gray-600/20 border border-gray-500/30' :
+                              'from-amber-900/20 to-orange-900/20 border border-amber-500/30'}`
+                          : 'bg-zinc-800/30 border border-zinc-700/50'
+                        }`}
+                    >
+                      {/* Rank */}
+                      <div className="flex-shrink-0 w-12 flex justify-center">
+                        {getRankIcon(user.rank)}
                       </div>
-                      {/* Removed level and achievements info */}
-                    </div>
 
-                    {/* Points */}
-                    <div className="flex-shrink-0 text-right">
-                      <div className="flex items-center gap-1 text-yellow-400 font-bold text-lg">
-                        <Zap className="w-5 h-5" />
-                        {(user.totalPoints ?? 0).toLocaleString()}
+                      {/* Avatar */}
+                      <div className="flex-shrink-0">
+                        <UserAvatar userId={user.userId} size={12} />
                       </div>
-                      <div className="text-xs text-gray-400">tokens</div>
-                    </div>
-                  </motion.div>
+
+                      {/* User Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-white text-sm md:text-lg truncate">{user.displayName}</h3>
+                          <span className={`px-1.5 py-0.5 md:px-2 md:py-1 rounded-full text-xs ${getBadgeColor(user.badge)}`}>
+                            {user.badge}
+                          </span>
+                          {user.isSandboxPioneer && (
+                            <span className={`px-1.5 py-0.5 md:px-2 md:py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter ${getBadgeColor('Sandbox')}`}>
+                              Sandbox
+                            </span>
+                          )}
+                        </div>
+                        {/* Removed level and achievements info */}
+                      </div>
+
+                      {/* Points */}
+                      <div className="flex-shrink-0 text-right">
+                        <div className="flex items-center gap-1 text-yellow-400 font-bold text-lg">
+                          <Zap className="w-5 h-5" />
+                          {(user.totalPoints ?? 0).toLocaleString()}
+                        </div>
+                        <div className="text-xs text-gray-400">tokens</div>
+                      </div>
+                    </motion.div>
                   ))
                 )}
               </div>
@@ -509,31 +517,31 @@ export default function LeaderboardPage() {
           className="text-center mt-12"
         >
           <div className="bg-gradient-to-r from-zinc-900/50 to-zinc-800/50 border border-zinc-700 rounded-2xl p-8 md:p-12 backdrop-blur-sm">
-          <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
+            <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
             <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            ¿Quieres ser el
-            <span className="bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent"> próximo Ma&icirc;tre</span>?
-          </h2>
+              ¿Quieres ser el
+              <span className="bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent"> próximo Ma&icirc;tre</span>?
+            </h2>
 
-          <p className="text-zinc-400 text-lg mb-8 max-w-2xl mx-auto">
-            ¡Actúa ahora! Gana tu primera aplicación de creación y comienza a acumular tokens y logros.
-          </p>
+            <p className="text-zinc-400 text-lg mb-8 max-w-2xl mx-auto">
+              ¡Actúa ahora! Gana tu primera aplicación de creación y comienza a acumular tokens y logros.
+            </p>
 
-          <div className="flex gap-4 justify-center flex-wrap">
-            <Link href="/applicants">
-              <Button className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-bold px-8 py-3 rounded-xl hover:from-yellow-300 hover:to-orange-400 transition-all duration-300 hover:scale-105">
-                Explorar Protocolos Disponibles
-              </Button>
-            </Link>
+            <div className="flex gap-4 justify-center flex-wrap">
+              <Link href="/applicants">
+                <Button className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-bold px-8 py-3 rounded-xl hover:from-yellow-300 hover:to-orange-400 transition-all duration-300 hover:scale-105">
+                  Explorar Protocolos Disponibles
+                </Button>
+              </Link>
 
-            <Link href="/apply">
-              <Button variant="outline" className="bg-zinc-800/50 border-zinc-600 text-zinc-300 hover:bg-zinc-700/50 px-8 py-3 rounded-xl">
-                Desatar tu propia Creación
-              </Button>
-            </Link>
+              <Link href="/apply">
+                <Button variant="outline" className="bg-zinc-800/50 border-zinc-600 text-zinc-300 hover:bg-zinc-700/50 px-8 py-3 rounded-xl">
+                  Desatar tu propia Creación
+                </Button>
+              </Link>
+            </div>
+
           </div>
-
-        </div>
         </motion.div>
       </div>
     </div>

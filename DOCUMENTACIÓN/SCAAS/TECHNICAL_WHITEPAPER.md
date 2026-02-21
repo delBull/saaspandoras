@@ -572,6 +572,30 @@ This ensures backwards compatibility — all V1 protocols continue using the exi
 
 ---
 
+## **12. Sandbox & Simulation Infrastructure**
+
+### **12.1 Purpose**
+
+The SCaaS Sandbox is a dedicated simulation environment located at `staging.dash.pandoras.finance`. It serves as a high-fidelity staging area where protocol operators can:
+- **Test Deployments**: Verify atomic deployment logic without using real mainnet assets.
+- **Simulate Governance**: Conduct mock voting and proposal execution.
+- **Validate Economics**: Test APY distributions and reward logic in a risk-free environment.
+
+### **12.2 Integration & Synchronization**
+
+- **Domain Switching**: A seamless, animated portal transition allows users to toggle between Mainnet (Production) and Sandbox (Staging).
+- **Network Defaulting**: The Sandbox environment automatically defaults to Ethereum Sepolia or Base Sepolia for all contract interactions.
+- **State Separation**: Database and on-chain state remain strictly separated to prevent accidental production pollution.
+
+### **12.3 Gamification of Testing**
+
+To encourage thorough validation and security best practices, the platform incentivizes Sandbox usage through the gamification engine:
+- **Testing Rewards**: Users earn "XP" and tokens for completing their first Sandbox deployment.
+- **Verification Badges**: "Sandbox Pioneer" badges are awarded to active testers.
+- **Security Recognition**: Finding and validating potential misconfigurations in Sandbox grants higher reputation scores.
+
+---
+
 ## **References**
 
 

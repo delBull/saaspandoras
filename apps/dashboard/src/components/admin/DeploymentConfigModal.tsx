@@ -94,7 +94,15 @@ export function DeploymentConfigModal({
     };
 
     const updateArtifact = <K extends keyof ArtifactConfig>(id: string, field: K, value: ArtifactConfig[K]) => {
-        setArtifacts(prev => prev.map(a => a.id === id ? { ...a, [field]: value } : a));
+        setArtifacts(prev => prev.map(a => {
+            if (a.id !== id) return a;
+            const updated = { ...a, [field]: value };
+            // Enforce free price for Access type
+            if (field === 'artifactType' && value === 'Access') {
+                updated.price = '0';
+            }
+            return updated;
+        }));
     };
 
     const makePrimary = (id: string) => {
@@ -162,23 +170,44 @@ export function DeploymentConfigModal({
         <div className="fixed inset-0 z-[5000] flex items-center justify-center bg-black/85 backdrop-blur-sm p-4">
             <div className="bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col">
 
-                {/* ── Header ── */}
-                <div className="p-5 border-b border-zinc-800 flex items-start justify-between shrink-0">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xl">🏛️</div>
+                {/* Header */}
+                <div className="p-6 border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-xl sticky top-0 z-50 shrink-0 rounded-t-2xl">
+                    <div className="flex items-center justify-between mb-4">
                         <div>
-                            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                                Desplegar Protocolo V2
-                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                                    MODULAR ECOSYSTEM
-                                </span>
+                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                🚀 Desplegar Nuevo Protocolo <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">V2</span>
                             </h2>
-                            <p className="text-sm text-gray-400 mt-0.5">
-                                <span className="text-lime-400 font-medium">{projectTitle}</span>
-                            </p>
+                            <p className="text-sm text-gray-400 mt-1">Configura tu ecosistema Work-to-Earn modular.</p>
                         </div>
+                        <button onClick={onClose} className="p-2 hover:bg-zinc-800 rounded-lg transition-colors">
+                            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
                     </div>
-                    <div className="flex items-center gap-2 flex-wrap">
+
+                    {/* Sandbox Mode Alert (Staging suggestion) */}
+                    <div className="mb-4 p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center shrink-0">
+                                <span className="text-lg">🧪</span>
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-indigo-300">¿Primera vez en V2?</p>
+                                <p className="text-[10px] text-zinc-400">Te recomendamos probar tu configuración en el <strong className="text-indigo-200">Sandbox</strong> antes de producción.</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => {
+                                if (typeof window !== 'undefined') {
+                                    window.location.href = 'https://staging.dash.pandoras.finance';
+                                }
+                            }}
+                            className="text-[10px] font-bold text-indigo-300 hover:text-indigo-200 underline decoration-indigo-500/50 underline-offset-2 shrink-0"
+                        >
+                            Ir al Sandbox →
+                        </button>
+                    </div>
+
+                    <div className="flex gap-1.5 p-1 bg-zinc-800/50 rounded-xl border border-zinc-700/50">
                         {/* Page Layout Type Selector */}
                         <div className="flex items-center gap-1">
                             <select
@@ -441,9 +470,13 @@ export function DeploymentConfigModal({
                                                 onChange={e => updateArtifact(art.id, 'price', e.target.value)}
                                                 step="0.001"
                                                 min={0}
-                                                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-sm text-white font-mono focus:border-indigo-500 outline-none transition-colors"
+                                                disabled={art.artifactType === 'Access'}
+                                                className={`w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-sm font-mono focus:border-indigo-500 outline-none transition-colors ${art.artifactType === 'Access' ? 'text-lime-400 opacity-60' : 'text-white'}`}
                                                 placeholder="0"
                                             />
+                                            {art.artifactType === 'Access' && (
+                                                <p className="text-[10px] text-lime-500/70 mt-1 font-bold">Loom Access: SIEMPRE GRATIS</p>
+                                            )}
                                         </div>
                                     </div>
 

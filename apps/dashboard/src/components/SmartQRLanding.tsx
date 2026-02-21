@@ -1,11 +1,20 @@
 'use client';
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import {
     GlobeAltIcon,
     ShareIcon,
     ChatBubbleLeftIcon
 } from "@heroicons/react/24/outline";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogClose,
+} from "@/components/ui/dialog";
 
 // Safe Social Icons
 import {
@@ -45,6 +54,9 @@ const ensureAbsoluteUrl = (url?: string) => {
 };
 
 export function SmartQRLanding({ config, slug }: SmartQRLandingProps) {
+    const [showPrivacy, setShowPrivacy] = useState(false);
+    const [showTerms, setShowTerms] = useState(false);
+
     const {
         title,
         slogan,
@@ -192,13 +204,79 @@ export function SmartQRLanding({ config, slug }: SmartQRLandingProps) {
                         POWERED BY PANDORAS
                     </p>
                     <div className="text-[10px] text-zinc-600 space-x-2">
-                        <span>Privacy</span>
+                        <button onClick={() => setShowPrivacy(true)} className="hover:text-zinc-400 transition-colors">Privacy</button>
                         <span>•</span>
-                        <span>Terms</span>
+                        <button onClick={() => setShowTerms(true)} className="hover:text-zinc-400 transition-colors">Terms</button>
                     </div>
                 </motion.div>
 
             </motion.div>
+
+            {/* Privacy Modal */}
+            <Dialog open={showPrivacy} onOpenChange={setShowPrivacy}>
+                <DialogContent className="sm:max-w-[500px] bg-zinc-950 border-zinc-800 text-white">
+                    <DialogHeader>
+                        <DialogTitle>Aviso de Privacidad</DialogTitle>
+                        <DialogDescription className="text-zinc-500">
+                            Última actualización: Febrero 2026
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="text-sm text-zinc-300 space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                        <p>
+                            Este servicio es provisto por Pandora's Finance para {title || "este proyecto"}. Al interactuar con este Smart QR y su Landing Page, procesamos datos básicos para fines de analítica y prestación del servicio.
+                        </p>
+                        <p>
+                            <strong>Información que recolectamos:</strong> Dirección IP (anonimizada), tipo de dispositivo, navegador y procedencia geográfica general. No recolectamos datos de identificación personal sin su consentimiento explícito.
+                        </p>
+                        <p>
+                            <strong>Finalidad:</strong> Mejorar la experiencia de usuario y proporcionar métricas de uso al creador del protocolo.
+                        </p>
+                        <p>
+                            Para más información sobre nuestra infraestructura de privacidad, visite el Whitepaper técnico de Pandora's.
+                        </p>
+                    </div>
+                    <div className="flex justify-end mt-4">
+                        <DialogClose asChild>
+                            <button className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm transition-colors">
+                                Cerrar
+                            </button>
+                        </DialogClose>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Terms Modal */}
+            <Dialog open={showTerms} onOpenChange={setShowTerms}>
+                <DialogContent className="sm:max-w-[500px] bg-zinc-950 border-zinc-800 text-white">
+                    <DialogHeader>
+                        <DialogTitle>Términos y Condiciones</DialogTitle>
+                        <DialogDescription className="text-zinc-500">
+                            Condiciones de uso de Smart QR & Landing
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="text-sm text-zinc-300 space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                        <p>
+                            Al utilizar este Smart QR, usted acepta los siguientes términos:
+                        </p>
+                        <ol className="list-decimal pl-4 space-y-2">
+                            <li>El contenido mostrado en esta landing page es responsabilidad de {title || "el creador del proyecto"}.</li>
+                            <li>Pandora's Finance actúa como proveedor de infraestructura tecnológica únicamente.</li>
+                            <li>La redirección dinámica puede ser modificada por el administrador en cualquier momento.</li>
+                            <li>El uso de este servicio implica la aceptación de nuestra política de analítica no invasiva.</li>
+                        </ol>
+                        <p>
+                            Cualquier disputa legal relacionada con los activos ofrecidos (Tokens/NFTs) debe resolverse directamente con los emisores del protocolo.
+                        </p>
+                    </div>
+                    <div className="flex justify-end mt-4">
+                        <DialogClose asChild>
+                            <button className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm transition-colors">
+                                Cerrar
+                            </button>
+                        </DialogClose>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

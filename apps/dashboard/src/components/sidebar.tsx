@@ -764,7 +764,7 @@ export function Sidebar({
                       <Tooltip.Root>
                         <Tooltip.Trigger asChild>
                           <Link
-                            href="/whitepaper"
+                            href="https://staging.dash.pandoras.finance/whitepaper"
                             className="relative flex w-full items-center rounded-lg py-2 transition-all duration-200 text-gray-400 hover:bg-zinc-800/50 justify-center"
                           >
                             <BookOpen className="h-4 w-4 shrink-0" />

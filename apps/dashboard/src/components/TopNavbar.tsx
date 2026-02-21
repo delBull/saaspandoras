@@ -23,7 +23,9 @@ import { client } from "@/lib/thirdweb-client";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { config } from "@/config";
 import { useTour } from "@/components/onboarding/TourEngine";
-import { RocketLaunchIcon } from "@heroicons/react/24/outline";
+import { RocketLaunchIcon, BeakerIcon, GlobeAltIcon } from "@heroicons/react/24/outline";
+import { useRealGamification } from "@/hooks/useRealGamification";
+import { SandboxTransition } from "./SandboxTransition";
 
 interface TopNavbarProps {
   wallet?: string;
@@ -50,6 +52,59 @@ export function TopNavbar({
 
   const account = useActiveAccount();
   const pathname = usePathname();
+
+  // Gamification for Sandbox
+  const { trackNewEvent } = useRealGamification(account?.address);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [transitionTarget, setTransitionTarget] = useState<'production' | 'sandbox'>('production');
+
+  // Determine current mode based on hostname
+  const [currentMode, setCurrentMode] = useState<'production' | 'sandbox'>('production');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      if (hostname.includes('staging') || hostname.includes('sandbox') || hostname.includes('localhost')) {
+        setCurrentMode('sandbox');
+      } else {
+        setCurrentMode('production');
+      }
+    }
+  }, []);
+
+  const toggleSandbox = async () => {
+    if (!account?.address) {
+      alert("Por favor, conecta tu wallet para usar el Sandbox.");
+      return;
+    }
+
+    const isCurrentlyProduction = currentMode === 'production';
+    setTransitionTarget(isCurrentlyProduction ? 'sandbox' : 'production');
+    setIsTransitioning(true);
+
+    // Track achievement if entering sandbox for the first time
+    if (isCurrentlyProduction) {
+      void trackNewEvent('sandbox_entry', { source: 'navbar_toggle' });
+    }
+  };
+
+  const completeTransition = () => {
+    if (typeof window !== 'undefined') {
+      const isCurrentlyProduction = currentMode === 'production';
+      // If localhost, we just simulate/reload with a query param or something, 
+      // but the user specified specific domains.
+      if (window.location.hostname === 'localhost') {
+        window.location.reload(); // Simple reload for local testing
+        return;
+      }
+
+      const targetUrl = isCurrentlyProduction
+        ? 'https://staging.dash.pandoras.finance'
+        : 'https://dash.pandoras.finance';
+
+      window.location.href = targetUrl;
+    }
+  };
 
   // Multi-chain wallet state - ensure we have a valid chain
   const [selectedChain, setSelectedChain] = useState(ethereum);
@@ -241,6 +296,11 @@ export function TopNavbar({
 
   return (
     <div className={`absolute w-full z-[9999] md:block hidden pt-4 transition-opacity duration-700 pointer-events-none ${mounted ? 'opacity-100' : 'opacity-0'}`}>
+      <SandboxTransition
+        isVisible={isTransitioning}
+        targetMode={transitionTarget}
+        onComplete={completeTransition}
+      />
       <div className="pointer-events-auto"><PendingRewardsNotification /></div>
       <div className={`bg-gradient-to-r from-purple-950/0 to-black/0 transition-all duration-500 ${isApplicantsPage ? (panelCollapsed ? 'mr-8 lg:mr-12' : 'mr-[240px] lg:mr-[270px]') : ''
         }`}>
@@ -249,6 +309,7 @@ export function TopNavbar({
           <div className="flex items-center">
             {/* Right side - Profile and other items - Always pushed to the right */}
             <div className="flex items-center gap-4 ml-auto pointer-events-auto">
+
               {/* Profile Button or Connect Button */}
               {!account?.address ? (
                 <button
@@ -480,13 +541,36 @@ export function TopNavbar({
 
               <div className="border-t border-zinc-700 my-2"></div>
 
-              {/* Connect/Disconnect Button */}
               <div className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full">
                 <WalletIcon className="w-5 h-5 text-gray-400 md:block" />
                 <ConnectWalletButton
                   className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full"
                 />
               </div>
+
+              {/* Sandbox Toggle - Now in Dropdown */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void toggleSandbox();
+                }}
+                className={`w-full flex items-center gap-3 p-2 rounded transition-all mt-1 ${currentMode === 'sandbox'
+                  ? 'bg-indigo-500/10 border border-indigo-500/30 text-indigo-300'
+                  : 'bg-zinc-800/30 border border-zinc-700/50 text-gray-400 hover:bg-zinc-800 hover:text-indigo-300'
+                  }`}
+              >
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${currentMode === 'sandbox' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-zinc-800 text-gray-500'}`}>
+                  {currentMode === 'sandbox' ? <BeakerIcon className="w-5 h-5 animate-pulse" /> : <GlobeAltIcon className="w-5 h-5" />}
+                </div>
+                <div className="text-left">
+                  <div className={`text-sm font-medium ${currentMode === 'sandbox' ? 'text-indigo-300' : 'text-white'}`}>
+                    {currentMode === 'sandbox' ? 'Modo Sandbox Activo' : 'Activar Sandbox'}
+                  </div>
+                  <div className="text-[10px] text-gray-500">
+                    {currentMode === 'sandbox' ? 'Volver a producción' : 'Ambiente de pruebas seguro'}
+                  </div>
+                </div>
+              </button>
             </div>
           </motion.div>
         )}
