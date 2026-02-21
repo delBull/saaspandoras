@@ -6,6 +6,7 @@ import { useActiveAccount } from "thirdweb/react";
 
 interface UserProfile extends UserData {
   projects: Project[];
+  totalProjects?: number;
   _timestamp?: number; // For cache debugging
   _requestDuration?: number; // For performance monitoring
 }

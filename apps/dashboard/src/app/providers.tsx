@@ -43,6 +43,7 @@ export function Providers({
           <AutoConnect
             client={client}
             wallets={wallets}
+            accountAbstraction={accountAbstractionConfig}
             timeout={15000}
           />
         )}

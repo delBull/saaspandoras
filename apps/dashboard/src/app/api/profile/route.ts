@@ -69,19 +69,25 @@ export async function GET(request: Request) {
     const users = await sql`
       SELECT "id", "name", "email", "image", "walletAddress",
               "connectionCount", "lastConnectionAt", "createdAt",
-              "kycLevel", "kycCompleted", "kycData"
+              "kycLevel", "kycCompleted", "kycData", "hasPandorasKey"
       FROM "users"
       WHERE LOWER("walletAddress") = LOWER(${walletAddress})
     `;
     const user = users[0];
 
-    // Get user projects - Get ALL projects for the user, not just 3
+    // Get user projects - Get ALL projects for the user, accounting for legacy property 'update_authority_address'
     const projects = await sql`
-      SELECT id, title, description, status, created_at, business_category, logo_url, cover_photo_url, applicant_wallet_address, target_amount, raised_amount, slug, applicant_name, applicant_email, applicant_phone
+      SELECT id, title, description, status, created_at, business_category, logo_url, cover_photo_url, applicant_wallet_address, update_authority_address, target_amount, raised_amount, slug, applicant_name, applicant_email, applicant_phone
       FROM "projects"
       WHERE LOWER("applicant_wallet_address") = LOWER(${walletAddress})
+         OR LOWER("update_authority_address") = LOWER(${walletAddress})
       ORDER BY "created_at" DESC
     `;
+
+    // Calculate active project count (live, approved, pending)
+    const activeProjectCount = projects.filter((p: any) =>
+      ['live', 'approved', 'pending'].includes(p.status)
+    ).length;
 
 
     // Calculate user role
@@ -111,10 +117,11 @@ export async function GET(request: Request) {
     return NextResponse.json({
       ...user,
       projects,
-      projectCount: projects?.length,
+      projectCount: activeProjectCount,
+      totalProjects: projects?.length || 0,
       role,
       systemProjectsManaged,
-      hasPandorasKey: false, // Default to false, client verifies
+      hasPandorasKey: user?.hasPandorasKey ?? false,
     });
   } catch (error) {
     console.error("💥 [Profile API] CRITICAL ERROR:", {
