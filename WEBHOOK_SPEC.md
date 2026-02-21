@@ -90,29 +90,72 @@ if (diff > 300) { // 5 minutes
 
 ---
 
+## Base Payload Format
+
+All events share this base structure:
+
+```json
+{
+  "event": "event.type",
+  "version": "v1",
+  "id": "evt_uuid",
+  "timestamp": 1706841600,
+  "isSandbox": false,
+  "data": { ... }
+}
+```
+
+---
+
 ## Event Types
 
 ### `protocol.deployed`
 
-Triggered when a full protocol is deployed on-chain.
+Triggered when a full protocol is successfully deployed on-chain (V1 or V2).
 
 **Payload**:
 ```json
 {
   "event": "protocol.deployed",
   "version": "v1",
-  "timestamp": 1706841600,
   "data": {
     "projectId": "uuid",
     "projectName": "Example DAO",
     "chainId": 11155111,
+    "protocolVersion": 2,
+    "pageLayoutType": "Access",
     "contracts": {
       "token": "0x...",
       "governor": "0x...",
       "loom": "0x...",
-      "timelock": "0x..."
+      "timelock": "0x...",
+      "registry": "0x..." 
     },
+    "artifacts": [
+      { "name": "Access Pass", "address": "0x...", "symbol": "VHORA" }
+    ],
     "deployer": "0x..."
+  }
+}
+```
+
+---
+
+### `project.application_submitted`
+
+Triggered when a new project application is submitted by a user.
+
+**Payload**:
+```json
+{
+  "event": "project.application_submitted",
+  "version": "v1",
+  "data": {
+    "projectId": "uuid",
+    "title": "New Green Tech",
+    "category": "environmental",
+    "applicantWallet": "0x...",
+    "targetAmount": "50000"
   }
 }
 ```
@@ -128,7 +171,6 @@ Triggered when an NFT access pass is minted.
 {
   "event": "nft.minted",
   "version": "v1",
-  "timestamp": 1706841600,
   "data": {
     "projectId": "uuid",
     "contractAddress": "0x...",
@@ -141,24 +183,23 @@ Triggered when an NFT access pass is minted.
 
 ---
 
-### `phase.created`
+### `gamification.event`
 
-Triggered when a new sale phase is created.
+Triggered when a user earns points or a badge within the Pandora ecosystem.
 
 **Payload**:
 ```json
 {
-  "event": "phase.created",
+  "event": "gamification.event",
   "version": "v1",
-  "timestamp": 1706841600,
   "data": {
-    "projectId": "uuid",
-    "phaseId": "uuid",
-    "name": "Public Sale",
-    "price": "0.1",
-    "startTime": 1706841600,
-    "endTime": 1707446400,
-    "supply": 100
+    "userWallet": "0x...",
+    "eventType": "protocol_deployed",
+    "pointsEarned": 500,
+    "metadata": {
+      "projectId": "uuid",
+      "projectTitle": "Example DAO"
+    }
   }
 }
 ```

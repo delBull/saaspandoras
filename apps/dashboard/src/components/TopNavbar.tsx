@@ -72,7 +72,7 @@ export function TopNavbar({
     }
   }, []);
 
-  const toggleSandbox = async () => {
+  const toggleSandbox = () => {
     if (!account?.address) {
       alert("Por favor, conecta tu wallet para usar el Sandbox.");
       return;

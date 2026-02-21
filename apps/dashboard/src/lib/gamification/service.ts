@@ -21,7 +21,9 @@ import {
   gamificationEvents,
   type GamificationProfile as DrizzleGamificationProfile
 } from '@/db/schema';
-import { eq, sql, desc } from 'drizzle-orm';
+import { eq, sql, desc, or } from 'drizzle-orm';
+import { WebhookService } from '@/lib/integrations/webhook-service';
+import { integrationClients as integrationClientsSchema } from '@/db/schema';
 
 // Export the class before declaring it
 export class GamificationService {
@@ -275,6 +277,29 @@ export class GamificationService {
         projectId: metadata?.projectId ? Number(metadata.projectId) : null,
         metadata: metadata ? metadata : {},
       }).returning();
+
+      // 🚀 WEBHOOK: Notify external clients
+      try {
+        // Broadcast to all active clients (Staging + Production for Gamification as it's cross-env)
+        const clients = await db.query.integrationClients.findMany({
+          where: eq(integrationClientsSchema.isActive, true)
+        });
+
+        for (const client of clients) {
+          await WebhookService.queueEvent(client.id, 'gamification.event', {
+            userWallet: walletAddress,
+            eventType: eventType,
+            pointsEarned: points,
+            metadata: metadata || {},
+            isSandbox: client.environment === 'staging'
+          });
+        }
+        if (clients.length > 0) {
+          console.log(`📡 Gamification Webhook(s) queued for ${clients.length} clients.`);
+        }
+      } catch (webhookError) {
+        console.warn('⚠️ Failed to queue gamification webhook:', webhookError);
+      }
 
       // Return basic event object (without ID dependency)
       return {

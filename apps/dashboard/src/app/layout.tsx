@@ -71,7 +71,7 @@ export default function RootLayout({
         </Providers>
         <Script
           id="lockdown-override"
-          strategy="beforeInteractive"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               (function() {

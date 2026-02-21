@@ -8,6 +8,8 @@ import { SUPER_ADMIN_WALLET } from "@/lib/constants"; // Fixed constant import
 import { deployW2EProtocol } from "@pandoras/protocol-deployer";
 import type { W2EConfig } from "@pandoras/protocol-deployer";
 import { trackGamificationEvent } from "@/lib/gamification/service";
+import { WebhookService } from "@/lib/integrations/webhook-service";
+import { integrationClients } from "@/db/schema";
 
 // Force Node.js runtime for database interactions
 export const runtime = "nodejs";
@@ -244,6 +246,39 @@ export async function POST(
             } catch (gamificationError) {
                 console.warn('⚠️ Failed to track gamification event:', gamificationError);
             }
+        }
+
+        // 7. WEBHOOK: Notify external clients
+        try {
+            // Find all clients matching the current environment
+            const clients = await db.query.integrationClients.findMany({
+                where: eq(integrationClients.environment, network === 'sepolia' ? 'staging' : 'production')
+            });
+
+            const isSandbox = network === 'sepolia';
+
+            for (const client of clients) {
+                await WebhookService.queueEvent(client.id, 'protocol.deployed', {
+                    projectId: project.id.toString(),
+                    projectSlug: slug,
+                    projectName: project.title,
+                    chainId: result.chainId,
+                    protocolVersion: 2,
+                    isSandbox: isSandbox,
+                    contracts: {
+                        token: result.phiAddress,
+                        governor: result.governorAddress,
+                        loom: result.loomAddress,
+                        timelock: result.timelockAddress,
+                        registry: result.registryAddress
+                    },
+                    artifacts: result.artifacts || [],
+                    deployer: treasuryAddress
+                });
+            }
+            console.log(`📡 Webhook(s) queued for ${clients.length} clients.`);
+        } catch (webhookError) {
+            console.warn('⚠️ Failed to queue deployment webhook:', webhookError);
         }
 
         return NextResponse.json({

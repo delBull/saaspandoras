@@ -992,6 +992,7 @@ function QRGenerator({ value }: { value: string }) {
     }, [value]);
 
     if (!src) return <div className="w-64 h-64 bg-zinc-100 animate-pulse rounded-lg" />;
+    {/* eslint-disable-next-line @next/next/no-img-element */ }
     return <img src={src} alt="QR Code" className="w-64 h-64" />;
 }
 
