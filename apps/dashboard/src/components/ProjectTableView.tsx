@@ -530,40 +530,72 @@ export function ProjectTableView({
                                   {p.treasuryAddress ? `${p.treasuryAddress.substring(0, 8)}...${p.treasuryAddress.substring(36)}` : 'N/A'}
                                 </span>
                               </div>
+                              <div>
+                                <span className="text-gray-400 block mb-1">Registry Contract:</span>
+                                <span className="text-white break-all" title={(p as any).registryContractAddress || ''}>
+                                  {(p as any).registryContractAddress
+                                    ? `${(p as any).registryContractAddress.substring(0, 8)}...${(p as any).registryContractAddress.substring(36)}`
+                                    : 'N/A'}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400 block mb-1">Protocol Version:</span>
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${(p as any).protocolVersion === 2
+                                  ? 'bg-indigo-900 text-indigo-300 border border-indigo-700'
+                                  : 'bg-zinc-700 text-gray-400'
+                                  }`}>
+                                  V{(p as any).protocolVersion || 1}
+                                </span>
+                              </div>
                             </div>
-                          </div>
-                        )}
+                            {/* V2 Artifacts List */}
+                            {(p as any).artifacts && (p as any).artifacts.length > 0 && (
+                              <div className="mt-3 pt-3 border-t border-zinc-700/50">
+                                <span className="text-gray-400 block mb-2 text-[10px] uppercase tracking-wider">Artefactos del Ecosistema</span>
+                                <div className="flex flex-wrap gap-2">
+                                  {((p as any).artifacts as Array<{ type: string; address: string; name?: string }>).map((art, idx) => (
+                                    <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-900/30 border border-indigo-700/50 rounded-lg text-[10px] text-indigo-300" title={art.address}>
+                                      <span>{art.type === 'Access' ? '🔑' : art.type === 'Identity' ? '🪪' : art.type === 'Membership' ? '🏷️' : art.type === 'Coupon' ? '🎟️' : art.type === 'Reputation' ? '🏆' : '💰'}</span>
+                                      <span>{art.name || art.type}</span>
+                                      <span className="text-indigo-500">{art.address ? `${art.address.substring(0, 6)}…` : ''}</span>
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
 
-                        {/* Protocol Safety Layer (Super Admin Override) */}
-                        {p.deploymentStatus === 'deployed' && (
-                          <div className="border-t border-red-900/30 pt-4 mt-4 bg-red-950/10 p-4 rounded-lg">
-                            <div className="flex justify-between items-center mb-4">
-                              <h4 className="font-semibold text-red-400 text-sm flex items-center gap-2">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                </svg>
-                                Protocol Safety Layer (Super Admin Override)
-                              </h4>
-                              <button
-                                className="text-xs bg-red-900/30 hover:bg-red-800 text-red-300 px-2 py-1 rounded border border-red-800 transition-colors"
-                                onClick={() => fetch(`/api/admin/check-delays?force=true&projectId=${p.id}`).then(() => alert("Alert System Triggered"))}
-                              >
-                                🛠️ Test Alert System
-                              </button>
-                            </div>
-                            <div className="text-xs text-red-200/70 mb-4">
-                              <p>⚠️ <strong>Emergency Power:</strong> Use this panel to force-distribute funds if the Protocol Owner is unresponsive.</p>
-                              <p>Actions taken here use <strong>YOUR</strong> connected wallet (Super Admin). Ensure you have necessary authorization.</p>
-                            </div>
+                            {/* Protocol Safety Layer (Super Admin Override) */}
+                            {p.deploymentStatus === 'deployed' && (
+                              <div className="border-t border-red-900/30 pt-4 mt-4 bg-red-950/10 p-4 rounded-lg">
+                                <div className="flex justify-between items-center mb-4">
+                                  <h4 className="font-semibold text-red-400 text-sm flex items-center gap-2">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                    Protocol Safety Layer (Super Admin Override)
+                                  </h4>
+                                  <button
+                                    className="text-xs bg-red-900/30 hover:bg-red-800 text-red-300 px-2 py-1 rounded border border-red-800 transition-colors"
+                                    onClick={() => fetch(`/api/admin/check-delays?force=true&projectId=${p.id}`).then(() => alert("Alert System Triggered"))}
+                                  >
+                                    🛠️ Test Alert System
+                                  </button>
+                                </div>
+                                <div className="text-xs text-red-200/70 mb-4">
+                                  <p>⚠️ <strong>Emergency Power:</strong> Use this panel to force-distribute funds if the Protocol Owner is unresponsive.</p>
+                                  <p>Actions taken here use <strong>YOUR</strong> connected wallet (Super Admin). Ensure you have necessary authorization.</p>
+                                </div>
 
-                            <div className="bg-zinc-900 p-2 rounded border border-red-900/30">
-                              {/* Using the same component as the Owner Dashboard, but context is Super Admin */}
-                              <AdminPayouts
-                                projectId={Number(p.id)}
-                                project={p}
-                                safeChainId={p.chainId || 1} // Default to Mainnet if missing, though unlikely for deployed
-                              />
-                            </div>
+                                <div className="bg-zinc-900 p-2 rounded border border-red-900/30">
+                                  {/* Using the same component as the Owner Dashboard, but context is Super Admin */}
+                                  <AdminPayouts
+                                    projectId={Number(p.id)}
+                                    project={p}
+                                    safeChainId={p.chainId || 1} // Default to Mainnet if missing, though unlikely for deployed
+                                  />
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
 
@@ -604,13 +636,14 @@ export function ProjectTableView({
       </div >
 
       {/* Deployment Configuration Modal */}
-      < DeploymentConfigModal
+      <DeploymentConfigModal
         isOpen={isConfigModalOpen}
-        onClose={() => setIsConfigModalOpen(false)
-        }
+        onClose={() => setIsConfigModalOpen(false)}
         onConfirm={handleConfigConfirm}
         projectTitle={selectedProjectForDeployment?.title || ''}
-        isLoading={false} // Loading handled by Progress Modal now
+        projectSlug={selectedProjectForDeployment?.slug}
+        projectTotalTokens={projects.find(p => p.id === selectedProjectForDeployment?.id)?.totalTokens ?? undefined}
+        isLoading={false}
       />
 
       {/* Visual Deployment Progress Modal */}

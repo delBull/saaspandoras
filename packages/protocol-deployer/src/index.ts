@@ -1,7 +1,9 @@
 // Exportar funciones principales
 export { deployW2EProtocol, default as deployW2EProtocolDefault } from './deploy';
-export { deployNFTPass, type NFTPassConfig } from './deploy-nft';
+export { deployNFTPass } from './deploy-nft';
 export { deployNFTPassServer } from './deploy-nft-server';
+// NFTPassConfig type lives in types.ts (re-exported below in the types block)
+
 
 // Exportar configuraciones
 export { PANDORA_ORACLE_CONFIG, getPandoraOracleWallet } from './config/oracle';
@@ -47,5 +49,6 @@ export type {
   AuditLogEntry,
   ContractConfig,
   ValidationResult,
-  DeploymentValidation
+  DeploymentValidation,
+  NFTPassConfig
 } from './types';

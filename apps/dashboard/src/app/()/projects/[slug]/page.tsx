@@ -11,6 +11,7 @@ import ProjectContentTabs from "../../../../components/projects/ProjectContentTa
 import ProjectDetails from "../../../../components/projects/ProjectDetails";
 import MobileInvestmentCard from "../../../../components/projects/MobileInvestmentCard";
 import RecommendedProjectsSection from "../../../../components/projects/RecommendedProjectsSection";
+import ProtocolPageDispatcher from "../../../../components/projects/v2/ProtocolPageDispatcher";
 
 export default function ProjectPage({ params }: { params: Promise<{ slug: string }> }) {
   const [project, setProject] = useState<ProjectData | null>(null);
@@ -18,28 +19,22 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
   const [currentSlug, setCurrentSlug] = useState<string>('');
   const videoRef = useRef<ProjectVideoSectionRef>(null);
 
-  // Función para mostrar el video
   const showVideoFromHeader = () => {
-    if (videoRef.current) {
-      videoRef.current.showVideo();
-    }
+    if (videoRef.current) videoRef.current.showVideo();
   };
 
-  // Exponer el ref del video para uso global
   useEffect(() => {
     if (videoRef.current) {
       (window as Window & { projectVideoRef?: ProjectVideoSectionRef }).projectVideoRef = videoRef.current;
     }
   }, []);
 
-  // Load project data on mount
   useEffect(() => {
     const loadProject = async () => {
       try {
         const resolvedParams = await params;
         const slug = resolvedParams.slug;
         setCurrentSlug(slug);
-
         const response = await fetch(`/api/projects/${slug}`);
         if (response.ok) {
           const projectData = await response.json() as ProjectData;
@@ -54,58 +49,61 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
         setIsLoading(false);
       }
     };
-
     void loadProject();
   }, [params]);
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-white">Loading...</div>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 rounded-full border-2 border-lime-500 border-t-transparent animate-spin" />
+          <p className="text-zinc-400 text-sm">Cargando protocolo…</p>
+        </div>
       </div>
     );
   }
 
-  if (!project) {
-    notFound();
+  if (!project) { notFound(); }
+
+  // ── V2 Detection ──────────────────────────────────────────────────────────
+  // V2 if it has artifacts[] in w2eConfig, explicit protocol_version=2, or pageLayoutType
+  const isV2 = project.protocol_version === 2
+    || !!(project.w2eConfig?.artifacts && project.w2eConfig.artifacts.length > 0)
+    || !!(project.artifacts && project.artifacts.length > 0)
+    || !!(project.pageLayoutType);
+
+  // ── V2 Route ──────────────────────────────────────────────────────────────
+  if (isV2) {
+    return (
+      <Suspense fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
+        </div>
+      }>
+        <ProtocolPageDispatcher project={project} currentSlug={currentSlug} />
+      </Suspense>
+    );
   }
 
-  // --- Conversión de datos segura ---
+  // ── V1 Legacy Layout (unchanged, backwards-compatible) ───────────────────
   const targetAmount = Number(project.target_amount ?? 1);
 
   return (
     <div className="min-h-screen pb-20 md:pb-6">
-      {/* Navigation Header */}
       <ProjectNavigationHeader />
-
       <div className="max-w-[95%] 2xl:max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
-        {/* Main Layout with Sidebar */}
         <div className="relative">
-          {/* Sidebar (Right side) */}
           <ProjectSidebar project={project} targetAmount={targetAmount} />
-
-          {/* Main Content Area (Left side) */}
           <div className="lg:mr-80 xl:mr-80 2xl:mr-80">
-            {/* Project Header Component */}
             <ProjectHeader project={project} onVideoClick={showVideoFromHeader} />
-
-            {/* Video Section */}
             <ProjectVideoSection ref={videoRef} project={project} />
-
-            {/* New Utility-Focused Content Tabs */}
             <Suspense fallback={<div className="h-96 animate-pulse bg-zinc-800/20 rounded-xl" />}>
               <ProjectContentTabs project={project} />
             </Suspense>
-
-            {/* Additional Dynamic Sections */}
             <ProjectDetails project={project} />
           </div>
-
-          {/* Mobile Investment Card */}
           <MobileInvestmentCard project={project} targetAmount={targetAmount} />
         </div>
-
-        {/* Recommended Projects Section */}
         <RecommendedProjectsSection currentProjectSlug={currentSlug} />
       </div>
     </div>

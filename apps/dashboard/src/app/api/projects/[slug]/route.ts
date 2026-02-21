@@ -131,7 +131,14 @@ export async function GET(
         returns_paid: projectResult.returnsPaid,
         featured_button_text: projectResult.featuredButtonText,
         created_at: projectResult.createdAt,
-        w2eConfig: projectResult.w2eConfig
+        w2eConfig: projectResult.w2eConfig,
+        // V2 Protocol Fields
+        protocol_version: (projectResult as any).protocolVersion
+          ?? ((projectResult.w2eConfig as any)?.artifacts?.length > 0 ? 2 : 1),
+        registryContractAddress: (projectResult as any).registryContractAddress ?? null,
+        artifacts: (projectResult as any).artifacts ?? (projectResult.w2eConfig as any)?.artifacts ?? null,
+        pageLayoutType: (projectResult as any).pageLayoutType ?? (projectResult.w2eConfig as any)?.pageLayoutType ?? null,
+
       };
 
       return NextResponse.json(mappedProject);

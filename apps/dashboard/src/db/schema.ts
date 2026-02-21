@@ -148,6 +148,9 @@ export const projects = pgTable("projects", {
   utilityContractAddress: varchar("utility_contract_address", { length: 42 }),
   loomContractAddress: varchar("loom_contract_address", { length: 42 }),
   governorContractAddress: varchar("governor_contract_address", { length: 42 }),
+  registryContractAddress: varchar("registry_contract_address", { length: 42 }), // V2
+  artifacts: jsonb("artifacts").default([]), // V2: Array of {type, address}
+  protocolVersion: integer("protocol_version").default(1), // V1 = Legacy, V2 = Modular
   chainId: integer("chain_id"),
   deploymentStatus: varchar("deployment_status", { length: 50 }).default('pending'),
   w2eConfig: jsonb("w2e_config").default({}),

@@ -70,5 +70,19 @@ export interface ProjectData {
   featured?: boolean | null;
   featured_button_text?: string | null;
   created_at?: string | Date | null;
-  w2eConfig?: any; // Stores DeploymentConfig (phases, tokenomics, etc.)
+  w2eConfig?: any; // Stores DeploymentConfig (phases, tokenomics, artifacts, etc.)
+  // V2 Protocol Fields
+  protocol_version?: number | null;
+  registryContractAddress?: string | null;
+  artifacts?: Array<{
+    type: 'Access' | 'Identity' | 'Membership' | 'Coupon' | 'Reputation' | 'Yield';
+    name: string;
+    symbol: string;
+    address?: string;
+    maxSupply?: number;
+    price?: string;
+    isPrimary?: boolean;
+  }> | null;
+  pageLayoutType?: 'Access' | 'Identity' | 'Membership' | 'Coupon' | 'Reputation' | 'Yield' | null;
 }
+
