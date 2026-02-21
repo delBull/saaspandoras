@@ -203,7 +203,7 @@ export async function POST(
                 licenseContractAddress: result.licenseAddress,
                 utilityContractAddress: result.phiAddress,
                 loomContractAddress: result.loomAddress,
-                votingContractAddress: result.governorAddress,
+                governorContractAddress: result.governorAddress,  // ✅ matches schema column
                 treasuryAddress: result.treasuryAddress,
                 chainId: result.chainId,
                 deploymentStatus: 'deployed',
