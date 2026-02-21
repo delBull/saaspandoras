@@ -79,92 +79,62 @@ export async function GET(
 
     console.log('🔍 API: Fetching project with slug:', slug);
 
-    // Use the working pattern but with all fields needed
-    const projectResult = await db.execute(sql`
-      SELECT
-        "id",
-        "title",
-        "slug",
-        "description",
-        "status",
-        "video_pitch",
-        "cover_photo_url",
-        "logo_url",
-        "tagline",
-        "business_category",
-        "target_amount",
-        "raised_amount",
-        "website",
-        "twitter_url",
-        "discord_url",
-        "telegram_url",
-        "linkedin_url",
-        "whitepaper_url",
-        "total_valuation_usd",
-        "token_type",
-        "total_tokens",
-        "tokens_offered",
-        "token_price_usd",
-        "estimated_apy",
-        "yield_source",
-        "lockup_period",
-        "fund_usage",
-        "team_members",
-        "advisors",
-        "token_distribution",
-        "contract_address",
-        "contract_address" as "contractAddress",
-        "contract_address" as "governance_token_address",
-        "voting_contract_address",
-        "voting_contract_address" as "votingContractAddress",
-        "license_contract_address" as "licenseContractAddress",
-        "utility_contract_address" as "utilityContractAddress",
-        "governor_contract_address" as "governorContractAddress",
-        "treasury_address" as "treasuryAddress",
-        "loom_contract_address" as "loomContractAddress",
-        "deployment_status" as "deploymentStatus",
-        "chain_id" as "chainId",
-        "legal_status",
-        "valuation_document_url",
-        "fiduciary_entity",
-        "due_diligence_report_url",
-        "is_mintable",
-        "is_mutable",
-        "update_authority_address",
-        "chain_id" as "chainId",
-        "applicant_name",
-        "applicant_position",
-        "applicant_email",
-        "applicant_phone",
-        "applicant_wallet_address",
-        "verification_agreement",
-        "protoclMecanism",
-        "artefactUtility",
-        "worktoearnMecanism",
-        "integrationPlan",
-        "monetizationModel",
-        "adquireStrategy",
-        "mitigationPlan",
-        "recurring_rewards",
-        "integration_details",
-        "legal_entity_help",
-        "image_url",
-        "socials",
-        "returns_paid",
-        "featured",
-        "featured_button_text",
-        "w2e_config" as "w2eConfig",
-        "created_at"
-      FROM "projects"
-      WHERE "slug" = ${slug}
-      LIMIT 1
-    `);
+    const projectResult = await db.query.projects.findFirst({
+      where: (projects, { eq }) => eq(projects.slug, slug)
+    });
 
-    if (projectResult.length > 0) {
-      const project = projectResult[0] as unknown as ProjectData;
+    if (projectResult) {
       console.log('✅ API: Project found in database');
 
-      return NextResponse.json(project);
+      // Map Drizzle ORM's camelCase to the snake_case expected by frontend ProjectData interface
+      const mappedProject = {
+        ...projectResult,
+        logo_url: projectResult.logoUrl,
+        cover_photo_url: projectResult.coverPhotoUrl,
+        business_category: projectResult.businessCategory,
+        video_pitch: projectResult.videoPitch,
+        whitepaper_url: projectResult.whitepaperUrl,
+        twitter_url: projectResult.twitterUrl,
+        discord_url: projectResult.discordUrl,
+        telegram_url: projectResult.telegramUrl,
+        linkedin_url: projectResult.linkedinUrl,
+        target_amount: projectResult.targetAmount,
+        total_valuation_usd: projectResult.totalValuationUsd,
+        token_type: projectResult.tokenType,
+        total_tokens: projectResult.totalTokens,
+        tokens_offered: projectResult.tokensOffered,
+        token_price_usd: projectResult.tokenPriceUsd,
+        estimated_apy: projectResult.estimatedApy,
+        yield_source: projectResult.yieldSource,
+        lockup_period: projectResult.lockupPeriod,
+        fund_usage: projectResult.fundUsage,
+        team_members: projectResult.teamMembers,
+        token_distribution: projectResult.tokenDistribution,
+        contract_address: projectResult.contractAddress,
+        legal_status: projectResult.legalStatus,
+        valuation_document_url: projectResult.valuationDocumentUrl,
+        fiduciary_entity: projectResult.fiduciaryEntity,
+        due_diligence_report_url: projectResult.dueDiligenceReportUrl,
+        is_mintable: projectResult.isMintable,
+        is_mutable: projectResult.isMutable,
+        update_authority_address: projectResult.updateAuthorityAddress,
+        applicant_name: projectResult.applicantName,
+        applicant_position: projectResult.applicantPosition,
+        applicant_email: projectResult.applicantEmail,
+        applicant_phone: projectResult.applicantPhone,
+        applicant_wallet_address: projectResult.applicantWalletAddress,
+        verification_agreement: projectResult.verificationAgreement,
+        integration_details: projectResult.integrationDetails,
+        legal_entity_help: projectResult.legalEntityHelp,
+        image_url: projectResult.imageUrl,
+        raised_amount: projectResult.raisedAmount,
+        returns_paid: projectResult.returnsPaid,
+        featured_button_text: projectResult.featuredButtonText,
+        created_at: projectResult.createdAt,
+        w2eConfig: projectResult.w2eConfig
+      };
+
+      return NextResponse.json(mappedProject);
     }
 
     console.log('⚠️ API: Project not found for slug:', slug);

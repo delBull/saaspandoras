@@ -150,7 +150,7 @@ export default function ProfilePage() {
             connectionCount={profile?.connectionCount}
             kycCompleted={profile?.kycCompleted}
             lastConnectionAt={profile?.lastConnectionAt}
-            projectCount={profile?.projectCount}
+            projectCount={profile?.totalProjects ?? profile?.projectCount}
             hasPandorasKey={profile?.hasPandorasKey}
           />
         </div>

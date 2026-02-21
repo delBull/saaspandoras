@@ -784,7 +784,7 @@ export function NFTManager() {
                                     >
                                         <div className="flex items-center gap-1">
                                             <FaWhatsapp className="w-3 h-3" />
-                                            WhatsApp
+                                            Compartir
                                         </div>
                                     </Button>
                                     <Button
@@ -832,7 +832,7 @@ export function NFTManager() {
                                     className="flex-1 bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/30 hover:bg-[#25D366]/30 font-bold"
                                 >
                                     <Send className="w-4 h-4 mr-2" />
-                                    WhatsApp
+                                    Compartir
                                 </Button>
                                 <Button
                                     onClick={() => {

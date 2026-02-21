@@ -21,6 +21,6 @@ export const wallets = [
         },
         smartAccount: accountAbstractionConfig, // ⚡ Built-in Smart Account support
     }),
-    // 🛡️ Standard EOA wallets (can be wrapped later if we want Global Gasless for MetaMask too)
+    // 🛡️ Standard EOA wallets
     createWallet("io.metamask"),
 ];

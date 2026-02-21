@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { verifySignature } from "thirdweb/auth";
 import { client } from "@/lib/thirdweb-client";
 import { db } from "@/db";
-import { authChallenges } from "@/db/schema";
+import { authChallenges, users } from "@/db/schema";
 import { eq, and, gt } from "drizzle-orm";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
@@ -152,7 +152,56 @@ export async function POST(request: Request) {
             hasAccess = false;
         }
 
-        // Upsert User (Optional)
+        // 7. Upsert User and update connection count
+        const walletAddress = address.toLowerCase();
+
+        try {
+            // Find if user already exists
+            const existingUsers = await db.query.users.findMany({
+                where: (users, { eq }) => eq(users.walletAddress, walletAddress),
+                limit: 1
+            });
+
+            const now = new Date();
+
+            if (existingUsers.length > 0) {
+                // Update connection count and lastConnectionAt
+                const currentCount = existingUsers[0]?.connectionCount || 0;
+                const lastConn = existingUsers[0]?.lastConnectionAt;
+
+                // Only increment if last connection was more than 1 hour ago
+                // to avoid spamming the connection count on frequent relogins
+                let shouldIncrement = true;
+                if (lastConn) {
+                    const hourAgo = new Date(Date.now() - 60 * 60 * 1000);
+                    if (new Date(lastConn) > hourAgo) {
+                        shouldIncrement = false;
+                    }
+                }
+
+                await db.update(users)
+                    .set({
+                        lastConnectionAt: now,
+                        connectionCount: currentCount + (shouldIncrement ? 1 : 0),
+                        hasPandorasKey: hasAccess
+                    })
+                    .where(eq(users.walletAddress, walletAddress));
+            } else {
+                // Insert new user
+                const { randomUUID } = require('crypto');
+                await db.insert(users).values({
+                    id: randomUUID(),
+                    walletAddress,
+                    connectionCount: 1,
+                    lastConnectionAt: now,
+                    createdAt: now,
+                    hasPandorasKey: hasAccess
+                });
+            }
+        } catch (dbError) {
+            console.error("Failed to upsert user connection tracking:", dbError);
+            // Proceed to issue JWT anyway, don't break login if DB fails!
+        }
 
         // 8. Issue JWT
         const token = jwt.sign({

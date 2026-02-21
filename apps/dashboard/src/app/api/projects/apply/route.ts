@@ -128,10 +128,11 @@ export async function POST(request: Request) {
 
     // 🔔 DISCORD NOTIFICATION
     try {
-      const { notifyNewApplication } = await import("@/lib/notifications");
+      const { notifyNewApplication, ensureNotificationServiceConfigured } = await import("@/lib/notifications");
+      ensureNotificationServiceConfigured(); // ⚡ Initialize Discord webhook BEFORE sending
       if (newProject) {
         await notifyNewApplication(newProject);
-        console.log(`🔔 Notification sent for project: ${newProject.title}`);
+        console.log(`🔔 Discord notification sent for project: ${newProject.title}`);
       }
     } catch (notificationError) {
       console.warn('⚠️ Failed to send notification:', notificationError);
