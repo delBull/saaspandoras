@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { getContract, defineChain, sendTransaction, prepareTransaction, prepareContractCall } from "thirdweb";
+import { getContract, defineChain, sendTransaction, prepareTransaction, prepareContractCall, readContract } from "thirdweb";
 import { AdminPayouts } from "./AdminPayouts";
 import { mintWithSignature } from "thirdweb/extensions/erc20";
 import { usePBOXBalance } from "@/hooks/usePBOXBalance";
@@ -284,46 +284,49 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
         </div>
     );
 
-    const ProposalsView = () => (
-        <div className="space-y-8">
-            <div className="flex justify-between items-center">
-                <h3 className="text-xl font-bold text-white">Gobernanza del DAO</h3>
-                {isOwner && (
-                    <button
-                        onClick={() => setIsProposalModalOpen(true)}
-                        className="px-4 py-2 bg-lime-500 hover:bg-lime-400 text-black text-sm font-bold rounded-lg transition-colors shadow-lg shadow-lime-500/10"
-                    >
-                        + Nueva Propuesta
-                    </button>
+    const ProposalsView = () => {
+        const govAddress = project.governorContractAddress || project.votingContractAddress || (project as any).governor_contract_address || (project as any).voting_contract_address;
+
+        return (
+            <div className="space-y-6">
+                <div className="flex justify-between items-center bg-zinc-900 border border-zinc-800 p-4 rounded-xl">
+                    <div>
+                        <h3 className="text-lg font-bold text-white">Gobernanza del DAO</h3>
+                        <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Protocolo de Votación Activo</p>
+                    </div>
+                    {isOwner && (
+                        <button
+                            onClick={() => setIsProposalModalOpen(true)}
+                            className="px-4 py-2 bg-lime-500 hover:bg-lime-400 text-black text-xs font-bold rounded-lg transition-colors shadow-lg shadow-lime-500/10"
+                        >
+                            + Nueva Propuesta
+                        </button>
+                    )}
+                </div>
+
+                {/* 1. On-Chain Proposals (Formal) */}
+                {govAddress ? (
+                    <div className="space-y-3">
+                        <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2 px-1">
+                            <ShieldCheckIcon className="w-3.5 h-3.5" /> Propuestas On-Chain (Vinculantes)
+                        </h4>
+                        <OnChainProposalsList
+                            votingContractAddress={govAddress}
+                            chainId={safeChainId}
+                        />
+                    </div>
+                ) : (
+                    <div className="bg-yellow-900/10 border border-yellow-500/20 text-yellow-400 p-4 rounded-xl text-xs flex items-start gap-3">
+                        <InfoIcon className="w-4 h-4 mt-0.5 shrink-0" />
+                        <div>
+                            <p className="font-bold mb-1">Capa de Gobernanza On-Chain no detectada</p>
+                            <p className="opacity-70">Este proyecto no tiene un contrato de votación configurado. Las propuestas se gestionarán off-chain mediante señalización social.</p>
+                        </div>
+                    </div>
                 )}
             </div>
-
-            {/* 1. On-Chain Proposals (Formal) */}
-            {project.governorContractAddress ? (
-                <div className="space-y-4">
-                    <h4 className="text-sm font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2">
-                        <ShieldCheckIcon className="w-4 h-4" /> Propuestas On-Chain (Vinculantes)
-                    </h4>
-                    <OnChainProposalsList
-                        votingContractAddress={project.governorContractAddress}
-                        chainId={safeChainId}
-                    />
-                </div>
-            ) : (
-                <div className="bg-yellow-900/20 border border-yellow-500/30 text-yellow-400 p-4 rounded-xl text-sm">
-                    Este proyecto no tiene un contrato de votación configurado. Las propuestas serán off-chain.
-                </div>
-            )}
-
-            {/* 2. Off-Chain / Signaling (Informal) */}
-            <div className="space-y-4">
-                <h4 className="text-sm font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4" /> Discusiones & Señalización
-                </h4>
-                <UserGovernanceList projectIds={[Number(project.id)]} />
-            </div>
-        </div>
-    );
+        );
+    };
 
     const InfoView = () => (
         <div className="max-w-5xl mx-auto">
@@ -417,8 +420,6 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                     </p>
                 </div>
             </div>
-
-            {/* Support Footer REMOVED as per request */}
         </div>
     );
 
@@ -451,9 +452,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                     </div>
                 </div>
 
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
                     {/* Configuración General */}
                     <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl hover:border-lime-500/30 transition-colors">
                         <h4 className="font-bold text-white mb-4">Configuración General</h4>
@@ -550,14 +549,12 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
             if (!res.ok) throw new Error(data.error || "Redemption failed");
 
             if (data.signature && data.payload) {
-                // Execute Minting on Client
                 const pboxContract = getContract({
                     client,
                     chain: defineChain(process.env.NODE_ENV === 'production' ? 8453 : 11155111),
                     address: process.env.NEXT_PUBLIC_PBOX_TOKEN_ADDRESS || ""
                 });
 
-                // Execute Signature Mint
                 const transaction = mintWithSignature({
                     contract: pboxContract,
                     payload: data.payload,
@@ -680,41 +677,42 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
 
     // -- Main Render --
     return (
-        <div className="flex-1 p-6 md:p-12 min-h-screen">
-            <motion.div
-                key={activeView}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2 }}
-            >
-                {activeView === 'overview' && <OverviewView />}
-                {activeView === 'activities' && <ActivitiesView />}
-                {activeView === 'activities_admin' && <ActivitiesAdminView />}
-                {activeView === 'chat' && <DAOChat project={project} isOwner={isOwner} />}
-                {activeView === 'staking' && <StakingView />}
-                {activeView === 'proposals' && <ProposalsView />}
-                {activeView === 'info' && <InfoView />}
-                {activeView === 'manage' && <ManageView />}
-                {activeView === 'docs' && <DAODocs />}
+        <div className="flex-1 w-full min-h-screen bg-black/20">
+            <div className="p-4 md:p-8">
+                <motion.div
+                    key={activeView}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                >
+                    {activeView === 'overview' && <OverviewView />}
+                    {activeView === 'activities' && <ActivitiesView />}
+                    {activeView === 'activities_admin' && <ActivitiesAdminView />}
+                    {activeView === 'chat' && <DAOChat project={project} isOwner={isOwner} />}
+                    {activeView === 'staking' && <StakingView />}
+                    {activeView === 'proposals' && <ProposalsView />}
+                    {activeView === 'info' && <InfoView />}
+                    {activeView === 'manage' && <ManageView />}
+                    {activeView === 'docs' && <DAODocs />}
 
-                {activeView === 'members' && (
-                    <div className="flex flex-col items-center justify-center py-20 text-zinc-500">
-                        <UsersIcon className="w-12 h-12 mb-4 opacity-50" />
-                        <p>Directorio de miembros en construcción</p>
-                    </div>
-                )}
+                    {activeView === 'members' && (
+                        <div className="flex flex-col items-center justify-center py-20 text-zinc-500">
+                            <UsersIcon className="w-12 h-12 mb-4 opacity-50" />
+                            <p>Directorio de miembros en construcción</p>
+                        </div>
+                    )}
+                </motion.div>
+            </div>
 
-            </motion.div>
-
+            {/* Modal fixed for V2 slugs */}
             <CreateProposalModal
                 projectId={Number(project.id)}
                 isOpen={isProposalModalOpen}
                 onClose={() => setIsProposalModalOpen(false)}
                 onCreated={() => {
-                    // Refetch data if needed (SWR handles it automatically if we revalidate, but simple close is fine)
                     toast.success("Propuesta registrada.");
                 }}
-                votingContractAddress={project.governorContractAddress}
+                votingContractAddress={project.governorContractAddress || project.votingContractAddress || (project as any).governor_contract_address || (project as any).voting_contract_address}
                 chainId={safeChainId}
             />
         </div>
