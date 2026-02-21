@@ -299,13 +299,13 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
             </div>
 
             {/* 1. On-Chain Proposals (Formal) */}
-            {project.voting_contract_address ? (
+            {project.governorContractAddress ? (
                 <div className="space-y-4">
                     <h4 className="text-sm font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2">
                         <ShieldCheckIcon className="w-4 h-4" /> Propuestas On-Chain (Vinculantes)
                     </h4>
                     <OnChainProposalsList
-                        votingContractAddress={project.voting_contract_address}
+                        votingContractAddress={project.governorContractAddress}
                         chainId={safeChainId}
                     />
                 </div>
@@ -714,7 +714,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                     // Refetch data if needed (SWR handles it automatically if we revalidate, but simple close is fine)
                     toast.success("Propuesta registrada.");
                 }}
-                votingContractAddress={project.voting_contract_address}
+                votingContractAddress={project.governorContractAddress}
                 chainId={safeChainId}
             />
         </div>
