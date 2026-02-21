@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { AdminSettings } from "@/components/admin/AdminSettings";
@@ -719,148 +719,149 @@ export default function AdminDashboardPage() {
         /> */}
       </div>
 
-      <AdminTabs swaps={mockSwaps} users={users} showSettings={true} showUsers={true} showShortlinks={true} showMarketing={true} currentUserId={currentUserId}>
-        {/* Tab de proyectos */}
-        <div key="projects-tab" className="space-y-6">
-          {/* Barra de herramientas mejorada */}
-          <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
-            <div className="flex flex-col xl:flex-row gap-4">
-              {/* Búsqueda */}
-              <div className="flex-1 min-w-0">
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="🔍 Buscar proyecto por título..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-4 py-2 pl-10 bg-zinc-900 border border-zinc-600 rounded-lg text-white placeholder-gray-400 focus:border-lime-500 focus:outline-none transition-colors"
-                  />
-                  <svg className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-              </div>
-
-              {/* Controles */}
-              <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-                {/* Vista */}
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-400">Vista:</span>
-                  <button
-                    onClick={() => setViewMode('table')}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'table'
-                      ? 'bg-lime-500 text-black'
-                      : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600'
-                      }`}
-                  >
-                    📊 Tabla
-                  </button>
-                  <button
-                    onClick={() => setViewMode('cards')}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'cards'
-                      ? 'bg-lime-500 text-black'
-                      : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600'
-                      }`}
-                  >
-                    🃏 Cards
-                  </button>
+      <Suspense fallback={<div className="h-8 w-full animate-pulse bg-zinc-800 rounded" />}>
+        <AdminTabs swaps={mockSwaps} users={users} showSettings={true} showUsers={true} showShortlinks={true} showMarketing={true} currentUserId={currentUserId}>
+          {/* Tab de proyectos */}
+          <div key="projects-tab" className="space-y-6">
+            {/* Barra de herramientas mejorada */}
+            <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
+              <div className="flex flex-col xl:flex-row gap-4">
+                {/* Búsqueda */}
+                <div className="flex-1 min-w-0">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="🔍 Buscar proyecto por título..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full px-4 py-2 pl-10 bg-zinc-900 border border-zinc-600 rounded-lg text-white placeholder-gray-400 focus:border-lime-500 focus:outline-none transition-colors"
+                    />
+                    <svg className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
                 </div>
 
-                {/* Ordenamiento */}
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-400">Orden:</span>
-                  <select
-                    value={`${sortBy}-${sortOrder}`}
-                    onChange={(e) => {
-                      const [by, order] = e.target.value.split('-');
-                      setSortBy(by as 'date' | 'amount' | 'status' | 'title');
-                      setSortOrder(order as 'asc' | 'desc');
-                    }}
-                    className="px-3 py-2 bg-zinc-900 border border-zinc-600 rounded-lg text-white focus:border-lime-500 focus:outline-none transition-colors text-sm"
-                  >
-                    <option value="date-desc">📅 Fecha ↓</option>
-                    <option value="date-asc">📅 Fecha ↑</option>
-                    <option value="title-asc">📝 Título A-Z</option>
-                    <option value="title-desc">📝 Título Z-A</option>
-                    <option value="amount-desc">💰 Monto ↓</option>
-                    <option value="amount-asc">💰 Monto ↑</option>
-                    <option value="status-desc">📊 Estado ↓</option>
-                    <option value="status-asc">📊 Estado ↑</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Filtros de estado mejorados */}
-          <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
-            <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
-              <div>
-                <h3 className="text-sm font-medium text-gray-200 mb-2 sm:mb-0">Filtrar por Estado</h3>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => setStatusFilter('all')}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${statusFilter === 'all'
-                    ? 'bg-lime-500 text-black shadow-lg'
-                    : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600 hover:text-white'
-                    }`}
-                >
-                  Todos ({projects.length})
-                </button>
-                {Object.entries(statusCounts).map(([status, count]) => (
-                  count > 0 && (
+                {/* Controles */}
+                <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+                  {/* Vista */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-400">Vista:</span>
                     <button
-                      key={status}
-                      onClick={() => setStatusFilter(status)}
-                      className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${statusFilter === status
-                        ? 'bg-lime-500 text-black shadow-lg'
-                        : `${status === 'pending' ? 'text-yellow-300 bg-yellow-500/10 border border-yellow-500/20 hover:bg-yellow-500/20' :
-                          status === 'approved' ? 'text-blue-300 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20' :
-                            status === 'live' ? 'text-green-300 bg-green-500/10 border border-green-500/20 hover:bg-green-500/20' :
-                              status === 'completed' ? 'text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20' :
-                                status === 'draft' ? 'text-purple-300 bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20' :
-                                  'text-red-300 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20'
-                        } bg-zinc-700 hover:bg-zinc-600`
+                      onClick={() => setViewMode('table')}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'table'
+                        ? 'bg-lime-500 text-black'
+                        : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600'
                         }`}
                     >
-                      {status?.charAt(0)?.toUpperCase() + status?.slice(1) || status} ({count})
+                      📊 Tabla
                     </button>
-                  )
-                ))}
-              </div>
-            </div>
-          </div>
+                    <button
+                      onClick={() => setViewMode('cards')}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'cards'
+                        ? 'bg-lime-500 text-black'
+                        : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600'
+                        }`}
+                    >
+                      🃏 Cards
+                    </button>
+                  </div>
 
-          {/* Estadísticas rápida */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
-            <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-400">Total Proyectos</p>
-                  <p className="text-2xl font-bold text-white">{projects.length}</p>
-                </div>
-                <div className="w-8 h-8 bg-lime-500 rounded-full flex items-center justify-center">
-                  📊
+                  {/* Ordenamiento */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-400">Orden:</span>
+                    <select
+                      value={`${sortBy}-${sortOrder}`}
+                      onChange={(e) => {
+                        const [by, order] = e.target.value.split('-');
+                        setSortBy(by as 'date' | 'amount' | 'status' | 'title');
+                        setSortOrder(order as 'asc' | 'desc');
+                      }}
+                      className="px-3 py-2 bg-zinc-900 border border-zinc-600 rounded-lg text-white focus:border-lime-500 focus:outline-none transition-colors text-sm"
+                    >
+                      <option value="date-desc">📅 Fecha ↓</option>
+                      <option value="date-asc">📅 Fecha ↑</option>
+                      <option value="title-asc">📝 Título A-Z</option>
+                      <option value="title-desc">📝 Título Z-A</option>
+                      <option value="amount-desc">💰 Monto ↓</option>
+                      <option value="amount-asc">💰 Monto ↑</option>
+                      <option value="status-desc">📊 Estado ↓</option>
+                      <option value="status-asc">📊 Estado ↑</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
 
+            {/* Filtros de estado mejorados */}
             <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-400">Monto Total Meta</p>
-                  <p className="text-2xl font-bold text-lime-400">
-                    ${(projects.reduce((total, p) => total + Number(p.targetAmount || 0), 0)).toLocaleString()}
-                  </p>
+                  <h3 className="text-sm font-medium text-gray-200 mb-2 sm:mb-0">Filtrar por Estado</h3>
                 </div>
-                <div className="w-8 h-8 bg-lime-500 rounded-full flex items-center justify-center">
-                  💰
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setStatusFilter('all')}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${statusFilter === 'all'
+                      ? 'bg-lime-500 text-black shadow-lg'
+                      : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600 hover:text-white'
+                      }`}
+                  >
+                    Todos ({projects.length})
+                  </button>
+                  {Object.entries(statusCounts).map(([status, count]) => (
+                    count > 0 && (
+                      <button
+                        key={status}
+                        onClick={() => setStatusFilter(status)}
+                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${statusFilter === status
+                          ? 'bg-lime-500 text-black shadow-lg'
+                          : `${status === 'pending' ? 'text-yellow-300 bg-yellow-500/10 border border-yellow-500/20 hover:bg-yellow-500/20' :
+                            status === 'approved' ? 'text-blue-300 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20' :
+                              status === 'live' ? 'text-green-300 bg-green-500/10 border border-green-500/20 hover:bg-green-500/20' :
+                                status === 'completed' ? 'text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20' :
+                                  status === 'draft' ? 'text-purple-300 bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20' :
+                                    'text-red-300 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20'
+                          } bg-zinc-700 hover:bg-zinc-600`
+                          }`}
+                      >
+                        {status?.charAt(0)?.toUpperCase() + status?.slice(1) || status} ({count})
+                      </button>
+                    )
+                  ))}
                 </div>
               </div>
             </div>
-            {/* Count total por estado oculto */}
-            {/* 
+
+            {/* Estadísticas rápida */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
+              <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-400">Total Proyectos</p>
+                    <p className="text-2xl font-bold text-white">{projects.length}</p>
+                  </div>
+                  <div className="w-8 h-8 bg-lime-500 rounded-full flex items-center justify-center">
+                    📊
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-400">Monto Total Meta</p>
+                    <p className="text-2xl font-bold text-lime-400">
+                      ${(projects.reduce((total, p) => total + Number(p.targetAmount || 0), 0)).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="w-8 h-8 bg-lime-500 rounded-full flex items-center justify-center">
+                    💰
+                  </div>
+                </div>
+              </div>
+              {/* Count total por estado oculto */}
+              {/* 
             <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
               <div className="flex items-center justify-between">
                 <div>
@@ -889,41 +890,42 @@ export default function AdminDashboardPage() {
               </div>
             </div>
             */}
+            </div>
+
+            {/* Vista usando componentes modularizados */}
+            {viewMode === 'cards' ? (
+              <ProjectCardsView
+                projects={filteredProjects}
+                expandedProject={expandedProject}
+                setExpandedProject={setExpandedProject}
+                setStatusDropdown={setStatusDropdown}
+                statusDropdown={statusDropdown}
+              />
+            ) : (
+              <ProjectTableView
+                projects={filteredProjects}
+                expandedProject={expandedProject}
+                setExpandedProject={setExpandedProject}
+                actionsDropdown={actionsDropdown}
+                setActionsDropdown={setActionsDropdown}
+                setActionsDropdownPosition={setActionsDropdownPosition}
+                isFeatured={isFeatured}
+                toggleFeatured={toggleFeatured}
+                setStatusDropdown={setStatusDropdown}
+                statusDropdown={statusDropdown}
+                onDeployProtocol={deployProtocol}
+                actionsLoading={actionsLoading}
+              />
+            )}
           </div>
 
-          {/* Vista usando componentes modularizados */}
-          {viewMode === 'cards' ? (
-            <ProjectCardsView
-              projects={filteredProjects}
-              expandedProject={expandedProject}
-              setExpandedProject={setExpandedProject}
-              setStatusDropdown={setStatusDropdown}
-              statusDropdown={statusDropdown}
-            />
-          ) : (
-            <ProjectTableView
-              projects={filteredProjects}
-              expandedProject={expandedProject}
-              setExpandedProject={setExpandedProject}
-              actionsDropdown={actionsDropdown}
-              setActionsDropdown={setActionsDropdown}
-              setActionsDropdownPosition={setActionsDropdownPosition}
-              isFeatured={isFeatured}
-              toggleFeatured={toggleFeatured}
-              setStatusDropdown={setStatusDropdown}
-              statusDropdown={statusDropdown}
-              onDeployProtocol={deployProtocol}
-              actionsLoading={actionsLoading}
-            />
-          )}
-        </div>
+          {/* Tab de configuración */}
+          <AdminSettings key="settings-tab" initialAdmins={admins} />
 
-        {/* Tab de configuración */}
-        <AdminSettings key="settings-tab" initialAdmins={admins} />
-
-        {/* Tab de Shortlinks Analytics */}
-        <ShortlinksAnalyticsTab key="shortlinks-tab" />
-      </AdminTabs>
+          {/* Tab de Shortlinks Analytics */}
+          <ShortlinksAnalyticsTab key="shortlinks-tab" />
+        </AdminTabs>
+      </Suspense>
 
       {/* Dropdown de Status - Renderizado fuera de la tabla para z-index máximo */}
       {statusDropdown && (

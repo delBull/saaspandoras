@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback } from 'react';
 import type { ReactNode } from "react";
+import { useSearchParams, useRouter } from 'next/navigation';
 import type { UserData } from "@/types/admin";
 import { UsersTable } from "./UsersTable";
 import WhatsAppLeadsTab from './WhatsAppLeadsTab';
@@ -15,7 +16,6 @@ import { ClientsManager } from "./clients/ClientsManager";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Settings2, CreditCard } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { MarketingHelpModal } from "./marketing/MarketingHelpModal";
 import { CreateCampaignModal } from "./marketing/CreateCampaignModal";
 import { CreatePaymentLinkModal } from "./payments/CreatePaymentLinkModal";
@@ -43,33 +43,48 @@ interface AdminTabsProps {
 }
 
 export function AdminTabs({ swaps, users, children, showSettings = false, showUsers = false, showShortlinks = false, showMarketing = false, currentUserId }: AdminTabsProps) {
-  const [activeTab, setActiveTab] = useState('projects');
-  const [activeMarketingSubTab, setActiveMarketingSubTab] = useState<'wa-leads' | 'shortlinks' | 'newsletter' | 'discord' | 'campaigns' | 'agenda' | 'pay'>('wa-leads');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const activeTab = searchParams.get('tab') ?? 'projects';
+  const activeMarketingSubTab = (searchParams.get('sub') ?? 'wa-leads') as 'wa-leads' | 'shortlinks' | 'newsletter' | 'discord' | 'campaigns' | 'agenda' | 'pay';
+
+  const setTab = useCallback((tab: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', tab);
+    params.delete('sub'); // reset sub-tab when main tab changes
+    router.push(`?${params.toString()}`, { scroll: false });
+  }, [router, searchParams]);
+
+  const setSubTab = useCallback((sub: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('sub', sub);
+    router.push(`?${params.toString()}`, { scroll: false });
+  }, [router, searchParams]);
 
   return (
     <>
       <div className="border-b border-zinc-700 mb-6">
         <nav className="flex space-x-4">
-          <button onClick={() => setActiveTab('projects')} className={`pb-2 font-semibold ${activeTab === 'projects' ? 'text-lime-400 border-b-2 border-lime-400' : 'text-gray-400'}`}>
+          <button onClick={() => setTab('projects')} className={`pb-2 font-semibold ${activeTab === 'projects' ? 'text-lime-400 border-b-2 border-lime-400' : 'text-gray-400'}`}>
             Protocolos
           </button>
-          <button onClick={() => setActiveTab('users')} className={`pb-2 font-semibold ${activeTab === 'users' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-gray-400'} flex items-center gap-2`}>
+          <button onClick={() => setTab('users')} className={`pb-2 font-semibold ${activeTab === 'users' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-gray-400'} flex items-center gap-2`}>
             Usuarios
           </button>
-          <button onClick={() => setActiveTab('nft')} className={`pb-2 font-semibold ${activeTab === 'nft' ? 'text-lime-400 border-b-2 border-lime-400' : 'text-gray-400'} flex items-center gap-2`}>
+          <button onClick={() => setTab('nft')} className={`pb-2 font-semibold ${activeTab === 'nft' ? 'text-lime-400 border-b-2 border-lime-400' : 'text-gray-400'} flex items-center gap-2`}>
             NFT Lab
           </button>
-          <button onClick={() => setActiveTab('clients')} className={`pb-2 font-semibold ${activeTab === 'clients' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-400'} flex items-center gap-2`}>
+          <button onClick={() => setTab('clients')} className={`pb-2 font-semibold ${activeTab === 'clients' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-400'} flex items-center gap-2`}>
             Clientes
           </button>
 
           {showMarketing && (
-            <button onClick={() => setActiveTab('marketing')} className={`pb-2 font-semibold ${activeTab === 'marketing' ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-400'} flex items-center gap-2`}>
+            <button onClick={() => setTab('marketing')} className={`pb-2 font-semibold ${activeTab === 'marketing' ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-400'} flex items-center gap-2`}>
               Marketing
             </button>
           )}
           {showSettings && (
-            <button onClick={() => setActiveTab('settings')} className={`pb-2 font-semibold ${activeTab === 'settings' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-400'}`}>
+            <button onClick={() => setTab('settings')} className={`pb-2 font-semibold ${activeTab === 'settings' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-400'}`}>
               Config
             </button>
           )}
@@ -111,7 +126,7 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
           <div className="mb-6">
             <div className="flex flex-wrap gap-4 border-b border-zinc-700 pb-2">
               <button
-                onClick={() => setActiveMarketingSubTab('wa-leads')}
+                onClick={() => setSubTab('wa-leads')}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeMarketingSubTab === 'wa-leads'
                   ? 'bg-green-500/20 text-green-400 border border-green-500/30'
                   : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
@@ -120,7 +135,7 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
                 💬 WA Leads
               </button>
               <button
-                onClick={() => setActiveMarketingSubTab('pay')}
+                onClick={() => setSubTab('pay')}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeMarketingSubTab === 'pay'
                   ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                   : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
@@ -129,7 +144,7 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
                 💸 Pay & Finance
               </button>
               <button
-                onClick={() => setActiveMarketingSubTab('shortlinks')}
+                onClick={() => setSubTab('shortlinks')}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeMarketingSubTab === 'shortlinks'
                   ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
                   : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
@@ -138,7 +153,7 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
                 🔗 Shortlinks
               </button>
               <button
-                onClick={() => setActiveMarketingSubTab('newsletter')}
+                onClick={() => setSubTab('newsletter')}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeMarketingSubTab === 'newsletter'
                   ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
                   : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
@@ -147,7 +162,7 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
                 📧 Newsletter Analytics
               </button>
               <button
-                onClick={() => setActiveMarketingSubTab('discord')}
+                onClick={() => setSubTab('discord')}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeMarketingSubTab === 'discord'
                   ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
                   : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
@@ -156,7 +171,7 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
                 🎮 Discord
               </button>
               <button
-                onClick={() => setActiveMarketingSubTab('campaigns')}
+                onClick={() => setSubTab('campaigns')}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeMarketingSubTab === 'campaigns'
                   ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
                   : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
@@ -165,7 +180,7 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
                 🎯 Campaigns
               </button>
               <button
-                onClick={() => setActiveMarketingSubTab('agenda')}
+                onClick={() => setSubTab('agenda')}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeMarketingSubTab === 'agenda'
                   ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
                   : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
