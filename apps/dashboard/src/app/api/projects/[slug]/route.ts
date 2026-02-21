@@ -132,12 +132,17 @@ export async function GET(
         featured_button_text: projectResult.featuredButtonText,
         created_at: projectResult.createdAt,
         w2eConfig: projectResult.w2eConfig,
+        // Explicitly map all addresses to ensure frontend gets them in both formats if needed
+        registryContractAddress: (projectResult as any).registryContractAddress ?? null,
+        governorContractAddress: (projectResult as any).governorContractAddress ?? null,
+        tokenContractAddress: (projectResult as any).contractAddress ?? null,
+        timelockContractAddress: (projectResult as any).loomContractAddress ?? null, // Often loom is used as timelock-ish in this context
+
         // V2 Protocol Fields
         protocol_version: (projectResult as any).protocolVersion
           ?? ((projectResult.w2eConfig as any)?.artifacts?.length > 0 ? 2 : 1),
-        registryContractAddress: (projectResult as any).registryContractAddress ?? null,
-        artifacts: (projectResult as any).artifacts ?? (projectResult.w2eConfig as any)?.artifacts ?? null,
-        pageLayoutType: (projectResult as any).pageLayoutType ?? (projectResult.w2eConfig as any)?.pageLayoutType ?? null,
+        artifacts: (projectResult as any).artifacts ?? (projectResult.w2eConfig as any)?.artifacts ?? [],
+        pageLayoutType: (projectResult as any).pageLayoutType ?? (projectResult.w2eConfig as any)?.pageLayoutType ?? 'access',
 
       };
 

@@ -185,9 +185,9 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
             )}
 
             {/* Key Metrics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Treasury Card */}
-                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="p-2 bg-lime-500/10 rounded-lg">
                             <WalletIcon className="w-5 h-5 text-lime-400" />
@@ -207,8 +207,8 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                             </div>
                         </div>
                     </div>
-                    <div className="space-y-1">
-                        <span className="text-2xl font-bold text-white font-mono">{formattedBalance}</span>
+                    <div className="space-y-0.5">
+                        <span className="text-xl font-bold text-white font-mono">{formattedBalance}</span>
                         <p className="text-xs text-zinc-500">
                             {isBaseMainnet ? 'Balance en USDC (Base)' : 'Balance Nativo (Sepolia)'}
                         </p>
@@ -219,12 +219,12 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                 {licenseContract ? (
                     <DAOMetrics licenseContract={licenseContract} />
                 ) : (
-                    <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                            <VoteIcon className="w-24 h-24 text-zinc-700" />
+                    <div className="bg-zinc-900 p-4 rounded-xl border border-zinc-800 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-2 opacity-5 group-hover:opacity-10 transition-opacity">
+                            <VoteIcon className="w-16 h-16 text-zinc-700" />
                         </div>
-                        <p className="text-zinc-400 text-sm font-medium mb-1">Miembros del DAO</p>
-                        <h3 className="text-3xl font-bold text-white font-mono">--</h3>
+                        <p className="text-zinc-400 text-xs font-medium mb-1">Miembros del DAO</p>
+                        <h3 className="text-xl font-bold text-white font-mono">--</h3>
                         <div className="mt-4 flex items-center text-xs text-zinc-600">
                             <ActivityIcon className="w-3 h-3 mr-1" />
                             Holders de Access Cards
@@ -241,12 +241,12 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                 )}
 
                 {/* Rewards Metric */}
-                <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <TrendingUpIcon className="w-24 h-24 text-blue-500" />
+                <div className="bg-zinc-900 p-4 rounded-xl border border-zinc-800 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-2 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <TrendingUpIcon className="w-16 h-16 text-blue-500" />
                     </div>
-                    <p className="text-zinc-400 text-sm font-medium mb-1">Recompensas Estimadas</p>
-                    <h3 className="text-3xl font-bold text-white font-mono">Dinámico</h3>
+                    <p className="text-zinc-400 text-xs font-medium mb-1">Recompensas Estimadas</p>
+                    <h3 className="text-xl font-bold text-white font-mono">Dinámico</h3>
                     <div className="mt-4 flex items-center text-xs text-blue-400">
                         <ArrowUpRightIcon className="w-3 h-3 mr-1" />
                         Basado en participación

@@ -154,6 +154,7 @@ export const projects = pgTable("projects", {
   chainId: integer("chain_id"),
   deploymentStatus: varchar("deployment_status", { length: 50 }).default('pending'),
   w2eConfig: jsonb("w2e_config").default({}),
+  pageLayoutType: varchar("page_layout_type", { length: 50 }), // access, identity, membership, coupon, reputation, yield
 
   // Sección 5: Seguridad y Auditoría
   legalStatus: text("legal_status"), // Estatus legal del activo

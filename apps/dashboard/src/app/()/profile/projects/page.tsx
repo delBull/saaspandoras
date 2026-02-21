@@ -633,21 +633,19 @@ export default function ProfileProjectsPage() {
                       </Button>
                     </Link>
 
-                    {/* Show Edit for non-final states */}
-                    {project.status !== 'live' && project.status !== 'completed' && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="w-full bg-zinc-600 hover:bg-zinc-700 border-zinc-600 hover:border-zinc-700"
-                        onClick={() => {
-                          setSelectedProject(project);
-                          setShowEditModal(true);
-                        }}
-                      >
-                        <PencilIcon className="w-4 h-4 mr-2" />
-                        Editar
-                      </Button>
-                    )}
+                    {/* Allow Edit for all states to update basic info */}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full bg-zinc-600 hover:bg-zinc-700 border-zinc-600 hover:border-zinc-700"
+                      onClick={() => {
+                        setSelectedProject(project);
+                        setShowEditModal(true);
+                      }}
+                    >
+                      <PencilIcon className="w-4 h-4 mr-2" />
+                      Editar
+                    </Button>
 
                     {/* Show Manage DAO only if Approved/Live/Deployed */}
                     {/* Using /admin/projects/[id] as the management hub */}
