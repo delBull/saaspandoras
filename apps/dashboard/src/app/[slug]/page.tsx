@@ -73,6 +73,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
+// Helper to ensure links are absolute
+const ensureAbsoluteUrl = (url?: string) => {
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("mailto:") || url.startsWith("tel:")) {
+    return url;
+  }
+  return `https://${url}`;
+};
+
 // Server Action for tracking and redirecting
 async function handleShortlink(slug: string, searchParams: URLSearchParams, headersData: any) {
   try {
@@ -176,7 +185,8 @@ async function handleShortlink(slug: string, searchParams: URLSearchParams, head
     }
 
     // Redirect to destination URL with shortlink tracking parameters
-    const destinationUrl = new URL(link.destinationUrl);
+    const safeUrl = ensureAbsoluteUrl(link.destinationUrl);
+    const destinationUrl = new URL(safeUrl);
 
     // Add shortlink info so the landing page knows it came from a shortlink
     destinationUrl.searchParams.set('via_shortlink', slug);
