@@ -69,7 +69,7 @@ export default function CouponProtocolPage({ project, currentSlug }: Props) {
                 </p>
             </div>
 
-            <ProjectHeader project={project} onVideoClick={() => { }} />
+            <ProjectHeader project={project} onVideoClick={() => { /* noop */ }} />
             <ProjectVideoSection project={project} />
             <ProjectContentTabs project={project} />
             <ProjectDetails project={project} />

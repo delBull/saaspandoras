@@ -145,7 +145,7 @@ export default function AccessProtocolPage({ project, currentSlug }: Props) {
             )}
 
             {/* Standard Components (existing, reused) */}
-            <ProjectHeader project={project} onVideoClick={() => { }} />
+            <ProjectHeader project={project} onVideoClick={() => { /* noop */ }} />
             <ProjectVideoSection project={project} />
             <ProjectContentTabs project={project} />
             <ProjectDetails project={project} />

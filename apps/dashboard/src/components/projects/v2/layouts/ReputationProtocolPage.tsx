@@ -62,7 +62,7 @@ export default function ReputationProtocolPage({ project, currentSlug }: Props) 
                 </p>
             </div>
 
-            <ProjectHeader project={project} onVideoClick={() => { }} />
+            <ProjectHeader project={project} onVideoClick={() => { /* noop */ }} />
             <ProjectVideoSection project={project} />
             <ProjectContentTabs project={project} />
             <ProjectDetails project={project} />

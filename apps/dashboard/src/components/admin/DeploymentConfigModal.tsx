@@ -336,7 +336,7 @@ export function DeploymentConfigModal({
 
                                     {/* Artifact Type Selector */}
                                     <div className="mb-4">
-                                        <label className="block text-xs font-medium text-gray-400 mb-2 flex items-center">
+                                        <div className="block text-xs font-medium text-gray-400 mb-2 flex items-center">
                                             Tipo de Artefacto
                                             <InfoTooltip title="Tipos de Artefacto y cuándo usar cada uno">
                                                 <p><strong className="text-indigo-300">🔑 Access Pass:</strong> El más común. NFT transferible que da entrada al protocolo. Ideal para membresías de pago único.</p>
@@ -346,7 +346,7 @@ export function DeploymentConfigModal({
                                                 <p><strong className="text-indigo-300">🏆 Reputation:</strong> Badge de logro. No transferible ni quemable. Para gamificación.</p>
                                                 <p><strong className="text-indigo-300">💰 Yield:</strong> Comparte ingresos del protocolo con sus holders. Para modelos de revenue sharing.</p>
                                             </InfoTooltip>
-                                        </label>
+                                        </div>
                                         <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                                             {(Object.keys(ARTIFACT_TYPE_META) as ArtifactType[]).map(type => {
                                                 const meta = ARTIFACT_TYPE_META[type];
@@ -376,8 +376,9 @@ export function DeploymentConfigModal({
                                     {/* Artifact Fields */}
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                         <div>
-                                            <label className="block text-xs text-gray-400 mb-1">Nombre</label>
+                                            <label htmlFor={`art-name-${art.id}`} className="block text-xs text-gray-400 mb-1">Nombre</label>
                                             <input
+                                                id={`art-name-${art.id}`}
                                                 type="text"
                                                 value={art.name}
                                                 onChange={e => updateArtifact(art.id, 'name', e.target.value)}
@@ -386,7 +387,7 @@ export function DeploymentConfigModal({
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-xs text-gray-400 mb-1 flex items-center">
+                                            <label htmlFor={`art-symbol-${art.id}`} className="block text-xs text-gray-400 mb-1 flex items-center">
                                                 Símbolo
                                                 <InfoTooltip title="Símbolo del NFT">
                                                     <p>Ticker corto de 3–5 letras del contrato NFT. Aparece en exploradores como Etherscan y wallets.</p>
@@ -395,6 +396,7 @@ export function DeploymentConfigModal({
                                                 </InfoTooltip>
                                             </label>
                                             <input
+                                                id={`art-symbol-${art.id}`}
                                                 type="text"
                                                 value={art.symbol}
                                                 onChange={e => updateArtifact(art.id, 'symbol', e.target.value.toUpperCase())}
@@ -404,7 +406,7 @@ export function DeploymentConfigModal({
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-xs text-gray-400 mb-1 flex items-center">
+                                            <label htmlFor={`art-supply-${art.id}`} className="block text-xs text-gray-400 mb-1 flex items-center">
                                                 Supply Máx.
                                                 <InfoTooltip title="Supply Máximo (Max Supply)">
                                                     <p>Número máximo de NFTs que pueden existir de este artefacto.</p>
@@ -414,6 +416,7 @@ export function DeploymentConfigModal({
                                                 </InfoTooltip>
                                             </label>
                                             <input
+                                                id={`art-supply-${art.id}`}
                                                 type="number"
                                                 value={art.maxSupply}
                                                 onChange={e => updateArtifact(art.id, 'maxSupply', Number(e.target.value))}
@@ -422,7 +425,7 @@ export function DeploymentConfigModal({
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-xs text-gray-400 mb-1 flex items-center">
+                                            <label htmlFor={`art-price-${art.id}`} className="block text-xs text-gray-400 mb-1 flex items-center">
                                                 Precio (ETH)
                                                 <InfoTooltip title="Precio de Mint en ETH">
                                                     <p>Costo en ETH para que un usuario adquiera este artefacto directamente del contrato.</p>
@@ -432,6 +435,7 @@ export function DeploymentConfigModal({
                                                 </InfoTooltip>
                                             </label>
                                             <input
+                                                id={`art-price-${art.id}`}
                                                 type="number"
                                                 value={art.price}
                                                 onChange={e => updateArtifact(art.id, 'price', e.target.value)}
@@ -500,34 +504,34 @@ export function DeploymentConfigModal({
                                     </div>
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                         <div>
-                                            <label className="text-xs text-gray-500 block mb-1">Regla de Cierre</label>
-                                            <select value={phase.type} onChange={e => handlePhaseChange(phase.id, 'type', e.target.value)} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-gray-300 outline-none">
+                                            <label htmlFor={`phase-type-${phase.id}`} className="text-xs text-gray-500 block mb-1">Regla de Cierre</label>
+                                            <select id={`phase-type-${phase.id}`} value={phase.type} onChange={e => handlePhaseChange(phase.id, 'type', e.target.value)} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-gray-300 outline-none">
                                                 <option value="time">Por Tiempo (Días)</option>
                                                 <option value="amount">Por Recaudación</option>
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="text-xs text-gray-500 block mb-1">{phase.type === 'time' ? 'Duración (Días)' : 'Meta (USD)'}</label>
-                                            <input type="number" value={phase.limit} onChange={e => handlePhaseChange(phase.id, 'limit', Number(e.target.value))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white outline-none" />
+                                            <label htmlFor={`phase-limit-${phase.id}`} className="text-xs text-gray-500 block mb-1">{phase.type === 'time' ? 'Duración (Días)' : 'Meta (USD)'}</label>
+                                            <input id={`phase-limit-${phase.id}`} type="number" value={phase.limit} onChange={e => handlePhaseChange(phase.id, 'limit', Number(e.target.value))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white outline-none" />
                                         </div>
                                         <div>
-                                            <label className="text-xs text-gray-500 block mb-1">Tokens Asignados</label>
-                                            <input type="number" value={phase.tokenAllocation || 0} onChange={e => handlePhaseChange(phase.id, 'tokenAllocation', Number(e.target.value))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-emerald-400 font-mono outline-none" />
+                                            <label htmlFor={`phase-tokenAllocation-${phase.id}`} className="text-xs text-gray-500 block mb-1">Tokens Asignados</label>
+                                            <input id={`phase-tokenAllocation-${phase.id}`} type="number" value={phase.tokenAllocation || 0} onChange={e => handlePhaseChange(phase.id, 'tokenAllocation', Number(e.target.value))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-emerald-400 font-mono outline-none" />
                                         </div>
                                         <div>
-                                            <label className="text-xs text-gray-500 block mb-1">Precio Fase (USD)</label>
-                                            <input type="number" step="0.000001" value={phase.tokenPrice ?? tokenomics.price} onChange={e => handlePhaseChange(phase.id, 'tokenPrice', Number(e.target.value))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white outline-none" />
+                                            <label htmlFor={`phase-tokenPrice-${phase.id}`} className="text-xs text-gray-500 block mb-1">Precio Fase (USD)</label>
+                                            <input id={`phase-tokenPrice-${phase.id}`} type="number" step="0.000001" value={phase.tokenPrice ?? tokenomics.price} onChange={e => handlePhaseChange(phase.id, 'tokenPrice', Number(e.target.value))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white outline-none" />
                                         </div>
                                     </div>
                                     {/* Dates + Soft Cap */}
                                     <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-zinc-700/50">
                                         <div>
-                                            <label className="block text-xs text-gray-400 mb-1">Fecha Inicio</label>
-                                            <input type="date" value={phase.startDate || ''} onChange={e => handlePhaseChange(phase.id, 'startDate', e.target.value)} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white outline-none" />
+                                            <label htmlFor={`phase-start-${phase.id}`} className="block text-xs text-gray-400 mb-1">Fecha Inicio</label>
+                                            <input id={`phase-start-${phase.id}`} type="date" value={phase.startDate || ''} onChange={e => handlePhaseChange(phase.id, 'startDate', e.target.value)} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white outline-none" />
                                         </div>
                                         <div>
-                                            <label className="block text-xs text-gray-400 mb-1">{phase.type === 'time' ? 'Fecha Fin (calculada)' : 'Fecha Fin (opcional)'}</label>
-                                            <input type="date" value={phase.endDate || ''} onChange={e => handlePhaseChange(phase.id, 'endDate', e.target.value)} disabled={phase.type === 'time'} className={`w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white outline-none ${phase.type === 'time' ? 'opacity-40 cursor-not-allowed' : ''}`} />
+                                            <label htmlFor={`phase-end-${phase.id}`} className="block text-xs text-gray-400 mb-1">{phase.type === 'time' ? 'Fecha Fin (calculada)' : 'Fecha Fin (opcional)'}</label>
+                                            <input id={`phase-end-${phase.id}`} type="date" value={phase.endDate || ''} onChange={e => handlePhaseChange(phase.id, 'endDate', e.target.value)} disabled={phase.type === 'time'} className={`w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white outline-none ${phase.type === 'time' ? 'opacity-40 cursor-not-allowed' : ''}`} />
                                         </div>
                                         <div className="col-span-2 flex items-center gap-2">
                                             <input type="checkbox" id={`sc-${phase.id}`} checked={phase.isSoftCap || false} onChange={e => handlePhaseChange(phase.id, 'isSoftCap', e.target.checked)} className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-indigo-500" />
@@ -550,16 +554,16 @@ export function DeploymentConfigModal({
                                 <h4 className="text-sm font-semibold text-gray-300 mb-3">Tokenomics General</h4>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                     <div>
-                                        <label className="text-xs text-gray-400 block mb-1">Reserva / Team Allocation</label>
-                                        <input type="number" value={tokenomics.reserveSupply || 0} onChange={e => setTokenomics(prev => ({ ...prev, reserveSupply: Number(e.target.value) }))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-sm text-blue-400 font-mono outline-none focus:border-indigo-500 transition-colors" />
+                                        <label htmlFor="reserveSupply" className="text-xs text-gray-400 block mb-1">Reserva / Team Allocation</label>
+                                        <input id="reserveSupply" type="number" value={tokenomics.reserveSupply || 0} onChange={e => setTokenomics(prev => ({ ...prev, reserveSupply: Number(e.target.value) }))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-sm text-blue-400 font-mono outline-none focus:border-indigo-500 transition-colors" />
                                     </div>
                                     <div>
-                                        <label className="text-xs text-gray-400 block mb-1">Precio Base (USD)</label>
-                                        <input type="number" step="0.0001" value={tokenomics.price} onChange={e => setTokenomics(prev => ({ ...prev, price: Number(e.target.value) }))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-sm text-white font-mono outline-none focus:border-indigo-500 transition-colors" />
+                                        <label htmlFor="tokenPrice" className="text-xs text-gray-400 block mb-1">Precio Base (USD)</label>
+                                        <input id="tokenPrice" type="number" step="0.0001" value={tokenomics.price} onChange={e => setTokenomics(prev => ({ ...prev, price: Number(e.target.value) }))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-sm text-white font-mono outline-none focus:border-indigo-500 transition-colors" />
                                     </div>
                                     <div>
-                                        <label className="text-xs text-gray-400 block mb-1">Poder de Voto</label>
-                                        <input type="number" min={1} value={tokenomics.votingPowerMultiplier} onChange={e => setTokenomics(prev => ({ ...prev, votingPowerMultiplier: Number(e.target.value) }))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-sm text-white font-mono outline-none focus:border-indigo-500 transition-colors" />
+                                        <label htmlFor="votingMultiplier" className="text-xs text-gray-400 block mb-1">Poder de Voto</label>
+                                        <input id="votingMultiplier" type="number" min={1} value={tokenomics.votingPowerMultiplier} onChange={e => setTokenomics(prev => ({ ...prev, votingPowerMultiplier: Number(e.target.value) }))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-sm text-white font-mono outline-none focus:border-indigo-500 transition-colors" />
                                     </div>
                                 </div>
                             </div>
@@ -595,7 +599,7 @@ export function DeploymentConfigModal({
                                     info: { title: 'Royalty de Mercado Secundario', body: 'Porcentaje del precio de reventa que el protocolo recibe cuando un NFT se vende en mercados como OpenSea. Ej: 500 BPS = 5% de royalty. OpenSea y otros respetan royalties de hasta 10% (1000 BPS). Recomendado: 300–700 BPS.' }
                                 }] as const).map(item => (
                                     <div key={item.key} className="p-4 bg-zinc-800/30 rounded-xl border border-zinc-700">
-                                        <label className="text-xs text-gray-400 block mb-2 flex items-center">
+                                        <label htmlFor={`econo-${item.key}`} className="text-xs text-gray-400 block mb-2 flex items-center">
                                             {item.label}
                                             <InfoTooltip title={item.info.title}>
                                                 <p>{item.info.body}</p>
@@ -603,6 +607,7 @@ export function DeploymentConfigModal({
                                         </label>
                                         <div className="flex items-center gap-3">
                                             <input
+                                                id={`econo-${item.key}`}
                                                 type="number"
                                                 value={economicSchedule[item.key]}
                                                 onChange={e => setEconomicSchedule(prev => ({ ...prev, [item.key]: Number(e.target.value) }))}
