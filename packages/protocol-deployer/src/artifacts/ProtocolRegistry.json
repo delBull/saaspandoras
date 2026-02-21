@@ -1,0 +1,249 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "ProtocolRegistry",
+  "sourceName": "contracts/core/ProtocolRegistry.sol",
+  "abi": [
+    {
+      "type": "constructor",
+      "inputs": [
+        {
+          "name": "initialOwner",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "artifactList",
+      "inputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "artifacts",
+      "inputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "artifactAddress",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "artifactType",
+          "type": "uint8",
+          "internalType": "enum ProtocolRegistry.ArtifactType"
+        },
+        {
+          "name": "isAuthorized",
+          "type": "bool",
+          "internalType": "bool"
+        },
+        {
+          "name": "registeredAt",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getArtifactList",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "address[]",
+          "internalType": "address[]"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "hasAnyAuthorizedArtifact",
+      "inputs": [
+        {
+          "name": "_user",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "isAuthorizedArtifact",
+      "inputs": [
+        {
+          "name": "_artifact",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "owner",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "registerArtifact",
+      "inputs": [
+        {
+          "name": "_artifact",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "_type",
+          "type": "uint8",
+          "internalType": "enum ProtocolRegistry.ArtifactType"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "renounceOwnership",
+      "inputs": [],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "setAuthorization",
+      "inputs": [
+        {
+          "name": "_artifact",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "_isAuthorized",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "transferOwnership",
+      "inputs": [
+        {
+          "name": "newOwner",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "event",
+      "name": "ArtifactAuthorizationUpdated",
+      "inputs": [
+        {
+          "name": "artifact",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "isAuthorized",
+          "type": "bool",
+          "indexed": false,
+          "internalType": "bool"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "ArtifactRegistered",
+      "inputs": [
+        {
+          "name": "artifact",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "artifactType",
+          "type": "uint8",
+          "indexed": false,
+          "internalType": "enum ProtocolRegistry.ArtifactType"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "OwnershipTransferred",
+      "inputs": [
+        {
+          "name": "previousOwner",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "newOwner",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        }
+      ],
+      "anonymous": false
+    }
+  ],
+  "bytecode": "0x60803461013e57601f610a8738819003918201601f19168301916001600160401b038311848410176101425780849260209460405283398101031261013e57516001600160a01b038082169081830361013e5761005b33610156565b81159182159081610133575b5061007c575b6040516108ea908161019d8239f35b33905f5416036100ef5761009b5761009390610156565b5f808061006d565b60405162461bcd60e51b815260206004820152602660248201527f4f776e61626c653a206e6577206f776e657220697320746865207a65726f206160448201526564647265737360d01b6064820152608490fd5b606460405162461bcd60e51b815260206004820152602060248201527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e65726044820152fd5b90503314155f610067565b5f80fd5b634e487b7160e01b5f52604160045260245ffd5b5f80546001600160a01b039283166001600160a01b03198216811783559216907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e09080a356fe60806040818152600480361015610014575f80fd5b5f92833560e01c9081630b7883dc14610640575080630c506b251461061157806319d8ed751461040457806351800536146103c4578063703fb2f114610309578063715018a6146102ac5780638da5cb5b14610284578063eddb6b911461023f578063eecea000146101535763f2fde38b1461008e575f80fd5b3461014f57602036600319011261014f576100a76106a7565b906100b061085d565b6001600160a01b039182169283156100fd57505082546001600160a01b0319811683178455167f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e08280a380f35b906020608492519162461bcd60e51b8352820152602660248201527f4f776e61626c653a206e6577206f776e657220697320746865207a65726f206160448201526564647265737360d01b6064820152fd5b8280fd5b503461014f578160031936011261014f5761016c6106a7565b916024358015159283820361023b5761018361085d565b6001600160a01b03948516808752600260205283872054909516156101f8575083855260026020908152828620805460ff60a81b191692151560a81b60ff60a81b16929092179091557f132b0b44257a2bb527194a8bcbf863827ae4df9b33353d4f323d9e02bf404fe792909151908152a280f35b606490602084519162461bcd60e51b8352820152601860248201527f52656769737472793a204e6f74207265676973746572656400000000000000006044820152fd5b8580fd5b5050346102805760203660031901126102805760209160ff9082906001600160a01b0361026a6106a7565b16815260028552205460a81c1690519015158152f35b5080fd5b505034610280578160031936011261028057905490516001600160a01b039091168152602090f35b83346103065780600319360112610306576102c561085d565b80546001600160a01b03198116825581906001600160a01b03167f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e08280a380f35b80fd5b50503461028057816003193601126102805780516001805480835281855260208084019592939186907fb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf690855b8181106103a8575050508261036c91038361072b565b8451948186019282875251809352850195925b82811061038c5785870386f35b83516001600160a01b031687529581019592810192840161037f565b82546001600160a01b0316845292840192918701918701610356565b503461014f57602036600319011261014f57359160015483101561030657506103ee6020926106e2565b905491519160018060a01b039160031b1c168152f35b503461014f578160031936011261014f5761041d6106a7565b91602492833592600684101561023b5761043561085d565b6001600160a01b039182169485156105cf57858752600260205282848820541661058d5783516080810181811067ffffffffffffffff82111761057b57855286815260208101868152858201600181526060830191428352898b52600260205286888c2094511684549151600681101561056957925160ff60a81b90151560a81b1660ff60a81b1660ff60a01b60a09490941b939093166001600160b01b03199290921660ff60a81b199190911617171782556001905191015560015491680100000000000000008310156105585750506020927f01eae2edf370f1fd320489a4c2b396edb10055f7ea5926a1f450dbdb7368f07b949261053983600161055495016001556106e2565b819291549060031b9189831b921b19161790555180926106c1565ba280f35b634e487b7160e01b88526041905286fd5b634e487b7160e01b8d5260218852868dfd5b634e487b7160e01b8952604184528289fd5b90601c606492602086519362461bcd60e51b85528401528201527f52656769737472793a20416c72656164792072656769737465726564000000006044820152fd5b906019606492602086519362461bcd60e51b85528401528201527f52656769737472793a20496e76616c69642061646472657373000000000000006044820152fd5b505034610280576020366003190112610280576020906106376106326106a7565b610761565b90519015158152f35b8490843461014f57602036600319011261014f576080926001600160a01b03919060ff9082908461066f6106a7565b16815260026020522060018154910154938116855261069660208601838360a01c166106c1565b60a81c161515908301526060820152f35b600435906001600160a01b03821682036106bd57565b5f80fd5b9060068210156106ce5752565b634e487b7160e01b5f52602160045260245ffd5b6001548110156107175760015f527fb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf601905f90565b634e487b7160e01b5f52603260045260245ffd5b90601f8019910116810190811067ffffffffffffffff82111761074d57604052565b634e487b7160e01b5f52604160045260245ffd5b5f6001918254915b82811061077857505050505f90565b610781816106e2565b60018060a01b0391549060031b1c16805f5260026020528260ff60405f205460a81c166107ce575b50505f1981146107ba578301610769565b634e487b7160e01b5f52601160045260245ffd5b6107d7916107e8565b6107e2575f826107a9565b50505090565b6040516370a0823160e01b81526001600160a01b0392831660048201529160209183916024918391165afa5f918161082a575b5061082557505f90565b151590565b90916020823d8211610855575b816108446020938361072b565b81010312610306575051905f61081b565b3d9150610837565b5f546001600160a01b0316330361087057565b606460405162461bcd60e51b815260206004820152602060248201527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e65726044820152fdfea2646970667358221220ae6a2a72a66dcf05e03098790d87cbf2b2a1940034d331bb533bf59b52a5531464736f6c63430008140033"
+}

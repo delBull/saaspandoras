@@ -42,6 +42,11 @@ export interface Project {
   deploymentStatus?: string;
   w2eConfig?: any;
   treasuryAddress?: string;
+  totalTokens?: number;
+  // V2 Modular Fields
+  registryContractAddress?: string;
+  artifacts?: Array<{ type: string; address: string; name?: string }>;
+  protocolVersion?: number;
 }
 
 export interface AdminData {

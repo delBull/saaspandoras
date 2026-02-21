@@ -2,9 +2,9 @@
 
 ## **Abstract**
 
-SCaaS (Service as a Code) represents a revolutionary paradigm in decentralized protocol deployment and management. Built on Ethereum Layer 2 (Base Network), SCaaS provides a modular, secure, and governance-enhanced framework for creating Work-to-Earn (W2E) protocols with atomic deployment, hybrid treasury management, and decentralized autonomous organization (DAO) governance.
+SCaaS (Service as a Code) represents a revolutionary paradigm in decentralized protocol deployment and management. Built on Ethereum Layer 2 (Base Network), SCaaS Protocol V2 provides a modular, "pluggable" ecosystem where logic is decoupled from specific assets through a central Registry. This framework enables Work-to-Earn (W2E) protocols with atomic deployment, multi-artifact gatekeeping, and decentralized autonomous organization (DAO) governance.
 
-This technical whitepaper presents the comprehensive architecture, smart contract ecosystem, economic mechanisms, and security implementations that constitute the SCaaS protocol infrastructure.
+This technical whitepaper presents the comprehensive architecture, smart contract ecosystem (V2), economic mechanisms, and security implementations that constitute the SCaaS modular protocol infrastructure.
 
 ---
 
@@ -30,9 +30,9 @@ SCaaS introduces a **modular factory pattern** that enables:
 
 The SCaaS architecture implements three fundamental innovations:
 
-1. **ModularFactory Contract**: Atomic deployment orchestrator
-2. **Hybrid Treasury System**: Dual-control fund management
-3. **W2E Engine**: Decentralized labor validation and rewards
+1. **ProtocolRegistry Contract**: Central authority for authorized artifacts
+2. **ModularFactory Contract**: Atomic deployment orchestrator (V2 Compatible)
+3. **W2E Engine (LoomV2)**: Modular logic validation decoupled from specific assets
 
 ---
 
@@ -106,10 +106,24 @@ function deployProtocolStack(DeploymentConfig calldata config)
 
 1. **Validation**: Input parameter verification
 2. **Rate Limiting**: Anti-spam deployment controls
-3. **Atomic Deployment**: Sequential contract instantiation
-4. **Vinculation**: Cross-contract authorization setup
+3. **Atomic Deployment**: Registry-first contract instantiation
+4. **Vinculation**: Modular authorization setup via Registry
 5. **Funding**: Initial capital allocation
-6. **Registration**: Protocol metadata storage
+6. **Registration**: Ecosystem metadata storage
+
+### **3.2 ProtocolRegistry (Modular Hub)**
+
+#### **Contract Overview**
+The `ProtocolRegistry` acts as the single source of truth for authorized artifacts (NFTs, SFTs, or Tokens) within a protocol ecosystem.
+
+#### **Key Features**
+- **Artifact Categorization**: Type-based grouping (Access, Identity, Membership, etc.).
+- **authorization Status**: On-chain enabling/disabling of assets.
+- **Universal "ANY" Policy**: Users gain protocol access if they hold **at least one** authorized artifact from the registry.
+- **Immediate Revocation**: Disabling an artifact in the registry immediately revokes its permissions across the Loom and Governor.
+
+#### **Mutability & Governance**
+Only the protocol `Owner` (initially the Deployer, then transferred to a Timelock/Governor) can modify the registry, ensuring decentralized authority over the ecosystem's entry points.
 
 ### **3.2 Treasury System**
 
@@ -167,13 +181,13 @@ function deployProtocolStack(DeploymentConfig calldata config)
 - **Funding Proposals**: Treasury fund allocation
 - **Emergency Proposals**: Critical protocol actions
 
-#### **3.3.3 W2ELoom**
+#### **3.3.3 W2ELoomV2 (Modular Engine)**
 
 **Core Logic Engine:**
-- **Task Management**: W2E task lifecycle
-- **Reward Distribution**: PHI token minting and allocation
-- **Staking System**: Participation incentives
-- **Validation Logic**: DAO-verified task completion
+- **Modular Authorization**: Queries `ProtocolRegistry` for user permissions instead of checking a single contract.
+- **Task Management**: W2E task lifecycle and validation.
+- **Reward Distribution**: PHI token minting and allocation based on cross-artifact activity.
+- **Protocol State**: Transitions between Pre-Live, Live, and Completed phases.
 
 #### **3.3.4 W2EUtility (PHI)**
 
@@ -505,7 +519,61 @@ The technical architecture presented in this whitepaper demonstrates a robust fo
 
 ---
 
+## **11. Protocol V2 — Type-Specific Public Pages**
+
+### **11.1 Overview**
+
+In Protocol V2, each deployed protocol exposes a **type-specific public experience page** at `/projects/[slug]`. Rather than a single generic layout for all protocols, the frontend automatically selects a purpose-built layout based on the primary artifact type (set at deploy time via `pageLayoutType`).
+
+This ensures the user experience matches the economic and functional nature of each protocol — an investment product (Yield) looks and communicates differently from a community access pass (Access) or an event ticket (Coupon).
+
+---
+
+### **11.2 Dispatch Architecture**
+
+```
+/projects/[slug]/page.tsx
+    ↓ fetch project data from /api/projects/[slug]
+    ↓ detect isV2 (protocol_version === 2 OR w2eConfig.artifacts OR pageLayoutType)
+    ↓ if V2 → <ProtocolPageDispatcher project={...} />
+    ↓ detectLayoutType() → reads: pageLayoutType → primary artifact type → fallback 'Access'
+    ↓ routes to type-specific layout component (lazy-loaded)
+    ↓ if V1 → legacy layout (unchanged, backwards-compatible)
+```
+
+### **11.3 The Six Protocol Page Types**
+
+| Type | Icon | Palette | Primary CTA | Key Differentiator |
+|------|------|---------|-------------|-------------------|
+| **Access** | 🔑 | Lime/Emerald | Obtener Acceso | **ALWAYS FREE** — access card never charges the user |
+| **Identity** | 🪪 | Indigo/Blue | Verificar Identidad | SBT badge, non-transferable, KYC/credential emphasis |
+| **Membership** | 🏷️ | Purple/Violet | Suscribirme | Expiry countdown, renewal mechanics |
+| **Coupon** | 🎟️ | Yellow/Orange | Canjear Cupón | Burn-on-use mechanics, single-use clarity |
+| **Reputation** | 🏆 | Amber/Gold | Ver Logros | Merit-based acquisition, non-burnable, gamification focus |
+| **Yield** | 💰 | Emerald/Green | Invertir en el Protocolo | Live APY display, TVL, revenue-sharing explanation |
+
+### **11.4 Access Card Free Policy**
+
+By design and by platform policy, the **Access Pass artifact is always free to mint**. This is enforced both in the deploy modal (`DEFAULT_ARTIFACT` sets `price: '0'`) and in the `AccessProtocolPage` display where the price stat always shows **GRATIS**. This ensures protocol operators cannot inadvertently lock users behind a paid access gate.
+
+### **11.5 Page Type Selector in Admin Deploy Modal**
+
+The `DeploymentConfigModal` includes a **Page Type Selector** in the header alongside the network selector. Operators choose the layout type at deploy time — the selection is persisted as `pageLayoutType` inside `w2eConfig` (part of the project's deployment record). Contextual `ⓘ` tooltips explain each type's use case directly in the admin UI.
+
+### **11.6 V2 Detection Logic**
+
+A project is treated as V2 (and routed to `ProtocolPageDispatcher`) if **any** of the following are true:
+- `project.protocol_version === 2`
+- `project.w2eConfig.artifacts` array is non-empty
+- `project.artifacts` array is non-empty  
+- `project.pageLayoutType` is set
+
+This ensures backwards compatibility — all V1 protocols continue using the existing layout unchanged.
+
+---
+
 ## **References**
+
 
 1. **OpenZeppelin Contracts**: Security and standards library
 2. **ERC-721A**: Gas-optimized NFT standard
@@ -520,4 +588,4 @@ This technical whitepaper is for informational purposes only and does not consti
 
 ---
 
-*SCaaS Technical Whitepaper v1.0 - November 2024*
+*SCaaS Technical Whitepaper v2.0 - February 2026*

@@ -2,79 +2,71 @@
 
 export type NetworkType = 'sepolia' | 'base';
 
-export type TokenType = 'license' | 'utility' | 'governance';
+export type ArtifactType = 'Access' | 'Identity' | 'Membership' | 'Coupon' | 'Reputation' | 'Yield';
 
 export interface TokenConfig {
-  name: string;                    // Token name (e.g., "Licencia Vista Horizonte")
-  symbol: string;                  // Token symbol (e.g., "VHORA", "PHI_VH")
-  maxSupply?: number;             // Maximum supply (for licenses)
-  initialSupply?: number;         // Initial supply (for utility tokens)
-  price?: string;                 // Price in wei (for licenses)
-  feePercentage?: number;         // Transaction fee in basis points (for utility)
-  decimals?: number;              // Token decimals (default 18)
-  feeRecipient?: string;          // Address that receives transaction fees
-}
-
-
-export interface NFTPassConfig {
   name: string;
   symbol: string;
-  maxSupply: string | number;
-  price: string;
-  owner: string;
-  treasuryAddress?: string;
-  oracleAddress?: string;
-  transferable?: boolean;
-  burnable?: boolean;
+  maxSupply?: number;
+  initialSupply?: number;
+  price?: string;
+  feePercentage?: number;
+  decimals?: number;
+  feeRecipient?: string;
+  type?: ArtifactType;             // V2
+  standard?: 'ERC721' | 'ERC1155' | 'ERC20' | 'SBT'; // V2
+  transferable?: boolean;          // V2
+  burnable?: boolean;              // V2
 }
 
 export interface W2EConfig {
-  // Configuración general del protocolo
-  protocolName: string;           // Nombre del protocolo/creación
-  protocolCategory: string;       // Categoría (ej: "residencial", "comercial")
+  protocolName: string;
+  protocolCategory: string;
 
-  // Configuración de tokens
-  licenseToken: TokenConfig;      // Configuración del token de acceso
-  utilityToken: TokenConfig;      // Configuración del token de utilidad
+  // V1 compatibility (still used for main utility)
+  licenseToken?: TokenConfig;
+  utilityToken: TokenConfig;
 
-  // Configuración de gobernanza
-  quorumPercentage: number;       // Minimum quorum for proposals (0-100)
-  votingDelaySeconds: number;     // Delay before voting starts (in seconds)
-  votingPeriodHours: number;      // Voting period in hours
-  executionDelayHours: number;    // Delay before execution in hours
-  emergencyPeriodHours: number;   // Emergency inactivity period in hours
-  emergencyQuorumPct: number;     // Emergency quorum percentage (0-100)
+  // V2 modular artifacts
+  artifacts?: TokenConfig[];
 
-  // Configuración económica y staking
-  platformFeePercentage: number;  // Platform fee (0-1)
-  stakingRewardRate: string;      // Staking reward rate per second (in wei)
-  phiFundSplitPct: number;        // Percentage to PHI reward pool (0-100)
-  maxLicenses: number;           // Maximum license supply
-  treasurySigners: string[];     // Multi-sig signers
+  quorumPercentage: number;
+  votingDelaySeconds: number;
+  votingPeriodHours: number;
+  executionDelayHours: number;
+  emergencyPeriodHours: number;
+  emergencyQuorumPct: number;
 
-  // Configuración de distribución de capital
-  creatorWallet: string;          // Creator wallet for initial payouts
-  creatorPayoutPct: number;       // Percentage for creator from initial sale (0-100)
-  targetAmount: string;           // Target amount for successful sale (in wei)
-  payoutWindowSeconds: number;    // Time window for creator to claim payout
+  platformFeePercentage: number;
+  stakingRewardRate: string;
+  phiFundSplitPct: number;
+  maxLicenses: number;
+  treasurySigners: string[];
 
-  // Configuración de fases y ciclo de vida
-  inactivityThresholdSeconds: number; // Inactivity threshold for emergency releases
+  creatorWallet: string;
+  creatorPayoutPct: number;
+  targetAmount: string;
+  payoutWindowSeconds: number;
 
-  // Configuración de red
-  targetNetwork: NetworkType;    // Red de despliegue
+  inactivityThresholdSeconds: number;
+  targetNetwork: NetworkType;
 }
 
 export interface W2EDeploymentResult {
-  licenseAddress: string;     // VHORA contract address
-  phiAddress: string;         // PHI token contract address
-  loomAddress: string;        // VHLoom logic contract address
-  governorAddress: string;    // DAO Governor contract address
-  treasuryAddress: string;    // Protocol Treasury contract address
-  timelockAddress: string;    // Timelock contract address
-  deploymentTxHash: string;   // Deployment transaction hash
-  network: string;           // Target network
-  chainId: number;           // Chain ID
+  licenseAddress?: string;    // V1 legacy
+  phiAddress: string;
+  loomAddress: string;
+  governorAddress: string;
+  treasuryAddress: string;
+  registryAddress?: string;   // V2
+  artifacts?: {               // V2
+    type: ArtifactType;
+    address: string;
+  }[];
+  timelockAddress: string;
+  deploymentTxHash: string;
+  network: string;
+  chainId: number;
 }
 
 export interface ContractDeployment {
@@ -172,3 +164,19 @@ export interface DeploymentValidation extends ValidationResult {
   sufficientFunds: boolean;
   contractsCompiled: boolean;
 }
+
+// NFT Pass configuration (used by deploy-nft.ts and deploy-nft-server.ts)
+export interface NFTPassConfig {
+  name: string;
+  symbol: string;
+  maxSupply: number;
+  price: string;           // ETH value as string e.g. "0" or "0.01"
+  owner: string;           // Wallet address of the deployer/owner
+  oracleAddress?: string;  // Defaults to owner wallet if not set
+  treasuryAddress?: string; // Defaults to owner wallet if not set
+  image?: string;          // DataURI or IPFS URL for NFT image
+  transferable?: boolean;  // Default: true
+  burnable?: boolean;      // Default: false
+  artifactType?: ArtifactType; // V2 type classification
+}
+

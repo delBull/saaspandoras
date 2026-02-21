@@ -1,13 +1,14 @@
 import * as ethers from "ethers";
 import * as dotenv from "dotenv";
-import type { W2EConfig, W2EDeploymentResult, DeploymentValidation, NetworkType } from "./types";
+import type { W2EConfig, W2EDeploymentResult, DeploymentValidation, NetworkType, ArtifactType } from "./types";
 
 // Import Artifacts
 import W2ELicenseArtifact from "./artifacts/W2ELicense.json";
 import W2EUtilityArtifact from "./artifacts/W2EUtility.json";
 import PBOXProtocolTreasuryArtifact from "./artifacts/PBOXProtocolTreasury.json";
 import W2EGovernorArtifact from "./artifacts/W2EGovernor.json";
-import W2ELoomArtifact from "./artifacts/W2ELoom.json";
+import W2ELoomV2Artifact from "./artifacts/W2ELoomV2.json";
+import ProtocolRegistryArtifact from "./artifacts/ProtocolRegistry.json";
 
 // Load environment variables from multiple possible locations
 const envPaths = [
@@ -35,7 +36,7 @@ export async function deployW2EProtocol(
   config: W2EConfig,
   network: NetworkType = 'sepolia'
 ): Promise<W2EDeploymentResult> {
-  console.log(`🚀 Iniciando despliegue REAL W2E para ${projectSlug} en ${network}`);
+  console.log(`🚀 Iniciando despliegue MODULAR W2E V2 para ${projectSlug} en ${network}`);
 
   if (!process.env.THIRDWEB_SECRET_KEY) {
     console.warn("⚠️ THIRDWEB_SECRET_KEY missing. Deployment might fail if using Thirdweb infrastructure.");
@@ -48,7 +49,6 @@ export async function deployW2EProtocol(
   const eth = ethers as any;
   const isV6 = !!eth.JsonRpcProvider;
   const StaticJsonRpcProvider = isV6 ? eth.JsonRpcProvider : eth.providers.StaticJsonRpcProvider;
-  const FallbackProvider = isV6 ? eth.FallbackProvider : eth.providers.FallbackProvider;
   const Wallet = eth.Wallet;
   const ContractFactory = eth.ContractFactory;
   const parseEther = isV6 ? eth.parseEther : eth.utils.parseEther;
@@ -56,8 +56,6 @@ export async function deployW2EProtocol(
   const getCreateAddress = isV6 ? eth.getCreateAddress : eth.utils.getContractAddress;
 
   // 1. Setup Provider & Wallet (Ethers v5) with AUTOMATIC FALLBACK
-
-  // Explicitly pass network to avoid auto-detection failure
   const CHAIN_IDS = {
     'sepolia': 11155111,
     'base': 8453
@@ -65,182 +63,104 @@ export async function deployW2EProtocol(
 
   const targetChainId = CHAIN_IDS[network] || 11155111;
 
-  // If user provided custom RPC via env var, try it first
-  let customRpc = network === 'sepolia'
-    ? process.env.SEPOLIA_RPC_URL
-    : process.env.BASE_RPC_URL;
-
-  // Sanitize custom RPC
+  let customRpc = network === 'sepolia' ? process.env.SEPOLIA_RPC_URL : process.env.BASE_RPC_URL;
   if (customRpc) {
     customRpc = customRpc.trim().replace(/^["']|["']$/g, '');
-    if (!customRpc.startsWith('http')) {
-      customRpc = undefined; // Invalidate if not a valid http/https URL
-    }
   }
-
-  // Optimized RPC Selection
-  // STRATEGY: Deep Verification + Hardcoded Alchemy Backup
-  // Ethers v5 on Vercel is failing with "missing response". We must verify the connection deeply.
-
-  const ALCHEMY_FALLBACK = "https://eth-sepolia.g.alchemy.com/v2/demo";
 
   const SEPOLIA_RPCS = [
     "https://ethereum-sepolia-rpc.publicnode.com",
     "https://sepolia.drpc.org",
-    ALCHEMY_FALLBACK, // Move Alchemy down since it hangs often
-    "https://rpc2.sepolia.org"
+    "https://eth-sepolia.g.alchemy.com/v2/demo"
   ];
 
   const BASE_RPCS = [
     "https://mainnet.base.org",
-    "https://base.llamarpc.com",
-    "https://base.drpc.org"
+    "https://base.llamarpc.com"
   ];
 
   const rpcUrls = network === 'sepolia' ? [...SEPOLIA_RPCS] : [...BASE_RPCS];
-
-  if (customRpc) {
-    const idx = rpcUrls.indexOf(customRpc);
-    if (idx > -1) rpcUrls.splice(idx, 1);
-    rpcUrls.unshift(customRpc);
-  }
-
-  console.log(`🛡️ Starting Deep Verification RPC Strategy (Nodes: ${rpcUrls.length})`);
+  if (customRpc && customRpc.startsWith('http')) rpcUrls.unshift(customRpc);
 
   let provider: ethers.providers.StaticJsonRpcProvider | undefined;
-
   for (const url of rpcUrls) {
-    console.log(`Testing RPC: ${url}`);
     try {
-      // 1. Create a clean StaticJsonRpcProvider with minimal config to avoid header issues
-      const tempProvider = new StaticJsonRpcProvider(url, {
-        chainId: targetChainId,
-        name: network === 'sepolia' ? 'sepolia' : 'base'
-      });
-
-      // 2. Deep Check: Try a real call that requires state access (simulating nonce check)
-      // We intentionally use a random address to be safe, just checking if the node RESPONDS to state queries.
-      const testAddr = "0x0000000000000000000000000000000000000000";
-
-      const nonce = await Promise.race([
-        tempProvider.getTransactionCount(testAddr),
-        new Promise((_, reject) => setTimeout(() => reject(new Error("RPC Timeout 4s")), 4000))
+      const tempProvider = new StaticJsonRpcProvider(url, { chainId: targetChainId, name: network });
+      await Promise.race([
+        tempProvider.getBlockNumber(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 3000))
       ]);
-
-      console.log(`✅ Deep Verified ${url} (Nonce: ${nonce})`);
       provider = tempProvider;
       break;
-    } catch (e: any) {
-      const msg = e.message || String(e);
-      console.warn(`⚠️ Failed Deep Check for ${url}: ${msg.substring(0, 200)}...`);
-      // Continue to next candidate
-    }
+    } catch (e) { }
   }
 
-  if (!provider) {
-    console.error("❌ All RPCs failed deep health check.");
-    throw new Error(`Critical: No working RPC provider found. Please check network restrictions.`);
-  }
-
-  console.log(`🏆 Selected Verified Provider.`);
-
+  if (!provider) throw new Error(`No working RPC found for ${network}`);
 
   const wallet = new Wallet(privateKey, provider);
-
   console.log(`📡 Conectado a ${network} con wallet: ${wallet.address}`);
 
   // 2. Validate Config & Env
   const isValidAddress = (addr: string | undefined): boolean => addr != null && isAddress(addr);
 
-  // Load and validate specific addresses
-  let rootTreasury = process.env.ROOT_TREASURY_ADDRESS;
-  if (!isValidAddress(rootTreasury)) {
-    console.warn(`⚠️ ROOT_TREASURY_ADDRESS is invalid or missing (${rootTreasury}). Defaulting to known Sepolia deployment.`);
-    rootTreasury = "0x1e92270332F1BAa9c98679c44792997c1A33bD50";
-  }
+  let rootTreasury = process.env.ROOT_TREASURY_ADDRESS || "0x1e92270332F1BAa9c98679c44792997c1A33bD50";
+  let oracleAddress = isValidAddress(process.env.PANDORA_ORACLE_ADDRESS) ? process.env.PANDORA_ORACLE_ADDRESS! : wallet.address;
+  let feeRecipient = isValidAddress(process.env.PANDORA_PLATFORM_FEE_WALLET) ? process.env.PANDORA_PLATFORM_FEE_WALLET! : wallet.address;
 
-  let oracleAddress = process.env.PANDORA_ORACLE_ADDRESS;
-  if (!isValidAddress(oracleAddress)) {
-    console.warn(`⚠️ PANDORA_ORACLE_ADDRESS is invalid (${oracleAddress}). Defaulting to wallet address.`);
-    oracleAddress = wallet.address;
-  }
+  // Helper wait
+  const waitForDeploy = async (contract: any) => {
+    if (contract.waitForDeployment) await contract.waitForDeployment();
+    else await contract.deployed();
+    return contract.address;
+  };
 
-  let feeRecipient = process.env.PANDORA_PLATFORM_FEE_WALLET;
-  if (!isValidAddress(feeRecipient)) {
-    console.warn(`⚠️ PANDORA_PLATFORM_FEE_WALLET is invalid (${feeRecipient}). Defaulting to wallet address.`);
-    feeRecipient = wallet.address;
-  }
-
-  if (!rootTreasury) throw new Error("ROOT_TREASURY_ADDRESS missing and no fallback available");
-
-  // 3. Address Prediction for Circular Dependencies (v5)
-  // v6 uses getNonce(), v5 uses getTransactionCount()
+  // 3. Address Prediction for Ecosystem
   const currentNonce = await (wallet.getNonce ? wallet.getNonce() : wallet.getTransactionCount());
-  console.log(`🔢 Current Nonce: ${currentNonce}`);
-
   const predictAddr = (nonce: number) => getCreateAddress({ from: wallet.address, nonce });
 
-  const addrLicense = predictAddr(currentNonce);
+  const addrRegistry = predictAddr(currentNonce);
   const addrUtility = predictAddr(currentNonce + 1);
   const addrLoom = predictAddr(currentNonce + 2);
   const addrTreasury = predictAddr(currentNonce + 3);
   const addrGovernor = predictAddr(currentNonce + 4);
 
-  console.log("🔮 Predicted Addresses:", {
-    License: addrLicense,
+  // Artifacts will follow Governor
+  const artifactsToDeploy = config.artifacts || (config.licenseToken ? [config.licenseToken] : []);
+  const artifactCount = artifactsToDeploy.length;
+  const artifactAddresses: string[] = [];
+  for (let i = 0; i < artifactCount; i++) {
+    artifactAddresses.push(predictAddr(currentNonce + 5 + i));
+  }
+
+  console.log("🔮 Predicted Ecosystem Addresses:", {
+    Registry: addrRegistry,
     Utility: addrUtility,
     Loom: addrLoom,
     Treasury: addrTreasury,
-    Governor: addrGovernor
+    Governor: addrGovernor,
+    Artifacts: artifactAddresses
   });
 
   // 4. Contract Factories
-  const LicenseFactory = new ContractFactory(W2ELicenseArtifact.abi, W2ELicenseArtifact.bytecode, wallet);
+  const RegistryFactory = new ContractFactory(ProtocolRegistryArtifact.abi, ProtocolRegistryArtifact.bytecode, wallet);
   const UtilityFactory = new ContractFactory(W2EUtilityArtifact.abi, W2EUtilityArtifact.bytecode, wallet);
-  const LoomFactory = new ContractFactory(W2ELoomArtifact.abi, W2ELoomArtifact.bytecode, wallet);
+  const LoomV2Factory = new ContractFactory(W2ELoomV2Artifact.abi, W2ELoomV2Artifact.bytecode, wallet);
   const TreasuryFactory = new ContractFactory(PBOXProtocolTreasuryArtifact.abi, PBOXProtocolTreasuryArtifact.bytecode, wallet);
   const GovernorFactory = new ContractFactory(W2EGovernorArtifact.abi, W2EGovernorArtifact.bytecode, wallet);
-
-  // Helper to wait for deployment (Universal)
-  const waitForDeploy = async (contract: any) => {
-    if (contract.waitForDeployment) {
-      // v6
-      await contract.waitForDeployment();
-      return await contract.getAddress();
-    } else {
-      // v5
-      await contract.deployed();
-      return contract.address;
-    }
-  };
-
-  // 5. Execute Deployments
+  const LicenseFactory = new ContractFactory(W2ELicenseArtifact.abi, W2ELicenseArtifact.bytecode, wallet);
 
   // 5. Execute Deployments (PARALLEL v2)
-  console.log("🚀 Launching PARALLEL deployment of 5 contracts...");
-
-  // Override options generator
   const getOverrides = (nonce: number) => ({
     nonce,
-    gasLimit: 8000000 // Increased for heavy Governor contract
+    gasLimit: 8000000
   });
 
   try {
-    const deployPromises = [
-      // A. W2E License (Nonce N)
-      LicenseFactory.deploy(
-        config.licenseToken.name,
-        config.licenseToken.symbol,
-        config.maxLicenses,
-        parseEther("0"), // Always Free Access Card
-        oracleAddress,
-        addrTreasury, // Circular resolved
-        wallet.address, // Initial Owner
-        true, // isTransferable (Default for Protocol Licenses)
-        false, // isBurnable (Default for Protocol Licenses)
-        getOverrides(currentNonce)
-      ),
-      // B. W2E Utility (Nonce N+1)
+    const corePromises = [
+      // 0. Registry
+      RegistryFactory.deploy(wallet.address, getOverrides(currentNonce)),
+
+      // 1. PHI
       UtilityFactory.deploy(
         config.utilityToken.name,
         config.utilityToken.symbol,
@@ -250,12 +170,13 @@ export async function deployW2EProtocol(
         wallet.address,
         getOverrides(currentNonce + 1)
       ),
-      // C. W2E Loom (Nonce N+2)
-      LoomFactory.deploy(
-        addrLicense, // Predicted
-        addrUtility, // Predicted
+
+      // 2. Loom V2 (Ecosystem Enabled)
+      LoomV2Factory.deploy(
+        addrRegistry,
+        addrUtility,
         rootTreasury,
-        addrTreasury, // Predicted
+        addrTreasury,
         oracleAddress,
         feeRecipient,
         config.creatorWallet,
@@ -269,13 +190,13 @@ export async function deployW2EProtocol(
         wallet.address,
         getOverrides(currentNonce + 2)
       ),
-      // D. PBOX Protocol Treasury (Nonce N+3)
+
+      // 3. Treasury
       TreasuryFactory.deploy(
-        // Ensure unique signers
         (config.treasurySigners && config.treasurySigners.length >= 2) ? config.treasurySigners : [wallet.address, Wallet.createRandom().address],
-        [wallet.address, Wallet.createRandom().address, Wallet.createRandom().address], // Mock DAO signers
+        [wallet.address, Wallet.createRandom().address, Wallet.createRandom().address],
         oracleAddress,
-        addrGovernor, // Predicted
+        addrGovernor,
         Math.min(2, (config.treasurySigners?.length || 2)),
         2,
         parseEther("5.0"),
@@ -285,10 +206,11 @@ export async function deployW2EProtocol(
         wallet.address,
         getOverrides(currentNonce + 3)
       ),
-      // E. W2E Governor (Nonce N+4)
+
+      // 4. Governor (Using predicted first artifact as vote token)
       GovernorFactory.deploy(
-        addrLicense, // Predicted
-        addrLoom, // Predicted
+        artifactAddresses[0] || addrLoom, // Fallback to Loom if no artifacts (unlikely)
+        addrLoom,
         config.quorumPercentage || 10,
         100,
         (config.votingPeriodHours || 168) * 3600,
@@ -298,104 +220,91 @@ export async function deployW2EProtocol(
       )
     ];
 
-    // Wait for all deployments to be sent to mempool
-    const contracts = await Promise.all(deployPromises);
-    const [license, utility, loom, treasury, governor] = contracts;
+    // Deploy Artifacts in parallel with core
+    const artifactPromises = artifactsToDeploy.map((art, i) => {
+      return LicenseFactory.deploy(
+        art.name,
+        art.symbol,
+        art.maxSupply || config.maxLicenses,
+        parseEther(art.price || "0"),
+        oracleAddress,
+        addrTreasury,
+        wallet.address,
+        art.transferable ?? true,
+        art.burnable ?? false,
+        getOverrides(currentNonce + 5 + i)
+      );
+    });
 
-    console.log("⏳ Waiting for confirmations (Parallel)...");
+    const [registry, utility, loom, treasury, governor] = await Promise.all(corePromises);
+    const artifactsMined = await Promise.all(artifactPromises);
 
-    // Wait for all to be mined
+    console.log("⏳ Waiting for confirmations...");
     await Promise.all([
-      waitForDeploy(license),
+      waitForDeploy(registry),
       waitForDeploy(utility),
       waitForDeploy(loom),
       waitForDeploy(treasury),
-      waitForDeploy(governor)
+      waitForDeploy(governor),
+      ...artifactsMined.map(waitForDeploy)
     ]);
 
-    const licenseAddress = await license.getAddress ? license.getAddress() : license.address;
-    const utilityAddress = await utility.getAddress ? utility.getAddress() : utility.address;
-    const loomAddress = await loom.getAddress ? loom.getAddress() : loom.address;
-    const treasuryAddress = await treasury.getAddress ? treasury.getAddress() : treasury.address;
-    const governorAddress = await governor.getAddress ? governor.getAddress() : governor.address;
+    console.log("✅ Core stack and artifacts deployed!");
 
-    console.log("✅ All contracts deployed successfully!");
-    console.log({ licenseAddress, utilityAddress, loomAddress, treasuryAddress, governorAddress });
-
-    // 6. Post-Deployment Setup (Wiring - PARALLEL)
-    console.log("🔌 Wiring contracts (Parallel)...");
-
-    // Recalculate nonce baseline for wiring
-    const wiringStartNonce = currentNonce + 5;
+    // 6. Wiring & Registration (Serial for Nonce management simplicity or parallel with offsets)
+    const wiringStartNonce = currentNonce + 5 + artifactCount;
     let wiringIndex = 0;
     const wiringPromises: Promise<any>[] = [];
 
-    // Helper for wiring tx with idempotency check
     const pushWiringTx = async (contract: any, method: string, ...args: any[]) => {
-      try {
-        // Check if already transferred (Idempotency)
-        if (method === 'transferOwnership') {
-          const currentOwner = await contract.owner();
-          const targetOwner = args[0];
-          if (currentOwner.toLowerCase() === targetOwner.toLowerCase()) {
-            console.log(`⏩ Skipping transferOwnership for ${contract.address} (Already owned by ${targetOwner})`);
-            return;
-          }
-        } else if (method === 'setW2ELoomAddress') {
-          try {
-            // W2EUtility public getter
-            const currentLoom = await contract.w2eLoomAddress();
-            if (currentLoom && currentLoom !== "0x0000000000000000000000000000000000000000") {
-              console.log(`⏩ Skipping setW2ELoomAddress for ${contract.address} (Already set to ${currentLoom})`);
-              return;
-            }
-          } catch (ignored) {
-            console.warn("Could not check w2eLoomAddress, proceeding with write...");
-          }
-        }
-
-        // Execute
-        const tx = await contract[method](...args);
-        wiringPromises.push(tx);
-        wiringIndex++;
-      } catch (e) {
-        console.warn(`⚠️ Error preparing wiring tx for ${method}:`, e);
-      }
+      const tx = await contract[method](...args);
+      wiringPromises.push(tx);
+      wiringIndex++;
     };
 
-    // a. Set Loom in Utility
-    await pushWiringTx(utility, 'setW2ELoomAddress', loomAddress, getOverrides(wiringStartNonce + wiringIndex));
+    // a. Link Utility to Loom
+    await pushWiringTx(utility, 'setW2ELoomAddress', addrLoom, getOverrides(wiringStartNonce + wiringIndex));
 
-    // b. Transfer Ownerships to Governor
-    await pushWiringTx(license, 'transferOwnership', governorAddress, getOverrides(wiringStartNonce + wiringIndex));
-    await pushWiringTx(utility, 'transferOwnership', governorAddress, getOverrides(wiringStartNonce + wiringIndex));
-    await pushWiringTx(loom, 'transferOwnership', governorAddress, getOverrides(wiringStartNonce + wiringIndex));
-    await pushWiringTx(treasury, 'transferOwnership', governorAddress, getOverrides(wiringStartNonce + wiringIndex));
-
-    // Config Optional
-    if ((config as any).w2eConfig) {
-      const w2e = (config as any).w2eConfig;
-      if (w2e.phase1APY) await pushWiringTx(utility, 'setPhaseSchedule', 1, w2e.phase1APY, getOverrides(wiringStartNonce + wiringIndex));
-      if (w2e.phase2APY) await pushWiringTx(utility, 'setPhaseSchedule', 2, w2e.phase2APY, getOverrides(wiringStartNonce + wiringIndex));
-      if (w2e.phase3APY) await pushWiringTx(utility, 'setPhaseSchedule', 3, w2e.phase3APY, getOverrides(wiringStartNonce + wiringIndex));
-      if (w2e.royaltyBPS) await pushWiringTx(license, 'setRoyaltyInfo', addrTreasury, w2e.royaltyBPS, getOverrides(wiringStartNonce + wiringIndex));
+    // b. Register Artifacts in Registry
+    for (let i = 0; i < artifactCount; i++) {
+      const typeId = 0; // Access by default for Access Pass
+      // Mapping ArtifactType string to Enum uint8
+      const typeMap: Record<ArtifactType, number> = {
+        'Access': 0, 'Identity': 1, 'Membership': 2, 'Coupon': 3, 'Reputation': 4, 'Yield': 5
+      };
+      const art = artifactsToDeploy[i];
+      if (!art) continue;
+      const artType = art.type || 'Access';
+      await pushWiringTx(registry, 'registerArtifact', artifactAddresses[i], typeMap[artType], getOverrides(wiringStartNonce + wiringIndex));
     }
 
-    console.log(`🚀 Sending ${wiringPromises.length} wiring transactions...`);
+    // c. Transfer Ownerships to Governor
+    await pushWiringTx(registry, 'transferOwnership', addrGovernor, getOverrides(wiringStartNonce + wiringIndex));
+    await pushWiringTx(utility, 'transferOwnership', addrGovernor, getOverrides(wiringStartNonce + wiringIndex));
+    await pushWiringTx(loom, 'transferOwnership', addrGovernor, getOverrides(wiringStartNonce + wiringIndex));
+    await pushWiringTx(treasury, 'transferOwnership', addrGovernor, getOverrides(wiringStartNonce + wiringIndex));
+    for (const art of artifactsMined) {
+      await pushWiringTx(art, 'transferOwnership', addrGovernor, getOverrides(wiringStartNonce + wiringIndex));
+    }
+
+    console.log(`🚀 Finalizing ${wiringPromises.length} wiring actions...`);
     const txs = await Promise.all(wiringPromises);
     await Promise.all(txs.map((tx: any) => tx.wait()));
-    console.log("✅ All wiring complete!");
 
     return {
-      licenseAddress,
-      phiAddress: utilityAddress,
-      loomAddress,
-      governorAddress,
-      treasuryAddress,
+      phiAddress: addrUtility,
+      loomAddress: addrLoom,
+      governorAddress: addrGovernor,
+      treasuryAddress: addrTreasury,
+      registryAddress: addrRegistry,
+      artifacts: artifactAddresses.map((addr, i) => ({
+        type: artifactsToDeploy[i]?.type || 'Access',
+        address: addr
+      })),
       timelockAddress: "0x0000000000000000000000000000000000000000",
-      deploymentTxHash: (loom as any).deploymentTransaction?.()?.hash || (loom as any).deployTransaction?.hash || "",
+      deploymentTxHash: (loom as any).deployTransaction?.hash || (loom as any).hash || "",
       network: network,
-      chainId: Number((await provider.getNetwork()).chainId)
+      chainId: targetChainId
     };
 
   } catch (e) {

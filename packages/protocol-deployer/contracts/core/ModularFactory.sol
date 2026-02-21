@@ -6,8 +6,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "./PBOXToken.sol";
 import "../treasury/PBOXProtocolTreasury.sol";
-import "../core/W2ELoom.sol";
+import "../core/W2ELoomV2.sol";
 import "../core/W2EGovernor.sol";
+import "../core/ProtocolRegistry.sol";
 
 /**
  * @title ModularFactory - Fábrica de Despliegue para Protocolos W2E
@@ -69,6 +70,7 @@ contract ModularFactory is Ownable, ReentrancyGuard, Pausable {
 
     /// @notice Direcciones de contratos desplegados
     struct ContractAddresses {
+        address registry;
         address treasury;
         address loom;
         address governor;
@@ -158,7 +160,10 @@ contract ModularFactory is Ownable, ReentrancyGuard, Pausable {
         address[] memory pandoraSigners = new address[](1);
         pandoraSigners[0] = pandoraOracle; // Solo el oráculo como pandora signer
 
-        // 1. Desplegar Tesorería de Protocolo
+        // 1. Desplegar Registro de Protocolo
+        ProtocolRegistry registry = new ProtocolRegistry(owner());
+
+        // 2. Desplegar Tesorería de Protocolo
         PBOXProtocolTreasury treasury = new PBOXProtocolTreasury(
             pandoraSigners,           // _pandoraSigners
             config.treasurySigners,   // _daoSigners
@@ -173,10 +178,11 @@ contract ModularFactory is Ownable, ReentrancyGuard, Pausable {
             owner()                  // initialOwner
         );
 
-        // 2. Desplegar Gobernanza DAO
+        // 3. Desplegar Gobernanza DAO
+        // En V2 usaremos la Pandoras Key o el primer artefacto. Por ahora mantenemos Pandoras Key.
         W2EGovernor governor = new W2EGovernor(
             pandoraKey,              // _licenseToken
-            address(treasury),       // _w2eLoomAddress
+            address(0),              // Placeholder, se setea loom después si fuera necesario o se asume estático
             config.quorumPercentage, // _quorumPercentage
             100,                     // _votingDelaySeconds
             config.votingPeriodHours * 3600, // _votingPeriodSeconds
@@ -184,21 +190,21 @@ contract ModularFactory is Ownable, ReentrancyGuard, Pausable {
             owner()                  // initialOwner
         );
 
-        // 3. Desplegar Motor W2E (Loom)
-        W2ELoom loom = new W2ELoom(
-            address(0),             // _licenseNFT (se setea después)
-            address(0),             // _utilityToken (se setea después)
-            address(treasury),      // _pandoraRootTreasury
+        // 4. Desplegar Motor W2E (Loom V2)
+        W2ELoomV2 loom = new W2ELoomV2(
+            address(registry),      // _registry
+            address(0),             // _utilityToken (se setea fuera o se asume externo)
+            address(treasury),      // _pandoraRootTreasury (o root oficial)
             address(treasury),      // _protocolTreasuryAddress
             pandoraOracle,          // _pandoraOracle
-            address(0),             // _platformFeeWallet
-            address(0),             // _creatorWallet
+            owner(),                // _platformFeeWallet
+            msg.sender,             // _creatorWallet
             config.creatorPayoutPct, // _creatorPayoutPct
             config.quorumPercentage, // _minQuorumPercentage
             config.votingPeriodHours * 3600, // _votingPeriodSeconds
-            15 * 24 * 3600,         // _emergencyPeriodSeconds (15 días)
+            15 * 24 * 3600,         // _emergencyPeriodSeconds
             config.quorumPercentage, // _emergencyQuorumPct
-            0,                      // _stakingRewardRate
+            1585489599,             // _stakingRewardRate
             20,                     // _phiFundSplitPct
             owner()                 // initialOwner
         );
@@ -221,6 +227,7 @@ contract ModularFactory is Ownable, ReentrancyGuard, Pausable {
 
         // Registrar la creación
         _registerCreation(config, ContractAddresses({
+            registry: address(registry),
             treasury: address(treasury),
             loom: address(loom),
             governor: address(governor),
@@ -241,6 +248,7 @@ contract ModularFactory is Ownable, ReentrancyGuard, Pausable {
         }
 
         addresses = ContractAddresses({
+            registry: address(registry),
             treasury: address(treasury),
             loom: address(loom),
             governor: address(governor),
@@ -288,7 +296,7 @@ contract ModularFactory is Ownable, ReentrancyGuard, Pausable {
         ContractAddresses memory addresses = creationAddresses[slug];
 
         // Activar contratos
-        W2ELoom(addresses.loom).activateProtocol();
+        W2ELoomV2(addresses.loom).activateProtocol();
         PBOXProtocolTreasury(payable(addresses.treasury)).activateProtocol();
 
         creation.active = true;
@@ -303,7 +311,7 @@ contract ModularFactory is Ownable, ReentrancyGuard, Pausable {
         ContractAddresses memory addresses = creationAddresses[slug];
         require(addresses.loom != address(0), "Factory: Creation not found");
 
-        W2ELoom(addresses.loom).pause();
+        W2ELoomV2(addresses.loom).pause();
         PBOXProtocolTreasury(payable(addresses.treasury)).pause();
 
         creations[slug].active = false;
@@ -318,7 +326,7 @@ contract ModularFactory is Ownable, ReentrancyGuard, Pausable {
         ContractAddresses memory addresses = creationAddresses[slug];
         require(addresses.loom != address(0), "Factory: Creation not found");
 
-        W2ELoom(addresses.loom).unpause();
+        W2ELoomV2(addresses.loom).unpause();
         PBOXProtocolTreasury(payable(addresses.treasury)).unpause();
 
         creations[slug].active = true;

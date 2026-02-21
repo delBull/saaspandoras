@@ -145,7 +145,19 @@ export async function POST(
             inactivityThresholdSeconds: 60 * 60 * 24 * 30, // 30 days
 
             // Network
-            targetNetwork: network
+            // Network
+            targetNetwork: network,
+
+            // V2 Artifacts (Modular)
+            artifacts: (project.w2eConfig as any)?.artifacts || [
+                {
+                    name: `Licencia ${project.title}`,
+                    symbol: "VHORA",
+                    maxSupply: project.totalTokens || 1000,
+                    price: "0",
+                    type: "Access"
+                }
+            ]
         };
 
         console.log(`🚀 API: Deploying ${slug}`);
@@ -200,14 +212,17 @@ export async function POST(
         // 5. Update Database
         await db.update(projects)
             .set({
-                licenseContractAddress: result.licenseAddress,
+                licenseContractAddress: result.licenseAddress || (result.artifacts?.[0]?.address),
                 utilityContractAddress: result.phiAddress,
                 loomContractAddress: result.loomAddress,
-                governorContractAddress: result.governorAddress,  // ✅ matches schema column
+                governorContractAddress: result.governorAddress,
+                registryContractAddress: result.registryAddress, // V2
+                artifacts: result.artifacts, // V2
+                protocolVersion: 2, // V2 Hardening
                 treasuryAddress: result.treasuryAddress,
                 chainId: result.chainId,
                 deploymentStatus: 'deployed',
-                status: 'live', // Auto-set to live on deployment (User Request)
+                status: 'live',
                 w2eConfig: extendedConfig,
             })
             .where(eq(projects.slug, slug));
@@ -231,7 +246,13 @@ export async function POST(
             }
         }
 
-        return NextResponse.json({ success: true, deployment: result });
+        return NextResponse.json({
+            success: true,
+            deployment: {
+                ...result,
+                protocolVersion: 2
+            }
+        });
 
     } catch (error: any) {
         console.error("Deploy API Error:", error);
