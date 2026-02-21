@@ -1,7 +1,7 @@
 import * as ethers from "ethers";
 import * as dotenv from "dotenv";
 import W2ELicenseArtifact from "./artifacts/W2ELicense.json";
-import { NetworkType } from "./types";
+import { NetworkType, NFTPassConfig } from "./types";
 
 // Load environment variables logic (reused from deploy.ts)
 const fs = require('fs');
@@ -20,15 +20,7 @@ envPaths.forEach(p => {
     }
 });
 
-export interface NFTPassConfig {
-    name: string;
-    symbol: string;
-    maxSupply: string | number; // String to support MAX_UINT256
-    price: string; // Ether string, e.g. "0.1"
-    owner: string;
-    treasuryAddress?: string; // Optional, defaults to owner if not set
-    oracleAddress?: string; // Optional, defaults to owner if not set
-}
+// NFTPassConfig moved to types.ts
 
 export async function deployNFTPass(
     config: NFTPassConfig,
@@ -161,6 +153,10 @@ export async function deployNFTPass(
     // Ensure maxSupply is treated as BigInt/String for the contract call to avoid JS number overflow
     const maxSupplyBigInt = config.maxSupply.toString();
 
+    // Explicitly handle flags with defaults
+    const isTransferable = config.transferable ?? true;
+    const isBurnable = config.burnable ?? false;
+
     console.log("Creating transaction...");
 
     const contract = await LicenseFactory.deploy(
@@ -171,6 +167,8 @@ export async function deployNFTPass(
         oracle,
         treasury,
         config.owner,
+        isTransferable,
+        isBurnable,
         { gasLimit: 3000000 } // Safe limit
     );
 

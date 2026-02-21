@@ -24,6 +24,8 @@ export interface NFTPassConfig {
   owner: string;
   treasuryAddress?: string;
   oracleAddress?: string;
+  transferable?: boolean;
+  burnable?: boolean;
 }
 
 export interface W2EConfig {

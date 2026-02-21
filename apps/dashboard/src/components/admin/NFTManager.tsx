@@ -12,10 +12,12 @@ import { client } from "@/lib/thirdweb-client";
 import { config } from "@/config";
 import { PANDORAS_KEY_ABI } from "@/lib/pandoras-key-abi";
 import { CreateNFTPassModal } from "./CreateNFTPassModal";
+import { NFTTypeInfoModal } from "./NFTTypeInfoModal";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@saasfly/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Info } from "lucide-react";
 import { IdentificationIcon, GiftIcon, TicketIcon, QrCodeIcon } from "@heroicons/react/24/outline";
 
 // Extend the ABI to include missing standard items + adminMint
@@ -48,6 +50,7 @@ export function NFTManager() {
     const { toast } = useToast();
     const account = useActiveAccount();
     const [showCreateWizard, setShowCreateWizard] = useState(false);
+    const [showInfoModal, setShowInfoModal] = useState(false);
 
     // 1. Global Gate Settings (API)
     const [nftGateEnabled, setNftGateEnabled] = useState(false);
@@ -381,6 +384,14 @@ export function NFTManager() {
                         title="Refrescar lista"
                     >
                         <Loader2 className={`w-4 h-4 ${loadingPasses ? 'animate-spin' : ''}`} />
+                    </Button>
+                    <Button
+                        onClick={() => setShowInfoModal(true)}
+                        variant="outline"
+                        className="bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-lime-500 hover:border-lime-500/50"
+                        title="Información sobre tipos de NFT"
+                    >
+                        <Info className="w-4 h-4" />
                     </Button>
                     <Button
                         onClick={() => setShowCreateWizard(true)}
@@ -960,6 +971,10 @@ export function NFTManager() {
                 }}
             />
 
+            <NFTTypeInfoModal
+                open={showInfoModal}
+                onOpenChange={setShowInfoModal}
+            />
         </div>
     );
 }

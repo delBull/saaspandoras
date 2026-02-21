@@ -25,6 +25,25 @@ interface SmartQRLandingProps {
     slug: string;
 }
 
+// Helper to resolve IPFS URLs to a public gateway
+const resolveIpfsUrl = (url?: string) => {
+    if (!url) return "";
+    if (url.startsWith("ipfs://")) {
+        return url.replace("ipfs://", "https://ipfs.io/ipfs/");
+    }
+    return url;
+};
+
+// Helper to ensure links are absolute (avoiding relative path issues in dynamic routes)
+const ensureAbsoluteUrl = (url?: string) => {
+    if (!url) return "";
+    if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("mailto:") || url.startsWith("tel:")) {
+        return url;
+    }
+    // Default to https if no protocol is present
+    return `https://${url}`;
+};
+
 export function SmartQRLanding({ config, slug }: SmartQRLandingProps) {
     const {
         title,
@@ -62,6 +81,8 @@ export function SmartQRLanding({ config, slug }: SmartQRLandingProps) {
         window.open(`https://wa.me/${cleanPhone}`, '_blank');
     };
 
+    const resolvedLogoUrl = resolveIpfsUrl(logoUrl);
+
     const SocialIcon = ({ type, url }: { type: string, url: string }) => {
         if (!url) return null;
 
@@ -81,7 +102,7 @@ export function SmartQRLanding({ config, slug }: SmartQRLandingProps) {
 
         return (
             <a
-                href={url}
+                href={ensureAbsoluteUrl(url)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`text-gray-400 transition-colors transform hover:scale-110 ${colorClass}`}
@@ -106,9 +127,9 @@ export function SmartQRLanding({ config, slug }: SmartQRLandingProps) {
             >
                 {/* Header / Branding */}
                 <motion.div className="flex flex-col items-center text-center mb-10" variants={itemVariants}>
-                    {logoUrl ? (
+                    {resolvedLogoUrl ? (
                         <div className="w-24 h-24 rounded-full bg-zinc-800 border-2 border-zinc-700 overflow-hidden mb-4 shadow-xl">
-                            <img src={logoUrl} alt={title} className="w-full h-full object-cover" />
+                            <img src={resolvedLogoUrl} alt={title} className="w-full h-full object-cover" />
                         </div>
                     ) : (
                         <div className="w-20 h-20 rounded-full bg-gradient-to-br from-lime-400 to-emerald-600 flex items-center justify-center mb-4 shadow-lg shadow-emerald-500/20">
@@ -144,7 +165,7 @@ export function SmartQRLanding({ config, slug }: SmartQRLandingProps) {
                     {links?.map((link: any, index: number) => (
                         <a
                             key={index}
-                            href={link.url}
+                            href={ensureAbsoluteUrl(link.url)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="block w-full py-3.5 px-6 bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700/50 hover:border-zinc-600 rounded-xl text-center text-gray-200 font-medium transition-all hover:shadow-lg hover:shadow-black/20 flex items-center justify-between group"

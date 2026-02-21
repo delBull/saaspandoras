@@ -268,7 +268,18 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
             return;
         }
 
-        if (nftType === 'qr' && !createLanding && !formData.targetUrl) {
+        // Normalize URL if present
+        const normalizeUrl = (url: string) => {
+            if (!url) return "";
+            if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("mailto:") || url.startsWith("tel:")) {
+                return url;
+            }
+            return `https://${url}`;
+        };
+
+        const normalizedTargetUrl = normalizeUrl(formData.targetUrl);
+
+        if (nftType === 'qr' && !createLanding && !normalizedTargetUrl) {
             toast({ title: "Error", description: "Debes definir una URL de destino para el QR.", variant: "destructive" });
             return;
         }
@@ -286,7 +297,8 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
         }, 2000);
 
         try {
-            let finalImage = formData.imageUrl || formData.imagePreview || '';
+            const userLogo = formData.imageUrl || formData.imagePreview || '';
+            let finalImage = userLogo;
 
             // Generate QR Code if needed
             let shortlinkSlug: string | null = null;
@@ -320,11 +332,11 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                     throw new Error("No se pudo generar el código QR Dinámico");
                 }
             } else if (nftType === 'qr' && !isDynamic) {
-                // Static QR: Point directly to targetUrl
-                if (!formData.targetUrl) throw new Error("URL de destino requerida para QR estático");
+                // Static QR: Point directly to normalizedTargetUrl
+                if (!normalizedTargetUrl) throw new Error("URL de destino requerida para QR estático");
                 try {
-                    console.log("Generating Static QR for:", formData.targetUrl);
-                    finalImage = await QRCodeLib.toDataURL(formData.targetUrl, {
+                    console.log("Generating Static QR for:", normalizedTargetUrl);
+                    finalImage = await QRCodeLib.toDataURL(normalizedTargetUrl, {
                         errorCorrectionLevel: 'H',
                         margin: 2,
                         width: 500,
@@ -341,7 +353,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
             if (nftType === 'qr' && isDynamic && shortlinkSlug) {
                 const shortlinkPayload: any = {
                     slug: shortlinkSlug,
-                    destinationUrl: formData.targetUrl,
+                    destinationUrl: normalizedTargetUrl,
                     title: `QR: ${formData.name}`,
                     description: `Smart QR for NFT (Pending Deploy)`
                 };
@@ -351,7 +363,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                     shortlinkPayload.landingConfig = {
                         title: landingConfig.title || formData.name,
                         slogan: landingConfig.slogan || '',
-                        logoUrl: formData.imageUrl || '',
+                        logoUrl: userLogo, // ✅ Use original user logo (IPFS or dataURI)
                         links: landingConfig.links.filter(link => link.url && link.label),
                         socials: Object.entries(landingConfig.socials).filter(([_, url]) => url).reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {}),
                         whatsapp: landingConfig.whatsapp || '',
@@ -368,9 +380,9 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
 
                 if (!shortlinkRes.ok) throw new Error("Fallo al reservar el enlace corto (Slug tomado o error). Intenta con otro nombre.");
                 setGeneratedShortlink(`${window.location.origin}/${shortlinkSlug}`);
-            } else if (nftType === 'qr' && !isDynamic && formData.targetUrl) {
+            } else if (nftType === 'qr' && !isDynamic && normalizedTargetUrl) {
                 // Para QR Estático, usamos la URL de destino como link a compartir
-                setGeneratedShortlink(formData.targetUrl);
+                setGeneratedShortlink(normalizedTargetUrl);
             }
 
 
@@ -387,7 +399,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                 burnable: formData.burnable,
                 validUntil: formData.validUntil,
                 nftType: nftType,
-                targetUrl: formData.targetUrl || null,
+                targetUrl: normalizedTargetUrl || null,
                 createLanding: createLanding,
                 landingConfig: createLanding ? landingConfig : null,
                 shortlinkSlug: shortlinkSlug // Pass the slug to API

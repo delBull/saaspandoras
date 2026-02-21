@@ -236,6 +236,8 @@ export async function deployW2EProtocol(
         oracleAddress,
         addrTreasury, // Circular resolved
         wallet.address, // Initial Owner
+        true, // isTransferable (Default for Protocol Licenses)
+        false, // isBurnable (Default for Protocol Licenses)
         getOverrides(currentNonce)
       ),
       // B. W2E Utility (Nonce N+1)

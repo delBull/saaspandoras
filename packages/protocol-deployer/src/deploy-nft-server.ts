@@ -102,6 +102,11 @@ export async function deployNFTPassServer(
     const oracle = config.oracleAddress || wallet.address;
     const treasury = config.treasuryAddress || wallet.address;
     const priceWei = ethers.utils.parseEther(config.price || "0");
+
+    // Explicitly handle flags with defaults
+    const isTransferable = config.transferable ?? true;
+    const isBurnable = config.burnable ?? false;
+
     // Ensure maxSupply is string for BigNumber safety
     const maxSupply = config.maxSupply.toString();
 
@@ -116,6 +121,8 @@ export async function deployNFTPassServer(
         oracle,
         treasury,
         config.owner,
+        isTransferable,
+        isBurnable,
         {
             gasLimit: 3_000_000 // Explicit limit to avoid estimation errors on some RPCs
         }
