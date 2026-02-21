@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "~/db";
+import { eq } from "drizzle-orm";
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
 export const runtime = "nodejs";
@@ -9,6 +10,8 @@ import { getAuth } from "@/lib/auth";
 import { headers } from "next/headers";
 import slugify from "slugify";
 import { trackGamificationEvent } from "@/lib/gamification/service";
+import { WebhookService } from "@/lib/integrations/webhook-service";
+import { integrationClients } from "@/db/schema";
 
 export async function POST(request: Request) {
   try {
@@ -124,6 +127,37 @@ export async function POST(request: Request) {
       } catch (gamificationError) {
         console.warn('⚠️ Failed to track gamification event:', gamificationError);
       }
+    }
+
+    // 🕸️ WEBHOOK: Notify external clients
+    try {
+      // For now, we broadcast to all clients in the same environment
+      // (Staging if development/预览, Production if main)
+      const host = (await headers()).get("host") || "";
+      const isProduction = host === "dash.pandoras.finance" || host === "www.dash.pandoras.finance";
+      const env = isProduction ? 'production' : 'staging';
+
+      if (newProject) {
+        const clients = await db.query.integrationClients.findMany({
+          where: eq(integrationClients.environment, env)
+        });
+
+        for (const client of clients) {
+          await WebhookService.queueEvent(client.id, 'project.application_submitted', {
+            projectId: newProject.id.toString(),
+            title: newProject.title,
+            category: newProject.businessCategory || "other",
+            applicantWallet: applicantWalletAddress || "unknown",
+            targetAmount: newProject.targetAmount,
+            isSandbox: env === 'staging'
+          });
+        }
+        if (clients.length > 0) {
+          console.log(`📡 Webhook(s) queued for ${clients.length} clients: project.application_submitted`);
+        }
+      }
+    } catch (webhookError) {
+      console.warn('⚠️ Failed to queue application webhook:', webhookError);
     }
 
     // 🔔 DISCORD NOTIFICATION

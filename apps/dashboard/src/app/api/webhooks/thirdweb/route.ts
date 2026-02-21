@@ -3,6 +3,9 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { transactions } from "@/db/schema";
 import { sendPaymentNotification } from "@/lib/discord/notifier";
+import { WebhookService } from "@/lib/integrations/webhook-service";
+import { integrationClients } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import crypto from "crypto";
 
 // Security: Verify Thirdweb Signature
@@ -120,6 +123,32 @@ export async function POST(req: Request) {
                 txHash: txHash
             }
         });
+
+        // 6. WEBHOOK: Notify external clients if it's a MINT (from null address)
+        const isMint = fromAddress === "0x0000000000000000000000000000000000000000" || fromAddress === "0x0";
+        if (isMint) {
+            try {
+                // Broadcast to all active clients
+                const clients = await db.query.integrationClients.findMany({
+                    where: eq(integrationClients.isActive, true)
+                });
+
+                for (const client of clients) {
+                    await WebhookService.queueEvent(client.id, 'nft.minted', {
+                        contractAddress: log?.address || "unknown",
+                        tokenId: log?.args?.tokenId || log?.args?.[0] || "unknown",
+                        recipient: toAddress,
+                        txHash: txHash,
+                        isSandbox: client.environment === 'staging'
+                    });
+                }
+                if (clients.length > 0) {
+                    console.log(`📡 Mint Webhook(s) queued for ${clients.length} clients.`);
+                }
+            } catch (webhookError) {
+                console.warn('⚠️ Failed to queue mint webhook:', webhookError);
+            }
+        }
 
         return NextResponse.json({ success: true });
     } catch (error) {

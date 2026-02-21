@@ -141,6 +141,7 @@ export function SmartQRLanding({ config, slug }: SmartQRLandingProps) {
                 <motion.div className="flex flex-col items-center text-center mb-10" variants={itemVariants}>
                     {resolvedLogoUrl ? (
                         <div className="w-24 h-24 rounded-full bg-zinc-800 border-2 border-zinc-700 overflow-hidden mb-4 shadow-xl">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={resolvedLogoUrl} alt={title} className="w-full h-full object-cover" />
                         </div>
                     ) : (
