@@ -6,7 +6,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '~/db';
 import { shortlinks, shortlinkEvents } from '~/db/schema';
 import { headers } from 'next/headers';
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 import { SmartQRLanding } from '@/components/SmartQRLanding';
 
 // Force dynamic to prevent caching of 404s/redirects
@@ -243,7 +243,7 @@ export default async function ShortlinkPage({ params, searchParams }: PageProps)
     // For social media bots parsing OpenGraph tags
     if (result?.type === 'bot_preview') {
       return (
-        <html>
+        <html lang="es">
           <head>
             {/* The meta tags are handled by generateMetadata. We just return a client-side redirect for safety */}
             <meta httpEquiv="refresh" content={`0;url=${result.link?.destinationUrl}`} />

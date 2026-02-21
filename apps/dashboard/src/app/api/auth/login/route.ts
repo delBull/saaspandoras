@@ -188,9 +188,9 @@ export async function POST(request: Request) {
                     .where(eq(users.walletAddress, walletAddress));
             } else {
                 // Insert new user
-                const { randomUUID } = require('crypto');
+                const id = crypto.randomUUID();
                 await db.insert(users).values({
-                    id: randomUUID(),
+                    id,
                     walletAddress,
                     connectionCount: 1,
                     lastConnectionAt: now,
