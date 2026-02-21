@@ -3,7 +3,7 @@
 import { useConnectModal, useDisconnect, useActiveAccount, useActiveWallet } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
 import { config } from "@/config";
-import { wallets, accountAbstractionConfig } from "@/lib/wallets";
+import { wallets } from "@/lib/wallets";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
@@ -35,7 +35,6 @@ export function ConnectWalletButton({
         client,
         chain: config.chain,
         wallets,
-        accountAbstraction: accountAbstractionConfig, // ⚡ MetaMask + Smart Account = Gasless
         showThirdwebBranding: false,
       });
       onConnect?.();

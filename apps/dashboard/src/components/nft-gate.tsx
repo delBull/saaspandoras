@@ -28,6 +28,9 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const hasStartedProcessing = useRef(false);
 
+  // ℹ️ Auto-login is handled by AuthProvider.useEffect.
+  // NFTGate just reads isAuthLoading and user — no duplicate login() call here.
+
   // If user has access, render children immediately
   if (user?.hasAccess) {
     return <>{children}</>;
@@ -43,23 +46,28 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // If not logged in, but account is connected, try to login automatically
-  // Only show manual button if auto-login failed (account exists but user is null and not loading)
-  if (account && !user && !isAuthLoading) {
-    // User connected wallet but didn't sign SIWE yet (or session invalid)
+  // Connected wallet, but auth still loading or no session yet — show spinner
+  // AuthProvider handles auto-SIWE; NFTGate just shows feedback while it happens.
+  if (account && !user) {
     return (
-      <div className="flex flex-col items-center justify-center h-full space-y-4">
-        <p className="text-gray-300">Ups! Please sign in to verify your access.</p>
-        <button
-          onClick={() => login()}
-          className="bg-lime-400 text-black px-6 py-2 rounded font-bold hover:bg-lime-500 transition"
-        >
-          Sign In again
-        </button>
+      <div className="flex flex-col items-center justify-center h-full min-h-[50vh] space-y-4">
+        <Loader2 className="w-8 h-8 animate-spin text-lime-400" />
+        <p className="text-gray-300 text-sm">
+          {isAuthLoading ? 'Verificando acceso...' : 'Iniciando sesión...'}
+        </p>
+        {/* Fallback manual button only if not loading anymore (auto-login may have failed) */}
+        {!isAuthLoading && (
+          <button
+            onClick={() => login()}
+            className="mt-2 text-xs text-lime-400 underline hover:text-lime-300 transition"
+          >
+            Click aquí si nada ocurre
+          </button>
+        )}
       </div>
     );
   }
-  
+
   // If loading auth but no account connected, show guest mode loader
   if (isAuthLoading && !account) {
     return (
