@@ -21,12 +21,16 @@ import {
 } from '@heroicons/react/24/outline';
 import type { UserData, Project } from '@/types/admin';
 import { useActiveAccount } from 'thirdweb/react';
+import { ProjectBasicEditModal } from '@/components/projects/ProjectBasicEditModal';
+import { toast } from 'sonner';
 
 export default function ProfileProjectsPage() {
   const router = useRouter();
   const [userProfile, setUserProfile] = useState<UserData | null>(null);
   const [userProjects, setUserProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
   const account = useActiveAccount();
 
 
@@ -302,6 +306,22 @@ export default function ProfileProjectsPage() {
       setLoading(false);
     }
   }, [walletAddress]);
+
+  const refreshProjects = () => {
+    if (!walletAddress) return;
+    fetch('/api/projects', {
+      headers: {
+        'Content-Type': 'application/json',
+        'x-thirdweb-address': walletAddress,
+      }
+    })
+      .then(res => res.json())
+      .then(data => {
+        const filtered = data.filter((p: Project) => p.applicantWalletAddress?.toLowerCase() === walletAddress.toLowerCase());
+        setUserProjects(filtered);
+      })
+      .catch(err => console.error("Error refreshing projects:", err));
+  };
 
   if (loading) {
     return (
@@ -615,12 +635,18 @@ export default function ProfileProjectsPage() {
 
                     {/* Show Edit for non-final states */}
                     {project.status !== 'live' && project.status !== 'completed' && (
-                      <Link href={`/profile/projects/${project.id}/edit`} className="col-span-1">
-                        <Button size="sm" variant="outline" className="w-full bg-zinc-600 hover:bg-zinc-700 border-zinc-600 hover:border-zinc-700">
-                          <PencilIcon className="w-4 h-4 mr-2" />
-                          Editar
-                        </Button>
-                      </Link>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full bg-zinc-600 hover:bg-zinc-700 border-zinc-600 hover:border-zinc-700"
+                        onClick={() => {
+                          setSelectedProject(project);
+                          setShowEditModal(true);
+                        }}
+                      >
+                        <PencilIcon className="w-4 h-4 mr-2" />
+                        Editar
+                      </Button>
                     )}
 
                     {/* Show Manage DAO only if Approved/Live/Deployed */}
@@ -670,6 +696,14 @@ export default function ProfileProjectsPage() {
           </p>
         </CardContent>
       </Card>
+
+      {/* Edit Modal */}
+      <ProjectBasicEditModal
+        project={selectedProject}
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+        onSuccess={refreshProjects}
+      />
     </div>
   );
 }

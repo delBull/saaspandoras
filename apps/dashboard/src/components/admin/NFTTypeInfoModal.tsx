@@ -6,6 +6,7 @@ import {
     DialogDescription,
     DialogHeader,
     DialogTitle,
+    DialogClose,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -89,7 +90,7 @@ export function NFTTypeInfoModal({ open, onOpenChange }: NFTTypeInfoModalProps) 
                 <div className="absolute inset-0 bg-gradient-to-b from-lime-500/5 to-transparent pointer-events-none" />
 
                 <div className="p-6 relative z-10">
-                    <DialogHeader className="mb-6">
+                    <DialogHeader className="mb-6 relative">
                         <div className="flex items-center gap-3 mb-2">
                             <div className="w-10 h-10 rounded-full bg-lime-500/20 flex items-center justify-center border border-lime-500/30">
                                 <ShieldCheckIcon className="w-6 h-6 text-lime-500" />
@@ -103,6 +104,9 @@ export function NFTTypeInfoModal({ open, onOpenChange }: NFTTypeInfoModalProps) 
                                 </DialogDescription>
                             </div>
                         </div>
+                        <DialogClose className="absolute right-0 top-0 p-2 text-zinc-500 hover:text-white transition-colors">
+                            <span className="text-xl">×</span>
+                        </DialogClose>
                     </DialogHeader>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
