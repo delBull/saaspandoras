@@ -33,6 +33,14 @@ export function ProjectBasicEditModal({ project, open, onOpenChange, onSuccess }
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const resolveIpfs = (url: string) => {
+        if (!url) return "";
+        if (url.startsWith('ipfs://')) {
+            return url.replace('ipfs://', 'https://gateway.pinata.cloud/ipfs/');
+        }
+        return url;
+    };
+
     useEffect(() => {
         if (project) {
             setFormData({
@@ -133,7 +141,7 @@ export function ProjectBasicEditModal({ project, open, onOpenChange, onSuccess }
                             <div className="flex items-center gap-4">
                                 <div className="w-16 h-16 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center overflow-hidden">
                                     {formData.logoUrl ? (
-                                        <img src={formData.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                                        <img src={resolveIpfs(formData.logoUrl)} alt="Logo" className="w-full h-full object-cover" />
                                     ) : (
                                         <PhotoIcon className="w-8 h-8 text-zinc-700" />
                                     )}
@@ -182,7 +190,7 @@ export function ProjectBasicEditModal({ project, open, onOpenChange, onSuccess }
                             <div className="flex flex-col gap-2">
                                 <div className="h-16 w-full rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center overflow-hidden">
                                     {formData.coverPhotoUrl ? (
-                                        <img src={formData.coverPhotoUrl} alt="Cover" className="w-full h-full object-cover" />
+                                        <img src={resolveIpfs(formData.coverPhotoUrl)} alt="Cover" className="w-full h-full object-cover" />
                                     ) : (
                                         <PhotoIcon className="w-8 h-8 text-zinc-700" />
                                     )}

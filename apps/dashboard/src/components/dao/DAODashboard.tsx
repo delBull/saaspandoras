@@ -292,13 +292,20 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
     const ProposalsView = () => {
         // Robust detection of governance contract
         const artifacts = project.artifacts || (project.w2eConfig as any)?.artifacts || [];
-        const govArtifact = Array.isArray(artifacts) ? artifacts.find((a: any) => a.type === 'governor' || a.type === 'registry') : null;
+        const govArtifact = Array.isArray(artifacts) ? artifacts.find((a: any) =>
+            a.type === 'governor' ||
+            a.type === 'registry' ||
+            a.type === 'voting' ||
+            (a.name && a.name.toLowerCase().includes('governor'))
+        ) : null;
 
         const govAddress = project.governorContractAddress ||
             project.votingContractAddress ||
             govArtifact?.address ||
             (project as any).governor_contract_address ||
-            (project as any).voting_contract_address;
+            (project as any).voting_contract_address ||
+            (project as any).registry_contract_address ||
+            project.registryContractAddress;
 
         return (
             <div className="space-y-6">
