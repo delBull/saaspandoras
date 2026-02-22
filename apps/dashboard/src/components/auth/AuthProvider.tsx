@@ -3,7 +3,7 @@
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useRef } from "react";
 import { useActiveAccount, useActiveWalletChain } from "thirdweb/react";
 import { useToast } from "@saasfly/ui/use-toast";
 import { config } from "@/config";
@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const account = useActiveAccount();
     const chain = useActiveWalletChain();
     const { toast } = useToast();
-    
+
     // 🆕 Smart Account Support: Get the real EOA identity
     // This handles both EOA wallets and Smart Wallets (AA)
     const eoaIdentity = useEOAIdentity();
@@ -41,16 +41,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         checkSession();
     }, []);
 
+    const loginRequested = useRef<Record<string, boolean>>({});
+
     // Check session when account changes
     useEffect(() => {
         console.log('[AuthProvider] Account/User changed:', { hasAccount: !!account, hasUser: !!user });
         if (account && !user) {
             // User connected wallet but has no session -> Auto Login (SIWE)
-            const hasRequestedLogin = sessionStorage.getItem(`login-requested-${account.address}`);
+            const hasRequestedLogin = loginRequested.current[account.address];
             console.log('[AuthProvider] Auto-login check:', { hasRequestedLogin });
             if (!hasRequestedLogin) {
                 console.log('[AuthProvider] 🚀 Triggering auto-login for:', account.address);
-                sessionStorage.setItem(`login-requested-${account.address}`, "true");
+                loginRequested.current[account.address] = true;
                 login().catch(console.error);
             } else {
                 // Already requested, check session again just in case
@@ -60,7 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else if (!account && user) {
             // Wallet disconnected -> Logout
             setUser(null);
-            sessionStorage.clear(); // Clear prevention flags
+            loginRequested.current = {}; // Clear prevention flags
         }
     }, [account, user]);
 
@@ -94,13 +96,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         try {
             setIsLoading(true);
-            
+
             // 🆕 Smart Account Support: Use EOA as identity, not Smart Account address
             // This ensures sessions persist even when the smart wallet changes
             const identityAddress = eoaIdentity || account.address;
             console.log('[AuthProvider] 🆔 Identity Address (EOA):', identityAddress);
             console.log('[AuthProvider] 📱 Execution Address:', account.address);
-            
+
             // 1. Get Nonce for the EOA identity
             const nonceRes = await fetch(`${API_URL}/auth/nonce?address=${identityAddress}`, { credentials: "include" });
             const { nonce } = await nonceRes.json();
@@ -116,7 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             // 🆕 Include both addresses in the message for Smart Wallet support
             const executionAddress = account.address;
-            
+
             // Construct EIP-4361 message
             const message = `${domain} wants you to sign in with your Ethereum account:
 ${identityAddress}
@@ -160,7 +162,7 @@ ${executionAddress !== identityAddress ? `\nExecution Address: ${executionAddres
             if (!loginRes.ok) throw new Error("Login failed");
 
             const data = await loginRes.json();
-            
+
             // 🆕 Store EOA identity in session for persistent login across smart wallet changes
             setUser({ address: identityAddress, hasAccess: data.hasAccess });
             toast({ title: "Welcome back!", description: "Successfully logged in." });

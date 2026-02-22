@@ -18,7 +18,7 @@ export default function ProtocolPageShell({ project, children, currentSlug }: Pr
     return (
         <div className="min-h-screen pb-20 md:pb-6 bg-black">
             <ProjectNavigationHeader />
-            <div className="w-full 2xl:max-w-[1800px] mx-auto px-1 sm:px-2 md:px-4 py-4 md:py-6">
+            <div className="w-full">
                 <div className="relative">
                     <ProjectSidebar project={project} targetAmount={targetAmount} />
                     <div className="lg:mr-80 xl:mr-80 2xl:mr-80 bg-zinc-950/50 rounded-3xl min-h-[80vh] border border-zinc-800/10">

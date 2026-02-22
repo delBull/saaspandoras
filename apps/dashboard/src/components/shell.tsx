@@ -33,6 +33,7 @@ export function DashboardShell({
   const isHomePage = pathname === "/";
   const isGovernancePage = pathname?.startsWith("/governance");
   const isDaoPage = pathname?.includes("/dao");
+  const isProjectPage = pathname?.startsWith("/projects/") && !pathname?.includes("/admin");
 
   return (
     <div
@@ -54,8 +55,8 @@ export function DashboardShell({
         className={cn(
           "flex-1 relative",
           "h-screen overflow-y-auto",
-          // Conditional padding: No padding on Home, Governance, or DAO pages
-          isHomePage || isGovernancePage || isDaoPage ? "p-0" : "p-2 sm:p-2 md:px-8 md:pb-8 md:pt-0",
+          // Conditional padding: No padding on Home, Governance, Protocol, or DAO pages
+          isHomePage || isGovernancePage || isDaoPage || isProjectPage ? "p-0" : "p-2 sm:p-2 md:px-8 md:pb-8 md:pt-0",
           "bg-gradient-to-br from-gray-950 to-fuchsia-950/30 via-fuchsia-950/40", // Fixed typo in via-color
           "rounded-tl-[4rem] overflow-x-hidden", // Removed overflow-hidden to allow y-scroll
           className,

@@ -16,9 +16,9 @@ import {
   users,
   type GamificationProfile as DrizzleGamificationProfile,
   type UserAchievement as DrizzleUserAchievement,
-  type Achievement as DrizzleAchievement,
   type Reward as DrizzleReward,
 } from '@/db/schema';
+import { ilike } from 'drizzle-orm';
 
 export async function GET(
   request: NextRequest,
@@ -50,7 +50,7 @@ export async function GET(
     const userResult = await db
       .select({ id: users.id })
       .from(users)
-      .where(eq(users.walletAddress, walletAddress))
+      .where(ilike(users.walletAddress, walletAddress))
       .limit(1);
 
     console.log(`🔍 API: User query result:`, userResult);
