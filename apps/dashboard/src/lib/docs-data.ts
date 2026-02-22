@@ -1865,5 +1865,652 @@ Si tienes dudas de seguridad:
 `
       }
     ]
+  },
+  {
+    id: "telegram-integration",
+    title: "Telegram Integration",
+    icon: "MessageCircle",
+    sections: [
+      {
+        id: "telegram-overview",
+        title: "Overview",
+        content: `# How Telegram Integrates with Pandoras
+
+## Overview
+
+Pandoras integrates with Telegram through a **non-custodial, event-driven bridge layer** that allows users to interact with protocols, earn reputation and rewards, and request on-chain claims — **without exposing private keys or granting Telegram any protocol governance power**.
+
+Telegram is treated as an **external interaction surface**, not as a trusted execution environment. All protocol logic, validation, and accounting remain inside Pandoras Core.
+
+> **Key principle:**
+> Telegram can *signal intent* and *receive outcomes*, but it can never mutate protocol state directly.
+
+## Design Goals
+
+The Telegram integration was designed with the following goals:
+
+### 1. Security-First
+- No private keys in Telegram
+- No direct smart contract access
+- No governance or admin permissions
+
+### 2. Protocol Integrity
+- All logic evaluated inside Pandoras Core
+- Deterministic, auditable gamification rules
+- Idempotent execution
+
+### 3. Scalability & Composability
+- Telegram is one of many possible clients
+- Same core logic works for dashboard, bots, jobs, or future clients
+
+### 4. Clear Separation of Concerns
+- **Telegram** = UI + intent
+- **Pandoras Core** = truth + accounting
+- **Blockchain** = settlement
+`
+      },
+      {
+        id: "telegram-architecture",
+        title: "High-Level Architecture",
+        content: `# High-Level Architecture
+
+## System Diagram
+
+\`\`\`
+User
+ ↓
+Telegram App (Bot / Mini App)
+ ↓  REST API
+Pandoras Core
+ ├─ Protocol Registry (read-only)
+ ├─ Gamification Engine
+ ├─ Off-chain Accounting (PBOX)
+ └─ Webhook Emitter
+ ↓  Webhook (HMAC signed)
+Telegram Edge
+ ↓
+User Feedback / Claim Flow
+\`\`\`
+
+Pandoras Core acts as the **authoritative execution layer**.
+
+## What Telegram Never Does
+
+- ❌ Signs transactions
+- ❌ Executes protocol logic
+- ❌ Updates balances directly
+- ❌ Reads governance or admin-only data
+
+## Interaction Model
+
+Telegram interacts with Pandoras through **four bounded API surfaces**:
+
+| Endpoint | Purpose |
+|---|---|
+| \`POST /api/telegram/bind\` | Link Telegram user ↔ wallet |
+| \`GET /api/telegram/protocol/:slug\` | Read-only protocol data |
+| \`POST /api/gamification/record\` | Signal user action |
+| \`POST /api/pbox/claim-request\` | Request signed claim intent |
+
+Each endpoint is **strictly scoped**, feature-flagged, and auditable.
+`
+      },
+      {
+        id: "telegram-binding",
+        title: "Identity Binding",
+        content: `# Identity Binding (Telegram ↔ Wallet)
+
+## Purpose
+
+Associate a Telegram user with a blockchain wallet **without custody**.
+
+## Flow
+
+1. User signs a message in their wallet
+2. Telegram sends \`{ telegramUserId, walletAddress }\`
+3. Pandoras Core upserts binding in \`telegram_bindings\`
+
+## Storage
+
+\`\`\`sql
+telegram_bindings (
+  telegram_user_id TEXT UNIQUE,
+  wallet_address   TEXT,
+  source           TEXT DEFAULT 'telegram',
+  created_at       TIMESTAMPTZ,
+  last_seen_at     TIMESTAMPTZ
+)
+\`\`\`
+
+The \`source\` field is reserved for future multi-platform support (Discord, Farcaster, WhatsApp).
+
+## Security Properties
+
+- ✅ No private keys stored
+- ✅ Binding can be revoked or rotated
+- ✅ Endpoint is idempotent (safe to call multiple times)
+- ✅ Wallet ownership verified upstream in the Telegram App
+`
+      },
+      {
+        id: "telegram-readonly",
+        title: "Read-Only Protocol Access",
+        content: `# Read-Only Protocol Access
+
+Telegram can query protocol data using:
+
+\`\`\`
+GET /api/telegram/protocol/:slug
+\`\`\`
+
+## Returned Data
+
+- Protocol metadata (slug, title, status)
+- Artifacts in V2 format (type, name, symbol, address, price)
+- Registry contract address
+- **Capability flags** (see below)
+
+## Capability Flags
+
+The endpoint returns a \`capabilities\` object so the Telegram App **never has to infer business logic**:
+
+\`\`\`json
+{
+  "capabilities": {
+    "canMintFreeArtifact": true,
+    "canClaimPBOX": true,
+    "supportsGamification": true
+  }
+}
+\`\`\`
+
+These are derived server-side from feature flags, protocol version, and artifact configuration.
+
+## Explicitly Excluded
+
+- ❌ Governance configuration
+- ❌ Admin functions
+- ❌ Mutable parameters
+- ❌ Treasury controls
+
+This ensures Telegram users can **explore and interact**, but never govern.
+`
+      },
+      {
+        id: "telegram-gamification",
+        title: "Gamification Event Bridge",
+        content: `# Gamification Event Bridge
+
+## Core Concept
+
+Telegram never applies rewards directly. Instead, it sends **events**, which Pandoras Core evaluates deterministically.
+
+\`\`\`
+Telegram → record(event)
+Pandoras → evaluate → execute → emit result
+\`\`\`
+
+## Event Recording
+
+**Endpoint:**
+\`\`\`
+POST /api/gamification/record
+\`\`\`
+
+**Payload:**
+\`\`\`json
+{
+  "walletAddress": "0x...",
+  "eventType": "telegram.claim",
+  "metadata": {
+    "protocolSlug": "maniacos",
+    "artifactId": "gold-pass"
+  }
+}
+\`\`\`
+
+**Optional Header:**
+\`\`\`
+X-Telegram-User-Id: <telegramUserId>
+\`\`\`
+
+## Gamification Engine (Inside Pandoras Core)
+
+### 1. Policy Gate
+- Checks source (\`telegram\`)
+- Validates feature flags (\`ALLOW_TELEGRAM_GAMIFICATION\`)
+- Confirms wallet ↔ Telegram binding exists
+- Rate-limits: max 10 events / 60s per wallet
+
+### 2. Event Evaluation
+- \`EventSystem.evaluate()\` — pure function: input → ExecutionPlan
+- No side-effects inside evaluation (deterministic, replay-safe)
+
+### 3. Action Execution
+- Points awarded
+- Achievements unlocked
+- PBOX off-chain balance updated
+- Idempotency enforced at **(eventId, triggerId, actionType)** level
+
+## Deterministic Execution
+
+Each event produces an **ExecutionPlan**:
+
+\`\`\`typescript
+ExecutionPlan {
+  eventId: string;
+  source: 'telegram' | 'dashboard' | 'system';
+  triggered: TriggerExecution[];
+}
+\`\`\`
+
+This guarantees:
+- ✅ Replay safety
+- ✅ Auditability
+- ✅ Cross-client consistency
+`
+      },
+      {
+        id: "telegram-pbox",
+        title: "Off-Chain PBOX Accounting",
+        content: `# Off-Chain PBOX Accounting
+
+## Why Off-Chain?
+
+PBOX is accumulated frequently via micro-events. On-chain minting is expensive and unnecessary at accumulation time.
+
+Pandoras uses **off-chain accounting with cryptographic claims** — a pattern analogous to banking ledgers.
+
+## Accounting Model
+
+\`\`\`sql
+pbox_balances (
+  wallet_address TEXT PRIMARY KEY,
+  total_earned   INTEGER DEFAULT 0,  -- total PBOX earned from all events
+  reserved       INTEGER DEFAULT 0,  -- locked for pending claims
+  claimed        INTEGER DEFAULT 0,  -- already minted on-chain
+  updated_at     TIMESTAMPTZ
+)
+\`\`\`
+
+**Available balance** = \`total_earned - reserved - claimed\`
+
+## Conversion Rate
+
+Version 1 (current):
+\`\`\`
+1 PBOX = 10 Points
+\`\`\`
+
+The conversion rate is versioned (\`PBOX_CONVERSION_VERSION = 1\`) so future economy changes only apply to new deltas — historical records remain auditable.
+
+## Properties
+
+- ✅ Full reconcilability at any point in time
+- ✅ Separation of earned / pending / settled
+- ✅ No on-chain gas until user initiates claim
+- ✅ Version-safe for future economy adjustments
+`
+      },
+      {
+        id: "telegram-claim",
+        title: "PBOX Claim Flow",
+        content: `# Claim Flow (Non-Custodial)
+
+## Important Design Decision
+
+> **Pandoras Core never executes on-chain claims.**
+
+Claims are **requested**, signed, and **executed by the client** (Telegram App).
+
+## Claim Request
+
+\`\`\`
+POST /api/pbox/claim-request
+\`\`\`
+
+### Validations
+1. Wallet ↔ Telegram binding exists and matches
+2. Sufficient unclaimed PBOX (\`total_earned - reserved - claimed > 0\`)
+3. Claims enabled via \`PBOX_CLAIM_ENABLED\` flag
+
+### Claim Payload (Signed by Core)
+
+\`\`\`json
+{
+  "claimId": "claim_abc123...",
+  "walletAddress": "0x...",
+  "amount": 42,
+  "chainId": 137,
+  "nonce": "a1b2c3d4...",
+  "expiresAt": 1712345678000,
+  "signature": "HMAC-SHA256(wallet:amount:nonce:chainId:expiresAt)"
+}
+\`\`\`
+
+### Security Guarantees
+
+| Property | Mechanism |
+|---|---|
+| Time-bounded | 15-minute expiry |
+| Nonce-protected | Random 16-byte nonce, single-use |
+| Chain-specific | \`chainId\` in signature prevents cross-chain replay |
+| HMAC-signed | Core signs with \`PBOX_CLAIM_SIGNING_SECRET\` |
+
+## On-Chain Execution (Telegram App)
+
+1. Submit payload to \`PBOXClaimer\` smart contract
+2. Contract verifies Core's signature
+3. Tokens minted to wallet
+4. Off-chain balance reconciled (reserved → claimed)
+
+## Trust Model
+
+Core **verifies intent, reserves balance, and provides proof**.
+Blockchain **settles the final state**.
+Telegram App **is the executor, never the authorizer**.
+`
+      },
+      {
+        id: "telegram-webhook",
+        title: "Webhook Feedback Loop",
+        content: `# Webhook Feedback Loop
+
+After every gamification event, Pandoras Core emits a signed webhook to all registered edges.
+
+## Event Type
+
+\`\`\`
+gamification.event (v1)
+\`\`\`
+
+## Payload
+
+\`\`\`json
+{
+  "id": "evt_abc123...",
+  "type": "gamification.event",
+  "version": "v1",
+  "timestamp": 1712345678000,
+  "data": {
+    "user": {
+      "walletAddress": "0x...",
+      "telegramUserId": "123456"
+    },
+    "source": "telegram",
+    "event": {
+      "type": "telegram.claim",
+      "metadata": { "protocolSlug": "maniacos" }
+    },
+    "effects": {
+      "pointsEarned": 50,
+      "pboxDelta": 5,
+      "achievementsUnlocked": ["first_claim"],
+      "rewardsGranted": [],
+      "effectsHash": "sha256(effects)"
+    },
+    "balances": {
+      "totalPoints": 350,
+      "pboxBalance": 35,
+      "level": 3
+    },
+    "isSandbox": false
+  }
+}
+\`\`\`
+
+## Delivery Model
+
+| Property | Value |
+|---|---|
+| Signing | HMAC-SHA256 (\`X-Pandoras-Signature\`) |
+| Timestamp | \`X-Pandoras-Timestamp\` (replay protection) |
+| Delivery | At-least-once, async |
+| Failure mode | **Non-blocking for Core** (fire-and-forget) |
+| Retries | Managed by WebhookService + DLQ |
+
+The \`effectsHash\` field is a sha256 of the effects object — enabling downstream consumers to detect duplicates and perform forensic auditing without re-processing full payload.
+`
+      },
+      {
+        id: "telegram-flags",
+        title: "Feature Flags & Safety Controls",
+        content: `# Feature Flags & Safety Controls
+
+All Telegram integration points are guarded by explicit environment flags.
+
+## Environment Variables
+
+\`\`\`env
+# Master gate for all Telegram gamification
+ALLOW_TELEGRAM_GAMIFICATION=true
+
+# Protocol read-only access (always safe)
+TELEGRAM_ENABLE_PROTOCOL_READONLY=true
+
+# Enable PBOX claim flow
+TELEGRAM_ENABLE_CLAIMS=true
+PBOX_CLAIM_ENABLED=true
+
+# Block all write/mutation operations from Telegram
+ALLOW_TELEGRAM_MUTATIONS=false
+
+# Free artifact minting via Telegram
+TELEGRAM_ENABLE_MINT_FREE_ARTIFACT=true
+
+# HMAC secret for signing claim payloads
+PBOX_CLAIM_SIGNING_SECRET=<generate-strong-secret>
+
+# Default claim chain (137 = Polygon)
+PBOX_DEFAULT_CHAIN_ID=137
+\`\`\`
+
+## What Each Flag Controls
+
+| Flag | Effect when \`false\` |
+|---|---|
+| \`ALLOW_TELEGRAM_GAMIFICATION\` | All record calls return 403 |
+| \`PBOX_CLAIM_ENABLED\` | Claim requests return 403 |
+| \`ALLOW_TELEGRAM_MUTATIONS\` | Already \`false\` — prevents any write ops |
+
+## Instant Shutdown
+
+Setting \`ALLOW_TELEGRAM_GAMIFICATION=false\` instantly disables the entire bridge without any code deployment. Useful for:
+- Incident response
+- Maintenance windows
+- Environment-specific rollouts
+
+## Rate Limits (Soft, In-Memory)
+
+\`/api/gamification/record\` enforces:
+- Max **10 events / 60 seconds** per wallet
+- Returns \`429 Too Many Requests\` if exceeded
+- Upgrade to Redis-backed counter when traffic scales
+`
+      },
+      {
+        id: "telegram-trust-model",
+        title: "Trust Model Summary",
+        content: `# Trust Model Summary
+
+## Component Trust Levels
+
+| Component | Trust Level | Rationale |
+|---|---|---|
+| Pandoras Core | ✅ Trusted | Authoritative execution layer |
+| Blockchain | ✅ Trusted | Immutable settlement layer |
+| Telegram App | ⚠️ Untrusted client | External surface, sandboxed |
+| Telegram Edge | ⚠️ Untrusted transport | Webhook recipient, HMAC-verified |
+
+Pandoras is designed so that **even a fully compromised Telegram App cannot steal funds or mutate protocol state**.
+
+## What Telegram Can Do
+
+✅ Register wallet binding  
+✅ Read protocol data (filtered)  
+✅ Signal gamification events  
+✅ Request signed claim proofs  
+✅ Display PBOX balances  
+
+## What Telegram Cannot Do
+
+❌ Create or modify protocols  
+❌ Change artifact configuration  
+❌ Execute on-chain governance  
+❌ Emit arbitrary point values  
+❌ Sign transactions on behalf of Core  
+❌ Access admin or treasury functions  
+
+## Why This Matters
+
+This architecture enables:
+
+- **Mass-market UX** via Telegram without security compromises
+- **Protocol-grade security guarantees** even with untrusted clients
+- **Clean separation** of off-chain interaction and on-chain settlement
+- **Future expansion** to Discord, WhatsApp, Farcaster without rewriting core logic
+
+Telegram is not a shortcut — it is a **first-class, sandboxed interface** to the Pandoras protocol.
+`
+      }
+    ]
+  },
+  {
+    id: "security-architecture",
+    title: "Security Architecture",
+    icon: "Shield",
+    sections: [
+      {
+        id: "threat-model",
+        title: "Security & Threat Model",
+        content: `# Security & Threat Model
+
+## Overview
+
+This section documents the formal threat model for Pandoras Core, covering trust boundaries, attack surfaces, and mitigations.
+
+## Trust Boundaries
+
+\`\`\`
+[Blockchain]  ←→  [Pandoras Core]  ←→  [External Clients]
+  Trusted              Trusted          Untrusted by default
+\`\`\`
+
+All external clients (Telegram App, Dashboard users, webhook consumers) are treated as **untrusted** until authenticated.
+
+## Threat Vectors & Mitigations
+
+### T1 — Webhook Spoofing
+
+**Threat:** Attacker sends fake webhook events to a consumer endpoint pretending to be Pandoras Core.
+
+**Mitigation:**
+- All webhooks are signed with \`HMAC-SHA256\`
+- Consumers verify \`X-Pandoras-Signature\` using \`timingSafeEqual\`
+- Timestamp (\`X-Pandoras-Timestamp\`) checked — reject if older than 5 minutes
+- Prevents replay attacks
+
+\`\`\`typescript
+// Correct verification pattern
+const isValid = crypto.timingSafeEqual(
+  Buffer.from(receivedSig),
+  Buffer.from(expectedSig)
+);
+\`\`\`
+
+### T2 — Replay Attacks
+
+**Threat:** Attacker re-submits a captured valid request (webhook or claim payload) after it was already processed.
+
+**Mitigation:**
+- Webhooks: timestamp validation (5-minute window)
+- Claim payloads: 15-minute expiry + single-use nonce
+- Gamification events: action-level idempotency table (\`gamification_action_executions\`)
+- Primary key: \`(event_id, trigger_id, action_type)\` — prevents double-execution
+
+### T3 — Cross-Chain Claim Replay
+
+**Threat:** A valid PBOX claim signature generated for Polygon is submitted on Ethereum or Base to double-mint tokens.
+
+**Mitigation:**
+- \`chainId\` is included in the HMAC-signed payload
+- Signature: \`HMAC(wallet:amount:nonce:chainId:expiresAt)\`
+- Contract verifies \`chainId\` matches the executing chain
+
+### T4 — Telegram Identity Spoofing
+
+**Threat:** Attacker sends requests claiming to be a specific Telegram user ID to gain another wallet's gamification points.
+
+**Mitigation:**
+- \`POST /api/gamification/record\` verifies binding: \`telegramUserId\` must match the \`walletAddress\` in \`telegram_bindings\`
+- Mismatch returns \`403 Forbidden\`
+- Telegram IDs are weak identifiers — they are **not** used for authorization of monetary actions
+
+### T5 — Gamification Event Flooding
+
+**Threat:** Buggy or malicious bot sends thousands of events per second, flooding the DB and distorting balances.
+
+**Mitigation:**
+- In-memory rate limiter: **10 events / 60 seconds** per wallet per source
+- Returns \`429 Too Many Requests\` if exceeded
+- Upgradeable to Redis-backed counter for distributed instances
+- \`ALLOW_TELEGRAM_GAMIFICATION\` master kill switch
+
+### T6 — Unauthorized Protocol Mutation via Telegram
+
+**Threat:** Attacker uses Telegram App to modify protocol configuration, artifacts, or governance settings.
+
+**Mitigation:**
+- \`ALLOW_TELEGRAM_MUTATIONS=false\` (hardcoded default)
+- Source-based policy in \`GamificationService.assertSourceAllowed()\`
+- Telegram source is blocked from: \`protocol_deployed\`, \`sale_certified\`, \`admin_action\` event types
+- Protocol endpoints return read-only filtered data — no write paths exposed
+
+### T7 — Private Key Exposure
+
+**Threat:** PBOX claim signing secret or webhook secret is leaked, allowing attackers to forge valid signatures.
+
+**Mitigation:**
+- Secrets stored only as environment variables, never in DB or logs
+- Separate secrets: \`PBOX_CLAIM_SIGNING_SECRET\` ≠ \`TELEGRAM_WEBHOOK_SECRET\`
+- Claims expire in 15 minutes — leaked signatures have limited utility
+- Rotate secrets immediately if compromise suspected
+
+### T8 — PBOX Double-Claim
+
+**Threat:** User submits the same claim proof twice before the on-chain transaction is confirmed.
+
+**Mitigation:**
+- Core **reserves** PBOX atomically when claim request is issued: \`reserved += amount\`
+- Available balance check: \`total_earned - reserved - claimed > 0\`
+- If claim fails on-chain, reservation can be released manually (future: automatic release on chain event)
+
+## Security Properties Checklist
+
+| Property | Status |
+|---|---|
+| No private keys in Telegram | ✅ |
+| HMAC-signed webhooks | ✅ |
+| Timestamp + replay prevention | ✅ |
+| \`timingSafeEqual\` for signature comparison | ✅ |
+| Action-level idempotency | ✅ |
+| Cross-chain replay prevention (\`chainId\`) | ✅ |
+| Rate limiting on sensitive endpoints | ✅ |
+| Feature flag master kill switches | ✅ |
+| Source-based policy gate | ✅ |
+| Non-custodial claim flow | ✅ |
+
+## Audit Surface
+
+All security-critical paths are concentrated in:
+
+- \`core/gamification-service.ts\` — policy gate
+- \`lib/webhooks/emit.ts\` — HMAC signing
+- \`api/pbox/claim-request/route.ts\` — claim signing
+- \`api/gamification/record/route.ts\` — rate limit + binding verification
+- \`types/bridge.ts\` — canonical type contracts
+`
+      }
+    ]
   }
 ];

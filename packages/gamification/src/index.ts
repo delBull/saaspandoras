@@ -6,9 +6,12 @@ export * from './core/achievement-manager';
 export * from './core/reward-manager';
 export * from './core/event-system';
 export * from './core/leaderboard-manager';
+export * from './core/gamification-service';
+export * from './core/action-executor-registry';
 export * from './hooks';
 export * from './utils/tokenization-integration';
 export * from './utils/database-service';
+export * from './types/bridge';
 
 // Export components with namespace to avoid conflicts
 export {

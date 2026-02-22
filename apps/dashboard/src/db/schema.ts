@@ -1094,3 +1094,63 @@ export const sowTemplates = pgTable("sow_templates", {
 });
 
 export type SOWTemplate = typeof sowTemplates.$inferSelect;
+
+// ── Telegram Bridge Tables ──────────────────────────────────────────────────
+
+/**
+ * telegram_bindings — links Telegram user IDs to wallet addresses.
+ * 
+ * ⚠️  Do NOT store usernames or Telegram tokens here.
+ *     This is identity-only, not auth-critical storage.
+ * 
+ * `source` is reserved for future multi-platform support (Discord, Farcaster…)
+ */
+export const telegramBindings = pgTable("telegram_bindings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  telegramUserId: text("telegram_user_id").notNull().unique(),
+  walletAddress: text("wallet_address").notNull(),
+  source: text("source").notNull().default("telegram"), // future: 'discord', 'farcaster'
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type TelegramBinding = typeof telegramBindings.$inferSelect;
+
+/**
+ * pbox_balances — off-chain PBOX token accounting per wallet.
+ *
+ * Fields:
+ *   total_earned — cumulative PBOX from all gamification events
+ *   reserved     — PBOX locked for pending claim requests (not yet on-chain)
+ *   claimed      — PBOX already moved on-chain via claim flow
+ *
+ * Available balance = total_earned - reserved - claimed
+ */
+export const pboxBalances = pgTable("pbox_balances", {
+  walletAddress: text("wallet_address").primaryKey(),
+  totalEarned: integer("total_earned").notNull().default(0),
+  reserved: integer("reserved").notNull().default(0),   // pending claim
+  claimed: integer("claimed").notNull().default(0),     // settled on-chain
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type PboxBalance = typeof pboxBalances.$inferSelect;
+
+/**
+ * gamification_action_executions — action-level idempotency log.
+ *
+ * Primary key = (event_id, trigger_id, action_type) so the same action
+ * can never execute twice even during webhook retries or DLQ replays.
+ * This enables partial replay (retry specific triggers/actions safely).
+ */
+export const gamificationActionExecutions = pgTable("gamification_action_executions", {
+  eventId: text("event_id").notNull(),
+  triggerId: text("trigger_id").notNull(),
+  actionType: text("action_type").notNull(),
+  userId: text("user_id").notNull(),
+  executedAt: timestamp("executed_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  pk: { columns: [t.eventId, t.triggerId, t.actionType] },
+}));
+
+export type GamificationActionExecution = typeof gamificationActionExecutions.$inferSelect;
