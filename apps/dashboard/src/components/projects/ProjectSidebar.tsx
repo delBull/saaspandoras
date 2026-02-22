@@ -38,11 +38,35 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
   const isValidAddress = (addr: string | null | undefined): boolean =>
     !!addr && addr.startsWith("0x") && addr.length === 42 && addr !== "0x0000000000000000000000000000000000000000";
 
-  const licenseContract = isValidAddress(project.licenseContractAddress) ? getContract({
-    client,
-    chain: defineChain(safeChainId),
-    address: project.licenseContractAddress!
-  }) : undefined;
+  const licenseContract = (() => {
+    // Priority chain for license contract address:
+    // 1. project.licenseContractAddress (canonical field)
+    // 2. project.w2eConfig?.licenseToken?.address (common V1 deploy location)
+    // 3. project.contractAddress (legacy field name)
+    // 4. project.utilityContractAddress (last resort for V1 protocols)
+    const candidates = [
+      project.licenseContractAddress,
+      project.w2eConfig?.licenseToken?.address,
+      (project as any).contractAddress,
+      project.utilityContractAddress,
+    ];
+    const resolvedAddress = candidates.find(addr => isValidAddress(addr as string));
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('[Sidebar] licenseContract resolution:', {
+        licenseContractAddress: project.licenseContractAddress,
+        w2eConfigLicense: project.w2eConfig?.licenseToken?.address,
+        contractAddress: (project as any).contractAddress,
+        resolved: resolvedAddress
+      });
+    }
+    return resolvedAddress
+      ? getContract({
+        client,
+        chain: defineChain(safeChainId),
+        address: resolvedAddress as string
+      })
+      : undefined;
+  })();
 
   // Fallback to prevent hook crash if contract is undefined (even if disabled)
   // Use the SAME chain to avoid mismatches
