@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Input } from "@saasfly/ui/input";
 import { Button } from "@/components/ui/button";
 
-import { Trash2, PlusCircle, Loader2, Pencil, Activity, Power, Building2, Users, Key, Settings, Info } from "lucide-react";
+import { Trash2, PlusCircle, Loader2, Pencil, Activity, Power, Building2, Users, Key, Settings, Info, MessageCircle } from "lucide-react";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 import Link from "next/link";
 
@@ -315,6 +315,35 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
         </div>
       </div>
 
+      {/* --- TELEGRAM BRIDGE CONTROL LINK --- */}
+      <div className="border-t-2 border-zinc-700/50 pt-8 mt-8">
+        <div className="bg-gradient-to-r from-blue-950/20 to-indigo-950/20 border-2 border-blue-900/50 rounded-lg p-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="text-xl font-bold text-white flex items-center gap-2 mb-2">
+                <MessageCircle className="w-6 h-6 text-blue-400" />
+                Telegram Bridge Control
+              </h3>
+              <p className="text-sm text-gray-400 mb-4">
+                Kill-switches, economy config, observabilidad y playbooks del Telegram bridge.
+              </p>
+              <div className="flex gap-2 text-xs text-yellow-400">
+                <span>🔒 Super Admin Only</span>
+                <span>•</span>
+                <span>💬 Telegram Integration</span>
+              </div>
+            </div>
+            <Link
+              href="/admin/telegram-bridge"
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors flex items-center gap-2 shadow-lg hover:shadow-blue-900/50"
+            >
+              <MessageCircle className="w-4 h-4" />
+              Open Bridge Control
+            </Link>
+          </div>
+        </div>
+      </div>
+
       {/* --- MULTI-TENANT CONFIGURATION SECTION --- */}
       <MultiTenantSection />
     </div>
@@ -326,7 +355,7 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
 // ============================================
 function InfoTooltip({ content }: { content: string }) {
   const [show, setShow] = useState(false);
-  
+
   return (
     <div className="relative inline-flex">
       <button
@@ -354,20 +383,20 @@ function MultiTenantSection() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
-  
+
   // Form state for new tenant
   const [newTenantId, setNewTenantId] = useState("");
   const [newTenantName, setNewTenantName] = useState("");
   const [newTenantDescription, setNewTenantDescription] = useState("");
   const [tenantSearchQuery, setTenantSearchQuery] = useState("");
   const [showTenantSuggestions, setShowTenantSuggestions] = useState(false);
-  
+
   // Filtered tenants based on search
-  const filteredTenants = tenants.filter(t => 
+  const filteredTenants = tenants.filter(t =>
     t.id.toLowerCase().includes(tenantSearchQuery.toLowerCase()) ||
     t.name.toLowerCase().includes(tenantSearchQuery.toLowerCase())
   );
-  
+
   // Handle selecting a tenant from the list
   const handleSelectTenant = (tenant: Tenant) => {
     setNewTenantId(tenant.id);
@@ -376,7 +405,7 @@ function MultiTenantSection() {
     setTenantSearchQuery(tenant.name);
     setShowTenantSuggestions(false);
   };
-  
+
   // Handle typing in the search field
   const handleTenantSearchChange = (value: string) => {
     setTenantSearchQuery(value);
@@ -392,7 +421,7 @@ function MultiTenantSection() {
       setNewTenantId(value.toLowerCase().replace(/\s+/g, '-'));
     }
   };
-  
+
   // Form state for editing
   const [editConfig, setEditConfig] = useState<{
     nftContracts: string;
@@ -567,7 +596,7 @@ function MultiTenantSection() {
           Crear Nuevo Tenant
           <InfoTooltip content="Un tenant representa una DAO, proyecto o comunidad separada. Cada tenant puede tener sus propias reglas de acceso basadas en NFTs, roles y direcciones whitelisteadas." />
         </h4>
-        
+
         {/* Search/Select Existing or Create New */}
         <div className="relative mb-3">
           <label htmlFor="tenant-search" className="text-xs text-gray-400 block mb-1">Buscar tenant existente o crear nuevo</label>
@@ -626,8 +655,8 @@ function MultiTenantSection() {
             onChange={(e) => setNewTenantDescription(e.target.value)}
             className="bg-zinc-900 border-zinc-700"
           />
-          <Button 
-            onClick={handleCreateTenant} 
+          <Button
+            onClick={handleCreateTenant}
             disabled={isSaving || !newTenantId || !newTenantName}
             className="bg-lime-500 hover:bg-lime-600 text-zinc-900 disabled:opacity-50"
           >
@@ -644,13 +673,12 @@ function MultiTenantSection() {
         ) : (
           <div className="grid gap-3">
             {tenants.map((tenant) => (
-              <div 
+              <div
                 key={tenant.id}
-                className={`p-4 rounded-lg border ${
-                  tenant.isActive 
-                    ? "bg-zinc-800/50 border-zinc-700" 
+                className={`p-4 rounded-lg border ${tenant.isActive
+                    ? "bg-zinc-800/50 border-zinc-700"
                     : "bg-zinc-900/50 border-zinc-800 opacity-60"
-                }`}
+                  }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -679,7 +707,7 @@ function MultiTenantSection() {
                     </Button>
                   </div>
                 </div>
-                
+
                 {/* Quick Info */}
                 <div className="mt-3 flex gap-4 text-xs text-gray-400">
                   <span className="flex items-center gap-1">
@@ -709,14 +737,14 @@ function MultiTenantSection() {
               <h3 className="text-lg font-bold text-white">Editar: {selectedTenant.name}</h3>
               <Button variant="ghost" onClick={() => setSelectedTenant(null)}>✕</Button>
             </div>
-            
+
             <div className="space-y-4">
               <div>
                 <label htmlFor="tenant-name" className="text-sm text-gray-400 block mb-1">Nombre</label>
                 <Input
                   id="tenant-name"
                   value={selectedTenant.name}
-                  onChange={(e) => setSelectedTenant({...selectedTenant, name: e.target.value})}
+                  onChange={(e) => setSelectedTenant({ ...selectedTenant, name: e.target.value })}
                   className="bg-zinc-800 border-zinc-700"
                 />
               </div>
@@ -726,7 +754,7 @@ function MultiTenantSection() {
                 <Input
                   id="tenant-description"
                   value={selectedTenant.description || ""}
-                  onChange={(e) => setSelectedTenant({...selectedTenant, description: e.target.value})}
+                  onChange={(e) => setSelectedTenant({ ...selectedTenant, description: e.target.value })}
                   className="bg-zinc-800 border-zinc-700"
                 />
               </div>
@@ -739,7 +767,7 @@ function MultiTenantSection() {
                 <textarea
                   id="nft-contracts"
                   value={editConfig.nftContracts}
-                  onChange={(e) => setEditConfig({...editConfig, nftContracts: e.target.value})}
+                  onChange={(e) => setEditConfig({ ...editConfig, nftContracts: e.target.value })}
                   className="w-full h-24 bg-zinc-800 border border-zinc-700 rounded p-2 text-sm font-mono text-lime-400"
                   aria-label="NFT Contracts JSON"
                   placeholder='[{"address": "0x...", "chainId": 11155111, "minBalance": 1}]'
@@ -754,7 +782,7 @@ function MultiTenantSection() {
                 <textarea
                   id="required-roles"
                   value={editConfig.requiredRoles}
-                  onChange={(e) => setEditConfig({...editConfig, requiredRoles: e.target.value})}
+                  onChange={(e) => setEditConfig({ ...editConfig, requiredRoles: e.target.value })}
                   className="w-full h-20 bg-zinc-800 border border-zinc-700 rounded p-2 text-sm font-mono text-lime-400"
                   aria-label="Required Roles JSON"
                   placeholder='["admin", "member", "contributor"]'
@@ -769,7 +797,7 @@ function MultiTenantSection() {
                 <textarea
                   id="whitelist-addresses"
                   value={editConfig.whitelistedAddresses}
-                  onChange={(e) => setEditConfig({...editConfig, whitelistedAddresses: e.target.value})}
+                  onChange={(e) => setEditConfig({ ...editConfig, whitelistedAddresses: e.target.value })}
                   className="w-full h-20 bg-zinc-800 border border-zinc-700 rounded p-2 text-sm font-mono text-lime-400"
                   aria-label="Whitelisted Addresses JSON"
                   placeholder='["0x1234...", "0xabcd..."]'
@@ -780,7 +808,7 @@ function MultiTenantSection() {
                 <Button variant="outline" onClick={() => setSelectedTenant(null)}>
                   Cancelar
                 </Button>
-                <Button 
+                <Button
                   onClick={handleSaveTenant}
                   disabled={isSaving}
                   className="bg-lime-500 hover:bg-lime-600 text-zinc-900"
