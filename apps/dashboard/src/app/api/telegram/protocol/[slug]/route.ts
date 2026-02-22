@@ -12,7 +12,7 @@
  */
 import { db } from '@/db';
 import { sql } from 'drizzle-orm';
-import { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
 import type { ProtocolTelegramCapabilities } from '@pandoras/gamification/types/bridge';
 
 export async function GET(

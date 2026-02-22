@@ -14,7 +14,7 @@
 import { db } from '@/db';
 import { telegramBindings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
 
 export async function POST(req: NextRequest) {
     try {

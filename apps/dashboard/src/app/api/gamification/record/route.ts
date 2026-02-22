@@ -15,7 +15,7 @@
  * Optional header:
  *   X-Telegram-User-Id: telegramUserId (to include in webhook payload)
  */
-import { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { GamificationService } from '@pandoras/gamification/core/gamification-service';
 import { db } from '@/db';
 import { telegramBindings } from '@/db/schema';

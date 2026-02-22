@@ -10,7 +10,8 @@
  *   curl -X POST /api/admin/telegram-bridge/alerts/evaluate \
  *        -H "x-cron-secret: $CRON_SECRET"
  */
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getAuth, isAdmin } from '@/lib/auth';
 import { runAlertEvaluator } from '@/lib/alerts/evaluator';
 

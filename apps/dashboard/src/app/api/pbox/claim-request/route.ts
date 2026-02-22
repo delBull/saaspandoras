@@ -15,7 +15,7 @@
  *
  * The `chainId` is included in the signature to prevent cross-chain replay attacks.
  */
-import { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { createHmac, randomBytes } from 'crypto';
 import { db } from '@/db';
 import { telegramBindings, pboxBalances } from '@/db/schema';
