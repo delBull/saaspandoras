@@ -131,12 +131,12 @@ function GoldenStrip({ gs }: { gs: GoldenSignals }) {
                     <div className="space-y-1">
                         <div className="flex items-center justify-between">
                             <span className="text-[10px] text-gray-500">~24h</span>
-                            <span className="text-sm font-bold text-purple-400">{gs.pbox.earned_24h_approx}</span>
+                            <span className="text-sm font-bold text-purple-400">{gs?.pbox?.earned_24h_approx ?? 0}</span>
                         </div>
                         <div className="flex items-center justify-between">
                             <span className="text-[10px] text-gray-500">Pending</span>
-                            <span className={`text-sm font-bold ${gs.pbox.pendingClaims > 0 ? "text-yellow-400" : "text-gray-600"}`}>
-                                {gs.pbox.pendingClaims}
+                            <span className={`text-sm font-bold ${(gs?.pbox?.pendingClaims ?? 0) > 0 ? "text-yellow-400" : "text-gray-600"}`}>
+                                {gs?.pbox?.pendingClaims ?? 0}
                             </span>
                         </div>
                     </div>
@@ -147,9 +147,9 @@ function GoldenStrip({ gs }: { gs: GoldenSignals }) {
                     <div className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Webhook health</div>
                     <div className="space-y-1">
                         {[
-                            { label: "1h", val: `${gs.webhooks.successRate_1h}%` },
-                            { label: "24h", val: `${gs.webhooks.successRate_24h}%` },
-                            { label: "fail", val: gs.webhooks.failed_24h },
+                            { label: "1h", val: `${gs?.webhooks?.successRate_1h ?? 0}%` },
+                            { label: "24h", val: `${gs?.webhooks?.successRate_24h ?? 0}%` },
+                            { label: "fail", val: gs?.webhooks?.failed_24h ?? 0 },
                         ].map(({ label, val }) => (
                             <div key={label} className="flex items-center justify-between">
                                 <span className="text-[10px] text-gray-500 w-6">{label}</span>
@@ -977,25 +977,25 @@ export function TelegramBridgePanel() {
                     <GoldenStrip gs={status.goldenSignals} />
 
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        <StatCard label="Actions (total)" icon={Zap} value={status.events.total} color="blue" />
-                        <StatCard label="Actions (24h)" icon={Activity} value={status.goldenSignals.events.accepted_24h} color="lime" />
-                        <StatCard label="Actions (5m)" icon={BarChart3} value={status.goldenSignals.events.accepted_5m} sub="live rate" color="purple" />
+                        <StatCard label="Actions (total)" icon={Zap} value={status?.events?.total ?? 0} color="blue" />
+                        <StatCard label="Actions (24h)" icon={Activity} value={status?.goldenSignals?.events?.accepted_24h ?? 0} color="lime" />
+                        <StatCard label="Actions (5m)" icon={BarChart3} value={status?.goldenSignals?.events?.accepted_5m ?? 0} sub="live rate" color="purple" />
                         <StatCard label="Webhook Success (24h)" icon={CheckCircle}
-                            value={`${status.goldenSignals.webhooks.successRate_24h}%`}
-                            sub={`${status.webhooks.successLast24h} sent`}
-                            color={status.goldenSignals.webhooks.successRate_24h > 95 ? "green" : "yellow"} />
+                            value={`${status?.goldenSignals?.webhooks?.successRate_24h ?? 0}%`}
+                            sub={`${status?.webhooks?.successLast24h ?? 0} sent`}
+                            color={(status?.goldenSignals?.webhooks?.successRate_24h ?? 0) > 95 ? "green" : "yellow"} />
                         <StatCard label="Webhook Failed" icon={XCircle}
-                            value={status.goldenSignals.webhooks.failed_24h}
+                            value={status?.goldenSignals?.webhooks?.failed_24h ?? 0}
                             sub="last 24h"
-                            color={status.goldenSignals.webhooks.failed_24h === 0 ? "green" : "red"} />
+                            color={(status?.goldenSignals?.webhooks?.failed_24h ?? 0) === 0 ? "green" : "red"} />
                         <StatCard label="Webhook Pending" icon={RefreshCw}
-                            value={status.goldenSignals.webhooks.pending}
+                            value={status?.goldenSignals?.webhooks?.pending ?? 0}
                             sub="in queue"
-                            color={status.goldenSignals.webhooks.pending === 0 ? "green" : "yellow"} />
+                            color={(status?.goldenSignals?.webhooks?.pending ?? 0) === 0 ? "green" : "yellow"} />
                         <StatCard label="Execution Latency" icon={Zap}
-                            value={`${(status as any).latency_p95_ms ?? 0}ms`}
+                            value={`${(status as any)?.latency_p95_ms ?? 0}ms`}
                             sub="P95 last 5m"
-                            color={((status as any).latency_p95_ms ?? 0) < 300 ? "green" : (status as any).latency_p95_ms < 500 ? "yellow" : "red"} />
+                            color={((status as any)?.latency_p95_ms ?? 0) < 300 ? "green" : ((status as any)?.latency_p95_ms ?? 0) < 500 ? "yellow" : "red"} />
                     </div>
 
                     {/* Recent Events */}

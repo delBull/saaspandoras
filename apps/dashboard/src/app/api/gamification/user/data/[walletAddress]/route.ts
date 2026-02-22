@@ -19,6 +19,7 @@ import {
   type Reward as DrizzleReward,
 } from '@/db/schema';
 import { ilike } from 'drizzle-orm';
+import { GamificationService } from '@/lib/gamification/service';
 
 export async function GET(
   request: NextRequest,
@@ -86,6 +87,14 @@ export async function GET(
       });
     }
     console.log(`🔍 API: Found user with ID ${userId} for wallet ${walletAddress}`);
+
+    // ===== ENSURE ACHIEVEMENTS ARE SEEDED =====
+    // This is critical to ensure all available achievements (43+) are visible even if DB was empty
+    try {
+      await GamificationService.initializeBasicAchievements();
+    } catch (seedError) {
+      console.warn(`⚠️ API: Seeding achievements failed (non-critical):`, seedError);
+    }
 
     // 2. Get gamification profile
     const profileResult = await db
