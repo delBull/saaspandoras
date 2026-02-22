@@ -1,3 +1,16 @@
+// ── Single source of truth for artifact / layout types ─────────────────────
+// Used by: ProjectData, ProtocolPageDispatcher, validateProtocolForV2, migrate script
+export const ARTIFACT_TYPES = [
+  'Access',
+  'Identity',
+  'Membership',
+  'Coupon',
+  'Reputation',
+  'Yield',
+] as const;
+
+export type ArtifactType = typeof ARTIFACT_TYPES[number];
+
 // Type for project data - Updated to match new ConversationalForm schema
 export interface ProjectData {
   id: number | string;
@@ -75,7 +88,7 @@ export interface ProjectData {
   protocol_version?: number | null;
   registryContractAddress?: string | null;
   artifacts?: Array<{
-    type: 'Access' | 'Identity' | 'Membership' | 'Coupon' | 'Reputation' | 'Yield';
+    type: ArtifactType;
     name: string;
     symbol: string;
     address?: string;
@@ -83,6 +96,5 @@ export interface ProjectData {
     price?: string;
     isPrimary?: boolean;
   }> | null;
-  pageLayoutType?: 'Access' | 'Identity' | 'Membership' | 'Coupon' | 'Reputation' | 'Yield' | null;
+  pageLayoutType?: ArtifactType | null;
 }
-

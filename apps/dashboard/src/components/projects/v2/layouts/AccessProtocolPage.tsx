@@ -26,8 +26,16 @@ export default function AccessProtocolPage({ project, currentSlug }: Props) {
     const rawChainId = Number((project as any).chainId ?? project.chainId);
     const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
 
-    const licenseContract = project.licenseContractAddress ? getContract({
-        client, chain: defineChain(safeChainId), address: project.licenseContractAddress,
+    // Resolve contract address using same 4-field fallback chain as ProjectSidebar
+    const resolvedLicenseAddress =
+        project.licenseContractAddress ||
+        project.w2eConfig?.licenseToken?.address ||
+        (project as any).contractAddress ||
+        project.utilityContractAddress ||
+        undefined;
+
+    const licenseContract = resolvedLicenseAddress ? getContract({
+        client, chain: defineChain(safeChainId), address: resolvedLicenseAddress,
     }) : undefined;
 
     const dummyContract = getContract({ client, chain: defineChain(safeChainId), address: '0x0000000000000000000000000000000000000000' });
@@ -66,6 +74,27 @@ export default function AccessProtocolPage({ project, currentSlug }: Props) {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
+
+    // Guard: no-artifacts fallback — prevents broken V2 layout for legacy projects
+    // If this page was reached without artifacts, render a contained fallback instead
+    // of a mostly-empty V2 layout that hides the access card.
+    if (!project.artifacts || project.artifacts.length === 0) {
+        return (
+            <ProtocolPageShell project={project} currentSlug={currentSlug}>
+                <div className="p-8 rounded-2xl bg-zinc-800/40 border border-zinc-700/50 text-center">
+                    <span className="text-4xl mb-4 block">🔒</span>
+                    <h3 className="text-lg font-semibold text-white mb-2">Protocolo Legacy</h3>
+                    <p className="text-sm text-zinc-400 max-w-sm mx-auto">
+                        Este protocolo aún no ha sido migrado a Protocol V2.
+                        El acceso y los artefactos estarán disponibles tras la migración.
+                    </p>
+                </div>
+                <ProjectHeader project={project} onVideoClick={() => { /* noop */ }} />
+                <ProjectContentTabs project={project} />
+                <ProjectDetails project={project} />
+            </ProtocolPageShell>
+        );
+    }
 
     return (
         <ProtocolPageShell project={project} currentSlug={currentSlug}>
