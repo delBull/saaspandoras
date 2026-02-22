@@ -1164,7 +1164,7 @@ export function TelegramBridgePanel() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {alerts.resolved.map(a => (
+                                        {alerts.resolved.filter(a => a.triggerCount > 0).map(a => (
                                             <tr key={a.alertId}
                                                 className="border-t border-zinc-800 hover:bg-zinc-800/30 transition-colors">
                                                 <td className="px-4 py-2">

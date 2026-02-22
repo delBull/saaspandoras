@@ -206,16 +206,16 @@ export default function PandoriansDashboardPage() {
 
     // Add recent achievements as activity
     const recentAchievements = achievements
-      .filter(a => a.isCompleted)
+      .filter(a => a.isUnlocked)
       .slice(0, 2);
 
     recentAchievements.forEach(achievement => {
       activities.push({
         type: 'achievement',
-        title: `🏆 Logro Desbloqueado: ${(achievement as any).name || 'Nuevo logro'}`,
-        description: (achievement as any).description || 'Has completado un nuevo logro',
+        title: `🏆 Logro Desbloqueado: ${achievement.name || 'Nuevo logro'}`,
+        description: achievement.description || 'Has completado un nuevo logro',
         time: 'Recientemente',
-        amount: (achievement as any).points || 0,
+        amount: achievement.pointsReward || 0,
       });
     });
 
@@ -535,7 +535,7 @@ export default function PandoriansDashboardPage() {
               </div>
               <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
                 <div className="text-2xl font-bold text-blue-400 mb-1">
-                  {achievements.filter(a => a.isCompleted).length}
+                  {achievements.filter(a => a.isUnlocked).length}
                 </div>
                 <div className="text-sm text-gray-400">Logros Obtenidos</div>
               </div>
@@ -569,43 +569,40 @@ export default function PandoriansDashboardPage() {
           <CardContent>
             <div className="space-y-4">
               {achievements
-                .filter((a: any) => a.isCompleted || a.isUnlocked) // Try both properties
-                .sort((a: any, b: any) => {
-                  // Ordenar por fecha de desbloqueo descendente (más reciente primero)
-                  const aDate = a.unlockedAt || a.completedAt ? new Date(a.unlockedAt || a.completedAt).getTime() : 0;
-                  const bDate = b.unlockedAt || b.completedAt ? new Date(b.unlockedAt || b.completedAt).getTime() : 0;
-                  return bDate - aDate;
+                .filter((a) => a.isUnlocked)
+                .sort((a, b) => {
+                  // TODO: add unlockedAt to GamificationAchievement if needed for sorting
+                  return 0;
                 })
                 .slice(0, 3)
-                .map((achievement: any) => (
-                  <div key={achievement.id || achievement.achievementId} className="flex items-center gap-4 p-3 bg-yellow-900/20 border border-yellow-500/30 rounded-lg">
+                .map((achievement) => (
+                  <div key={achievement.id} className="flex items-center gap-4 p-3 bg-yellow-900/20 border border-yellow-500/30 rounded-lg">
                     <div className="text-2xl">{achievement.icon || '🏆'}</div>
                     <div className="flex-1">
                       <div className="text-white text-sm font-medium">{achievement.name || 'Logro'}</div>
                       <div className="text-gray-400 text-xs">{achievement.description || 'Descripción'}</div>
-                      <div className="text-yellow-400 text-xs font-medium">+{achievement.points || achievement.pointsReward || 0} tokens</div>
+                      <div className="text-yellow-400 text-xs font-medium">+{achievement.pointsReward || 0} tokens</div>
                     </div>
                     <div className="text-yellow-400 text-xs">Desbloqueado</div>
                   </div>
                 ))}
 
               {/* Show all achievements if no completed ones */}
-              {achievements.length > 0 && achievements.filter((a: any) => a.isCompleted || a.isUnlocked).length === 0 && (
+              {achievements.length > 0 && achievements.filter((a) => a.isUnlocked).length === 0 && (
                 <>
                   <div className="text-xs text-gray-400 mb-2">Mostrando todos los logros disponibles:</div>
-                  {achievements.slice(0, 3).map((achievement: any) => (
-                    <div key={achievement.id || achievement.achievementId} className="flex items-center gap-4 p-3 bg-gray-900/20 border border-gray-500/30 rounded-lg">
+                  {achievements.slice(0, 3).map((achievement) => (
+                    <div key={achievement.id} className="flex items-center gap-4 p-3 bg-gray-900/20 border border-gray-500/30 rounded-lg">
                       <div className="text-2xl">{achievement.icon || '🏆'}</div>
                       <div className="flex-1">
                         <div className="text-white text-sm font-medium">{achievement.name || 'Logro'}</div>
                         <div className="text-gray-400 text-xs">{achievement.description || 'Descripción'}</div>
                         <div className="text-gray-400 text-xs">
-                          Estado: {achievement.isCompleted || achievement.isUnlocked ? 'Completado' : 'Pendiente'}
-                          {achievement.progress && ` (${achievement.progress}/100)`}
+                          Estado: {achievement.isUnlocked ? 'Completado' : 'Pendiente'}
                         </div>
                       </div>
-                      <div className={`text-xs ${achievement.isCompleted || achievement.isUnlocked ? 'text-green-400' : 'text-gray-400'}`}>
-                        {achievement.isCompleted || achievement.isUnlocked ? 'Completado' : 'Pendiente'}
+                      <div className={`text-xs ${achievement.isUnlocked ? 'text-green-400' : 'text-gray-400'}`}>
+                        {achievement.isUnlocked ? 'Completado' : 'Pendiente'}
                       </div>
                     </div>
                   ))}
@@ -613,15 +610,15 @@ export default function PandoriansDashboardPage() {
               )}
 
               {/* Show pending achievements if not enough completed */}
-              {achievements.filter((a: any) => !(a.isCompleted || a.isUnlocked)).length > 0 &&
-                achievements.filter((a: any) => a.isCompleted || a.isUnlocked).length < 3 && (
+              {achievements.filter((a) => !a.isUnlocked).length > 0 &&
+                achievements.filter((a) => a.isUnlocked).length < 3 && (
                   <>
                     <div className="text-xs text-gray-400 mb-2">Logros pendientes:</div>
                     {achievements
-                      .filter((a: any) => !(a.isCompleted || a.isUnlocked))
-                      .slice(0, 3 - achievements.filter((a: any) => a.isCompleted || a.isUnlocked).length)
-                      .map((achievement: any) => (
-                        <div key={achievement.id || achievement.achievementId} className="flex items-center gap-4 p-3 bg-gray-900/20 border border-gray-500/30 rounded-lg">
+                      .filter((a) => !a.isUnlocked)
+                      .slice(0, 3 - achievements.filter((a) => a.isUnlocked).length)
+                      .map((achievement) => (
+                        <div key={achievement.id} className="flex items-center gap-4 p-3 bg-gray-900/20 border border-gray-500/30 rounded-lg">
                           <div className="text-2xl">{achievement.icon || '🏆'}</div>
                           <div className="flex-1">
                             <div className="text-white text-sm font-medium">{achievement.name || 'Logro'}</div>
