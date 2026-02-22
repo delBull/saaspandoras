@@ -85,14 +85,22 @@ export async function GET(
 
     if (projectResult) {
       console.log('✅ API: Project found:', (projectResult as any).title);
+      console.log('📊 API: Project keys:', Object.keys(projectResult));
 
       try {
+        const resolveIpfs = (url: any) => {
+          if (typeof url === 'string' && url.startsWith('ipfs://')) {
+            return url.replace('ipfs://', 'https://gateway.pinata.cloud/ipfs/');
+          }
+          return url;
+        };
+
         // Map Drizzle ORM's camelCase to the snake_case expected by frontend ProjectData interface
         const mappedProject = {
           ...projectResult,
           id: projectResult.id ? Number(projectResult.id) : (projectResult as any).id,
-          logo_url: projectResult.logoUrl || null,
-          cover_photo_url: projectResult.coverPhotoUrl || null,
+          logo_url: resolveIpfs(projectResult.logoUrl || (projectResult as any).logo_url) || null,
+          cover_photo_url: resolveIpfs(projectResult.coverPhotoUrl || (projectResult as any).cover_photo_url) || null,
           business_category: projectResult.businessCategory || null,
           video_pitch: projectResult.videoPitch || null,
           whitepaper_url: projectResult.whitepaperUrl || null,
@@ -135,11 +143,12 @@ export async function GET(
           created_at: projectResult.createdAt || null,
           w2eConfig: projectResult.w2eConfig || {},
 
-          // Technical / Governance Addresses
-          registryContractAddress: (projectResult as any).registryContractAddress || null,
-          governorContractAddress: (projectResult as any).governorContractAddress || (projectResult as any).votingContractAddress || null,
-          tokenContractAddress: (projectResult as any).contractAddress || null,
-          timelockContractAddress: (projectResult as any).loomContractAddress || null,
+          // Technical / Governance Addresses (with snake_case fallbacks)
+          registryContractAddress: (projectResult as any).registryContractAddress || (projectResult as any).registry_contract_address || null,
+          governorContractAddress: (projectResult as any).governorContractAddress || (projectResult as any).votingContractAddress ||
+            (projectResult as any).governor_contract_address || (projectResult as any).voting_contract_address || null,
+          tokenContractAddress: (projectResult as any).contractAddress || (projectResult as any).contract_address || null,
+          timelockContractAddress: (projectResult as any).loomContractAddress || (projectResult as any).loom_contract_address || null,
 
           // V2 Protocol Fields with extreme safety
           protocol_version: (() => {

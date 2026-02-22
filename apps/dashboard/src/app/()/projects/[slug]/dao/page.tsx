@@ -135,7 +135,7 @@ export default function DAOPage({ params }: { params: Promise<{ slug: string }> 
             {/* Note: ProjectNavigationHeader usually needs to know it's in detailed view or just top nav? 
          It seems to be the top navbar. */ }
 
-            <div className="flex flex-col lg:flex-row max-w-[1600px] mx-auto">
+            <div className="flex flex-col lg:flex-row w-full">
                 {/* Main Content (Left/Center) */}
                 <div className="flex-1 order-2 lg:order-1 border-r border-zinc-800/50 min-h-[calc(100vh-80px)]">
                     <DAODashboard project={project} activeView={activeView} isOwner={isOwner} />
