@@ -79,9 +79,20 @@ export async function GET(
 
     console.log('🔍 API: Fetching project with slug:', slug);
 
-    const projectResult = await db.query.projects.findFirst({
-      where: (projects, { eq }) => eq(projects.slug, slug)
-    });
+    let projectResult: any;
+
+    try {
+      projectResult = await db.query.projects.findFirst({
+        where: (projects, { eq }) => eq(projects.slug, slug)
+      });
+    } catch (ormError) {
+      console.warn('⚠️ API: ORM Error (legacy data?), trying raw SQL:', ormError);
+      const { sql } = await import('drizzle-orm');
+      const rawRes = await db.execute(sql`SELECT * FROM projects WHERE slug = ${slug} LIMIT 1`);
+      if (rawRes && rawRes.length > 0) {
+        projectResult = rawRes[0];
+      }
+    }
 
     if (projectResult) {
       console.log('✅ API: Project found:', (projectResult as any).title);
@@ -94,6 +105,16 @@ export async function GET(
           }
           return url;
         };
+
+        // Safely parse w2eConfig if it's a string
+        let parsedW2eConfig = projectResult.w2eConfig || {};
+        if (typeof parsedW2eConfig === 'string') {
+          try {
+            parsedW2eConfig = JSON.parse(parsedW2eConfig);
+          } catch (e) {
+            console.warn('⚠️ API: Failed to parse w2eConfig string', e);
+          }
+        }
 
         // Map Drizzle ORM's camelCase to the snake_case expected by frontend ProjectData interface
         const mappedProject = {
@@ -141,7 +162,7 @@ export async function GET(
           returns_paid: projectResult.returnsPaid || "0.00",
           featured_button_text: projectResult.featuredButtonText || null,
           created_at: projectResult.createdAt || null,
-          w2eConfig: projectResult.w2eConfig || {},
+          w2eConfig: parsedW2eConfig,
 
           // Technical / Governance Addresses (with snake_case fallbacks)
           registryContractAddress: (projectResult as any).registryContractAddress || (projectResult as any).registry_contract_address || null,
@@ -153,23 +174,31 @@ export async function GET(
           // V2 Protocol Fields with extreme safety
           protocol_version: (() => {
             if ((projectResult as any).protocolVersion) return Number((projectResult as any).protocolVersion);
-            const artifacts = (projectResult as any).artifacts || (projectResult.w2eConfig as any)?.artifacts;
+            const artifacts = (projectResult as any).artifacts || parsedW2eConfig?.artifacts;
             return (Array.isArray(artifacts) && artifacts.length > 0) ? 2 : 1;
           })(),
           artifacts: Array.isArray((projectResult as any).artifacts)
             ? (projectResult as any).artifacts
-            : Array.isArray((projectResult.w2eConfig as any)?.artifacts)
-              ? (projectResult.w2eConfig as any).artifacts
+            : Array.isArray(parsedW2eConfig?.artifacts)
+              ? parsedW2eConfig.artifacts
               : [],
           pageLayoutType: (() => {
-            const raw = (projectResult as any).pageLayoutType || (projectResult.w2eConfig as any)?.pageLayoutType || 'Access';
+            const raw = (projectResult as any).pageLayoutType || parsedW2eConfig?.pageLayoutType || 'Access';
             if (typeof raw !== 'string') return 'Access';
             // Capitalize first letter to match ProtocolLayoutType
             return (raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase()) as any;
           })(),
         };
 
-        return NextResponse.json(mappedProject);
+        // Serialize manually to handle potential BigInts from database numeric fields
+        const safeJson = JSON.stringify(mappedProject, (key, value) =>
+          typeof value === 'bigint' ? value.toString() : value
+        );
+
+        return new NextResponse(safeJson, {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
       } catch (mappingError) {
         console.error('❌ API: Error mapping project data:', mappingError);
         return NextResponse.json({ error: 'Data mapping error', details: String(mappingError) }, { status: 500 });
