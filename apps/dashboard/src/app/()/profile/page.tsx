@@ -55,7 +55,7 @@ export default function ProfilePage() {
   const gamification = useRealGamification(walletAddress);
 
   // Unified loading state - wait for both profile and gamification data
-  const isPageLoading = isLoading || (!profile && !walletAddress) || (walletAddress && !gamification);
+  const isPageLoading = isLoading || gamification?.isLoading || (!profile && !walletAddress);
 
   if (isPageLoading) {
     return (
@@ -147,11 +147,11 @@ export default function ProfilePage() {
 
           <AccountStatus
             role={profile?.role}
-            connectionCount={profile?.connectionCount}
-            kycCompleted={profile?.kycCompleted}
-            lastConnectionAt={profile?.lastConnectionAt}
-            projectCount={profile?.totalProjects ?? profile?.projectCount}
-            hasPandorasKey={profile?.hasPandorasKey}
+            connectionCount={profile?.connectionCount ?? (profile as any)?.connection_count ?? 1}
+            kycCompleted={profile?.kycCompleted ?? (profile as any)?.kyc_completed ?? false}
+            lastConnectionAt={profile?.lastConnectionAt ?? (profile as any)?.last_connection_at}
+            projectCount={profile?.totalProjects ?? profile?.projectCount ?? 0}
+            hasPandorasKey={profile?.hasPandorasKey ?? (profile as any)?.has_pandoras_key ?? false}
           />
         </div>
 
@@ -179,8 +179,8 @@ export default function ProfilePage() {
                   <div className="text-xs text-gray-400">Tu Nivel</div>
                 </div>
                 <div className="text-center p-4 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-lg border border-green-500/20">
-                  <div className="text-2xl font-bold text-green-400">{gamification.achievements.length}</div>
-                  <div className="text-xs text-gray-400">Logros</div>
+                  <div className="text-2xl font-bold text-green-400">{gamification.achievements.filter(a => a.isCompleted || (a as any).isUnlocked).length}</div>
+                  <div className="text-xs text-gray-400">Logros Obtenidos</div>
                 </div>
                 <div className="text-center p-4 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-lg border border-purple-500/20">
                   <div className="text-2xl font-bold text-purple-400">{gamification.levelProgress}%</div>
@@ -205,40 +205,43 @@ export default function ProfilePage() {
               {/* Logros Recientes */}
               <div>
                 <h4 className="text-sm font-medium text-gray-300 mb-3">Logros Recientes</h4>
-                {gamification.achievements.length > 0 ? (
-                  <div className="space-y-2">
-                    {gamification.achievements.slice(0, 3).map((achievement) => (
-                      <div key={achievement.id} className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg border border-zinc-700/50">
-                        <div className="text-2xl">{(achievement as ExtendedUserAchievement).icon}</div>
-                        <div className="flex-1">
-                          <div className="font-medium text-white">{(achievement as ExtendedUserAchievement).name}</div>
-                          <div className="text-xs text-gray-400">{(achievement as ExtendedUserAchievement).description}</div>
+                {(() => {
+                  const completedAchievements = gamification.achievements.filter(a => a.isCompleted || (a as any).isUnlocked);
+                  return completedAchievements.length > 0 ? (
+                    <div className="space-y-2">
+                      {completedAchievements.slice(0, 3).map((achievement) => (
+                        <div key={achievement.id} className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg border border-zinc-700/50">
+                          <div className="text-2xl">{(achievement as ExtendedUserAchievement).icon}</div>
+                          <div className="flex-1">
+                            <div className="font-medium text-white">{(achievement as ExtendedUserAchievement).name}</div>
+                            <div className="text-xs text-gray-400">{(achievement as ExtendedUserAchievement).description}</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-bold text-lime-400">+{(achievement as ExtendedUserAchievement).points} pts</div>
+                            {achievement.completedAt && (
+                              <div className="text-xs text-gray-500">
+                                {new Date(achievement.completedAt).toLocaleDateString('es-ES')}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-sm font-bold text-lime-400">+{(achievement as ExtendedUserAchievement).points} pts</div>
-                          {achievement.completedAt && (
-                            <div className="text-xs text-gray-500">
-                              {new Date(achievement.completedAt).toLocaleDateString('es-ES')}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                    {gamification.achievements.length > 3 && (
-                      <Link href="/profile/achievements">
-                        <Button variant="outline" size="sm" className="w-full">
-                          Ver todos los logros ({gamification.achievements.length})
-                        </Button>
-                      </Link>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-400">
-                    <BoltIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>Aún no tienes logros</p>
-                    <p className="text-sm">¡Conecta tu wallet y comienza a ganar puntos!</p>
-                  </div>
-                )}
+                      ))}
+                      {completedAchievements.length > 3 && (
+                        <Link href="/profile/achievements">
+                          <Button variant="outline" size="sm" className="w-full">
+                            Ver todos los logros ({completedAchievements.length})
+                          </Button>
+                        </Link>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-400">
+                      <BoltIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>Aún no tienes logros</p>
+                      <p className="text-sm">¡Comienza a interactuar para ganar puntos!</p>
+                    </div>
+                  )
+                })()}
               </div>
             </CardContent>
           </Card>

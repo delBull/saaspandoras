@@ -186,13 +186,17 @@ export default function AchievementsPage() {
     cat.achievements.map(achievement => ({ ...achievement, categoryName: cat.name }))
   );
 
-  const filteredAchievements = selectedCategory
+  const filteredAchievements = (selectedCategory
     ? allAchievements.filter(a => a.category === selectedCategory)
     : allAchievements.filter(a =>
-        filter === 'all' ||
-        (filter === 'unlocked' && a.isUnlocked) ||
-        (filter === 'locked' && !a.isUnlocked)
-      );
+      filter === 'all' ||
+      (filter === 'unlocked' && a.isUnlocked) ||
+      (filter === 'locked' && !a.isUnlocked)
+    )).sort((a, b) => {
+      if (a.isUnlocked && !b.isUnlocked) return -1;
+      if (!a.isUnlocked && b.isUnlocked) return 1;
+      return (b.pointsReward || 0) - (a.pointsReward || 0);
+    });
 
   return (
     <div className="absolute inset-x-0 min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-black text-white">
@@ -263,7 +267,7 @@ export default function AchievementsPage() {
           <div className="text-center p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl backdrop-blur-sm">
             <Target className="w-8 h-8 text-red-400 mx-auto mb-2" />
             <div className="text-3xl font-bold text-red-400 mb-1">
-              {Math.max(0, allAchievements.length - allAvailableAchievements.filter((a: any) => a.isUnlocked).length)}
+              {Math.max(0, allAvailableAchievements.length - allAvailableAchievements.filter((a: any) => a.isUnlocked).length)}
             </div>
             <div className="text-sm text-zinc-400">Pendientes</div>
           </div>
@@ -320,7 +324,7 @@ export default function AchievementsPage() {
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12"
         >
           {filteredAchievements.map((achievement, index) => {
-            const rarity = rarityConfig[achievement.type as keyof typeof rarityConfig];
+            const rarity = rarityConfig[achievement.type as keyof typeof rarityConfig] || rarityConfig.first_steps;
             if (!rarity) return null;
             const RarityIconComponent = rarity.icon;
 
@@ -332,17 +336,15 @@ export default function AchievementsPage() {
                 transition={{ delay: 1.2 + index * 0.1 }}
                 className="group"
               >
-                <Card className={`relative overflow-hidden transition-all duration-300 hover:scale-105 border-2 ${
-                  achievement.isUnlocked
-                    ? 'border-yellow-500 bg-gradient-to-br from-yellow-900/20 to-orange-900/20 shadow-lg shadow-yellow-500/10'
-                    : `${rarity.bgColor} opacity-80 hover:opacity-100`
-                } backdrop-blur-sm`}>
+                <Card className={`relative overflow-hidden transition-all duration-300 hover:scale-105 border-2 ${achievement.isUnlocked
+                  ? 'border-yellow-500 bg-gradient-to-br from-yellow-900/20 to-orange-900/20 shadow-lg shadow-yellow-500/10'
+                  : `${rarity.bgColor} opacity-80 hover:opacity-100`
+                  } backdrop-blur-sm`}>
                   {/* Rarity Badge */}
-                  <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${
-                    achievement.isUnlocked
-                      ? 'bg-yellow-500 text-black shadow-lg'
-                      : `bg-gradient-to-r ${rarity.color} text-white`
-                  }`}>
+                  <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${achievement.isUnlocked
+                    ? 'bg-yellow-500 text-black shadow-lg'
+                    : `bg-gradient-to-r ${rarity.color} text-white`
+                    }`}>
                     <RarityIconComponent className="w-3 h-3" />
                     <span>{rarity.name}</span>
                   </div>
@@ -354,11 +356,10 @@ export default function AchievementsPage() {
 
                   <CardHeader className="text-center pt-8">
                     <div className="text-5xl mb-4 relative">
-                      <div className={`absolute inset-0 ${
-                        achievement.isUnlocked
-                          ? 'bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full blur-xl opacity-30'
-                          : ''
-                      }`}></div>
+                      <div className={`absolute inset-0 ${achievement.isUnlocked
+                        ? 'bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full blur-xl opacity-30'
+                        : ''
+                        }`}></div>
                       <div className="relative">{achievement.icon}</div>
                     </div>
 
@@ -402,19 +403,17 @@ export default function AchievementsPage() {
                     <div className="flex justify-between items-center pt-2">
                       <div className="flex items-center gap-2">
                         <Zap className="w-5 h-5 text-yellow-400" />
-                        <span className={`font-bold ${
-                          achievement.isUnlocked ? 'text-yellow-400' : 'text-gray-500'
-                        }`}>
+                        <span className={`font-bold ${achievement.isUnlocked ? 'text-yellow-400' : 'text-gray-500'
+                          }`}>
                           +{achievement.pointsReward} tokens
                         </span>
                       </div>
 
                       {/* Status Badge */}
-                      <div className={`px-4 py-2 rounded-full text-sm font-medium ${
-                        achievement.isUnlocked
-                          ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-black shadow-lg'
-                          : 'bg-zinc-700/50 text-gray-400'
-                      }`}>
+                      <div className={`px-4 py-2 rounded-full text-sm font-medium ${achievement.isUnlocked
+                        ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-black shadow-lg'
+                        : 'bg-zinc-700/50 text-gray-400'
+                        }`}>
                         {achievement.isUnlocked ? '🏆 Completado' : '⏳ Pendiente'}
                       </div>
                     </div>

@@ -807,7 +807,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                 )}
 
                 {/* DAO Access */}
-                {projectObj.deploymentStatus === 'deployed' && (
+                {(['approved', 'live', 'deployed', 'active'].includes(String(projectObj.status).toLowerCase()) || projectObj.deploymentStatus === 'deployed') && (
                   <Link
                     href={`/projects/${String(projectObj.slug)}/dao`}
                     className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group cursor-pointer"

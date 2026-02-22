@@ -175,6 +175,8 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
     setIsArtifactModalOpen(true);
   };
 
+  const isDeployed = ['approved', 'live', 'deployed', 'active'].includes(project.status?.toLowerCase() || '') || project.deploymentStatus === 'deployed';
+
   return (
     <>
       <div className="hidden lg:block absolute right-0 top-0 w-72 h-full z-20">
@@ -220,7 +222,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
 
               <div className="flex justify-between text-sm mb-6">
                 <span className="text-zinc-400">Meta: {project.w2eConfig?.licenseToken?.maxSupply ? Number(project.w2eConfig.licenseToken.maxSupply).toLocaleString() : targetAmount.toLocaleString()} tokens</span>
-                <span className="text-zinc-400">Status: {project.deploymentStatus === 'deployed' ? '🟢 Activo' : '🟡 Espera'}</span>
+                <span className="text-zinc-400">Status: {isDeployed ? '🟢 Activo' : '🟡 Espera'}</span>
               </div>
 
               {hasAccess ? (
@@ -241,7 +243,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                     Ir al DAO
                   </Link>
                 </div>
-              ) : project.deploymentStatus === 'deployed' && licenseContract && account ? (
+              ) : isDeployed && licenseContract && account ? (
                 <div className="space-y-2 w-full mb-4">
                   <button
                     onClick={() => setIsAccessModalOpen(true)}
@@ -263,7 +265,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                   className="w-full font-bold py-3 px-6 rounded-lg transition-colors mb-4 flex items-center justify-center gap-2 bg-zinc-800/50 text-zinc-500 cursor-not-allowed border border-zinc-700/50 backdrop-blur-sm"
                   disabled
                 >
-                  {project.deploymentStatus === 'deployed' ? (
+                  {isDeployed ? (
                     <>
                       <Ticket className="w-5 h-5" />
                       Conecta tu Wallet
@@ -304,7 +306,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
               </div>
 
               <div className="text-xs text-zinc-500">
-                {(project as any).deploymentStatus === 'deployed'
+                {isDeployed
                   ? "El acceso desbloquea utilidades exclusivas del protocolo."
                   : "Esta creación solo será activada si alcanza su meta antes de la fecha límite."}
               </div>

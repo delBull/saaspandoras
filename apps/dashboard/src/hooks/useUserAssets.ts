@@ -58,12 +58,26 @@ export function useUserAssets() {
 
             await Promise.all(approvedProjects.flatMap(project => {
                 const checks = [];
-                // Check License (Access)
+                // Check License (Access) - V1
                 const licenseAddr = project.licenseContractAddress || project.contractAddress;
                 if (licenseAddr) checks.push(checkBalance(licenseAddr, 'access', project));
 
-                // Check Utility (Artifact)
+                // Check Utility (Artifact) - V1
                 if (project.utilityContractAddress) checks.push(checkBalance(project.utilityContractAddress, 'utility', project));
+
+                // Check V2 Artifacts (w2eConfig)
+                const artifacts = project.w2eConfig?.artifacts;
+                if (Array.isArray(artifacts)) {
+                    artifacts.forEach((artifact: any) => {
+                        if (artifact.address) {
+                            checks.push(checkBalance(
+                                artifact.address,
+                                artifact.type === 'Access' ? 'access' : 'utility',
+                                project
+                            ));
+                        }
+                    });
+                }
 
                 return checks;
             }));

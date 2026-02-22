@@ -66,11 +66,10 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
   if (!project) { notFound(); }
 
   // ── V2 Detection ──────────────────────────────────────────────────────────
-  // V2 if it has artifacts[] in w2eConfig, explicit protocol_version=2, or pageLayoutType
+  // V2 if it has artifacts[] in w2eConfig or explicit protocol_version=2
   const isV2 = project.protocol_version === 2
     || !!(project.w2eConfig?.artifacts && project.w2eConfig.artifacts.length > 0)
-    || !!(project.artifacts && project.artifacts.length > 0)
-    || !!(project.pageLayoutType);
+    || !!(project.artifacts && project.artifacts.length > 0);
 
   // ── V2 Route ──────────────────────────────────────────────────────────────
   if (isV2) {
@@ -91,7 +90,7 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
   return (
     <div className="min-h-screen pb-20 md:pb-6 bg-black">
       <ProjectNavigationHeader />
-      <div className="w-full">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="relative">
           <ProjectSidebar project={project} targetAmount={targetAmount} />
           <div className="lg:mr-80 xl:mr-80 2xl:mr-80">

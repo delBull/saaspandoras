@@ -18,10 +18,10 @@ export default function ProtocolPageShell({ project, children, currentSlug }: Pr
     return (
         <div className="min-h-screen pb-20 md:pb-6 bg-black">
             <ProjectNavigationHeader />
-            <div className="w-full">
+            <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="relative">
                     <ProjectSidebar project={project} targetAmount={targetAmount} />
-                    <div className="lg:mr-80 xl:mr-80 2xl:mr-80 bg-zinc-950/50 rounded-3xl min-h-[80vh] border border-zinc-800/10">
+                    <div className="lg:mr-80 xl:mr-80 2xl:mr-80 p-6 lg:p-8 bg-zinc-950/50 rounded-3xl min-h-[80vh] border border-zinc-800/10">
                         <Suspense fallback={<div className="h-96 animate-pulse bg-zinc-800/20 rounded-xl" />}>
                             {children}
                         </Suspense>

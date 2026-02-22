@@ -63,7 +63,7 @@ function verifyWebhook(req) {
 }
 ```
 
-## 4. Golden Path Example: `deployment.completed`
+## 4. Golden Path Example: `protocol.deployed`
 
 1. **Trigger**: Protocol deployed on-chain.
 2. **Core**:
@@ -87,20 +87,22 @@ function verifyWebhook(req) {
 ```typescript
 interface PandoraWebhookEvent<T = unknown> {
   id: string;          // Unique Event ID (UUID)
-  type: string;        // domain.action (e.g., 'deployment.completed')
+  type: string;        // domain.action (e.g., 'protocol.deployed')
   version: 'v1';       // Payload version
   timestamp: number;   // Unit timestamp (seconds)
-  data: T;             // Event-specific data
+  data: T & { isSandbox?: boolean }; // Base data with optional environment flag
 }
 ```
 
 ### Supported Events
 | Event Type | Description | Data Payload |
 | :--- | :--- | :--- |
-| `deployment.queued` | Protocol deployment queued | `{ protocolId: string }` |
-| `deployment.completed` | Protocol successfully deployed | `{ protocolId: string, contractAddress: string, transactionHash: string }` |
-| `deployment.failed` | Deployment failed | `{ protocolId: string, reason: string }` |
-| `investment.created` | New investment recorded | `{ investmentId: string, amount: string, phaseId: string }` |
+| `protocol.queued` | Protocol deployment queued | `{ protocolId: string, isSandbox: boolean }` |
+| `protocol.deployed` | Protocol successfully deployed | `{ projectId: string, projectSlug: string, projectName: string, chainId: number, protocolVersion: number, contracts: { token: string, governor: string, loom: string, timelock: string, registry: string }, artifacts: object[], deployer: string, isSandbox: boolean }` |
+| `protocol.failed` | Deployment failed | `{ protocolId: string, reason: string, isSandbox: boolean }` |
+| `project.application_submitted` | New project application sent | `{ projectId: string, title: string, category: string, applicantWallet: string, targetAmount: string, isSandbox: boolean }` |
+| `gamification.event` | User gamification recorded | `{ userWallet: string, eventType: string, pointsEarned: number, metadata: object, isSandbox: boolean }` |
+| `investment.created` | New investment recorded | `{ investmentId: string, amount: string, phaseId: string, isSandbox: boolean }` |
 
 ## 4. Retry Policy & Dead Letter Queue (DLQ)
 

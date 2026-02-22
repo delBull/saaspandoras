@@ -69,7 +69,7 @@ export function useApplicantsDataBasic(): ApplicantsData {
   }, []);
 
   const pendingProjects = useMemo(() => projects.filter(p => p.status === 'pending'), [projects]);
-  const approvedProjects = useMemo(() => projects.filter(p => ['approved', 'live', 'completed'].includes(p.status)), [projects]);
+  const approvedProjects = useMemo(() => projects.filter(p => ['approved', 'live', 'completed', 'deployed', 'active'].includes(p.status?.toLowerCase())), [projects]);
   const approvedOnlyProjects = useMemo(() => projects.filter(p => p.status === 'approved'), [projects]);
 
   return {

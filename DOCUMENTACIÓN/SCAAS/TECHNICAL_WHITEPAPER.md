@@ -75,6 +75,19 @@ The SCaaS architecture implements three fundamental innovations:
 - **Test Networks**: Base Goerli, Ethereum Sepolia
 - **Future Expansion**: Multi-chain support (Optimism, Polygon, Arbitrum)
 
+### **2.4 Type-Specific Routing & Pages**
+
+SCaaS Protocols leverage a dynamic App Router in Next.js to provide context-aware views based on the protocol category.
+
+**URL Structure:** `/projects/[slug]`
+
+**Dynamic Layout Resolution:**
+- **Standard Layout:** Default rendering for general W2E protocols showing tokenomics, governance, and treasury.
+- **DAO Layout (`/projects/[slug]/dao`):** Full-bleed immersive UI tailored for Decentralized Autonomous Organizations, hiding default padding and emphasizing voting power and delegate systems.
+- **Creator/Artist Layouts (Future):** Media-rich galleries with integrated royalty distribution UI linked directly to the `ProtocolRegistry` artifacts.
+
+This client-side decoupling allows the Smart Contract layer (LoomV2, Registry) to remain identical while delivering drastically different User Experiences based on the project's metadata.
+
 ---
 
 ## **3. Core Smart Contracts**
