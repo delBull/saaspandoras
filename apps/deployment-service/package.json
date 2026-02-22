@@ -7,7 +7,7 @@
     "scripts": {
         "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
         "build": "tsc",
-        "start": "bun dist/index.js"
+        "start": "bun src/index.ts"
     },
     "dependencies": {
         "dotenv": "^16.4.5",
