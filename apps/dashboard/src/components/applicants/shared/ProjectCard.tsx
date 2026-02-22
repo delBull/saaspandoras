@@ -139,12 +139,12 @@ export function ProjectCard({ project, variant = 'approved', gridColumns = 3 }: 
   };
 
   const getDescriptionHeight = () => {
-    if (isPending) return 'h-8';
+    if (isPending) return 'h-8 line-clamp-1 group-hover:line-clamp-none group-hover:h-auto';
     switch (gridColumns) {
-      case 6: return 'h-8'; // Menos espacio para descripción
-      case 4: return 'h-10'; // Espacio medio
+      case 6: return 'h-8 line-clamp-1 group-hover:line-clamp-none group-hover:h-auto'; // Menos espacio
+      case 4: return 'h-10 line-clamp-2 group-hover:line-clamp-none group-hover:h-auto'; // Espacio medio
       case 3:
-      default: return 'h-12'; // Más espacio para descripción
+      default: return 'h-12 line-clamp-2 group-hover:line-clamp-none group-hover:h-auto'; // Más espacio
     }
   };
 
@@ -193,7 +193,7 @@ export function ProjectCard({ project, variant = 'approved', gridColumns = 3 }: 
           <h3 className={`font-bold text-white mb-2 line-clamp-1 ${getTitleSize()}`}>
             {project.title}
           </h3>
-          <p className={`text-zinc-400 mb-4 line-clamp-2 flex-grow text-sm ${getDescriptionHeight()}`}>
+          <p className={`text-zinc-400 mb-4 flex-grow text-sm transition-all duration-300 ease-in-out ${getDescriptionHeight()}`}>
             {project.description}
           </p>
 
@@ -202,7 +202,7 @@ export function ProjectCard({ project, variant = 'approved', gridColumns = 3 }: 
               {/* Dynamic Phase Info */}
               {activePhase ? (
                 <div className="flex justify-between items-center text-xs mb-2 bg-black/40 p-2 rounded-lg border border-white/5">
-                  <span className="text-zinc-400">{activePhase.name ?? "Venta Pública"}</span>
+                  <span className="text-zinc-400">{activePhase.name ?? "Venta de Utilidad"}</span>
                   <span className="font-mono font-bold text-lime-400">
                     {activePhase.tokenPrice ? `$${activePhase.tokenPrice}` : 'Gratis'}
                   </span>
@@ -210,7 +210,7 @@ export function ProjectCard({ project, variant = 'approved', gridColumns = 3 }: 
               ) : null}
 
               <div className="flex justify-between items-center text-xs text-zinc-400 mb-2">
-                <span>Progreso de Financiamiento</span>
+                <span>Progreso del Protocolo</span>
                 <span className="font-semibold text-white">{progress.toFixed(1)}%</span>
               </div>
               <div className="w-full bg-zinc-800 rounded-full h-2 mb-2 overflow-hidden">

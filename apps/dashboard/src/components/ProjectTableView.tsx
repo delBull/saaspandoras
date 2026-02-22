@@ -146,53 +146,18 @@ export function ProjectTableView({
                       const phone = p.applicantPhone?.trim();
                       const hasEmail = !!p.applicantEmail;
                       const createdAt = new Date(p.createdAt);
-
-                      // Fecha de referencia: cuando empezó el WhatsApp bot (aprox 18 nov 2025)
-                      const whatsappStartDate = new Date('2025-11-15T00:00:00Z');
-
+                      // Nueva Lógica Simplificada
                       let source = "unknown";
-                      let confidence = "low";
 
-                      // PATRÓN 1: Fecha reciente (después del whatsapp bot) + teléfono internacional
-                      if (createdAt >= whatsappStartDate && phone) {
-                        // Formatos internacionales comunes que indican WhatsApp
-                        const internationalPatterns = [
-                          /^\+/, // +52, +1, etc
-                          /^00\d/, // 00952, 001, etc
-                          /^52/, // 52XXXX (México directo)
-                          /^1/, // 1XXXX (USA directo)
-                        ];
-
-                        const isInternationalNumber = internationalPatterns.some(pattern => pattern.test(phone));
-                        const isRecentProject = (Date.now() - createdAt.getTime()) < (30 * 24 * 60 * 60 * 1000); // Últimos 30 días
-
-                        if (isInternationalNumber && phone.length >= 10) {
-                          source = "whatsapp";
-                          confidence = "high";
-                        } else if (isRecentProject && phone) {
-                          source = "whatsapp";
-                          confidence = "medium";
-                        }
-                      }
-
-                      // PATRÓN 2: Proyectos antiguos sin teléfono son definitivamente web
-                      if (source === "unknown" && createdAt < whatsappStartDate && hasEmail) {
+                      if (hasEmail) {
+                        // El form web siempre pide Email. Bot de whatsapp no.
                         source = "web";
-                      }
-
-                      // PATRÓN 3: Cualquier proyecto con email es web por defecto (máxima cobertura)
-                      if (source === "unknown" && hasEmail) {
+                      } else if (phone) {
+                        // Teléfono sin email -> Bot de WhatsApp.
+                        source = "whatsapp";
+                      } else {
+                        // Fallback
                         source = "web";
-                      }
-
-                      // PATRÓN 4: Si tiene teléfono pero es proyecto muy antiguo, es más probable que sea web
-                      if (source === "unknown" && phone && createdAt < whatsappStartDate) {
-                        source = "web"; // Proyectos antiguos con teléfono opcional
-                      }
-
-                      // ÚLTIMO FALLBACK: Todo lo que llegue aquí es web (por defecto)
-                      if (source === "unknown") {
-                        source = "web"; // Máxima cobertura - asumir web si no hay evidencia de whatsapp
                       }
 
                       return (
@@ -211,7 +176,7 @@ export function ProjectTableView({
                   {/* Featured Column */}
                   <td className="px-4 py-3 text-center">
                     <div className="flex items-center justify-center gap-2">
-                      {isFeatured(Number(p.id)) && (
+                      {p.featured && (
                         <div className="w-2 h-2 bg-lime-400 rounded-full animate-pulse"></div>
                       )}
                       <button
@@ -225,12 +190,12 @@ export function ProjectTableView({
                             console.error('🔧 Admin: Error updating featured status:', error);
                           }
                         }}
-                        className={`px-3 py-1.5 rounded text-xs font-medium transition-all duration-200 ${isFeatured(Number(p.id))
+                        className={`px-3 py-1.5 rounded text-xs font-medium transition-all duration-200 ${p.featured
                           ? 'bg-lime-500 hover:bg-lime-600 text-black shadow-lg ring-2 ring-lime-400/30'
                           : 'bg-zinc-700 hover:bg-zinc-600 text-gray-300 hover:text-white border border-zinc-600 hover:border-zinc-500'
                           }`}
                       >
-                        {isFeatured(Number(p.id)) ? '✓ Featured' : '☆ Feature'}
+                        {p.featured ? '✓ Featured' : '☆ Feature'}
                       </button>
                     </div>
                   </td>

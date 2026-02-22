@@ -41,7 +41,7 @@ export async function GET(request: Request) {
             businessCategory: projects.businessCategory
         }).from(projects).where(
             and(
-                eq(projects.status, 'live'), 
+                eq(projects.status, 'live'),
                 eq(projects.deploymentStatus, 'deployed'),
                 // Exclude standalone NFT Passes (infrastructure category = NFT Lab passes)
                 // Only include projects that have utilityContractAddress (full projects) or are not infrastructure
@@ -52,24 +52,21 @@ export async function GET(request: Request) {
         // 3. Fetch Notifications (Recent Events) if wallet provided
         let notifications: any[] = [];
         if (wallet) {
-            const user = await db.select({ id: users.id }).from(users).where(eq(users.walletAddress, wallet)).limit(1);
-            if (user && user.length > 0 && user[0]) {
-                const rawEvents = await db.select()
-                    .from(gamificationEvents)
-                    .where(eq(gamificationEvents.userId, user[0].id))
-                    .orderBy(desc(gamificationEvents.createdAt))
-                    .limit(5); // Last 5 events
+            const rawEvents = await db.select()
+                .from(gamificationEvents)
+                .where(eq(gamificationEvents.userId, wallet))
+                .orderBy(desc(gamificationEvents.createdAt))
+                .limit(5); // Last 5 events
 
-                notifications = rawEvents.map(e => ({
-                    id: e.id,
-                    type: e.points > 0 ? "success" : "info",
-                    title: `Event: ${e.type.replace(/_/g, ' ').toUpperCase()}`,
-                    description: `You earned ${e.points} points!`,
-                    category: e.category,
-                    createdAt: e.createdAt,
-                    dismissible: true
-                }));
-            }
+            notifications = rawEvents.map(e => ({
+                id: e.id,
+                type: e.points > 0 ? "success" : "info",
+                title: `Event: ${e.type.replace(/_/g, ' ').toUpperCase()}`,
+                description: `You earned ${e.points} points!`,
+                category: e.category,
+                createdAt: e.createdAt,
+                dismissible: true
+            }));
         }
 
         // Map Featured
