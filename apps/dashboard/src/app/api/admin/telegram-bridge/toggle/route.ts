@@ -9,7 +9,8 @@
  *
  * Destructive toggles (disabling) require confirmationToken = 'CONFIRM'.
  */
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { getAuth, isAdmin } from '@/lib/auth';
 import { db } from '@/db';
 import { platformSettings } from '@/db/schema';
@@ -76,7 +77,11 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const { settingKey, label } = FLAG_MAP[flag];
+        const config = FLAG_MAP[flag];
+        if (!config) {
+            return NextResponse.json({ error: `Configuration mismatch for flag: ${flag}` }, { status: 500 });
+        }
+        const { settingKey, label } = config;
 
         await db
             .insert(platformSettings)
