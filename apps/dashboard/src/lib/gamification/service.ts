@@ -1048,9 +1048,9 @@ export class GamificationService {
   }
 
   /**
-   * Initialize basic achievements in database
+   * Initialize basic achievements in database if they don't exist
    */
-  private static async initializeBasicAchievements(): Promise<void> {
+  public static async initializeBasicAchievements(): Promise<void> {
     try {
       // 🙋‍♂️ DASHBOARD SPECIFIC ACHIEVEMENTS (equivalents to package achievements)
       const basicAchievements = [
