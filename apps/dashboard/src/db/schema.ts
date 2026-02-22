@@ -261,7 +261,8 @@ export const achievementTypeEnum = pgEnum("achievement_type", [
   "artifact_collector",
   "defi_starter",
   "governor",
-  "yield_hunter"
+  "yield_hunter",
+  "explorer"
 ]);
 
 export const rewardTypeEnum = pgEnum("reward_type", [
