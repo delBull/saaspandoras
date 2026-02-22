@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import {
     Dialog,
     DialogContent,
@@ -141,7 +142,14 @@ export function ProjectBasicEditModal({ project, open, onOpenChange, onSuccess }
                             <div className="flex items-center gap-4">
                                 <div className="w-16 h-16 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center overflow-hidden">
                                     {formData.logoUrl ? (
-                                        <img src={resolveIpfs(formData.logoUrl)} alt="Logo" className="w-full h-full object-cover" />
+                                        <Image
+                                            src={resolveIpfs(formData.logoUrl)}
+                                            alt="Logo"
+                                            width={64}
+                                            height={64}
+                                            className="w-full h-full object-cover"
+                                            unoptimized
+                                        />
                                     ) : (
                                         <PhotoIcon className="w-8 h-8 text-zinc-700" />
                                     )}
@@ -190,7 +198,14 @@ export function ProjectBasicEditModal({ project, open, onOpenChange, onSuccess }
                             <div className="flex flex-col gap-2">
                                 <div className="h-16 w-full rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center overflow-hidden">
                                     {formData.coverPhotoUrl ? (
-                                        <img src={resolveIpfs(formData.coverPhotoUrl)} alt="Cover" className="w-full h-full object-cover" />
+                                        <Image
+                                            src={resolveIpfs(formData.coverPhotoUrl)}
+                                            alt="Cover"
+                                            width={600}
+                                            height={64}
+                                            className="w-full h-full object-cover"
+                                            unoptimized
+                                        />
                                     ) : (
                                         <PhotoIcon className="w-8 h-8 text-zinc-700" />
                                     )}
