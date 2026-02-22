@@ -1,20 +1,15 @@
-import { db } from "./src/db";
-import { projects } from "./src/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from './src/db';
+import { sql } from 'drizzle-orm';
 
 async function main() {
-  const result = await db.query.projects.findFirst({
-    where: eq(projects.slug, "escuela-libre-digital")
-  });
-  console.log(result ? "Found project with addresses:" : "Not found in DB");
-  if (result) {
-    console.log({
-      gov: result.governorContractAddress,
-      voting: result.votingContractAddress,
-      registry: result.registryContractAddress,
-      artifacts: result.artifacts || (result.w2eConfig as any)?.artifacts
-    });
-  }
-  process.exit(0);
+    console.log("Projects Count:");
+    const projects = await db.execute(sql`SELECT id, title, business_category, status FROM projects`);
+    console.log(projects);
+
+    console.log("\nUsers Count:");
+    const users = await db.execute(sql`SELECT id, name, "walletAddress", "connectionCount", "lastConnectionAt" FROM users`);
+    console.log(users);
+
+    process.exit(0);
 }
 main();

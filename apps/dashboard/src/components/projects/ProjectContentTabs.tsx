@@ -236,6 +236,30 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
               {project.description ?? 'No hay descripción disponible para este proyecto.'}
             </p>
           </SectionCard>
+
+          {/* Video Pitch - shown if available */}
+          {(project.video_pitch || (project as any).videoPitch) && (
+            <SectionCard title="Video de Presentación" icon={PlayCircle}>
+              <div className="aspect-video w-full rounded-lg overflow-hidden bg-black border border-zinc-800">
+                <iframe
+                  src={(() => {
+                    const url = project.video_pitch || (project as any).videoPitch || '';
+                    // Convert youtube watch URLs to embed
+                    const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+                    if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
+                    // Convert Loom share to embed
+                    const loomMatch = url.match(/loom\.com\/share\/([a-f0-9]+)/);
+                    if (loomMatch) return `https://www.loom.com/embed/${loomMatch[1]}`;
+                    return url;
+                  })()}
+                  title="Video de Presentación del Protocolo"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="w-full h-full"
+                />
+              </div>
+            </SectionCard>
+          )}
         </div>
       ),
     },
@@ -246,35 +270,35 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
       icon: Puzzle,
       content: (
         <div className="space-y-8 mb-8">
-          {/* Mecánica del Protocolo - Nueva clave */}
+          {/* Mecánica del Protocolo (nueva clave) */}
           {project.protoclMecanism && (
             <SectionCard title="Mecánica del Protocolo" icon={Puzzle}>
               <p className="text-zinc-300 whitespace-pre-line">{project.protoclMecanism}</p>
             </SectionCard>
           )}
 
-          {/* Utilidad a Largo Plazo - Nueva clave */}
+          {/* Utilidad a Largo Plazo (nueva clave) */}
           {project.artefactUtility && (
             <SectionCard title="Utilidad a Largo Plazo de los Artefactos" icon={Star}>
               <p className="text-zinc-300 whitespace-pre-line">{project.artefactUtility}</p>
             </SectionCard>
           )}
 
-          {/* Mecánica del Protocolo (desde ProjectDetails) */}
-          {project.fund_usage && (
+          {/* Uso de Fondos / Mecánica (campo legacy fund_usage) */}
+          {project.fund_usage && !project.protoclMecanism && (
             <SectionCard title="Mecánica del Protocolo" icon={Puzzle}>
               <p className="text-zinc-300 whitespace-pre-line">{project.fund_usage}</p>
             </SectionCard>
           )}
 
-          {/* Utilidad Continua (desde ProjectDetails) */}
-          {project.lockup_period && (
-            <SectionCard title="Utilidad Continua" icon={Star}>
+          {/* Período de Retención / Utilidad Continua (campo legacy lockup_period) */}
+          {project.lockup_period && !project.artefactUtility && (
+            <SectionCard title="Período de Retención / Utilidad Continua" icon={Clock}>
               <p className="text-zinc-300 whitespace-pre-line">{project.lockup_period}</p>
             </SectionCard>
           )}
 
-          {/* Sistema Work-to-Earn - Nueva clave */}
+          {/* Sistema Work-to-Earn (nueva clave) */}
           {project.worktoearnMecanism && (
             <SectionCard title="Sistema Work-to-Earn" icon={Briefcase}>
               <p className="text-zinc-300 whitespace-pre-line">{project.worktoearnMecanism}</p>
