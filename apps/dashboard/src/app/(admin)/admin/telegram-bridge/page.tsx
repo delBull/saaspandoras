@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { getAuth, isAdmin } from "@/lib/auth";
+import { getAuth, isSuperAdmin } from "@/lib/auth";
 import { UnauthorizedAccess } from "@/components/admin/UnauthorizedAccess";
 import { TelegramBridgePanel } from "@/components/admin/TelegramBridgePanel";
 import Link from "next/link";
@@ -16,7 +16,7 @@ export const metadata = {
 export default async function TelegramBridgePage() {
     const { session } = await getAuth(await headers());
 
-    if (!session?.userId || !await isAdmin(session.userId)) {
+    if (!session?.userId || !isSuperAdmin(session.userId)) {
         return <UnauthorizedAccess authError="Super Admin access required" />;
     }
 

@@ -349,7 +349,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
     };
 
     const InfoView = () => (
-        <div className="max-w-5xl mx-auto">
+        <div className="w-full">
             <div className="mb-8">
                 <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
                     <HelpCircleIcon className="w-6 h-6 text-lime-400" />
