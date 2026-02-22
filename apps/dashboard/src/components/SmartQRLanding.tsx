@@ -46,11 +46,12 @@ const resolveIpfsUrl = (url?: string) => {
 // Helper to ensure links are absolute (avoiding relative path issues in dynamic routes)
 const ensureAbsoluteUrl = (url?: string) => {
     if (!url) return "";
-    if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("mailto:") || url.startsWith("tel:")) {
-        return url;
+    const cleanUrl = url.trim();
+    if (cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://") || cleanUrl.startsWith("mailto:") || cleanUrl.startsWith("tel:")) {
+        return cleanUrl;
     }
     // Default to https if no protocol is present
-    return `https://${url}`;
+    return `https://${cleanUrl}`;
 };
 
 export function SmartQRLanding({ config, slug }: SmartQRLandingProps) {

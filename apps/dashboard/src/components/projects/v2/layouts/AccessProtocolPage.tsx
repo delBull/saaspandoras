@@ -32,21 +32,30 @@ export default function AccessProtocolPage({ project, currentSlug }: Props) {
 
     const dummyContract = getContract({ client, chain: defineChain(safeChainId), address: '0x0000000000000000000000000000000000000000' });
 
-    const { data: totalSupplyBN } = useReadContract({
+    const { data: totalSupplyERC721 } = useReadContract({
         contract: licenseContract || dummyContract,
-        queryOptions: { enabled: !!licenseContract },
+        queryOptions: { enabled: !!licenseContract, retry: 0 },
         method: 'function totalSupply() view returns (uint256)',
         params: []
     });
-    const { data: maxSupplyBN } = useReadContract({
+
+    const { data: totalSupplyERC1155 } = useReadContract({
         contract: licenseContract || dummyContract,
-        queryOptions: { enabled: !!licenseContract },
+        queryOptions: { enabled: !!licenseContract && !totalSupplyERC721, retry: 0 },
+        method: 'function totalSupply(uint256) view returns (uint256)',
+        params: [0n]
+    });
+
+    const { data: maxSupplyERC721 } = useReadContract({
+        contract: licenseContract || dummyContract,
+        queryOptions: { enabled: !!licenseContract, retry: 0 },
         method: 'function maxSupply() view returns (uint256)',
         params: []
     });
 
+    const totalSupplyBN = totalSupplyERC721 ?? totalSupplyERC1155;
     const holdersCount = totalSupplyBN ? Number(totalSupplyBN) : 0;
-    const maxSupply = maxSupplyBN ? Number(maxSupplyBN) : (project.artifacts?.[0]?.maxSupply ?? 0);
+    const maxSupply = maxSupplyERC721 ? Number(maxSupplyERC721) : (project.artifacts?.[0]?.maxSupply ?? 0);
     const remaining = maxSupply > 0 ? maxSupply - holdersCount : null;
 
     const primaryArtifact = project.artifacts?.find(a => a.isPrimary) ?? project.artifacts?.[0];

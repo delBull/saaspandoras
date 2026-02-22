@@ -11,7 +11,7 @@ export function DocsNavbar() {
                     {/* Left: Navigation */}
                     <div className="flex items-center gap-6">
                         <Link
-                            href="/dashboard"
+                            href="/"
                             className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
                         >
                             <Home className="w-4 h-4" />
