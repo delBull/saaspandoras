@@ -21,25 +21,11 @@ interface JWTPayload {
  * Comprueba si una dirección es admin o super admin.
  */
 export async function isAdmin(address?: string | null): Promise<boolean> {
-  if (!address) {
-    // Only log in development and reduce verbosity
-    if (process.env.NODE_ENV === 'development') {
-      console.log("🛑 isAdmin: No address provided");
-    }
-    return false;
-  }
+  const isSuper = isSuperAdmin(address);
+  if (isSuper) return true;
 
+  if (!address) return false;
   const lower = address.toLowerCase();
-
-  // 📍 Step 1: Check if super admin
-  const isSuperAdminCheck = lower === SUPER_ADMIN_WALLET.toLowerCase();
-
-  if (isSuperAdminCheck) {
-    if (process.env.NODE_ENV === 'development') {
-      console.log("🎉 isAdmin: ✅ SUPER ADMIN CONFIRMED");
-    }
-    return true;
-  }
 
   try {
     // 📍 Step 2: Database check for regular admin
@@ -58,9 +44,24 @@ export async function isAdmin(address?: string | null): Promise<boolean> {
     return isAdmin;
   } catch (error) {
     console.error("💥 isAdmin: Database query FAILED:", error);
-    // If database query fails, fall back to super admin check only
-    return isSuperAdminCheck;
+    // If database query fails, already checked super admin at the top
+    return false;
   }
+}
+
+/**
+ * Comprueba si una dirección es el super admin definido en constantes/env.
+ */
+export function isSuperAdmin(address?: string | null): boolean {
+  if (!address) return false;
+  const lower = address.toLowerCase();
+  const isSuper = lower === SUPER_ADMIN_WALLET.toLowerCase();
+
+  if (isSuper && process.env.NODE_ENV === 'development') {
+    console.log("🎉 isSuperAdmin: ✅ SUPER ADMIN CONFIRMED");
+  }
+
+  return isSuper;
 }
 
 interface MinimalHeaders {

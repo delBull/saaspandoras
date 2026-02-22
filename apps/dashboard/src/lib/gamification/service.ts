@@ -21,7 +21,7 @@ import {
   gamificationEvents,
   type GamificationProfile as DrizzleGamificationProfile
 } from '@/db/schema';
-import { eq, sql, desc, or } from 'drizzle-orm';
+import { eq, sql, desc, or, and } from 'drizzle-orm';
 import { WebhookService } from '@/lib/integrations/webhook-service';
 import { integrationClients as integrationClientsSchema } from '@/db/schema';
 
@@ -577,11 +577,10 @@ export class GamificationService {
 
       const userIdInt = user[0].id;
 
-      // Get user achievements with achievement details
       const userAchievementsData = await db
         .select({
           userAchievementId: userAchievements.id,
-          achievementId: userAchievements.achievementId,
+          achievementId: achievements.id,
           progress: userAchievements.progress,
           isUnlocked: userAchievements.isUnlocked,
           unlockedAt: userAchievements.unlockedAt,
@@ -592,9 +591,11 @@ export class GamificationService {
           points: achievements.pointsReward,
           category: achievements.type
         })
-        .from(userAchievements)
-        .innerJoin(achievements, eq(userAchievements.achievementId, achievements.id))
-        .where(eq(userAchievements.userId, userIdInt));
+        .from(achievements)
+        .leftJoin(userAchievements, and(
+          eq(userAchievements.achievementId, achievements.id),
+          eq(userAchievements.userId, userIdInt)
+        ));
 
       // Map to UserAchievement format
       const achievementsList: UserAchievement[] = userAchievementsData.map((item: any) => ({

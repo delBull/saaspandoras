@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { getAuth, isAdmin } from "@/lib/auth";
+import { getAuth, isSuperAdmin } from "@/lib/auth";
 import { OperationsPanel } from "@/components/admin/OperationsPanel";
 import { UnauthorizedAccess } from "@/components/admin/UnauthorizedAccess";
 import Link from "next/link";
@@ -12,7 +12,7 @@ export default async function OperationsPage() {
     // Server-side auth check
     const { session } = await getAuth(await headers());
 
-    if (!session?.userId || !await isAdmin(session.userId)) {
+    if (!session?.userId || !isSuperAdmin(session.userId)) {
         return <UnauthorizedAccess authError="Super Admin access required" />;
     }
 
