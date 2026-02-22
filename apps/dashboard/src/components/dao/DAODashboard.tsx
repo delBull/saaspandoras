@@ -296,7 +296,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
             a.type === 'governor' ||
             a.type === 'registry' ||
             a.type === 'voting' ||
-            (a.name && a.name.toLowerCase().includes('governor'))
+            a.name?.toLowerCase().includes('governor')
         ) : null;
 
         const govAddress = project.governorContractAddress ||
