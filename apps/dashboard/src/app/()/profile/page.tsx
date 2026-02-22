@@ -179,7 +179,7 @@ export default function ProfilePage() {
                   <div className="text-xs text-gray-400">Tu Nivel</div>
                 </div>
                 <div className="text-center p-4 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-lg border border-green-500/20">
-                  <div className="text-2xl font-bold text-green-400">{gamification.achievements.filter(a => a.isCompleted || (a as any).isUnlocked).length}</div>
+                  <div className="text-2xl font-bold text-green-400">{gamification.achievements.filter(a => a.isUnlocked).length}</div>
                   <div className="text-xs text-gray-400">Logros Obtenidos</div>
                 </div>
                 <div className="text-center p-4 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-lg border border-purple-500/20">
@@ -206,23 +206,18 @@ export default function ProfilePage() {
               <div>
                 <h4 className="text-sm font-medium text-gray-300 mb-3">Logros Recientes</h4>
                 {(() => {
-                  const completedAchievements = gamification.achievements.filter(a => a.isCompleted || (a as any).isUnlocked);
+                  const completedAchievements = gamification.achievements.filter(a => a.isUnlocked);
                   return completedAchievements.length > 0 ? (
                     <div className="space-y-2">
                       {completedAchievements.slice(0, 3).map((achievement) => (
                         <div key={achievement.id} className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg border border-zinc-700/50">
-                          <div className="text-2xl">{(achievement as ExtendedUserAchievement).icon}</div>
+                          <div className="text-2xl">{achievement.icon}</div>
                           <div className="flex-1">
-                            <div className="font-medium text-white">{(achievement as ExtendedUserAchievement).name}</div>
-                            <div className="text-xs text-gray-400">{(achievement as ExtendedUserAchievement).description}</div>
+                            <div className="font-medium text-white">{achievement.name}</div>
+                            <div className="text-xs text-gray-400">{achievement.description}</div>
                           </div>
                           <div className="text-right">
-                            <div className="text-sm font-bold text-lime-400">+{(achievement as ExtendedUserAchievement).points} pts</div>
-                            {achievement.completedAt && (
-                              <div className="text-xs text-gray-500">
-                                {new Date(achievement.completedAt).toLocaleDateString('es-ES')}
-                              </div>
-                            )}
+                            <div className="text-sm font-bold text-lime-400">+{achievement.pointsReward} tokens</div>
                           </div>
                         </div>
                       ))}

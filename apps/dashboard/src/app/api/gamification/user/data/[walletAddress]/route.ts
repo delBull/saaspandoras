@@ -237,22 +237,43 @@ export async function GET(
       ))
       .orderBy(achievements.id); // Consistent ordering
 
-    const achievementsData: UserAchievement[] = achievementsResult.map((item) => ({
-      id: item.achievementId.toString(),
-      userId: walletAddress,
-      achievementId: item.achievementId.toString(),
-      progress: item.progress || 0,
-      isCompleted: Boolean(item.isUnlocked), // Convert to boolean - null becomes false
-      isUnlocked: Boolean(item.isUnlocked), // Convert to boolean - null becomes false
-      completedAt: item.unlockedAt || undefined,
-      name: item.name,
-      description: item.description,
-      icon: item.icon,
-      category: item.type,
-      points: item.pointsReward || 0,
-      unlockedAt: item.unlockedAt || undefined,
-      metadata: undefined
-    }));
+    const achievementsData: UserAchievement[] = achievementsResult.map((item) => {
+      // 🧠 Map semantics to satisfy BOTH legacy and new refactored expectations
+      const rawType = item.type || 'community';
+
+      // Determine Rarity: first_steps | investor | community_builder | early_adopter | high_roller
+      let rarity = 'first_steps';
+      if (['high_roller', 'tokenization_expert', 'dao_pioneer'].includes(rawType)) rarity = 'high_roller';
+      else if (['early_adopter', 'governor', 'yield_hunter'].includes(rawType)) rarity = 'early_adopter';
+      else if (['community_builder', 'creator'].includes(rawType)) rarity = 'community_builder';
+      else if (['investor', 'defi_starter'].includes(rawType)) rarity = 'investor';
+
+      // Determine Category: community | investor | creator | expert
+      let category = 'community';
+      if (['investor', 'defi_starter', 'yield_hunter'].includes(rawType)) category = 'investor';
+      else if (['creator', 'protocol_deployed', 'artifact_collector'].includes(rawType)) category = 'creator';
+      else if (['tokenization_expert', 'early_adopter', 'governor', 'dao_pioneer'].includes(rawType)) category = 'expert';
+
+      return {
+        id: item.achievementId.toString(),
+        userId: walletAddress,
+        achievementId: item.achievementId.toString(),
+        progress: item.progress || 0,
+        isCompleted: Boolean(item.isUnlocked),
+        isUnlocked: Boolean(item.isUnlocked),
+        completedAt: item.unlockedAt || undefined,
+        name: item.name,
+        description: item.description,
+        icon: item.icon,
+        points: item.pointsReward || 0,
+        unlockedAt: item.unlockedAt || undefined,
+        // 🔥 Refactored fields
+        type: rawType,
+        category: category,
+        rarity: rarity,
+        metadata: undefined
+      };
+    });
 
     // 4. Get available rewards (for now, return empty array)
     const rewardsData: Reward[] = [];
