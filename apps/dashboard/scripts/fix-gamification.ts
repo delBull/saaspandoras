@@ -50,7 +50,7 @@ async function main() {
         console.log("   Unique constraint added.");
 
     } catch (err) {
-        if (err.message?.includes("already exists")) {
+        if (err instanceof Error && err.message.includes("already exists")) {
             console.log("Constraint already exists, skipping...");
         } else {
             console.error("Migration failed:", err);
