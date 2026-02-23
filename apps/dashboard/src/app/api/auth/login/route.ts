@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { verifySignature } from "thirdweb/auth";
 import { client } from "@/lib/thirdweb-client";
 import { db } from "@/db";
-import { authChallenges, users } from "@/db/schema";
+import { authChallenges, users, sessions, securityEvents } from "@/db/schema";
 import { eq, and, gt } from "drizzle-orm";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
@@ -154,6 +154,7 @@ export async function POST(request: Request) {
 
         // 7. Upsert User and update connection count
         const walletAddress = address.toLowerCase();
+        let userId = "";
 
         try {
             // Find if user already exists
@@ -164,13 +165,15 @@ export async function POST(request: Request) {
 
             const now = new Date();
 
-            if (existingUsers.length > 0) {
+            const userRecord = existingUsers[0];
+
+            if (userRecord) {
+                userId = userRecord.id;
                 // Update connection count and lastConnectionAt
-                const currentCount = existingUsers[0]?.connectionCount || 0;
-                const lastConn = existingUsers[0]?.lastConnectionAt;
+                const currentCount = userRecord.connectionCount || 0;
+                const lastConn = userRecord.lastConnectionAt;
 
                 // Only increment if last connection was more than 1 hour ago
-                // to avoid spamming the connection count on frequent relogins
                 let shouldIncrement = true;
                 if (lastConn) {
                     const hourAgo = new Date(Date.now() - 60 * 60 * 1000);
@@ -182,30 +185,65 @@ export async function POST(request: Request) {
                 await db.update(users)
                     .set({
                         lastConnectionAt: now,
+                        updatedAt: now,
                         connectionCount: currentCount + (shouldIncrement ? 1 : 0),
                         hasPandorasKey: hasAccess
                     })
-                    .where(eq(users.walletAddress, walletAddress));
+                    .where(eq(users.id, userId));
             } else {
                 // Insert new user
-                const id = crypto.randomUUID();
+                userId = crypto.randomUUID();
                 await db.insert(users).values({
-                    id,
+                    id: userId,
                     walletAddress,
                     connectionCount: 1,
                     lastConnectionAt: now,
                     createdAt: now,
+                    updatedAt: now,
                     hasPandorasKey: hasAccess
                 });
+                console.log(`🆕 User created with unified ID: ${userId} for wallet: ${walletAddress}`);
             }
         } catch (dbError) {
             console.error("Failed to upsert user connection tracking:", dbError);
-            // Proceed to issue JWT anyway, don't break login if DB fails!
+            // Si falla la DB, no podemos obtener un userId real, 
+            // pero para no romper el login usamos el address temporalmente
+            userId = walletAddress;
         }
 
-        // 8. Issue JWT
+        // 8. Generate sid and Persist Session
+        const sid = crypto.randomUUID();
+        const ip = request.headers.get("x-forwarded-for") || "unknown";
+        const userAgent = request.headers.get("user-agent");
+
+        try {
+            await db.insert(sessions).values({
+                id: sid,
+                userId,
+                scope: 'web',
+                ip,
+                userAgent,
+                expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24h
+            });
+
+            // Log security event
+            await db.insert(securityEvents).values({
+                userId,
+                type: 'LOGIN',
+                ip,
+                userAgent,
+                metadata: { scope: 'web', sid }
+            });
+        } catch (sessionError) {
+            console.error("Failed to persist session/security event:", sessionError);
+        }
+
+        // 9. Issue Scoped JWT with sid
         const token = jwt.sign({
-            sub: address,
+            sub: userId,
+            sid: sid,
+            walletAddress: walletAddress,
+            scope: 'web',
             hasAccess,
             v: 1,
             iat: Math.floor(Date.now() / 1000),
