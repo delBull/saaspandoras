@@ -83,7 +83,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
         formattedBalance = `${balanceVal.toFixed(4)} ${safeChainId === 11155111 ? 'SepoliaETH' : 'ETH'}`;
     }
 
-    const treasuryAddress = project.treasuryAddress || project.treasuryContractAddress;
+    const treasuryAddress = project?.treasuryAddress || project?.treasuryContractAddress;
 
     // 2. Real Data Hooks
     const licenseContract = project.licenseContractAddress ? getContract({
@@ -138,7 +138,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                                         if (Number(amount) <= 0) throw new Error("Monto inválido");
 
                                         return prepareTransaction({
-                                            to: project.treasuryAddress || project.treasuryContractAddress,
+                                            to: project?.treasuryAddress || project?.treasuryContractAddress,
                                             value: BigInt(Math.floor(Number(amount) * 1e18)),
                                             chain: defineChain(safeChainId),
                                             client: client
@@ -253,7 +253,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
             {isOwner && !licenseContract && (
                 <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
                     <AdminPayouts
-                        projectId={project.id}
+                        projectId={project?.id}
                         project={project}
                         safeChainId={safeChainId}
                     />
@@ -263,11 +263,11 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div>
                     <h3 className="text-lg font-bold text-white mb-6">Nuevas Tareas (Recompensas)</h3>
-                    <ActivitiesList projectId={project.id ? Number(project.id) : 0} compact limit={3} />
+                    <ActivitiesList projectId={project?.id ? Number(project.id) : 0} compact limit={3} />
                 </div>
                 <div>
                     <h3 className="text-lg font-bold text-white mb-6">Actividad de Gobernanza</h3>
-                    <UserGovernanceList projectIds={project.id ? [Number(project.id)] : []} />
+                    <UserGovernanceList projectIds={project?.id ? [Number(project.id)] : []} />
                 </div>
             </div>
         </div>
@@ -291,21 +291,21 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
 
     const ProposalsView = () => {
         // Robust detection of governance contract
-        const artifacts = project.artifacts || (project.w2eConfig as any)?.artifacts || [];
+        const artifacts = project?.artifacts || (project?.w2eConfig as any)?.artifacts || [];
         const govArtifact = Array.isArray(artifacts) ? artifacts.find((a: any) =>
-            a.type === 'governor' ||
-            a.type === 'registry' ||
-            a.type === 'voting' ||
-            a.name?.toLowerCase().includes('governor')
+            a?.type === 'governor' ||
+            a?.type === 'registry' ||
+            a?.type === 'voting' ||
+            a?.name?.toLowerCase().includes('governor')
         ) : null;
 
-        const govAddress = project.governorContractAddress ||
-            project.votingContractAddress ||
+        const govAddress = project?.governorContractAddress ||
+            project?.votingContractAddress ||
             govArtifact?.address ||
-            (project as any).governor_contract_address ||
-            (project as any).voting_contract_address ||
-            (project as any).registry_contract_address ||
-            project.registryContractAddress;
+            (project as any)?.governor_contract_address ||
+            (project as any)?.voting_contract_address ||
+            (project as any)?.registry_contract_address ||
+            project?.registryContractAddress;
 
         return (
             <div className="space-y-6">
