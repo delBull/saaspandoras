@@ -338,6 +338,7 @@ export const userPoints = pgTable("user_points", {
 
 export const achievements = pgTable("achievements", {
   id: serial("id").primaryKey(),
+  code: varchar("code", { length: 50 }).unique(), // Added code for stable seeding
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description").notNull(),
   icon: varchar("icon", { length: 10 }).notNull(),
