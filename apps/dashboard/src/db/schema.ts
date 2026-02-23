@@ -55,6 +55,8 @@ export const users = pgTable("users", {
   email: varchar("email", { length: 255 }).unique(),
   image: text("image"),
   walletAddress: varchar("walletAddress", { length: 42 }).unique(), // Restaurado nombre original
+  telegramId: varchar("telegram_id", { length: 255 }).unique(),
+  status: varchar("status", { length: 20 }).default('ACTIVE').notNull(),
   hasPandorasKey: boolean("hasPandorasKey").default(false).notNull(),
 
   // KYC Related Fields
@@ -65,6 +67,39 @@ export const users = pgTable("users", {
   connectionCount: integer("connectionCount").default(1).notNull(),
   lastConnectionAt: timestamp("lastConnectionAt").defaultNow(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export const sessions = pgTable("sessions", {
+  id: uuid("id").primaryKey().defaultRandom(), // sid
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  scope: varchar("scope", { length: 20 }).notNull(), // 'web' | 'telegram'
+  ip: varchar("ip", { length: 45 }),
+  userAgent: text("user_agent"),
+  issuedAt: timestamp("issued_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  revokedAt: timestamp("revoked_at"),
+  revokedReason: varchar("revoked_reason", { length: 100 }),
+});
+
+export const accountRecoveryTokens = pgTable("account_recovery_tokens", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  tokenHash: varchar("token_hash", { length: 255 }).notNull(),
+  scope: varchar("scope", { length: 20 }).default('recovery').notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const securityEvents = pgTable("security_events", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 255 }).references(() => users.id),
+  type: varchar("type", { length: 50 }).notNull(), // LOGIN, REVOKE, RECOVERY, LINK, UNLINK, FREEZE
+  metadata: jsonb("metadata"),
+  ip: varchar("ip", { length: 45 }),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const businessCategoryEnum = pgEnum("business_category", [
@@ -282,6 +317,7 @@ export const gamificationProfiles = pgTable("gamification_profiles", {
 
   // Points and Level System
   totalPoints: integer("total_points").default(0).notNull(),
+  claimedPoints: integer("claimed_points").default(0).notNull(), // PBOX ya reclamados
   currentLevel: integer("current_level").default(1).notNull(),
   levelProgress: integer("level_progress").default(0).notNull(),
   pointsToNextLevel: integer("points_to_next_level").default(100).notNull(),
@@ -304,6 +340,19 @@ export const gamificationProfiles = pgTable("gamification_profiles", {
 
   // Metadata
   lastActivityDate: timestamp("last_activity_date").defaultNow().notNull(),
+  lastClaimedAt: timestamp("last_claimed_at"), // Tracking de rate limiting para claims
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// PBOX Claim Idempotency Table
+export const pboxClaims = pgTable("pbox_claims", {
+  id: uuid("id").primaryKey().defaultRandom(), // claimId
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  walletAddress: varchar("wallet_address", { length: 42 }).notNull(),
+  amount: integer("amount").notNull(),
+  status: varchar("status", { length: 20 }).default('PENDING').notNull(), // PENDING, CONFIRMED, FAILED
+  txHash: varchar("tx_hash", { length: 66 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

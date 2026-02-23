@@ -11,8 +11,12 @@ import { client } from "@/lib/thirdweb-client";
 import { useEOAIdentity } from "@/hooks/useEOAIdentity";
 
 interface User {
-    address: string;
+    id: string;
+    address: string | null;
     hasAccess: boolean;
+    telegramId?: string | null;
+    name?: string | null;
+    image?: string | null;
 }
 
 interface AuthContextType {
@@ -20,6 +24,7 @@ interface AuthContextType {
     isLoading: boolean;
     login: () => Promise<void>;
     logout: () => Promise<void>;
+    checkSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -70,13 +75,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
             const res = await fetch(`${API_URL}/auth/me`, { credentials: "include" });
             const data = await res.json();
-            if (res.ok && data.address) {
-                // If wallet connected, verify it matches
-                if (account && data.address.toLowerCase() !== account.address.toLowerCase()) {
-                    // Mismatch: logout previous, login new?
-                    // Or just invalid state.
-                }
-                setUser({ address: data.address, hasAccess: data.hasAccess });
+
+            // 🔥 El nuevo payload es { user: { id, address, ... } }
+            if (res.ok && data.user) {
+                setUser(data.user);
+            } else if (res.status === 403) {
+                // Identity Frozen
+                setUser(data.user || null);
+                toast({
+                    title: "Access Restricted",
+                    description: data.error || "Your identity is currently frozen.",
+                    variant: "destructive"
+                });
             } else {
                 setUser(null);
             }
@@ -98,10 +108,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setIsLoading(true);
 
             // 🆕 Smart Account Support: Use EOA as identity, not Smart Account address
-            // This ensures sessions persist even when the smart wallet changes
             const identityAddress = eoaIdentity || account.address;
             console.log('[AuthProvider] 🆔 Identity Address (EOA):', identityAddress);
-            console.log('[AuthProvider] 📱 Execution Address:', account.address);
 
             // 1. Get Nonce for the EOA identity
             const nonceRes = await fetch(`${API_URL}/auth/nonce?address=${identityAddress}`, { credentials: "include" });
@@ -114,9 +122,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const version = "1";
             const chainId = chain?.id || config.chain.id;
             const issuedAt = new Date().toISOString();
-            const expirationTime = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 min validity for sig
+            const expirationTime = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
-            // 🆕 Include both addresses in the message for Smart Wallet support
             const executionAddress = account.address;
 
             // Construct EIP-4361 message
@@ -133,15 +140,14 @@ Issued At: ${issuedAt}
 Expiration Time: ${expirationTime}
 ${executionAddress !== identityAddress ? `\nExecution Address: ${executionAddress}` : ''}`;
 
-            // 3. Sign (the user signs with their wallet, could be EOA or Smart Wallet)
+            // 3. Sign
             const signature = await account.signMessage({ message });
 
             // 4. Verify & Create Session
-            // 🆕 Send both addresses: identity (EOA) for session, execution for display
             const payload = {
                 domain,
-                address: identityAddress, // Use EOA as the identity
-                executionAddress: executionAddress !== identityAddress ? executionAddress : undefined, // Smart Wallet address
+                address: identityAddress,
+                executionAddress: executionAddress !== identityAddress ? executionAddress : undefined,
                 statement,
                 uri,
                 version,
@@ -149,7 +155,7 @@ ${executionAddress !== identityAddress ? `\nExecution Address: ${executionAddres
                 nonce,
                 issuedAt,
                 expirationTime,
-                message, // 🔑 Send the exact signed string for backend verification
+                message,
             };
 
             const loginRes = await fetch(`${API_URL}/auth/login`, {
@@ -163,8 +169,13 @@ ${executionAddress !== identityAddress ? `\nExecution Address: ${executionAddres
 
             const data = await loginRes.json();
 
-            // 🆕 Store EOA identity in session for persistent login across smart wallet changes
-            setUser({ address: identityAddress, hasAccess: data.hasAccess });
+            // 🆕 Store full unified identity
+            if (data.user) {
+                setUser(data.user);
+            } else {
+                // Fallback for transition
+                await checkSession();
+            }
             toast({ title: "Welcome back!", description: "Successfully logged in." });
 
         } catch (e) {
@@ -181,7 +192,7 @@ ${executionAddress !== identityAddress ? `\nExecution Address: ${executionAddres
     };
 
     return (
-        <AuthContext.Provider value={{ user, isLoading, login, logout }}>
+        <AuthContext.Provider value={{ user, isLoading, login, logout, checkSession }}>
             {children}
         </AuthContext.Provider>
     );

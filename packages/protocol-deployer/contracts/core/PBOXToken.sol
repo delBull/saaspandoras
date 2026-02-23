@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 
 /**
  * @title PBOXToken - Token de Utilidad Interna de Pandora's
@@ -18,7 +19,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
  * - Mint permissions delegados a Fábrica Modular
  * - NO es un token de inversión especulativa
  */
-contract PBOXToken is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard {
+contract PBOXToken is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard, Pausable {
     // ========== ROLES DE ACCESO ==========
 
     /// @notice Rol para acuñar nuevos tokens (solo Fábrica Modular)
@@ -60,9 +61,20 @@ contract PBOXToken is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard {
     /// @notice Último día de conversión por usuario
     mapping(address => uint256) public lastConversionDay;
 
+    // ========== ENUMS ==========
+
+    enum MintReason {
+        REWARD,
+        GAMIFICATION,
+        STAKING,
+        MIGRATION,
+        VOUCHER_CLAIM,
+        OTHER
+    }
+
     // ========== EVENTOS ==========
 
-    event TokensMinted(address indexed to, uint256 amount, string reason);
+    event TokensMinted(address indexed to, uint256 amount, MintReason reason);
     event TokensBurned(address indexed from, uint256 amount, string reason);
     event ConversionExecuted(
         address indexed user,
@@ -72,7 +84,9 @@ contract PBOXToken is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard {
         address indexed backingAsset
     );
     event ConversionFeeUpdated(uint256 oldFee, uint256 newFee);
+    event ConversionLimitsUpdated(uint256 newMinConversion, uint256 newMaxDaily);
     event FactoryUpdated(address indexed oldFactory, address indexed newFactory);
+    event EmergencyWithdraw(address indexed to, uint256 amount);
 
     // ========== CONSTRUCTOR ==========
 
@@ -118,8 +132,8 @@ contract PBOXToken is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard {
     function mint(
         address to,
         uint256 amount,
-        string calldata reason
-    ) external onlyRole(MINTER_ROLE) nonReentrant {
+        MintReason reason
+    ) external onlyRole(MINTER_ROLE) nonReentrant whenNotPaused {
         require(to != address(0), "PBOX: Invalid recipient");
         require(amount > 0, "PBOX: Amount must be positive");
         require(totalSupply() + amount <= MAX_TOTAL_SUPPLY, "PBOX: Max supply exceeded");
@@ -138,7 +152,7 @@ contract PBOXToken is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard {
     function convertToLiquidity(
         uint256 amount,
         address backingAsset
-    ) external nonReentrant {
+    ) external nonReentrant whenNotPaused {
         require(amount >= minConversionAmount, "PBOX: Below minimum conversion");
         require(backingAsset != address(0), "PBOX: Invalid backing asset");
 
@@ -241,6 +255,8 @@ contract PBOXToken is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard {
 
         minConversionAmount = newMinConversion;
         maxDailyConversion = newMaxDaily;
+
+        emit ConversionLimitsUpdated(newMinConversion, newMaxDaily);
     }
 
     /**
@@ -258,6 +274,34 @@ contract PBOXToken is ERC20, ERC20Burnable, AccessControl, ReentrancyGuard {
      */
     function revokeBurner(address burner) external onlyAdmin {
         _revokeRole(BURNER_ROLE, burner);
+    }
+
+    /**
+     * @notice Pausa emisiones y conversiones (Emergencias)
+     */
+    function pause() external onlyAdmin {
+        _pause();
+    }
+
+    /**
+     * @notice Reanuda emisiones y conversiones
+     */
+    function unpause() external onlyAdmin {
+        _unpause();
+    }
+
+    /**
+     * @notice Permite al admin retirar ETH atascado (caso de emergencia)
+     */
+    function withdrawETH(address to) external onlyAdmin {
+        require(to != address(0), "PBOX: Invalid address");
+        uint256 balance = address(this).balance;
+        require(balance > 0, "PBOX: No ETH to withdraw");
+        
+        (bool success, ) = to.call{value: balance}("");
+        require(success, "PBOX: ETH Transfer failed");
+        
+        emit EmergencyWithdraw(to, balance);
     }
 
     // ========== FUNCIONES DE VISTA ==========

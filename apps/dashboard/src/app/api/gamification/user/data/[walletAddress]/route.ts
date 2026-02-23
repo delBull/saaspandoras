@@ -46,15 +46,19 @@ export async function GET(
 
     console.log(`🔍 API: Getting gamification data for wallet ${walletAddress}`);
 
-    // 1. Get user ID from wallet address
-    console.log(`🔍 API: Querying users table for wallet ${walletAddress} (case-normalized)`);
+    // 🔍 1. Resolve User from Identifier (Wallet or UUID)
+    console.log(`🔍 API: Querying users table for identifier ${walletAddress}`);
     const userResult = await db
       .select({ id: users.id })
       .from(users)
-      .where(ilike(users.walletAddress, walletAddress))
+      .where(
+        walletAddress.startsWith('0x')
+          ? ilike(users.walletAddress, walletAddress)
+          : eq(users.id, walletAddress)
+      )
       .limit(1);
 
-    console.log(`🔍 API: User query result:`, userResult);
+    console.log(`🔍 API: User resolution result:`, userResult);
 
     if (!userResult || userResult.length === 0 || !userResult[0]) {
       console.log(`❌ User not found for wallet ${walletAddress}`);
