@@ -37,6 +37,32 @@ interface RealTimeGamificationData {
   trackNewEvent: (eventType: string, metadata?: Record<string, unknown>) => Promise<void>;
 }
 
+// 🔥 HELPER: Map database 'type' to UI 'category' for filtering and icons
+function mapTypeToCategory(type: string): 'community' | 'investor' | 'creator' | 'expert' {
+  if (!type) return 'community';
+
+  const t = type.toLowerCase();
+  if (t.includes('community')) return 'community';
+  if (t.includes('creator') || t.includes('projects') || t.includes('tokenization')) return 'creator';
+  if (t.includes('invest') || t.includes('defi') || t.includes('yield') || t.includes('staking') || t.includes('governor') || t.includes('dao')) return 'investor';
+  if (t.includes('learning') || t.includes('expert') || t.includes('streak') || t.includes('explorer')) return 'expert';
+
+  return 'community';
+}
+
+// 🔥 HELPER: Map database 'type' to UI 'rarity' for styling
+function mapTypeToRarity(type: string): 'first_steps' | 'investor' | 'community_builder' | 'early_adopter' | 'high_roller' {
+  if (!type) return 'first_steps';
+
+  const t = type.toLowerCase();
+  if (t.includes('early')) return 'early_adopter';
+  if (t.includes('collector') || t.includes('whale') || t.includes('high_roller')) return 'high_roller';
+  if (t.includes('community')) return 'community_builder';
+  if (t.includes('invest')) return 'investor';
+
+  return 'first_steps';
+}
+
 // Custom Hook para conectar con sistema gamificación real y persistente
 export function useRealGamification(userId?: string): RealTimeGamificationData {
   const [profile, setProfile] = useState<UserGamificationProfile | null>(null);
@@ -81,16 +107,16 @@ export function useRealGamification(userId?: string): RealTimeGamificationData {
         description: a.description,
         icon: a.icon ?? '🏆',
 
-        // 🔥 EXPLICIT SEMANTICS
-        category: normalizeCategory(a.category || a.type),
-        rarity: normalizeRarity(a.rarity || a.type),
+        // 🔥 EXPLICIT SEMANTICS (Fixing user mismatch)
+        category: mapTypeToCategory(a.type),
+        rarity: mapTypeToRarity(a.type),
 
-        pointsReward: Number(a.pointsReward ?? a.points ?? 0),
+        pointsReward: Number(a.pointsReward ?? a.points_reward ?? a.points ?? 0),
 
         progress: Number(a.progress ?? 0),
-        required: Number(a.required ?? 1),
+        required: Number(a.required ?? a.required_points ?? 1),
 
-        isUnlocked: Boolean(a.isUnlocked ?? a.isCompleted ?? false),
+        isUnlocked: Boolean(a.isUnlocked ?? a.is_unlocked ?? a.isCompleted ?? false),
       }));
 
       // Update state with normalized data
@@ -161,21 +187,4 @@ export function useRealGamification(userId?: string): RealTimeGamificationData {
   };
 }
 
-/* ---------------- helpers ---------------- */
 
-function normalizeCategory(raw: string): 'community' | 'investor' | 'creator' | 'expert' {
-  const val = String(raw).toLowerCase();
-  if (['investor', 'defi_starter', 'high_roller'].includes(val)) return 'investor';
-  if (['creator', 'artifact_collector'].includes(val)) return 'creator';
-  if (['expert', 'tokenization_expert', 'early_adopter', 'governor', 'yield_hunter', 'dao_pioneer'].includes(val)) return 'expert';
-  return 'community';
-}
-
-function normalizeRarity(raw: string): 'first_steps' | 'investor' | 'community_builder' | 'early_adopter' | 'high_roller' {
-  const val = String(raw).toLowerCase();
-  if (['high_roller', 'tokenization_expert', 'dao_pioneer'].includes(val)) return 'high_roller';
-  if (['early_adopter', 'governor', 'yield_hunter'].includes(val)) return 'early_adopter';
-  if (['community_builder', 'creator'].includes(val)) return 'community_builder';
-  if (['investor', 'defi_starter'].includes(val)) return 'investor';
-  return 'first_steps';
-}

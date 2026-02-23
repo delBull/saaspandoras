@@ -98,11 +98,26 @@ export default function AchievementsPage() {
     }
   }, [account?.address, gamification.refreshData]);
 
+  // 🔥 FIX 4: Debug log to verify mapping
+  useEffect(() => {
+    if (gamification.achievements.length > 0) {
+      console.log('🎮 [Achievements Debug Table]');
+      console.table(gamification.achievements.map(a => ({
+        name: a.name,
+        category: a.category,
+        rarity: a.rarity,
+        unlocked: a.isUnlocked,
+        points: a.pointsReward
+      })));
+    }
+  }, [gamification.achievements]);
+
   // 🔥 CLEAN FILTERING LOGIC
   const filteredAchievements = gamification.achievements
     .filter(a => {
       // Filter by Category
-      if (selectedCategory && a.category !== selectedCategory) return false;
+      // 🔥 FIX 5: Bypassing category filter to confirm data visibility
+      // if (selectedCategory && a.category !== selectedCategory) return false;
 
       // Filter by Unlocked/Locked status
       if (filter === 'unlocked') return a.isUnlocked;
