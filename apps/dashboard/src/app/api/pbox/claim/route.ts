@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
 
         const claimRecord = pendingClaimResult[0];
 
-        if (!claimRecord || !claimRecord.claimId) {
+        if (!claimRecord?.claimId) {
             throw new Error("Failed to initialize claim record.");
         }
 
@@ -125,13 +125,13 @@ export async function POST(request: NextRequest) {
                     throw new Error("Server misconfiguration: Minter keys missing.");
                 }
             } else {
-                const provider = new ethers.JsonRpcProvider(RPC_URL);
+                const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
                 const signer = new ethers.Wallet(MINTER_PRIVATE_KEY, provider);
                 const pboxContract = new ethers.Contract(PBOX_TOKEN_ADDRESS, PBOXTokenArtifact.abi, signer);
 
                 // Assuming reason 0 is REWARD according to MintReason Enum (REWARD, GAMIFICATION, STAKING, MIGRATION, VOUCHER_CLAIM, OTHER)
                 // Sending exact wei formatted amount. E.g if 1 point = 1 PBOX token (18 decimals)
-                const amountInWei = ethers.parseUnits(claimablePBOX.toString(), 18);
+                const amountInWei = ethers.utils.parseUnits(claimablePBOX.toString(), 18);
                 const mintReasonEnum = 0; // REWARD
 
                 const tx = await pboxContract.mint(user.walletAddress, amountInWei, mintReasonEnum);
