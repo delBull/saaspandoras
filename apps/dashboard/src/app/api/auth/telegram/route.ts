@@ -28,7 +28,7 @@ export async function POST(req: Request) {
         const name = `${tgUser.first_name || ''} ${tgUser.last_name || ''}`.trim();
 
         // 🔍 Resolve Identity (Unified Source of Truth)
-        let userRecord = await db.query.users.findFirst({
+        const userRecord = await db.query.users.findFirst({
             where: eq(users.telegramId, telegramId)
         });
 
