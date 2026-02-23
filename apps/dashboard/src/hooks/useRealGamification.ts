@@ -102,19 +102,20 @@ export function useRealGamification(userId?: string): RealTimeGamificationData {
 
       // 🔥 ANTI-CORRUPTION LAYER: Normalizar datos del backend
       const normalizedAchievements: GamificationAchievement[] = (data.achievements || []).map((a: any) => ({
-        id: a.id,
-        name: a.name,
-        description: a.description,
-        icon: a.icon ?? '🏆',
+        id: String(a.id || a.achievementId || a.achievement_id),
+        name: a.name || 'Logro sin nombre',
+        description: a.description || '',
+        icon: a.icon || '🏆',
 
         // 🔥 EXPLICIT SEMANTICS (Fixing user mismatch)
-        category: mapTypeToCategory(a.type),
-        rarity: mapTypeToRarity(a.type),
+        // Asegura que lea 'type' de la BD o los campos ya mapeados del API
+        category: mapTypeToCategory(a.type || a.category),
+        rarity: mapTypeToRarity(a.type || a.rarity),
 
         pointsReward: Number(a.pointsReward ?? a.points_reward ?? a.points ?? 0),
 
         progress: Number(a.progress ?? 0),
-        required: Number(a.required ?? a.required_points ?? 1),
+        required: Number(a.required ?? a.required_points ?? a.requiredPoints ?? 1),
 
         isUnlocked: Boolean(a.isUnlocked ?? a.is_unlocked ?? a.isCompleted ?? false),
       }));

@@ -88,6 +88,10 @@ export async function GET(
     }
     console.log(`🔍 API: Found user with ID ${userId} for wallet ${walletAddress}`);
 
+    // ===== DIAGNOSTIC: Check user in database directly =====
+    const userConfirm = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    console.log(`🔍 API DIAGNOSTIC: User record in DB:`, userConfirm[0] ? 'EXISTS' : 'MISSING');
+
     // ===== ENSURE ACHIEVEMENTS ARE SEEDED =====
     // This is critical to ensure all available achievements (43+) are visible even if DB was empty
     try {
@@ -246,6 +250,11 @@ export async function GET(
       ))
       .orderBy(achievements.id); // Consistent ordering
 
+    console.log(`🔍 API DIAGNOSTIC: Raw achievements from DB: ${achievementsResult.length}`);
+    if (achievementsResult.length === 1) {
+      console.log(`⚠️ API DIAGNOSTIC: Only 1 achievement found! ID: ${achievementsResult[0]?.achievementId}, Name: ${achievementsResult[0]?.name}`);
+    }
+
     const achievementsData: UserAchievement[] = achievementsResult.map((item) => {
       // 🧠 Map semantics to satisfy BOTH legacy and new refactored expectations
       const rawType = item.type || 'community';
@@ -283,6 +292,8 @@ export async function GET(
         metadata: undefined
       };
     });
+
+    console.log(`🔍 API DIAGNOSTIC: Mapped achievementsData: ${achievementsData.length}`);
 
     // 4. Get available rewards (for now, return empty array)
     const rewardsData: Reward[] = [];
