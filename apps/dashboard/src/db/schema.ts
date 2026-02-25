@@ -229,8 +229,12 @@ export const projects = pgTable("projects", {
   // Campos para featured projects
   featured: boolean("featured").default(false).notNull(),
   featuredButtonText: varchar("featured_button_text", { length: 100 }).default("Dime más"),
-
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
+
+  // Pricing & Access Metadata
+  accessType: varchar("access_type", { length: 20 }).default('free'), // free, license, gated, premium
+  price: decimal("price", { precision: 18, scale: 6 }).default("0.000000"),
 });
 
 export const projectsIndexes = {
