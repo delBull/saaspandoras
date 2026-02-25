@@ -69,3 +69,4 @@ DEPLOY.md
 nft_lab.md
 
 # Note: PUBLIC_SECURITY_OVERVIEW.md is intentionally NOT ignored (safe for public)
+apps/dashboard/drizzle_backup/
