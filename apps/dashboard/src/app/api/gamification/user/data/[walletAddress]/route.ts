@@ -233,33 +233,21 @@ export async function GET(
       }
     }
 
-    // 3. Get ALL available achievements with user progress (LEFT JOIN to include all achievements)
-    const achievementsResult = await db
-      .select({
-        userAchievementId: userAchievements.id,
-        achievementId: achievements.id,
-        progress: userAchievements.progress,
-        isUnlocked: userAchievements.isUnlocked,
-        unlockedAt: userAchievements.unlockedAt,
-        name: achievements.name,
-        description: achievements.description,
-        icon: achievements.icon,
-        type: achievements.type,
-        pointsReward: achievements.pointsReward
-      })
-      .from(achievements)
-      .leftJoin(userAchievements, and(
-        eq(achievements.id, userAchievements.achievementId),
-        eq(userAchievements.userId, userId)
-      ))
-      .orderBy(achievements.id); // Consistent ordering
+    // 3. Get ALL available achievements
+    const allAchievements = await db.select().from(achievements).orderBy(achievements.id);
 
-    console.log(`🔍 API DIAGNOSTIC: Raw achievements from DB: ${achievementsResult.length}`);
-    if (achievementsResult.length === 1) {
-      console.log(`⚠️ API DIAGNOSTIC: Only 1 achievement found! ID: ${achievementsResult[0]?.achievementId}, Name: ${achievementsResult[0]?.name}`);
-    }
+    // 4. Get specific user progress
+    const userProgress = await db
+      .select()
+      .from(userAchievements)
+      .where(eq(userAchievements.userId, userId));
 
-    const achievementsData: UserAchievement[] = achievementsResult.map((item) => {
+    console.log(`🔍 API DIAGNOSTIC: Found ${allAchievements.length} total achievements and ${userProgress.length} user progress records.`);
+
+    // 5. Map achievements to user progress
+    const achievementsData: UserAchievement[] = allAchievements.map((item) => {
+      const progressRecord = userProgress.find(up => up.achievementId === item.id);
+
       // 🧠 Map semantics to satisfy BOTH legacy and new refactored expectations
       const rawType = item.type || 'community';
 
@@ -277,18 +265,18 @@ export async function GET(
       else if (['tokenization_expert', 'early_adopter', 'governor', 'dao_pioneer'].includes(rawType)) category = 'expert';
 
       return {
-        id: item.achievementId.toString(),
+        id: item.id.toString(),
         userId: walletAddress,
-        achievementId: item.achievementId.toString(),
-        progress: item.progress || 0,
-        isCompleted: Boolean(item.isUnlocked),
-        isUnlocked: Boolean(item.isUnlocked),
-        completedAt: item.unlockedAt || undefined,
+        achievementId: item.id.toString(),
+        progress: progressRecord?.progress || 0,
+        isCompleted: Boolean(progressRecord?.isUnlocked),
+        isUnlocked: Boolean(progressRecord?.isUnlocked),
+        completedAt: progressRecord?.unlockedAt || undefined,
         name: item.name,
         description: item.description,
         icon: item.icon,
         points: item.pointsReward || 0,
-        unlockedAt: item.unlockedAt || undefined,
+        unlockedAt: progressRecord?.unlockedAt || undefined,
         // 🔥 Refactored fields
         type: rawType,
         category: category,
