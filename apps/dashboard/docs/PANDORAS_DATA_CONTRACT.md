@@ -1,47 +1,65 @@
-# 🔗 Pandoras Data Contract
+# 🔗 Pandoras Data Contract v2
 
 **Core → Edge API → Telegram Mini App**  
-*Status: FINAL · Alpha-ready*
+Status: FINAL · Alpha-ready · Telegram Standalone Compatible
 
 ---
 
-## 1️⃣ Principios de diseño (no negociables)
+# 1️⃣ Principios No Negociables
 
 1. **Core es el Source of Truth**
-   * Telegram **no define reglas**
-   * Telegram **no interpreta lógica**
-   * Telegram **solo renderiza y ejecuta**
+   - Define protocolos
+   - Define reglas
+   - Define artefactos
+   - Define contratos
+   - Define disponibilidad
 
-2. **Edge API = Adaptador + Cache**
-   * Traduce Core → UX-friendly
-   * Añade contexto del usuario (hasAccess, balances, etc.)
-   * Ejecuta acciones delegadas (relayer)
+2. **Edge es Adaptador + Contextualizador**
+   - Traduce DTOs
+   - Calcula `hasAccess`
+   - Calcula `unlocked`
+   - Ejecuta relayer
+   - Nunca redefine reglas
 
-3. **Mini App = Render + Acción**
-   * Nunca asume contratos
-   * Nunca hardcodea artefactos
-   * Nunca calcula permisos
+3. **Mini App solo Renderiza**
+   - No lee blockchain
+   - No calcula permisos
+   - No interpreta unlock rules
+   - Solo usa campos ya resueltos
 
 ---
 
-## 2️⃣ Core → Edge
+# 2️⃣ Identidad: Modelo Oficial
 
-### 📦 DTO: `CoreProjectDTO`
-Este es el **contrato que el Core debe exponer** (REST o GraphQL).
+Telegram y Core son identidades separadas.
+
+## Estados posibles del usuario en Telegram:
+
+| Estado | Descripción |
+|--------|------------|
+| STANDALONE | Solo TelegramUser |
+| TELEGRAM + WALLET | TelegramUser con wallet conectada |
+| TELEGRAM + CORE LINKED | TelegramUser vinculado a CoreUser |
+
+---
+
+# 3️⃣ Core → Edge Contract
+
+## 📦 CoreProjectDTO (Source of Truth)
 
 ```ts
-// Core → Edge
 export interface CoreProjectDTO {
-  id: string;                 // UUID Core
+  id: string;
   slug: string;
   name: string;
   description: string;
 
-  category: string;           // enum: REAL_ESTATE | TECH | AGRI | etc
+  category: string;
   status: 'DRAFT' | 'LIVE' | 'PAUSED';
+  version: number;
 
-  version: number;            // protocolVersion
   pageLayoutType?: 'DEFAULT' | 'PREMIUM' | 'GOVERNANCE';
+  interactionMode?: 'PASSIVE' | 'ACTIVE' | 'GOVERNANCE';
 
   visuals: {
     logoUrl?: string;
@@ -53,13 +71,20 @@ export interface CoreProjectDTO {
     tvl?: string;
   };
 
+  availability: {
+    telegram: boolean;
+    web: boolean;
+  };
+
   access: {
     type: 'LICENSE' | 'KEY';
     licenseContractAddress: string;
     chainId: number;
-    gasPolicy: 'SPONSORED' | 'USER_PAYS'; // ← YA decidido: SPONSORED
+    gasPolicy: 'SPONSORED';
     price: 'FREE';
   };
+
+  requiresLink?: boolean;
 
   artifacts: Array<{
     id: string;
@@ -79,21 +104,14 @@ export interface CoreProjectDTO {
 
   updatedAt: string;
 }
-```
 
-✅ **Nota clave**
-* **Pandoras Key** entra aquí como `access.type = 'KEY'`
-* Telegram **NO decide** si algo es Key o License → solo renderiza
 
----
+⸻
 
-## 3️⃣ Edge API (Adaptación Telegram-aware)
+4️⃣ Edge → Mini App Contract
 
-### 📦 DTO: `EdgeProtocolDTO`
-Este es **el DTO real que YA estás usando en Telegram**, formalizado.
+📦 EdgeProtocolDTO (Telegram-ready)
 
-```ts
-// Edge → Mini App
 export interface EdgeProtocolDTO {
   id: string;
   slug: string;
@@ -110,10 +128,13 @@ export interface EdgeProtocolDTO {
   coverPhotoUrl?: string;
 
   pageLayoutType?: string;
+  interactionMode?: string;
+
   isFeatured?: boolean;
 
-  // 🔐 Usuario-contextual
   hasAccess: boolean;
+
+  requiresLink?: boolean;
 
   access: {
     type: 'LICENSE' | 'KEY';
@@ -128,67 +149,190 @@ export interface EdgeProtocolDTO {
     unlocked: boolean;
   }>;
 }
-```
 
-🔎 **De dónde sale cada campo**
 
-| Campo | Fuente |
-| :--- | :--- |
-| metadata | Core |
-| artifacts | Core |
-| hasAccess | Edge (on-chain + DB) |
-| unlocked | Edge (reglas Core + estado usuario) |
+⸻
 
----
+5️⃣ Cálculo Oficial de hasAccess
 
-## 4️⃣ Edge API – Endpoints finales (contrato cerrado)
+hasAccess es calculado exclusivamente en Edge.
 
-### 🔹 Listado (Home / Explore)
-`GET /protocols` -> `EdgeProtocolDTO[]`
+Nunca en Mini App.
 
-### 🔹 Detalle de protocolo
-`GET /protocols/:slug` -> `EdgeProtocolDTO`
+⸻
 
-### 🔹 Activar acceso (GASLESS)
-`POST /protocols/:id/access-card`
-* Ejecuta: Relayer, Mint `mintTo(user.wallet)`, Idempotencia, Auditoría.
-* Response: `{ status: 'SUCCESS' | 'PENDING' | 'ALREADY_OWNED', txHash?: string }`
+🧠 Identidad Resuelta en Edge
 
----
+Edge recibe contexto:
 
-## 5️⃣ Mini App – Contrato asumido (Frontend)
+interface EdgeUserContext {
+  telegramUserId: string;
+  walletAddress?: string;
+  linkedCoreUserId?: string;
+}
 
-### 🔹 Discover.tsx
-* **NO calcula permisos**. Usa `hasAccess`, `isFeatured`, `coverPhotoUrl`.
 
-### 🔹 ProtocolDetail.tsx
-* **No lee blockchain**. No usa thirdweb read. Solo `protocol.hasAccess` y `protocol.artifacts[].unlocked`.
+⸻
 
----
+🧮 Algoritmo Oficial hasAccess
 
-## 6️⃣ Pandoras Key (ajuste final)
-* **No entra en Telegram Alpha**. Vive en plataforma web.
-* Mismo DTO, pero `access.type = 'KEY'`. Telegram ignora o muestra badge: “Disponible en Plataforma”.
+async function resolveHasAccess(
+  protocol: CoreProjectDTO,
+  context: EdgeUserContext
+): Promise<boolean> {
 
----
+  const contract = protocol.access.licenseContractAddress;
 
-## 7️⃣ Roadmap (para Mini App + Web)
+  // 1️⃣ Caso Telegram + Wallet
+  if (context.walletAddress) {
+    const owns = await blockchain.ownsAccessCard(
+      contract,
+      context.walletAddress
+    );
+    if (owns) return true;
+  }
 
-### 📍 Alpha (Ahora)
-* Protocol Discovery
-* Access Cards gasless
-* Artefactos bloqueados/desbloqueados
-* PBOX Testnet
-* Activity Drawer
+  // 2️⃣ Caso Telegram + Core Vinculado
+  if (context.linkedCoreUserId) {
+    const coreWallets = await core.getWallets(context.linkedCoreUserId);
 
-### 📍 Beta
-* Artefactos interactivos
-* Governance lite
-* Misiones por protocolo
-* Badges dinámicos
+    for (const wallet of coreWallets) {
+      const owns = await blockchain.ownsAccessCard(
+        contract,
+        wallet.address
+      );
+      if (owns) return true;
+    }
+  }
 
-### 📍 Mainnet
-* Artefactos transferibles
-* Revenue-sharing
-* Governance real
-* Marketplace interno
+  // 3️⃣ Telegram Standalone sin wallet
+  return false;
+}
+
+
+⸻
+
+6️⃣ Cálculo Oficial de artifacts[].unlocked
+
+Edge aplica reglas del Core:
+
+function resolveArtifactUnlocked(
+  artifact,
+  hasAccess: boolean
+): boolean {
+
+  if (artifact.unlockRule.requiresAccess && !hasAccess) {
+    return false;
+  }
+
+  // Fases futuras pueden expandirse aquí
+  return true;
+}
+
+Mini App solo recibe:
+
+artifact.unlocked = true | false
+
+
+⸻
+
+7️⃣ Mint Access Card (GASLESS)
+
+Endpoint
+
+POST /protocols/:id/access-card
+
+Lógica Edge
+	1.	Validar TelegramSession
+	2.	Resolver walletAddress:
+	•	Wallet conectada
+	•	Wallet Core vinculada
+	3.	Verificar idempotencia
+	4.	Ejecutar relayer
+	5.	Registrar auditoría
+	6.	Recalcular hasAccess
+
+Response
+
+{
+  "status": "SUCCESS" | "PENDING" | "ALREADY_OWNED",
+  "txHash": "0x..."
+}
+
+
+⸻
+
+8️⃣ Reglas de Disponibilidad
+
+Edge solo expone protocolos donde:
+
+protocol.status === 'LIVE'
+AND protocol.availability.telegram === true
+
+
+⸻
+
+9️⃣ Reglas de KEY en Alpha
+
+Si:
+
+protocol.access.type === 'KEY'
+
+Entonces:
+	•	Se muestra badge
+	•	No se permite activación
+	•	Puede incluir CTA: “Disponible en Plataforma”
+
+⸻
+
+🔟 Mini App — Reglas Obligatorias
+
+La Mini App:
+	•	NO calcula hasAccess
+	•	NO calcula unlocked
+	•	NO lee blockchain
+	•	NO interpreta unlockRule
+	•	NO decide disponibilidad
+
+Solo renderiza lo recibido.
+
+⸻
+
+1️⃣1️⃣ Roadmap Compatibility
+
+Este contrato soporta:
+
+Alpha:
+	•	Access Cards gasless
+	•	Artefactos bloqueados/desbloqueados
+	•	Protocol Discovery
+	•	Featured
+
+Beta:
+	•	Governance
+	•	Fases dinámicas
+	•	Reglas complejas
+	•	Artefactos interactivos
+
+Mainnet:
+	•	Transferencias
+	•	Revenue-sharing
+	•	Marketplace
+
+Sin romper compatibilidad hacia atrás.
+
+⸻
+
+1️⃣2️⃣ Declaración Final
+
+Este contrato:
+	•	Soporta Telegram Standalone
+	•	Soporta Telegram + Wallet
+	•	Soporta Telegram + Core Vinculado
+	•	Mantiene Core como Soberano
+	•	Evita dependencias de identidad cruzada
+	•	Elimina race conditions
+	•	Permite escalar a Beta sin refactor
+
+Estado: Arquitectura estable.
+
