@@ -523,7 +523,7 @@ function TelegramUsersManager() {
     const [search, setSearch] = useState("");
     const [searching, setSearching] = useState(false);
     const [results, setResults] = useState<any[]>([]);
-    const [selected, setSelected] = useState<any | null>(null);
+    const [selected, setSelected] = useState<any>(null);
     const [updating, setUpdating] = useState(false);
 
     // Mutation DTO
@@ -698,11 +698,12 @@ function TelegramUsersManager() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {/* Points Delta */}
                                 <div className="space-y-2">
-                                    <label className="text-[11px] font-bold text-gray-500 uppercase">Modificar Puntos (Delta)</label>
+                                    <label htmlFor="points-add" className="text-[11px] font-bold text-gray-500 uppercase">Modificar Puntos (Delta)</label>
                                     <div className="flex items-center gap-2">
                                         <div className="flex-1 space-y-1">
                                             <span className="text-[9px] text-gray-600 font-bold uppercase">Sumar</span>
                                             <Input
+                                                id="points-add"
                                                 type="number"
                                                 value={mutation.addPoints}
                                                 onChange={e => setMutation({ ...mutation, addPoints: parseInt(e.target.value) || 0 })}
@@ -712,6 +713,7 @@ function TelegramUsersManager() {
                                         <div className="flex-1 space-y-1">
                                             <span className="text-[9px] text-gray-600 font-bold uppercase">Restar</span>
                                             <Input
+                                                id="points-subtract"
                                                 type="number"
                                                 value={mutation.subtractPoints}
                                                 onChange={e => setMutation({ ...mutation, subtractPoints: parseInt(e.target.value) || 0 })}
@@ -723,8 +725,9 @@ function TelegramUsersManager() {
 
                                 {/* Role Selection */}
                                 <div className="space-y-2">
-                                    <label className="text-[11px] font-bold text-gray-500 uppercase">Rol de Usuario</label>
+                                    <label htmlFor="user-role" className="text-[11px] font-bold text-gray-500 uppercase">Rol de Usuario</label>
                                     <select
+                                        id="user-role"
                                         value={mutation.role}
                                         onChange={e => setMutation({ ...mutation, role: e.target.value as any })}
                                         className="w-full bg-zinc-950 border border-zinc-800 rounded-md h-9 text-sm px-2 text-white"
@@ -737,8 +740,9 @@ function TelegramUsersManager() {
 
                                 {/* Tags Management */}
                                 <div className="space-y-2 md:col-span-2">
-                                    <label className="text-[11px] font-bold text-gray-500 uppercase">Etiquetas (Separadas por Coma)</label>
+                                    <label htmlFor="user-tags" className="text-[11px] font-bold text-gray-500 uppercase">Etiquetas (Separadas por Coma)</label>
                                     <Input
+                                        id="user-tags"
                                         value={mutation.tags.join(", ")}
                                         onChange={e => setMutation({ ...mutation, tags: e.target.value.split(",").map(t => t.trim()).filter(Boolean) })}
                                         placeholder="VIP, Partner, Ambassador..."
