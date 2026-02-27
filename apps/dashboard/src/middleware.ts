@@ -13,10 +13,11 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith("/admin")) {
     const walletCookie = request.cookies.get('wallet-address') ||
       request.cookies.get('thirdweb:wallet-address') ||
-      request.cookies.get('x-wallet-address');
+      request.cookies.get('x-wallet-address') ||
+      request.cookies.get('auth_token'); // Support Unified Identity Token
 
     if (!walletCookie?.value) {
-      console.log(`🛡️ Middleware: Blocking unauthorized access to ${pathname} (No Wallet Cookie)`);
+      console.log(`🛡️ Middleware: Blocking unauthorized access to ${pathname} (No Wallet Cookie or Auth Token)`);
       return NextResponse.redirect(new URL("/", request.url));
     }
   }

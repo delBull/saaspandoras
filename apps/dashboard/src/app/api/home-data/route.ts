@@ -52,6 +52,22 @@ export async function GET(request: Request) {
         // 3. Fetch Notifications (Recent Events) if wallet provided
         let notifications: any[] = [];
         if (wallet) {
+            // Check if user has telegram linked
+            const userRecord = await db.select({ telegramId: users.telegramId }).from(users).where(eq(users.walletAddress, wallet)).limit(1);
+
+            if (userRecord.length > 0 && !userRecord[0]?.telegramId) {
+                notifications.push({
+                    id: "telegram-link-reminder",
+                    type: "warning",
+                    title: "Vincula Telegram",
+                    description: "Conecta tu cuenta para recibir alertas y acceder a funciones exclusivas.",
+                    category: "system",
+                    createdAt: new Date(),
+                    dismissible: false,
+                    actionUrl: "/profile" // Or wherever they link it
+                });
+            }
+
             const rawEvents = await db.select()
                 .from(gamificationEvents)
                 .where(eq(gamificationEvents.userId, wallet))

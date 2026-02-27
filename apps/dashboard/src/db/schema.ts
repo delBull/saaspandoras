@@ -301,7 +301,13 @@ export const achievementTypeEnum = pgEnum("achievement_type", [
   "defi_starter",
   "governor",
   "yield_hunter",
-  "explorer"
+  "explorer",
+  "projects",
+  "investments",
+  "community",
+  "learning",
+  "streaks",
+  "special"
 ]);
 
 export const rewardTypeEnum = pgEnum("reward_type", [
