@@ -1,13 +1,52 @@
 'use server'
-import { cookies } from "next/headers";
+import { getAuth } from "@/lib/auth";
+import { headers } from "next/headers";
 
-export async function getLoginToken(): Promise<string | null> {
+export async function validateTelegramLinkAction(challenge: string): Promise<{ success: boolean; message?: string }> {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get('auth_token')?.value;
-        return token || null;
-    } catch (e) {
-        console.error("Failed to retrieve auth token for Telegram link", e);
-        return null;
+        const requestHeaders = await headers();
+        const { session } = await getAuth(requestHeaders);
+
+        let walletAddress: string | null = session?.userId ?? null;
+        if (!walletAddress) {
+            walletAddress = requestHeaders.get('x-thirdweb-address')
+                ?? requestHeaders.get('x-wallet-address')
+                ?? requestHeaders.get('x-user-address') ?? null;
+        }
+
+        if (!walletAddress) {
+            return { success: false, message: 'Debes conectar tu wallet en la Web antes de vincular Telegram.' };
+        }
+
+        // Directly call the Edge API 
+        const edgeUrl = process.env.NEXT_PUBLIC_PANDORAS_EDGE_URL || 'https://pandoras-edge-api.up.railway.app';
+        const PANDORA_CORE_KEY = process.env.PANDORA_CORE_KEY;
+
+        if (!PANDORA_CORE_KEY) {
+            console.error('Missing PANDORA_CORE_KEY in env');
+            return { success: false, message: 'Error de configuración del servidor Core' };
+        }
+
+        const res = await fetch(`${edgeUrl}/auth/validate-link-internal`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-core-webhook-key': PANDORA_CORE_KEY
+            },
+            body: JSON.stringify({
+                linkToken: challenge,
+                coreUserId: walletAddress
+            })
+        });
+
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            return { success: false, message: error.message || 'Código inválido o expirado' };
+        }
+
+        return { success: true, message: '¡Cuenta vinculada exitosamente!' };
+    } catch (e: any) {
+        console.error("Failed to validate Telegram link", e);
+        return { success: false, message: e.message || 'Error interno al conectar con Edge' };
     }
 }
