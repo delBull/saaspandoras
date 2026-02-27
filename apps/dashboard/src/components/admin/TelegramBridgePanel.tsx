@@ -7,7 +7,7 @@ import { Input } from "@saasfly/ui/input";
 import {
     Activity, AlertTriangle, BarChart3, Bell, BookOpen, CheckCircle,
     ChevronDown, ChevronRight, Coins, ExternalLink, MessageCircle, Play, Power,
-    RefreshCw, Shield, Skull, TrendingUp, Wallet, XCircle, Zap, Info
+    RefreshCw, Shield, Skull, TrendingUp, Wallet, XCircle, Zap, Info, User, Search
 } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -517,10 +517,273 @@ function OperationsGuide() {
     );
 }
 
+// ── Telegram Users Manager ────────────────────────────────────────────────
+
+function TelegramUsersManager() {
+    const [search, setSearch] = useState("");
+    const [searching, setSearching] = useState(false);
+    const [results, setResults] = useState<any[]>([]);
+    const [selected, setSelected] = useState<any | null>(null);
+    const [updating, setUpdating] = useState(false);
+
+    // Mutation DTO
+    const [mutation, setMutation] = useState({
+        addPoints: 0,
+        subtractPoints: 0,
+        role: "" as any,
+        tags: [] as string[],
+        isFrozen: false
+    });
+
+    const handleSearch = async () => {
+        if (!search) return;
+        setSearching(true);
+        try {
+            const res = await fetch(`/api/admin/telegram-bridge/users?q=${encodeURIComponent(search)}`, { headers: authHdrs() });
+            if (res.ok) setResults(await res.json());
+            else toast.error("Search failed");
+        } catch { toast.error("Network error"); }
+        finally { setSearching(false); }
+    };
+
+    const handleSelectUser = (user: any) => {
+        setSelected(user);
+        setMutation({
+            addPoints: 0,
+            subtractPoints: 0,
+            role: user.role,
+            tags: user.tags || [],
+            isFrozen: user.isFrozen
+        });
+    };
+
+    const handleUpdate = async () => {
+        if (!selected) return;
+        setUpdating(true);
+        try {
+            const res = await fetch(`/api/admin/telegram-bridge/users?telegramId=${selected.telegramId}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", ...authHdrs() },
+                body: JSON.stringify(mutation),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                toast.success("User updated successfully");
+                setSelected(data.user);
+                // Refresh list if user is in results
+                setResults(prev => prev.map(u => u.telegramId === selected.telegramId ? data.user : u));
+            } else {
+                toast.error(data.error || "Update failed");
+            }
+        } catch { toast.error("Network error"); }
+        finally { setUpdating(false); }
+    };
+
+    return (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Search & List */}
+            <div className="lg:col-span-5 space-y-4">
+                <div className="bg-zinc-900/40 border border-zinc-700/50 rounded-xl p-4">
+                    <div className="flex gap-2">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+                            <Input
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                                onKeyDown={e => e.key === "Enter" && handleSearch()}
+                                placeholder="ID o Username..."
+                                className="pl-9 bg-zinc-950 border-zinc-800"
+                            />
+                        </div>
+                        <Button size="sm" onClick={handleSearch} disabled={searching}>
+                            {searching ? <RefreshCw className="w-4 h-4 animate-spin" /> : "Buscar"}
+                        </Button>
+                    </div>
+                </div>
+
+                <div className="bg-zinc-900/40 border border-zinc-700/50 rounded-xl overflow-hidden min-h-[400px]">
+                    <div className="p-3 border-b border-zinc-800 bg-zinc-800/20 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                        Resultados ({results.length})
+                    </div>
+                    {results.length === 0 ? (
+                        <div className="p-10 text-center text-gray-500 text-sm">
+                            {searching ? "Buscando..." : "Usa el buscador para encontrar usuarios"}
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-zinc-800 max-h-[600px] overflow-y-auto">
+                            {results.map(u => (
+                                <button
+                                    key={u.telegramId}
+                                    onClick={() => handleSelectUser(u)}
+                                    className={`w-full p-4 flex items-center justify-between hover:bg-zinc-800/40 transition-colors text-left ${selected?.telegramId === u.telegramId ? "bg-blue-500/10 border-r-2 border-blue-500" : ""}`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-gray-400">
+                                            {u.username?.[0]?.toUpperCase() || "?"}
+                                        </div>
+                                        <div>
+                                            <div className="text-sm font-semibold text-white">@{u.username || "sin_user"}</div>
+                                            <div className="text-[10px] text-gray-500 font-mono">{u.telegramId}</div>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-xs font-bold text-lime-400">{u.points?.points || 0} PTS</div>
+                                        {u.isFrozen && <span className="text-[9px] font-bold text-red-400 uppercase">Frozen</span>}
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Details & Actions */}
+            <div className="lg:col-span-7">
+                {!selected ? (
+                    <div className="h-full flex flex-col items-center justify-center text-gray-500 bg-zinc-900/20 border border-dashed border-zinc-800 rounded-xl p-10">
+                        <User className="w-10 h-10 mb-4 opacity-20" />
+                        <p className="text-sm text-center">Selecciona un usuario para gestionar sus roles, puntos y etiquetas.</p>
+                    </div>
+                ) : (
+                    <div className="bg-zinc-900/40 border border-zinc-700/50 rounded-xl p-6 space-y-6 slide-in-bottom">
+                        {/* Header Profile */}
+                        <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-white/5 flex items-center justify-center text-2xl font-bold text-blue-400">
+                                    {selected.username?.[0]?.toUpperCase() || "?"}
+                                </div>
+                                <div>
+                                    <h4 className="text-xl font-bold text-white flex items-center gap-2">
+                                        @{selected.username || "sin_user"}
+                                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${selected.role === 'ADMIN' ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-zinc-700 text-gray-300'}`}>
+                                            {selected.role}
+                                        </span>
+                                    </h4>
+                                    <p className="text-xs text-gray-500 font-mono mb-2">{selected.telegramId}</p>
+                                    <div className="flex gap-2">
+                                        {selected.tags?.map((t: string) => (
+                                            <span key={t} className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[10px] font-bold uppercase border border-blue-500/20">
+                                                {t}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <div className="text-3xl font-bold text-lime-400">{selected.points?.points || 0}</div>
+                                <div className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Puntos Edge</div>
+                            </div>
+                        </div>
+
+                        {/* Quick Stats Grid */}
+                        <div className="grid grid-cols-3 gap-3">
+                            <div className="bg-zinc-950/50 p-3 rounded-lg border border-zinc-800">
+                                <div className="text-[10px] text-gray-500 uppercase font-bold mb-1">Lifetime</div>
+                                <div className="text-lg font-bold text-white">{selected.points?.lifetimeEarned || 0}</div>
+                            </div>
+                            <div className="bg-zinc-950/50 p-3 rounded-lg border border-zinc-800">
+                                <div className="text-[10px] text-gray-500 uppercase font-bold mb-1">Referidos</div>
+                                <div className="text-lg font-bold text-white">{selected._count?.referralsMade || 0}</div>
+                            </div>
+                            <div className="bg-zinc-950/50 p-3 rounded-lg border border-zinc-800">
+                                <div className="text-[10px] text-gray-500 uppercase font-bold mb-1">Artefactos</div>
+                                <div className="text-lg font-bold text-white">{selected._count?.artefacts || 0}</div>
+                            </div>
+                        </div>
+
+                        {/* Actions Form */}
+                        <div className="space-y-4 pt-4 border-t border-zinc-800">
+                            <h5 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Panel de Gestión</h5>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Points Delta */}
+                                <div className="space-y-2">
+                                    <label className="text-[11px] font-bold text-gray-500 uppercase">Modificar Puntos (Delta)</label>
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex-1 space-y-1">
+                                            <span className="text-[9px] text-gray-600 font-bold uppercase">Sumar</span>
+                                            <Input
+                                                type="number"
+                                                value={mutation.addPoints}
+                                                onChange={e => setMutation({ ...mutation, addPoints: parseInt(e.target.value) || 0 })}
+                                                className="bg-zinc-950 border-zinc-800 h-9"
+                                            />
+                                        </div>
+                                        <div className="flex-1 space-y-1">
+                                            <span className="text-[9px] text-gray-600 font-bold uppercase">Restar</span>
+                                            <Input
+                                                type="number"
+                                                value={mutation.subtractPoints}
+                                                onChange={e => setMutation({ ...mutation, subtractPoints: parseInt(e.target.value) || 0 })}
+                                                className="bg-zinc-950 border-zinc-800 h-9"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Role Selection */}
+                                <div className="space-y-2">
+                                    <label className="text-[11px] font-bold text-gray-500 uppercase">Rol de Usuario</label>
+                                    <select
+                                        value={mutation.role}
+                                        onChange={e => setMutation({ ...mutation, role: e.target.value as any })}
+                                        className="w-full bg-zinc-950 border border-zinc-800 rounded-md h-9 text-sm px-2 text-white"
+                                    >
+                                        <option value="USER">USER</option>
+                                        <option value="MODERATOR">MODERATOR</option>
+                                        <option value="ADMIN">ADMIN</option>
+                                    </select>
+                                </div>
+
+                                {/* Tags Management */}
+                                <div className="space-y-2 md:col-span-2">
+                                    <label className="text-[11px] font-bold text-gray-500 uppercase">Etiquetas (Separadas por Coma)</label>
+                                    <Input
+                                        value={mutation.tags.join(", ")}
+                                        onChange={e => setMutation({ ...mutation, tags: e.target.value.split(",").map(t => t.trim()).filter(Boolean) })}
+                                        placeholder="VIP, Partner, Ambassador..."
+                                        className="bg-zinc-950 border-zinc-800"
+                                    />
+                                </div>
+
+                                {/* Frozen Toggle */}
+                                <div className="md:col-span-2 flex items-center justify-between p-3 bg-red-950/10 border border-red-900/20 rounded-lg">
+                                    <div>
+                                        <p className="text-xs font-bold text-red-400">Estado de Congelación (Frozen)</p>
+                                        <p className="text-[10px] text-gray-500">Si está frozen, el usuario no podrá realizar mints ni sumar puntos.</p>
+                                    </div>
+                                    <Button
+                                        size="sm"
+                                        variant={mutation.isFrozen ? "destructive" : "outline"}
+                                        onClick={() => setMutation({ ...mutation, isFrozen: !mutation.isFrozen })}
+                                        className="h-8"
+                                    >
+                                        {mutation.isFrozen ? "Frozen (On)" : "Normal (Off)"}
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <Button
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-11"
+                                onClick={handleUpdate}
+                                disabled={updating}
+                            >
+                                {updating ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <Shield className="w-4 h-4 mr-2" />}
+                                Guardar Cambios Administrativos
+                            </Button>
+                        </div>
+                    </div>
+                )
+                }
+            </div>
+        </div>
+    );
+}
+
 // ── Main Component ─────────────────────────────────────────────────────────
 
 export function TelegramBridgePanel() {
-    const [tab, setTab] = useState<"status" | "economy" | "analytics" | "alerts" | "playbooks" | "guide">("status");
+    const [tab, setTab] = useState<"status" | "economy" | "analytics" | "alerts" | "playbooks" | "guide" | "users">("status");
     const [status, setStatus] = useState<BridgeStatus | null>(null);
     const [economy, setEconomy] = useState<EconomyParams | null>(null);
     const [loading, setLoading] = useState(true);
@@ -640,6 +903,7 @@ export function TelegramBridgePanel() {
 
     const tabs = [
         { id: "status", label: "Status & Control", icon: Shield },
+        { id: "users", label: "Users & Roles", icon: User },
         { id: "economy", label: "Economy", icon: Coins },
         { id: "analytics", label: "Analytics", icon: BarChart3 },
         { id: "alerts", label: "Alerts", icon: Bell, badge: alerts?.activeCount },
@@ -1211,6 +1475,13 @@ export function TelegramBridgePanel() {
                             onExecute={handlePlaybookExecute}
                             executing={executingPlaybook} />
                     ))}
+                </div>
+            )}
+
+            {/* ── TAB: Users & Roles ─────────────────────────────────────────── */}
+            {tab === "users" && (
+                <div className="space-y-6">
+                    <TelegramUsersManager />
                 </div>
             )}
 
