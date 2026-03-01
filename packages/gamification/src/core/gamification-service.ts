@@ -109,7 +109,7 @@ export class GamificationService {
     // ── Private helpers ─────────────────────────────────────────────────────────
 
     private assertSourceAllowed(source: GamificationSource, eventType: string): void {
-        if (source === 'telegram') {
+        if (source === 'telegram' || source === 'telegram_s2s') {
             if (process.env.ALLOW_TELEGRAM_GAMIFICATION !== 'true') {
                 throw new Error('[GamificationService] Telegram gamification is disabled (ALLOW_TELEGRAM_GAMIFICATION)');
             }

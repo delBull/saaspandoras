@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { GamificationService } from '@pandoras/gamification/core/gamification-service';
+import { GamificationService } from "@/lib/gamification/service";
 
 /**
  * POST /api/v1/internal/gamification/record
@@ -16,20 +16,20 @@ export async function POST(req: Request) {
 
     try {
         const body = await req.json();
-        const { telegramId, walletAddress, achievementId } = body;
+        const { telegramId, walletAddress, achievementId, eventType } = body;
 
         if (!telegramId && !walletAddress) {
             return NextResponse.json({ error: "Missing identity (telegramId or walletAddress)" }, { status: 400 });
         }
 
-        // Delegate to GamificationService
-        const service = GamificationService.getInstance();
-        const result = await service.record({
-            source: 'telegram_s2s',
-            walletAddress: walletAddress || '0x0',
-            eventType: 'ACHIEVEMENT_UNLOCKED',
-            metadata: { telegramId, achievementId },
-        });
+        const targetWallet = walletAddress || '0x0';
+
+        // Delegate to the Dashboard's REAL GamificationService
+        const result = await GamificationService.trackEvent(
+            targetWallet,
+            eventType || 'ACHIEVEMENT_UNLOCKED',
+            { telegramId, achievementId, source: 'telegram_s2s' }
+        );
 
         return NextResponse.json({
             ok: true,
