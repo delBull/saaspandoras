@@ -1889,10 +1889,10 @@ Telegram is an **external interaction surface**, not a trusted execution environ
 
 The Telegram integration is built around:
 
-### 1. Federated Identity (Institution-Grade)
-- No required pre-existing accounts.
-- **5-Layer Security**: HMAC signatures on \`initData\`, strict 5-minute TTL to prevent replays, ID integrity checks, S2S HMAC Guards, and on-demand imports.
-- Complete isolation from platform private keys.
+### 1. Standalone & Federated Identity
+- **Telegram First**: Users can interact, earn points, and make purchases without connecting a Web3 Wallet initially (Shadow Profiles).
+- **Progressive Onboarding**: Users can act as *Standalone*, connect a temporary wallet in the MiniApp (*Connected Wallet*), or fully merge with a web Pandoras account via a Challenge Code (*Linked Identity*).
+- **Security**: HMAC signatures on \`initData\`, strict 5-minute TTL to prevent replays, S2S Guard checks.
 
 ### 2. Embedded Payments (Decoupled)
 - **Core-First Architecture**: Purchase intents are created and persisted in the Core as \`pending\` *before* the user sees the payment UI.
@@ -2277,23 +2277,34 @@ The \`effectsHash\` field is a sha256 of the effects object — enabling downstr
         title: "Feature Flags & Safety Controls",
         content: `# Feature Flags & Safety Controls
 
-All Telegram integration points are guarded by explicit environment flags.
+All Telegram integration points are guarded by explicit environment flags, manageable via the **Telegram Bridge Control Panel**.
 
-## Environment Variables
+## Emergency Kill Switches & Modes
+
+### 🔴 Paranoia Mode
+Maximum security posture. Activated during suspected bot attacks or sudden volume spikes.
+- **Effects**: Drastically tightens rate limits, forces Economy to read-only, enables forensic logging mode.
+- **Impact**: Some UX degradation, but absolute protection against state corruption. Requires explicit \`CONFIRM\` to toggle.
+
+### 🔴 Telegram Gamification Master Switch
+- **Effects**: Setting \`ALLOW_TELEGRAM_GAMIFICATION=false\` instantly blocks ALL \`/record\` endpoints (returns 403). Events won't be processed.
+- **Usage**: Hard stop if an exploit is found in event emission. Payments bridge keeps working.
+
+### 🔴 PBOX Claims Switch
+- **Effects**: Setting \`PBOX_CLAIM_ENABLED=false\` stops issuing claim signatures.
+- **Usage**: Used during blockchain network congestion (e.g. Polygon RPC down) to prevent users from burning gas on failed claims, or when rotating the signing secret.
+
+## Environment Variables Reference
 
 \`\`\`env
 # Master gate for all Telegram gamification
 ALLOW_TELEGRAM_GAMIFICATION=true
 
-# Protocol read-only access (always safe)
+# Protocol read-only access
 TELEGRAM_ENABLE_PROTOCOL_READONLY=true
 
 # Enable PBOX claim flow
-TELEGRAM_ENABLE_CLAIMS=true
 PBOX_CLAIM_ENABLED=true
-
-# Block all write/mutation operations from Telegram
-ALLOW_TELEGRAM_MUTATIONS=false
 
 # Free artifact minting via Telegram
 TELEGRAM_ENABLE_MINT_FREE_ARTIFACT=true
