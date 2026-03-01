@@ -229,7 +229,29 @@ export class GamificationService {
       }
 
       // Get points for this event type
-      const points = this.getEventPoints(eventType);
+      let points = this.getEventPoints(eventType);
+
+      // 🔥 FIX: Special case for achievement unlocks from S2S/Edge
+      if (eventType === 'ACHIEVEMENT_UNLOCKED' && metadata?.achievementId) {
+        try {
+          const achId = typeof metadata.achievementId === 'string' ? parseInt(metadata.achievementId) : Number(metadata.achievementId);
+          if (!isNaN(achId)) {
+            const ach = await db
+              .select({ points: achievements.pointsReward })
+              .from(achievements)
+              .where(eq(achievements.id, achId))
+              .limit(1);
+
+            if (ach.length > 0 && ach[0]) {
+              points = ach[0].points;
+              console.log(`🏆 Resolved achievement points: ${points} for achievement ID ${achId}`);
+            }
+          }
+        } catch (achResError) {
+          console.warn(`⚠️ Failed to resolve achievement points:`, achResError);
+        }
+      }
+
       console.log(`💰 Event ${eventType} grants ${points} points`);
 
       // Award points directly using raw SQL (without events table dependency)
@@ -255,11 +277,12 @@ export class GamificationService {
           WHERE user_id = ${userId}
         `);
 
-        // Insert points record using numeric user ID
+        // Insert points record using numeric user ID and dynamic category
+        const eventCategory = this.getEventCategory(eventType);
         await db.execute(sql`
           INSERT INTO user_points
           (user_id, points, reason, category, metadata, created_at)
-          VALUES (${userId}, ${points}, ${`Event: ${eventType}`}, 'daily_login', ${JSON.stringify(metadata ?? {})}, NOW())
+          VALUES (${userId}, ${points}, ${metadata?.achievementId ? `Logro Desbloqueado: ${String(metadata.achievementId)}` : `Evento: ${String(eventType)}`}, ${eventCategory}, ${JSON.stringify(metadata ?? {})}, NOW())
         `);
       }
 

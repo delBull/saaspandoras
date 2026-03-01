@@ -2,7 +2,7 @@
 // Shared contract between GamificationService, webhooks, and API consumers
 // (Telegram App, Dashboard, future edges)
 
-export type GamificationSource = 'telegram' | 'dashboard' | 'system';
+export type GamificationSource = 'telegram' | 'telegram_s2s' | 'dashboard' | 'system';
 
 /**
  * The canonical return type for any gamification record operation.
