@@ -93,8 +93,9 @@ export interface FiredAlert {
 }
 
 // ── Discord color codes ───────────────────────────────────────────────────
-export const DISCORD_COLORS: Record<AlertSeverity, number> = {
+export const DISCORD_COLORS: Record<AlertSeverity | 'success', number> = {
     critical: 0xE74C3C, // red
     warning: 0xE67E22, // orange
     info: 0x3498DB, // blue
+    success: 0x10b981, // green
 };

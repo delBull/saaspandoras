@@ -161,6 +161,16 @@ export async function POST(req: Request) {
             }
         }
 
+        if (process.env.NODE_ENV === 'production') {
+            console.log(JSON.stringify({
+                type: 'PURCHASE_COMPLETED_WEBHOOK',
+                purchaseId,
+                amount: value.toString(),
+                txHash,
+                timestamp: new Date().toISOString()
+            }));
+        }
+
         // 5. Notify Discord
         await sendPaymentNotification({
             type: "payment_received",

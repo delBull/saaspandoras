@@ -7,7 +7,7 @@ import { Input } from "@saasfly/ui/input";
 import {
     Activity, AlertTriangle, BarChart3, Bell, BookOpen, CheckCircle,
     ChevronDown, ChevronRight, Coins, ExternalLink, MessageCircle, Play, Power,
-    RefreshCw, Shield, Skull, TrendingUp, Wallet, XCircle, Zap, Info, User, Search
+    RefreshCw, Shield, Skull, TrendingUp, Wallet, XCircle, Zap, Info, User, Search, HelpCircle, FileText
 } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -26,6 +26,7 @@ interface BridgeStatus {
     pbox: { activeWallets: number; totalEarned: number; totalReserved: number; totalClaimed: number; available: number };
     webhooks: { successLast24h: number; failedLast24h: number; pending: number; successRate: number };
     conversion: { intents: number; completed: number; failed: number; rate: number };
+    liveMetrics: { intents: number; completed: number; revenue: number; protocolsUnlocked: number };
 }
 
 interface EconomyParams {
@@ -797,6 +798,7 @@ export function TelegramBridgePanel() {
     const [economyDraft, setEconomyDraft] = useState<EconomyParams | null>(null);
     const [executingPlaybook, setExecutingPlaybook] = useState<string | null>(null);
     const [alerts, setAlerts] = useState<AlertsData | null>(null);
+    const [showManual, setShowManual] = useState(false);
     const [evaluating, setEvaluating] = useState(false);
 
     const fetchStatus = useCallback(async () => {
@@ -1040,12 +1042,156 @@ export function TelegramBridgePanel() {
                             <span className="text-[11px] font-bold text-red-400">PARANOIA MODE</span>
                         </div>
                     )}
+                    <Button onClick={() => setShowManual(true)} variant="outline" size="sm" className="gap-2 border-blue-500/30 text-blue-400 hover:bg-blue-500/10">
+                        <FileText className="w-3.5 h-3.5" />
+                        Manual del Admin
+                    </Button>
                     <Button onClick={() => { fetchStatus(); fetchEconomy(); }} variant="outline" size="sm" className="gap-2">
                         <RefreshCw className="w-3.5 h-3.5" />
                         Refresh
                     </Button>
                 </div>
             </div>
+
+            {/* ── Admin Manual Modal ────────────────────────────────────────── */}
+            {showManual && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-zinc-900 border border-zinc-700/50 rounded-xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden slide-in-bottom">
+                        <div className="flex items-center justify-between p-4 border-b border-zinc-800 bg-zinc-900/50">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400">
+                                    <BookOpen className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h2 className="text-lg font-bold text-white">Manual del Administrador: Sistema Standalone (Telegram First)</h2>
+                                    <p className="text-xs text-gray-400">Guía operativa completa para la gestión y resolución de incidentes del Bridge.</p>
+                                </div>
+                            </div>
+                            <Button variant="ghost" size="icon" onClick={() => setShowManual(false)} className="text-gray-400 hover:text-white hover:bg-zinc-800 rounded-full h-8 w-8">
+                                <XCircle className="w-5 h-5" />
+                            </Button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-zinc-950/50">
+
+                            {/* Section 1: Architecture */}
+                            <section>
+                                <h3 className="text-base font-bold text-white flex items-center gap-2 mb-3">
+                                    <Shield className="w-4 h-4 text-purple-400" />
+                                    1. Arquitectura Standalone (Telegram First)
+                                </h3>
+                                <div className="space-y-4 text-sm text-gray-300">
+                                    <p>
+                                        El sistema ahora prioriza a los usuarios que ingresan directamente desde Telegram
+                                        (<strong className="text-white">Shadow Users</strong>). No es mandatorio que conecten una Wallet Web3 de inmediato.
+                                    </p>
+                                    <div className="bg-zinc-900 p-4 border border-zinc-800 rounded-lg space-y-2">
+                                        <h4 className="font-semibold text-white">Estados del Usuario:</h4>
+                                        <ul className="list-disc pl-5 space-y-1">
+                                            <li><strong className="text-blue-400">Standalone:</strong> Usuario solo tiene cuenta de Telegram (id tipo <code>tg-1234...</code> en la DB del Core). Puede comprar acceso con tarjeta o crypto-bot, pero NO puede mintear NFTs ni cobrar tokens PBOX.</li>
+                                            <li><strong className="text-yellow-400">Connected Wallet:</strong> Usuario Standalone que conectó su Metamask/Rabby en la MiniApp para firmar y cobrar PBOX localmente en el Bridge, pero NO vinculó su cuenta web central.</li>
+                                            <li><strong className="text-green-400">Linked Identity:</strong> El usuario unificó su cuenta Standalone con su cuenta principal de Pandoras Web introduciendo el "Challenge Code" en el Dashboard. Mints automáticos habilitados.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Section 2: Kill Switches & Status */}
+                            <section>
+                                <h3 className="text-base font-bold text-white flex items-center gap-2 mb-3">
+                                    <Power className="w-4 h-4 text-red-500" />
+                                    2. Kill Switches y Paranoia Mode
+                                </h3>
+                                <p className="text-sm text-gray-300 mb-3">
+                                    En la pestaña "Status & Control" encontrarás interruptores críticos de emergencia. Todo cambio aquí es inmediato.
+                                </p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                    <div className="p-3 border border-red-900/30 bg-red-950/10 rounded-lg">
+                                        <strong className="text-red-400 block mb-1">Paranoia Mode</strong>
+                                        Actívalo bajo sospecha de ataque de bots o vulnerabilidad. Activa rate-limits severos, bloquea modificaciones a la economía y pausa entregas no críticas.
+                                    </div>
+                                    <div className="p-3 border border-yellow-900/30 bg-yellow-950/10 rounded-lg">
+                                        <strong className="text-yellow-400 block mb-1">Telegram Gamification</strong>
+                                        Apagadlo si alguien encuentra un exploit para farmear puntos falsos. Se detiene el sistema de XP pero el Bridge de pagos sigue operando.
+                                    </div>
+                                    <div className="p-3 border border-blue-900/30 bg-blue-950/10 rounded-lg">
+                                        <strong className="text-blue-400 block mb-1">PBOX Claims</strong>
+                                        Si la blockchain está caída, congestionada, o si rotaste el Secreto de Firma, apaga temporalmente para evitar que los usuarios pierdan gas en fallas.
+                                    </div>
+                                    <div className="p-3 border border-gray-700 bg-zinc-800/40 rounded-lg">
+                                        <strong className="text-gray-300 block mb-1">Free Mint</strong>
+                                        Deshabilita el minting promocional gratuito. Solo los pagos aprobados por webhook permitirán accesos.
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Section 3: Economy & Gamification */}
+                            <section>
+                                <h3 className="text-base font-bold text-white flex items-center gap-2 mb-3">
+                                    <Coins className="w-4 h-4 text-lime-400" />
+                                    3. Gestión de la Economía ($PBOX)
+                                </h3>
+                                <div className="space-y-3 text-sm text-gray-300">
+                                    <p>Desde la pestaña <strong>Economy</strong> puedes ajustar el multiplicador de recompensas.</p>
+                                    <ul className="list-disc pl-5 space-y-2">
+                                        <li><strong>Points per PBOX:</strong> Cuántos puntos de "XP" en Telegram equivalen a 1 PBOX desbloqueado. Si lo bajas, haces el token más abundante.</li>
+                                        <li><strong className="text-yellow-400">¡CRÍTICO!:</strong> Si haces cambios a las métricas monetarias, <strong>DEBES</strong> incrementar el "Conversion Version". Si no lo haces, romperás los cálculos retrospectivos de los balances no reclamados.</li>
+                                        <li>Antes de guardar, revisa el componente "Impact Preview" que te muestra cómo afectará tu cambio basándose en los datos analíticos formados las últimas 24 horas.</li>
+                                    </ul>
+                                </div>
+                            </section>
+
+                            {/* Section 4: User Roles & Tags */}
+                            <section>
+                                <h3 className="text-base font-bold text-white flex items-center gap-2 mb-3">
+                                    <User className="w-4 h-4 text-blue-400" />
+                                    4. Gestión de Usuarios y Roles
+                                </h3>
+                                <div className="space-y-3 text-sm text-gray-300">
+                                    <p>Desde la pestaña <strong>Users & Roles</strong> puedes buscar perfiles mediante su Telegram ID o <code>@username</code>.</p>
+                                    <ul className="list-disc pl-5 space-y-2">
+                                        <li><strong>Sumar/Restar Puntos:</strong> Úsalo como compensación o penalización. Reflejará directamente en la XP del usuario.</li>
+                                        <li><strong>Congelación (Freeze):</strong> Marca a un usuario como <code>Frozen</code> si detectas actividad sospechosa en su ID. Perderá inmediatamente la capacidad de comprar o mintear usando las APIs.</li>
+                                        <li><strong>Etiquetas (Tags):</strong> Puedes asignar "Partner", "VIP" u otras de forma libre. Modifica el UI que el usuario ve dentro de Telegram.</li>
+                                        <li><strong>Roles:</strong> Asigna "ADMIN" a tu equipo para saltar bloqueos o acceder a hooks de test.</li>
+                                    </ul>
+                                    <p className="p-3 bg-zinc-900 border border-zinc-800 border-l-2 border-l-blue-500 rounded text-xs mt-2 text-gray-400">
+                                        Nota: Si la identidad Standalone ya se fusionó a una cuenta web (Linked), las prohibiciones de cuentas web también caerán en cascada gracias al middleware híbrido, pero congelarlo explícitamente desde aquí detiene su uso dentro de la MiniApp de forma rotunda.
+                                    </p>
+                                </div>
+                            </section>
+
+                            {/* Section 5: Webhooks & Discord */}
+                            <section>
+                                <h3 className="text-base font-bold text-white flex items-center gap-2 mb-3">
+                                    <Bell className="w-4 h-4 text-orange-400" />
+                                    5. Alertas (Discord) y Telemetría
+                                </h3>
+                                <div className="space-y-3 text-sm text-gray-300">
+                                    <p>
+                                        El Bridge es auto-reportante. Los incidentes críticos de firmas criptográficas o errores 500 se filtran a <strong className="text-white">#pandoras-alerts</strong> en Discord.
+                                    </p>
+                                    <p>
+                                        Además, el panel consolida el estatus de las respuestas de "Thirdweb" y pagos. Si la "Webhook Success Rate" cae bruscamente de 99% a menos de 50%, no entres en pánico:
+                                    </p>
+                                    <ul className="list-disc pl-5 space-y-1 mt-2">
+                                        <li><strong>Causa Común:</strong> Cambio en la ruta (URL param) dentro del Dashboard de Thirdweb, caída global de su Engine, o problemas de latencia en Neon DB.</li>
+                                        <li><strong>Solución:</strong> Revisa el "Event Forensics" (últimas 10 acciones) en la pestaña Analytics. Los webhooks fallidos suelen quedar encapsulados y pueden ser re-emitidos sin pérdida de datos ya que funcionan con una llave criptográfica de Idempotencia por transacción.</li>
+                                    </ul>
+                                </div>
+                            </section>
+
+                            <div className="pt-6 border-t border-zinc-800 text-center">
+                                <p className="text-xs text-gray-500 font-mono">
+                                    Manual v2.0 - Pandoras Bridge Control Architecture <br />
+                                    (Actualizado tras el Refactor Standalone)
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
 
             {/* Quick Health Strip */}
             {status && (
@@ -1095,6 +1241,20 @@ export function TelegramBridgePanel() {
                 <div className="space-y-6">
                     {/* Golden Signals */}
                     <GoldenStrip gs={status.goldenSignals} />
+
+                    {/* LIVE FEED (Last 60m) */}
+                    <div className="bg-blue-950/20 border border-blue-900/40 rounded-xl p-4 slide-in-bottom">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Activity className="w-4 h-4 text-blue-400 animate-pulse" />
+                            <span className="text-[11px] font-bold text-blue-400 uppercase tracking-widest">Live Business Feed (60m)</span>
+                        </div>
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                            <StatCard label="Live Intents" icon={Zap} value={status.liveMetrics?.intents || 0} sub="Last hour" color="yellow" />
+                            <StatCard label="Live Payments" icon={CheckCircle} value={status.liveMetrics?.completed || 0} sub="Last hour" color="lime" />
+                            <StatCard label="Live Revenue" icon={Coins} value={`$${status.liveMetrics?.revenue || 0}`} sub="Last hour" color="green" />
+                            <StatCard label="Protocols Unlocked" icon={Wallet} value={status.liveMetrics?.protocolsUnlocked || 0} sub="Last hour" color="purple" />
+                        </div>
+                    </div>
 
                     {/* Kill Switches */}
                     <div>
