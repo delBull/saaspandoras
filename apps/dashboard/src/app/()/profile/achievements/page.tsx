@@ -273,12 +273,13 @@ export default function AchievementsPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 1.2 + index * 0.1 }}
-                className="group"
+                className="group relative transform-gpu"
+                style={{ willChange: "transform, opacity" }}
               >
-                <Card className={`relative overflow-hidden transition-all duration-300 hover:scale-105 border-2 ${achievement.isUnlocked
-                  ? 'border-yellow-500 bg-gradient-to-br from-yellow-900/20 to-orange-900/20 shadow-lg shadow-yellow-500/10'
-                  : `${rarity.bgColor} opacity-80 hover:opacity-100`
-                  } backdrop-blur-sm`}>
+                <Card className={`relative overflow-hidden transition-all duration-300 transform-gpu will-change-transform hover:scale-105 border-2 ${achievement.isUnlocked
+                  ? 'border-yellow-500 bg-gradient-to-br from-yellow-900/30 to-orange-900/30 shadow-xl shadow-yellow-500/10'
+                  : `${rarity.bgColor} opacity-90 hover:opacity-100`
+                  } backdrop-blur-md`}>
                   {/* Rarity Badge */}
                   <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${achievement.isUnlocked
                     ? 'bg-yellow-500 text-black shadow-lg'

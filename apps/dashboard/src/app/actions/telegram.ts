@@ -50,3 +50,38 @@ export async function validateTelegramLinkAction(challenge: string): Promise<{ s
         return { success: false, message: e.message || 'Error interno al conectar con Edge' };
     }
 }
+
+export async function resolveTelegramUserAction(telegramId: string, initData: string): Promise<{ success: boolean; data?: any; message?: string }> {
+    try {
+        const edgeUrl = process.env.NEXT_PUBLIC_PANDORAS_EDGE_URL || 'https://pandoras-edge-api.up.railway.app';
+        const PANDORA_CORE_KEY = process.env.PANDORA_CORE_KEY;
+
+        if (!PANDORA_CORE_KEY) {
+            return { success: false, message: 'Configuración de servidor incompleta (Core Key)' };
+        }
+
+        const res = await fetch(`${edgeUrl}/internal/user/resolve`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-core-webhook-key': PANDORA_CORE_KEY
+            },
+            body: JSON.stringify({
+                telegramId,
+                initData
+            })
+        });
+
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            return { success: false, message: error.message || 'No se pudo resolver la identidad de Telegram' };
+        }
+
+        const userData = await res.json();
+        return { success: true, data: userData };
+    } catch (e: any) {
+        console.error("Failed to resolve Telegram user", e);
+        return { success: false, message: 'Error técnico al contactar con el Bridge de Telegram' };
+    }
+}
+

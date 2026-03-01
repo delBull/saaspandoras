@@ -1,11 +1,11 @@
 
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { transactions } from "@/db/schema";
+import { transactions, purchases } from "@/db/schema";
 import { sendPaymentNotification } from "@/lib/discord/notifier";
 import { WebhookService } from "@/lib/integrations/webhook-service";
 import { integrationClients } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import crypto from "crypto";
 
 // Security: Verify Thirdweb Signature
@@ -100,14 +100,66 @@ export async function POST(req: Request) {
             value = body.value || body.amount || "0";
         }
 
-        // 4. Record DB Entry
+        // 4. Record DB Entry & Resolve Purchase
+        const purchaseId = body.metadata?.purchaseId || body.purchaseId;
+
         await db.insert(transactions).values({
-            amount: value.toString(), // Note: Likely needs formatting from Wei to Eth/Tokens if raw
+            amount: value.toString(),
             currency: 'CRYPTO',
             method: 'crypto',
             status: 'completed',
             processedAt: new Date(),
         });
+
+        if (purchaseId) {
+            try {
+                // Update Purchase record
+                await db.execute(sql`
+                    UPDATE purchases 
+                    SET status = 'completed', updated_at = now() 
+                    WHERE purchaseId = ${purchaseId}
+                `);
+
+                // Fetch details for Edge notification
+                const purchase = await db.query.purchases.findFirst({
+                    where: eq(purchases.purchaseId, purchaseId)
+                });
+
+                if (purchase) {
+                    const metadata = purchase.metadata as any;
+                    const edgeWebhookUrl = process.env.TELEGRAM_EDGE_API_URL + '/core/callback';
+                    const edgeSecret = process.env.CORE_CALLBACK_SECRET;
+
+                    if (edgeWebhookUrl && edgeSecret) {
+                        const payload = {
+                            type: 'PURCHASE_COMPLETED',
+                            actionId: purchaseId,
+                            telegramUserId: metadata?.paymentConfig?.payOptions?.metadata?.telegramId,
+                            amount: Number(purchase.amount),
+                            protocolId: metadata?.paymentConfig?.payOptions?.metadata?.projectId,
+                            timestamp: Math.floor(Date.now() / 1000)
+                        };
+
+                        const signature = crypto
+                            .createHmac('sha256', edgeSecret)
+                            .update(JSON.stringify(payload))
+                            .digest('hex');
+
+                        await fetch(edgeWebhookUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'x-core-signature': signature
+                            },
+                            body: JSON.stringify(payload)
+                        });
+                        console.log(`📡 [Webhook] Notified Edge API of completed purchase: ${purchaseId}`);
+                    }
+                }
+            } catch (err) {
+                console.error(`⚠️ Error resolving purchase ${purchaseId}:`, err);
+            }
+        }
 
         // 5. Notify Discord
         await sendPaymentNotification({

@@ -1142,7 +1142,32 @@ export const transactions = pgTable("transactions", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// 4. SOW TEMPLATES
+// 5. PURCHASES (FOR TG MINIAPP & EMBEDDED PAYMENTS)
+export const purchases = pgTable("purchases", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: varchar("user_id", { length: 255 }).references(() => users.id).notNull(),
+  projectId: integer("project_id").references(() => projects.id).notNull(),
+
+  amount: decimal("amount", { precision: 18, scale: 6 }).notNull(),
+  currency: varchar("currency", { length: 10 }).default("USD").notNull(),
+
+  paymentMethod: varchar("payment_method", { length: 20 }).notNull(), // 'stripe', 'crypto'
+  status: transactionStatusEnum("status").default('pending').notNull(),
+
+  purchaseId: varchar("purchase_id", { length: 255 }).notNull().unique(), // External reference
+  idempotencyKey: varchar("idempotency_key", { length: 255 }).notNull().unique(),
+
+  thirdwebSessionId: varchar("thirdweb_session_id", { length: 255 }),
+  stripeSessionId: varchar("stripe_session_id", { length: 255 }),
+
+  metadata: jsonb("metadata").default({}),
+
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// 6. SOW TEMPLATES
 export const sowTemplates = pgTable("sow_templates", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   tier: varchar("tier", { length: 50 }).notNull(), // TIER_1, TIER_2, TIER_3
@@ -1215,3 +1240,4 @@ export const gamificationActionExecutions = pgTable("gamification_action_executi
 }));
 
 export type GamificationActionExecution = typeof gamificationActionExecutions.$inferSelect;
+export type Purchase = typeof purchases.$inferSelect;
