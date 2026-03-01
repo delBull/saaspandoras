@@ -30,7 +30,7 @@ router.get("/nonce", nonceLimiter, async (req: Request, res: Response) => {
             nonce: nonce,
             expiresAt: expiresAt,
         }).onConflictDoUpdate({
-            target: authChallenges.nonce,
+            target: authChallenges.address,
             set: {
                 nonce: nonce,
                 expiresAt: expiresAt,
