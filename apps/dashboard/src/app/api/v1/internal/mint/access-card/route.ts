@@ -30,11 +30,7 @@ export async function POST(req: Request) {
         });
 
         if (!project) {
-            // Try by ID if slug not found
-            const projectById = await db.query.projects.findFirst({
-                where: eq(projects.id, protocolId)
-            });
-            if (!projectById) return NextResponse.json({ error: "Project not found" }, { status: 404 });
+            return NextResponse.json({ error: "Project not found" }, { status: 404 });
         }
 
         // 2. Resolve User (Optional for Standalone)
