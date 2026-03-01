@@ -116,8 +116,7 @@ export default function AchievementsPage() {
   const filteredAchievements = gamification.achievements
     .filter(a => {
       // Filter by Category
-      // 🔥 FIX 5: Bypassing category filter to confirm data visibility
-      // if (selectedCategory && a.category !== selectedCategory) return false;
+      if (selectedCategory && a.category !== selectedCategory) return false;
 
       // Filter by Unlocked/Locked status
       if (filter === 'unlocked') return a.isUnlocked;
