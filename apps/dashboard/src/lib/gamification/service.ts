@@ -1085,21 +1085,35 @@ export class GamificationService {
         console.log(`📦 Loading ${TOKENIZATION_ACHIEVEMENTS.length} achievements from package...`);
 
         // Convert package achievements to dashboard format, assigning a unique code based on ID
-        const packageAchievements = TOKENIZATION_ACHIEVEMENTS.map(pkgAchievement => ({
-          code: `PKG_${pkgAchievement.id}`,
-          name: pkgAchievement.name,
-          description: pkgAchievement.description,
-          icon: pkgAchievement.icon,
-          type: pkgAchievement.category as any,
-          requiredPoints: pkgAchievement.points,
-          requiredLevel: 1,
-          requiredEvents: pkgAchievement.requirements.map(r => typeof r === 'string' ? r : (r as any).id),
-          pointsReward: pkgAchievement.points,
-          badgeUrl: `/${pkgAchievement.category}-badges/${pkgAchievement.id}`,
-          isActive: pkgAchievement.isActive,
-          isSecret: pkgAchievement.isSecret,
-          createdAt: new Date()
-        }));
+        const packageAchievements = TOKENIZATION_ACHIEVEMENTS.map(pkgAchievement => {
+          // 🔥 Mapping package categories to dashboard ENUMs (fix 22P02)
+          let dashboardType = 'community_builder';
+          const cat = pkgAchievement.category;
+
+          if (cat === 'projects') dashboardType = 'creator';
+          else if (cat === 'investments') dashboardType = 'investor';
+          else if (cat === 'community') dashboardType = 'community_builder';
+          else if (cat === 'learning') dashboardType = 'tokenization_expert';
+          else if (cat === 'special') dashboardType = 'early_adopter';
+          else if (cat === 'streaks') dashboardType = 'first_steps';
+          else if (cat === 'social') dashboardType = 'community_builder';
+
+          return {
+            code: `PKG_${pkgAchievement.id}`,
+            name: pkgAchievement.name,
+            description: pkgAchievement.description,
+            icon: pkgAchievement.icon,
+            type: dashboardType as any,
+            requiredPoints: pkgAchievement.points,
+            requiredLevel: 1,
+            requiredEvents: pkgAchievement.requirements.map(r => typeof r === 'string' ? r : (r as any).type || (r as any).id),
+            pointsReward: pkgAchievement.points,
+            badgeUrl: `/${pkgAchievement.category}-badges/${pkgAchievement.id}`,
+            isActive: pkgAchievement.isActive,
+            isSecret: pkgAchievement.isSecret,
+            createdAt: new Date()
+          };
+        });
 
         seedAchievements.push(...packageAchievements);
       } catch (importError) {
