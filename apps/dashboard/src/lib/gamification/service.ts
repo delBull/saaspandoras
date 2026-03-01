@@ -1086,17 +1086,18 @@ export class GamificationService {
 
         // Convert package achievements to dashboard format, assigning a unique code based on ID
         const packageAchievements = TOKENIZATION_ACHIEVEMENTS.map(pkgAchievement => {
-          // 🔥 Mapping package categories to dashboard ENUMs (fix 22P02)
-          let dashboardType = 'community_builder';
-          const cat = pkgAchievement.category;
+          // 🔥 Mapping package categories to dashboard ENUMs (fix 22P02 & no-unsafe-enum-comparison)
+          const categoryMap: Record<string, string> = {
+            'projects': 'creator',
+            'investments': 'investor',
+            'community': 'community_builder',
+            'learning': 'tokenization_expert',
+            'special': 'early_adopter',
+            'streaks': 'first_steps',
+            'social': 'community_builder'
+          };
 
-          if (cat === 'projects') dashboardType = 'creator';
-          else if (cat === 'investments') dashboardType = 'investor';
-          else if (cat === 'community') dashboardType = 'community_builder';
-          else if (cat === 'learning') dashboardType = 'tokenization_expert';
-          else if (cat === 'special') dashboardType = 'early_adopter';
-          else if (cat === 'streaks') dashboardType = 'first_steps';
-          else if (cat === 'social') dashboardType = 'community_builder';
+          const dashboardType = categoryMap[String(pkgAchievement.category)] || 'community_builder';
 
           return {
             code: `PKG_${pkgAchievement.id}`,
