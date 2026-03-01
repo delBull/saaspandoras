@@ -29,6 +29,7 @@ export async function GET() {
                 contractAddress: projects.contractAddress,
                 chainId: projects.chainId,
                 artifacts: projects.artifacts,
+                w2eConfig: projects.w2eConfig,
                 featured: projects.featured,
                 updatedAt: projects.updatedAt,
                 createdAt: projects.createdAt,
@@ -44,39 +45,45 @@ export async function GET() {
             )
             .orderBy(desc(projects.updatedAt));
 
-        const formattedProtocols = projectsData.map(p => ({
-            id: String(p.id),
-            slug: p.slug,
-            name: p.title,
-            description: p.description,
-            category: (p.businessCategory || 'other').toUpperCase(),
-            status: (p.status || 'draft').toUpperCase(),
-            version: p.protocolVersion || 1,
-            pageLayoutType: (p.pageLayoutType || 'Access').toUpperCase(),
-            visuals: {
-                logo_url: p.logoUrl, // Snake_case for Telegram
-                cover_photo_url: p.coverPhotoUrl,
-            },
-            metrics: {
-                apr: p.estimatedApy || "0%",
-                tvl: p.totalValuationUsd ? `$${p.totalValuationUsd}` : "$0",
-            },
-            access: {
-                type: (p.accessType || 'LICENSE').toUpperCase(),
-                licenseContractAddress: p.licenseContractAddress || p.contractAddress || "0x0",
-                chainId: p.chainId || -1, // -1 signals UNCONFIGURED/SAFE_OFFLINE
-                gasPolicy: 'SPONSORED',
-                price: p.price && Number(p.price) > 0 ? `$${p.price}` : 'FREE',
-            },
-            artifacts: Array.isArray(p.artifacts) ? p.artifacts.map((a: any) => ({
-                ...a,
-                unlockRule: a.unlockRule || { requiresAccess: true, phase: 1 }
-            })) : [],
-            flags: {
-                isFeatured: p.featured || false,
-            },
-            updatedAt: (p.updatedAt || p.createdAt || new Date()).toISOString(),
-        }));
+        const formattedProtocols = projectsData.map(p => {
+            // Fallback for artifacts from w2eConfig if the main column is empty
+            let rawArtifacts = p.artifacts;
+            if (!Array.isArray(rawArtifacts) || rawArtifacts.length === 0) {
+                const config = typeof p.w2eConfig === 'string' ? JSON.parse(p.w2eConfig) : p.w2eConfig;
+                rawArtifacts = config?.artifacts || [];
+            }
+
+            return {
+                id: String(p.id),
+                slug: p.slug,
+                name: p.title,
+                description: p.description,
+                category: (p.businessCategory || 'other').toUpperCase(),
+                status: (p.status || 'draft').toUpperCase(),
+                version: p.protocolVersion || 1,
+                pageLayoutType: (p.pageLayoutType || 'Access').toUpperCase(),
+                visuals: {
+                    logo_url: p.logoUrl, // Snake_case for Telegram
+                    cover_photo_url: p.coverPhotoUrl,
+                },
+                metrics: {
+                    apr: p.estimatedApy || "0%",
+                    tvl: p.totalValuationUsd ? `$${p.totalValuationUsd}` : "$0",
+                },
+                access: {
+                    type: (p.accessType || 'LICENSE').toUpperCase(),
+                    licenseContractAddress: p.licenseContractAddress || p.contractAddress || "0x0",
+                    chainId: p.chainId || -1, // -1 signals UNCONFIGURED/SAFE_OFFLINE
+                    gasPolicy: 'SPONSORED',
+                    price: p.price && Number(p.price) > 0 ? `$${p.price}` : 'FREE',
+                },
+                artifacts: Array.isArray(rawArtifacts) ? rawArtifacts.map((a: any) => ({
+                    ...a,
+                    unlockRule: a.unlockRule || { requiresAccess: true, phase: 1 }
+                })) : [],
+                updatedAt: (p.updatedAt || p.createdAt || new Date()).toISOString(),
+            };
+        });
 
         return NextResponse.json(formattedProtocols);
     } catch (error) {
