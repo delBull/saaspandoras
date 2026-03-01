@@ -14,8 +14,8 @@
 import { NextResponse } from 'next/server';
 import { getAuth, isAdmin } from '@/lib/auth';
 import { db } from '@/db';
-import { webhookEvents } from '@/db/schema';
-import { sql, gte, eq, and } from 'drizzle-orm';
+import { webhookEvents, purchases } from '@/db/schema';
+import { sql, gte, eq, and, count } from 'drizzle-orm';
 
 export const dynamic = 'force-dynamic';
 
@@ -191,6 +191,32 @@ export async function GET() {
             })(),
         ]);
 
+        // ── Conversion Metrics (Payments) ─────────────────────────────────────
+        let conversion = {
+            intents: 0,
+            completed: 0,
+            failed: 0,
+            rate: 0
+        };
+        try {
+            const rows = await db.execute(sql`
+                SELECT
+                    count(*) as total,
+                    count(*) FILTER (WHERE status = 'completed') as completed,
+                    count(*) FILTER (WHERE status = 'failed' OR status = 'rejected') as failed
+                FROM purchases
+            `) as any;
+            const r = Array.isArray(rows) ? rows[0] : rows?.rows?.[0];
+            const total = parseInt(r?.total ?? 0);
+            const comp = parseInt(r?.completed ?? 0);
+            conversion = {
+                intents: total,
+                completed: comp,
+                failed: parseInt(r?.failed ?? 0),
+                rate: total > 0 ? Math.round((comp / total) * 100) : 0
+            };
+        } catch (e) { console.error('[Bridge Status] conversion', e); }
+
         const calcRate = (s: number, f: number) => {
             const t = s + f;
             return t > 0 ? Math.round((s / t) * 1000) / 10 : 100;
@@ -241,6 +267,7 @@ export async function GET() {
                 pending: wPending,
                 successRate: calcRate(wSuccess24h, wFailed24h),
             },
+            conversion,
             latency_p95_ms: (golden as any).latency_p95_ms ?? 0,
         });
     } catch (err: any) {

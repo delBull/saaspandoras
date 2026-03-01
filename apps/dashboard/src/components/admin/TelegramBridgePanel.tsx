@@ -25,6 +25,7 @@ interface BridgeStatus {
     events: { total: number; lastHour: number; last24h: number; recent: any[] };
     pbox: { activeWallets: number; totalEarned: number; totalReserved: number; totalClaimed: number; available: number };
     webhooks: { successLast24h: number; failedLast24h: number; pending: number; successRate: number };
+    conversion: { intents: number; completed: number; failed: number; rate: number };
 }
 
 interface EconomyParams {
@@ -1260,6 +1261,18 @@ export function TelegramBridgePanel() {
                             value={status?.goldenSignals?.webhooks?.pending ?? 0}
                             sub="in queue"
                             color={(status?.goldenSignals?.webhooks?.pending ?? 0) === 0 ? "green" : "yellow"} />
+                        <StatCard label="Pmt. Intents" icon={Wallet}
+                            value={status?.conversion?.intents ?? 0}
+                            sub="Total created"
+                            color="blue" />
+                        <StatCard label="Pmt. Completed" icon={CheckCircle}
+                            value={status?.conversion?.completed ?? 0}
+                            sub={`${status?.conversion?.rate ?? 0}% conversion`}
+                            color="green" />
+                        <StatCard label="Pmt. Failed" icon={XCircle}
+                            value={status?.conversion?.failed ?? 0}
+                            sub="Rejected/Refused"
+                            color="red" />
                         <StatCard label="Execution Latency" icon={Zap}
                             value={`${(status as any)?.latency_p95_ms ?? 0}ms`}
                             sub="P95 last 5m"

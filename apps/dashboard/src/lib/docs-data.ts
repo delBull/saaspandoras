@@ -1880,33 +1880,29 @@ Si tienes dudas de seguridad:
 
 Pandoras integrates with Telegram through a **non-custodial, event-driven bridge layer** that allows users to interact with protocols, earn reputation and rewards, and request on-chain claims — **without exposing private keys or granting Telegram any protocol governance power**.
 
-Telegram is treated as an **external interaction surface**, not as a trusted execution environment. All protocol logic, validation, and accounting remain inside Pandoras Core.
+Telegram is an **external interaction surface**, not a trusted execution environment. All identity resolution, payment intents, and protocol accounting remain inside Pandoras Core.
 
 > **Key principle:**
-> Telegram can *signal intent* and *receive outcomes*, but it can never mutate protocol state directly.
+> Telegram can *signal intent* and *process local UI*, but Pandoras Core is the absolute source of truth (SSOT).
 
 ## Design Goals
 
-The Telegram integration was designed with the following goals:
+The Telegram integration is built around:
 
-### 1. Security-First
-- No private keys in Telegram
-- No direct smart contract access
-- No governance or admin permissions
+### 1. Federated Identity (Institution-Grade)
+- No required pre-existing accounts.
+- **5-Layer Security**: HMAC signatures on \`initData\`, strict 5-minute TTL to prevent replays, ID integrity checks, S2S HMAC Guards, and on-demand imports.
+- Complete isolation from platform private keys.
 
-### 2. Protocol Integrity
-- All logic evaluated inside Pandoras Core
-- Deterministic, auditable gamification rules
-- Idempotent execution
+### 2. Embedded Payments (Decoupled)
+- **Core-First Architecture**: Purchase intents are created and persisted in the Core as \`pending\` *before* the user sees the payment UI.
+- Thirdweb PayEmbed acts solely as the payment processor, completely decoupled from the source of truth.
+- Idempotent execution using \`idempotencyKey\` and \`txHash\` deduplication.
 
-### 3. Scalability & Composability
-- Telegram is one of many possible clients
-- Same core logic works for dashboard, bots, jobs, or future clients
-
-### 4. Clear Separation of Concerns
-- **Telegram** = UI + intent
-- **Pandoras Core** = truth + accounting
-- **Blockchain** = settlement
+### 3. Webhook Hardening
+- **HMAC Signatures**: All Core-to-Edge events are cryptographically signed.
+- **Transactional State**: Database operations are atomic to prevent ghost states or duplicate unlocks.
+- **Analytics-Ready**: Funnel tracking from intent, to payment start, to completion and unlock.
 `
       },
       {
@@ -1919,36 +1915,40 @@ The Telegram integration was designed with the following goals:
 \`\`\`
 User
  ↓
-Telegram App (Bot / Mini App)
- ↓  REST API
-Pandoras Core
- ├─ Protocol Registry (read-only)
- ├─ Gamification Engine
- ├─ Off-chain Accounting (PBOX)
- └─ Webhook Emitter
- ↓  Webhook (HMAC signed)
-Telegram Edge
- ↓
-User Feedback / Claim Flow
+Telegram MiniApp (React + Thirdweb PayEmbed)
+ ↓  REST API (Edge)
+Pandoras Edge (Gateway)
+ │
+ ├─> POST /protocols/:slug/purchase-intent
+ │    ↓ S2S (Bearer Token Auth)
+Pandoras Core (SSOT)
+ ├─ Protocol Registry & Accounting
+ ├─ Creates 'Pending' Purchase
+ └─ Webhook Emitter (HMAC Signed)
+      ↓ POST /core/callback
+Pandoras Edge
+      ↓
+User Feedback & Unhooks
 \`\`\`
 
 Pandoras Core acts as the **authoritative execution layer**.
 
 ## What Telegram Never Does
 
-- ❌ Signs transactions
-- ❌ Executes protocol logic
-- ❌ Updates balances directly
-- ❌ Reads governance or admin-only data
+- ❌ Holds or manages private keys
+- ❌ Executes protocol logic independently
+- ❌ Updates protocol balances directly
+- ❌ Overrides Core payment states
 
 ## Interaction Model
 
-Telegram interacts with Pandoras through **four bounded API surfaces**:
+Telegram interacts with Pandoras through bounded, secure API surfaces:
 
 | Endpoint | Purpose |
 |---|---|
-| \`POST /api/telegram/bind\` | Link Telegram user ↔ wallet |
-| \`GET /api/telegram/protocol/:slug\` | Read-only protocol data |
+| \`POST /internal/user/resolve\` | Secure Federated Identity resolution |
+| \`POST /internal/payments/intent\` | Create Core-authorized payment sessions |
+| \`POST /core/callback\` | Receive HMAC-signed state updates |
 | \`POST /api/gamification/record\` | Signal user action |
 | \`POST /api/pbox/claim-request\` | Request signed claim intent |
 
