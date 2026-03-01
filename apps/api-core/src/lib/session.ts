@@ -57,8 +57,8 @@ export async function createSession(
             id: sid,
             userId,
             scope,
-            ip: metadata.ip,
-            userAgent: metadata.userAgent,
+            ip: metadata.ip ?? null,
+            userAgent: metadata.userAgent ?? null,
             expiresAt,
         });
 
@@ -66,8 +66,8 @@ export async function createSession(
         await db.insert(securityEvents).values({
             userId,
             type: 'LOGIN',
-            ip: metadata.ip,
-            userAgent: metadata.userAgent,
+            ip: metadata.ip ?? null,
+            userAgent: metadata.userAgent ?? null,
             metadata: { scope, sid }
         });
     } catch (e) {
