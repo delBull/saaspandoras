@@ -19,7 +19,7 @@ export async function validateTelegramLinkAction(challenge: string): Promise<{ s
         }
 
         // Directly call the Edge API 
-        const edgeUrl = process.env.NEXT_PUBLIC_PANDORAS_EDGE_URL || 'https://pandoras-edge-api.up.railway.app';
+        const edgeUrl = process.env.NEXT_PUBLIC_PANDORAS_EDGE_URL || 'https://pandorasminiapp-staging.up.railway.app/api';
         const PANDORA_CORE_KEY = process.env.PANDORA_CORE_KEY;
 
         if (!PANDORA_CORE_KEY) {
@@ -53,7 +53,7 @@ export async function validateTelegramLinkAction(challenge: string): Promise<{ s
 
 export async function resolveTelegramUserAction(telegramId: string, initData: string): Promise<{ success: boolean; data?: any; message?: string }> {
     try {
-        const edgeUrl = process.env.NEXT_PUBLIC_PANDORAS_EDGE_URL || 'https://pandoras-edge-api.up.railway.app';
+        const edgeUrl = process.env.NEXT_PUBLIC_PANDORAS_EDGE_URL || 'https://pandorasminiapp-staging.up.railway.app/api';
         const PANDORA_CORE_KEY = process.env.PANDORA_CORE_KEY;
 
         if (!PANDORA_CORE_KEY) {
