@@ -3,6 +3,7 @@ import { purchases, users, projects } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import crypto from "crypto";
+import { sendBusinessNotification } from "@/lib/discord/business-notifier";
 
 /**
  * POST /api/v1/internal/payments/intent
@@ -123,6 +124,29 @@ export async function POST(req: Request) {
                 paymentConfig
             }
         });
+
+        // 9. Send internal business metric notification
+        await sendBusinessNotification(
+            "Purchase Intent Created",
+            {
+                PurchaseId: purchaseId,
+                Amount: `$${amount} USD`,
+                Project: project.title,
+                UserTelegramId: telegramId,
+            },
+            "info"
+        );
+
+        if (process.env.NODE_ENV === 'production') {
+            console.log(JSON.stringify({
+                type: 'PURCHASE_INTENT_CREATED',
+                purchaseId,
+                projectId: project.id,
+                amount: amount.toString(),
+                telegramId,
+                timestamp: new Date().toISOString()
+            }));
+        }
 
         return NextResponse.json({
             purchaseId,

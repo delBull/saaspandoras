@@ -217,6 +217,32 @@ export async function GET() {
             };
         } catch (e) { console.error('[Bridge Status] conversion', e); }
 
+        // ── LIVE Feed Metrics (Last 60m) ──────────────────────────────────────
+        let liveMetrics = {
+            intents: 0,
+            completed: 0,
+            revenue: 0,
+            protocolsUnlocked: 0
+        };
+        try {
+            const rowsLive = await db.execute(sql`
+                SELECT
+                    count(*) as total,
+                    count(*) FILTER (WHERE status = 'completed') as completed,
+                    sum(amount) FILTER (WHERE status = 'completed') as revenue
+                FROM purchases
+                WHERE created_at >= ${oneHourAgo} OR updated_at >= ${oneHourAgo}
+            `) as any;
+            const rl = Array.isArray(rowsLive) ? rowsLive[0] : rowsLive?.rows?.[0];
+            const compLive = parseInt(rl?.completed ?? 0);
+            liveMetrics = {
+                intents: parseInt(rl?.total ?? 0),
+                completed: compLive,
+                revenue: parseFloat(rl?.revenue ?? 0),
+                protocolsUnlocked: compLive // Simulated 1:1 for now
+            };
+        } catch (e) { console.error('[Bridge Status] liveMetrics', e); }
+
         const calcRate = (s: number, f: number) => {
             const t = s + f;
             return t > 0 ? Math.round((s / t) * 1000) / 10 : 100;
@@ -268,6 +294,7 @@ export async function GET() {
                 successRate: calcRate(wSuccess24h, wFailed24h),
             },
             conversion,
+            liveMetrics,
             latency_p95_ms: (golden as any).latency_p95_ms ?? 0,
         });
     } catch (err: any) {

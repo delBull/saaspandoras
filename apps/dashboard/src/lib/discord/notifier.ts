@@ -13,8 +13,10 @@ export interface PaymentNotification {
 }
 
 export async function sendPaymentNotification(data: PaymentNotification) {
-    if (!process.env.DISCORD_WEBHOOK_URL) {
-        console.warn("DISCORD_WEBHOOK_URL not set, skipping notification");
+    const webhookUrl = process.env.DISCORD_WEBHOOK_PANDORAS_ALERTS || process.env.DISCORD_WEBHOOK_URL;
+
+    if (!webhookUrl) {
+        console.warn("Discord webhook URL not set, skipping notification");
         return;
     }
 
@@ -62,7 +64,7 @@ export async function sendPaymentNotification(data: PaymentNotification) {
     };
 
     try {
-        await fetch(process.env.DISCORD_WEBHOOK_URL, {
+        await fetch(webhookUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ embeds: [embed] })
