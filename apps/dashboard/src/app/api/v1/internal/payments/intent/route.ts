@@ -43,15 +43,27 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Project not found" }, { status: 404 });
         }
 
-        // 3. Find User by Telegram ID
-        const user = await db.query.users.findFirst({
+        // 3. Find or Create User by Telegram ID (Support Standalone)
+        let user = await db.query.users.findFirst({
             where: eq(users.telegramId, telegramId)
         });
 
         if (!user) {
-            return NextResponse.json({
-                error: "User not found in Core. Please use 'Continue with Telegram' bridge first."
-            }, { status: 404 });
+            const newUserId = `tg-${telegramId}-${crypto.randomBytes(3).toString('hex')}`;
+            await db.insert(users).values({
+                id: newUserId,
+                telegramId: telegramId,
+                status: 'ACTIVE',
+                kycLevel: 'basic',
+                kycCompleted: false
+            });
+            user = await db.query.users.findFirst({
+                where: eq(users.id, newUserId)
+            });
+        }
+
+        if (!user) {
+            throw new Error("Failed to create shadow user in Core");
         }
 
         // 4. Idempotency Check
