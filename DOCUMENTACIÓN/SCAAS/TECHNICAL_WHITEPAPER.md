@@ -609,8 +609,35 @@ To encourage thorough validation and security best practices, the platform incen
 
 ---
 
-## **References**
+## **13. Telegram MiniApp Integration (Identity-First)**
 
+### **13.1 Architecture Overview**
+
+The SCaaS ecosystem extends its reach through a native Telegram MiniApp designed for viral onboarding. To eliminate Web3 friction for mainstream users, the integration employs an **Identity-first, Wallet-optional** architecture.
+
+This paradigm decouples protocol access from mandatory on-chain wallets, acting as a "Web2.5" bridge. 
+
+### **13.2 Hybrid Identity Resolution**
+
+User identities are handled dynamically based on their onboarding state:
+- **Standalone Telegram Users**: Authenticate purely via Telegram's `initData`. Their identity is represented by a `telegramUserId` and their points/activities are tracked natively within the Edge database without requiring a cryptographic wallet.
+- **Linked Users (Legacy Web)**: Users who have bound their core SaaS account. They possess a verifiable `userId` linked to an on-chain `walletAddress`.
+
+### **13.3 The Genesis NFT (Virtual vs On-Chain Minting)**
+
+The "Genesis NFT" serves as the foundational Identity Artifact for entering the Pandoras ecosystem. Its issuance follows a **Dual-Minting Path** to preserve UX without breaking blockchain verifiability:
+
+1. **Virtual Mint (Off-Chain)**: 
+   If a user registers through the MiniApp and lacks a linked wallet, the NFT is minted **virtually**. The `ProtocolRegistry` equivalent on the Edge Server creates an `Artefact` record associated strictly with their `telegramUserId`. The user gains immediate visual and functional access to the platform, receiving gamification points and real-time notifications, with **zero gas fees** and no wallet prompts.
+
+2. **Real Mint (On-Chain)**:
+   If the user has a pre-existing wallet linked to their core account, the system triggers a standard `claimAccessCard` transaction. The request is relayed to the blockchain (e.g., Base or Sepolia), formalizing the Genesis NFT through a smart contract interaction.
+
+By defaulting to the Virtual Protocol, the Telegram integration achieves instantaneous onboarding while retaining the capacity to formalize assets On-Chain once the user chooses to adopt full Web3 custody.
+
+---
+
+## **References**
 
 1. **OpenZeppelin Contracts**: Security and standards library
 2. **ERC-721A**: Gas-optimized NFT standard
@@ -625,4 +652,4 @@ This technical whitepaper is for informational purposes only and does not consti
 
 ---
 
-*SCaaS Technical Whitepaper v2.0 - February 2026*
+*SCaaS Technical Whitepaper v2.1 - March 2026*
