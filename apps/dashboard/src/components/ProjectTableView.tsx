@@ -60,15 +60,46 @@ export function ProjectTableView({
       setIsProgressModalOpen(true);
 
       try {
-        await onDeployProtocol(
+        const result = await onDeployProtocol(
           selectedProjectForDeployment.id,
           selectedProjectForDeployment.title,
           selectedProjectForDeployment.slug,
-          // Merge force flag into config (requires logic update in useProjectActions to extract it)
           { ...config, forceRedeploy: selectedProjectForDeployment.forceRedeploy } as any
         );
-        setDeploymentStatus('success');
+
+        const jobId = (result as any)?.jobId;
+
+        if (jobId) {
+          // Start Polling
+          const pollStatus = async () => {
+            try {
+              const pollRes = await fetch(`/api/admin/deployment-job/${jobId}`);
+              if (!pollRes.ok) throw new Error("Failed to poll status");
+              const { job } = await pollRes.json();
+
+              if (job.status === 'completed') {
+                setDeploymentStatus('success');
+                return; // Stop polling
+              } else if (job.status === 'failed') {
+                setDeploymentStatus('error');
+                setDeploymentError(job.error || "Deployment failed in background");
+                return; // Stop polling
+              }
+
+              // Continue polling
+              setTimeout(pollStatus, 3000);
+            } catch (pollErr) {
+              console.error("Polling error:", pollErr);
+              setTimeout(pollStatus, 5000);
+            }
+          };
+          pollStatus();
+        } else {
+          // Fallback if no jobId returned (sync legacy)
+          setDeploymentStatus('success');
+        }
       } catch (err) {
+
         setDeploymentStatus('error');
         setDeploymentError(err instanceof Error ? err.message : 'Error desconocido al desplegar');
       }

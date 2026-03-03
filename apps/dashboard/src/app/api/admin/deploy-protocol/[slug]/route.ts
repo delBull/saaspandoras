@@ -9,7 +9,8 @@ import { deployW2EProtocol } from "@pandoras/protocol-deployer";
 import type { W2EConfig } from "@pandoras/protocol-deployer";
 import { trackGamificationEvent } from "@/lib/gamification/service";
 import { WebhookService } from "@/lib/integrations/webhook-service";
-import { integrationClients } from "@/db/schema";
+import { integrationClients, deploymentJobs, deploymentJobStatusEnum } from "@/db/schema";
+
 
 // Force Node.js runtime for database interactions
 export const runtime = "nodejs";
@@ -167,9 +168,22 @@ export async function POST(
         // console.log(`🌍 Environment Detect: BRANCH=${branchName}...`); // Removed to avoid lint error
         // Already logged above at "Network Decision"
 
-        console.log(`🚀 API: Proceeding with config (via Railway Service):`, config);
+        console.log(`🚀 API: Proceeding with config (Asynchronous Job):`, config);
 
-        // 4. Delegate to Deployment Service
+        // 4. Create Deployment Job
+        const [job] = await db.insert(deploymentJobs).values({
+            projectSlug: slug,
+            network: network,
+            config: config as any,
+            status: "pending",
+            step: "queued"
+        }).returning();
+
+        if (!job) {
+            throw new Error("Failed to create deployment job in database");
+        }
+
+        // 5. Signal Deployment Service (Fire and forget-ish, or just rely on worker)
         const DEPLOY_SERVICE_URL = process.env.DEPLOY_SERVICE_URL || "http://localhost:3000";
         const DEPLOY_SECRET = process.env.DEPLOY_SECRET;
 
@@ -177,140 +191,36 @@ export async function POST(
             throw new Error("Missing DEPLOY_SECRET in environment variables");
         }
 
-        console.log(`📡 Forwarding deployment to: ${DEPLOY_SERVICE_URL}/deploy/protocol`);
+        console.log(`📡 Notifying deployment service for job: ${job.id}`);
 
-        const deployResponse = await fetch(`${DEPLOY_SERVICE_URL}/deploy/protocol`, {
+        // We use a non-blocking fetch (or just let the worker pick it up if it's polling)
+        // For now, we'll hit the process endpoint but not wait for it.
+        fetch(`${DEPLOY_SERVICE_URL}/deploy/process-job`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 "x-deploy-secret": DEPLOY_SECRET
             },
-            body: JSON.stringify({ slug, config, network })
-        });
+            body: JSON.stringify({ jobId: job.id })
+        }).catch(err => console.error("⚠️ Failed to signal deployment service:", err));
 
-        if (!deployResponse.ok) {
-            const errorText = await deployResponse.text();
-            throw new Error(`Deployment Service failed: ${deployResponse.status} ${deployResponse.statusText} - ${errorText}`);
-        }
-
-        const deployResult = await deployResponse.json();
-
-        if (!deployResult.success || !deployResult.deployment) {
-            throw new Error(`Deployment Service returned failure: ${deployResult.error || "Unknown error"}`);
-        }
-
-        const result = deployResult.deployment;
-        console.log("✅ Deployment Result (from Service):", result);
-
-        // Prepare Extended Config for DB (includes UI-specific fields not used by deployer)
-        const extendedConfig = {
-            ...config,
-            phases: reqConfig?.phases || [],
-            tokenomics: reqConfig?.tokenomics || {}, // Store raw tokenomics from UI
-            accessCardImage: reqConfig?.accessCardImage,
-            timelockAddress: result.timelockAddress // Store timelock in config since we lack a column
-        };
-
-        // 5. Update Database
-        await db.update(projects)
-            .set({
-                licenseContractAddress: result.licenseAddress || (result.artifacts?.[0]?.address),
-                utilityContractAddress: result.phiAddress,
-                loomContractAddress: result.loomAddress,
-                governorContractAddress: result.governorAddress,
-                registryContractAddress: result.registryAddress, // V2
-                artifacts: result.artifacts, // V2
-                protocolVersion: 2, // V2 Hardening
-                treasuryAddress: result.treasuryAddress,
-                chainId: result.chainId,
-                deploymentStatus: 'deployed',
-                status: 'live',
-                w2eConfig: extendedConfig,
-            })
-            .where(eq(projects.slug, slug));
-
-        // 6. Gamification: Award 500 points for deploying protocol
-        if (project.applicantWalletAddress) {
-            try {
-                await trackGamificationEvent(
-                    project.applicantWalletAddress,
-                    'protocol_deployed',
-                    {
-                        projectId: project.id.toString(),
-                        projectSlug: slug,
-                        network: network,
-                        timestamp: new Date().toISOString()
-                    }
-                );
-                console.log(`🎯 Gamification event tracked: protocol_deployed for ${project.applicantWalletAddress}`);
-            } catch (gamificationError) {
-                console.warn('⚠️ Failed to track gamification event:', gamificationError);
-            }
-        }
-
-        // 7. WEBHOOK: Notify external clients
-        try {
-            // Find all clients matching the current environment
-            const clients = await db.query.integrationClients.findMany({
-                where: eq(integrationClients.environment, network === 'sepolia' ? 'staging' : 'production')
-            });
-
-            const isSandbox = network === 'sepolia';
-
-            for (const client of clients) {
-                await WebhookService.queueEvent(client.id, 'protocol.deployed', {
-                    projectId: project.id.toString(),
-                    projectSlug: slug,
-                    projectName: project.title,
-                    chainId: result.chainId,
-                    protocolVersion: 2,
-                    isSandbox: isSandbox,
-                    contracts: {
-                        token: result.phiAddress,
-                        governor: result.governorAddress,
-                        loom: result.loomAddress,
-                        timelock: result.timelockAddress,
-                        registry: result.registryAddress
-                    },
-                    artifacts: result.artifacts || [],
-                    deployer: treasuryAddress
-                });
-            }
-            console.log(`📡 Webhook(s) queued for ${clients.length} clients.`);
-        } catch (webhookError) {
-            console.warn('⚠️ Failed to queue deployment webhook:', webhookError);
-        }
-
+        // 6. Return response
         return NextResponse.json({
             success: true,
-            deployment: {
-                ...result,
-                protocolVersion: 2
-            }
+            jobId: job?.id,
+            message: "Deployment started asynchronously"
         });
 
     } catch (error: any) {
         console.error("Deploy API Error:", error);
-
-        // Diagnostic Info
-        const diagnostics = {
-            networkAttempted: network,
-            envDetection: {
-                host: host,
-                vercelEnv: process.env.NEXT_PUBLIC_VERCEL_ENV,
-                branch: branchName
-            },
-            rpcStatus: {
-                sepolia: process.env.SEPOLIA_RPC_URL ? `Configured (Length: ${process.env.SEPOLIA_RPC_URL.length})` : 'MISSING',
-                base: process.env.BASE_RPC_URL ? `Configured (Length: ${process.env.BASE_RPC_URL.length})` : 'MISSING'
-            },
-            errorDetails: error?.message || error
-        };
-
+        // ... (rest of error handling stays same but with safer checks)
         return NextResponse.json(
             {
                 error: error instanceof Error ? error.message : "Internal Server Error",
-                details: diagnostics
+                details: {
+                    networkAttempted: network,
+                    errorDetails: error?.message || error
+                }
             },
             { status: 500 }
         );

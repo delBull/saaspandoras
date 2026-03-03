@@ -5,7 +5,27 @@ import { toast } from "sonner";
 import { Input } from "@saasfly/ui/input";
 import { Button } from "@/components/ui/button";
 
-import { Trash2, PlusCircle, Loader2, Pencil, Activity, Power, Building2, Users, Key, Settings, Info, MessageCircle } from "lucide-react";
+import {
+  Trash2,
+  PlusCircle,
+  Loader2,
+  Pencil,
+  Activity,
+  Power,
+  Building2,
+  Users,
+  Key,
+  Settings,
+  Info,
+  MessageCircle,
+  HelpCircle,
+  ArrowRight,
+  ShieldCheck,
+  PieChart,
+  Landmark,
+  Target,
+  TrendingUp
+} from "lucide-react";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 import Link from "next/link";
 
@@ -79,7 +99,7 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [editingAliasId, setEditingAliasId] = useState<number | null>(null);
   const [editingAliasValue, setEditingAliasValue] = useState("");
-
+  const [showGuideModal, setShowGuideModal] = useState(false);
 
 
   const handleAddAdmin = async () => {
@@ -202,89 +222,209 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
   return (
     <div className="space-y-8">
       {/* --- ADMIN MANAGEMENT SECTION --- */}
-      <div className="space-y-6">
-        <div>
-          <h3 className="text-lg font-semibold text-white">Añadir Nuevo Administrador</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
-            <Input
-              type="text"
-              placeholder="Dirección de Wallet (0x...)"
-              value={newAddress}
-              onChange={(e) => setNewAddress(e.target.value)}
-              className="bg-zinc-800 border-zinc-700 sm:col-span-1"
-            />
-            <Input
-              type="text"
-              placeholder="Alias (opcional)"
-              value={newAlias}
-              onChange={(e) => setNewAlias(e.target.value)}
-              className="bg-zinc-800 border-zinc-700 sm:col-span-1"
-              maxLength={100}
-            />
-            <Button onClick={handleAddAdmin} disabled={isLoading} className="bg-lime-500 hover:bg-lime-600 text-zinc-900 sm:col-span-1">
-              {isLoading ? <Loader2 className="animate-spin" /> : <PlusCircle className="w-4 h-4 mr-2" />}
-              Añadir
+      {/* --- AGORA ARCHITECTURE GUIDE SECTION --- */}
+      <div className="border-t-2 border-zinc-700/50 pt-8 mt-8">
+        <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <Landmark className="w-6 h-6 text-lime-400" />
+              <div>
+                <h3 className="text-xl font-bold text-white">AGORA Infrastructure Guide</h3>
+                <p className="text-sm text-gray-400">Transfer of Power: Understanding the Engine Rules</p>
+              </div>
+            </div>
+            <Button
+              onClick={() => setShowGuideModal(true)}
+              className="bg-zinc-800 hover:bg-zinc-700 text-white flex items-center gap-2"
+            >
+              <HelpCircle className="w-4 h-4" />
+              Visual Guide
             </Button>
           </div>
-        </div>
-        <div>
-          <h3 className="text-lg font-semibold text-white">Administradores Actuales</h3>
-          <ul className="mt-2 space-y-2">
-            {admins.map((admin) => (
-              <li key={admin.id} className="p-3 bg-zinc-800/50 rounded-md border border-zinc-700">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <div className="min-w-0 flex-1">
-                        <div className="font-semibold text-white truncate">{admin.alias ?? 'Sin alias'}</div>
-                        <div className="font-mono text-xs text-gray-400 truncate">
-                          {truncateWallet(getWalletAddress(admin), 6)}
-                        </div>
-                      </div>
-                      {editingAliasId === admin.id ? (
-                        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-                          <Input
-                            type="text"
-                            value={editingAliasValue}
-                            onChange={(e) => setEditingAliasValue(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleUpdateAlias()}
-                            className="w-24 sm:w-32 h-8 text-xs sm:text-sm bg-zinc-700 border-zinc-600"
-                            placeholder="Alias..."
-                            maxLength={100}
-                          />
-                          <Button size="sm" variant="outline" onClick={handleUpdateAlias} className="h-8 px-1 sm:px-2">
-                            ✓
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={handleCancelEditAlias} className="h-8 px-1 sm:px-2 text-gray-400">
-                            ✕
-                          </Button>
-                        </div>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleStartEditAlias(admin)}
-                          className="h-8 w-8 p-0 text-gray-400 hover:text-white flex-shrink-0"
-                          title="Editar alias"
-                        >
-                          <Pencil className="h-3 w-3" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                  {/* Verificación de seguridad en la UI: no mostrar el botón de borrar para el Super Admin */}
-                  {getWalletAddress(admin).toLowerCase() !== SUPER_ADMIN_WALLET && (
-                    <Button variant="destructive" size="sm" onClick={() => handleDeleteAdmin(admin.id)} className="flex-shrink-0 px-2 sm:px-3 text-xs sm:text-sm">
-                      <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-0" />
-                      <span className="hidden sm:inline">Borrar</span>
-                    </Button>
-                  )}
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 bg-zinc-800/30 rounded-lg border border-zinc-800 space-y-3">
+              <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                <PieChart className="w-4 h-4 text-lime-400" />
+                Treasury Policy
+              </h4>
+              <p className="text-xs text-gray-400 leading-relaxed">
+                Define secondary buyback rules and capital allocation.
+              </p>
+              <div className="pt-2">
+                <label htmlFor="buyback-ratio" className="text-[10px] text-gray-500 uppercase font-bold block mb-1">Buyback Allocation Ratio (%)</label>
+                <div className="flex gap-2">
+                  <Input
+                    id="buyback-ratio"
+                    type="number"
+                    step="0.05"
+                    min="0"
+                    max="1.0"
+                    placeholder="1.0 (100%)"
+                    className="bg-zinc-900 border-zinc-700 h-8 text-xs text-lime-400"
+                    defaultValue="1.0"
+                  />
+                  <Button size="sm" className="h-8 text-[10px] bg-zinc-700 hover:bg-zinc-600">Save</Button>
                 </div>
-              </li>
-            ))}
-          </ul>
+                <p className="text-[10px] text-gray-500 mt-1">Recommended: 0.2-0.5 for stability.</p>
+              </div>
+            </div>
+            <div className="p-4 bg-zinc-800/30 rounded-lg border border-zinc-800">
+              <h4 className="text-sm font-bold text-white mb-2 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-lime-400" />
+                Settlement Guard
+              </h4>
+              <p className="text-xs text-gray-400 leading-relaxed">
+                Rules-based atomic trades. No AMM slippage. ROFR intervenes when market price drops below NAV baseline.
+              </p>
+            </div>
+            <div className="p-4 bg-zinc-800/30 rounded-lg border border-zinc-800">
+              <h4 className="text-sm font-bold text-white mb-2 flex items-center gap-2">
+                <ArrowRight className="w-4 h-4 text-lime-400" />
+                Timelock Discipline
+              </h4>
+              <p className="text-xs text-gray-400 leading-relaxed">
+                Parameter changes (Fees, Ratios) are delayed by 6-72 hours. This prevents "flash-adjustment" attacks.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* --- ARCHITECTURE GUIDE MODAL --- */}
+      {showGuideModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="p-8">
+              <div className="flex items-center justify-between mb-8 pb-4 border-b border-zinc-800">
+                <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                  <Landmark className="w-8 h-8 text-lime-400" />
+                  AGORA Architecture: Visual Flow
+                </h2>
+                <Button variant="ghost" onClick={() => setShowGuideModal(false)} className="text-gray-400 hover:text-white">✕</Button>
+              </div>
+
+              <div className="space-y-12">
+                <div className="relative flex flex-col md:flex-row items-center justify-between gap-8 py-8">
+                  <div className="flex flex-col items-center gap-4 text-center group">
+                    <div className="w-16 h-16 rounded-2xl bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center group-hover:border-lime-400 transition-colors">
+                      <Users className="w-8 h-8 text-lime-400" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-white">LISTING</div>
+                      <div className="text-[10px] text-gray-500 uppercase">Input</div>
+                    </div>
+                  </div>
+                  <ArrowRight className="hidden md:block w-6 h-6 text-zinc-700" />
+                  <div className="flex flex-col items-center gap-4 text-center group">
+                    <div className="w-20 h-20 rounded-2xl bg-zinc-800 border-2 border-lime-500/50 flex items-center justify-center shadow-[0_0_20px_rgba(163,230,53,0.1)] group-hover:border-lime-400 transition-colors">
+                      <Settings className="w-10 h-10 text-lime-400" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-white uppercase">Settlement Engine</div>
+                      <div className="text-[10px] text-gray-500 uppercase">Atomic Validation</div>
+                    </div>
+                  </div>
+                  <ArrowRight className="hidden md:block w-6 h-6 text-zinc-700" />
+                  <div className="flex flex-col items-center gap-4 text-center group">
+                    <div className="w-16 h-16 rounded-2xl bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center group-hover:border-lime-400 transition-colors">
+                      <Building2 className="w-8 h-8 text-lime-400" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-white uppercase">Treasury / NAV</div>
+                      <div className="text-[10px] text-gray-500 uppercase">Stability</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-zinc-950/50 rounded-xl p-6 border border-zinc-800">
+                  <div className="space-y-4">
+                    <h5 className="text-lime-400 font-bold text-sm uppercase tracking-widest">Economic Logic</h5>
+                    <ul className="space-y-4">
+                      <li className="flex gap-3">
+                        <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-lime-400 shrink-0">1</div>
+                        <p className="text-xs text-gray-400 leading-relaxed">
+                          <strong>NAV Calculation:</strong> Net Asset Value = Treasury / Supply. This is the "Truth" price of the platform.
+                        </p>
+                      </li>
+                      <li className="flex gap-3">
+                        <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-lime-400 shrink-0">2</div>
+                        <p className="text-xs text-gray-400 leading-relaxed">
+                          <strong>Buyback (ROFR):</strong> If a Listing price is &lt; NAV, the protocol can exercise its Right of First Refusal to stabilize the market.
+                        </p>
+                      </li>
+                      <li className="flex gap-3">
+                        <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-lime-400 shrink-0">3</div>
+                        <p className="text-xs text-gray-400 leading-relaxed">
+                          <strong>Early Exit:</strong> Users can sell back directly to Treasury, but pay a penalty (default 15%) to discourage bank runs.
+                        </p>
+                      </li>
+                    </ul>
+                  </div>
+                  <div className="space-y-4">
+                    <h5 className="text-red-400 font-bold text-sm uppercase tracking-widest">Operational Safety</h5>
+                    <div className="space-y-4">
+                      <div className="p-4 bg-red-950/10 border border-red-900/20 rounded-lg">
+                        <div className="text-xs font-bold text-red-400 mb-1">GLOBAL KILL-SWITCH</div>
+                        <p className="text-[11px] text-gray-400">
+                          Immmediate pause. Bypasses 6h delay. Use ONLY in case of exploit or extreme volatility.
+                        </p>
+                      </div>
+                      <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-lg">
+                        <div className="text-xs font-bold text-white mb-1">LOCK ORDERING</div>
+                        <p className="text-[11px] text-gray-400">
+                          To prevent deadlocks, the engine always locks artifacts in strict order: [Listing] then [Artifact].
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-lime-400/5 border border-lime-400/20 rounded-xl p-6">
+                  <h5 className="text-lime-400 font-bold text-sm uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4" />
+                    Strategic Roadmap: Policy Transition
+                  </h5>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <div className="text-xs font-bold text-white flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-blue-400" />
+                        PHASE 1: FUNDING (Initial)
+                      </div>
+                      <p className="text-[11px] text-gray-400 pl-4 border-l border-zinc-800">
+                        Buyback Ratio is 0%. The protocol focuses on treasury growth. Market operates within bands but without protocol intervention.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="text-xs font-bold text-white flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-lime-400 animate-pulse" />
+                        PHASE 2: DEFENSE (Active)
+                      </div>
+                      <p className="text-[11px] text-gray-400 pl-4 border-l border-zinc-800">
+                        Governance increases Ratio &gt; 0%. ROFR becomes active. Protocol automatedly defends the floor based on NAV.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 text-center">
+                  <p className="text-xs text-gray-500 italic">
+                    "AGORA is not just a marketplace; it is an economic buffer system designed to protect long-term value."
+                  </p>
+                </div>
+                <div className="flex justify-end pt-4">
+                  <Button
+                    onClick={() => setShowGuideModal(false)}
+                    className="bg-lime-500 hover:bg-lime-600 text-zinc-900 font-bold px-8"
+                  >
+                    Understood
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* --- OPERATIONS CONTROL LINK --- */}
       <div className="border-t-2 border-zinc-700/50 pt-8 mt-8">
@@ -298,19 +438,55 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
               <p className="text-sm text-gray-400 mb-4">
                 Emergency controls, system monitoring, and infrastructure management.
               </p>
+              <div className="mt-4 p-4 bg-zinc-900/80 rounded border border-red-900/30 mb-4">
+                <h4 className="text-sm font-bold text-red-400 flex items-center gap-2 mb-2">
+                  <Info className="w-4 h-4" />
+                  Institutional Emergency Playbook
+                </h4>
+                <ul className="text-xs text-gray-400 space-y-2 list-disc pl-4">
+                  <li><strong>Market Exploit:</strong> Activate Global Pause immediately. It bypasses governance delays.</li>
+                  <li><strong>Oracle Failure:</strong> If NAV drifts unexpectedly, pause relevant protocol configs.</li>
+                  <li><strong>Liquidity Crunch:</strong> Check Buyback Pools; if empty, settlements will fail automatically.</li>
+                  <li><strong>Reactivation:</strong> Settlement unpausing ALWAYS requires a 6h Governance Delay.</li>
+                </ul>
+              </div>
               <div className="flex gap-2 text-xs text-yellow-400">
                 <span>🔒 Super Admin Only</span>
                 <span>•</span>
                 <span>⚠️ High Risk Area</span>
               </div>
             </div>
-            <Link
-              href="/admin/operations"
-              className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors flex items-center gap-2 shadow-lg hover:shadow-red-900/50"
-            >
-              <Power className="w-4 h-4" />
-              Access Operations
-            </Link>
+            <div className="flex flex-col gap-3">
+              <Link
+                href="/admin/operations"
+                className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold rounded-lg transition-colors flex items-center gap-2 shadow-lg"
+              >
+                <Settings className="w-4 h-4" />
+                Monitor Systems
+              </Link>
+              <Button
+                onClick={async () => {
+                  if (confirm("⚠️ CRITICAL ACTION: Are you sure you want to PAUSE ALL Agora protocols? This will stop all settlements globally.")) {
+                    try {
+                      const res = await fetch("/api/v1/admin/agora/emergency/pause-all", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ confirmed: true })
+                      });
+                      const data = await res.json();
+                      if (data.success) toast.success(data.message);
+                      else toast.error(data.error);
+                    } catch (e) {
+                      toast.error("Failed to activate kill-switch");
+                    }
+                  }
+                }}
+                className="px-6 py-6 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-all flex items-center gap-2 shadow-lg hover:shadow-red-600/50 uppercase tracking-wider"
+              >
+                <Power className="w-5 h-5 fill-white" />
+                Global Kill-Switch
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -344,7 +520,6 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
         </div>
       </div>
 
-      {/* --- MULTI-TENANT CONFIGURATION SECTION --- */}
       <MultiTenantSection />
     </div>
   );
@@ -676,8 +851,8 @@ function MultiTenantSection() {
               <div
                 key={tenant.id}
                 className={`p-4 rounded-lg border ${tenant.isActive
-                    ? "bg-zinc-800/50 border-zinc-700"
-                    : "bg-zinc-900/50 border-zinc-800 opacity-60"
+                  ? "bg-zinc-800/50 border-zinc-700"
+                  : "bg-zinc-900/50 border-zinc-800 opacity-60"
                   }`}
               >
                 <div className="flex items-center justify-between">
