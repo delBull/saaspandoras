@@ -484,6 +484,18 @@ export function ProjectTableView({
                                       )}
                                     </button>
                                   )}
+
+                                  {p.deploymentStatus === 'deployed' && (
+                                    <button
+                                      onClick={() => {
+                                        alert("🏛️ Transición Soberana a AGORA Market\n\nLa activación de la Fase de Defensa debe realizarse a través de una propuesta en la DAO del protocolo (W2EGovernor) o mediante interacción directa con los Smart Contracts si eres el propietario.\n\nEl sistema backend detectará automáticamente el cambio cuando las transferencias queden habilitadas on-chain.");
+                                      }}
+                                      className="px-2 py-0.5 bg-purple-900/50 hover:bg-purple-900 border border-purple-500/50 text-purple-200 text-xs font-bold rounded shadow-lg transition-all flex items-center gap-1 ml-2"
+                                      title="Instrucciones para transición soberana a Fase de Defensa"
+                                    >
+                                      🏛️ Lanza AGORA Market
+                                    </button>
+                                  )}
                                 </div>
                                 <span className={`px-2 py-0.5 rounded ${p.deploymentStatus === 'deployed' ? 'bg-indigo-900 text-indigo-300 border border-indigo-700' :
                                   p.deploymentStatus === 'pending' ? 'bg-amber-900 text-amber-300 border border-amber-700' :

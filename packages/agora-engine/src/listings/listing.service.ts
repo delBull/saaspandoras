@@ -55,6 +55,9 @@ export class ListingService {
 
         // 1. Governance Policy Evaluation
         const config = await this.configStorage.getActiveConfig(protocolId);
+        if (config.phase !== 'defense') {
+            throw new Error('SECONDARY_MARKET_INACTIVE: AGORA market is only active during the Defense phase.');
+        }
         if (config.settlementPaused) {
             throw new Error('MARKET_PAUSED: Market operations are temporarily suspended.');
         }

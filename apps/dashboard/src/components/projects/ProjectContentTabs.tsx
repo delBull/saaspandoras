@@ -309,9 +309,29 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
               <LayoutGrid className="w-5 h-5 text-lime-400" />
-              <h3 className="text-lg font-bold text-white">Artefactos (Fases)</h3>
+              <h3 className="text-lg font-bold text-white">Artefactos (Venta Primaria)</h3>
             </div>
-            {project.w2eConfig?.phases && project.w2eConfig.phases.length > 0 ? (
+
+            {/* EDUCATIONAL VIEW: Primary Sale Closed */}
+            {project.marketPhase === 'defense' && (
+              <div className="mb-6 p-6 bg-red-900/10 border border-red-500/20 rounded-2xl">
+                <div className="flex items-center gap-3 mb-2">
+                  <Lock className="w-5 h-5 text-red-500" />
+                  <h4 className="font-bold text-white uppercase italic">Venta Primaria Finalizada</h4>
+                </div>
+                <p className="text-zinc-400 text-sm leading-relaxed">
+                  El protocolo ha transicionado a la fase de **Defensa (Mercado Secundario)**. La emisión directa de nuevos artefactos ha concluido para proteger la escasez del ecosistema.
+                </p>
+                <Link
+                  href={`/protocol/market/${project.id || project.slug}`}
+                  className="mt-4 inline-flex items-center gap-2 bg-white text-black px-4 py-2 rounded-lg text-xs font-black uppercase italic hover:bg-lime-400 transition-colors"
+                >
+                  Ir al AGORA Market <ArrowRight className="w-3 h-3" />
+                </Link>
+              </div>
+            )}
+
+            {project.marketPhase !== 'defense' && project.w2eConfig?.phases && project.w2eConfig.phases.length > 0 ? (
               <div className="space-y-6">
                 {/* Fases Activas */}
                 <div className="space-y-4">
@@ -517,6 +537,61 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
             utilityContract={{ address: project.utilityContractAddress }}
             phase={selectedPhase}
           />
+
+          {/* AGORA Market: Phase-Aware Preview */}
+          <SectionCard title="Mercado Secundario (AGORA)" icon={Zap}>
+            {project.marketPhase === 'defense' ? (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                  <Zap className="w-5 h-5 text-emerald-400" />
+                  <p className="text-emerald-400 font-bold text-sm">MERCADO ACTIVO: Liquidez Secundaria habilitada.</p>
+                </div>
+                <p className="text-zinc-300 text-sm">
+                  Ahora puedes comprar y vender artefactos directamente con otros miembros de la comunidad bajo las reglas de gobernanza institucional.
+                </p>
+                <Link
+                  href={`/protocol/market/${project.id || project.slug}`}
+                  className="w-full justify-center inline-flex items-center gap-2 bg-emerald-500 text-black py-4 rounded-xl text-md font-black uppercase italic hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20"
+                >
+                  Abrir AGORA Market <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 p-4 bg-zinc-800/50 border border-zinc-700/50 rounded-xl">
+                  <Lock className="w-5 h-5 text-zinc-500" />
+                  <p className="text-zinc-400 font-bold text-sm uppercase italic">Mercado en Funding (Fase 1)</p>
+                </div>
+
+                {/* Educational Metrics */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-zinc-900/50 rounded-lg border border-zinc-800">
+                    <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-1">Treasury Actual</p>
+                    <p className="text-xl font-mono text-white">{formatCurrency(fundsRaised)}</p>
+                  </div>
+                  <div className="p-4 bg-zinc-900/50 rounded-lg border border-zinc-800">
+                    <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-1">Meta Activación</p>
+                    <p className="text-xl font-mono text-lime-400">{formatCurrency(targetAmount)}</p>
+                  </div>
+                </div>
+
+                <div className="w-full bg-zinc-900 rounded-full h-2 overflow-hidden">
+                  <div
+                    className="bg-lime-500 h-full transition-all duration-1000"
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+
+                <p className="text-xs text-zinc-500 leading-relaxed italic">
+                  * El mercado secundario AGORA se activará automáticamente (Fase 2) al alcanzar el 100% de la meta de adopción o por decreto de gobernanza.
+                </p>
+
+                <button className="w-full py-4 bg-zinc-800 text-zinc-500 rounded-xl text-md font-bold uppercase italic cursor-not-allowed border border-zinc-700" disabled>
+                  AGORA Bloqueado
+                </button>
+              </div>
+            )}
+          </SectionCard>
 
           {/* Estructura de Recompensa Recurrente */}
           <SectionCard title="Estructura de Recompensa Recurrente" icon={Star}>

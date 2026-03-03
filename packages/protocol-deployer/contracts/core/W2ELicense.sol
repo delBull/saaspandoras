@@ -34,6 +34,9 @@ contract W2ELicense is ERC721A, Ownable, ERC2981 {
     /// @notice Indica si los tokens pueden ser quemados por el dueño
     bool public isBurnable;
 
+    /// @notice Indica si la venta primaria está abierta
+    bool public primaryOpen = true;
+
     /// @notice Fase actual del protocolo (1, 2, 3...)
     uint256 public phaseId;
 
@@ -51,6 +54,8 @@ contract W2ELicense is ERC721A, Ownable, ERC2981 {
     event TreasuryUpdated(address indexed oldTreasury, address indexed newTreasury);
     event LicensePriceUpdated(uint256 indexed oldPrice, uint256 indexed newPrice);
     event RoyaltyUpdated(address indexed receiver, uint96 feeNumerator);
+    event TransferabilityUpdated(bool indexed status);
+    event PrimarySaleClosed();
 
     // ========== CONSTRUCTOR ==========
 
@@ -113,6 +118,23 @@ contract W2ELicense is ERC721A, Ownable, ERC2981 {
         emit RoyaltyUpdated(receiver, feeNumerator);
     }
 
+    /**
+     * @notice Habilita o deshabilita la transferencia de tokens
+     * @param _status Nuevo estado de transferibilidad
+     */
+    function setIsTransferable(bool _status) external onlyOwner {
+        isTransferable = _status;
+        emit TransferabilityUpdated(_status);
+    }
+
+    /**
+     * @notice Cierra la venta primaria de forma permanente
+     */
+    function closePrimarySale() external onlyOwner {
+        primaryOpen = false;
+        emit PrimarySaleClosed();
+    }
+
     // ... (Existing setPandoraOracle, setTreasuryAddress, setLicensePrice) ...
 
     /**
@@ -149,6 +171,7 @@ contract W2ELicense is ERC721A, Ownable, ERC2981 {
         external
         onlyPandoraOracle
     {
+        require(primaryOpen, "W2E: Primary sale closed");
         uint256 newTotal = _totalMinted() + quantity;
         require(newTotal <= maxSupply, "W2E: Max supply reached");
         require(recipient != address(0), "W2E: Invalid recipient");
@@ -164,6 +187,7 @@ contract W2ELicense is ERC721A, Ownable, ERC2981 {
      * @param quantity Cantidad de licencias a mintear
      */
     function mintWithPayment(uint256 quantity) external payable {
+        require(primaryOpen, "W2E: Primary sale closed");
         require(quantity > 0, "W2E: Quantity must be positive");
         require(msg.value >= licensePrice * quantity, "W2E: Insufficient payment");
 

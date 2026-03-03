@@ -48,6 +48,9 @@ export class SettlementService {
 
             // 1.5 Governance Circuit Breaker Check directly against DB live state via configStorage adapter config (could be passed the tx context)
             const protocolConfig = await this.configStorage.getActiveConfig(listing.protocolId);
+            if (protocolConfig.phase !== 'defense') {
+                throw new Error('SECONDARY_MARKET_INACTIVE: Settlements are only allowed in the Defense phase.');
+            }
             if (protocolConfig.settlementPaused) {
                 throw new Error('MARKET_PAUSED: Settlements are currently suspended by institutional governance.');
             }

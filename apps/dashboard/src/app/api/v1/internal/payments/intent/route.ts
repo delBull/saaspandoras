@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { purchases, users, projects } from "@/db/schema";
+import { purchases, users, projects, protocolConfigs } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import crypto from "crypto";
@@ -42,6 +42,18 @@ export async function POST(req: Request) {
 
         if (!project) {
             return NextResponse.json({ error: "Project not found" }, { status: 404 });
+        }
+
+        // 2.5 Phase Validation (Hardening)
+        const config = await db.query.protocolConfigs.findFirst({
+            where: eq(protocolConfigs.protocolId, project.id)
+        });
+
+        if (config && config.marketPhase === 'defense') {
+            return NextResponse.json({
+                error: "PRIMARY_SALE_CLOSED",
+                message: "The primary sale for this project has closed. Artifacts are now available on the AGORA Secondary Market."
+            }, { status: 403 });
         }
 
         // 3. Find or Create User by Telegram ID (Support Standalone)
