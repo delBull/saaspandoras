@@ -32,6 +32,8 @@ export const deploymentJobStatusEnum = pgEnum("deployment_job_status", [
   "failed"
 ]);
 
+export const marketPhaseEnum = pgEnum("market_phase", ["funding", "ready", "defense"]);
+
 
 export const tokenTypeEnum = pgEnum("token_type", [
   "erc20", // Token Fungible (ERC-20)
@@ -1390,6 +1392,8 @@ export const protocolConfigs = pgTable("protocol_configs", {
   earlyExitPenalty: decimal("early_exit_penalty", { precision: 5, scale: 4 }).default("0.1500").notNull(), // Default 15% penalty
   buybackAllocationRatio: decimal("buyback_allocation_ratio", { precision: 5, scale: 4 }).default("1.0000").notNull(), // Default 100% of availableBuybackPool
   settlementPaused: boolean("settlement_paused").default(false).notNull(),
+  marketPhase: marketPhaseEnum("market_phase").default("funding").notNull(),
+  readySince: timestamp("ready_since", { withTimezone: true }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   updatedBy: varchar("updated_by", { length: 255 })
 });

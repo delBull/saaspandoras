@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "~/db";
-import { projects } from "~/db/schema";
-import { inArray, desc, and, ne } from "drizzle-orm";
+import { projects, protocolConfigs } from "~/db/schema";
+import { inArray, desc, and, ne, eq } from "drizzle-orm";
 
 export const dynamic = 'force-dynamic';
 
@@ -35,8 +35,10 @@ export async function GET() {
                 createdAt: projects.createdAt,
                 accessType: projects.accessType,
                 price: projects.price,
+                marketPhase: protocolConfigs.marketPhase,
             })
             .from(projects)
+            .leftJoin(protocolConfigs, eq(projects.id, protocolConfigs.protocolId))
             .where(
                 and(
                     inArray(projects.status, ['approved', 'live', 'completed']),
@@ -81,6 +83,8 @@ export async function GET() {
                     ...a,
                     unlockRule: a.unlockRule || { requiresAccess: true, phase: 1 }
                 })) : [],
+                w2eConfig: typeof p.w2eConfig === 'string' ? JSON.parse(p.w2eConfig) : (p.w2eConfig || {}),
+                marketPhase: p.marketPhase || 'funding',
                 updatedAt: (p.updatedAt || p.createdAt || new Date()).toISOString(),
             };
         });

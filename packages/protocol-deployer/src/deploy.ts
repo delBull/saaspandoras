@@ -212,9 +212,9 @@ export async function deployW2EProtocol(
         artifactAddresses[0] || addrLoom, // Fallback to Loom if no artifacts (unlikely)
         addrLoom,
         config.quorumPercentage || 10,
-        100,
-        (config.votingPeriodHours || 168) * 3600,
-        3600,
+        100, // votingDelay = 100 blocks
+        (config.votingPeriodHours || 168) * 3600, // votingPeriod
+        86400, // executionDelaySeconds = 24 hours (Institutional Timelock)
         wallet.address,
         getOverrides(currentNonce + 4)
       )

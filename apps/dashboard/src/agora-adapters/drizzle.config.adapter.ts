@@ -23,6 +23,8 @@ export class DrizzleProtocolConfigAdapter implements IProtocolConfigAdapter {
                 earlyExitPenalty: parseFloat(record.earlyExitPenalty),
                 buybackAllocationRatio: parseFloat(record.buybackAllocationRatio),
                 settlementPaused: record.settlementPaused,
+                phase: record.marketPhase as 'funding' | 'ready' | 'defense',
+                readySince: record.readySince || undefined,
                 // Since versioning was an idea, we synthesize it with unix epoch of update
                 // We can track the epoch via the updatedAt timestamp for auditability.
                 versionEpoch: record.updatedAt.getTime()
@@ -37,6 +39,7 @@ export class DrizzleProtocolConfigAdapter implements IProtocolConfigAdapter {
             earlyExitPenalty: 0.15,
             buybackAllocationRatio: 0.0, // Manual activation required for Phase 2 (Defense)
             settlementPaused: false,
+            phase: 'funding',
             versionEpoch: Date.now()
         };
     }

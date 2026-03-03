@@ -5,6 +5,8 @@ export interface IProtocolConfig {
     earlyExitPenalty: number;
     buybackAllocationRatio: number; // % of treasury dedicated to buybacks
     settlementPaused: boolean;
+    phase: 'funding' | 'ready' | 'defense';
+    readySince?: Date;
     versionEpoch: number; // For auditing the active configuration epoch
 }
 

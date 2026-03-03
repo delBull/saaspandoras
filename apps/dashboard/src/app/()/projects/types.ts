@@ -82,6 +82,8 @@ export interface ProjectData {
   status: string;
   featured?: boolean | null;
   featured_button_text?: string | null;
+  marketPhase?: 'funding' | 'ready' | 'defense' | null;
+  readySince?: string | Date | null;
   created_at?: string | Date | null;
   w2eConfig?: any; // Stores DeploymentConfig (phases, tokenomics, artifacts, etc.)
   // V2 Protocol Fields

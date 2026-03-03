@@ -54,6 +54,9 @@ export class EarlyExitService {
 
         // 1. Fetch current Governance state (Outside DB TX)
         const config = await this.configStorage.getActiveConfig(protocolId);
+        if (config.phase !== 'defense') {
+            throw new Error('SECONDARY_MARKET_INACTIVE: Early Exit is only available in the Defense phase.');
+        }
         if (config.settlementPaused) {
             throw new Error('MARKET_PAUSED: Liquidity exits are currently suspended.');
         }
