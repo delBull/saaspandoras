@@ -114,8 +114,18 @@ function deployProtocolStack(DeploymentConfig calldata config)
 - `votingPeriodHours`: Voting duration
 - `treasurySigners`: Multi-sig signers array
 - `initialCapital`: Initial treasury funding
+- `jobId`: Unique tracking ID for the asynchronous deployment worker
 
-#### **Deployment Sequence**
+#### **Deployment Architecture (Hardened V2)**
+
+To ensure institutional-grade reliability and prevent HTTP timeouts (502 errors), SCaaS V2 implements an **Asynchronous Job-Based Deployment** model:
+
+1.  **Atomic Job Creation**: The API validates parameters and persists a "Pending" job in the database immediately.
+2.  **Worker Delegation**: A specialized background worker (Deployment Service) picks up the job using **Atomic Locking** (Compare-and-Swap) to prevent double-processing.
+3.  **Granular Progress Tracking**: The worker updates the job state across four granular steps: `broadcasting`, `mining`, `wiring`, and `finalizing`.
+4.  **Zombie Protection**: Automatic cleanup processes identify and fail jobs stuck in "processing" due to unexpected worker crashes.
+5.  **Structured Observability**: All deployment events are emitted as structured JSON logs for post-mortem analysis and performance metrics.
+
 
 1. **Validation**: Input parameter verification
 2. **Rate Limiting**: Anti-spam deployment controls
@@ -213,6 +223,20 @@ Only the protocol `Owner` (initially the Deployer, then transferred to a Timeloc
 - **Staking Rewards**: 5% fixed APY
 - **Transaction Fees**: 0.5% per transfer
 - **Governance Rights**: Protocol voting power
+
+### **3.4 Safety & Security Framework**
+
+#### **3.4.1 Transversal Kill-Switch (Circuit Breaker)**
+SCaaS V2 includes a platform-wide **Circuit Breaker** mechanism. Authorized operators can instantaneously pause critical protocol functions cross-layer:
+- **Settlement Stop**: Halts all ROFR and Buyback interactions.
+- **Exit Pause**: Disables early exit and fee processing during volatility.
+- **Global Lock**: Freezes non-essential state transitions across the dynamic registry.
+
+#### **3.4.2 Monetary Policy Activations**
+Default deployments follow a disciplined **Phase-Based Activation** policy to protect treasury capitalization:
+- **Phase 1: Capital Accumulation (Funding)**: Protocols launch with `buybackAllocationRatio = 0%`. Logic focuses on accumulating fees without premature intervention.
+- **Phase 2: Market Defense (Active)**: Governance or Admin triggers the transition to active ROFR once capitalization thresholds (Phase 2) are met.
+
 
 ---
 

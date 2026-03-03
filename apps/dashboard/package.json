@@ -25,6 +25,7 @@
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "3.3.4",
+    "@pandoras/agora-engine": "workspace:*",
     "@pandoras/core-webhooks": "workspace:*",
     "@pandoras/gamification": "workspace:*",
     "@pandoras/protocol-deployer": "workspace:*",

@@ -256,6 +256,43 @@ All deployments undergo:
 `
       },
       {
+        id: "agora",
+        title: "AGORA: Disciplined Economic Model",
+        content: `
+# AGORA: Institutional Stability Engine
+
+AGORA is not a standard Automated Market Maker (AMM). It is a rules-based liquidity engine designed to protect long-term value through disciplined monetary policy.
+
+## Strategic Monetary Phases
+
+To ensure long-term sustainability, AGORA protocol activations are divided into two distinct policy phases:
+
+### Phase 1: Capital Accumulation (Funding)
+During the initial launch or growth period, the **Buyback Allocation Ratio** is typically set to **0%**. 
+- **Focus**: Building the platform's Net Asset Value (NAV) through usage fees and initial sales.
+- **Liquidity**: The market operates within AGORA Price Bands, but the protocol does not yet intervene as a buyer.
+
+### Phase 2: Market Defense (Active ROFR)
+Once the treasury reaches institutional thresholds, governance can activate Phase 2 by increasing the **Buyback Allocation Ratio**.
+- **Focus**: Stabilizing the floor price through the Right of First Refusal (ROFR).
+- **Intervention**: The protocol becomes an "Active Interventor," automatedly buying back assets that fall below NAV.
+
+## Core Pillars
+
+### 1. Right of First Refusal (ROFR)
+When a listing price falls below the current **Net Asset Value (NAV)**, the protocol has the priority right to buy back the assets. This prevents liquidity death spirals and stabilizes the floor price based on real treasury backing.
+
+### 2. Early Exit Amortization
+To discourage mass-exit events ("bank runs"), direct redemptions from the treasury incur an **Early Exit Penalty** (default 15%). These fees are recirculated into the treasury, rewarding long-term holders.
+
+### 3. Governance Timelock
+All critical parameters—Fees, Max Inventory Ratios, and Penalties—are subject to a mandatory **6-hour to 72-hour timelock**. This ensures transparency and prevents sudden policy shifts.
+
+### 4. Treasury Allocation Rule
+The protocol dynamically allocates capital for buybacks based on a configurable **Allocation Ratio**, balancing market support with capital preservation.
+        `
+      },
+      {
         id: "access-control",
         title: "Access Control (NFT Licenses)",
         content: `# Access Control via NFT Licenses

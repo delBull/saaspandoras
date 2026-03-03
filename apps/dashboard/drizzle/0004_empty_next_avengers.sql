@@ -1,0 +1,1 @@
+ALTER TABLE "agora_listings" ADD COLUMN "locked_at" timestamp with time zone;

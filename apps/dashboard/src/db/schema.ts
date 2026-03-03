@@ -10,6 +10,7 @@ import {
   pgEnum,
   boolean,
   uniqueIndex,
+  index,
   uuid
 } from "drizzle-orm/pg-core";
 
@@ -23,6 +24,14 @@ export const projectStatusEnum = pgEnum("project_status", [
   "incomplete",   // No completado: Denegado por información faltante
   "rejected",     // Denegado: Rechazado definitivamente después de revisión
 ]);
+
+export const deploymentJobStatusEnum = pgEnum("deployment_job_status", [
+  "pending",
+  "processing",
+  "completed",
+  "failed"
+]);
+
 
 export const tokenTypeEnum = pgEnum("token_type", [
   "erc20", // Token Fungible (ERC-20)
@@ -1241,3 +1250,184 @@ export const gamificationActionExecutions = pgTable("gamification_action_executi
 
 export type GamificationActionExecution = typeof gamificationActionExecutions.$inferSelect;
 export type Purchase = typeof purchases.$inferSelect;
+
+// =========================================================
+// AGORA MARKET (REGULATED LIQUIDITY & BUYBACKS)
+// =========================================================
+
+export const listingStatusEnum = pgEnum("listing_status", [
+  "ACTIVE",
+  "LOCKED",
+  "SOLD",
+  "CANCELLED",
+  "ROFR_PENDING"
+]);
+
+export const inventoryStatusEnum = pgEnum("inventory_status", [
+  "HELD",
+  "LISTED",
+  "SOLD"
+]);
+
+export const reservationStatusEnum = pgEnum("reservation_status", [
+  "ACTIVE",
+  "RELEASED",
+  "COMPLETED"
+]);
+
+export const agoraListings = pgTable("agora_listings", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  protocolId: integer("protocol_id").references(() => projects.id).notNull(),
+  artifactId: varchar("artifact_id", { length: 255 }).notNull(),
+  sellerTelegramId: varchar("seller_telegram_id", { length: 255 }).notNull(),
+  price: decimal("price", { precision: 24, scale: 8 }).notNull(),
+  status: listingStatusEnum("status").default("ACTIVE").notNull(),
+  lockedAt: timestamp("locked_at", { withTimezone: true }),
+  cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+  idempotencyKey: varchar("idempotency_key", { length: 255 }).unique(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  protocolIdx: index("agora_listings_protocol_idx").on(t.protocolId),
+}));
+
+export const pandoraBuybackPools = pgTable("pandora_buyback_pools", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  protocolId: integer("protocol_id").references(() => projects.id).notNull().unique(),
+  allocatedCapital: decimal("allocated_capital", { precision: 24, scale: 8 }).notNull(),
+  availableCapital: decimal("available_capital", { precision: 24, scale: 8 }).notNull(),
+  targetReserveRatio: decimal("target_reserve_ratio", { precision: 5, scale: 4 }).notNull(),
+  lastRebalanceAt: timestamp("last_rebalance_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const pandoraInventories = pgTable("pandora_inventories", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  artifactId: varchar("artifact_id", { length: 255 }).notNull().unique(),
+  protocolId: integer("protocol_id").references(() => projects.id).notNull(),
+  acquisitionType: varchar("acquisition_type", { length: 50 }).notNull(), // ROFR or EARLY_EXIT
+  acquisitionNAV: decimal("acquisition_nav", { precision: 24, scale: 8 }).notNull(),
+  acquisitionPrice: decimal("acquisition_price", { precision: 24, scale: 8 }).notNull(),
+  acquiredAt: timestamp("acquired_at", { withTimezone: true }).defaultNow().notNull(),
+  relistEligibleAt: timestamp("relist_eligible_at", { withTimezone: true }),
+  status: inventoryStatusEnum("status").default("HELD").notNull(),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const buybackTransactions = pgTable("buyback_transactions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  poolId: uuid("pool_id").references(() => pandoraBuybackPools.id).notNull(),
+  listingId: uuid("listing_id").references(() => agoraListings.id), // Nullable for EARLY_EXIT
+  artifactId: varchar("artifact_id", { length: 255 }).notNull(),
+  amountPaid: decimal("amount_paid", { precision: 24, scale: 8 }).notNull(),
+  acquisitionType: varchar("acquisition_type", { length: 50 }).notNull(),
+  correlationId: varchar("correlation_id", { length: 255 }),
+  processedBy: varchar("processed_by", { length: 255 }),
+  note: text("note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const protocolNavs = pgTable("protocol_navs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  protocolId: integer("protocol_id").references(() => projects.id).notNull(),
+  nav: decimal("nav", { precision: 24, scale: 8 }).notNull(),
+  treasury: decimal("treasury", { precision: 24, scale: 8 }).notNull(),
+  supply: integer("supply").notNull(),
+  minPrice: decimal("min_price", { precision: 24, scale: 8 }).notNull(),
+  maxPrice: decimal("max_price", { precision: 24, scale: 8 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  protocolNavsIdx: index("protocol_navs_idx").on(t.protocolId, t.createdAt),
+}));
+
+export const buybackReservations = pgTable("buyback_reservations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  protocolId: integer("protocol_id").references(() => projects.id).notNull(),
+  artifactId: varchar("artifact_id", { length: 255 }).notNull(),
+  reservedAmount: decimal("reserved_amount", { precision: 24, scale: 8 }).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  status: reservationStatusEnum("status").default("ACTIVE").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const actionLogs = pgTable("action_logs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  correlationId: varchar("correlation_id", { length: 255 }).notNull(),
+  actionType: varchar("action_type", { length: 255 }).notNull(),
+  protocolId: integer("protocol_id").references(() => projects.id),
+  artifactId: varchar("artifact_id", { length: 255 }),
+  userId: varchar("user_id", { length: 255 }),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type AgoraListing = typeof agoraListings.$inferSelect;
+export type PandoraBuybackPool = typeof pandoraBuybackPools.$inferSelect;
+export type PandoraInventory = typeof pandoraInventories.$inferSelect;
+export type BuybackTransaction = typeof buybackTransactions.$inferSelect;
+export type ProtocolNAV = typeof protocolNavs.$inferSelect;
+export type BuybackReservation = typeof buybackReservations.$inferSelect;
+export type ActionLog = typeof actionLogs.$inferSelect;
+
+export const configQueueStatusEnum = pgEnum("config_queue_status", [
+  "PENDING",
+  "EXECUTED",
+  "CANCELLED"
+]);
+
+export const artifacts = pgTable("artifacts", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  ownerId: varchar("owner_id", { length: 255 }).notNull(),
+  lastListingCancelledAt: timestamp("last_listing_cancelled_at", { withTimezone: true })
+});
+
+export const protocolConfigs = pgTable("protocol_configs", {
+  protocolId: integer("protocol_id").references(() => projects.id).primaryKey(),
+  feeRate: decimal("fee_rate", { precision: 5, scale: 4 }).default("0.0200").notNull(),
+  inventoryMaxRatio: decimal("inventory_max_ratio", { precision: 5, scale: 4 }).default("0.2500").notNull(),
+  earlyExitPenalty: decimal("early_exit_penalty", { precision: 5, scale: 4 }).default("0.1500").notNull(), // Default 15% penalty
+  buybackAllocationRatio: decimal("buyback_allocation_ratio", { precision: 5, scale: 4 }).default("1.0000").notNull(), // Default 100% of availableBuybackPool
+  settlementPaused: boolean("settlement_paused").default(false).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedBy: varchar("updated_by", { length: 255 })
+});
+
+export const protocolConfigQueues = pgTable("protocol_config_queues", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  protocolId: integer("protocol_id").references(() => projects.id).notNull(),
+  proposedFeeRate: decimal("proposed_fee_rate", { precision: 5, scale: 4 }),
+  proposedInventoryMaxRatio: decimal("proposed_inventory_max_ratio", { precision: 5, scale: 4 }),
+  proposedEarlyExitPenalty: decimal("proposed_early_exit_penalty", { precision: 5, scale: 4 }),
+  proposedBuybackAllocationRatio: decimal("proposed_buyback_allocation_ratio", { precision: 5, scale: 4 }),
+  proposedSettlementPaused: boolean("proposed_settlement_paused"),
+  effectiveAt: timestamp("effective_at", { withTimezone: true }).notNull(),
+  status: configQueueStatusEnum("status").default("PENDING").notNull(),
+  proposedBy: varchar("proposed_by", { length: 255 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+});
+
+export type Artifact = typeof artifacts.$inferSelect;
+export type ProtocolConfig = typeof protocolConfigs.$inferSelect;
+export type ProtocolConfigQueue = typeof protocolConfigQueues.$inferSelect;
+
+// --- DEPLOYMENT JOBS TABLE ---
+// Queue for asynchronous contract deployments
+export const deploymentJobs = pgTable("deployment_jobs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  projectSlug: varchar("project_slug", { length: 256 }).notNull().references(() => projects.slug),
+  status: deploymentJobStatusEnum("status").default("pending").notNull(),
+  step: varchar("step", { length: 100 }).default("queued"), // e.g., "broadcasting", "mining", "wiring"
+  network: varchar("network", { length: 50 }).notNull(),
+  config: jsonb("config").notNull(), // W2EConfig
+  result: jsonb("result"), // Addresses and hashes
+  error: text("error"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().$onUpdate(() => new Date()).notNull(),
+});
+
+
+export type DeploymentJob = typeof deploymentJobs.$inferSelect;
+
