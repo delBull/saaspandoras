@@ -31,17 +31,20 @@ export async function middleware(request: NextRequest) {
     }
 
     try {
+      // 0. Handle preflight OPTIONS requests early
+      if (request.method === "OPTIONS") {
+        return new NextResponse(null, { status: 204 });
+      }
+
       const publicKeyPem = process.env.JWT_PUBLIC_KEY;
       if (!publicKeyPem) {
         console.error("❌ Middleware: JWT_PUBLIC_KEY not set");
-        // Fail open or closed? Closed for security.
         return NextResponse.redirect(new URL("/", request.url));
       }
 
-      // Import Public Key (SPKI)
-      // Use atob for Edge Runtime compatibility (Buffer is not standard)
-      const publicKeyString = atob(publicKeyPem);
-      const publicKey = await importSPKI(publicKeyString, 'RS256');
+      // Import Public Key (SPKI) directly from PEM string
+      // PEM strings should NOT be processed with atob()
+      const publicKey = await importSPKI(publicKeyPem, 'RS256');
 
       const { payload } = await jwtVerify(token, publicKey, {
         algorithms: ['RS256'],
