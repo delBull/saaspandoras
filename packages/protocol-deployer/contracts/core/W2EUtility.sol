@@ -63,7 +63,7 @@ contract W2EUtility is ERC20, Ownable, ERC20Pausable, ReentrancyGuard {
         address from,
         address to,
         uint256 amount
-    ) internal virtual override {
+    ) internal virtual override(ERC20, ERC20Pausable) {
         super._beforeTokenTransfer(from, to, amount);
 
         // Bloquear si no están habilitadas y no es minting (from == 0) ni burning (to == 0)
@@ -537,14 +537,4 @@ contract W2EUtility is ERC20, Ownable, ERC20Pausable, ReentrancyGuard {
         return _decimals;
     }
 
-    /**
-     * @dev Sobrescribe _beforeTokenTransfer para incluir pausa
-     */
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal override(ERC20, ERC20Pausable) {
-        super._beforeTokenTransfer(from, to, amount);
-    }
 }

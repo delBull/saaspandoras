@@ -35,7 +35,7 @@ contract ClaimVerifier is EIP712, Ownable, Pausable {
     ) EIP712("PandorasClaimSystem", "1") Ownable() {
         require(_pboxToken != address(0), "ClaimVerifier: Invalid token");
         require(_claimSigner != address(0), "ClaimVerifier: Invalid signer");
-        pboxToken = PBOXToken(_pboxToken);
+        pboxToken = PBOXToken(payable(_pboxToken));
         claimSigner = _claimSigner;
 
         if (initialOwner != address(0) && initialOwner != msg.sender) {
