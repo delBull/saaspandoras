@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getAuth, isAdmin } from "@/lib/auth";
-import { headers } from "next/headers";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
@@ -10,14 +9,12 @@ export const dynamic = "force-dynamic";
 // Note: Edge runtime may not support all Node.js APIs
 // This is why we have runtime = "nodejs" at top
 
-export async function GET() {
+export async function GET(request: Request) {
+  console.log("🩺 Route hit: /api/admin/verify");
   try {
     console.log("🛠️ DEBUG: API admin/verify called START");
 
-    const headersObj = await headers();
-    console.log("🔍 DEBUG: Headers object received");
-
-    const { session } = await getAuth(headersObj);
+    const { session } = await getAuth(request.headers);
     console.log("😎 VERIFY: session found:", session);
     console.log("🔍 Raw session userId:", session?.userId);
 

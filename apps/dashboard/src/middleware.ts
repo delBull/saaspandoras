@@ -8,6 +8,21 @@ const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  console.log("🛣️ Middleware hit:", pathname);
+
+  // 0. Global OPTIONS Handling (CORS Preflight)
+  // MUST stay at the top to avoid auth/rate-limit blocks
+  if (request.method === "OPTIONS") {
+    return new NextResponse(null, {
+      status: 204,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization, x-thirdweb-address, x-wallet-address",
+        "Access-Control-Max-Age": "86400",
+      },
+    });
+  }
 
   // 1. Admin Route Protection (Strict)
   if (pathname.startsWith("/admin")) {
@@ -31,10 +46,6 @@ export async function middleware(request: NextRequest) {
     }
 
     try {
-      // 0. Handle preflight OPTIONS requests early
-      if (request.method === "OPTIONS") {
-        return new NextResponse(null, { status: 204 });
-      }
 
       const publicKeyPem = process.env.JWT_PUBLIC_KEY;
       if (!publicKeyPem) {
@@ -105,19 +116,22 @@ export async function middleware(request: NextRequest) {
 
     if (rateLimitMap.size > 5000) rateLimitMap.clear();
 
-    const response = NextResponse.next();
-    response.headers.set('X-Content-Type-Options', 'nosniff');
-    response.headers.set('X-Frame-Options', 'DENY');
-    response.headers.set('X-XSS-Protection', '1; mode=block');
-    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+    const securityHeaders = {
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'X-XSS-Protection': '1; mode=block',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
+    } as Record<string, string>;
 
     if (pathname.startsWith('/api/whatsapp/')) {
-      response.headers.set('Access-Control-Allow-Origin', '*');
-      response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-      response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      securityHeaders['Access-Control-Allow-Origin'] = '*';
+      securityHeaders['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
+      securityHeaders['Access-Control-Allow-Headers'] = 'Content-Type, Authorization';
     }
 
-    return response;
+    return NextResponse.next({
+      headers: securityHeaders,
+    });
   }
 
   // 4. Global Security Headers -> MOVED TO next.config.mjs to avoid conflicts

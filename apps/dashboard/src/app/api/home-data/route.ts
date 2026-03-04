@@ -9,6 +9,7 @@ import type { DeploymentConfig } from "~/types/deployment";
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
+    console.log("🩺 Route hit: /api/home-data");
     try {
         const { searchParams } = new URL(request.url);
         const wallet = searchParams.get("wallet");
