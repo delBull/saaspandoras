@@ -13,6 +13,7 @@ import {
   index,
   uuid
 } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 
 export const projectStatusEnum = pgEnum("project_status", [
   "draft",        // Borrador: Proyecto incompleto guardado por el solicitante
@@ -690,6 +691,81 @@ export const governanceEvents = pgTable("governance_events", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+// --- GOVERNANCE INDEXER TABLES (HYBRID CORE) ---
+
+export const governorSyncState = pgTable("governor_sync_state", {
+  id: serial("id").primaryKey(),
+  governorAddress: varchar("governor_address", { length: 42 }).notNull().unique(),
+  chainId: integer("chain_id").notNull(),
+  lastProcessedBlock: integer("last_processed_block").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const governanceProposals = pgTable("governance_proposals", {
+  id: serial("id").primaryKey(),
+  proposalId: varchar("proposal_id", { length: 255 }).notNull(),
+  protocolId: integer("protocol_id").references(() => projects.id).notNull(),
+  governorAddress: varchar("governor_address", { length: 42 }).notNull(),
+  chainId: integer("chain_id").notNull(),
+  proposer: varchar("proposer", { length: 42 }).notNull(),
+  description: text("description").notNull(),
+  targets: jsonb("targets").notNull().default([]),
+  values: jsonb("values").notNull().default([]),
+  calldatas: jsonb("calldatas").notNull().default([]),
+  startBlock: integer("start_block").notNull(),
+  endBlock: integer("end_block").notNull(),
+
+  // Agregados Dinamicos
+  forVotes: decimal("for_votes", { precision: 78, scale: 0 }).notNull().default("0"),
+  againstVotes: decimal("against_votes", { precision: 78, scale: 0 }).notNull().default("0"),
+  abstainVotes: decimal("abstain_votes", { precision: 78, scale: 0 }).notNull().default("0"),
+  quorum: decimal("quorum", { precision: 78, scale: 0 }).notNull().default("0"),
+
+  status: integer("status").notNull().default(0), // Governor State Enum (0=Pending, 1=Active, 7=Executed...)
+
+  isExecuted: boolean("is_executed").notNull().default(false),
+  isCanceled: boolean("is_canceled").notNull().default(false),
+
+  createdTxHash: varchar("created_tx_hash", { length: 66 }).notNull(),
+  createdBlockNumber: integer("created_block_number").notNull(),
+
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  // The same numerical ID could technically be emitted by two different Governors.
+  unqProposal: uniqueIndex("unq_governance_proposal").on(t.proposalId, t.governorAddress, t.chainId),
+  protocolIdx: index("gov_proposals_protocol_idx").on(t.protocolId),
+  statusIdx: index("gov_proposals_status_idx").on(t.status),
+}));
+
+export const governanceVotes = pgTable("governance_votes", {
+  id: serial("id").primaryKey(),
+  proposalId: varchar("proposal_id", { length: 255 }).notNull(),
+  voterAddress: varchar("voter_address", { length: 42 }).notNull(),
+  support: integer("support").notNull(), // 0=Against, 1=For, 2=Abstain
+  weight: decimal("weight", { precision: 78, scale: 0 }).notNull(),
+  reason: text("reason"),
+
+  txHash: varchar("tx_hash", { length: 66 }).notNull(),
+  blockNumber: integer("block_number").notNull(),
+
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  unqVote: uniqueIndex("unq_governance_vote").on(t.proposalId, t.voterAddress),
+  blockIdx: index("gov_votes_block_idx").on(t.blockNumber),
+}));
+
+export const governanceExecutions = pgTable("governance_executions", {
+  id: serial("id").primaryKey(),
+  proposalId: varchar("proposal_id", { length: 255 }).notNull(),
+  executorAddress: varchar("executor_address", { length: 42 }).notNull(),
+  txHash: varchar("tx_hash", { length: 66 }).notNull().unique(),
+  blockNumber: integer("block_number").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  unqExecution: uniqueIndex("unq_governance_execution").on(t.proposalId),
+}));
+
 // --- AUTH CHALLENGES TABLE ---
 // Stores ephemeral nonces for SIWE authentication
 export const authChallenges = pgTable("auth_challenges", {
@@ -701,17 +777,6 @@ export const authChallenges = pgTable("auth_challenges", {
 }, (table) => ({
   // Enforce 1 active nonce per address to prevent race conditions and clutter
   addressIndex: uniqueIndex("auth_challenges_address_idx").on(table.address),
-}));
-
-export const governanceVotes = pgTable("governance_votes", {
-  id: serial("id").primaryKey(),
-  proposalId: integer("proposal_id").notNull(), // ID Referencia (On-Chain or DB), FK removed for hybrid support
-  voterAddress: text("voter_address").notNull(),
-  support: integer("support").notNull(), // 0=Against, 1=For, 2=Abstain
-  signature: text("signature"),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (t) => ({
-  unq: uniqueIndex("unique_vote").on(t.proposalId, t.voterAddress),
 }));
 
 // --- EMAIL METRICS TABLES ---
@@ -1431,3 +1496,13 @@ export const deploymentJobs = pgTable("deployment_jobs", {
 
 export type DeploymentJob = typeof deploymentJobs.$inferSelect;
 
+export const governanceProposalsRelations = relations(governanceProposals, ({ many }) => ({
+  votes: many(governanceVotes),
+}));
+
+export const governanceVotesRelations = relations(governanceVotes, ({ one }) => ({
+  proposal: one(governanceProposals, {
+    fields: [governanceVotes.proposalId],
+    references: [governanceProposals.proposalId],
+  }),
+}));
