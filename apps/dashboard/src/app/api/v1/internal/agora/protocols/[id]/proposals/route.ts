@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { governanceProposals, governanceVotes } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
@@ -25,20 +26,23 @@ export async function GET(
 
         // Calculate aggregated metrics
         const enrichedProposals = proposals.map(p => {
-            const votesFor = p.votes.filter(v => v.support === 1).length;
-            const votesAgainst = p.votes.filter(v => v.support === 0).length;
-            const totalVPFor = p.votes.filter(v => v.support === 1).reduce((acc, v) => acc + (Number(v.weight) || 0), 0);
-            const totalVPAgainst = p.votes.filter(v => v.support === 0).reduce((acc, v) => acc + (Number(v.weight) || 0), 0);
+            const votesFor = parseFloat(p.forVotes);
+            const votesAgainst = parseFloat(p.againstVotes);
+            const votesAbstain = parseFloat(p.abstainVotes);
+            const supplySnapshot = parseFloat(p.totalVotingSupplySnapshot) || 1;
+
+            const totalParticipation = votesFor + votesAgainst + votesAbstain;
+            const participationRate = totalParticipation / supplySnapshot;
+            const quorumReached = totalParticipation >= parseFloat(p.quorumSnapshot);
 
             return {
                 ...p,
                 metrics: {
-                    votersCount: p.votes.length,
-                    votesFor,
-                    votesAgainst,
-                    totalVPFor,
-                    totalVPAgainst,
-                    totalVP: totalVPFor + totalVPAgainst
+                    votersCount: p.votes?.length || 0,
+                    participationRate,
+                    quorumReached,
+                    totalVotingSupplySnapshot: p.totalVotingSupplySnapshot,
+                    quorumSnapshot: p.quorumSnapshot
                 }
             };
         });
