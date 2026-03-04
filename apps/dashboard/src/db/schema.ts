@@ -247,11 +247,9 @@ export const projects = pgTable("projects", {
   // Pricing & Access Metadata
   accessType: varchar("access_type", { length: 20 }).default('free'), // free, license, gated, premium
   price: decimal("price", { precision: 18, scale: 6 }).default("0.000000"),
-});
-
-export const projectsIndexes = {
-  slugIndex: { columns: ["slug"], name: "slug_index" },
-};
+}, (table) => ({
+  slugIndex: index("project_slug_index").on(table.slug),
+}));
 
 // Gamification Enums
 export const eventTypeEnum = pgEnum("event_type", [
@@ -800,16 +798,13 @@ export const emailMetrics = pgTable("email_metrics", {
   metadata: jsonb("metadata").default({}), // Datos extras del webhook
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-});
-
-// Indexes para consultas eficientes
-export const emailMetricsIndexes = {
-  emailIdIndex: { columns: ["email_id"], name: "email_metrics_email_id_idx" },
-  typeStatusIndex: { columns: ["type", "status"], name: "email_metrics_type_status_idx" },
-  statusIndex: { columns: ["status"], name: "email_metrics_status_idx" },
-  recipientIndex: { columns: ["recipient"], name: "email_metrics_recipient_idx" },
-  createdAtIndex: { columns: ["created_at"], name: "email_metrics_created_at_idx" },
-};
+}, (table) => ({
+  emailIdIndex: uniqueIndex("email_metrics_email_id_idx").on(table.emailId),
+  typeStatusIndex: index("email_metrics_type_status_idx").on(table.type, table.status),
+  statusIndex: index("email_metrics_status_idx").on(table.status),
+  recipientIndex: index("email_metrics_recipient_idx").on(table.recipient),
+  createdAtIndex: index("email_metrics_created_at_idx").on(table.createdAt),
+}));
 
 // Shortlinks Types
 export type ShortlinkEvent = typeof shortlinkEvents.$inferSelect;
