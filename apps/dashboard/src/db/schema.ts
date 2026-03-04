@@ -1289,9 +1289,7 @@ export const agoraListings = pgTable("agora_listings", {
   idempotencyKey: varchar("idempotency_key", { length: 255 }).unique(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-}, (t) => ({
-  protocolIdx: index("agora_listings_protocol_idx").on(t.protocolId),
-}));
+});
 
 export const pandoraBuybackPools = pgTable("pandora_buyback_pools", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -1340,9 +1338,7 @@ export const protocolNavs = pgTable("protocol_navs", {
   minPrice: decimal("min_price", { precision: 24, scale: 8 }).notNull(),
   maxPrice: decimal("max_price", { precision: 24, scale: 8 }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-}, (t) => ({
-  protocolNavsIdx: index("protocol_navs_idx").on(t.protocolId, t.createdAt),
-}));
+});
 
 export const buybackReservations = pgTable("buyback_reservations", {
   id: uuid("id").defaultRandom().primaryKey(),
