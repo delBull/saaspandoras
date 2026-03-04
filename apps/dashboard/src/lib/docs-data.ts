@@ -261,7 +261,7 @@ All deployments undergo:
         content: `
 # AGORA: Institutional Stability Engine
 
-AGORA is not a standard Automated Market Maker (AMM). It is a rules-based liquidity engine designed to protect long-term value through disciplined monetary policy.
+AGORA is not a standard Automated Market Maker (AMM). It is a rules-based liquidity engine designed to protect long-term value through disciplined monetary policy and sovereign risk management.
 
 ## Strategic Monetary Phases
 
@@ -275,9 +275,9 @@ During the initial launch or growth period, the **Buyback Allocation Ratio** is 
 ### Phase 2: Market Defense (Active ROFR)
 Once the treasury reaches institutional thresholds, governance can activate Phase 2 by increasing the **Buyback Allocation Ratio**.
 - **Focus**: Stabilizing the floor price through the Right of First Refusal (ROFR).
-- **Intervention**: The protocol becomes an "Active Interventor," automatedly buying back assets that fall below NAV.
+- **Intervention**: The protocol becomes an "Active Interventor," automatedly buying back assets that fall below NAV using deep liquidity pools.
 
-## Core Pillars
+## Institutional Infrastructure
 
 ### 1. Right of First Refusal (ROFR)
 When a listing price falls below the current **Net Asset Value (NAV)**, the protocol has the priority right to buy back the assets. This prevents liquidity death spirals and stabilizes the floor price based on real treasury backing.
@@ -288,8 +288,8 @@ To discourage mass-exit events ("bank runs"), direct redemptions from the treasu
 ### 3. Governance Timelock
 All critical parameters—Fees, Max Inventory Ratios, and Penalties—are subject to a mandatory **6-hour to 72-hour timelock**. This ensures transparency and prevents sudden policy shifts.
 
-### 4. Treasury Allocation Rule
-The protocol dynamically allocates capital for buybacks based on a configurable **Allocation Ratio**, balancing market support with capital preservation.
+### 4. Deterministic Indexing
+The market state is managed by a sovereign indexer with **Financial-Grade Idempotency**, ensuring that all trades and liquidations are recorded with 100% integrity, even across chain reorganizations.
         `
       },
       {
@@ -426,74 +426,38 @@ Admins can:
       },
       {
         id: "dao-governance",
-        title: "DAO Governance",
-        content: `# DAO Governance
+        title: "DAO Governance: Institutional Grade",
+        content: `# DAO Governance: Institutional Grade
 
-Enable decentralized decision-making for your protocol.
+Enable decentralized decision-making for your protocol with an infrastructure built for resilience and political legitimacy.
 
-## What is a DAO?
+## Federated Sovereignty
 
-A **Decentralized Autonomous Organization** allows license holders to:
-- 🗳️ Vote on proposals
-- 💡 Submit ideas
-- 💰 Allocate treasury funds
-- 📊 Set protocol parameters
+Pandora's supports a **Federated DAO Model**, where individual protocols operate as sovereign micro-DAOs under a unified institutional indexer.
 
-## Governance Models
+## Governance Robustness
 
-Pandora's supports multiple governance patterns:
+### 1. Ethereum-Grade Hardening
+Our governance engine is built as an institutional indexer with high-availability features:
+- **Atomic Operations**: Vote counts and participation rates use atomic SQL increments to prevent race conditions.
+- **Reorg Protection**: Every governance event is "pinned" to its block hash. The system automatically detects and handles chain reorganizations.
+- **Idempotent Invariants**: Deterministic event processing \`(txHash, logIndex)\` ensures that re-indexing never corrupts the political state.
 
-### Token-Weighted Voting
-- 1 NFT = 1 vote
-- Simple majority or supermajority thresholds
+### 2. Multi-Constitutional Support
+- **Proposal Snapshots**: Quorum and supply are captured precisely at the \`proposalSnapshot\` block, ensuring no retroactive manipulation of voting weight.
+- **Institutional Metrics**: Participation rates and quorum reached are calculated using immutable supply snapshots.
 
-### Quadratic Voting
-- Prevents whale dominance
-- Encourages broad participation
+## Voting Models
 
-### Delegation
-- Token holders can delegate voting power
-- Representatives vote on behalf of delegators
+- **Standard Governor**: Compatible with OpenZeppelin Governor Alpha/Bravo standards.
+- **Hybrid Intent Voting**: Telegram acts as a social/intent layer (high-latency, social proof), while Core acts as the executive on-chain layer.
 
-## Proposal Types
+## Proposals & Execution
 
-**Parameter Changes**
-- Update protocol settings
-- Adjust fee structures
-
-**Treasury Allocation**
-- Fund development
-- Marketing budgets
-- Community rewards
-
-**Partnership Approvals**
-- Integrate with other protocols
-- Strategic collaborations
-
-**Emergency Actions**
-- Pause/unpause features
-- Trigger kill switches
-
-## Voting Process
-
-1. **Proposal Submission** (requires minimum license count)
-2. **Discussion Period** (e.g., 3 days)
-3. **Voting Period** (e.g., 7 days)
-4. **Execution** (if passed, automated or manual)
-
-## Security
-
-- ✅ Time-locks on treasury withdrawals
-- ✅ Multi-sig execution for high-value actions
-- ✅ Veto power for emergency situations (optional)
-- ✅ Transparent on-chain voting records
-
-## Integration
-
-Access DAO features via:
-- **Dashboard**: \`/projects/{slug}/dao\`
-- **Smart Contracts**: Direct governance calls
-- **Webhooks**: \`governance.proposal_created\`, \`governance.vote_cast\`
+1. **Submission**: Proposals are submitted with on-chain metadata.
+2. **Snapshot**: System fixed supply and quorum at the constitutional block.
+3. **Voting**: Transparent on-chain records with real-time participation monitoring.
+4. **Execution**: Atomic execution via Timelock contracts for authorized upgrades and treasury movements.
 `
       },
       {

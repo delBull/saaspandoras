@@ -30,7 +30,12 @@ export async function GET(
             const votesFor = parseFloat(p.forVotes);
             const votesAgainst = parseFloat(p.againstVotes);
             const votesAbstain = parseFloat(p.abstainVotes);
-            const supplySnapshot = parseFloat(p.totalVotingSupplySnapshot) || 1;
+
+            if (!p.totalVotingSupplySnapshot || p.totalVotingSupplySnapshot === "0") {
+                throw new Error("Missing constitutional snapshot for proposal: " + p.proposalId);
+            }
+
+            const supplySnapshot = parseFloat(p.totalVotingSupplySnapshot);
 
             const totalParticipation = votesFor + votesAgainst + votesAbstain;
             const participationRate = totalParticipation / supplySnapshot;

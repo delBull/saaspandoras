@@ -5,7 +5,8 @@ import { sql } from "drizzle-orm";
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: Request) {
+    console.log("🩺 Route hit: /api/test-db");
     try {
         console.log("🔍 [TestDB] Starting health check...");
         const start = Date.now();
