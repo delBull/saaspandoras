@@ -728,8 +728,15 @@ export const governanceProposals = pgTable("governance_proposals", {
   isExecuted: boolean("is_executed").notNull().default(false),
   isCanceled: boolean("is_canceled").notNull().default(false),
 
+  snapshotBlock: integer("snapshot_block"),
+  deadlineBlock: integer("deadline_block"),
+  isInvalid: boolean("is_invalid").notNull().default(false),
+
   createdTxHash: varchar("created_tx_hash", { length: 66 }).notNull(),
   createdBlockNumber: integer("created_block_number").notNull(),
+
+  blockNumberIndexed: integer("block_number_indexed"),
+  indexerVersion: varchar("indexer_version", { length: 20 }).notNull().default("1.1.0"),
 
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -749,11 +756,14 @@ export const governanceVotes = pgTable("governance_votes", {
   reason: text("reason"),
 
   txHash: varchar("tx_hash", { length: 66 }).notNull(),
+  logIndex: integer("log_index").notNull().default(0),
   blockNumber: integer("block_number").notNull(),
+  chainId: integer("chain_id").notNull(),
+  governorAddress: varchar("governor_address", { length: 255 }).notNull(),
 
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (t) => ({
-  unqVote: uniqueIndex("unq_governance_vote").on(t.proposalId, t.voterAddress),
+  unqVoteLog: uniqueIndex("unq_governance_vote_log").on(t.txHash, t.logIndex),
   blockIdx: index("gov_votes_block_idx").on(t.blockNumber),
 }));
 

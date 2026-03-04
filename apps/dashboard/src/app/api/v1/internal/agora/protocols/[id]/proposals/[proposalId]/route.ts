@@ -34,11 +34,24 @@ export async function GET(
         const votesFor = parseFloat(proposal.forVotes);
         const votesAgainst = parseFloat(proposal.againstVotes);
         const votesAbstain = parseFloat(proposal.abstainVotes);
-        const supplySnapshot = parseFloat(proposal.totalVotingSupplySnapshot) || 1;
+
+        // CONSTITUTIONAL VALIDATION (No Fallback)
+        const supplySnapshot = parseFloat(proposal.totalVotingSupplySnapshot);
+        if (supplySnapshot <= 0 && !proposal.isInvalid) {
+            return NextResponse.json({
+                error: "Missing or invalid constitutional snapshot",
+                detail: "Total voting supply at snapshot block is 0 or uninitialized."
+            }, { status: 422 });
+        }
 
         const totalParticipation = votesFor + votesAgainst + votesAbstain;
-        const participationRate = totalParticipation / supplySnapshot;
-        const quorumReached = totalParticipation >= parseFloat(proposal.quorumSnapshot);
+
+        // Deterministic Rounding (4 decimals)
+        const rawParticipationRate = supplySnapshot > 0 ? totalParticipation / supplySnapshot : 0;
+        const participationRate = Math.floor(rawParticipationRate * 10000) / 10000;
+
+        const quorumSnapshot = parseFloat(proposal.quorumSnapshot);
+        const quorumReached = totalParticipation >= quorumSnapshot;
 
         return NextResponse.json({
             ...proposal,
@@ -47,7 +60,9 @@ export async function GET(
                 participationRate,
                 quorumReached,
                 totalVotingSupplySnapshot: proposal.totalVotingSupplySnapshot,
-                quorumSnapshot: proposal.quorumSnapshot
+                quorumSnapshot: proposal.quorumSnapshot,
+                blockNumberIndexed: proposal.blockNumberIndexed,
+                indexerVersion: proposal.indexerVersion
             }
         });
 
