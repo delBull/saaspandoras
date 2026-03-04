@@ -6,10 +6,11 @@ import { eq, desc } from "drizzle-orm";
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const protocolId = parseInt(params.id);
+        const { id } = await params;
+        const protocolId = parseInt(id);
 
         if (isNaN(protocolId)) {
             return NextResponse.json({ error: "Invalid protocol ID" }, { status: 400 });
