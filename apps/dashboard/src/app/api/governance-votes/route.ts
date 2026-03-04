@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { governanceVotes } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 
-export async function POST(req: NextRequest) {
+export function POST(req: NextRequest) {
     // Legacy endpoint: now handled by GovernanceIndexerService
     return NextResponse.json({ error: "Method not allowed. Use smart contract." }, { status: 405 });
 }

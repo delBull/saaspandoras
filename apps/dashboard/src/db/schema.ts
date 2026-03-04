@@ -718,6 +718,10 @@ export const governanceProposals = pgTable("governance_proposals", {
   againstVotes: decimal("against_votes", { precision: 78, scale: 0 }).notNull().default("0"),
   abstainVotes: decimal("abstain_votes", { precision: 78, scale: 0 }).notNull().default("0"),
   quorum: decimal("quorum", { precision: 78, scale: 0 }).notNull().default("0"),
+  participationRate: decimal("participation_rate", { precision: 10, scale: 4 }).notNull().default("0"),
+  quorumReached: boolean("quorum_reached").notNull().default(false),
+  totalVotingSupplySnapshot: decimal("total_voting_supply_snapshot", { precision: 78, scale: 0 }).notNull().default("0"),
+  quorumSnapshot: decimal("quorum_snapshot", { precision: 78, scale: 0 }).notNull().default("0"),
 
   status: integer("status").notNull().default(0), // Governor State Enum (0=Pending, 1=Active, 7=Executed...)
 

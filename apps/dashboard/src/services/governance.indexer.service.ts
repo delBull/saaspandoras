@@ -6,7 +6,13 @@ import { ethers } from 'ethers';
 const GOVERNOR_ABI = [
     "event ProposalCreated(uint256 proposalId, address proposer, address[] targets, uint256[] values, string[] signatures, bytes[] calldatas, uint256 startBlock, uint256 endBlock, string description)",
     "event VoteCast(address indexed voter, uint256 proposalId, uint8 support, uint256 weight, string reason)",
-    "event ProposalExecuted(uint256 proposalId)"
+    "event ProposalExecuted(uint256 proposalId)",
+    "function token() external view returns (address)",
+    "function quorum(uint256 blockNumber) external view returns (uint256)"
+];
+
+const ERC20_VOTES_ABI = [
+    "function getPastTotalSupply(uint256 blockNumber) external view returns (uint256)"
 ];
 
 export class GovernanceIndexerService {
@@ -21,7 +27,7 @@ export class GovernanceIndexerService {
     /**
      * HOT PATH: Inicia el Listener en Tiempo Real
      */
-    public async listenToGovernor(governorAddress: string, protocolId: number) {
+    public listenToGovernor(governorAddress: string, protocolId: number) {
         console.log(`[Indexer] Listening to Governor: ${governorAddress} for Protocol ${protocolId}`);
         const contract = new ethers.Contract(governorAddress, GOVERNOR_ABI, this.provider);
 
@@ -80,6 +86,16 @@ export class GovernanceIndexerService {
             if (!event.args) return;
             const [proposalIdStr, proposerStr, targetsArr, valuesArr, signaturesArr, calldatasArr, startBlockNum, endBlockNum, desc] = event.args;
 
+            // Instanciamos el Governor para lecturas constitucionales
+            const governor = new ethers.Contract(contractAddress, GOVERNOR_ABI, this.provider);
+            const tokenAddr = await governor.token();
+            const token = new ethers.Contract(tokenAddr, ERC20_VOTES_ABI, this.provider);
+
+            // Fetch Snapshots (Constitutional Logic)
+            const snapshotBlock = Number(startBlockNum); // El snapshot suele ser el startBlock
+            const quorumAtSnapshot = await governor.quorum(snapshotBlock);
+            const supplyAtSnapshot = await token.getPastTotalSupply(snapshotBlock);
+
             await db.insert(governanceProposals).values({
                 protocolId: protocolId,
                 proposalId: proposalIdStr.toString(),
@@ -93,6 +109,8 @@ export class GovernanceIndexerService {
                 startBlock: Number(startBlockNum),
                 endBlock: Number(endBlockNum),
                 status: 1, // Pending or Active 
+                quorumSnapshot: quorumAtSnapshot.toString(),
+                totalVotingSupplySnapshot: supplyAtSnapshot.toString(),
                 createdTxHash: event.transactionHash,
                 createdBlockNumber: event.blockNumber,
             }).onConflictDoNothing({ target: [governanceProposals.proposalId, governanceProposals.governorAddress, governanceProposals.chainId] });
@@ -143,7 +161,7 @@ export class GovernanceIndexerService {
     private extractTitle(description: string): string {
         if (!description) return "Untitled Proposal";
         const lines = description.split('\n');
-        if (lines.length > 0 && lines[0] && lines[0].startsWith('# ')) {
+        if (lines?.[0]?.startsWith('# ')) {
             return lines[0].substring(2).trim();
         }
         return description.substring(0, 50) + "..."; // Fallback truncado
