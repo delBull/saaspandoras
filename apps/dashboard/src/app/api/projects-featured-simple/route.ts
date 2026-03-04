@@ -44,14 +44,6 @@ export async function GET() {
           image_url: '/images/sem.jpeg'
         },
         {
-          id: 2,
-          title: 'TechStart AI',
-          description: 'AI for everyone, everywhere',
-          slug: 'techstart-ai',
-          cover_photo_url: '/images/blockbunny.jpg',
-          image_url: '/images/blockbunny.jpg'
-        },
-        {
           id: 3,
           title: 'Artisan Marketplace',
           description: 'Art made fair, trade made transparent',
@@ -71,14 +63,6 @@ export async function GET() {
           slug: 'ecogreen-energy',
           cover_photo_url: '/images/sem.jpeg',
           image_url: '/images/sem.jpeg'
-        },
-        {
-          id: 2,
-          title: 'TechStart AI',
-          description: 'AI for everyone, everywhere',
-          slug: 'techstart-ai',
-          cover_photo_url: '/images/blockbunny.jpg',
-          image_url: '/images/blockbunny.jpg'
         },
         {
           id: 3,

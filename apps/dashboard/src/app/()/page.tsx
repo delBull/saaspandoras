@@ -19,7 +19,6 @@ import { GovernanceParticipationModal } from "@/components/governance/Governance
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
-// --- FALLBACK PROJECTS (Hardcoded as requested) ---
 const FALLBACK_PROJECTS = [
   {
     id: "fallback-1",
@@ -28,14 +27,6 @@ const FALLBACK_PROJECTS = [
     actionText: "Explorar",
     imageUrl: "/images/dhub3.png",
     projectSlug: "pandoras-protocol"
-  },
-  {
-    id: "fallback-2",
-    title: "BlockBunny",
-    subtitle: "Ecosistema de gamificación y recompensas.",
-    actionText: "Ver Proyecto",
-    imageUrl: "/images/blockbunny.jpg",
-    projectSlug: "blockbunny"
   }
 ];
 
