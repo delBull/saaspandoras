@@ -13,7 +13,7 @@
         "dotenv": "^16.4.5",
         "ethers": "5.7.2",
         "express": "^4.19.2",
-        "drizzle-orm": "^0.30.0",
+        "drizzle-orm": "^0.44.5",
         "postgres": "^3.4.3",
         "@pandoras/agora-engine": "workspace:*",
         "@pandoras/protocol-deployer": "workspace:*"

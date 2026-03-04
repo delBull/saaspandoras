@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { protocolConfigs } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { IProtocolConfigAdapter, IProtocolConfig } from "@pandoras/agora-engine";
+import type { IProtocolConfigAdapter, IProtocolConfig } from "@pandoras/agora-engine";
 
 export class DrizzleProtocolConfigAdapter implements IProtocolConfigAdapter {
 
