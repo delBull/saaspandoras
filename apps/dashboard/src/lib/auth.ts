@@ -15,13 +15,11 @@ interface JWTPayload {
   exp?: number;
 }
 
-/**
- * Comprueba si una dirección es admin o super admin.
- */
 export async function isAdmin(address?: string | null): Promise<boolean> {
   if (!address) return false;
 
   const lower = address.toLowerCase();
+  // ⚡ Optimistic check for Super Admin (No DB call)
   if (lower === SUPER_ADMIN_WALLET.toLowerCase()) return true;
 
   try {
@@ -45,23 +43,20 @@ export function isSuperAdmin(address?: string | null): boolean {
   return address.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase();
 }
 
-/**
- * Obtiene la sesión autenticada del usuario.
- */
-export async function getAuth(headers?: any, userAddress?: string) {
+export async function getAuth(headersData?: any, userAddress?: string) {
   let address: string | null = userAddress ?? null;
 
-  if (headers && !address) {
+  if (headersData && !address) {
     try {
       // Handle both Headers object and plain record
-      if (typeof (headers as any).get === 'function') {
-        address = (headers as any).get('x-thirdweb-address') ??
-          (headers as any).get('x-wallet-address') ??
-          (headers as any).get('x-user-address');
+      if (typeof (headersData as any).get === 'function') {
+        address = (headersData as any).get('x-thirdweb-address') ??
+          (headersData as any).get('x-wallet-address') ??
+          (headersData as any).get('x-user-address');
       } else {
-        address = (headers as any)['x-thirdweb-address'] ??
-          (headers as any)['x-wallet-address'] ??
-          (headers as any)['x-user-address'];
+        address = (headersData as any)['x-thirdweb-address'] ??
+          (headersData as any)['x-wallet-address'] ??
+          (headersData as any)['x-user-address'];
       }
 
       if (address) console.log("🔍 [Dashboard getAuth] Address found in HEADERS:", address);
@@ -72,6 +67,7 @@ export async function getAuth(headers?: any, userAddress?: string) {
 
   if (!address) {
     try {
+      // Use Next.js 15 async cookies/headers if possible
       const cookieStore = await cookies();
       const authToken = cookieStore.get('auth_token')?.value;
 

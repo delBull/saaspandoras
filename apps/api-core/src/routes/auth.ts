@@ -194,11 +194,14 @@ router.post("/login", authLimiter, async (req: Request, res: Response) => {
         const cookieDomain = process.env.COOKIE_DOMAIN || (isProd ? ".pandoras.finance" : undefined);
         const cookieOptions: any = {
             httpOnly: true,
-            secure: isProd,
-            sameSite: isProd ? "none" : "lax",
+            secure: true, // Force secure for partitioned
+            sameSite: "none", // Required for partitioned
             domain: cookieDomain,
             path: "/",
+            partitioned: true, // 🛡️ CHIPS Support for cross-subdomain same-site contexts
         };
+
+        console.log(`🍪 [LOGIN] Setting Partitioned cookies for domain: ${cookieDomain}`);
 
         console.log(`🍪 [LOGIN] Setting cookies for domain: ${cookieDomain} | Secure: ${cookieOptions.secure} | isProd: ${isProd}`);
 

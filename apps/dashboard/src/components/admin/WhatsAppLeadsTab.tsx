@@ -89,35 +89,7 @@ export default function WhatsAppLeadsTab() {
       setStats(data.stats || stats);
     } catch (error) {
       console.error('Error fetching leads:', error);
-      // Fallback al endpoint antiguo si falla el nuevo
-      try {
-        const fallbackResponse = await fetch('/api/admin/whatsapp-preapply');
-        const fallbackData = await fallbackResponse.json();
-
-        setLeads((fallbackData.leads || []).map((lead: any) => ({
-          ...lead,
-          flow_type: 'eight_q', // Mark as legacy eight_q
-          priority_level: 'normal'
-        })));
-
-        setStats({
-          total: fallbackData.total || 0,
-          active: fallbackData.total || 0,
-          eight_q: {
-            total: fallbackData.total || 0,
-            pending: fallbackData.pending || 0,
-            approved: fallbackData.approved || 0,
-            completed: fallbackData.completed || 0
-          },
-          high_ticket: { total: 0, scheduled: 0, contacted: 0 },
-          utility: { total: 0, pending: 0, approved: 0 },
-          support: { total: 0, escalated: 0, resolved: 0 },
-          human: { total: 0, active: 0, resolved: 0 },
-          protocol_application: { total: 0, active: 0, resolved: 0 }
-        });
-      } catch (fallbackError) {
-        console.error('Fallback also failed:', fallbackError);
-      }
+      // Removed legacy fallback to /api/admin/whatsapp-preapply to avoid 404s
     } finally {
       setLoading(false);
     }
