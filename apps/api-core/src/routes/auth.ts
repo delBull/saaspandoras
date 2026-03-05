@@ -190,35 +190,24 @@ router.post("/login", authLimiter, async (req: Request, res: Response) => {
         });
 
         const isProd = process.env.NODE_ENV === "production";
-        // Default to .pandoras.finance in production if not specified
+        // Default to .pandoras.finance in production for cross-subdomain compatibility
         const cookieDomain = process.env.COOKIE_DOMAIN || (isProd ? ".pandoras.finance" : undefined);
-
-        res.cookie("access_token", tokens.accessToken, {
+        const cookieOptions: any = {
             httpOnly: true,
             secure: isProd,
             sameSite: isProd ? "none" : "lax",
             domain: cookieDomain,
             path: "/",
-            maxAge: 15 * 60 * 1000
-        });
+        };
 
+        res.cookie("access_token", tokens.accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
         res.cookie("refresh_token", tokens.refreshToken, {
-            httpOnly: true,
-            secure: isProd,
-            sameSite: isProd ? "strict" : "lax",
-            domain: cookieDomain,
+            ...cookieOptions,
             path: "/auth/refresh",
-            maxAge: 7 * 24 * 60 * 60 * 1000
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+            sameSite: isProd ? "strict" : "lax"
         });
-
-        res.cookie("auth_token", jwtToken, {
-            httpOnly: true,
-            secure: isProd,
-            sameSite: isProd ? "none" : "lax",
-            domain: cookieDomain,
-            path: "/",
-            maxAge: 15 * 60 * 1000
-        });
+        res.cookie("auth_token", jwtToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
 
         console.log("✅ [LOGIN] SUCCESS: Session created for", payloadAddress, "| hasAccess:", hasAccess);
         return res.status(200).json({
@@ -348,13 +337,21 @@ router.post("/logout", async (req: Request, res: Response) => {
 router.get("/me", async (req: Request, res: Response) => {
     try {
         const accessToken = req.cookies.access_token;
-        let session = null;
+        const authToken = req.cookies.auth_token;
 
+        console.log("🔍 [AUTH/ME] Cookies received:", {
+            hasAccessToken: !!accessToken,
+            hasAuthToken: !!authToken,
+            cookieNames: Object.keys(req.cookies)
+        });
+
+        let session = null;
         if (accessToken) {
             session = await getSession(accessToken);
+            console.log("🔍 [AUTH/ME] Session from access_token:", session ? "FOUND" : "NOT FOUND");
         }
 
-        const token = req.cookies.auth_token;
+        const token = authToken;
         let decoded = null;
 
         if (!session && token) {
@@ -363,6 +360,7 @@ router.get("/me", async (req: Request, res: Response) => {
                 if (PUBLIC_KEY) {
                     const publicKey = Buffer.from(PUBLIC_KEY, "base64").toString("utf-8");
                     decoded = jwt.verify(token, publicKey, { algorithms: ["RS256"] }) as any;
+                    console.log("🔍 [AUTH/ME] Decoded from auth_token:", decoded ? "SUCCESS" : "FAIL");
                 }
             } catch (e) {
                 console.error("❌ /auth/me JWT verify failed:", e);
@@ -373,6 +371,7 @@ router.get("/me", async (req: Request, res: Response) => {
         const sid = session?.sid || decoded?.sid;
 
         if (!userId) {
+            console.warn("⚠️ [AUTH/ME] Unauthorized: No userId found in session or token");
             return res.status(401).json({ error: "Unauthorized" });
         }
 
@@ -387,7 +386,7 @@ router.get("/me", async (req: Request, res: Response) => {
             });
 
             if (!sessionRecord) {
-                console.warn(`⚠️ Attempted use of revoked or expired sid: ${sid}`);
+                console.warn(`⚠️ [AUTH/ME] Session revoked or expired sid: ${sid}`);
                 return res.status(401).json({ error: "Session revoked or expired" });
             }
         }
@@ -398,6 +397,7 @@ router.get("/me", async (req: Request, res: Response) => {
         });
 
         if (!user) {
+            console.warn(`⚠️ [AUTH/ME] User record not found for id: ${userId}`);
             return res.status(401).json({ error: "User not found" });
         }
 
