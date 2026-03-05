@@ -30,7 +30,8 @@ export async function middleware(request: NextRequest) {
       request.cookies.get('auth_token');
 
     if (!walletCookie?.value) {
-      return NextResponse.redirect(new URL("/", request.url));
+      // Allow request to proceed to handle auth client-side via React
+      return NextResponse.next();
     }
   }
 

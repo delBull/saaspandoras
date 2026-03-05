@@ -180,6 +180,7 @@ router.post("/login", authLimiter, async (req: Request, res: Response) => {
             sub: userId,
             sid: tokens.sid,
             address: walletAddress,
+            role: userRecord?.role || 'user',
             hasAccess,
             v: 1,
             iat: Math.floor(Date.now() / 1000),
@@ -412,6 +413,7 @@ router.get("/me", async (req: Request, res: Response) => {
             user: {
                 id: user.id,
                 address: user.walletAddress,
+                role: user.role,
                 telegramId: user.telegramId,
                 email: user.email,
                 image: user.image,

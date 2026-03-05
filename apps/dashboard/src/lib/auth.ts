@@ -8,6 +8,8 @@ import jwt from "jsonwebtoken";
 interface JWTPayload {
   userId?: string;
   sub?: string;
+  address?: string;
+  role?: string;
   aud?: string;
   iat?: number;
   exp?: number;
@@ -62,14 +64,19 @@ export async function getAuth(headers?: any, userAddress?: string) {
 
       if (authToken) {
         const decoded = jwt.decode(authToken) as JWTPayload | null;
-        if (decoded?.sub) {
+        if (decoded?.address && validateWalletAddress(decoded.address)) {
+          address = decoded.address;
+        } else if (decoded?.sub && validateWalletAddress(decoded.sub)) {
           address = decoded.sub;
         }
       }
 
       if (!address) {
-        address = cookieStore.get('wallet-address')?.value ??
-          cookieStore.get('thirdweb:wallet-address')?.value ?? null;
+        const addrCookie = cookieStore.get('wallet-address')?.value ??
+          cookieStore.get('thirdweb:wallet-address')?.value;
+        if (validateWalletAddress(addrCookie)) {
+          address = addrCookie ?? null;
+        }
       }
     } catch (error) {
       // Silent in production
@@ -78,8 +85,8 @@ export async function getAuth(headers?: any, userAddress?: string) {
 
   return {
     session: {
-      userId: address ? address.toLowerCase() : null,
-      address: address ? address.toLowerCase() : null,
+      userId: (address ? address.toLowerCase() : null) as string | null,
+      address: (address ? address.toLowerCase() : null) as string | null,
     },
   };
 }
