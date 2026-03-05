@@ -6,6 +6,7 @@ import { AdminTabs } from "@/components/admin/AdminTabs";
 import { AdminSettings } from "@/components/admin/AdminSettings";
 import WhatsAppLeadsTab from "@/components/admin/WhatsAppLeadsTab";
 import { UnauthorizedAccess } from "@/components/admin/UnauthorizedAccess";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 import { useProjectActions } from "@/hooks/useProjectActions";
 import { useFeaturedProjects } from "@/hooks/useFeaturedProjects";
@@ -115,92 +116,34 @@ export default function AdminDashboardPage() {
   // �‍♂️ IMPORTANT: This page requires CONFIRMED admin status, not tentative
   // Sidebars can show based on initial server props, but this endpoint requires API verification
 
-  // Check admin status first with timeout fallback - ONLY ONCE
+  const { user, isLoading: authLoading } = useAuth();
+
+  // Check admin status strictly linked to the Next.js AuthProvider state
   useEffect(() => {
-    if (isAdmin !== null) return; // Don't run if already determined
+    // 🛡️ Do not proceed if global AuthProvider is still hydrating
+    if (authLoading) return;
 
     const checkAdminStatus = async () => {
       // If already determined, don't check again
       if (isAdmin !== null) return;
 
       try {
-        // Try multiple sources for wallet address (client-side only)
-        let walletAddress = null;
-        if (typeof window !== 'undefined') {
-          // 1. First try localStorage (most reliable)
-          if (window.localStorage) {
-            try {
-              const sessionData = localStorage.getItem('wallet-session');
-              if (sessionData) {
-                const parsedSession = JSON.parse(sessionData) as unknown as WalletSession;
-                walletAddress = parsedSession.address?.toLowerCase();
-              }
-            } catch (e) {
-              if (process.env.NODE_ENV === 'development') {
-                console.warn('❌ Error reading wallet session from localStorage:', e);
-              }
-            }
-          }
+        const address = user?.address;
 
-          // 2. Fallback to cookies (multiple possible cookie names)
-          if (!walletAddress) {
-            try {
-              // Try wallet-address cookie first
-              walletAddress = document.cookie
-                .split('; ')
-                .find((row) => row.startsWith('wallet-address='))
-                ?.split('=')[1];
-
-              // If not found, try thirdweb specific cookie
-              if (!walletAddress) {
-                walletAddress = document.cookie
-                  .split('; ')
-                  .find((row) => row.startsWith('thirdweb:wallet-address='))
-                  ?.split('=')[1];
-              }
-
-              // If still not found, search for any cookie containing wallet address
-              if (!walletAddress) {
-                const allCookies = document.cookie.split('; ');
-                const walletCookie = allCookies.find(cookie => {
-                  const parts = cookie.split('=');
-                  return parts.length === 2 &&
-                    parts[0] &&
-                    parts[0].includes('wallet') &&
-                    parts[0].includes('address') &&
-                    parts[1] &&
-                    parts[1].startsWith('0x') &&
-                    parts[1].length === 42;
-                });
-                if (walletCookie) {
-                  walletAddress = walletCookie.split('=')[1];
-                }
-              }
-            } catch (e) {
-              if (process.env.NODE_ENV === 'development') {
-                console.warn('❌ Error reading wallet address from cookies:', e);
-              }
-            }
-          }
-        }
-
-        // 🚫 REMOVED: Optimistic client-side Super Admin bypass. 
-        // Admin hydration must strictly await backend session validation to prevent race conditions.
-
-        if (!walletAddress) {
-          setAuthError('No se pudo obtener dirección de wallet');
+        if (!address) {
+          setAuthError('No se pudo verificar tu sesión. Inicia de nuevo.');
           setIsAdmin(false);
           return;
         }
 
         // Store wallet address for use in hooks
-        setWalletAddress(walletAddress);
+        setWalletAddress(address);
 
         const requestHeaders: Record<string, string> = {
           'Content-Type': 'application/json',
-          'x-thirdweb-address': walletAddress,
-          'x-wallet-address': walletAddress,
-          'x-user-address': walletAddress,
+          'x-thirdweb-address': address,
+          'x-wallet-address': address,
+          'x-user-address': address,
         };
 
         const response = await fetch('/api/admin/verify', {
@@ -217,34 +160,21 @@ export default function AdminDashboardPage() {
 
         // User is admin if they have admin privileges OR super admin privileges
         const userIsAdmin = (data.isAdmin ?? false) || (data.isSuperAdmin ?? false);
-        // Debug logging only in development
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🏛️ Admin dashboard auth result:', userIsAdmin, { data, walletAddress });
-
-          // Enhanced debugging for admin verification
-          console.log('🏛️ Admin dashboard: ENHANCED AUTH DEBUG:', {
-            walletAddress,
-            isSuperAdmin: walletAddress?.toLowerCase() === '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9',
-            apiResponse: data,
-            finalIsAdmin: userIsAdmin
-          });
-        }
 
         setIsAdmin(userIsAdmin);
         setAuthError(null);
 
       } catch (error) {
-        setAuthError('Error al verificar permisos administrativos');
+        setAuthError('Error al verificar permisos administrativos en la base de datos');
         setIsAdmin(false);
       }
     };
 
-    // Start admin verification without timeout - let it complete naturally
     void checkAdminStatus();
-  }, []);
+  }, [user, authLoading, isAdmin]);
 
   useEffect(() => {
-    // Set loading to false immediately if user is not admin (prevents infinite loading)
+    // Set loading to false immediately if user is not admin
     if (isAdmin === false) {
       setLoading(false);
       return;
