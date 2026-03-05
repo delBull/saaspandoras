@@ -52,9 +52,15 @@ export async function getAuth(headers?: any, userAddress?: string) {
   let address: string | null = userAddress ?? null;
 
   if (headers && !address) {
-    address = headers.get('x-thirdweb-address') ??
-      headers.get('x-wallet-address') ??
-      headers.get('x-user-address');
+    try {
+      address = headers.get('x-thirdweb-address') ??
+        headers.get('x-wallet-address') ??
+        headers.get('x-user-address');
+
+      if (address) console.log("🔍 [Dashboard getAuth] Address found in HEADERS:", address);
+    } catch (e) {
+      console.warn("🔍 [Dashboard getAuth] Could not read headers, likely not a Headers object");
+    }
   }
 
   if (!address) {
@@ -66,8 +72,10 @@ export async function getAuth(headers?: any, userAddress?: string) {
         const decoded = jwt.decode(authToken) as JWTPayload | null;
         if (decoded?.address && validateWalletAddress(decoded.address)) {
           address = decoded.address;
+          console.log("🔍 [Dashboard getAuth] Address found in JWT Cookie:", address);
         } else if (decoded?.sub && validateWalletAddress(decoded.sub)) {
           address = decoded.sub;
+          console.log("🔍 [Dashboard getAuth] Address found in JWT Cookie (sub):", address);
         }
       }
 
@@ -76,11 +84,16 @@ export async function getAuth(headers?: any, userAddress?: string) {
           cookieStore.get('thirdweb:wallet-address')?.value;
         if (validateWalletAddress(addrCookie)) {
           address = addrCookie ?? null;
+          console.log("🔍 [Dashboard getAuth] Address found in WALLET Cookie:", address);
         }
       }
     } catch (error) {
-      // Silent in production
+      console.error("🔍 [Dashboard getAuth] Error reading cookies:", error);
     }
+  }
+
+  if (!address) {
+    console.warn("🔍 [Dashboard getAuth] NO ADDRESS FOUND after all checks");
   }
 
   return {

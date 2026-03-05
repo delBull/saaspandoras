@@ -285,7 +285,7 @@ export default function AdminDashboardPage() {
         if (usersRes.ok) setUsers(await usersRes.json());
 
       } catch (error) {
-        // Silent error
+        console.error('🏛️ Admin dashboard: Error fetching data:', error);
       } finally {
         setLoading(false);
       }

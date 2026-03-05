@@ -13,8 +13,9 @@ import slugify from "slugify";
 import { validateRequestBody } from "@/lib/security-utils";
 
 export async function GET(_request: Request) {
+  const requestId = Math.random().toString(36).substring(7);
   try {
-    console.log('🔍 Admin API: Starting GET request...');
+    console.log(`🔍 [${requestId}] Admin API: Starting GET /api/admin/projects...`);
 
     // Check admin authentication
     const { session } = await getAuth(await headers());
@@ -218,6 +219,7 @@ export async function GET(_request: Request) {
     );
   }
 }
+
 
 export async function POST(request: Request) {
   const { session } = await getAuth(await headers());

@@ -21,7 +21,7 @@ function getSql() {
     }
 
     sqlInstance = postgres(connectionString, {
-      max: 3, // Reduced to 3 for serverless optimization (Neon limits)
+      max: 10, // Increased back to 10 to avoid hangs during concurrent API calls
       idle_timeout: 20,
       connect_timeout: 10,
       prepare: false,
