@@ -184,6 +184,16 @@ export default function AdminDashboardPage() {
           }
         }
 
+        // ⚡ OPTIMISTIC CHECK: If wallet is Super Admin, bypass API check for instant hydration
+        const SUPER_ADMIN = '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9';
+        if (walletAddress?.toLowerCase() === SUPER_ADMIN) {
+          console.log('🏛️ Admin dashboard: ⚡ Optimistic Super Admin bypass triggered');
+          setWalletAddress(walletAddress);
+          setIsAdmin(true);
+          setAuthError(null);
+          return;
+        }
+
         if (!walletAddress) {
           setAuthError('No se pudo obtener dirección de wallet');
           setIsAdmin(false);
@@ -271,10 +281,24 @@ export default function AdminDashboardPage() {
           }),
         };
 
+        const fetchWithTimeout = async (url: string, timeout = 10000) => {
+          const controller = new AbortController();
+          const id = setTimeout(() => controller.abort(), timeout);
+          try {
+            const response = await fetch(url, { ...{ headers }, signal: controller.signal });
+            clearTimeout(id);
+            return response;
+          } catch (e) {
+            clearTimeout(id);
+            console.warn(`⚠️ Fetch timeout or error for ${url}:`, e);
+            return { ok: false, status: 408, json: async () => ({}) } as any;
+          }
+        };
+
         const [projectsRes, adminsRes, usersRes] = await Promise.all([
-          fetch('/api/admin/projects', { headers }),
-          fetch('/api/admin/administrators', { headers }),
-          fetch('/api/admin/users', { headers })
+          fetchWithTimeout('/api/admin/projects'),
+          fetchWithTimeout('/api/admin/administrators'),
+          fetchWithTimeout('/api/admin/users')
         ]);
 
         if (projectsRes.ok) setProjects(await projectsRes.json());

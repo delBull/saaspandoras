@@ -99,7 +99,13 @@ export async function middleware(request: NextRequest) {
       rateLimitMap.set(key, { count: 1, resetTime: now + limitConfig.windowMs });
     }
 
-    if (rateLimitMap.size > 5000) rateLimitMap.clear();
+    // Aggressive cleanup if map gets large
+    if (rateLimitMap.size > 2000) {
+      const oldestResetTime = Array.from(rateLimitMap.values()).sort((a, b) => a.resetTime - b.resetTime)[0]?.resetTime;
+      if (oldestResetTime && now > oldestResetTime + 60000) {
+        rateLimitMap.clear();
+      }
+    }
 
     const response = NextResponse.next();
 
