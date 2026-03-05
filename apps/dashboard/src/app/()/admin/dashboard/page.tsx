@@ -66,119 +66,36 @@ export default function AdminDashboardPage() {
 
   // Function to refresh all data
   const refreshData = async () => {
-    console.log('🔄 Admin dashboard: Refreshing data...');
     try {
-      // Get current wallet address for headers - try multiple sources
       let currentWalletAddress = walletAddress;
-
       if (!currentWalletAddress && typeof window !== 'undefined') {
-        // Try localStorage first
-        if (window.localStorage) {
-          try {
-            const sessionData = localStorage.getItem('wallet-session');
-            if (sessionData) {
-              const parsedSession = JSON.parse(sessionData) as unknown as WalletSession;
-              currentWalletAddress = parsedSession.address?.toLowerCase();
-            }
-          } catch (e) {
-            console.warn('Error getting wallet for refresh:', e);
-          }
-        }
-
-        // Try cookies as fallback
-        if (!currentWalletAddress) {
-          try {
-            const walletCookie = document.cookie
-              .split('; ')
-              .find((row) => row.startsWith('wallet-address='))
-              ?.split('=')[1];
-            if (walletCookie) {
-              currentWalletAddress = walletCookie.toLowerCase();
-            }
-          } catch (e) {
-            console.warn('Error getting wallet from cookies:', e);
-          }
+        const sessionData = localStorage.getItem('wallet-session');
+        if (sessionData) {
+          const parsedSession = JSON.parse(sessionData) as any;
+          currentWalletAddress = parsedSession.address?.toLowerCase();
         }
       }
 
-      console.log('🔄 Admin dashboard: Using wallet address:', currentWalletAddress?.substring(0, 10) + '...');
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(currentWalletAddress && {
+          'x-thirdweb-address': currentWalletAddress,
+          'x-wallet-address': currentWalletAddress,
+        }),
+      };
 
-      // Enhanced debugging for wallet detection
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🏛️ Admin dashboard: WALLET DETECTION DEBUG:', {
-          fromProps: walletAddress,
-          fromLocalStorage: currentWalletAddress,
-          match: walletAddress === currentWalletAddress,
-          sources: {
-            localStorage: !!localStorage.getItem('wallet-session'),
-            cookies: !!document.cookie.includes('wallet-address'),
-            thirdwebCookies: !!document.cookie.includes('thirdweb:wallet-address')
-          }
-        });
-      }
+      const [projectsRes, adminsRes, usersRes] = await Promise.all([
+        fetch('/api/admin/projects', { headers }),
+        fetch('/api/admin/administrators', { headers }),
+        fetch('/api/admin/users', { headers })
+      ]);
 
-      // Fetch projects
-      const projectsRes = await fetch('/api/admin/projects', {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(currentWalletAddress && {
-            'x-thirdweb-address': currentWalletAddress,
-            'x-wallet-address': currentWalletAddress,
-            'x-user-address': currentWalletAddress
-          }),
-        }
-      });
-
-      if (projectsRes.ok) {
-        const projectsData = await projectsRes.json() as Project[];
-        setProjects(projectsData);
-        console.log('🔄 Admin dashboard: Projects refreshed successfully');
-      }
-
-      // Fetch administrators
-      const adminsRes = await fetch('/api/admin/administrators', {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(currentWalletAddress && {
-            'x-thirdweb-address': currentWalletAddress,
-            'x-wallet-address': currentWalletAddress,
-            'x-user-address': currentWalletAddress
-          }),
-        }
-      });
+      if (projectsRes.ok) setProjects(await projectsRes.json());
       if (adminsRes.ok) {
-        const rawAdminsData = await adminsRes.json() as (Omit<AdminData, 'role'> & { role?: string })[];
-        const processedAdmins = rawAdminsData.map((admin) => ({
-          id: admin.id,
-          walletAddress: admin.walletAddress,
-          alias: admin.alias,
-          role: admin.role ?? 'admin'
-        } as AdminData));
-        setAdmins(processedAdmins);
+        const raw = await adminsRes.json() as any[];
+        setAdmins(raw.map(a => ({ ...a, role: a.role ?? 'admin' })));
       }
-
-      // Fetch users
-      const usersRes = await fetch('/api/admin/users', {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(currentWalletAddress && {
-            'x-thirdweb-address': currentWalletAddress,
-            'x-wallet-address': currentWalletAddress,
-            'x-user-address': currentWalletAddress
-          }),
-        }
-      });
-      if (usersRes.ok) {
-        const usersData = await usersRes.json() as UserData[];
-        console.log('🏛️ Admin dashboard: Users loaded successfully:', usersData.length, usersData);
-        console.log('🏛️ Admin dashboard: First user sample:', usersData[0] ? {
-          id: usersData[0].id,
-          walletAddress: usersData[0].walletAddress,
-          role: usersData[0].role,
-          projectCount: usersData[0].projectCount
-        } : 'No users');
-        setUsers(usersData);
-      }
+      if (usersRes.ok) setUsers(await usersRes.json());
 
     } catch (error) {
       console.error('🔄 Admin dashboard: Error refreshing data:', error);
@@ -337,228 +254,38 @@ export default function AdminDashboardPage() {
 
     const fetchData = async () => {
       try {
-        console.log('🏛️ Admin dashboard: Starting data fetch...');
-        // Get current wallet address for headers
         let currentWalletAddress = null;
         if (typeof window !== 'undefined') {
-          if (window.localStorage) {
-            try {
-              const sessionData = localStorage.getItem('wallet-session');
-              if (sessionData) {
-                const parsedSession = JSON.parse(sessionData) as unknown as WalletSession;
-                currentWalletAddress = parsedSession.address?.toLowerCase();
-              }
-            } catch (e) {
-              console.warn('Error getting wallet for API calls:', e);
-            }
+          const sessionData = localStorage.getItem('wallet-session');
+          if (sessionData) {
+            const parsedSession = JSON.parse(sessionData) as any;
+            currentWalletAddress = parsedSession.address?.toLowerCase();
           }
         }
 
-        // Fetch projects - Send wallet authentication header
-        console.log('🏛️ Admin dashboard: Calling /api/admin/projects with wallet:', currentWalletAddress?.substring(0, 10) + '...');
+        const headers = {
+          'Content-Type': 'application/json',
+          ...(currentWalletAddress && {
+            'x-thirdweb-address': currentWalletAddress,
+            'x-wallet-address': currentWalletAddress,
+          }),
+        };
 
-        // Enhanced debugging for API calls
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🏛️ Admin dashboard: API CALL DEBUG:', {
-            walletAddress: currentWalletAddress,
-            headers: {
-              'x-thirdweb-address': currentWalletAddress,
-              'x-wallet-address': currentWalletAddress,
-              'x-user-address': currentWalletAddress
-            }
-          });
-        }
-        const projectsRes = await fetch('/api/admin/projects', {
-          headers: {
-            'Content-Type': 'application/json',
-            ...(currentWalletAddress && {
-              'x-thirdweb-address': currentWalletAddress,
-              'x-wallet-address': currentWalletAddress,
-              'x-user-address': currentWalletAddress
-            }),
-          }
-        });
+        const [projectsRes, adminsRes, usersRes] = await Promise.all([
+          fetch('/api/admin/projects', { headers }),
+          fetch('/api/admin/administrators', { headers }),
+          fetch('/api/admin/users', { headers })
+        ]);
 
-        console.log('🏛️ Admin dashboard: Projects response status:', projectsRes.status, projectsRes.statusText);
-
-        // Enhanced debugging for API response
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🏛️ Admin dashboard: API RESPONSE DEBUG:', {
-            status: projectsRes.status,
-            statusText: projectsRes.statusText,
-            walletAddress: currentWalletAddress,
-            responseHeaders: Object.fromEntries(projectsRes.headers.entries())
-          });
-        }
-
-        if (projectsRes.ok) {
-          const projectsData = await projectsRes.json() as Project[];
-          console.log('🏛️ Admin dashboard: Projects loaded successfully:', projectsData.length, projectsData);
-          console.log('🏛️ Admin dashboard: First project applicantWalletAddress:', projectsData[0]?.applicantWalletAddress);
-          console.log('🏛️ Admin dashboard: First project all fields:', projectsData[0] ? {
-            id: projectsData[0].id,
-            title: projectsData[0].title,
-            applicantWalletAddress: projectsData[0].applicantWalletAddress,
-            applicantName: projectsData[0].applicantName,
-            status: projectsData[0].status,
-            featured: projectsData[0].featured
-          } : 'No projects');
-
-          // Enhanced debugging for wallet matching in admin dashboard
-          if (projectsData.length > 0 && currentWalletAddress) {
-            console.log('🏛️ Admin dashboard: WALLET MATCHING DEBUG:', {
-              adminWallet: currentWalletAddress,
-              projectWallets: projectsData.slice(0, 5).map(p => ({
-                id: p.id,
-                title: p.title,
-                applicantWallet: p.applicantWalletAddress,
-                matches: p.applicantWalletAddress?.toLowerCase() === currentWalletAddress.toLowerCase()
-              }))
-            });
-          }
-          setProjects(projectsData);
-        } else {
-          const errorText = await projectsRes.text();
-          console.error('🏛️ Admin dashboard: Failed to load projects:', {
-            status: projectsRes.status,
-            statusText: projectsRes.statusText,
-            errorBody: errorText,
-            walletAddress: currentWalletAddress,
-            requestHeaders: {
-              'x-thirdweb-address': currentWalletAddress,
-              'x-wallet-address': currentWalletAddress,
-              'x-user-address': currentWalletAddress
-            }
-          });
-
-          // Enhanced debugging for API errors
-          if (process.env.NODE_ENV === 'development') {
-            console.log('🏛️ Admin dashboard: API ERROR DEBUG:', {
-              error: errorText,
-              status: projectsRes.status,
-              walletAddress: currentWalletAddress,
-              suggestion: projectsRes.status === 401 ? 'Authentication failed - check wallet address' :
-                projectsRes.status === 403 ? 'Authorization failed - check admin permissions' :
-                  'Unknown error - check server logs'
-            });
-          }
-        }
-
-        // Fetch administrators - Send wallet authentication header
-        const adminsRes = await fetch('/api/admin/administrators', {
-          headers: {
-            'Content-Type': 'application/json',
-            ...(currentWalletAddress && {
-              'x-thirdweb-address': currentWalletAddress,
-              'x-wallet-address': currentWalletAddress,
-              'x-user-address': currentWalletAddress
-            }),
-          }
-        });
+        if (projectsRes.ok) setProjects(await projectsRes.json());
         if (adminsRes.ok) {
-          const rawAdminsData = await adminsRes.json() as (Omit<AdminData, 'role'> & { role?: string })[];
-          // Ensure each admin has a role property (default to 'admin')
-          const processedAdmins = rawAdminsData.map((admin) => ({
-            id: admin.id,
-            walletAddress: admin.walletAddress,
-            alias: admin.alias,
-            role: admin.role ?? 'admin' // Default role for all admins
-          } as AdminData));
-          console.log('🏛️ Admin dashboard: Admins loaded successfully:', processedAdmins.length, processedAdmins);
-
-          // Enhanced debugging for admin verification
-          if (processedAdmins.length > 0 && currentWalletAddress) {
-            console.log('🏛️ Admin dashboard: ADMIN VERIFICATION DEBUG:', {
-              currentWallet: currentWalletAddress,
-              isCurrentUserAdmin: processedAdmins.some(a => a.walletAddress?.toLowerCase() === currentWalletAddress.toLowerCase()),
-              allAdmins: processedAdmins.map(a => ({
-                wallet: a.walletAddress?.substring(0, 10) + '...' || 'undefined',
-                alias: a.alias,
-                role: a.role,
-                isCurrentUser: a.walletAddress?.toLowerCase() === currentWalletAddress.toLowerCase()
-              }))
-            });
-          }
-          setAdmins(processedAdmins);
-        } else {
-          const errorText = await adminsRes.text();
-          console.error('🏛️ Admin dashboard: Failed to load admins:', {
-            status: adminsRes.status,
-            statusText: adminsRes.statusText,
-            errorBody: errorText,
-            walletAddress: currentWalletAddress
-          });
+          const raw = await adminsRes.json() as any[];
+          setAdmins(raw.map(a => ({ ...a, role: a.role ?? 'admin' })));
         }
+        if (usersRes.ok) setUsers(await usersRes.json());
 
-        // Fetch users - Send wallet authentication header
-        const usersRes = await fetch('/api/admin/users', {
-          headers: {
-            'Content-Type': 'application/json',
-            ...(currentWalletAddress && {
-              'x-thirdweb-address': currentWalletAddress,
-              'x-wallet-address': currentWalletAddress,
-              'x-user-address': currentWalletAddress
-            }),
-          }
-        });
-        console.log('🏛️ Admin dashboard: Users API response status:', usersRes.status, usersRes.statusText);
-
-        if (usersRes.ok) {
-          const usersData = await usersRes.json() as UserData[];
-          console.log('🏛️ Admin dashboard: Users loaded successfully:', usersData.length, usersData);
-          console.log('🏛️ Admin dashboard: First user sample:', usersData[0] ? {
-            id: usersData[0].id,
-            walletAddress: usersData[0].walletAddress,
-            role: usersData[0].role,
-            projectCount: usersData[0].projectCount
-          } : 'No users');
-
-          // Enhanced debugging for user roles and project counts
-          if (usersData.length > 0 && currentWalletAddress) {
-            console.log('🏛️ Admin dashboard: USER ROLES DEBUG:', {
-              adminWallet: currentWalletAddress,
-              usersWithProjects: usersData.filter(u => u.projectCount > 0).length,
-              usersByRole: {
-                applicant: usersData.filter(u => u.role === 'applicant').length,
-                pandorian: usersData.filter(u => u.role === 'pandorian').length,
-                admin: usersData.filter(u => u.role === 'admin').length
-              },
-              sampleUsers: usersData.slice(0, 3).map(u => ({
-                wallet: u.walletAddress?.substring(0, 10) + '...' || 'undefined',
-                role: u.role,
-                projectCount: u.projectCount,
-                isCurrentUser: u.walletAddress?.toLowerCase() === currentWalletAddress.toLowerCase()
-              }))
-            });
-          } else {
-            console.log('🏛️ Admin dashboard: No users received or no current wallet address');
-          }
-          setUsers(usersData);
-        } else {
-          const errorText = await usersRes.text();
-          console.error('🏛️ Admin dashboard: Failed to load users:', {
-            status: usersRes.status,
-            statusText: usersRes.statusText,
-            errorBody: errorText,
-            walletAddress: currentWalletAddress,
-            responseHeaders: Object.fromEntries(usersRes.headers.entries())
-          });
-
-          // Enhanced debugging for API errors
-          console.log('🏛️ Admin dashboard: API ERROR DEBUG:', {
-            url: usersRes.url,
-            status: usersRes.status,
-            statusText: usersRes.statusText,
-            errorBody: errorText,
-            suggestion: usersRes.status === 401 ? 'Authentication failed - check wallet address' :
-              usersRes.status === 403 ? 'Authorization failed - check admin permissions' :
-                usersRes.status === 500 ? 'Server error - check API logs' :
-                  'Unknown error - check network tab'
-          });
-        }
       } catch (error) {
-        console.error('🏛️ Admin dashboard: Error fetching data:', error);
-        // Silent error handling in production
+        // Silent error
       } finally {
         setLoading(false);
       }

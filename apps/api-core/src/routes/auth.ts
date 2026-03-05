@@ -189,7 +189,8 @@ router.post("/login", authLimiter, async (req: Request, res: Response) => {
         });
 
         const isProd = process.env.NODE_ENV === "production";
-        const cookieDomain = process.env.COOKIE_DOMAIN || undefined;
+        // Default to .pandoras.finance in production if not specified
+        const cookieDomain = process.env.COOKIE_DOMAIN || (isProd ? ".pandoras.finance" : undefined);
 
         res.cookie("access_token", tokens.accessToken, {
             httpOnly: true,
@@ -260,7 +261,7 @@ router.post("/refresh", refreshLimiter, async (req: Request, res: Response) => {
         }
 
         const isProd = process.env.NODE_ENV === "production";
-        const cookieDomain = process.env.COOKIE_DOMAIN || undefined;
+        const cookieDomain = process.env.COOKIE_DOMAIN || (isProd ? ".pandoras.finance" : undefined);
 
         res.cookie("access_token", newTokens.accessToken, {
             httpOnly: true,
@@ -307,7 +308,7 @@ router.post("/logout", async (req: Request, res: Response) => {
         }
 
         const isProd = process.env.NODE_ENV === "production";
-        const cookieDomain = process.env.COOKIE_DOMAIN || undefined;
+        const cookieDomain = process.env.COOKIE_DOMAIN || (isProd ? ".pandoras.finance" : undefined);
 
         res.clearCookie("access_token", {
             httpOnly: true,
