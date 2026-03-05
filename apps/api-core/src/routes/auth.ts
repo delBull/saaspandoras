@@ -190,7 +190,7 @@ router.post("/login", authLimiter, async (req: Request, res: Response) => {
         });
 
         const isProd = process.env.NODE_ENV === "production";
-        // Default to .pandoras.finance in production for cross-subdomain compatibility
+        // CRITICAL: Explicitly use .pandoras.finance for production cross-subdomain support
         const cookieDomain = process.env.COOKIE_DOMAIN || (isProd ? ".pandoras.finance" : undefined);
         const cookieOptions: any = {
             httpOnly: true,
@@ -199,6 +199,8 @@ router.post("/login", authLimiter, async (req: Request, res: Response) => {
             domain: cookieDomain,
             path: "/",
         };
+
+        console.log(`🍪 [LOGIN] Setting cookies for domain: ${cookieDomain} | Secure: ${cookieOptions.secure} | isProd: ${isProd}`);
 
         res.cookie("access_token", tokens.accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
         res.cookie("refresh_token", tokens.refreshToken, {

@@ -10,6 +10,14 @@ const app = express();
 // ☁️ Trust Proxy (Railway / Vercel Load Balancers)
 app.set("trust proxy", 1);
 
+// 🔍 DEBUG MIDDLEWARE (Trace Cookies and Origin)
+app.use((req, res, next) => {
+    if (process.env.DEBUG_AUTH === 'true' || process.env.NODE_ENV === 'production') {
+        console.log(`🔍 [DEBUG API] ${req.method} ${req.url} | Origin: ${req.headers.origin} | Has Cookies: ${Object.keys(req.cookies || {}).join(', ')}`);
+    }
+    next();
+});
+
 // 🌐 CORS Configuration (MUST BE FIRST)
 app.use(
     cors({
