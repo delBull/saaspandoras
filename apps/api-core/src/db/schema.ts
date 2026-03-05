@@ -20,6 +20,7 @@ export const users = pgTable("users", {
     walletAddress: varchar("walletAddress", { length: 42 }).unique(),
     telegramId: varchar("telegram_id", { length: 255 }).unique(),
     status: varchar("status", { length: 20 }).default('ACTIVE').notNull(),
+    role: varchar("role", { length: 20 }).default('user').notNull(),
     hasPandorasKey: boolean("hasPandorasKey").default(false).notNull(),
 
     // Timestamps

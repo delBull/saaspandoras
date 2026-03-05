@@ -43,7 +43,7 @@ function useTokenPrices(): TokenPriceState {
 
         // Using local API Proxy to avoid CORS issues
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
         const response = await fetch(
           '/api/prices',
@@ -72,8 +72,8 @@ function useTokenPrices(): TokenPriceState {
 
           const newPrices: TokenPriceState = {
             ETH: data.ethereum?.usd ?? 2500,
-            POL: polPrice, // ✅ Using POL price (new Polygon native token)
-            ARB: data.arbitrum?.usd ?? 0.6, // ✅ ARB token price
+            POL: polPrice,
+            ARB: data.arbitrum?.usd ?? 0.6,
             USDC: data['usd-coin']?.usd ?? 1,
             USDT: data.tether?.usd ?? 1,
             isLoading: false,
@@ -82,33 +82,18 @@ function useTokenPrices(): TokenPriceState {
           };
 
           setPrices(newPrices);
-
-          console.log('✅ Token prices updated successfully:', {
-            ETH: newPrices.ETH,
-            POL: newPrices.POL,
-            ARB: newPrices.ARB,
-            USDC: newPrices.USDC,
-            USDT: newPrices.USDT,
-            lastUpdated: newPrices.lastUpdated,
-          });
         } else {
-          console.warn('⚠️ CoinGecko API returned non-ok status:', response.status, response.statusText);
           throw new Error(`API responded with status: ${response.status}`);
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
-        // Don't log "Failed to fetch" as error - it's usually network related
-        // and we have fallback prices
         if (error instanceof Error && error.name === 'AbortError') {
           console.warn('⚠️ Token price fetch timed out, using default prices');
         } else if (!errorMessage.includes('Failed to fetch')) {
           console.error('❌ Error fetching token prices:', errorMessage);
-        } else {
-          console.warn('⚠️ Network error fetching token prices, using defaults');
         }
 
-        // Set error state but keep previous prices
         setPrices(prev => ({
           ...prev,
           isLoading: false,
@@ -117,11 +102,8 @@ function useTokenPrices(): TokenPriceState {
       }
     };
 
-    // Fetch prices immediately
     void fetchPrices();
-
-    // Set up interval to fetch prices every 30 seconds
-    const interval = setInterval(() => void fetchPrices(), 30000);
+    const interval = setInterval(() => void fetchPrices(), 120000); // 120 seconds
 
     return () => clearInterval(interval);
   }, []);
