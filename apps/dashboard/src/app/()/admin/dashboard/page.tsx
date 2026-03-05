@@ -16,6 +16,8 @@ import { ProjectTableView } from "@/components/ProjectTableView";
 import { ProjectCardsView } from "@/components/ProjectCardsView";
 import { ShortlinksAnalyticsTab } from "@/components/admin/ShortlinksAnalyticsTab";
 
+import { waitForSession } from "@/lib/session-lock";
+
 // NOTE: Using 'draft' and 'incomplete' in UI but DB ENUM needs migration to include these values
 
 // Datos de ejemplo para swaps (puedes conectar esto a tu API real después)
@@ -68,27 +70,11 @@ export default function AdminDashboardPage() {
   // Function to refresh all data
   const refreshData = async () => {
     try {
-      let currentWalletAddress = walletAddress;
-      if (!currentWalletAddress && typeof window !== 'undefined') {
-        const sessionData = localStorage.getItem('wallet-session');
-        if (sessionData) {
-          const parsedSession = JSON.parse(sessionData) as any;
-          currentWalletAddress = parsedSession.address?.toLowerCase();
-        }
-      }
-
-      const headers = {
-        'Content-Type': 'application/json',
-        ...(currentWalletAddress && {
-          'x-thirdweb-address': currentWalletAddress,
-          'x-wallet-address': currentWalletAddress,
-        }),
-      };
-
+      await waitForSession(); // 🛡️ Evita disparos ciegos al recargar
       const [projectsRes, adminsRes, usersRes] = await Promise.all([
-        fetch('/api/admin/projects', { headers }),
-        fetch('/api/admin/administrators', { headers }),
-        fetch('/api/admin/users', { headers })
+        fetch('/api/admin/projects'),
+        fetch('/api/admin/administrators'),
+        fetch('/api/admin/users')
       ]);
 
       if (projectsRes.ok) setProjects(await projectsRes.json());
@@ -113,7 +99,7 @@ export default function AdminDashboardPage() {
   // Use global featured projects hook
   const { toggleFeatured, isFeatured } = useFeaturedProjects();
 
-  // �‍♂️ IMPORTANT: This page requires CONFIRMED admin status, not tentative
+  // ‍♂️ IMPORTANT: This page requires CONFIRMED admin status, not tentative
   // Sidebars can show based on initial server props, but this endpoint requires API verification
 
   const { user, isLoading: authLoading } = useAuth();
@@ -139,16 +125,10 @@ export default function AdminDashboardPage() {
         // Store wallet address for use in hooks
         setWalletAddress(address);
 
-        const requestHeaders: Record<string, string> = {
-          'Content-Type': 'application/json',
-          'x-thirdweb-address': address,
-          'x-wallet-address': address,
-          'x-user-address': address,
-        };
+        await waitForSession(); // 🛡️ Garantiza que cookies cross-domain estén establecidas
 
-        const response = await fetch('/api/admin/verify', {
-          headers: requestHeaders,
-        });
+        // 🔥 Removidos los headers manuales. La API usará getAuth() y leerá las cookies.
+        const response = await fetch('/api/admin/verify');
 
         if (!response.ok) {
           setAuthError(`Verificación fallida: ${response.status}`);
@@ -187,28 +167,12 @@ export default function AdminDashboardPage() {
 
     const fetchData = async () => {
       try {
-        let currentWalletAddress = null;
-        if (typeof window !== 'undefined') {
-          const sessionData = localStorage.getItem('wallet-session');
-          if (sessionData) {
-            const parsedSession = JSON.parse(sessionData) as any;
-            currentWalletAddress = parsedSession.address?.toLowerCase();
-          }
-        }
-
-        const headers = {
-          'Content-Type': 'application/json',
-          ...(currentWalletAddress && {
-            'x-thirdweb-address': currentWalletAddress,
-            'x-wallet-address': currentWalletAddress,
-          }),
-        };
-
         const fetchWithTimeout = async (url: string, timeout = 10000) => {
           const controller = new AbortController();
           const id = setTimeout(() => controller.abort(), timeout);
           try {
-            const response = await fetch(url, { ...{ headers }, signal: controller.signal });
+            // 🔥 Request limpio sin Headers manuales para evitar preflights OPTIONS
+            const response = await fetch(url, { signal: controller.signal });
             clearTimeout(id);
             return response;
           } catch (e) {
@@ -218,16 +182,18 @@ export default function AdminDashboardPage() {
           }
         };
 
+        await waitForSession(); // 🛡️ Global Hydration Lock
+
         const [projectsRes, adminsRes, usersRes] = await Promise.all([
           fetchWithTimeout('/api/admin/projects'),
           fetchWithTimeout('/api/admin/administrators'),
           fetchWithTimeout('/api/admin/users')
         ]);
 
-        // Si el backend rechaza la petición (ej. sesión social login falló), mostrar error y quitar admin
+        // Si el backend rechaza la petición, mostrar error y quitar admin
         if (projectsRes.status === 401 || projectsRes.status === 403) {
           console.warn(`⚠️ Admin dashboard: Backend rejected access with status ${projectsRes.status}`);
-          setAuthError(`Sesión del servidor caducada o sin permisos de escritura (Error ${projectsRes.status}). Por favor, vuelve a iniciar sesión.`);
+          setAuthError(`Sesión del servidor caducada o sin permisos de lectura (Error ${projectsRes.status}).`);
           setIsAdmin(false);
           setLoading(false);
           return;
