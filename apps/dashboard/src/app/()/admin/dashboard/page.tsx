@@ -184,15 +184,8 @@ export default function AdminDashboardPage() {
           }
         }
 
-        // ⚡ OPTIMISTIC CHECK: If wallet is Super Admin, bypass API check for instant hydration
-        const SUPER_ADMIN = '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9';
-        if (walletAddress?.toLowerCase() === SUPER_ADMIN) {
-          console.log('🏛️ Admin dashboard: ⚡ Optimistic Super Admin bypass triggered');
-          setWalletAddress(walletAddress);
-          setIsAdmin(true);
-          setAuthError(null);
-          return;
-        }
+        // 🚫 REMOVED: Optimistic client-side Super Admin bypass. 
+        // Admin hydration must strictly await backend session validation to prevent race conditions.
 
         if (!walletAddress) {
           setAuthError('No se pudo obtener dirección de wallet');
@@ -300,6 +293,15 @@ export default function AdminDashboardPage() {
           fetchWithTimeout('/api/admin/administrators'),
           fetchWithTimeout('/api/admin/users')
         ]);
+
+        // Si el backend rechaza la petición (ej. sesión social login falló), mostrar error y quitar admin
+        if (projectsRes.status === 401 || projectsRes.status === 403) {
+          console.warn(`⚠️ Admin dashboard: Backend rejected access with status ${projectsRes.status}`);
+          setAuthError(`Sesión del servidor caducada o sin permisos de escritura (Error ${projectsRes.status}). Por favor, vuelve a iniciar sesión.`);
+          setIsAdmin(false);
+          setLoading(false);
+          return;
+        }
 
         if (projectsRes.ok) setProjects(await projectsRes.json());
         if (adminsRes.ok) {

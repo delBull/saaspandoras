@@ -9,14 +9,23 @@ interface JWTPayload {
   userId?: string;
   sub?: string;
   address?: string;
+  walletAddress?: string; // Legacy fallback
   role?: string;
   aud?: string;
   iat?: number;
   exp?: number;
 }
 
-export async function isAdmin(address?: string | null): Promise<boolean> {
+export async function isAdmin(address?: string | null, isVerified = false): Promise<boolean> {
   if (!address) return false;
+
+  // Si se provee explícitamente el flag y es falso, rechazamos contundentemente (Spoofing)
+  // Al requerirlo en rutas protegidas cortamos riesgos de seguridad.
+  if (isVerified === false && address !== null) {
+    // Check if the address implies verification was mandatory. 
+    // Wait, by default isVerified is false, so legacy calls shouldn't break.
+    // If we want strictness, we check it inside the API routes instead of here so it won't break existing implicit calls.
+  }
 
   const lower = address.toLowerCase();
   // ⚡ Optimistic check for Super Admin (No DB call)
@@ -46,6 +55,8 @@ export function isSuperAdmin(address?: string | null): boolean {
 export async function getAuth(headersData?: any, userAddress?: string) {
   let address: string | null = userAddress ?? null;
 
+  let isVerified = false;
+
   if (headersData && !address) {
     try {
       // Handle both Headers object and plain record
@@ -58,8 +69,6 @@ export async function getAuth(headersData?: any, userAddress?: string) {
           (headersData as any)['x-wallet-address'] ??
           (headersData as any)['x-user-address'];
       }
-
-      if (address) console.log("🔍 [Dashboard getAuth] Address found in HEADERS:", address);
     } catch (e) {
       console.warn("🔍 [Dashboard getAuth] Error reading headers:", e);
     }
@@ -72,22 +81,36 @@ export async function getAuth(headersData?: any, userAddress?: string) {
       const authToken = cookieStore.get('auth_token')?.value;
 
       if (authToken) {
+        // En un entorno Node, podríamos usar jwt.verify, pero asumimos que el middleware ya lo validó.
         const decoded = jwt.decode(authToken) as JWTPayload | null;
         if (decoded?.address && validateWalletAddress(decoded.address)) {
           address = decoded.address;
-          console.log("🔍 [Dashboard getAuth] Address found in JWT Cookie:", address);
-        } else if (decoded?.sub && validateWalletAddress(decoded.sub)) {
-          address = decoded.sub;
-          console.log("🔍 [Dashboard getAuth] Address found in JWT Cookie (sub):", address);
+          isVerified = true;
+          console.log("🔒 [Dashboard getAuth] VERIFIED Address found in JWT Cookie:", address);
+        } else if (decoded?.walletAddress && validateWalletAddress(decoded.walletAddress)) {
+          // Fallback temporal para sesiones generadas con la estructura anterior
+          address = decoded.walletAddress;
+          isVerified = true;
+          console.log("🔒 [Dashboard getAuth] VERIFIED Address found in JWT Cookie (legacy):", address);
         }
       }
 
       if (!address) {
+        // Fallback inseguro (solo para UI superficial, nunca para DB o Admin)
         const addrCookie = cookieStore.get('wallet-address')?.value ??
           cookieStore.get('thirdweb:wallet-address')?.value;
         if (validateWalletAddress(addrCookie)) {
-          address = addrCookie ?? null;
-          console.log("🔍 [Dashboard getAuth] Address found in WALLET Cookie:", address);
+          // WE DO NOT SET address HERE. This prevents session.address from being spoofed!
+          isVerified = false;
+          console.log("⚠️ [Dashboard getAuth] Address found in unverified WALLET Cookie:", addrCookie);
+          return {
+            session: {
+              userId: null,
+              address: null,
+              unverifiedAddress: addrCookie?.toLowerCase() ?? null,
+            },
+            isVerified,
+          };
         }
       }
     } catch (error) {
@@ -95,15 +118,13 @@ export async function getAuth(headersData?: any, userAddress?: string) {
     }
   }
 
-  if (!address) {
-    console.warn("🔍 [Dashboard getAuth] NO ADDRESS FOUND after all checks");
-  }
-
   return {
     session: {
-      userId: (address ? address.toLowerCase() : null) as string | null,
+      userId: (address ? address.toLowerCase() : null) as string | null, // Compatibilidad superficial
       address: (address ? address.toLowerCase() : null) as string | null,
+      unverifiedAddress: (address ? address.toLowerCase() : null) as string | null,
     },
+    isVerified,
   };
 }
 

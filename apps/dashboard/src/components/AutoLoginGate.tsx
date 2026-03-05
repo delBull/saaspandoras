@@ -17,10 +17,39 @@ export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGa
   const pathname = usePathname();
   const [isClientReady, setIsClientReady] = useState(false);
 
+  // Check explicit logout flag
+  const isLoggedOut = typeof window !== 'undefined' && localStorage.getItem('wallet-logged-out') === 'true';
+
   // Ensure we're fully hydrated on client side
   useEffect(() => {
     setIsClientReady(true);
   }, []);
+
+  // ❌ Redirect guests away from protected routes automatically
+  // This is safely declared at the top level to obey Rules of Hooks
+  useEffect(() => {
+    if (!isClientReady) return;
+
+    // Si llegamos a verificar sesión de último recurso
+    const isGuest = isLoggedOut || (!account?.address && !savedWalletAddress && !serverSession?.hasSession);
+
+    if (isGuest && pathname !== "/") {
+      // Verificación final con el servidor en caso de desincronización
+      fetch('/api/auth/session', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      })
+        .then(response => response.json())
+        .then((data: { hasSession?: boolean }) => {
+          if (!data.hasSession) {
+            router.push("/"); // Invitarlos a login retornándolos al home
+          }
+        })
+        .catch(() => {
+          router.push("/");
+        });
+    }
+  }, [isClientReady, account?.address, savedWalletAddress, serverSession, isLoggedOut, pathname, router]);
 
   // 🟢 SIEMPRE permitir acceso a la Home Page ("/") para marketing/landing
   if (pathname === "/") {
@@ -39,9 +68,6 @@ export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGa
     );
   }
 
-  // Check explicit logout flag
-  const isLoggedOut = typeof window !== 'undefined' && localStorage.getItem('wallet-logged-out') === 'true';
-
   if (isLoggedOut) {
     // If explicit logout is set, we ignore server session and force clean state
     // Ensure cookies are cleared to prevent infinite loop
@@ -49,22 +75,8 @@ export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGa
       document.cookie = "wallet-address=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
       document.cookie = "thirdweb:wallet-address=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     }
-
-    // If we are connecting (user action), let it pass?
-    // No, if isConnecting is true, user might have just clicked "Connect". 
-    // BUT we clear the flag on "Connect" click. So isLoggedOut should be false if connecting manually.
-    // So if isLoggedOut is true, we block.
-
-    // Fallback to home if no children should be shown
-    if (pathname !== "/") {
-      // Verify if we should redirect or just render children (unauthenticated)
-      // Dashboard routes usually require auth.
-      // But preventing loop is priority.
-      // We'll let it fall through to the final redirect logic.
-    }
   }
 
-  // 🟢 Esperar si Thirdweb está intentando conectar (evita race condition con localStorage)
   // 🟢 Esperar si Thirdweb está intentando conectar (evita race condition con localStorage)
   if (isConnecting) {
     return (
@@ -109,32 +121,8 @@ export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGa
       document.cookie = `wallet-address=${savedWalletAddress}; path=/; max-age=86400; samesite=strict`;
     }
 
-    // Try to verify session with server using saved wallet
     if (typeof window !== 'undefined') {
-      fetch('/api/auth/session', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-thirdweb-address': savedWalletAddress,
-          'x-wallet-address': savedWalletAddress,
-          'x-user-address': savedWalletAddress,
-        }
-      })
-        .then(response => response.json())
-        .then((data: { hasSession?: boolean; address?: string }) => {
-          if (data.hasSession && data.address) {
-            // Session is valid, reload to sync with server
-            window.location.reload();
-            return;
-          } else {
-            // No valid session, redirect to home
-            router.push("/");
-          }
-        })
-        .catch(() => {
-          router.push("/");
-        });
-
+      // (La lógica del fetch directo en el cliente se eliminó de aquí ya que el hook superior maneja la redirección final)
       return (
         <div className="flex items-center justify-center min-h-screen text-gray-400">
           <div className="text-center">
@@ -163,34 +151,15 @@ export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGa
     return <>{fallback}</>;
   }
 
-  // ❌ Final: intentar verificar sesión en servidor antes de redirigir
-  if (typeof window !== 'undefined') {
-    // En el cliente, intentar verificar sesión antes de redirigir
-    fetch('/api/auth/session', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    })
-      .then(response => response.json())
-      .then((data: { hasSession?: boolean }) => {
-        if (data.hasSession) {
-          // Si hay sesión en servidor, recargar la página para sincronizar
-          window.location.reload();
-          return;
-        } else {
-          // Si no hay sesión, redirigir a login
-          router.push("/");
-        }
-      })
-      .catch(() => {
-        // En caso de error, redirigir a login
-        router.push("/");
-      });
-  } else {
-    // En servidor, redirigir directamente
-    router.push("/");
-  }
-
-  return null;
+  // Mientras ocurre la redirección o verificación final del hook superior, mostramos un estado de carga
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-zinc-950">
+      <div className="text-center">
+        <div className="animate-pulse flex flex-col items-center space-y-4">
+          <div className="h-4 w-48 bg-gray-700 rounded"></div>
+          <div className="h-3 w-32 bg-gray-800 rounded"></div>
+        </div>
+      </div>
+    </div>
+  );
 }
