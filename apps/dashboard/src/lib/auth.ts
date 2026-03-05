@@ -53,13 +53,20 @@ export async function getAuth(headers?: any, userAddress?: string) {
 
   if (headers && !address) {
     try {
-      address = headers.get('x-thirdweb-address') ??
-        headers.get('x-wallet-address') ??
-        headers.get('x-user-address');
+      // Handle both Headers object and plain record
+      if (typeof (headers as any).get === 'function') {
+        address = (headers as any).get('x-thirdweb-address') ??
+          (headers as any).get('x-wallet-address') ??
+          (headers as any).get('x-user-address');
+      } else {
+        address = (headers as any)['x-thirdweb-address'] ??
+          (headers as any)['x-wallet-address'] ??
+          (headers as any)['x-user-address'];
+      }
 
       if (address) console.log("🔍 [Dashboard getAuth] Address found in HEADERS:", address);
     } catch (e) {
-      console.warn("🔍 [Dashboard getAuth] Could not read headers, likely not a Headers object");
+      console.warn("🔍 [Dashboard getAuth] Error reading headers:", e);
     }
   }
 
