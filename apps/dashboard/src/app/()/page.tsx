@@ -362,28 +362,29 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const query = account?.address ? `?wallet=${account.address}` : '';
-        const res = await fetch(`/api/home-data${query}`);
-        if (res.ok) {
-          const json = await res.json();
-          // Use DB projects if available, otherwise FALLBACK
-          const rawProjects = json.featuredProjects || [];
-          setHomeData({
-            featuredProjects: rawProjects.length > 0 ? rawProjects : FALLBACK_PROJECTS,
-            accessCards: json.accessCards || [],
-            artifacts: json.artifacts || [],
-            notifications: json.notifications || [], // Add notifications
-            loading: false
-          });
-        } else {
-          setHomeData(prev => ({
-            ...prev,
-            featuredProjects: FALLBACK_PROJECTS,
-            loading: false
-          }));
-        }
+        // 1. Fetch Global Data (Heavily Cached via Vercel Edge CDN)
+        const globalPromise = fetch(`/api/home-data/global`).then(res => res.json());
+
+        // 2. Fetch User Data ONLY if wallet is connected (Lightweight)
+        const userPromise = account?.address
+          ? fetch(`/api/home-data/user?wallet=${account.address}`).then(res => res.json())
+          : Promise.resolve({ notifications: [] });
+
+        const [globalData, userData] = await Promise.all([globalPromise, userPromise]);
+
+        // Use DB projects if available, otherwise FALLBACK
+        const rawProjects = globalData.featuredProjects || [];
+
+        setHomeData({
+          featuredProjects: rawProjects.length > 0 ? rawProjects : FALLBACK_PROJECTS,
+          accessCards: globalData.accessCards || [],
+          artifacts: globalData.artifacts || [],
+          notifications: userData.notifications || [],
+          loading: false
+        });
+
       } catch (e) {
-        console.error("Failed to fetch data", e);
+        console.error("Failed to fetch home data", e);
         setHomeData(prev => ({
           ...prev,
           featuredProjects: FALLBACK_PROJECTS,
