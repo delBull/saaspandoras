@@ -1,4 +1,3 @@
-
 "use client";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -9,6 +8,7 @@ import { useToast } from "@saasfly/ui/use-toast";
 import { config } from "@/config";
 import { client } from "@/lib/thirdweb-client";
 import { useEOAIdentity } from "@/hooks/useEOAIdentity";
+import { hydrateSession, resetSessionLock } from "@/lib/session-lock";
 
 interface User {
     id: string;
@@ -109,6 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (e) {
             setUser(null);
         } finally {
+            hydrateSession();
             setIsLoading(false);
         }
     };
@@ -200,11 +201,13 @@ ${executionAddress !== identityAddress ? `\nExecution Address: ${executionAddres
             console.error(e);
             toast({ title: "Login failed", variant: "destructive" });
         } finally {
+            hydrateSession();
             setIsLoading(false);
         }
     };
 
     const logout = async () => {
+        resetSessionLock();
         setUser(null);
         await fetch(`${API_URL}/auth/logout`, { method: "POST", credentials: "include" });
     };
