@@ -51,6 +51,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Check session when account changes
     useEffect(() => {
         console.log('[AuthProvider] Account/User changed:', { hasAccount: !!account, hasUser: !!user });
+
+        // 🛡️ Previene loops si todavía estamos cargando el estado inicial
+        if (isLoading) return;
+
         if (account && !user) {
             // User connected wallet but has no session -> Auto Login (SIWE)
             const hasRequestedLogin = loginRequested.current[account.address];
@@ -69,11 +73,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(null);
             loginRequested.current = {}; // Clear prevention flags
         }
-    }, [account, user]);
+    }, [account, user, isLoading]);
 
     const checkSession = async () => {
+        // 🛑 Optimización crítica: No bloquear el render inicial buscando sesión a usuarios desconectados
+        if (!account) {
+            setIsLoading(false);
+            return;
+        }
+
         try {
             const res = await fetch(`${API_URL}/auth/me`, { credentials: "include" });
+
+            if (res.status === 401) {
+                setUser(null);
+                return;
+            }
+
             const data = await res.json();
 
             // 🔥 El nuevo payload es { user: { id, address, ... } }
@@ -173,6 +189,8 @@ ${executionAddress !== identityAddress ? `\nExecution Address: ${executionAddres
             if (data.user) {
                 setUser(data.user);
             } else {
+                // 🛑 Fix crítico: Dar tiempo al navegador de registrar la cookie cross-domain (SameSite=Lax/None)
+                await new Promise(resolve => setTimeout(resolve, 200));
                 // Fallback for transition
                 await checkSession();
             }
