@@ -109,9 +109,9 @@ export async function GET() {
 
         return NextResponse.json(result, {
             headers: {
-                // 🔥 THE MAGIC: Cache at Vercel Edge for 2 mins, serve stale while revalidating for 5 mins
-                "Cache-Control": "public, s-maxage=120, stale-while-revalidate=300",
-                "CDN-Cache-Control": "public, s-maxage=120, stale-while-revalidate=300"
+                // 🔥 HOBBY PLAN FIX: Cache for 1 hour, serve stale for up to 24 hours while Vercel auto-regenerates in background
+                "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+                "CDN-Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400"
             }
         });
 
