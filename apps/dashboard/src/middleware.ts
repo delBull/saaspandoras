@@ -8,10 +8,8 @@ const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  console.log("🛣️ Middleware hit:", pathname);
 
   // 0. Global OPTIONS Handling (CORS Preflight)
-  // MUST stay at the top to avoid auth/rate-limit blocks
   if (request.method === "OPTIONS") {
     return new NextResponse(null, {
       status: 204,
@@ -29,10 +27,9 @@ export async function middleware(request: NextRequest) {
     const walletCookie = request.cookies.get('wallet-address') ||
       request.cookies.get('thirdweb:wallet-address') ||
       request.cookies.get('x-wallet-address') ||
-      request.cookies.get('auth_token'); // Support Unified Identity Token
+      request.cookies.get('auth_token');
 
     if (!walletCookie?.value) {
-      console.log(`🛡️ Middleware: Blocking unauthorized access to ${pathname} (No Wallet Cookie or Auth Token)`);
       return NextResponse.redirect(new URL("/", request.url));
     }
   }
@@ -46,33 +43,21 @@ export async function middleware(request: NextRequest) {
     }
 
     try {
-
       const publicKeyPem = process.env.JWT_PUBLIC_KEY;
       if (!publicKeyPem) {
-        console.error("❌ Middleware: JWT_PUBLIC_KEY not set");
         return NextResponse.redirect(new URL("/", request.url));
       }
 
-      // Import Public Key (SPKI) directly from PEM string
-      // PEM strings should NOT be processed with atob()
       const publicKey = await importSPKI(publicKeyPem, 'RS256');
-
       const { payload } = await jwtVerify(token, publicKey, {
         algorithms: ['RS256'],
       });
 
-      // Enforce JWT Version (Kill Switch)
       const EXPECTED_VERSION = Number(process.env.JWT_VERSION || 1);
       if (Number(payload.v) !== EXPECTED_VERSION) {
-        console.warn(`🔒 Middleware: Token version mismatch (Got ${String(payload.v)}, Expected ${EXPECTED_VERSION})`);
         return NextResponse.redirect(new URL("/", request.url));
       }
-
-      // Valid Token
-      // Optional: Check expiration explicitly if needed, but jwtVerify does it.
-
     } catch (error) {
-      console.error("❌ Middleware: Invalid Token", error);
       return NextResponse.redirect(new URL("/", request.url));
     }
   }
@@ -102,7 +87,6 @@ export async function middleware(request: NextRequest) {
       if (now > current.resetTime) {
         rateLimitMap.set(key, { count: 1, resetTime: now + limitConfig.windowMs });
       } else if (current.count >= limitConfig.requests) {
-        console.warn(`🔥 [RATE_LIMIT] IP ${ip} exceeded limit on ${pathname}`);
         return NextResponse.json(
           { error: 'Rate limit exceeded' },
           { status: 429, headers: { 'Retry-After': Math.ceil((current.resetTime - now) / 1000).toString() } }
@@ -116,28 +100,21 @@ export async function middleware(request: NextRequest) {
 
     if (rateLimitMap.size > 5000) rateLimitMap.clear();
 
-    const securityHeaders = {
-      'X-Content-Type-Options': 'nosniff',
-      'X-Frame-Options': 'DENY',
-      'X-XSS-Protection': '1; mode=block',
-      'Referrer-Policy': 'strict-origin-when-cross-origin',
-    } as Record<string, string>;
+    const response = NextResponse.next();
+
+    response.headers.set('X-Content-Type-Options', 'nosniff');
+    response.headers.set('X-Frame-Options', 'DENY');
+    response.headers.set('X-XSS-Protection', '1; mode=block');
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
     if (pathname.startsWith('/api/whatsapp/')) {
-      securityHeaders['Access-Control-Allow-Origin'] = '*';
-      securityHeaders['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
-      securityHeaders['Access-Control-Allow-Headers'] = 'Content-Type, Authorization';
+      response.headers.set('Access-Control-Allow-Origin', '*');
+      response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     }
 
-    return NextResponse.next({
-      headers: securityHeaders,
-    });
+    return response;
   }
-
-  // 4. Global Security Headers -> MOVED TO next.config.mjs to avoid conflicts
-  // const response = NextResponse.next();
-  // response.headers.set('Cross-Origin-Opener-Policy', 'unsafe-none');
-  // response.headers.set('Cross-Origin-Embedder-Policy', 'unsafe-none');
 
   return NextResponse.next();
 }
