@@ -233,7 +233,7 @@ export class GovernanceIndexerService {
      * Detección de Reorgs (Block Pinning)
      * Verifica que los blockHashes en DB coincidan con la cadena.
      */
-    public async checkAndFixReorgs(governorAddress: string, chainId: number, depth: number = 20) {
+    public async checkAndFixReorgs(governorAddress: string, chainId: number, depth = 20) {
         const latestBlock = await this.provider.getBlockNumber();
         const startCheck = latestBlock - depth;
 
