@@ -12,8 +12,11 @@ export function getProvider() {
             console.error("❌ Missing RPC_URL environment variable");
             // Fallback to a default if absolutely necessary, or let it fail
         }
-        provider = new ethers.providers.JsonRpcProvider(rpcUrl);
-        console.log("🔌 RPC Provider singleton initialized");
+        provider = new ethers.providers.JsonRpcProvider({
+            url: rpcUrl as string,
+            timeout: 5000, // ⚡ 5s strict timeout to prevent Vercel hangs
+        });
+        console.log("🔌 RPC Provider singleton initialized with 5s timeout");
     }
     return provider;
 }
