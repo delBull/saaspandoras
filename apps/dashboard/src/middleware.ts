@@ -30,8 +30,8 @@ export async function middleware(request: NextRequest) {
       request.cookies.get('auth_token');
 
     if (!walletCookie?.value) {
-      // Allow request to proceed to handle auth client-side via React
-      return NextResponse.next();
+      // 🔒 Server-Side Redirect: Avoid client-side React flickers
+      return NextResponse.redirect(new URL("/", request.url));
     }
   }
 
@@ -54,7 +54,7 @@ export async function middleware(request: NextRequest) {
         algorithms: ['RS256'],
       });
 
-      const EXPECTED_VERSION = Number(process.env.JWT_VERSION || 1);
+      const EXPECTED_VERSION = Number(process.env.JWT_VERSION || 2);
       if (Number(payload.v) !== EXPECTED_VERSION) {
         return NextResponse.redirect(new URL("/", request.url));
       }
@@ -71,11 +71,20 @@ export async function middleware(request: NextRequest) {
     const now = Date.now();
 
     const rateLimits = {
-      '/api/whatsapp/webhook': { requests: 5000, windowMs: 60 * 60 * 1000 },
-      '/api/whatsapp/preapply': { requests: 5000, windowMs: 60 * 60 * 1000 },
+      // 🛡️ Strict Auth Rate Limiting (Brute-force protection)
+      '/api/auth/login': { requests: 15, windowMs: 60 * 1000 },
+      '/api/auth/link-wallet': { requests: 15, windowMs: 60 * 1000 },
+      '/api/auth/telegram': { requests: 15, windowMs: 60 * 1000 },
+      '/api/auth': { requests: 60, windowMs: 60 * 1000 },
+
+      // 🛡️ Admin Rate Limiting
       '/api/admin/whatsapp/multi-flow': { requests: 30, windowMs: 5 * 60 * 1000 },
       '/api/admin/whatsapp-preapply': { requests: 100, windowMs: 15 * 60 * 1000 },
-      '/api/auth/session': { requests: 300, windowMs: 5 * 60 * 1000 },
+      '/api/admin': { requests: 150, windowMs: 60 * 1000 },
+
+      // 📱 Legacy Webhook Limits
+      '/api/whatsapp/webhook': { requests: 5000, windowMs: 60 * 60 * 1000 },
+      '/api/whatsapp/preapply': { requests: 5000, windowMs: 60 * 60 * 1000 },
       default: { requests: 200, windowMs: 15 * 60 * 1000 },
     };
 
@@ -128,13 +137,8 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - images/ (public images)
-     */
-    '/((?!_next/static|_next/image|favicon.ico|images/).*)',
+    "/admin/:path*",
+    "/dashboard/:path*",
+    "/api/:path*"
   ],
 };

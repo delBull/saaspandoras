@@ -242,10 +242,11 @@ export async function POST(request: Request) {
         const token = jwt.sign({
             sub: userId,
             sid: sid,
-            walletAddress: walletAddress,
+            address: walletAddress,
             scope: 'web',
             hasAccess,
-            v: 1,
+            chainId: config.chain.id,
+            v: 2,
             iat: Math.floor(Date.now() / 1000),
         }, secret, { expiresIn: '24h' });
 

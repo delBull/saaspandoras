@@ -50,19 +50,24 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
   // AuthProvider handles auto-SIWE; NFTGate just shows feedback while it happens.
   if (account && !user) {
     return (
-      <div className="flex flex-col items-center justify-center h-full min-h-[50vh] space-y-4">
-        <Loader2 className="w-8 h-8 animate-spin text-lime-400" />
+      <div className="flex flex-col items-center justify-center h-full min-h-[50vh] space-y-4 p-4 text-center">
+        {isAuthLoading && <Loader2 className="w-8 h-8 animate-spin text-lime-400" />}
         <p className="text-gray-300 text-sm">
-          {isAuthLoading ? 'Verificando acceso...' : 'Iniciando sesión...'}
+          {isAuthLoading ? 'Verificando acceso...' : 'Autenticación requerida o fallida.'}
         </p>
         {/* Fallback manual button only if not loading anymore (auto-login may have failed) */}
         {!isAuthLoading && (
-          <button
-            onClick={() => login()}
-            className="mt-2 text-xs text-lime-400 underline hover:text-lime-300 transition"
-          >
-            Click aquí si nada ocurre
-          </button>
+          <div className="flex flex-col items-center space-y-3 mt-4">
+            <span className="text-xs text-red-400 max-w-xs">
+              Hubo un problema al generar tu sesión. Puede ser un error temporal del proveedor (ej. Thirdweb/Red).
+            </span>
+            <button
+              onClick={() => login()}
+              className="px-4 py-2 text-sm font-semibold bg-zinc-800 text-white border border-zinc-700 rounded-md hover:bg-zinc-700 transition"
+            >
+              Reintentar inicio de sesión
+            </button>
+          </div>
         )}
       </div>
     );

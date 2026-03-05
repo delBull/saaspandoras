@@ -18,8 +18,14 @@ export async function GET(_request: Request) {
     console.log(`🔍 [${requestId}] Admin API: Starting GET /api/admin/projects...`);
 
     // Check admin authentication
-    const { session } = await getAuth(await headers());
-    const userIsAdmin = await isAdmin(session?.address ?? session?.userId);
+    const { session, isVerified } = await getAuth(await headers());
+
+    if (!isVerified) {
+      console.log('❌ Admin API: Access denied (Unverified identity) for user:', session?.address ?? session?.userId);
+      return NextResponse.json({ message: "No autorizado" }, { status: 401 });
+    }
+
+    const userIsAdmin = await isAdmin(session?.address ?? session?.userId, isVerified);
 
     if (!userIsAdmin) {
       console.log('❌ Admin API: Access denied for user:', session?.address ?? session?.userId);

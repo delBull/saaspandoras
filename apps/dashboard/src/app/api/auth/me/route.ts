@@ -1,73 +1,56 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
-import { db } from "@/db";
-import { users, sessions } from "@/db/schema";
-import { eq, and, isNull, gt } from "drizzle-orm";
 
+// ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para evitar errores con jsonwebtoken
 export const runtime = "nodejs";
+
+const JWT_SECRET = process.env.JWT_SECRET || "super-secret-dev-key";
+
+interface JWTPayload {
+    userId?: string;
+    sub?: string;
+    address?: string;
+    walletAddress?: string; // Legacy fallback
+    role?: string;
+    scope?: string;
+    hasAccess?: boolean;
+    iat?: number;
+    exp?: number;
+}
 
 export async function GET() {
     try {
-        const token = (await cookies()).get("auth_token")?.value;
+        const cookieStore = await cookies();
+        const token = cookieStore.get("auth_token")?.value;
 
         if (!token) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            return NextResponse.json({ authenticated: false, error: "No session token found" }, { status: 401 });
         }
 
-        const JWT_SECRET = process.env.JWT_SECRET || "super-secret-dev-key";
-        const decoded = jwt.verify(token, JWT_SECRET) as any;
-
-        const userId = decoded.sub;
-        const sid = decoded.sid;
-
-        // 1. Validate User
-        const user = await db.query.users.findFirst({
-            where: eq(users.id, userId)
-        });
-
-        if (!user) {
-            return NextResponse.json({ error: "User not found" }, { status: 401 });
+        let verified: JWTPayload;
+        try {
+            verified = jwt.verify(token, JWT_SECRET) as JWTPayload;
+        } catch (e) {
+            return NextResponse.json({ authenticated: false, error: "Invalid or expired session" }, { status: 401 });
         }
 
-        // Enforcement: Check status (ACTIVE, FROZEN, etc.)
-        if (user.status !== 'ACTIVE') {
-            return NextResponse.json({
-                error: "Identity frozen or in recovery",
-                status: user.status
-            }, { status: 403 });
-        }
-
-        // 2. Validate Session (sid) - Architectural Hardening
-        if (sid) {
-            const session = await db.query.sessions.findFirst({
-                where: and(
-                    eq(sessions.id, sid),
-                    isNull(sessions.revokedAt),
-                    gt(sessions.expiresAt, new Date())
-                )
-            });
-
-            if (!session) {
-                console.warn(`⚠️ Revoked or expired session attempted: ${sid}`);
-                return NextResponse.json({ error: "Session revoked" }, { status: 401 });
-            }
-        }
+        const address = verified.address || verified.walletAddress || verified.sub;
 
         return NextResponse.json({
+            authenticated: true,
             user: {
-                id: user.id,
-                address: user.walletAddress,
-                telegramId: user.telegramId,
-                name: user.name,
-                image: user.image,
-                hasAccess: decoded.hasAccess || user.hasPandorasKey,
-                status: user.status
+                id: verified.sub || verified.userId,
+                address: address,
+                role: verified.role || "user",
+                scope: verified.scope,
+                hasAccess: verified.hasAccess || false,
+                expiresAt: verified.exp ? new Date(verified.exp * 1000).toISOString() : null,
             }
         });
 
     } catch (error) {
-        console.error("Auth error:", error);
-        return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+        console.error("❌ Auth Me Error:", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }

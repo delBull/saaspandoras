@@ -94,7 +94,7 @@ export async function POST(request: Request) {
         // 6. Refresh Session (optional: add walletAddress to claims)
         const newToken = jwt.sign({
             ...verified,
-            walletAddress: walletAddress,
+            address: walletAddress,
             iat: Math.floor(Date.now() / 1000),
         }, JWT_SECRET, { expiresIn: '24h' });
 
