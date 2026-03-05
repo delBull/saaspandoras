@@ -13,10 +13,10 @@ export function getProvider() {
             // Fallback to a default if absolutely necessary, or let it fail
         }
         provider = new ethers.providers.JsonRpcProvider({
-            url: rpcUrl as string,
-            timeout: 5000, // ⚡ 5s strict timeout to prevent Vercel hangs
+            url: rpcUrl!,
+            timeout: 4000, // ⚡ 4s strict timeout to prevent Vercel hangs
         });
-        console.log("🔌 RPC Provider singleton initialized with 5s timeout");
+        console.log("🔌 RPC Provider singleton initialized with 4s timeout");
     }
     return provider;
 }
