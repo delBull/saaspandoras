@@ -291,7 +291,7 @@ export default function AdminDashboardPage() {
           } catch (e) {
             clearTimeout(id);
             console.warn(`⚠️ Fetch timeout or error for ${url}:`, e);
-            return { ok: false, status: 408, json: async () => ({}) } as any;
+            return { ok: false, status: 408, json: () => Promise.resolve({}) } as any;
           }
         };
 

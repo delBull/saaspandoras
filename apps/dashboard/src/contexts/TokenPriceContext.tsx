@@ -103,7 +103,12 @@ function useTokenPrices(): TokenPriceState {
     };
 
     void fetchPrices();
-    const interval = setInterval(() => void fetchPrices(), 120000); // 120 seconds
+    const interval = setInterval(() => {
+      // 🛡️ Optimization: Only fetch if the tab is active to save Vercel costs
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        void fetchPrices();
+      }
+    }, 120000); // 120 seconds
 
     return () => clearInterval(interval);
   }, []);

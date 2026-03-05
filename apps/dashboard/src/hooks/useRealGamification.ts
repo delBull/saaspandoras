@@ -169,9 +169,18 @@ export function useRealGamification(userId?: string): RealTimeGamificationData {
     }
   }, [userId, refreshData]);
 
-  // Load data on mount and user change
+  // Load data on mount and user change with periodic refresh
   useEffect(() => {
     refreshData();
+
+    // 🛡️ Optimization: Periodic refresh every 5 mins but ONLY if the tab is active
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        refreshData();
+      }
+    }, 300000); // 5 minutes
+
+    return () => clearInterval(interval);
   }, [refreshData]);
 
   return {

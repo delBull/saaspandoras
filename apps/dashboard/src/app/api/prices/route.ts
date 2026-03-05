@@ -17,15 +17,21 @@ export async function GET() {
     }
 
     try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 🛡️ 8s strict limit
+
         const response = await fetch(
             'https://api.coingecko.com/api/v3/simple/price?ids=ethereum,polygon-ecosystem-token,matic-network,arbitrum,usd-coin,tether&vs_currencies=usd',
             {
+                signal: controller.signal,
                 headers: {
                     'Accept': 'application/json',
                 },
                 next: { revalidate: 60 }
             }
         );
+
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
             throw new Error(`CoinGecko API Error: ${response.status}`);
