@@ -190,27 +190,24 @@ router.post("/login", authLimiter, async (req: Request, res: Response) => {
         });
 
         const isProd = process.env.NODE_ENV === "production";
-        // CRITICAL: Explicitly use .pandoras.finance for production cross-subdomain support
-        const cookieDomain = process.env.COOKIE_DOMAIN || (isProd ? ".pandoras.finance" : undefined);
+        // CRITICAL: Explicitly use .pandoras.finance for cross-subdomain support
+        const cookieDomain = process.env.COOKIE_DOMAIN || ".pandoras.finance";
         const cookieOptions: any = {
             httpOnly: true,
-            secure: true, // Force secure for partitioned
-            sameSite: "none", // Required for partitioned
+            secure: true, // Required for cross-origin
+            sameSite: "none", // Required for cross-origin
             domain: cookieDomain,
             path: "/",
-            partitioned: true, // 🛡️ CHIPS Support for cross-subdomain same-site contexts
+            // 🛡️ Removed 'partitioned: true' as it breaks Next.js cross-subdomain routing
         };
 
-        console.log(`🍪 [LOGIN] Setting Partitioned cookies for domain: ${cookieDomain}`);
-
-        console.log(`🍪 [LOGIN] Setting cookies for domain: ${cookieDomain} | Secure: ${cookieOptions.secure} | isProd: ${isProd}`);
+        console.log(`🍪 [LOGIN] Setting CROSS-ORIGIN cookies for domain: ${cookieDomain} | Secure: ${cookieOptions.secure}`);
 
         res.cookie("access_token", tokens.accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
         res.cookie("refresh_token", tokens.refreshToken, {
             ...cookieOptions,
             path: "/auth/refresh",
             maxAge: 7 * 24 * 60 * 60 * 1000,
-            sameSite: isProd ? "strict" : "lax"
         });
         res.cookie("auth_token", jwtToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
 
@@ -256,22 +253,23 @@ router.post("/refresh", refreshLimiter, async (req: Request, res: Response) => {
         }
 
         const isProd = process.env.NODE_ENV === "production";
-        const cookieDomain = process.env.COOKIE_DOMAIN || (isProd ? ".pandoras.finance" : undefined);
+        const cookieDomain = process.env.COOKIE_DOMAIN || ".pandoras.finance";
 
-        res.cookie("access_token", newTokens.accessToken, {
+        const cookieOptions: any = {
             httpOnly: true,
-            secure: isProd,
-            sameSite: isProd ? "none" : "lax",
+            secure: true,
+            sameSite: "none",
             domain: cookieDomain,
             path: "/",
+        };
+
+        res.cookie("access_token", newTokens.accessToken, {
+            ...cookieOptions,
             maxAge: 15 * 60 * 1000
         });
 
         res.cookie("refresh_token", newTokens.refreshToken, {
-            httpOnly: true,
-            secure: isProd,
-            sameSite: isProd ? "strict" : "lax",
-            domain: cookieDomain,
+            ...cookieOptions,
             path: "/auth/refresh",
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
@@ -303,31 +301,24 @@ router.post("/logout", async (req: Request, res: Response) => {
         }
 
         const isProd = process.env.NODE_ENV === "production";
-        const cookieDomain = process.env.COOKIE_DOMAIN || (isProd ? ".pandoras.finance" : undefined);
+        const cookieDomain = process.env.COOKIE_DOMAIN || ".pandoras.finance";
 
-        res.clearCookie("access_token", {
+        const cookieOptions: any = {
             httpOnly: true,
-            secure: isProd,
-            sameSite: isProd ? "none" : "lax",
+            secure: true,
+            sameSite: "none",
             domain: cookieDomain,
             path: "/",
-        });
+        };
+
+        res.clearCookie("access_token", cookieOptions);
 
         res.clearCookie("refresh_token", {
-            httpOnly: true,
-            secure: isProd,
-            sameSite: isProd ? "strict" : "lax",
-            domain: cookieDomain,
+            ...cookieOptions,
             path: "/auth/refresh",
         });
 
-        res.clearCookie("auth_token", {
-            httpOnly: true,
-            secure: isProd,
-            sameSite: isProd ? "none" : "lax",
-            domain: cookieDomain,
-            path: "/",
-        });
+        res.clearCookie("auth_token", cookieOptions);
 
         console.log("✅ [LOGOUT] Session invalidated");
 
