@@ -6,6 +6,8 @@ import { usePersistedAccount } from "@/hooks/usePersistedAccount";
 import { useEffect, useState } from "react";
 import { waitForSession } from "@/lib/session";
 
+import { useAuth } from "@/components/auth/AuthProvider";
+
 interface AutoLoginGateProps {
   children: ReactNode;
   fallback?: ReactNode;
@@ -28,26 +30,17 @@ export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGa
 
   // ❌ Redirect guests away from protected routes automatically
   // This is safely declared at the top level to obey Rules of Hooks
+  const { state: authState } = useAuth();
+
+  // ❌ Redirect guests away from protected routes automatically
   useEffect(() => {
-    if (!isClientReady || !isBootstrapped || isConnecting) return;
+    if (!isClientReady || authState === "booting" || isConnecting) return;
 
-    // Si llegamos a verificar sesión de último recurso
-    const isGuest = isLoggedOut || (!account?.address && !savedWalletAddress && !serverSession?.hasSession);
-
-    if (isGuest && pathname !== "/") {
-      waitForSession(account?.address)
-        .then((session) => {
-          if (!session?.authenticated) {
-            // Solo redirigir si el componente Thirdweb terminó su bootstrapping inicial
-            console.log("[AutoLoginGate] Guest explicitly confirmed, redirecting to Home.");
-            router.push("/");
-          }
-        })
-        .catch(() => {
-          // Silent catch
-        });
+    if (authState === "guest" && pathname !== "/") {
+      console.log("[AutoLoginGate] Guest state confirmed by AuthProvider, redirecting to Home.");
+      router.push("/");
     }
-  }, [isClientReady, isBootstrapped, isConnecting, account?.address, savedWalletAddress, serverSession, isLoggedOut, pathname, router]);
+  }, [isClientReady, authState, isConnecting, pathname, router]);
 
   // 🟢 SIEMPRE permitir acceso a la Home Page ("/") para marketing/landing
   if (pathname === "/") {
@@ -94,7 +87,7 @@ export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGa
     // If we are here, account is likely valid or reconnected manually.
     // Ensure wallet information is properly set in cookies for server-side requests
     if (typeof window !== 'undefined' && account.address) {
-      document.cookie = `wallet-address=${account.address}; path=/; max-age=86400; samesite=strict`;
+      document.cookie = `wallet-address=${account.address}; path=/; max-age=86400; samesite=lax`;
       // Also set in localStorage for consistency
       localStorage.setItem('wallet-address', account.address);
     }
@@ -106,7 +99,7 @@ export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGa
   if (!isLoggedOut && serverSession?.hasSession && serverSession?.address) {
     // Ensure wallet information is properly set in cookies for server-side requests
     if (typeof window !== 'undefined' && serverSession.address) {
-      document.cookie = `wallet-address=${serverSession.address}; path=/; max-age=86400; samesite=strict`;
+      document.cookie = `wallet-address=${serverSession.address}; path=/; max-age=86400; samesite=lax`;
       localStorage.setItem('wallet-address', serverSession.address);
     }
     return <>{children}</>;
@@ -116,7 +109,7 @@ export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGa
   if (!isLoggedOut && savedWalletAddress && !account?.address) {
     // Ensure wallet information is properly set in cookies for server-side requests
     if (typeof window !== 'undefined' && savedWalletAddress) {
-      document.cookie = `wallet-address=${savedWalletAddress}; path=/; max-age=86400; samesite=strict`;
+      document.cookie = `wallet-address=${savedWalletAddress}; path=/; max-age=86400; samesite=lax`;
     }
 
     if (typeof window !== 'undefined') {
