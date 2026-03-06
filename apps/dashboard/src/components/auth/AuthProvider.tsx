@@ -78,6 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const checkSession = async () => {
         // 🛑 Optimización crítica: No bloquear el render inicial buscando sesión a usuarios desconectados
         if (!account) {
+            hydrateSession(); // 🛡️ CRITICAL: Release session lock for unauthenticated guests
             setIsLoading(false);
             return;
         }
@@ -109,7 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (e) {
             setUser(null);
         } finally {
-            hydrateSession();
+            hydrateSession(); // 🛡️ CRITICAL: Release session lock after check
             setIsLoading(false);
         }
     };
@@ -118,6 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('[AuthProvider] 🔐 Login function called');
         if (!account) {
             console.warn('[AuthProvider] ❌ No account connected, aborting login');
+            hydrateSession(); // 🛡️ CRITICAL: Release session lock to prevent deadlock
             return;
         }
 
