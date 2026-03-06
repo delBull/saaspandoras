@@ -28,7 +28,7 @@ export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGa
   // ❌ Redirect guests away from protected routes automatically
   // This is safely declared at the top level to obey Rules of Hooks
   useEffect(() => {
-    if (!isClientReady) return;
+    if (!isClientReady || !isBootstrapped || isConnecting) return;
 
     // Si llegamos a verificar sesión de último recurso
     const isGuest = isLoggedOut || (!account?.address && !savedWalletAddress && !serverSession?.hasSession);
@@ -49,7 +49,7 @@ export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGa
           router.push("/");
         });
     }
-  }, [isClientReady, account?.address, savedWalletAddress, serverSession, isLoggedOut, pathname, router]);
+  }, [isClientReady, isBootstrapped, isConnecting, account?.address, savedWalletAddress, serverSession, isLoggedOut, pathname, router]);
 
   // 🟢 SIEMPRE permitir acceso a la Home Page ("/") para marketing/landing
   if (pathname === "/") {
