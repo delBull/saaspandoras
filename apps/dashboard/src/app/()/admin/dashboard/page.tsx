@@ -102,7 +102,8 @@ export default function AdminDashboardPage() {
   // ‍♂️ IMPORTANT: This page requires CONFIRMED admin status, not tentative
   // Sidebars can show based on initial server props, but this endpoint requires API verification
 
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, state } = useAuth();
+  const authLoading = state === "booting" || state === "checking_session" || state === "authenticating";
 
   // Check admin status strictly linked to the Next.js AuthProvider state
   useEffect(() => {

@@ -10,6 +10,14 @@ import { client } from "@/lib/thirdweb-client";
 import { useEOAIdentity } from "@/hooks/useEOAIdentity";
 import { hydrateSession, resetSessionLock } from "@/lib/session-lock";
 
+type AuthState =
+    | "booting"
+    | "wallet_ready"
+    | "checking_session"
+    | "authenticating"
+    | "authenticated"
+    | "guest";
+
 interface User {
     id: string;
     address: string | null;
@@ -17,121 +25,121 @@ interface User {
     telegramId?: string | null;
     name?: string | null;
     image?: string | null;
+    isAdmin?: boolean;
 }
 
 interface AuthContextType {
+    state: AuthState;
     user: User | null;
-    isLoading: boolean;
+    isAuthenticated: boolean;
     login: () => Promise<void>;
     logout: () => Promise<void>;
-    checkSession: () => Promise<void>;
+    checkSession: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const [user, setUser] = useState<User | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
     const account = useActiveAccount();
     const isAutoConnecting = useIsAutoConnecting();
     const chain = useActiveWalletChain();
     const { toast } = useToast();
 
-    // 🆕 Smart Account Support: Get the real EOA identity
-    // This handles both EOA wallets and Smart Wallets (AA)
+    const [state, setState] = useState<AuthState>("booting");
+    const [user, setUser] = useState<User | null>(null);
+
     const eoaIdentity = useEOAIdentity();
-
     const loginRequested = useRef<Record<string, boolean>>({});
-    const sessionChecked = useRef(false);
 
-    // 1. Initial Session Check: Strictly wait for Thirdweb to settle.
+    // 1. Core State Transition: React to wallet changes
     useEffect(() => {
-        // If thirdweb is checking local storage, hold off.
-        if (isAutoConnecting || sessionChecked.current) {
-            if (isAutoConnecting) console.log('[AuthProvider] ⏳ Waiting for thirdweb auto-connect...');
+        if (isAutoConnecting) {
+            console.log('[Auth] ⏳ Booting (waiting for wallet)...');
             return;
         }
 
-        sessionChecked.current = true;
-        console.log('[AuthProvider] 🔍 Wallet state settled. Initial session check.');
-        checkSession();
-    }, [isAutoConnecting]);
-
-    // 2. Auto-Login Loop Management: Sign payload if wallet connects dynamically
-    useEffect(() => {
-        if (isLoading || isAutoConnecting) return;
-
-        if (account && !user) {
-            const hasRequestedLogin = loginRequested.current[account.address];
-            if (!hasRequestedLogin) {
-                console.log('[AuthProvider] 🚀 Triggering auto-login for:', account.address);
-                loginRequested.current[account.address] = true;
-                login().catch(console.error);
-            }
-        }
-
+        // Only transition to wallet_ready if we aren't already deeply engaged, or if account changed
         if (!account && user) {
-            setUser(null);
+            // Wallet actively disconnected
+            console.log('[Auth] 👻 Wallet disconnected, reverting to guest.');
             loginRequested.current = {};
-        }
-    }, [account, user, isLoading, isAutoConnecting]);
-
-    const checkSession = async () => {
-        // 🛑 Optimización crítica: No bloquear el render inicial buscando sesión a usuarios desconectados
-        if (!account) {
-            hydrateSession(); // 🛡️ CRITICAL: Release session lock for unauthenticated guests
-            setIsLoading(false);
+            setUser(null);
+            setState("guest");
             return;
         }
 
-        try {
-            const res = await fetch(`${API_URL}/auth/me`, { credentials: "include" });
+        setState("wallet_ready");
+    }, [isAutoConnecting, account?.address]);
 
-            if (res.status === 401) {
-                setUser(null);
+    // 2. Action: When wallet is ready, check authorization cookies
+    useEffect(() => {
+        if (state !== "wallet_ready") return;
+
+        const check = async () => {
+            setState("checking_session");
+
+            if (!account) {
+                console.log('[Auth] 👻 No wallet. Guest state.');
+                setState("guest");
+                hydrateSession();
                 return;
             }
 
-            const data = await res.json();
+            try {
+                const res = await fetch(`${API_URL}/auth/me`, { credentials: "include" });
 
-            // 🔥 El nuevo payload es { user: { id, address, ... } }
-            if (res.ok && data.user) {
-                setUser(data.user);
-            } else if (res.status === 403) {
-                // Identity Frozen
-                setUser(data.user || null);
-                toast({
-                    title: "Access Restricted",
-                    description: data.error || "Your identity is currently frozen.",
-                    variant: "destructive"
-                });
-            } else {
+                if (res.status === 401) {
+                    setUser(null);
+                    // Crucial: Fallback to SIWE if they are connected but cookie is missing
+                    if (!loginRequested.current[account.address]) {
+                        console.log('[Auth] 🔐 Connected but no cookie, attempting SIWE login...');
+                        loginRequested.current[account.address] = true;
+                        login().catch(console.error);
+                    } else {
+                        setState("guest");
+                    }
+                } else if (res.ok) {
+                    const data = await res.json();
+                    setUser(data.user);
+                    setState("authenticated");
+                } else if (res.status === 403) {
+                    // Identity Frozen
+                    const data = await res.json();
+                    setUser(data.user || null);
+                    setState("guest");
+                } else {
+                    setUser(null);
+                    setState("guest");
+                }
+            } catch (e) {
                 setUser(null);
+                setState("guest");
+            } finally {
+                hydrateSession(); // Unblock React Suspense boundaries!
             }
-        } catch (e) {
-            setUser(null);
-        } finally {
-            hydrateSession(); // 🛡️ CRITICAL: Release session lock after check
-            setIsLoading(false);
-        }
+        };
+
+        check();
+    }, [state]);
+
+    const checkSession = () => {
+        // Expose manual check wrapper if needed by UI
+        if (account) setState("wallet_ready");
     };
 
     const login = async () => {
-        console.log('[AuthProvider] 🔐 Login function called');
+        console.log('[Auth] 🔐 Login function called');
         if (!account) {
-            console.warn('[AuthProvider] ❌ No account connected, aborting login');
-            hydrateSession(); // 🛡️ CRITICAL: Release session lock to prevent deadlock
+            hydrateSession();
             return;
         }
 
         try {
-            setIsLoading(true);
+            setState("authenticating");
 
-            // 🆕 Smart Account Support: Use EOA as identity, not Smart Account address
             const identityAddress = eoaIdentity || account.address;
-            console.log('[AuthProvider] 🆔 Identity Address (EOA):', identityAddress);
 
-            // 1. Get Nonce for the EOA identity
+            // 1. Get Nonce
             const nonceRes = await fetch(`${API_URL}/auth/nonce?address=${identityAddress}`, { credentials: "include" });
             const { nonce } = await nonceRes.json();
 
@@ -139,6 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const domain = window.location.host;
             const uri = window.location.origin;
             const statement = "Sign in to Pandoras Dashboard";
+
             const version = "1";
             const chainId = chain?.id || config.chain.id;
             const issuedAt = new Date().toISOString();
@@ -196,27 +205,45 @@ ${executionAddress !== identityAddress ? `\nExecution Address: ${executionAddres
                 // 🛑 Fix crítico: Dar tiempo al navegador de registrar la cookie cross-domain (SameSite=Lax/None)
                 await new Promise(resolve => setTimeout(resolve, 200));
                 // Fallback for transition
-                await checkSession();
+                checkSession();
             }
             toast({ title: "Welcome back!", description: "Successfully logged in." });
 
         } catch (e) {
-            console.error(e);
-            toast({ title: "Login failed", variant: "destructive" });
+            console.error('[Auth] ❌ Login error:', e);
+            toast({
+                title: "Authentication Failed",
+                description: e instanceof Error ? e.message : "Error accessing dashboard",
+                variant: "destructive"
+            });
+            setState("guest");
         } finally {
-            hydrateSession();
-            setIsLoading(false);
+            hydrateSession(); // Ensures App router data can hydrate even if aborted
+            loginRequested.current[account.address] = false;
         }
     };
 
     const logout = async () => {
-        resetSessionLock();
-        setUser(null);
-        await fetch(`${API_URL}/auth/logout`, { method: "POST", credentials: "include" });
+        try {
+            console.log('[Auth] 🚪 Logging out...');
+            await fetch(`${API_URL}/auth/logout`, { method: "POST", credentials: "include" });
+            setUser(null);
+            setState("guest");
+            resetSessionLock();
+        } catch (e) {
+            console.error("Logout error", e);
+        }
     };
 
     return (
-        <AuthContext.Provider value={{ user, isLoading, login, logout, checkSession }}>
+        <AuthContext.Provider value={{
+            state,
+            user,
+            isAuthenticated: state === "authenticated",
+            login,
+            logout,
+            checkSession
+        }}>
             {children}
         </AuthContext.Provider>
     );
@@ -224,6 +251,8 @@ ${executionAddress !== identityAddress ? `\nExecution Address: ${executionAddres
 
 export const useAuth = () => {
     const context = useContext(AuthContext);
-    if (!context) throw new Error("useAuth must be used within AuthProvider");
+    if (!context) {
+        throw new Error("useAuth must be used within an AuthProvider");
+    }
     return context;
 };

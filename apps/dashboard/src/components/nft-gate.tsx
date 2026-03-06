@@ -19,7 +19,8 @@ import { useAuth } from "@/components/auth/AuthProvider";
 
 export function NFTGate({ children }: { children: React.ReactNode }) {
   const account = useActiveAccount();
-  const { user, login, isLoading: isAuthLoading } = useAuth();
+  const { user, login, state } = useAuth();
+  const isAuthLoading = state === "booting" || state === "checking_session" || state === "authenticating";
   const pathname = usePathname();
   const { mutate: sendTransaction } = useSendTransaction();
   const { toast } = useToast();
