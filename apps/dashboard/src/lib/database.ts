@@ -5,49 +5,34 @@ import postgres from "postgres";
 // Connection pool configuration for better performance
 // This prevents "too many clients" errors by reusing connections
 // Lazy initialization to prevent global side effects during build/import
-let sqlInstance: ReturnType<typeof postgres> | undefined;
+// Standard Next.js Postgres caching mechanism
+const globalForPostgres = globalThis as unknown as {
+  sqlInstance: ReturnType<typeof postgres> | undefined;
+};
 
-function getSql() {
-  if (!sqlInstance) {
-    const connectionString = process.env.DATABASE_URL || "";
+const connectionString = process.env.DATABASE_URL || "";
+const isProduction = process.env.NODE_ENV === 'production';
 
-    // Determine if we are in a production-like environment
-    const isProduction = process.env.NODE_ENV === 'production';
-
-    if (!connectionString) {
-      console.warn("⚠️ Warning: DATABASE_URL is not set. Database features will fail.");
-    } else {
-      console.log("🔌 Lazy Initializing Database Connection... Length:", connectionString.length);
-    }
-
-    sqlInstance = postgres(connectionString, {
-      max: 10, // Increased back to 10 to avoid hangs during concurrent API calls
-      idle_timeout: 20,
-      connect_timeout: 10,
-      prepare: false,
-      ssl: isProduction ? 'require' : false,
-      debug: (connection, query, params) => {
-        if (process.env.DEBUG_DB === 'true') {
-          console.log('SQL:', query);
-        }
-      }
-    });
-  }
-  return sqlInstance;
+if (!connectionString) {
+  console.warn("⚠️ Warning: DATABASE_URL is not set. Database features will fail.");
 }
 
-// Proxy to forward calls to the lazy instance
-// eslint-disable-next-line @typescript-eslint/no-empty-function
-export const sql = new Proxy(() => { }, {
-  get(_target, prop) {
-    return (getSql() as any)[prop];
-  },
-  apply(_target, _thisArg, args) {
-    const instance = getSql();
-    if (!instance) throw new Error("Database initialization failed");
-    return (instance as any)(...args);
+export const sql = globalForPostgres.sqlInstance ?? postgres(connectionString, {
+  max: 10, // Increased back to 10 to avoid hangs during concurrent API calls
+  idle_timeout: 20,
+  connect_timeout: 10,
+  prepare: false,
+  ssl: isProduction ? 'require' : false,
+  debug: (connection, query, params) => {
+    if (process.env.DEBUG_DB === 'true') {
+      console.log('SQL:', query);
+    }
   }
-}) as unknown as ReturnType<typeof postgres>;
+});
+
+if (!isProduction) {
+  globalForPostgres.sqlInstance = sql;
+}
 
 export default sql;
 
