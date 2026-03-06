@@ -7,16 +7,13 @@ import * as schema from "./schema";
 type DrizzleClient = PostgresJsDatabase<typeof schema>;
 let dbInstance: DrizzleClient | undefined;
 
-function getDb(): DrizzleClient {
-    if (!dbInstance) {
-        dbInstance = drizzle(sql, { schema, logger: true });
-    }
-    return dbInstance;
-}
+// Standard singleton pattern for Next.js to prevent connection exhaustion during HMR
+const globalForDrizzle = globalThis as unknown as {
+    dbInstance: PostgresJsDatabase<typeof schema> | undefined;
+};
 
-// Proxy to forward calls to the lazy instance
-export const db = new Proxy({} as DrizzleClient, {
-    get(_target, prop) {
-        return (getDb() as any)[prop];
-    }
-}) as DrizzleClient;
+export const db = globalForDrizzle.dbInstance ?? drizzle(sql, { schema, logger: true });
+
+if (process.env.NODE_ENV !== "production") {
+    globalForDrizzle.dbInstance = db;
+}
