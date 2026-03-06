@@ -1,6 +1,11 @@
 "use client";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+let API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+// 🛡️ Bulletproof override: If API_URL points back to the Next.js frontend or is empty/root, force it to the backend.
+// This permanently bypasses Next.js proxy rewrite cookie-stripping bugs.
+if (API_URL === "/" || API_URL === "" || API_URL.includes("dash.pandoras.finance") || API_URL.includes("localhost:3000")) {
+    API_URL = "https://api.pandoras.finance";
+}
 
 import React, { createContext, useContext, useEffect, useState, useRef } from "react";
 import { useActiveAccount, useActiveWalletChain, useIsAutoConnecting } from "thirdweb/react";
