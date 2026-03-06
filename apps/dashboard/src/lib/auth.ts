@@ -76,9 +76,37 @@ export async function getAuth(headersData?: any, userAddress?: string) {
 
   if (!address) {
     try {
-      // Use Next.js 15 async cookies/headers if possible
-      const cookieStore = await cookies();
-      const authToken = cookieStore.get('auth_token')?.value;
+      // 🚨 CRITICAL BUGFIX: We CANNOT use `await cookies()` inside this utility function on Vercel Serverless.
+      // Next.js 15 has a crippling bug where `await cookies()` occasionally deadlocks the V8 event loop
+      // when executed outside the immediate route handler scope, causing 10s silent timeouts.
+      // We manually parse the raw cookie header instead.
+
+      let rawCookieHeader = '';
+      if (headersData && typeof (headersData as any).get === 'function') {
+        rawCookieHeader = (headersData as any).get('cookie') || '';
+      } else if (headersData && typeof headersData === 'object') {
+        rawCookieHeader = headersData.cookie || headersData['Cookie'] || '';
+      } else {
+        // Fallback for Server Components calling getAuth without args (via next/headers)
+        try {
+          const { headers: nextHeaders } = await import('next/headers');
+          const hdrs = await nextHeaders();
+          rawCookieHeader = hdrs.get('cookie') || '';
+        } catch (e) {
+          // Silent catch in case it's executed outside a server component boundary
+        }
+      }
+
+      // Parse specific cookies
+      const cookiesMap = new Map();
+      rawCookieHeader.split(';').forEach((cookie: string) => {
+        const parts = cookie.trim().split('=');
+        if (parts.length >= 2) {
+          cookiesMap.set(parts[0], parts.slice(1).join('='));
+        }
+      });
+
+      const authToken = cookiesMap.get('auth_token');
 
       if (authToken) {
         // En un entorno Node, podríamos usar jwt.verify, pero asumimos que el middleware ya lo validó.
@@ -97,8 +125,7 @@ export async function getAuth(headersData?: any, userAddress?: string) {
 
       if (!address) {
         // Fallback inseguro (solo para UI superficial, nunca para DB o Admin)
-        const addrCookie = cookieStore.get('wallet-address')?.value ??
-          cookieStore.get('thirdweb:wallet-address')?.value;
+        const addrCookie = cookiesMap.get('wallet-address') ?? cookiesMap.get('thirdweb:wallet-address');
         if (validateWalletAddress(addrCookie)) {
           // WE DO NOT SET address HERE. This prevents session.address from being spoofed!
           isVerified = false;
@@ -114,7 +141,7 @@ export async function getAuth(headersData?: any, userAddress?: string) {
         }
       }
     } catch (error) {
-      console.error("🔍 [Dashboard getAuth] Error reading cookies:", error);
+      console.error("🔍 [Dashboard getAuth] Error parsing headers cookies:", error);
     }
   }
 
