@@ -8,7 +8,8 @@ import { zodResolver } from "@hookform/resolvers/zod"; // FIX 1: Reactivado
 import { z } from "zod";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import { SUPER_ADMIN_WALLET } from "@/lib/constants"; 
+import { SUPER_ADMIN_WALLET } from "@/lib/constants";
+import { waitForSession } from "@/lib/session";
 // 🎮 IMPORTAR EVENTOS DE GAMIFICACIÓN
 import { gamificationEngine, EventType } from "@pandoras/gamification";
 import { ProjectSection1 } from "./sections/ProjectSection1";
@@ -20,54 +21,54 @@ import { ProjectSection6 } from "./sections/ProjectSection6";
 import { ProjectSection7 } from "./sections/ProjectSection7";
 
 interface Project {
-   id?: number;
-   slug?: string;
-   title?: string | null;
-   description?: string | null;
-   tagline?: string | null;
-   businessCategory?: string | null;
-   logoUrl?: string | null;
-   coverPhotoUrl?: string | null;
-   videoPitch?: string | null;
-   website?: string | null;
-   whitepaperUrl?: string | null;
-   twitterUrl?: string | null;
-   discordUrl?: string | null;
-   telegramUrl?: string | null;
-   linkedinUrl?: string | null;
-   targetAmount?: string | number | null;
-   totalValuationUsd?: string | number | null;
-   tokenType?: string | null;
-   totalTokens?: string | number | null;
-   tokensOffered?: string | number | null;
-   tokenPriceUsd?: string | number | null;
-   estimatedApy?: string | null;
-   yieldSource?: string | null;
-   lockupPeriod?: string | null;
-   fundUsage?: string | null;
-   teamMembers?: unknown;
-   advisors?: unknown;
-   tokenDistribution?: unknown;
-   contractAddress?: string | null;
-   treasuryAddress?: string | null;
-   legalStatus?: string | null;
-   valuationDocumentUrl?: string | null;
-   fiduciaryEntity?: string | null;
-   dueDiligenceReportUrl?: string | null;
-   isMintable?: boolean | string | null;
-   isMutable?: boolean | string | null;
-   updateAuthorityAddress?: string | null;
-   applicantName?: string | null;
-   applicantPosition?: string | null;
-   applicantEmail?: string | null;
-   applicantPhone?: string | null;
-   applicantWalletAddress?: string | null;
-   verificationAgreement?: boolean | string | null;
-   createdAt?: Date;
-   raisedAmount?: string | number | null;
-   returnsPaid?: string | number | null;
-   status?: string | null;
- }
+  id?: number;
+  slug?: string;
+  title?: string | null;
+  description?: string | null;
+  tagline?: string | null;
+  businessCategory?: string | null;
+  logoUrl?: string | null;
+  coverPhotoUrl?: string | null;
+  videoPitch?: string | null;
+  website?: string | null;
+  whitepaperUrl?: string | null;
+  twitterUrl?: string | null;
+  discordUrl?: string | null;
+  telegramUrl?: string | null;
+  linkedinUrl?: string | null;
+  targetAmount?: string | number | null;
+  totalValuationUsd?: string | number | null;
+  tokenType?: string | null;
+  totalTokens?: string | number | null;
+  tokensOffered?: string | number | null;
+  tokenPriceUsd?: string | number | null;
+  estimatedApy?: string | null;
+  yieldSource?: string | null;
+  lockupPeriod?: string | null;
+  fundUsage?: string | null;
+  teamMembers?: unknown;
+  advisors?: unknown;
+  tokenDistribution?: unknown;
+  contractAddress?: string | null;
+  treasuryAddress?: string | null;
+  legalStatus?: string | null;
+  valuationDocumentUrl?: string | null;
+  fiduciaryEntity?: string | null;
+  dueDiligenceReportUrl?: string | null;
+  isMintable?: boolean | string | null;
+  isMutable?: boolean | string | null;
+  updateAuthorityAddress?: string | null;
+  applicantName?: string | null;
+  applicantPosition?: string | null;
+  applicantEmail?: string | null;
+  applicantPhone?: string | null;
+  applicantWalletAddress?: string | null;
+  verificationAgreement?: boolean | string | null;
+  createdAt?: Date;
+  raisedAmount?: string | number | null;
+  returnsPaid?: string | number | null;
+  status?: string | null;
+}
 
 // FIX 2: Definir tipos claros para los datos parseados
 interface TeamMember {
@@ -105,26 +106,26 @@ const Button: React.FC<{
   disabled = false,
   variant = "primary"
 }) => (
-  <button
-    type={type}
-    onClick={onClick}
-    disabled={disabled}
-    className={`
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      className={`
       px-6 py-3 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed
       ${variant === "primary" && "bg-lime-500 hover:bg-lime-600 text-zinc-900 shadow-lg hover:shadow-lime-500/25"}
       ${variant === "secondary" && "bg-zinc-700 hover:bg-zinc-600 text-white border border-zinc-600"}
       ${variant === "outline" && "border-2 border-lime-500 text-lime-400 hover:bg-lime-500 hover:text-zinc-900"}
       ${className}
     `}
-  >
-    {children}
-  </button>
-);
+    >
+      {children}
+    </button>
+  );
 
 const ProgressBar = ({ currentStep, totalSteps }: { currentStep: number; totalSteps: number }) => (
   <div className="w-full bg-zinc-800 rounded-full h-2 mb-6">
-    <div 
-      className="bg-gradient-to-r from-lime-500 to-emerald-500 h-2 rounded-full transition-all duration-300 ease-out" 
+    <div
+      className="bg-gradient-to-r from-lime-500 to-emerald-500 h-2 rounded-full transition-all duration-300 ease-out"
       style={{ width: `${(currentStep / totalSteps) * 100}%` }}
     />
   </div>
@@ -247,6 +248,8 @@ export function MultiStepForm({
 
       // Check if wallet exists in administrators table (async)
       try {
+        await waitForSession(walletAddress); // 🛡️ Wait for SIWE hydration to avoid 401
+
         const response = await fetch('/api/admin/verify', {
           headers: {
             'Content-Type': 'application/json',
@@ -284,7 +287,7 @@ export function MultiStepForm({
   }, [account?.address, isAdminUser, isPublic, router]);
 
   const totalSteps = 7;
-  
+
   // Funciones de parseo seguro para inicializar el formulario
   function safeParseArray<T>(input: unknown): T[] {
     try {
@@ -392,7 +395,7 @@ export function MultiStepForm({
     if (savedData) {
       try {
         const parsedData: unknown = JSON.parse(savedData); // Parse to unknown first
-        
+
         // Validate the parsed data against a partial schema
         const validation = fullProjectSchema.partial().safeParse(parsedData);
         if (validation.success) {
@@ -406,9 +409,9 @@ export function MultiStepForm({
           setCurrentStep(Number(savedStep));
         }
       } catch (e) {
-         console.error("Failed to parse saved form data from localStorage", e);
-         localStorage.removeItem("pandoras-project-form");
-         localStorage.removeItem("pandoras-project-step");
+        console.error("Failed to parse saved form data from localStorage", e);
+        localStorage.removeItem("pandoras-project-form");
+        localStorage.removeItem("pandoras-project-step");
       }
     }
   }, [setValue, isEdit, methods]);
@@ -701,10 +704,10 @@ export function MultiStepForm({
     console.log('📤 apiEndpoint prop:', apiEndpoint);
 
     try {
-       // FIX: Use the apiEndpoint prop if it's different from default, otherwise use built-in logic
-       const finalEndpoint = apiEndpoint !== "/api/admin/projects" ? apiEndpoint : (
-         isEdit ? `/api/admin/projects/${project?.id}` : "/api/admin/projects"
-       );
+      // FIX: Use the apiEndpoint prop if it's different from default, otherwise use built-in logic
+      const finalEndpoint = apiEndpoint !== "/api/admin/projects" ? apiEndpoint : (
+        isEdit ? `/api/admin/projects/${project?.id}` : "/api/admin/projects"
+      );
 
       console.log('📡 Submitting to endpoint:', finalEndpoint);
 
@@ -785,7 +788,7 @@ export function MultiStepForm({
 
   const onAdminQuickSubmit = async (data: FullProjectFormData) => {
     if (isPublic) return; // No quick submit for public users
-    
+
     // Re-validate to ensure type safety and satisfy the linter
     const validation = fullProjectSchema.safeParse(data);
     if (!validation.success) {
@@ -797,7 +800,7 @@ export function MultiStepForm({
 
     setIsLoading(true);
     console.log('🚀 onAdminQuickSubmit called with validated data:', safeData);
-    
+
     const tokenDist = safeData.tokenDistribution ?? {};
     const finalDistribution = {
       publicSale: tokenDist.publicSale ?? 0,
@@ -831,12 +834,12 @@ export function MultiStepForm({
       }
 
       toast.success("Proyecto creado y publicado rápidamente!");
-      
+
       if (!isEdit) {
         localStorage.removeItem("pandoras-project-form");
         localStorage.removeItem("pandoras-project-step");
       }
-      
+
       router.push("/admin/dashboard");
       router.refresh();
     } catch (error: unknown) {
@@ -850,7 +853,7 @@ export function MultiStepForm({
 
   const stepTitles = [
     "Identidad del Proyecto",
-    "Enlaces y Comunidad", 
+    "Enlaces y Comunidad",
     "Detalles de la Oferta",
     "Equipo y Transparencia",
     "Seguridad y Auditoría",

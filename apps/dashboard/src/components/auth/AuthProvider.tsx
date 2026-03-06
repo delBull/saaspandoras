@@ -10,10 +10,11 @@ if (API_URL === "/" || API_URL === "" || API_URL.includes("dash.pandoras.finance
 import React, { createContext, useContext, useEffect, useState, useRef } from "react";
 import { useActiveAccount, useActiveWalletChain, useIsAutoConnecting } from "thirdweb/react";
 import { useToast } from "@saasfly/ui/use-toast";
+import { waitForSession } from "@/lib/session";
 import { config } from "@/config";
 import { client } from "@/lib/thirdweb-client";
 import { useEOAIdentity } from "@/hooks/useEOAIdentity";
-import { hydrateSession, resetSessionLock } from "@/lib/session-lock";
+
 
 type AuthState =
     | "booting"
@@ -86,16 +87,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (!account) {
                 console.log('[Auth] 👻 No wallet. Guest state.');
                 setState("guest");
-                hydrateSession();
                 return;
             }
 
             try {
-                const res = await fetch(`${API_URL}/auth/me`, { credentials: "include" });
+                // 🛡️ Use the global session lock to prevent fetch races
+                const sessionData = await waitForSession(account.address);
 
-                if (res.status === 401) {
+                if (!sessionData) {
                     setUser(null);
-                    // Crucial: Fallback to SIWE if they are connected but cookie is missing
+                    // Crucial: Fallback to SIWE if they are connected but cookie is missing (or 401)
                     if (!loginRequested.current[account.address]) {
                         console.log('[Auth] 🔐 Connected but no cookie, attempting SIWE login...');
                         loginRequested.current[account.address] = true;
@@ -103,15 +104,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     } else {
                         setState("guest");
                     }
-                } else if (res.ok) {
-                    const data = await res.json();
-                    setUser(data.user);
+                } else if (sessionData.authenticated) {
+                    setUser(sessionData.user);
                     setState("authenticated");
-                } else if (res.status === 403) {
-                    // Identity Frozen
-                    const data = await res.json();
-                    setUser(data.user || null);
-                    setState("guest");
                 } else {
                     setUser(null);
                     setState("guest");
@@ -119,8 +114,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             } catch (e) {
                 setUser(null);
                 setState("guest");
-            } finally {
-                hydrateSession(); // Unblock React Suspense boundaries!
             }
         };
 
@@ -135,7 +128,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const login = async () => {
         console.log('[Auth] 🔐 Login function called');
         if (!account) {
-            hydrateSession();
             return;
         }
 
@@ -223,7 +215,6 @@ ${executionAddress !== identityAddress ? `\nExecution Address: ${executionAddres
             });
             setState("guest");
         } finally {
-            hydrateSession(); // Ensures App router data can hydrate even if aborted
             loginRequested.current[account.address] = false;
         }
     };
@@ -234,7 +225,8 @@ ${executionAddress !== identityAddress ? `\nExecution Address: ${executionAddres
             await fetch(`${API_URL}/auth/logout`, { method: "POST", credentials: "include" });
             setUser(null);
             setState("guest");
-            resetSessionLock();
+
+            import("@/lib/session").then(m => m.bustSessionCache());
         } catch (e) {
             console.error("Logout error", e);
         }

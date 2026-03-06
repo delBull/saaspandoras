@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { usePersistedAccount } from "@/hooks/usePersistedAccount";
 import { useEffect, useState } from "react";
+import { waitForSession } from "@/lib/session";
 
 interface AutoLoginGateProps {
   children: ReactNode;
@@ -34,19 +35,16 @@ export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGa
     const isGuest = isLoggedOut || (!account?.address && !savedWalletAddress && !serverSession?.hasSession);
 
     if (isGuest && pathname !== "/") {
-      // Verificación final con el servidor en caso de desincronización
-      fetch('/api/auth/session', {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
-      })
-        .then(response => response.json())
-        .then((data: { hasSession?: boolean }) => {
-          if (!data.hasSession) {
-            router.push("/"); // Invitarlos a login retornándolos al home
+      waitForSession(account?.address)
+        .then((session) => {
+          if (!session?.authenticated) {
+            // Solo redirigir si el componente Thirdweb terminó su bootstrapping inicial
+            console.log("[AutoLoginGate] Guest explicitly confirmed, redirecting to Home.");
+            router.push("/");
           }
         })
         .catch(() => {
-          router.push("/");
+          // Silent catch
         });
     }
   }, [isClientReady, isBootstrapped, isConnecting, account?.address, savedWalletAddress, serverSession, isLoggedOut, pathname, router]);

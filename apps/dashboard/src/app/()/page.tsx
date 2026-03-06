@@ -15,7 +15,7 @@ import { base } from "thirdweb/chains";
 import { createWallet } from "thirdweb/wallets";
 import { NotificationsPanel } from "@/components/dashboard/notifications-panel";
 import { GovernanceParticipationModal } from "@/components/governance/GovernanceParticipationModal";
-import { waitForSession } from "@/lib/session-lock";
+import { waitForSession } from "@/lib/session";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
