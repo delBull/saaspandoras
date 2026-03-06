@@ -15,8 +15,7 @@ import { ProjectApplicationButton } from "@/components/ProjectApplicationButton"
 import { ProjectTableView } from "@/components/ProjectTableView";
 import { ProjectCardsView } from "@/components/ProjectCardsView";
 import { ShortlinksAnalyticsTab } from "@/components/admin/ShortlinksAnalyticsTab";
-
-import { waitForSession } from "@/lib/session-lock";
+import { waitForSession } from "@/lib/session";
 
 // NOTE: Using 'draft' and 'incomplete' in UI but DB ENUM needs migration to include these values
 

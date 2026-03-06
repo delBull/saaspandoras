@@ -25,14 +25,20 @@ export async function GET() {
         const token = cookieStore.get("auth_token")?.value;
 
         if (!token) {
-            return NextResponse.json({ authenticated: false, error: "No session token found" }, { status: 401 });
+            return NextResponse.json({ authenticated: false, error: "No session token found" }, {
+                status: 401,
+                headers: { "Cache-Control": "no-store" }
+            });
         }
 
         let verified: JWTPayload;
         try {
             verified = jwt.verify(token, JWT_SECRET) as JWTPayload;
         } catch (e) {
-            return NextResponse.json({ authenticated: false, error: "Invalid or expired session" }, { status: 401 });
+            return NextResponse.json({ authenticated: false, error: "Invalid or expired session" }, {
+                status: 401,
+                headers: { "Cache-Control": "no-store" }
+            });
         }
 
         const address = verified.address || verified.walletAddress || verified.sub;
@@ -47,6 +53,8 @@ export async function GET() {
                 hasAccess: verified.hasAccess || false,
                 expiresAt: verified.exp ? new Date(verified.exp * 1000).toISOString() : null,
             }
+        }, {
+            headers: { "Cache-Control": "no-store" }
         });
 
     } catch (error) {
