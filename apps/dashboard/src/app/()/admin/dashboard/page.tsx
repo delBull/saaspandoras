@@ -103,7 +103,9 @@ export default function AdminDashboardPage() {
   // Sidebars can show based on initial server props, but this endpoint requires API verification
 
   const { user, state } = useAuth();
-  const authLoading = state === "booting" || state === "checking_session" || state === "authenticating";
+  // 🔥 FIX: Loading is TRUE unless we securely reach a definitive conclusion ('authenticated' or 'guest')
+  // This explicitly catches intermediate rendering bridges like 'wallet_ready' that otherwise slipped through
+  const authLoading = state !== "authenticated" && state !== "guest";
 
   // Check admin status strictly linked to the Next.js AuthProvider state
   useEffect(() => {
