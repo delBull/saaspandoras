@@ -6,7 +6,7 @@ import { jwtVerify, importSPKI } from 'jose';
 // Note: In serverless/edge, this map is ephemeral per-instance.
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
-export async function middleware(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 0. Global OPTIONS Handling (CORS Preflight)
@@ -22,7 +22,8 @@ export async function middleware(request: NextRequest) {
     });
   }
 
-  // 1. Admin Route Protection (Strict)
+  // 1. Admin Route Protection (Moved to Client-Side AutoLoginGate for Metamask compatibility)
+  /*
   if (pathname.startsWith("/admin")) {
     const walletCookie = request.cookies.get('wallet-address') ||
       request.cookies.get('thirdweb:wallet-address') ||
@@ -30,7 +31,6 @@ export async function middleware(request: NextRequest) {
       request.cookies.get('auth_token');
 
     if (!walletCookie?.value) {
-      // 🔒 Server-Side Redirect: Avoid client-side React flickers
       return NextResponse.redirect(new URL("/", request.url));
     }
   }
@@ -62,6 +62,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/", request.url));
     }
   }
+  */
 
   // 3. Rate Limiting Strategy (Only for API routes)
   if (pathname.startsWith("/api")) {

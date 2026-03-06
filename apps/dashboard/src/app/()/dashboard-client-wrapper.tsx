@@ -70,8 +70,8 @@ export function DashboardClientWrapper({
       }, 300);
       // Ensure wallet information is available in cookies for server-side requests
       if (typeof window !== 'undefined') {
-        document.cookie = `wallet-address=${account.address}; path=/; max-age=86400; samesite=strict`;
-        document.cookie = `thirdweb:wallet-address=${account.address}; path=/; max-age=86400; samesite=strict`;
+        document.cookie = `wallet-address=${account.address}; path=/; max-age=86400; samesite=lax`;
+        document.cookie = `thirdweb:wallet-address=${account.address}; path=/; max-age=86400; samesite=lax`;
       }
     } else {
       setIsLoadingUserData(false); // Si no hay wallet, no esperamos
