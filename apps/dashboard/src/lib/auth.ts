@@ -85,7 +85,7 @@ export async function getAuth(headersData?: any, userAddress?: string) {
       if (headersData && typeof (headersData as any).get === 'function') {
         rawCookieHeader = (headersData as any).get('cookie') || '';
       } else if (headersData && typeof headersData === 'object') {
-        rawCookieHeader = headersData.cookie || headersData['Cookie'] || '';
+        rawCookieHeader = headersData.cookie || headersData.Cookie || '';
       } else {
         // Fallback for Server Components calling getAuth without args (via next/headers)
         try {
