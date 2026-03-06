@@ -3,7 +3,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useReadContract, TransactionButton } from "thirdweb/react";
 import { usePersistedAccount } from "@/hooks/usePersistedAccount";
-import { useProfile } from "@/hooks/useProfile";
 import Link from "next/link";
 import { config } from "@/config";
 import { getContract, prepareContractCall } from "thirdweb";
@@ -16,6 +15,7 @@ import { base } from "thirdweb/chains";
 import { createWallet } from "thirdweb/wallets";
 import { NotificationsPanel } from "@/components/dashboard/notifications-panel";
 import { GovernanceParticipationModal } from "@/components/governance/GovernanceParticipationModal";
+import { waitForSession } from "@/lib/session-lock";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -342,7 +342,6 @@ function AccessArtifactsSection({ accessCards, artifacts }: { accessCards: any[]
 
 export default function DashboardPage() {
   const { account } = usePersistedAccount();
-  const { profile } = useProfile();
   const [isGovernanceModalOpen, setIsGovernanceModalOpen] = useState(false);
 
   // Hoist data fetching here to prevent layout shift/empty states
@@ -350,7 +349,8 @@ export default function DashboardPage() {
     featuredProjects: any[];
     accessCards: any[];
     artifacts: any[];
-    notifications?: any[]; // optional
+    notifications?: any[];
+    profile?: any;
     loading: boolean
   }>({
     featuredProjects: [],
@@ -360,31 +360,36 @@ export default function DashboardPage() {
   });
 
   useEffect(() => {
-    const fetchData = async () => {
+    const controller = new AbortController();
+
+    const load = async () => {
       try {
-        // 1. Fetch Global Data (Heavily Cached via Vercel Edge CDN)
-        const globalPromise = fetch(`/api/home-data/global`).then(res => res.json());
+        // 🛡️ CRITICAL: Wait for session hydration to unlock (so we don't fetch prematurely as guest)
+        await waitForSession();
 
-        // 2. Fetch User Data ONLY if wallet is connected (Lightweight)
-        const userPromise = account?.address
-          ? fetch(`/api/home-data/user?wallet=${account.address}`).then(res => res.json())
-          : Promise.resolve({ notifications: [] });
+        const walletParam = account?.address ? `?wallet=${account.address}` : "";
+        const res = await fetch(`/api/bootstrap${walletParam}`, {
+          signal: controller.signal
+        });
+        const data = await res.json();
 
-        const [globalData, userData] = await Promise.all([globalPromise, userPromise]);
-
-        // Use DB projects if available, otherwise FALLBACK
-        const rawProjects = globalData.featuredProjects || [];
+        const rawProjects = data.featuredProjects || [];
 
         setHomeData({
           featuredProjects: rawProjects.length > 0 ? rawProjects : FALLBACK_PROJECTS,
-          accessCards: globalData.accessCards || [],
-          artifacts: globalData.artifacts || [],
-          notifications: userData.notifications || [],
+          accessCards: data.accessCards || [],
+          artifacts: data.artifacts || [],
+          notifications: data.notifications || [],
+          profile: data.profile || null,
           loading: false
         });
 
-      } catch (e) {
-        console.error("Failed to fetch home data", e);
+      } catch (e: any) {
+        if (e.name === "AbortError") {
+          console.log("Bootstrap data fetch aborted (component unmounted)");
+          return;
+        }
+        console.error("Failed to fetch dashboard bootstrap data", e);
         setHomeData(prev => ({
           ...prev,
           featuredProjects: FALLBACK_PROJECTS,
@@ -392,12 +397,15 @@ export default function DashboardPage() {
         }));
       }
     };
-    fetchData();
+
+    load();
+
+    return () => controller.abort();
   }, [account?.address]);
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <MobileHeader userName={null} walletAddress={account?.address} profile={profile} />
+      <MobileHeader userName={homeData.profile?.name || null} walletAddress={account?.address} profile={homeData.profile} />
 
       <div className="text-left pt-6 ml-5 mb-6 pr-5">
         <TypewriterText

@@ -3,7 +3,7 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 import React, { createContext, useContext, useEffect, useState, useRef } from "react";
-import { useActiveAccount, useActiveWalletChain } from "thirdweb/react";
+import { useActiveAccount, useActiveWalletChain, useIsAutoConnecting } from "thirdweb/react";
 import { useToast } from "@saasfly/ui/use-toast";
 import { config } from "@/config";
 import { client } from "@/lib/thirdweb-client";
@@ -33,6 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const account = useActiveAccount();
+    const isAutoConnecting = useIsAutoConnecting();
     const chain = useActiveWalletChain();
     const { toast } = useToast();
 
@@ -40,40 +41,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // This handles both EOA wallets and Smart Wallets (AA)
     const eoaIdentity = useEOAIdentity();
 
-    // Load session on mount
-    useEffect(() => {
-        console.log('[AuthProvider] Mounting - checking session');
-        checkSession();
-    }, []);
-
     const loginRequested = useRef<Record<string, boolean>>({});
+    const sessionChecked = useRef(false);
 
-    // Check session when account changes
+    // 1. Initial Session Check: Strictly wait for Thirdweb to settle.
     useEffect(() => {
-        console.log('[AuthProvider] Account/User changed:', { hasAccount: !!account, hasUser: !!user });
+        // If thirdweb is checking local storage, hold off.
+        if (isAutoConnecting || sessionChecked.current) {
+            if (isAutoConnecting) console.log('[AuthProvider] ⏳ Waiting for thirdweb auto-connect...');
+            return;
+        }
 
-        // 🛡️ Previene loops si todavía estamos cargando el estado inicial
-        if (isLoading) return;
+        sessionChecked.current = true;
+        console.log('[AuthProvider] 🔍 Wallet state settled. Initial session check.');
+        checkSession();
+    }, [isAutoConnecting]);
+
+    // 2. Auto-Login Loop Management: Sign payload if wallet connects dynamically
+    useEffect(() => {
+        if (isLoading || isAutoConnecting) return;
 
         if (account && !user) {
-            // User connected wallet but has no session -> Auto Login (SIWE)
             const hasRequestedLogin = loginRequested.current[account.address];
-            console.log('[AuthProvider] Auto-login check:', { hasRequestedLogin });
             if (!hasRequestedLogin) {
                 console.log('[AuthProvider] 🚀 Triggering auto-login for:', account.address);
                 loginRequested.current[account.address] = true;
                 login().catch(console.error);
-            } else {
-                // Already requested, check session again just in case
-                console.log('[AuthProvider] Login already requested, rechecking session');
-                checkSession();
             }
-        } else if (!account && user) {
-            // Wallet disconnected -> Logout
-            setUser(null);
-            loginRequested.current = {}; // Clear prevention flags
         }
-    }, [account, user, isLoading]);
+
+        if (!account && user) {
+            setUser(null);
+            loginRequested.current = {};
+        }
+    }, [account, user, isLoading, isAutoConnecting]);
 
     const checkSession = async () => {
         // 🛑 Optimización crítica: No bloquear el render inicial buscando sesión a usuarios desconectados
