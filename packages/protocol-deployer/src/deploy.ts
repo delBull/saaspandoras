@@ -292,6 +292,7 @@ export async function deployW2EProtocol(
     await Promise.all(txs.map((tx: any) => tx.wait()));
 
     return {
+      licenseAddress: artifactAddresses[0],
       phiAddress: addrUtility,
       loomAddress: addrLoom,
       governorAddress: addrGovernor,
