@@ -34,15 +34,15 @@ export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGa
 
   // ❌ Redirect guests away from protected routes automatically
   useEffect(() => {
-    if (!isClientReady || authState === "booting" || isConnecting) return;
+    if (!isClientReady || authState === "booting" || authState === "authenticating" || isConnecting) return;
 
     if (authState === "guest" && pathname !== "/") {
-      // ⏳ Patience: If we just reached guest state, give it 3 seconds to recover (e.g. if SIWE is starting)
+      // ⏳ Patience: If we just reached guest state, give it 5 seconds to recover (e.g. if SIWE is starting)
       // This prevents the "immediate redirect" problem when auth/me resets.
       const timer = setTimeout(() => {
-        console.log("[AutoLoginGate] Guest state confirmed for 3s, redirecting to Home.");
+        console.log("[AutoLoginGate] Guest state confirmed for 5s, redirecting to Home.");
         router.push("/");
-      }, 3000);
+      }, 5000);
       return () => clearTimeout(timer);
     }
   }, [isClientReady, authState, isConnecting, pathname, router]);
