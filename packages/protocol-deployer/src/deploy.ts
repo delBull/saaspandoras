@@ -141,6 +141,17 @@ export async function deployW2EProtocol(
     Artifacts: artifactAddresses
   });
 
+  // --- HARDENING: Address Pre-checks ---
+  const addressesToCheck = [addrRegistry, addrUtility, addrLoom, addrTreasury, addrGovernor, ...artifactAddresses];
+  console.log("🔍 Checking predicted addresses for existing code...");
+  for (const addr of addressesToCheck) {
+    const code = await provider.getCode(addr);
+    if (code !== '0x') {
+      console.warn(`⚠️ WARNING: Address ${addr} already has code! This deployment step WILL fail (CREATE/CREATE2 collision).`);
+      // We don't throw here to allow partial success or custom logic, but usually this is a terminal state for the nonce.
+    }
+  }
+
   // 4. Contract Factories
   const RegistryFactory = new ContractFactory(ProtocolRegistryArtifact.abi, ProtocolRegistryArtifact.bytecode, wallet);
   const UtilityFactory = new ContractFactory(W2EUtilityArtifact.abi, W2EUtilityArtifact.bytecode, wallet);
