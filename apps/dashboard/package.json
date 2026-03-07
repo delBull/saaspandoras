@@ -5,8 +5,8 @@
   "scripts": {
     "build": "next build",
     "clean": "git clean -xdf .next .turbo node_modules",
-    "dev": "next dev",
-    "dev:staging": "dotenv -e .env.staging -- next dev",
+    "dev": "next dev --turbo",
+    "dev:staging": "dotenv -e .env.staging -- next dev --turbo",
     "lint": "next lint --quiet",
     "format": "prettier --write '**/*.{js,cjs,mjs,ts,tsx,md,json}'",
     "start": "next start",

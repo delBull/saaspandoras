@@ -12,6 +12,34 @@ export async function GET(request: Request) {
         const wallet = searchParams.get("wallet");
         const walletAddress = wallet && wallet !== 'undefined' && wallet !== 'null' ? wallet.toLowerCase() : null;
 
+        // 🚀 DEV_FAST MODE: Instant Mock Response
+        if (process.env.NEXT_PUBLIC_DEV_FAST === "true" && process.env.NODE_ENV === "development") {
+            const mockProfile = walletAddress ? {
+                id: "dev-user-id",
+                walletAddress: walletAddress,
+                role: "admin",
+                name: "Dev User",
+                status: "ACTIVE"
+            } : null;
+
+            return NextResponse.json({
+                featuredProjects: [{
+                    id: "mock-1",
+                    title: "Mock Featured Project (DEV_FAST)",
+                    subtitle: "Instantly loaded for local development",
+                    actionText: "Dime más",
+                    imageUrl: "/images/default-project.jpg",
+                    projectSlug: "mock-project"
+                }],
+                accessCards: [],
+                artifacts: [],
+                profile: mockProfile,
+                notifications: []
+            }, {
+                headers: { "Cache-Control": "no-store" } // Don't cache dev mocks
+            });
+        }
+
         // --- GLOBAL QUERIES ---
         const globalPromise = async () => {
             // 1. Fetch Featured Projects (Allow 'approved' or 'live', even if not deployed yet)

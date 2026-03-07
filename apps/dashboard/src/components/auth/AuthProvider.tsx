@@ -146,7 +146,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             // 1. Get Nonce
             const nonceRes = await fetch(`${API_URL}/auth/nonce?address=${identityAddress}`, { credentials: "include" });
+            if (!nonceRes.ok) {
+                const errData = await nonceRes.json().catch(() => ({}));
+                throw new Error(errData.error || `Nonce fetch failed (${nonceRes.status})`);
+            }
             const { nonce } = await nonceRes.json();
+
+            if (!nonce) {
+                throw new Error("Received empty nonce from server");
+            }
 
             // 2. Create SIWE Message
             const domain = window.location.host;

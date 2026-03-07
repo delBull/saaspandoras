@@ -8,6 +8,25 @@ let currentWalletAddress: string | null = null;
 export async function waitForSession(walletAddress?: string): Promise<any> {
     const isNewWallet = walletAddress && walletAddress !== currentWalletAddress;
 
+    // 🚀 DEV_FAST MODE: Instant Mock Session
+    if (process.env.NEXT_PUBLIC_DEV_FAST === "true" && process.env.NODE_ENV === "development") {
+        if (!sessionPromise || isNewWallet) {
+            currentWalletAddress = walletAddress || "0xDEV_USER";
+            sessionPromise = Promise.resolve({
+                authenticated: true,
+                user: {
+                    id: "dev-user-id",
+                    address: currentWalletAddress,
+                    role: "admin",
+                    scope: "web",
+                    hasAccess: true,
+                    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+                }
+            });
+        }
+        return sessionPromise;
+    }
+
     if (!sessionPromise || isNewWallet) {
         if (walletAddress) {
             currentWalletAddress = walletAddress;
