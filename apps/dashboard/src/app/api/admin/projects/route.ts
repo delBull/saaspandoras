@@ -13,12 +13,19 @@ import slugify from "slugify";
 import { validateRequestBody } from "@/lib/security-utils";
 
 export async function GET(_request: Request) {
+  const requestId = Math.random().toString(36).substring(7);
   try {
-    console.log('🔍 Admin API: Starting GET request...');
+    console.log(`🔍 [${requestId}] Admin API: Starting GET /api/admin/projects...`);
 
     // Check admin authentication
-    const { session } = await getAuth(await headers());
-    const userIsAdmin = await isAdmin(session?.address ?? session?.userId);
+    const { session, isVerified } = await getAuth(await headers());
+
+    if (!isVerified) {
+      console.log('❌ Admin API: Access denied (Unverified identity) for user:', session?.address ?? session?.userId);
+      return NextResponse.json({ message: "No autorizado" }, { status: 401 });
+    }
+
+    const userIsAdmin = await isAdmin(session?.address ?? session?.userId, isVerified);
 
     if (!userIsAdmin) {
       console.log('❌ Admin API: Access denied for user:', session?.address ?? session?.userId);
@@ -45,6 +52,15 @@ export async function GET(_request: Request) {
     try {
       const projectsData = await db.query.projects.findMany({
         orderBy: (projects, { desc }) => desc(projects.createdAt),
+        where: (projects, { ne, and, or, isNull }) =>
+          // Filter out 'infrastructure' category (NFT Passes)
+          // They have their own tab/view
+          and(
+            or(
+              ne(projects.businessCategory, 'infrastructure'),
+              isNull(projects.businessCategory)
+            )
+          ),
         columns: {
           // Basic info
           id: true,
@@ -119,7 +135,7 @@ export async function GET(_request: Request) {
           w2eConfig: true,
         }
       });
-      console.log(`📊 Admin API: Found ${projectsData.length} projects`);
+      console.log(`📊 Admin API: Found ${projectsData.length} projects (excluding infrastructure)`);
       console.log('📊 Admin API: First project sample:', projectsData[0] ? {
         id: projectsData[0].id,
         title: projectsData[0].title,
@@ -134,7 +150,9 @@ export async function GET(_request: Request) {
       // Fallback: Try to get all columns using raw SQL
       try {
         const fallbackProjects = await db.execute(sql`
-          SELECT * FROM projects ORDER BY created_at DESC
+          SELECT * FROM projects 
+          WHERE business_category IS DISTINCT FROM 'infrastructure'
+          ORDER BY created_at DESC
         `);
         console.log(`📊 Admin API: Fallback query found ${fallbackProjects.length} projects`);
 
@@ -207,6 +225,7 @@ export async function GET(_request: Request) {
     );
   }
 }
+
 
 export async function POST(request: Request) {
   const { session } = await getAuth(await headers());

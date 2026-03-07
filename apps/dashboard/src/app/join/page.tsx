@@ -7,7 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@saasfly/ui/card';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import { Loader2 } from 'lucide-react';
 import { CheckCircleIcon, ArrowRightIcon, UserGroupIcon } from '@heroicons/react/24/outline';
+import { TelegramDashboardAuth } from '@/components/auth/TelegramDashboardAuth';
 
 function JoinContent() {
   const router = useRouter();
@@ -17,6 +19,7 @@ function JoinContent() {
   const [referrerWallet, setReferrerWallet] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [referralProcessed, setReferralProcessed] = useState(false);
+  const [telegramUserData, setTelegramUserData] = useState<any>(null);
 
   // Obtener el parámetro ref de la URL
   useEffect(() => {
@@ -82,15 +85,15 @@ function JoinContent() {
   if (!referrerWallet) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-zinc-900 to-black">
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-md border-zinc-800 bg-zinc-950">
           <CardHeader className="text-center">
             <CardTitle className="text-red-400">Enlace Inválido</CardTitle>
-            <CardDescription>
+            <CardDescription className="text-zinc-500">
               El enlace de referido no es válido o ha expirado.
             </CardDescription>
           </CardHeader>
           <CardContent className="text-center">
-            <Button onClick={() => router.push('/')} className="w-full">
+            <Button onClick={() => router.push('/')} variant="outline" className="w-full border-zinc-800 text-zinc-400">
               Ir al Inicio
             </Button>
           </CardContent>
@@ -107,43 +110,62 @@ function JoinContent() {
         transition={{ duration: 0.5 }}
         className="w-full max-w-md"
       >
-        <Card className="bg-zinc-900 border-zinc-800">
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 bg-cyan-500/20 rounded-full flex items-center justify-center">
+        <Card className="bg-zinc-900 border-zinc-800 shadow-2xl overflow-hidden">
+          <CardHeader className="text-center relative">
+            {/* Decorative element */}
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500"></div>
+
+            <div className="flex justify-center mb-4 pt-4">
+              <div className="w-16 h-16 bg-cyan-500/10 rounded-full flex items-center justify-center ring-1 ring-cyan-500/30">
                 <UserGroupIcon className="w-8 h-8 text-cyan-400" />
               </div>
             </div>
-            <CardTitle className="text-2xl text-white">
+            <CardTitle className="text-2xl text-white font-bold tracking-tight">
               ¡Bienvenido a Pandora&apos;s!
             </CardTitle>
-            <CardDescription className="text-gray-400">
-              Has sido invitado por un amigo. Conecta tu wallet para comenzar.
+            <CardDescription className="text-zinc-400">
+              Has sido invitado. Elige cómo quieres continuar para empezar a ganar puntos.
             </CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-6">
-            {/* Estado de conexión */}
+            {/* Telegram Login Option (Priority) */}
+            <div className="space-y-3">
+              <TelegramDashboardAuth
+                onSuccess={(data) => {
+                  setTelegramUserData(data);
+                  // If they have a wallet linked in Telegram, we could use it
+                  // For now we just track that they resolved identity
+                }}
+              />
+
+              <div className="relative flex items-center py-2">
+                <div className="flex-grow border-t border-zinc-800"></div>
+                <span className="flex-shrink mx-4 text-zinc-500 text-xs uppercase tracking-widest font-medium">O CONECTA TU WALLET</span>
+                <div className="flex-grow border-t border-zinc-800"></div>
+              </div>
+            </div>
+
+            {/* Wallet connection status */}
             {!account?.address ? (
-              <div className="text-center p-6 bg-zinc-800/50 rounded-lg">
-                <div className="animate-pulse">
-                  <div className="w-12 h-12 bg-zinc-700 rounded-full mx-auto mb-4"></div>
-                  <p className="text-gray-400">Esperando conexión de wallet...</p>
-                </div>
+              <div className="text-center p-6 bg-zinc-950/50 border border-zinc-800/50 rounded-xl">
+                <p className="text-zinc-500 text-sm mb-4 italic">Conecta tu wallet para vincular activos on-chain</p>
+                {/* The parent sidebar usually has the connect button, but here we can show instructions */}
               </div>
             ) : (
               <motion.div
                 initial={{ scale: 0.95 }}
                 animate={{ scale: 1 }}
-                className="text-center p-6 bg-green-900/20 border border-green-700/50 rounded-lg"
+                className="text-center p-6 bg-blue-900/10 border border-blue-500/30 rounded-xl"
               >
-                <CheckCircleIcon className="w-12 h-12 text-green-400 mx-auto mb-4" />
-                <p className="text-green-300 font-medium">¡Wallet conectada!</p>
-                <p className="text-xs text-green-400 mt-1">
+                <CheckCircleIcon className="w-12 h-12 text-blue-400 mx-auto mb-4" />
+                <p className="text-blue-300 font-medium">¡Wallet conectada!</p>
+                <p className="text-xs text-blue-400/70 mt-1 font-mono">
                   {account.address.slice(0, 6)}...{account.address.slice(-4)}
                 </p>
               </motion.div>
             )}
+
 
             {/* Estado del referido */}
             {account?.address && (
@@ -173,8 +195,8 @@ function JoinContent() {
             )}
 
             {/* Información del referrer */}
-            <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
-              <p className="text-xs text-gray-400 mb-2">Invitado por:</p>
+            <div className="text-center p-4 bg-zinc-950/50 border border-zinc-800/30 rounded-xl">
+              <p className="text-xs text-zinc-500 mb-2 uppercase tracking-widest font-bold">Invitado por</p>
               <p className="text-sm font-mono text-cyan-400">
                 {referrerWallet.slice(0, 6)}...{referrerWallet.slice(-4)}
               </p>
@@ -184,12 +206,12 @@ function JoinContent() {
             {account?.address && !referralProcessed && !isProcessing && (
               <Button
                 onClick={processReferral}
-                className="w-full bg-cyan-600 hover:bg-cyan-700"
+                className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-6 rounded-xl transition-all shadow-lg shadow-cyan-600/20"
                 disabled={isProcessing}
               >
                 {isProcessing ? (
                   <div className="flex items-center gap-2">
-                    <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+                    <Loader2 className="animate-spin w-4 h-4" />
                     Procesando...
                   </div>
                 ) : (
@@ -203,11 +225,11 @@ function JoinContent() {
 
             {/* Botón para ir al dashboard */}
             <Button
-              variant="outline"
+              variant="link"
               onClick={() => router.push('/')}
-              className="w-full border-zinc-700 hover:bg-zinc-800"
+              className="w-full text-zinc-500 hover:text-zinc-300 text-xs"
             >
-              Ir al Dashboard
+              Omitir y entrar al Dashboard
             </Button>
           </CardContent>
         </Card>
@@ -215,6 +237,7 @@ function JoinContent() {
     </div>
   );
 }
+
 
 export default function JoinPage() {
   return (

@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
+    "build:railway": "turbo run build --filter=deployment-service",
     "clean": "git clean -xdf node_modules",
     "clean:workspaces": "turbo clean",
     "db:push": "cd ./packages/db/ && bun db:push",
@@ -16,7 +17,8 @@
     "check-deps": "check-dependency-version-consistency .",
     "check-deps:ci": "check-dependency-version-consistency . || echo '⚠️  Version mismatches detected - continuing for CI/CD compatibility'",
     "fix-deps": "check-dependency-version-consistency . --fix",
-    "gen": "turbo gen --config 'turbo/generators/config.ts'"
+    "gen": "turbo gen --config 'turbo/generators/config.ts'",
+    "start": "cd apps/deployment-service && bun src/index.ts"
   },
   "devDependencies": {
     "@turbo/gen": "1.13.3",
@@ -69,6 +71,11 @@
   },
   "overrides": {
     "next": "15.5.7",
-    "ethers": "5.7.2"
+    "ethers": "5.7.2",
+    "thirdweb": "5.106.0",
+    "viem": "2.33.2",
+    "ox": "0.7.0",
+    "@noble/curves": "1.9.2",
+    "@noble/hashes": "1.8.0"
   }
 }

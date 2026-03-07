@@ -6,7 +6,8 @@ import { eq } from 'drizzle-orm';
 import { db } from '~/db';
 import { shortlinks, shortlinkEvents } from '~/db/schema';
 import { headers } from 'next/headers';
-import { NextRequest } from 'next/server';
+import type { Metadata } from 'next';
+import { SmartQRLanding } from '@/components/SmartQRLanding';
 
 // Force dynamic to prevent caching of 404s/redirects
 export const dynamic = 'force-dynamic';
@@ -16,6 +17,70 @@ interface PageProps {
   params: Promise<{ slug: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+
+  if (['admin', 'api', 'dashboard', '_next', 'w', 's'].includes(slug)) {
+    return { title: 'Pandoras System' };
+  }
+
+  try {
+    const shortlink = await db
+      .select()
+      .from(shortlinks)
+      .where(eq(shortlinks.slug, slug))
+      .limit(1);
+
+    if (!shortlink.length || !shortlink[0]?.isActive) {
+      return { title: 'Not Found' };
+    }
+
+    const link = shortlink[0];
+
+    // Default metadata from the shortlink record
+    let title = link.title || 'Pandoras Pass';
+    let description = link.description || 'Access Pass / Smart QR';
+    let imageUrl = 'https://pandoras.finance/images/pkey.png'; // Fallback image
+
+    // If it's a landing page, prefer landing config metadata
+    if (link.type === 'landing' && link.landingConfig) {
+      const config = link.landingConfig as any;
+      if (config.title) title = config.title;
+      if (config.slogan) description = config.slogan;
+      if (config.logoUrl) imageUrl = config.logoUrl;
+    }
+
+    return {
+      title,
+      description,
+      openGraph: {
+        title,
+        description,
+        images: [{ url: imageUrl }],
+        type: 'website',
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description,
+        images: [imageUrl],
+      },
+    };
+  } catch (err) {
+    console.error('Error generating metadata for shortlink:', err);
+    return { title: 'Pandoras' };
+  }
+}
+
+// Helper to ensure links are absolute
+const ensureAbsoluteUrl = (url?: string) => {
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("mailto:") || url.startsWith("tel:")) {
+    return url;
+  }
+  return `https://${url}`;
+};
 
 // Server Action for tracking and redirecting
 async function handleShortlink(slug: string, searchParams: URLSearchParams, headersData: any) {
@@ -70,6 +135,9 @@ async function handleShortlink(slug: string, searchParams: URLSearchParams, head
       deviceType = 'desktop';
     }
 
+    // Detect social bots for OpenGraph previews (WhatsApp, FB, Twitter, etc.)
+    const isBot = /bot|facebookexternalhit|whatsapp|twitterbot|linkedinbot|pinterestbot|slackbot|discordbot/i.test(userAgent.toLowerCase());
+
     // Detect browser
     let browser = 'unknown';
     if (/chrome/i.test(userAgent)) browser = 'chrome';
@@ -84,26 +152,41 @@ async function handleShortlink(slug: string, searchParams: URLSearchParams, head
     console.log(`📊 Tracking shortlink click: ${slug} -> ${link.destinationUrl}`);
 
     // Track the event (async, don't wait for it)
-    db.insert(shortlinkEvents).values({
-      slug,
-      domain: host,
-      ip,
-      userAgent,
-      referer,
-      utmSource,
-      utmMedium,
-      utmCampaign,
-      utmTerm,
-      utmContent,
-      deviceType,
-      browser,
-      country,
-    }).catch(error => {
-      console.error('Failed to track shortlink event:', error);
-    });
+    if (!isBot) {
+      db.insert(shortlinkEvents).values({
+        slug,
+        domain: host,
+        ip,
+        userAgent,
+        referer,
+        utmSource,
+        utmMedium,
+        utmCampaign,
+        utmTerm,
+        utmContent,
+        deviceType,
+        browser,
+        country,
+      }).catch(error => {
+        console.error('Failed to track shortlink event:', error);
+      });
+    }
+
+    // 🚀 NEW: Smart QR Landing Page Logic
+    if (link.type === 'landing' && link.landingConfig) {
+      console.log(`🎨 Found Landing Page config for: ${slug}`);
+      return { type: 'landing', config: link.landingConfig };
+    }
+
+    // Return a bot preview state if a scraper is accessing a redirect link
+    if (isBot) {
+      console.log(`🤖 Detected bot for redirect link: ${slug}`);
+      return { type: 'bot_preview', link };
+    }
 
     // Redirect to destination URL with shortlink tracking parameters
-    const destinationUrl = new URL(link.destinationUrl);
+    const safeUrl = ensureAbsoluteUrl(link.destinationUrl);
+    const destinationUrl = new URL(safeUrl);
 
     // Add shortlink info so the landing page knows it came from a shortlink
     destinationUrl.searchParams.set('via_shortlink', slug);
@@ -160,11 +243,30 @@ export default async function ShortlinkPage({ params, searchParams }: PageProps)
   }
 
   try {
-    // Call handleShortlink - this will redirect if successful or throw error if not
-    await handleShortlink(slug, urlSearchParams, headersData);
+    // Call handleShortlink - this will redirect if successful or return landing config
+    const result = await handleShortlink(slug, urlSearchParams, headersData);
 
-    // If we reach this point, handleShortlink should have redirected
-    // This is a fallback in case something goes wrong
+    if (result?.type === 'landing') {
+      return <SmartQRLanding config={result.config} slug={slug} />;
+    }
+
+    // For social media bots parsing OpenGraph tags
+    if (result?.type === 'bot_preview') {
+      return (
+        <html lang="es">
+          <head>
+            {/* The meta tags are handled by generateMetadata. We just return a client-side redirect for safety */}
+            <meta httpEquiv="refresh" content={`0;url=${result.link?.destinationUrl}`} />
+          </head>
+          <body>
+            Redirecting...
+          </body>
+        </html>
+      );
+    }
+
+    // If we reach this point and no redirect happened (which throws), 
+    // it's a fallback for non-landing results
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="max-w-md w-full space-y-4 p-8 bg-white rounded-lg shadow-lg">

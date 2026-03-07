@@ -6,3 +6,4 @@ export { AddressInfo } from './AddressInfo';
 export { AccountStatus } from './AccountStatus';
 export { WalletSecurity } from './WalletSecurity';
 export { KycModal } from './KycModal';
+export { TelegramLinkCard } from './TelegramLinkCard';

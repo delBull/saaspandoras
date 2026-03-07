@@ -147,10 +147,6 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   const userIsAdmin = await isAdmin(session?.userId) ||
     await isAdmin(session?.address);
 
-  if (!userIsAdmin) {
-    return NextResponse.json({ message: "No autorizado" }, { status: 403 });
-  }
-
   const { slug } = await params;
   const projectId = Number(slug);
 
@@ -159,9 +155,9 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   }
 
   try {
-    console.log('🔄 PATCH: Starting project status update for ID:', projectId);
+    console.log('🔄 PATCH: Starting project update for ID:', projectId);
 
-    const body: unknown = await request.json();
+    const body: any = await request.json();
 
     // Validación inmediata del body
     const validation = validateRequestBody(body);
@@ -171,28 +167,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
     console.log('🔄 PATCH: Request body:', sanitizeLogData(body));
 
-    // For PATCH, we only allow status updates for now
-    if (typeof body !== 'object' || body === null || !('status' in body)) {
-      console.log('🔄 PATCH: Invalid body structure');
-      return NextResponse.json(
-        { message: "Solo se permite actualizar el estado del proyecto" },
-        { status: 400 }
-      );
-    }
-
-    const { status } = body as { status: string | number | boolean };
-    const statusString = String(status);
-    console.log('🔄 PATCH: Status to update:', statusString);
-
-    // Validar que el status sea válido (debe coincidir con el ENUM de la base de datos)
-    const validStatuses = ['pending', 'approved', 'live', 'completed', 'rejected'];
-    if (!validStatuses.includes(statusString)) {
-      console.log('🔄 PATCH: Invalid status value:', statusString);
-      return NextResponse.json({ message: "Estado inválido" }, { status: 400 });
-    }
-
-    // Verificar que el proyecto existe y obtener información completa
-    console.log('🔄 PATCH: Checking if project exists...');
+    // Verificar que el proyecto existe
     const existingProject = await db.query.projects.findFirst({
       where: eq(projectsSchema.id, projectId),
       columns: {
@@ -206,66 +181,83 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     });
 
     if (!existingProject) {
-      console.log('🔄 PATCH: Project not found:', projectId);
       return NextResponse.json({ message: "Proyecto no encontrado" }, { status: 404 });
     }
 
-    console.log('🔄 PATCH: Existing project status:', existingProject.status);
-    console.log('🔄 PATCH: Updating project status...');
+    // --- AUTHENTICATION & AUTHORIZATION ---
+    const userWallet = (session?.address ?? session?.userId)?.toLowerCase();
+    const isAdminUser = userIsAdmin;
+    const isOwner = userWallet && existingProject.applicantWalletAddress?.toLowerCase() === userWallet;
 
-    // Actualizar solo el status del proyecto
-    await db
-      .update(projectsSchema)
-      .set({ status: statusString as "pending" | "approved" | "live" | "completed" | "rejected" | "incomplete" })
-      .where(eq(projectsSchema.id, projectId));
-
-    // 🎮 TRIGGER EVENTO DE APROBACIÓN DE PROYECTO si el status cambió a "approved"
-    if (existingProject.status !== "approved" && statusString === "approved") {
-      const adminWallet = (session?.address ?? session?.userId)?.toLowerCase();
-      const applicantWallet = existingProject.applicantWalletAddress?.toLowerCase();
-
-      console.log('✅ Project approved! Triggering gamification events...');
-      console.log('🎮 Admin wallet:', adminWallet?.substring(0, 6) + '...');
-      console.log('🎮 Applicant wallet:', applicantWallet?.substring(0, 6) + '...');
-
-      // Evento de aprobación para el applicant usando el evento correcto
-      if (applicantWallet) {
-        try {
-          // Importar dinámicamente para evitar problemas de dependencias circulares
-          const { trackGamificationEvent } = await import('@/lib/gamification/service');
-
-          await trackGamificationEvent(
-            applicantWallet,
-            'project_application_approved', // Evento correcto para aprobación (100 puntos)
-            {
-              projectId: projectId.toString(),
-              projectTitle: existingProject.title ?? 'Proyecto Aprobado',
-              businessCategory: existingProject.businessCategory ?? 'other',
-              targetAmount: existingProject.targetAmount?.toString() ?? '0',
-              approvedBy: adminWallet,
-              approvalType: 'admin_approval',
-              approvalDate: new Date().toISOString()
-            }
-          );
-          console.log('✅ PROJECT APPROVAL event tracked for applicant (100 points earned!)');
-        } catch (gamificationError) {
-          console.warn('⚠️ Failed to track PROJECT APPROVAL for applicant:', gamificationError);
-          // No bloquear el flujo si falla la gamificación
-        }
-      }
-
-      // Nota: Para el admin podríamos agregar puntos por revisión, pero por ahora nos enfocamos en el applicant
-      // En futuras fases podemos crear eventos específicos para admins
+    if (!isAdminUser && !isOwner) {
+      return NextResponse.json({ message: "No autorizado para editar este proyecto" }, { status: 403 });
     }
 
-    console.log('🔄 PATCH: Update successful for project:', projectId);
-    return NextResponse.json({ message: "Status actualizado exitosamente" }, { status: 200 });
+    // Case 1: Simple Status Update (Admin Only)
+    if (body.status && !body.isBasicEdit) {
+      if (!isAdminUser) {
+        return NextResponse.json({ message: "Solo admins pueden cambiar el estado" }, { status: 403 });
+      }
+
+      const { status } = body;
+      const statusString = String(status);
+      const validStatuses = ['pending', 'approved', 'live', 'completed', 'rejected', 'incomplete'];
+
+      if (!validStatuses.includes(statusString)) {
+        return NextResponse.json({ message: "Estado inválido" }, { status: 400 });
+      }
+
+      await db
+        .update(projectsSchema)
+        .set({ status: statusString as any })
+        .where(eq(projectsSchema.id, projectId));
+
+      // ... gamification logic for approval ...
+      if (existingProject.status !== "approved" && statusString === "approved") {
+        try {
+          const { trackGamificationEvent } = await import('@/lib/gamification/service');
+          await trackGamificationEvent(
+            existingProject.applicantWalletAddress!.toLowerCase(),
+            'project_application_approved',
+            { projectId: projectId.toString(), projectTitle: existingProject.title ?? 'Proyecto' }
+          );
+        } catch (e) { console.warn('Gamification error:', e); }
+      }
+
+      return NextResponse.json({ message: "Status actualizado" }, { status: 200 });
+    }
+
+    // Case 2: Basic Metadata Edit (Owner or Admin)
+    if (body.isBasicEdit) {
+      const updates: any = {};
+      if (body.title) updates.title = body.title;
+      if (body.tagline !== undefined) updates.tagline = body.tagline;
+      if (body.description) updates.description = body.description;
+      if (body.logoUrl !== undefined) updates.logoUrl = body.logoUrl;
+      if (body.coverPhotoUrl !== undefined) updates.coverPhotoUrl = body.coverPhotoUrl;
+
+      // Optional: generate new slug if title changed (admin only or owner?)
+      if (body.title && body.title !== existingProject.title) {
+        updates.slug = slugify(body.title, { lower: true, strict: true });
+      }
+
+      if (Object.keys(updates).length === 0) {
+        return NextResponse.json({ message: "Sin cambios detectados" }, { status: 400 });
+      }
+
+      await db
+        .update(projectsSchema)
+        .set(updates)
+        .where(eq(projectsSchema.id, projectId));
+
+      return NextResponse.json({ message: "Propiedades básicas actualizadas" }, { status: 200 });
+    }
+
+    return NextResponse.json({ message: "Operación no reconocida" }, { status: 400 });
+
   } catch (error) {
-    console.error("🔄 PATCH: Error al actualizar el proyecto:", error);
-    return NextResponse.json(
-      { message: "Error interno del servidor.", error: String(error) },
-      { status: 500 }
-    );
+    console.error("🔄 PATCH Error:", error);
+    return NextResponse.json({ message: "Error interno", error: String(error) }, { status: 500 });
   }
 }
 

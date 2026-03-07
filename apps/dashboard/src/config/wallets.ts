@@ -7,6 +7,8 @@ export const accountAbstractionConfig = {
 };
 
 export const wallets = [
+    // 🛡️ Explicitly wrapping inAppWallet with smartWallet to ENFORCE Account Abstraction
+    // 🛡️ Explicitly configuring inAppWallet with Smart Account
     inAppWallet({
         auth: {
             options: [
@@ -17,13 +19,8 @@ export const wallets = [
                 "passkey",
             ],
         },
-        smartAccount: accountAbstractionConfig, // 🛡️ Explicit AA for Social
-        executionMode: {
-            mode: "EIP7702",
-            sponsorGas: true,
-        },
+        smartAccount: accountAbstractionConfig, // ⚡ Built-in Smart Account support
     }),
-    // 🛡️ Explicitly listed wallets for Global Smart Account support
-    // 🛡️ Explicitly listed wallets for Global Smart Account support
+    // 🛡️ Standard EOA wallets
     createWallet("io.metamask"),
 ];

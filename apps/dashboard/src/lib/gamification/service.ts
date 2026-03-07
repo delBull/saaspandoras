@@ -21,7 +21,9 @@ import {
   gamificationEvents,
   type GamificationProfile as DrizzleGamificationProfile
 } from '@/db/schema';
-import { eq, sql, desc } from 'drizzle-orm';
+import { eq, sql, desc, or, and } from 'drizzle-orm';
+import { WebhookService } from '@/lib/integrations/webhook-service';
+import { integrationClients as integrationClientsSchema } from '@/db/schema';
 
 // Export the class before declaring it
 export class GamificationService {
@@ -227,7 +229,29 @@ export class GamificationService {
       }
 
       // Get points for this event type
-      const points = this.getEventPoints(eventType);
+      let points = this.getEventPoints(eventType);
+
+      // 🔥 FIX: Special case for achievement unlocks from S2S/Edge
+      if (eventType === 'ACHIEVEMENT_UNLOCKED' && metadata?.achievementId) {
+        try {
+          const achId = typeof metadata.achievementId === 'string' ? parseInt(metadata.achievementId) : Number(metadata.achievementId);
+          if (!isNaN(achId)) {
+            const ach = await db
+              .select({ points: achievements.pointsReward })
+              .from(achievements)
+              .where(eq(achievements.id, achId))
+              .limit(1);
+
+            if (ach.length > 0 && ach[0]) {
+              points = ach[0].points;
+              console.log(`🏆 Resolved achievement points: ${points} for achievement ID ${achId}`);
+            }
+          }
+        } catch (achResError) {
+          console.warn(`⚠️ Failed to resolve achievement points:`, achResError);
+        }
+      }
+
       console.log(`💰 Event ${eventType} grants ${points} points`);
 
       // Award points directly using raw SQL (without events table dependency)
@@ -253,11 +277,12 @@ export class GamificationService {
           WHERE user_id = ${userId}
         `);
 
-        // Insert points record using numeric user ID
+        // Insert points record using numeric user ID and dynamic category
+        const eventCategory = this.getEventCategory(eventType);
         await db.execute(sql`
           INSERT INTO user_points
           (user_id, points, reason, category, metadata, created_at)
-          VALUES (${userId}, ${points}, ${`Event: ${eventType}`}, 'daily_login', ${JSON.stringify(metadata ?? {})}, NOW())
+          VALUES (${userId}, ${points}, ${metadata?.achievementId ? `Logro Desbloqueado: ${String(metadata.achievementId)}` : `Evento: ${String(eventType)}`}, ${eventCategory}, ${JSON.stringify(metadata ?? {})}, NOW())
         `);
       }
 
@@ -275,6 +300,29 @@ export class GamificationService {
         projectId: metadata?.projectId ? Number(metadata.projectId) : null,
         metadata: metadata ? metadata : {},
       }).returning();
+
+      // 🚀 WEBHOOK: Notify external clients
+      try {
+        // Broadcast to all active clients (Staging + Production for Gamification as it's cross-env)
+        const clients = await db.query.integrationClients.findMany({
+          where: eq(integrationClientsSchema.isActive, true)
+        });
+
+        for (const client of clients) {
+          await WebhookService.queueEvent(client.id, 'gamification.event', {
+            userWallet: walletAddress,
+            eventType: eventType,
+            pointsEarned: points,
+            metadata: metadata || {},
+            isSandbox: client.environment === 'staging'
+          });
+        }
+        if (clients.length > 0) {
+          console.log(`📡 Gamification Webhook(s) queued for ${clients.length} clients.`);
+        }
+      } catch (webhookError) {
+        console.warn('⚠️ Failed to queue gamification webhook:', webhookError);
+      }
 
       // Return basic event object (without ID dependency)
       return {
@@ -552,11 +600,10 @@ export class GamificationService {
 
       const userIdInt = user[0].id;
 
-      // Get user achievements with achievement details
       const userAchievementsData = await db
         .select({
           userAchievementId: userAchievements.id,
-          achievementId: userAchievements.achievementId,
+          achievementId: achievements.id,
           progress: userAchievements.progress,
           isUnlocked: userAchievements.isUnlocked,
           unlockedAt: userAchievements.unlockedAt,
@@ -567,9 +614,11 @@ export class GamificationService {
           points: achievements.pointsReward,
           category: achievements.type
         })
-        .from(userAchievements)
-        .innerJoin(achievements, eq(userAchievements.achievementId, achievements.id))
-        .where(eq(userAchievements.userId, userIdInt));
+        .from(achievements)
+        .leftJoin(userAchievements, and(
+          eq(userAchievements.achievementId, achievements.id),
+          eq(userAchievements.userId, userIdInt)
+        ));
 
       // Map to UserAchievement format
       const achievementsList: UserAchievement[] = userAchievementsData.map((item: any) => ({
@@ -1021,363 +1070,93 @@ export class GamificationService {
     }
   }
 
+  private static hasSeeded = false;
+
   /**
-   * Initialize basic achievements in database
+   * Initialize basic achievements in database if they don't exist
    */
-  private static async initializeBasicAchievements(): Promise<void> {
+  public static async initializeBasicAchievements(): Promise<void> {
+    if (this.hasSeeded) return; // Prevent multiple seeds in same process
+
+    // 🚀 DEV_FAST MODE: Skip seeding to save DB time
+    if (process.env.NEXT_PUBLIC_DEV_FAST === "true" && process.env.NODE_ENV === "development") {
+      this.hasSeeded = true;
+      return;
+    }
     try {
-      // 🙋‍♂️ DASHBOARD SPECIFIC ACHIEVEMENTS (equivalents to package achievements)
-      const basicAchievements = [
-        {
-          name: "Primer Login",
-          description: "Conecta tu wallet exitosamente",
-          icon: "🔗",
-          type: "community_builder" as any,
-          required_points: 10,
-          required_level: 1,
-          required_events: JSON.stringify(["DAILY_LOGIN"]),
-          points_reward: 0,
-          badge_url: "/badges/first-login.png",
-          is_active: true,
-          is_secret: false,
-          created_at: new Date()
-        },
-        {
-          name: "Explorador Intrépido",
-          description: "Gana tus primeros 25 tokens",
-          icon: "🔍",
-          type: "explorer" as any,
-          required_points: 25,
-          required_level: 1,
-          required_events: JSON.stringify([]),
-          points_reward: 0,
-          badge_url: "/badges/explorer.png",
-          is_active: true,
-          is_secret: false,
-          created_at: new Date()
-        },
-        {
-          name: "Primer Borrador",
-          description: "Envía tu primera aplicación de proyecto",
-          icon: "📝",
-          type: "creator" as any,
-          required_points: 0,
-          required_level: 1,
-          required_events: JSON.stringify(["project_application_submitted"]),
-          points_reward: 0,
-          badge_url: "/badges/applicant.png",
-          is_active: true,
-          is_secret: false,
-          created_at: new Date()
-        },
-        {
-          name: "Aplicante Proactivo",
-          description: "Gana 100 tokens por actividades",
-          icon: "📝",
-          type: "creator" as any,
-          required_points: 100,
-          required_level: 1,
-          required_events: JSON.stringify(["project_application_started"]), // Fixed typo
-          points_reward: 0,
-          badge_url: "/badges/applicant.png",
-          is_active: true,
-          is_secret: false,
-          created_at: new Date()
-        },
-        {
-          name: "Promotor de Comunidad",
-          description: "Obtén tu primer referido exitoso",
-          icon: "🎯",
-          type: "community_builder" as any,
-          required_points: 0,
-          required_level: 1,
-          required_events: JSON.stringify(["referral_made"]),
-          points_reward: 500,
-          badge_url: "/badges/referrer.png",
-          is_active: true,
-          is_secret: false,
-          created_at: new Date()
-        },
-        {
-          name: "Proyecto Aprobado",
-          description: "Tu proyecto fue aprobado por el equipo de Pandora's",
-          icon: "✅",
-          type: "creator" as any,
-          required_points: 0,
-          required_level: 1,
-          required_events: JSON.stringify(["project_application_approved"]),
-          points_reward: 100,
-          badge_url: "/badges/project-approved.png",
-          is_active: true,
-          is_secret: false,
-          created_at: new Date()
-        },
-        {
-          name: "Maestro Recrutador",
-          description: "Ayuda a 5 personas a unirse",
-          icon: "🎉",
-          type: "community_builder" as any,
-          required_points: 0,
-          required_level: 1,
-          required_events: JSON.stringify(["referral_made_5"]), // Placeholder
-          points_reward: 1000,
-          badge_url: "/badges/recruiter.png",
-          is_active: true,
-          is_secret: false,
-          created_at: new Date()
-        },
-        {
-          name: "Referido Completado",
-          description: "Completa tu referido realizando acciones importantes",
-          icon: "🎯",
-          type: "community_builder" as any,
-          required_points: 0,
-          required_level: 1,
-          required_events: JSON.stringify(["referral_completed"]),
-          points_reward: 100,
-          badge_url: "/badges/referral-completed.png",
-          is_active: true,
-          is_secret: false,
-          created_at: new Date()
-        },
-        // NEW ACHIEVEMENTS
-        {
-          name: "Curso Iniciado",
-          description: "Has comenzado tu viaje de aprendizaje",
-          icon: "📚",
-          type: "tokenization_expert" as any,
-          required_points: 0,
-          required_level: 1,
-          required_events: JSON.stringify(["course_started"]),
-          points_reward: 10,
-          badge_url: "/badges/scholar-start.png",
-          is_active: true,
-          is_secret: false,
-          created_at: new Date()
-        },
-        {
-          name: "Curso Completado",
-          description: "Has completado un curso educativo",
-          icon: "🎓",
-          type: "tokenization_expert" as any,
-          required_points: 0,
-          required_level: 1,
-          required_events: JSON.stringify(["course_completed"]),
-          points_reward: 100,
-          badge_url: "/badges/scholar-complete.png",
-          is_active: true,
-          is_secret: false,
-          created_at: new Date()
-        },
-        {
-          name: "Protocolo Desplegado",
-          description: "Has desplegado tu propio protocolo en blockchain",
-          icon: "🚀",
-          type: "creator" as any,
-          required_points: 0,
-          required_level: 1,
-          required_events: JSON.stringify(["protocol_deployed"]),
-          points_reward: 500,
-          badge_url: "/badges/protocol-deployert.png",
-          is_active: true,
-          is_secret: false,
-          created_at: new Date()
-        },
-        {
-          name: "Iniciado en Pandoras",
-          description: "Has completado el recorrido de iniciación de Pandora's OS",
-          icon: "🚀",
-          type: "explorer" as any,
-          required_points: 0,
-          required_level: 1,
-          required_events: JSON.stringify(["onboarding_tour_completed"]),
-          points_reward: 50,
-          badge_url: "/badges/onboarding-complete.png",
-          is_active: true,
-          is_secret: false,
-          created_at: new Date()
-        },
-      ];
+      // 1. Get static seed accomplishments
+      const { ACHIEVEMENTS } = await import('./seeds/achievements.seed');
+      const seedAchievements = [...ACHIEVEMENTS];
 
-      const newAchievements = [
-        // --- NEW USER REQUESTED ACHIEVEMENTS ---
-        {
-          name: "Pionero DAO",
-          description: "Has activado el sistema de Gobernanza Descentralizada",
-          icon: "🏛️",
-          type: "dao_pioneer" as any,
-          required_points: 0,
-          required_level: 2,
-          required_events: JSON.stringify(["dao_activated"]),
-          points_reward: 500,
-          badge_url: "/badges/dao-pioneer.png",
-          is_active: true,
-          is_secret: false,
-          created_at: new Date()
-        },
-        {
-          name: "Coleccionista Novato",
-          description: "Adquiere tu primer Artefacto",
-          icon: "🏺",
-          type: "artifact_collector" as any,
-          required_points: 0,
-          required_level: 1,
-          required_events: JSON.stringify(["artifact_purchased"]),
-          points_reward: 50,
-          badge_url: "/badges/collector-1.png",
-          is_active: true,
-          is_secret: false,
-          created_at: new Date()
-        },
-        {
-          name: "Coleccionista Entusiasta",
-          description: "Posees 3 Artefactos de la comunidad",
-          icon: "🏺",
-          type: "artifact_collector" as any,
-          required_points: 0,
-          required_level: 1,
-          required_events: JSON.stringify(["artifact_purchased_3"]),
-          points_reward: 150,
-          badge_url: "/badges/collector-3.png",
-          is_active: true,
-          is_secret: false,
-          created_at: new Date()
-        },
-        {
-          name: "Coleccionista Experto",
-          description: "Posees 5 Artefactos de la comunidad",
-          icon: "🏺",
-          type: "artifact_collector" as any,
-          required_points: 0,
-          required_level: 1,
-          required_events: JSON.stringify(["artifact_purchased_5"]),
-          points_reward: 300,
-          badge_url: "/badges/collector-5.png",
-          is_active: true,
-          is_secret: false,
-          created_at: new Date()
-        },
-        {
-          name: "Ballena de Artefactos",
-          description: "Posees 10 o más Artefactos. ¡Eres una leyenda!",
-          icon: "🐋",
-          type: "artifact_collector" as any,
-          required_points: 0,
-          required_level: 1,
-          required_events: JSON.stringify(["artifact_purchased_10"]),
-          points_reward: 1000,
-          badge_url: "/badges/collector-whale.png",
-          is_active: true,
-          is_secret: false,
-          created_at: new Date()
-        },
-        {
-          name: "Iniciación DeFi",
-          description: "Tu primer depósito en Staking",
-          icon: "🥩",
-          type: "defi_starter" as any,
-          required_points: 0,
-          required_level: 1,
-          required_events: JSON.stringify(["staking_deposit"]),
-          points_reward: 100,
-          badge_url: "/badges/defi-starter.png",
-          is_active: true,
-          is_secret: false,
-          created_at: new Date()
-        },
-        {
-          name: "Voz Activa",
-          description: "Tu primera participación en una votación del DAO",
-          icon: "🗳️",
-          type: "governor" as any,
-          required_points: 0,
-          required_level: 1,
-          required_events: JSON.stringify(["proposal_vote"]),
-          points_reward: 50,
-          badge_url: "/badges/governor.png",
-          is_active: true,
-          is_secret: false,
-          created_at: new Date()
-        },
-        {
-          name: "Cazador de Rendimiento",
-          description: "Tu primer reclamo de recompensas",
-          icon: "💰",
-          type: "yield_hunter" as any,
-          required_points: 0,
-          required_level: 1,
-          required_events: JSON.stringify(["rewards_claimed"]),
-          points_reward: 75,
-          badge_url: "/badges/yield-hunter.png",
-          is_active: true,
-          is_secret: false,
-          created_at: new Date()
-        }
-      ];
-
-      const mergedBasicAchievements = [...basicAchievements, ...newAchievements];
-
-      // First import and convert TOKENIZATION_ACHIEVEMENTS from package
-      // (Dynamic import to avoid build issues if package is not available)
+      // 2. Import package tokenization achievements dynamically
       try {
         const { TOKENIZATION_ACHIEVEMENTS } = await import('@pandoras/gamification');
         console.log(`📦 Loading ${TOKENIZATION_ACHIEVEMENTS.length} achievements from package...`);
 
-        // Convert package achievements to dashboard format
-        const packageAchievements = TOKENIZATION_ACHIEVEMENTS.map(pkgAchievement => ({
-          name: pkgAchievement.name,
-          description: pkgAchievement.description,
-          icon: pkgAchievement.icon,
-          type: pkgAchievement.category as any,
-          required_points: pkgAchievement.points,
-          required_level: 1,
-          required_events: JSON.stringify(pkgAchievement.requirements),
-          points_reward: pkgAchievement.points,
-          badge_url: `/${pkgAchievement.category}-badges/${pkgAchievement.id}`,
-          is_active: pkgAchievement.isActive,
-          is_secret: pkgAchievement.isSecret,
-          created_at: new Date()
-        }));
+        // Convert package achievements to dashboard format, assigning a unique code based on ID
+        const packageAchievements = TOKENIZATION_ACHIEVEMENTS.map(pkgAchievement => {
+          // 🔥 Mapping package categories to dashboard ENUMs (fix 22P02 & no-unsafe-enum-comparison)
+          const categoryMap: Record<string, string> = {
+            'projects': 'creator',
+            'investments': 'investor',
+            'community': 'community_builder',
+            'learning': 'tokenization_expert',
+            'special': 'early_adopter',
+            'streaks': 'first_steps',
+            'social': 'community_builder'
+          };
 
-        // Merge with dashboard achievements
-        const allAchievements = [...mergedBasicAchievements, ...packageAchievements];
-        console.log(`🏆 Total achievements to initialize: ${allAchievements.length}`);
+          const dashboardType = categoryMap[String(pkgAchievement.category)] || 'community_builder';
 
-        // Only insert if not exists (by name)
-        for (const achievement of allAchievements) {
-          const exists = await db
-            .select()
-            .from(achievements)
-            .where(eq(achievements.name, achievement.name))
-            .limit(1);
+          return {
+            code: `PKG_${pkgAchievement.id}`,
+            name: pkgAchievement.name,
+            description: pkgAchievement.description,
+            icon: pkgAchievement.icon,
+            type: dashboardType as any,
+            requiredPoints: pkgAchievement.points,
+            requiredLevel: 1,
+            requiredEvents: pkgAchievement.requirements.map(r => typeof r === 'string' ? r : (r as any).type || (r as any).id),
+            pointsReward: pkgAchievement.points,
+            badgeUrl: `/${pkgAchievement.category}-badges/${pkgAchievement.id}`,
+            isActive: pkgAchievement.isActive,
+            isSecret: pkgAchievement.isSecret,
+            createdAt: new Date()
+          };
+        });
 
-          if (exists.length === 0) {
-            await db.insert(achievements).values(achievement);
-            console.log(`🏆 Created achievement: ${achievement.name}`);
-          }
-        }
-
-        console.log(`✅ Achievements initialization complete: ${allAchievements.length} total`);
+        seedAchievements.push(...packageAchievements);
       } catch (importError) {
-        console.warn('⚠️ Could not import TOKENIZATION_ACHIEVEMENTS from package, using only basic achievements:', importError);
-
-        // Fallback to basic achievements only
-        for (const achievement of basicAchievements) {
-          const exists = await db
-            .select()
-            .from(achievements)
-            .where(eq(achievements.name, achievement.name))
-            .limit(1);
-
-          if (exists.length === 0) {
-            await db.insert(achievements).values(achievement);
-            console.log(`🏆 Created achievement: ${achievement.name}`);
-          }
-        }
+        console.warn('⚠️ Could not import TOKENIZATION_ACHIEVEMENTS from package. Only core achievements will be used.');
       }
+
+      console.log(`🏆 Seeding ${seedAchievements.length} achievements to database...`);
+
+      // 3. Upsert using the unique `code` constraint to ensure strict versioning
+      await db.insert(achievements)
+        .values(seedAchievements)
+        .onConflictDoUpdate({
+          target: achievements.code,
+          set: {
+            name: sql`EXCLUDED.name`,
+            description: sql`EXCLUDED.description`,
+            icon: sql`EXCLUDED.icon`,
+            type: sql`EXCLUDED.type`,
+            requiredPoints: sql`EXCLUDED.required_points`,
+            requiredLevel: sql`EXCLUDED.required_level`,
+            requiredEvents: sql`EXCLUDED.required_events`,
+            pointsReward: sql`EXCLUDED.points_reward`,
+            badgeUrl: sql`EXCLUDED.badge_url`,
+            isActive: sql`EXCLUDED.is_active`,
+            isSecret: sql`EXCLUDED.is_secret`
+          }
+        });
+
+      this.hasSeeded = true;
+      console.log(`✅ Achievements successfully seeded/updated.`);
     } catch (error) {
-      console.error('Error initializing basic achievements:', error);
-      // Don't throw - this is optional
+      console.error('⚠️ Critical Error initializing basic achievements:', error);
+      // Optional: Rethrow if seeding is considered a blocker, but normally it shouldn't crash the API entirely
     }
   }
 

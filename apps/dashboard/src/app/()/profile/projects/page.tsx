@@ -21,12 +21,16 @@ import {
 } from '@heroicons/react/24/outline';
 import type { UserData, Project } from '@/types/admin';
 import { useActiveAccount } from 'thirdweb/react';
+import { ProjectBasicEditModal } from '@/components/projects/ProjectBasicEditModal';
+import { toast } from 'sonner';
 
 export default function ProfileProjectsPage() {
   const router = useRouter();
   const [userProfile, setUserProfile] = useState<UserData | null>(null);
   const [userProjects, setUserProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
   const account = useActiveAccount();
 
 
@@ -303,6 +307,22 @@ export default function ProfileProjectsPage() {
     }
   }, [walletAddress]);
 
+  const refreshProjects = () => {
+    if (!walletAddress) return;
+    fetch('/api/projects', {
+      headers: {
+        'Content-Type': 'application/json',
+        'x-thirdweb-address': walletAddress,
+      }
+    })
+      .then(res => res.json())
+      .then(data => {
+        const filtered = data.filter((p: Project) => p.applicantWalletAddress?.toLowerCase() === walletAddress.toLowerCase());
+        setUserProjects(filtered);
+      })
+      .catch(err => console.error("Error refreshing projects:", err));
+  };
+
   if (loading) {
     return (
       <div className="py-4 px-2 md:p-6">
@@ -320,7 +340,7 @@ export default function ProfileProjectsPage() {
   if (!walletAddress) {
     return (
       <div className="py-4 px-2 md:p-6">
-        <Card>
+        <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
           <CardHeader>
             <CardTitle>Acceso Denegado</CardTitle>
             <CardDescription>Necesitas estar conectado para ver tus protocolos.</CardDescription>
@@ -401,7 +421,7 @@ export default function ProfileProjectsPage() {
       {/* Summary Stats */}
       {userProjects.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card>
+          <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -421,7 +441,7 @@ export default function ProfileProjectsPage() {
           {/* Only show investment metrics for non-admin users or if user has personal projects */}
           {walletAddress?.toLowerCase() !== '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9' && userProjects.reduce((total, p) => total + calculateProjectMetrics(p).raisedAmount, 0) > 0 ? (
             <>
-              <Card>
+              <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -435,7 +455,7 @@ export default function ProfileProjectsPage() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -449,7 +469,7 @@ export default function ProfileProjectsPage() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -466,7 +486,7 @@ export default function ProfileProjectsPage() {
           ) : walletAddress?.toLowerCase() === '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9' ? (
             <>
               {/* Alternative metrics for admin dashboard */}
-              <Card>
+              <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -480,7 +500,7 @@ export default function ProfileProjectsPage() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -494,7 +514,7 @@ export default function ProfileProjectsPage() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -510,7 +530,7 @@ export default function ProfileProjectsPage() {
             </>
           ) : (
             <>
-              <Card>
+              <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -521,7 +541,7 @@ export default function ProfileProjectsPage() {
                   </div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -532,7 +552,7 @@ export default function ProfileProjectsPage() {
                   </div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -548,89 +568,17 @@ export default function ProfileProjectsPage() {
         </div>
       )}
 
-      {/* All Projects List - Moved from Dashboard */}
-      {userProjects.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FolderIcon className="w-5 h-5" />
-              Todos Mis Protocolos
-            </CardTitle>
-            <CardDescription>
-              Vista completa de todas tus rotocolos por estado
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {userProjects.map((project) => (
-                <div key={project.id} className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full ${project.status === 'live' ? 'bg-green-500' :
-                      project.status === 'approved' ? 'bg-blue-500' :
-                        project.status === 'pending' ? 'bg-yellow-500' :
-                          project.status === 'completed' ? 'bg-emerald-500' :
-                            project.status === 'rejected' ? 'bg-red-500' :
-                              'bg-gray-500'
-                      }`}></div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <div className="text-white text-sm font-medium">{project.title}</div>
-                        {/* Copy Wallet Helper */}
-                        {project.applicantWalletAddress && (
-                          <button
-                            onClick={() => navigator.clipboard.writeText(project.applicantWalletAddress || "")}
-                            className="text-zinc-600 hover:text-zinc-400 transition-colors"
-                            title={`Copiar Wallet: ${project.applicantWalletAddress}`}
-                          >
-                            <KeyIcon className="w-3 h-3" />
-                          </button>
-                        )}
-                      </div>
-                      <div className="text-gray-400 text-xs text-left">
-                        Estado: {
-                          project.status === 'live' ? '🏃‍♂️ Activo' :
-                            project.status === 'approved' ? '✅ Aprobado' :
-                              project.status === 'pending' ? '⏳ En Revisión' :
-                                project.status === 'completed' ? '🏁 Completado' :
-                                  project.status === 'rejected' ? '❌ Rechazado' :
-                                    project.status === 'draft' ? '📝 Borrador' :
-                                      project.status
-                        }
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Link href={`/projects/${project.slug || project.id}`}>
-                      <button className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition-colors">
-                        Ver
-                      </button>
-                    </Link>
-                    {project.status !== 'live' && project.status !== 'completed' && (
-                      <Link href={`/admin/projects/${project.id}/edit`}>
-                        <button className="px-3 py-1 bg-zinc-600 hover:bg-zinc-700 text-white rounded text-xs font-medium transition-colors">
-                          Editar
-                        </button>
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Projects List - Simplified Cards */}
+      {/* Projects Cards - Main View */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
         {userProjects.length > 0 ? (
           userProjects.map((project) => {
             const metrics = calculateProjectMetrics(project);
             return (
-              <Card key={project.id} className="hover:bg-zinc-800/50 transition-colors border-zinc-700">
+              <Card key={project.id} className="bg-black/40 border-zinc-800 backdrop-blur-sm hover:bg-zinc-800/50 transition-colors flex flex-col h-full">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <CardTitle className="text-lg text-white mb-1 truncate">{project.title}</CardTitle>
+                      <CardTitle className="text-lg text-white mb-1 truncate" title={project.title}>{project.title}</CardTitle>
                       <div className="flex items-center gap-2">
                         <div className={`w-2 h-2 rounded-full ${project.status === 'live' ? 'bg-green-500' :
                           project.status === 'approved' ? 'bg-blue-500' :
@@ -653,9 +601,9 @@ export default function ProfileProjectsPage() {
                   </div>
                 </CardHeader>
 
-                <CardContent className="pt-0">
+                <CardContent className="pt-0 flex-grow flex flex-col justify-between">
                   {/* Essential Info Only */}
-                  <div className="space-y-3 mb-4">
+                  <div className="space-y-3 mb-6">
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-400">Meta</span>
                       <span className="text-white font-medium">${metrics.targetAmount.toLocaleString()}</span>
@@ -676,29 +624,36 @@ export default function ProfileProjectsPage() {
                     )}
                   </div>
 
-                  {/* Action Buttons - Both Edit and View */}
-                  <div className="flex gap-2">
-                    <Link href={`/projects/${project.slug || project.id}`} className="flex-1">
+                  {/* Action Buttons */}
+                  <div className="grid grid-cols-2 gap-3 mt-auto">
+                    <Link href={`/projects/${project.slug || project.id}`} className="col-span-1">
                       <Button size="sm" variant="outline" className="w-full bg-blue-600 hover:bg-blue-700 border-blue-600 hover:border-blue-700">
                         <EyeIcon className="w-4 h-4 mr-2" />
                         Ver
                       </Button>
                     </Link>
 
-                    {project.deploymentStatus === 'deployed' && (
-                      <Link href={`/profile/projects/${project.id}/manage`} className="flex-1">
-                        <Button size="sm" variant="outline" className="w-full bg-purple-600 hover:bg-purple-700 border-purple-600 hover:border-purple-700 text-white">
+                    {/* Allow Edit for all states to update basic info */}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full bg-zinc-600 hover:bg-zinc-700 border-zinc-600 hover:border-zinc-700"
+                      onClick={() => {
+                        setSelectedProject(project);
+                        setShowEditModal(true);
+                      }}
+                    >
+                      <PencilIcon className="w-4 h-4 mr-2" />
+                      Editar
+                    </Button>
+
+                    {/* Show Manage DAO only if Approved/Live/Deployed */}
+                    {/* Using /admin/projects/[id] as the management hub */}
+                    {(project.status === 'approved' || project.status === 'live' || project.deploymentStatus === 'deployed') && (
+                      <Link href={`/projects/${project.slug || project.id}/dao`} className="col-span-2">
+                        <Button size="sm" className="w-full bg-purple-600 hover:bg-purple-700 text-white border-none">
                           <BuildingLibraryIcon className="w-4 h-4 mr-2" />
                           Gestionar DAO
-                        </Button>
-                      </Link>
-                    )}
-
-                    {project.status !== 'live' && project.status !== 'completed' && (
-                      <Link href={`/profile/projects/${project.id}/edit`} className="flex-1">
-                        <Button size="sm" variant="outline" className="w-full bg-zinc-600 hover:bg-zinc-700 border-zinc-600 hover:border-zinc-700">
-                          <PencilIcon className="w-4 h-4 mr-2" />
-                          Editar
                         </Button>
                       </Link>
                     )}
@@ -708,7 +663,7 @@ export default function ProfileProjectsPage() {
             );
           })
         ) : (
-          <Card>
+          <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
             <CardContent className="p-12 text-center">
               <FolderIcon className="w-16 h-16 text-gray-500 mx-auto mb-4" />
               <h3 className="text-xl font-medium text-white mb-2">Sin Protocolos</h3>
@@ -729,7 +684,7 @@ export default function ProfileProjectsPage() {
       </div>
 
       {/* Coming Soon - Advanced Analytics */}
-      <Card className="border-dashed border-gray-600">
+      <Card className="bg-black/40 border-dashed border-gray-600 backdrop-blur-sm">
         <CardContent className="p-6 text-center">
           <ChartBarIcon className="w-12 h-12 text-gray-500 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-white mb-2">Analytics Avanzado Próximamente</h3>
@@ -739,6 +694,14 @@ export default function ProfileProjectsPage() {
           </p>
         </CardContent>
       </Card>
+
+      {/* Edit Modal */}
+      <ProjectBasicEditModal
+        project={selectedProject}
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+        onSuccess={refreshProjects}
+      />
     </div>
   );
 }

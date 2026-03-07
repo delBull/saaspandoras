@@ -19,7 +19,7 @@ export function TermsContent({ dict }: { dict: Dictionary }) {
   const renderSection = (
     section: Section,
     index: number,
-    prefix: string = "",
+    prefix = "",
   ) => {
     if (!section) return null;
     return (

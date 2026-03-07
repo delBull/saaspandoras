@@ -37,16 +37,16 @@ export async function GET(_request: Request) {
             SELECT 
                 id,
                 title,
-                "licenseContractAddress" as "licenseContractAddress",
-                "w2eConfig" as "w2eConfig",
-                "chainId" as "chainId"
+                "license_contract_address" as "licenseContractAddress",
+                "w2e_config" as "w2eConfig",
+                "chain_id" as "chainId"
             FROM projects
             WHERE 
-                "businessCategory" = 'infrastructure'
-                AND "licenseContractAddress" IS NOT NULL
-                AND "utilityContractAddress" IS NULL
-                AND "deploymentStatus" = 'deployed'
-            ORDER BY "createdAt" DESC
+                "business_category" = 'infrastructure'
+                AND "license_contract_address" IS NOT NULL
+                AND "utility_contract_address" IS NULL
+                AND "deployment_status" = 'deployed'
+            ORDER BY "created_at" DESC
         `);
 
         // 3. Format response with extracted w2eConfig fields
@@ -56,9 +56,13 @@ export async function GET(_request: Request) {
                 id: pass.id,
                 title: pass.title,
                 contractAddress: pass.licenseContractAddress,
-                symbol: w2eConfig.symbol || 'PASS',
+                symbol: w2eConfig.licenseToken?.symbol || 'PASS',
                 imageUrl: w2eConfig.accessCardImage || null,
                 chainId: pass.chainId || null,
+                nftType: w2eConfig.licenseToken?.type || 'access', // Default to 'access'
+                shortlinkSlug: w2eConfig.licenseToken?.shortlinkSlug || null,
+                targetUrl: w2eConfig.licenseToken?.targetUrl || null,
+                shortlinkType: w2eConfig.licenseToken?.shortlinkType || null
             };
         });
 

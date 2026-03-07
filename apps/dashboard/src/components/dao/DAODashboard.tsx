@@ -7,14 +7,16 @@ import { LaboresList } from "./LaboresList";
 import { CreateProposalModal } from "./CreateProposalModal";
 import { DAOMetrics } from "./DAOMetrics";
 import { DAOChat } from "./DAOChat";
-import { VoteIcon, Wallet, WalletIcon, TrendingUpIcon, ActivityIcon, ArrowUpRightIcon, HelpCircleIcon, SettingsIcon, LockIcon, ListTodoIcon, TrophyIcon, UsersIcon, InfoIcon } from "lucide-react";
+import { DAODocs } from "./DAODocs";
+import { VoteIcon, Wallet, WalletIcon, TrendingUpIcon, ActivityIcon, ArrowUpRightIcon, HelpCircleIcon, SettingsIcon, LockIcon, ListTodoIcon, TrophyIcon, UsersIcon, InfoIcon, ShieldCheckIcon, MessageSquare } from "lucide-react";
 import { motion } from "framer-motion";
-import { useReadContract, useWalletBalance, useActiveAccount } from "thirdweb/react";
+import { useReadContract, useWalletBalance, useActiveAccount, TransactionButton } from "thirdweb/react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { getContract, defineChain, sendTransaction } from "thirdweb";
+import { getContract, defineChain, sendTransaction, prepareTransaction, prepareContractCall, readContract } from "thirdweb";
+import { AdminPayouts } from "./AdminPayouts";
 import { mintWithSignature } from "thirdweb/extensions/erc20";
 import { usePBOXBalance } from "@/hooks/usePBOXBalance";
 import { client } from "@/lib/thirdweb-client";
@@ -34,18 +36,54 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
     const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
 
     // --- Hooks for Real Data ---
+    // --- Hooks for Real Data ---
     // 1. Treasury Balance
-    const { data: treasuryBalance } = useWalletBalance({
+    // Base Mainnet USDC Address
+    const USDC_BASE_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+    const isBaseMainnet = safeChainId === 8453;
+
+    // Hook for Native Balance (Sepolia/ETH)
+    const { data: nativeBalance } = useWalletBalance({
         client,
         chain: defineChain(safeChainId),
-        address: project.treasuryAddress || project.treasuryContractAddress || "",
+        address: !isBaseMainnet ? (project.treasuryAddress || project.treasuryContractAddress || "") : "",
     });
 
-    const formattedBalance = treasuryBalance ?
-        Number(treasuryBalance.displayValue).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
-        : "$0.00";
+    // Hook for USDC Balance (Base)
+    const dummyContract = getContract({
+        client,
+        chain: defineChain(safeChainId),
+        address: "0x0000000000000000000000000000000000000000"
+    });
 
-    const treasuryAddress = project.treasuryAddress || project.treasuryContractAddress;
+    const usdcContract = isBaseMainnet ? getContract({
+        client,
+        chain: defineChain(safeChainId),
+        address: USDC_BASE_ADDRESS
+    }) : undefined;
+
+    const { data: usdcBalance } = useReadContract({
+        contract: usdcContract || dummyContract,
+        method: "function balanceOf(address) view returns (uint256)",
+        params: [project.treasuryAddress || project.treasuryContractAddress || "0x0000000000000000000000000000000000000000"],
+        queryOptions: { enabled: isBaseMainnet }
+    });
+
+    // Determine Display Value
+    let formattedBalance = "$0.00";
+    console.log("DEBUG: DAO Dashboard Balance Check", { isBaseMainnet, usdcBalance: usdcBalance?.toString(), nativeBalance: nativeBalance?.displayValue, safeChainId });
+
+    if (isBaseMainnet) {
+        // USDC has 6 decimals
+        const balanceVal = usdcBalance ? Number(usdcBalance) / 1000000 : 0;
+        formattedBalance = balanceVal.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+    } else {
+        // Native ETH
+        const balanceVal = nativeBalance ? Number(nativeBalance.displayValue) : 0;
+        formattedBalance = `${balanceVal.toFixed(4)} ${safeChainId === 11155111 ? 'SepoliaETH' : 'ETH'}`;
+    }
+
+    const treasuryAddress = project?.treasuryAddress || project?.treasuryContractAddress;
 
     // 2. Real Data Hooks
     const licenseContract = project.licenseContractAddress ? getContract({
@@ -56,70 +94,180 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
 
     const [isProposalModalOpen, setIsProposalModalOpen] = useState(false);
 
+    const loomContract = project.loom_contract_address ? getContract({
+        client,
+        chain: defineChain(safeChainId),
+        address: project.loom_contract_address
+    }) : undefined;
+
     // -- Sub-Views --
+
 
     const OverviewView = () => (
         <div className="space-y-8">
+            {/* Admin Financial Controls (Owner Only) */}
+            {isOwner && (
+                <div className="bg-zinc-900 border border-yellow-500/20 rounded-xl p-6 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                        <LockIcon className="w-32 h-32 text-yellow-500" />
+                    </div>
+                    <h3 className="text-yellow-500 font-bold text-lg mb-4 flex items-center gap-2 relative z-10">
+                        <ShieldCheckIcon className="w-5 h-5" /> Gestión Financiera (Admin)
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
+                        {/* Deposit Action */}
+                        <div className="bg-black/40 p-4 rounded-lg border border-zinc-800">
+                            <h4 className="text-zinc-300 font-medium mb-2 text-sm">Recargar Recompensas</h4>
+                            <p className="text-xs text-zinc-500 mb-4">Envía fondos a la tesorería para cubrir recompensas futuras.</p>
+                            <div className="space-y-3">
+                                <div className="relative">
+                                    <Input
+                                        type="number"
+                                        placeholder="0.0"
+                                        className="bg-zinc-900 border-zinc-700 text-white pr-16"
+                                        id="deposit-amount"
+                                    />
+                                    <span className="absolute right-3 top-2.5 text-xs text-zinc-500 font-bold">
+                                        {isBaseMainnet ? 'ETH' : 'ETH'}
+                                    </span>
+                                </div>
+                                <TransactionButton
+                                    transaction={() => {
+                                        const amountInput = document.getElementById('deposit-amount') as HTMLInputElement;
+                                        const amount = amountInput?.value || "0";
+                                        if (Number(amount) <= 0) throw new Error("Monto inválido");
+
+                                        return prepareTransaction({
+                                            to: project?.treasuryAddress || project?.treasuryContractAddress,
+                                            value: BigInt(Math.floor(Number(amount) * 1e18)),
+                                            chain: defineChain(safeChainId),
+                                            client: client
+                                        });
+                                    }}
+                                    onTransactionConfirmed={() => {
+                                        toast.success("Fondos depositados correctamente");
+                                        const amountInput = document.getElementById('deposit-amount') as HTMLInputElement;
+                                        if (amountInput) amountInput.value = "";
+                                    }}
+                                    onError={(e) => toast.error("Error al depositar: " + e.message)}
+                                    className="!w-full !bg-zinc-800 hover:!bg-zinc-700 !text-white !text-xs !py-3"
+                                >
+                                    Depositar Fondos (Real)
+                                </TransactionButton>
+                            </div>
+                        </div>
+
+                        {/* Withdraw Action */}
+                        <div className="bg-black/40 p-4 rounded-lg border border-zinc-800">
+                            <h4 className="text-zinc-300 font-medium mb-2 text-sm">Retirar Capital Inicial</h4>
+                            <p className="text-xs text-zinc-500 mb-4">Libera fondos iniciales si se han cumplido los hitos de venta.</p>
+                            {loomContract ? (
+                                <TransactionButton
+                                    transaction={() => prepareContractCall({
+                                        contract: loomContract,
+                                        method: "function releaseInitialCapital()",
+                                        params: []
+                                    })}
+                                    onTransactionConfirmed={() => toast.success("Capital liberado (si era elegible)")}
+                                    onError={(e) => toast.error("Error: " + e.message)}
+                                    className="!w-full !bg-yellow-500/10 hover:!bg-yellow-500/20 !text-yellow-500 !border !border-yellow-500/50 !text-xs !py-3"
+                                >
+                                    Liberar Capital
+                                </TransactionButton>
+                            ) : (
+                                <button disabled className="w-full bg-zinc-800 text-zinc-500 text-xs py-3 rounded-lg cursor-not-allowed">
+                                    Contrato no disponible
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Key Metrics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-                    <div className="flex items-center gap-3 mb-2">
-                        <Wallet className="w-5 h-5 text-lime-400" />
-                        <h3 className="text-zinc-400 text-sm font-medium">Tesorería</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Treasury Card */}
+                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-lime-500/10 rounded-lg">
+                            <WalletIcon className="w-4 h-4 text-lime-400" />
+                        </div>
+                        <div>
+                            <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider">Tesorería DAO</span>
+                            <div className="flex items-center gap-2">
+                                <a
+                                    href={`https://${isBaseMainnet ? 'basescan.org' : 'sepolia.etherscan.io'}/address/${treasuryAddress}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[10px] text-zinc-600 hover:text-lime-400 transition-colors flex items-center gap-1"
+                                >
+                                    {treasuryAddress?.slice(0, 6)}...{treasuryAddress?.slice(-4)}
+                                    <ArrowUpRightIcon className="w-2.5 h-2.5" />
+                                </a>
+                            </div>
+                        </div>
                     </div>
-                    <div className="text-3xl font-bold text-white font-mono mb-2">
-                        {formattedBalance}
-                    </div>
-                    {treasuryAddress ? (
-                        <span className="text-xs text-zinc-500 break-all line-clamp-1 hover:text-zinc-300 transition-colors cursor-help" title={treasuryAddress}>
-                            {treasuryAddress.slice(0, 6)}...{treasuryAddress.slice(-4)}
-                        </span>
-                    ) : null}
-                    <div className="mt-2 flex items-center text-xs text-lime-400">
-                        <TrendingUpIcon className="w-3 h-3 mr-1" />
-                        Disponible (On-Chain)
+                    <div className="space-y-1">
+                        <span className="text-xl font-bold text-white font-mono tracking-tight">{formattedBalance}</span>
+                        <p className="text-[10px] text-zinc-600 font-medium">
+                            {isBaseMainnet ? 'USDC (Base Mainnet)' : 'Balance Nativo (Sepolia)'}
+                        </p>
                     </div>
                 </div>
 
                 {/* DAO Members Metric */}
-                {licenseContract ? (
-                    <DAOMetrics licenseContract={licenseContract} />
-                ) : (
-                    <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                            <VoteIcon className="w-24 h-24 text-zinc-700" />
+                <div className="bg-zinc-900 p-5 rounded-xl border border-zinc-800 relative overflow-hidden group hover:border-zinc-700 transition-colors">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-purple-500/10 rounded-lg">
+                            <UsersIcon className="w-4 h-4 text-purple-400" />
                         </div>
-                        <p className="text-zinc-400 text-sm font-medium mb-1">Miembros del DAO</p>
-                        <h3 className="text-3xl font-bold text-white font-mono">--</h3>
-                        <div className="mt-4 flex items-center text-xs text-zinc-600">
-                            <ActivityIcon className="w-3 h-3 mr-1" />
-                            Holders de Access Cards
-                        </div>
+                        <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider">Miembros del DAO</span>
                     </div>
-                )}
+                    {licenseContract ? (
+                        <DAOMetrics licenseContract={licenseContract} />
+                    ) : (
+                        <div>
+                            <h3 className="text-xl font-bold text-white font-mono tracking-tight">--</h3>
+                            <p className="text-[10px] text-zinc-600 font-medium mt-1">Holders de Access Cards</p>
+                        </div>
+                    )}
+                </div>
 
-                <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <TrendingUpIcon className="w-24 h-24 text-blue-500" />
+                {/* Rewards Metric */}
+                <div className="bg-zinc-900 p-5 rounded-xl border border-zinc-800 relative overflow-hidden group hover:border-zinc-700 transition-colors">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-blue-500/10 rounded-lg">
+                            <TrendingUpIcon className="w-4 h-4 text-blue-400" />
+                        </div>
+                        <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider">Recompensas</span>
                     </div>
-                    <p className="text-zinc-400 text-sm font-medium mb-1">Recompensas Estimadas</p>
-                    <h3 className="text-3xl font-bold text-white font-mono">Dinámico</h3>
-                    <div className="mt-4 flex items-center text-xs text-blue-400">
-                        <ArrowUpRightIcon className="w-3 h-3 mr-1" />
+                    <h3 className="text-xl font-bold text-white font-mono tracking-tight">Dinámico</h3>
+                    <div className="mt-1 flex items-center text-[10px] text-blue-400/80 font-medium">
+                        <ArrowUpRightIcon className="w-2.5 h-2.5 mr-1" />
                         Basado en participación
                     </div>
                 </div>
             </div>
 
-            {/* Recent Activity / Governance List */}
+            {/* Admin Payouts Section (Owner Only, outside metric cards to keep them compact) */}
+            {isOwner && !licenseContract && (
+                <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
+                    <AdminPayouts
+                        projectId={project?.id}
+                        project={project}
+                        safeChainId={safeChainId}
+                    />
+                </div>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div>
-                    <h3 className="text-xl font-bold text-white mb-6">Nuevas Tareas (Recompensas)</h3>
-                    <ActivitiesList projectId={Number(project.id)} compact limit={3} />
+                    <h3 className="text-lg font-bold text-white mb-6">Nuevas Tareas (Recompensas)</h3>
+                    <ActivitiesList projectId={project?.id ? Number(project.id) : 0} compact limit={3} />
                 </div>
                 <div>
-                    <h3 className="text-xl font-bold text-white mb-6">Actividad de Gobernanza</h3>
-                    <UserGovernanceList projectIds={[Number(project.id)]} />
+                    <h3 className="text-lg font-bold text-white mb-6">Actividad de Gobernanza</h3>
+                    <UserGovernanceList projectIds={project?.id ? [Number(project.id)] : []} />
                 </div>
             </div>
         </div>
@@ -129,11 +277,11 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
         <div className="space-y-6">
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-                        <TrendingUpIcon className="w-6 h-6 text-lime-400" />
+                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                        <TrendingUpIcon className="w-5 h-5 text-lime-400" />
                         Utilidad y Labores
                     </h3>
-                    <p className="text-zinc-400 mt-1">Realiza staking de tus artefactos o cumple misiones para ganar recompensas.</p>
+                    <p className="text-xs text-zinc-500 mt-1">Realiza staking de tus artefactos o cumple misiones para ganar recompensas.</p>
                 </div>
             </div>
 
@@ -141,43 +289,73 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
         </div>
     );
 
-    const ProposalsView = () => (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h3 className="text-xl font-bold text-white">Todas las Propuestas</h3>
-                {isOwner && (
-                    <button
-                        onClick={() => setIsProposalModalOpen(true)}
-                        className="px-4 py-2 bg-lime-500 hover:bg-lime-400 text-black text-sm font-bold rounded-lg transition-colors shadow-lg shadow-lime-500/10"
-                    >
-                        + Nueva Propuesta
-                    </button>
+    const ProposalsView = () => {
+        // Robust detection of governance contract
+        const artifacts = project?.artifacts || (project?.w2eConfig as any)?.artifacts || [];
+        const govArtifact = Array.isArray(artifacts) ? artifacts.find((a: any) =>
+            a?.type === 'governor' ||
+            a?.type === 'registry' ||
+            a?.type === 'voting' ||
+            a?.name?.toLowerCase().includes('governor')
+        ) : null;
+
+        const govAddress = project?.governorContractAddress ||
+            project?.votingContractAddress ||
+            govArtifact?.address ||
+            (project as any)?.governor_contract_address ||
+            (project as any)?.voting_contract_address ||
+            (project as any)?.registry_contract_address ||
+            project?.registryContractAddress;
+
+        return (
+            <div className="space-y-6">
+                <div className="flex justify-between items-center bg-zinc-900 border border-zinc-800 p-4 rounded-xl">
+                    <div>
+                        <h3 className="text-lg font-bold text-white">Gobernanza del DAO</h3>
+                        <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Protocolo de Votación Activo</p>
+                    </div>
+                    {isOwner && (
+                        <button
+                            onClick={() => setIsProposalModalOpen(true)}
+                            className="px-4 py-2 bg-lime-500 hover:bg-lime-400 text-black text-xs font-bold rounded-lg transition-colors shadow-lg shadow-lime-500/10"
+                        >
+                            + Nueva Propuesta
+                        </button>
+                    )}
+                </div>
+
+                {/* 1. On-Chain Proposals (Formal) */}
+                {govAddress ? (
+                    <div className="space-y-3">
+                        <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2 px-1">
+                            <ShieldCheckIcon className="w-3.5 h-3.5" /> Propuestas On-Chain (Vinculantes)
+                        </h4>
+                        <OnChainProposalsList
+                            votingContractAddress={govAddress}
+                            chainId={safeChainId}
+                        />
+                    </div>
+                ) : (
+                    <div className="bg-yellow-900/10 border border-yellow-500/20 text-yellow-400 p-4 rounded-xl text-xs flex items-start gap-3">
+                        <InfoIcon className="w-4 h-4 mt-0.5 shrink-0" />
+                        <div>
+                            <p className="font-bold mb-1">Capa de Gobernanza On-Chain no detectada</p>
+                            <p className="opacity-70">Este proyecto no tiene un contrato de votación configurado. Las propuestas se gestionarán off-chain mediante señalización social.</p>
+                        </div>
+                    </div>
                 )}
             </div>
-            {project.voting_contract_address ? (
-                <OnChainProposalsList
-                    votingContractAddress={project.voting_contract_address}
-                    chainId={safeChainId}
-                />
-            ) : (
-                <div className="space-y-4">
-                    <div className="bg-yellow-900/20 border border-yellow-500/30 text-yellow-400 p-4 rounded-xl text-sm mb-4">
-                        Este proyecto no tiene un contrato de votación configurado. Las propuestas serán off-chain.
-                    </div>
-                    <UserGovernanceList projectIds={[Number(project.id)]} />
-                </div>
-            )}
-        </div>
-    );
+        );
+    };
 
     const InfoView = () => (
-        <div className="max-w-5xl mx-auto">
+        <div className="w-full">
             <div className="mb-8">
-                <h3 className="text-3xl font-bold text-white mb-2 flex items-center gap-2">
-                    <HelpCircleIcon className="w-8 h-8 text-lime-400" />
+                <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+                    <HelpCircleIcon className="w-6 h-6 text-lime-400" />
                     Centro de Conocimiento DAO
                 </h3>
-                <p className="text-zinc-400">
+                <p className="text-xs text-zinc-500">
                     Entiende cómo funciona la gobernanza descentralizada, tus derechos como miembro y la seguridad del protocolo.
                 </p>
             </div>
@@ -262,8 +440,6 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                     </p>
                 </div>
             </div>
-
-            {/* Support Footer REMOVED as per request */}
         </div>
     );
 
@@ -272,13 +448,13 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
         return (
             <div className="space-y-6">
                 <div>
-                    <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-                        <ListTodoIcon className="w-6 h-6 text-lime-400" />
+                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                        <ListTodoIcon className="w-5 h-5 text-lime-400" />
                         Gestor de Misiones
                     </h3>
-                    <p className="text-zinc-400 mt-1">Crea, edita y administra las misiones disponibles para la comunidad.</p>
+                    <p className="text-xs text-zinc-500 mt-1">Crea, edita y administra las misiones disponibles para la comunidad.</p>
                 </div>
-                <ManageActivities projectId={Number(project.id)} />
+                <ManageActivities projectId={project.id ? Number(project.id) : 0} />
             </div>
         );
     };
@@ -296,9 +472,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                     </div>
                 </div>
 
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
                     {/* Configuración General */}
                     <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl hover:border-lime-500/30 transition-colors">
                         <h4 className="font-bold text-white mb-4">Configuración General</h4>
@@ -395,14 +569,12 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
             if (!res.ok) throw new Error(data.error || "Redemption failed");
 
             if (data.signature && data.payload) {
-                // Execute Minting on Client
                 const pboxContract = getContract({
                     client,
                     chain: defineChain(process.env.NODE_ENV === 'production' ? 8453 : 11155111),
                     address: process.env.NEXT_PUBLIC_PBOX_TOKEN_ADDRESS || ""
                 });
 
-                // Execute Signature Mint
                 const transaction = mintWithSignature({
                     contract: pboxContract,
                     payload: data.payload,
@@ -432,11 +604,11 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
         <div className="space-y-6">
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-                        <ListTodoIcon className="w-6 h-6 text-lime-400" />
+                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                        <ListTodoIcon className="w-5 h-5 text-lime-400" />
                         Actividades & Recompensas
                     </h3>
-                    <p className="text-zinc-400 mt-1">Completa tareas para ganar recompensas y reputación en el DAO.</p>
+                    <p className="text-xs text-zinc-500 mt-1">Completa tareas para ganar recompensas y reputación en el DAO.</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <div className="bg-zinc-800 px-4 py-2 rounded-lg border border-zinc-700 flex items-center gap-2">
@@ -519,46 +691,48 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                 </div>
             </div>
 
-            <ActivitiesList projectId={Number(project.id)} />
+            <ActivitiesList projectId={project.id ? Number(project.id) : 0} />
         </div>
     );
 
     // -- Main Render --
     return (
-        <div className="flex-1 p-6 md:p-12 min-h-screen">
-            <motion.div
-                key={activeView}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2 }}
-            >
-                {activeView === 'overview' && <OverviewView />}
-                {activeView === 'activities' && <ActivitiesView />}
-                {activeView === 'activities_admin' && <ActivitiesAdminView />}
-                {activeView === 'chat' && <DAOChat project={project} isOwner={isOwner} />}
-                {activeView === 'staking' && <StakingView />}
-                {activeView === 'proposals' && <ProposalsView />}
-                {activeView === 'info' && <InfoView />}
-                {activeView === 'manage' && <ManageView />}
+        <div className="flex-1 w-full min-h-screen bg-black/20">
+            <div className="p-4 md:p-8">
+                <motion.div
+                    key={activeView}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                >
+                    {activeView === 'overview' && <OverviewView />}
+                    {activeView === 'activities' && <ActivitiesView />}
+                    {activeView === 'activities_admin' && <ActivitiesAdminView />}
+                    {activeView === 'chat' && <DAOChat project={project} isOwner={isOwner} />}
+                    {activeView === 'staking' && <StakingView />}
+                    {activeView === 'proposals' && <ProposalsView />}
+                    {activeView === 'info' && <InfoView />}
+                    {activeView === 'manage' && <ManageView />}
+                    {activeView === 'docs' && <DAODocs />}
 
-                {activeView === 'members' && (
-                    <div className="flex flex-col items-center justify-center py-20 text-zinc-500">
-                        <UsersIcon className="w-12 h-12 mb-4 opacity-50" />
-                        <p>Directorio de miembros en construcción</p>
-                    </div>
-                )}
+                    {activeView === 'members' && (
+                        <div className="flex flex-col items-center justify-center py-20 text-zinc-500">
+                            <UsersIcon className="w-12 h-12 mb-4 opacity-50" />
+                            <p>Directorio de miembros en construcción</p>
+                        </div>
+                    )}
+                </motion.div>
+            </div>
 
-            </motion.div>
-
+            {/* Modal fixed for V2 slugs */}
             <CreateProposalModal
-                projectId={Number(project.id)}
+                projectId={project.id ? Number(project.id) : 0}
                 isOpen={isProposalModalOpen}
                 onClose={() => setIsProposalModalOpen(false)}
                 onCreated={() => {
-                    // Refetch data if needed (SWR handles it automatically if we revalidate, but simple close is fine)
                     toast.success("Propuesta registrada.");
                 }}
-                votingContractAddress={project.voting_contract_address}
+                votingContractAddress={project.governorContractAddress || project.votingContractAddress || (project as any).governor_contract_address || (project as any).voting_contract_address}
                 chainId={safeChainId}
             />
         </div>

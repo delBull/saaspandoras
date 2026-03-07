@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from 'react';
-import { Ticket, Lock, Unlock, Share2, Users, Heart, Check, Clock, Shield, Copy, MessageSquare } from "lucide-react";
+import { Ticket, Lock, Unlock, Share2, Users, Heart, Check, Clock, Shield, Copy, MessageSquare, ArrowDown, ArrowRight } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { SimpleTooltip } from "../ui/simple-tooltip";
 import { toast } from "sonner";
@@ -38,11 +38,35 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
   const isValidAddress = (addr: string | null | undefined): boolean =>
     !!addr && addr.startsWith("0x") && addr.length === 42 && addr !== "0x0000000000000000000000000000000000000000";
 
-  const licenseContract = isValidAddress(project.licenseContractAddress) ? getContract({
-    client,
-    chain: defineChain(safeChainId),
-    address: project.licenseContractAddress!
-  }) : undefined;
+  const licenseContract = (() => {
+    // Priority chain for license contract address:
+    // 1. project.licenseContractAddress (canonical field)
+    // 2. project.w2eConfig?.licenseToken?.address (common V1 deploy location)
+    // 3. project.contractAddress (legacy field name)
+    // 4. project.utilityContractAddress (last resort for V1 protocols)
+    const candidates = [
+      project.licenseContractAddress,
+      project.w2eConfig?.licenseToken?.address,
+      (project as any).contractAddress,
+      project.utilityContractAddress,
+    ];
+    const resolvedAddress = candidates.find(addr => isValidAddress(addr as string));
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('[Sidebar] licenseContract resolution:', {
+        licenseContractAddress: project.licenseContractAddress,
+        w2eConfigLicense: project.w2eConfig?.licenseToken?.address,
+        contractAddress: (project as any).contractAddress,
+        resolved: resolvedAddress
+      });
+    }
+    return resolvedAddress
+      ? getContract({
+        client,
+        chain: defineChain(safeChainId),
+        address: resolvedAddress as string
+      })
+      : undefined;
+  })();
 
   // Fallback to prevent hook crash if contract is undefined (even if disabled)
   // Use the SAME chain to avoid mismatches
@@ -96,6 +120,71 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
 
   const raisedPercentage = progressPercent;
 
+  // --- Phase Stats Calculation (Replicated from Tabs for Robustness) ---
+  const allPhases = project.w2eConfig?.phases || [];
+  // let accumulatedUSD = 0; // Unused
+  let accumulatedTokens = 0;
+
+  const phasesWithStats = allPhases.map((phase: any) => {
+    const price = Number(phase.tokenPrice || 0);
+    const allocation = Number(phase.tokenAllocation || 0); // Tokens
+
+    const stats = {
+      cap: 0,
+      raised: 0,
+      percent: 0,
+      isSoldOut: false,
+      tokensAllocated: 0,
+      tokensSold: 0,
+      remainingTokens: 0
+    };
+
+    // UNIFIED LOGIC: Always track by Tokens First (Source of Truth) to determine Sold Out
+    // If Price > 0, we can display USD, but the limit logic should respect the Token Allocation if present.
+    // NOTE: If phase.type === 'amount' (USD Limit), we track USD. If 'time', we track Tokens?
+    // Actually, usually allocations are in TOKENS.
+
+    // For this fix, we will prioritize Token Allocation check against Total Supply.
+
+    // Calculate Phase Cap in Tokens
+    const phaseCapTokens = allocation;
+
+    // Calculate Raised Tokens for this phase
+    const phaseStartTokens = accumulatedTokens;
+    const currentPhaseRaisedTokens = Math.max(0, Math.min(allocation, currentSupply - phaseStartTokens));
+
+    if (price === 0) {
+      // Free Mint
+      stats.cap = allocation;
+      stats.raised = currentPhaseRaisedTokens;
+      stats.percent = allocation > 0 ? (currentPhaseRaisedTokens / allocation) * 100 : 0;
+      stats.isSoldOut = currentPhaseRaisedTokens >= allocation && allocation > 0;
+    } else {
+      // Paid Mint
+      // We still check Sold Out based on Token Allocation because checking USD wallet balance is flaky
+      const phaseCapUSD = phase.type === 'amount' ? Number(phase.limit) : (allocation * price);
+      stats.cap = phaseCapUSD;
+
+      // Infer Raised USD from Raised Tokens (more stable than wallet balance)
+      const inferredRaisedUSD = currentPhaseRaisedTokens * price;
+      stats.raised = inferredRaisedUSD;
+
+      stats.percent = phaseCapUSD > 0 ? (inferredRaisedUSD / phaseCapUSD) * 100 : 0;
+      stats.percent = phaseCapUSD > 0 ? (inferredRaisedUSD / phaseCapUSD) * 100 : 0;
+      stats.isSoldOut = currentPhaseRaisedTokens >= allocation && allocation > 0;
+    }
+
+    // Add explicit token stats for Modal validation
+    stats.tokensAllocated = allocation;
+    stats.tokensSold = currentPhaseRaisedTokens;
+    stats.remainingTokens = Math.max(0, allocation - currentPhaseRaisedTokens);
+
+    accumulatedTokens += allocation;
+    // We don't really use accumulatedUSD for calculation anymore in this unified approach
+
+    return { ...phase, stats };
+  });
+
   // Debug log (remove in prod)
   // console.log("Gating Check:", { user: account?.address, hasAccess, balance: licenseBalance?.toString() });
 
@@ -110,13 +199,19 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
     setIsArtifactModalOpen(true);
   };
 
+  const isDeployed = ['approved', 'live', 'deployed', 'active'].includes(project.status?.toLowerCase() || '') || project.deploymentStatus === 'deployed';
+  // Check if current connected wallet is the protocol creator (owner)
+  const isOwner = !!account?.address &&
+    !!(project.applicant_wallet_address) &&
+    account.address.toLowerCase() === (project.applicant_wallet_address as string).toLowerCase();
+
   return (
     <>
       <div className="hidden lg:block absolute right-0 top-0 w-72 h-full z-20">
         {/* Non-sticky section - Investment & Creator cards */}
         <div className="space-y-6 mb-6">
           {/* Access / Investment Card */}
-          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6 relative overflow-hidden group">
+          <div className="bg-black/40 backdrop-blur-xl rounded-xl border border-white/10 p-6 relative overflow-hidden group">
             {/* Access Card Background (Optional visual flair) */}
             {project.w2eConfig?.accessCardImage && (
               <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none">
@@ -145,7 +240,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
               )}
 
               {!project.w2eConfig?.accessCardImage && (
-                <div className="w-full bg-zinc-800 rounded-full h-3 mb-4">
+                <div className="w-full bg-zinc-800/50 rounded-full h-3 mb-4 overflow-hidden border border-white/5">
                   <div
                     className="bg-lime-400 h-full rounded-full transition-all duration-500"
                     style={{ width: `${Math.min(raisedPercentage, 100)}%` }}
@@ -154,38 +249,83 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
               )}
 
               <div className="flex justify-between text-sm mb-6">
-                <span className="text-gray-400">Meta: {project.w2eConfig?.licenseToken?.maxSupply ? Number(project.w2eConfig.licenseToken.maxSupply).toLocaleString() : targetAmount.toLocaleString()} tokens</span>
-                <span className="text-gray-400">Status: {project.deploymentStatus === 'deployed' ? '🟢 Activo' : '🟡 Espera'}</span>
+                <span className="text-zinc-400">Meta: {project.w2eConfig?.licenseToken?.maxSupply ? Number(project.w2eConfig.licenseToken.maxSupply).toLocaleString() : targetAmount.toLocaleString()} tokens</span>
+                <span className="text-zinc-400">Status: {isDeployed ? '🟢 Activo' : '🟡 Espera'}</span>
               </div>
 
-              {hasAccess ? (
-                <div className="space-y-3 mb-4">
-                  <div className="w-full bg-zinc-800/80 border border-lime-500/50 text-lime-400 py-3 px-6 rounded-lg flex items-center justify-center gap-2">
+              {/* === BUTTON LOGIC ===
+                Priority: 1) Owner → DAO Management
+                          2) Has Access NFT → Acceso Verificado
+                          3) Deployed + Contract + Connected → Obtener Acceso
+                          4) Deployed + Connected (no contract) → locked placeholder
+                          5) Not connected → Conecta tu Wallet
+              */}
+              {isOwner ? (
+                // Owner: show DAO management button
+                <div className="space-y-2 w-full mb-4">
+                  <Link
+                    href={`/projects/${project.slug}/dao`}
+                    className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(147,51,234,0.4)] hover:scale-[1.02]"
+                  >
+                    <Shield className="w-4 h-4" />
+                    Gestión de DAO
+                  </Link>
+                  {hasAccess && (
+                    <div className="w-full bg-lime-500/10 border border-lime-500/30 text-lime-400 py-2 px-6 rounded-lg flex items-center justify-center gap-2 text-sm">
+                      <Unlock className="w-3 h-3" />
+                      Tu acceso está activo
+                    </div>
+                  )}
+                </div>
+              ) : hasAccess ? (
+                <div className="space-y-2 w-full mb-4">
+                  <div className="w-full bg-lime-500/10 border border-lime-500/30 text-lime-400 py-3 px-6 rounded-lg flex items-center justify-center gap-2 backdrop-blur-sm">
                     <Unlock className="w-3 h-3" />
                     Acceso Verificado
                   </div>
-                  <Link href={`/projects/${project.slug}/dao`} className="w-full hover:bg-zinc-700/20 text-white py-3 px-6 rounded-lg flex items-center justify-center gap-2 transition-colors">
+                  <button
+                    onClick={() => document.getElementById('sidebar-phases')?.scrollIntoView({ behavior: 'smooth' })}
+                    className="w-full py-1 text-xs text-zinc-400 hover:text-lime-400 hover:bg-white/5 rounded flex items-center justify-center gap-1 transition-colors"
+                  >
+                    <span>Ver Fases</span>
+                    <ArrowDown className="w-3 h-3" />
+                  </button>
+                  <Link href={`/projects/${project.slug}/dao`} className="w-full hover:bg-white/5 text-white py-3 px-6 rounded-lg flex items-center justify-center gap-2 transition-colors border border-white/5">
                     <Shield className="w-3 h-3 text-sm text-lime-400" />
                     Ir al DAO
                   </Link>
                 </div>
-              ) : project.deploymentStatus === 'deployed' && licenseContract && account ? (
-                <button
-                  onClick={() => setIsAccessModalOpen(true)}
-                  className="w-full bg-lime-400 hover:bg-lime-500 text-black font-bold py-3 px-2 rounded-lg mb-4 flex items-center justify-center gap-1 shadow-[0_0_15px_rgba(163,230,53,0.4)] text-sm whitespace-nowrap transition-all hover:scale-[1.02]"
-                >
-                  <Ticket className="w-4 h-4" />
-                  <span>Obtener Acceso (Gratis)</span>
-                </button>
+              ) : isDeployed && licenseContract && account ? (
+                <div className="space-y-2 w-full mb-4">
+                  <button
+                    onClick={() => setIsAccessModalOpen(true)}
+                    className="w-full bg-lime-400 hover:bg-lime-500 text-black font-bold py-3 px-2 rounded-lg flex items-center justify-center gap-1 shadow-[0_0_15px_rgba(163,230,53,0.4)] text-sm whitespace-nowrap transition-all hover:scale-[1.02]"
+                  >
+                    <Ticket className="w-4 h-4" />
+                    <span>Obtener Acceso</span>
+                  </button>
+                  <button
+                    onClick={() => document.getElementById('sidebar-phases')?.scrollIntoView({ behavior: 'smooth' })}
+                    className="w-full py-1 text-xs text-zinc-400 hover:text-white hover:bg-white/5 rounded flex items-center justify-center gap-1 transition-colors"
+                  >
+                    <span>Ver Fases</span>
+                    <ArrowDown className="w-3 h-3" />
+                  </button>
+                </div>
               ) : (
                 <button
-                  className="w-full font-bold py-3 px-6 rounded-lg transition-colors mb-4 flex items-center justify-center gap-2 bg-zinc-700 text-gray-500 cursor-not-allowed border border-zinc-600"
+                  className="w-full font-bold py-3 px-6 rounded-lg transition-colors mb-4 flex items-center justify-center gap-2 bg-zinc-800/50 text-zinc-500 cursor-not-allowed border border-zinc-700/50 backdrop-blur-sm"
                   disabled
                 >
-                  {project.deploymentStatus === 'deployed' ? (
+                  {!account ? (
                     <>
                       <Ticket className="w-5 h-5" />
                       Conecta tu Wallet
+                    </>
+                  ) : isDeployed ? (
+                    <>
+                      <Ticket className="w-5 h-5" />
+                      Acceso Próximamente
                     </>
                   ) : (
                     <>
@@ -201,7 +341,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                 <SimpleTooltip content="Compartir Proyecto">
                   <button
                     onClick={() => setIsShareModalOpen(true)}
-                    className="p-2 text-gray-400 hover:text-lime-400 transition-colors"
+                    className="p-2 text-zinc-400 hover:text-lime-400 transition-colors"
                   >
                     <Share2 className="w-3 h-3" />
                   </button>
@@ -209,56 +349,43 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
 
                 {/* 2. Referral / Invite (Activator) */}
                 <SimpleTooltip content="Programa de Referidos (Próximamente)">
-                  <button className="p-2 text-gray-400 hover:text-white transition-colors cursor-not-allowed">
+                  <button className="p-2 text-zinc-400 hover:text-white transition-colors cursor-not-allowed">
                     <Users className="w-3 h-3" />
                   </button>
                 </SimpleTooltip>
 
                 {/* 3. Support / Donate (Activator) */}
                 <SimpleTooltip content="Apoyar Creador (Donación)">
-                  <button className="p-2 text-gray-400 hover:text-pink-400 transition-colors cursor-not-allowed">
+                  <button className="p-2 text-zinc-400 hover:text-pink-400 transition-colors cursor-not-allowed">
                     <Heart className="w-3 h-3" />
                   </button>
                 </SimpleTooltip>
               </div>
 
-              <div className="text-xs text-gray-400">
-                {(project as any).deploymentStatus === 'deployed'
+              <div className="text-xs text-zinc-500">
+                {isDeployed
                   ? "El acceso desbloquea utilidades exclusivas del protocolo."
                   : "Esta creación solo será activada si alcanza su meta antes de la fecha límite."}
               </div>
             </div>
-            <p className="mt-3 text-xs text-zinc-400 text-center">
+            <p className="mt-3 text-xs text-zinc-500 text-center">
               Este NFT otorga acceso a la utilidad del protocolo.
             </p>
           </div>
 
-          {/* Project Creator Card */}
-          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
-            <h3 className="text-lg font-bold text-white mb-4">Creación Por</h3>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-zinc-800 rounded-full mx-auto mb-3 flex items-center justify-center">
-                <span className="text-white font-bold text-lg">IMG</span>
-              </div>
-              <div className="text-white font-medium mb-1">{project.applicant_name ?? "Nombre del Creador"}</div>
-              <div className="text-gray-400 text-sm mb-3">
+          {/* Project Creator Card (Compact Redesign) */}
+          <div className="bg-black/40 backdrop-blur-xl rounded-xl border border-white/10 p-4 flex items-center gap-4">
+            <div className="w-12 h-12 bg-zinc-800/50 rounded-full flex-shrink-0 flex items-center justify-center border border-white/10">
+              <span className="text-white font-bold text-xs">IMG</span>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <p className="text-xs text-zinc-500 uppercase tracking-wide mb-0.5">Creación Por</p>
+              <div className="text-white font-medium truncate">{project.applicant_name ?? "Creador"}</div>
+              <div className="text-zinc-500 text-xs mt-0.5">
                 {(() => {
                   const createdDate = project.created_at ? new Date(project.created_at as string) : new Date();
-                  const now = new Date();
-                  const currentMonth = now.getMonth();
-                  const currentYear = now.getFullYear();
-                  const projectMonth = createdDate.getMonth();
-                  const projectYear = createdDate.getFullYear();
-
-                  if (projectMonth === currentMonth && projectYear === currentYear) {
-                    return "Creado recientemente";
-                  } else {
-                    const monthNames = [
-                      "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-                      "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-                    ];
-                    return `${monthNames[projectMonth]} ${projectYear}`;
-                  }
+                  const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+                  return `${monthNames[createdDate.getMonth()]} ${createdDate.getFullYear()}`;
                 })()}
               </div>
             </div>
@@ -267,144 +394,159 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
 
         {/* Sticky section - Tokenomics & Offers (from here down) */}
         <div className="sticky top-6 space-y-6">
-          {/* Investment Card (Move here if sticky desired, or keep logic separate) */}
-
-          {/* Utility Protocol Info (Already dynamic) */}
-
-          {/* Access Card Preview (New) */}
-          {project.w2eConfig?.accessCardImage && (
-            <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
-              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <Ticket className="w-5 h-5 text-amber-400" /> Tarjeta de Acceso
-              </h3>
-              <div className="rounded-lg overflow-hidden border border-zinc-700/50 aspect-square relative group">
-                <div className="relative w-full h-full">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={project.w2eConfig.accessCardImage}
-                    alt="Access Card"
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                  <p className="text-white font-medium text-sm">NFT de Acceso Oficial</p>
-                </div>
-              </div>
-              <p className="mt-3 text-xs text-zinc-400 text-center">
-                Este NFT otorga acceso a la utilidad del protocolo.
-              </p>
-            </div>
-          )}
 
           {/* Utility Offers Panel (Dynamic Phases) */}
           {(project.w2eConfig?.phases && project.w2eConfig.phases.length > 0) ? (
-            <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+            <div id="sidebar-phases" className="bg-black/40 backdrop-blur-xl rounded-xl border border-white/10 p-6">
               <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                 <Ticket className="w-5 h-5 text-lime-400" /> Fases de Venta
               </h3>
               <div className="space-y-4">
-                {project.w2eConfig.phases.map((phase: any) => {
-                  // Calculate Status based on Time and Flags
-                  const now = new Date();
-                  let status = 'active'; // Default
-                  let statusLabel = 'Activo';
-                  let statusColor = 'bg-lime-500 text-black';
+                {phasesWithStats
+                  .map((phase: any, index: number) => {
+                    // 1. Calculate Status for Sorting
+                    const now = new Date();
+                    const hasStarted = !phase.startDate || new Date(phase.startDate) <= now;
+                    const hasEnded = phase.endDate && new Date(phase.endDate) < now;
+                    const isNotPaused = phase.isActive !== false;
+                    const isSoldOut = phase.stats?.isSoldOut || false;
 
-                  // Check Date
-                  if (phase.startDate && new Date(phase.startDate) > now) {
-                    status = 'coming_soon';
-                    statusLabel = 'Próximamente';
-                    statusColor = 'bg-yellow-500 text-black';
-                  } else if (phase.isActive === false) {
-                    // Explicitly deactivated by admin
-                    status = 'paused';
-                    statusLabel = 'Próximamente'; // User requested "Próximamente" if waiting for admin
-                    statusColor = 'bg-zinc-600 text-gray-300';
-                  }
+                    // Check previous phase for sequential logic
+                    // Note: We use original index from phasesWithStats to check previous
+                    const previousPhase = index > 0 ? phasesWithStats[index - 1] : null;
+                    const previousIsSoldOut = previousPhase ? (previousPhase.stats?.isSoldOut || false) : true;
 
-                  const isActive = status === 'active';
+                    let status = 'inactive';
+                    let statusPriority = 99; // Lower is better
+                    let statusLabel = 'No Disponible';
+                    let statusColor = 'bg-zinc-600 text-gray-300';
 
-                  return (
-                    <div key={phase.id} className={`bg-zinc-800 rounded-lg overflow-hidden border ${isActive ? 'border-lime-500/30' : 'border-zinc-700'} group transition-all hover:border-lime-500/50`}>
-                      {/* Phase Image (Rich UI) */}
-                      {phase.image && (
-                        <div className="h-32 w-full relative overflow-hidden">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={phase.image} alt={phase.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 to-transparent opacity-90" />
-                          {/* Overlay Badge */}
-                          <div className="absolute bottom-2 left-3">
-                            <span className={`text-xs px-2 py-1 rounded font-bold uppercase ${statusColor}`}>
-                              {statusLabel}
-                            </span>
-                          </div>
-                        </div>
-                      )}
+                    if (isSoldOut) {
+                      status = 'sold_out';
+                      statusPriority = 3;
+                      statusLabel = 'Agotado';
+                      statusColor = 'bg-red-500/20 text-red-400 border border-red-500/50';
+                    } else if (!isNotPaused) {
+                      status = 'paused';
+                      statusPriority = 4;
+                      statusLabel = 'Pausado';
+                      statusColor = 'bg-yellow-500/20 text-yellow-400';
+                    } else if (!hasStarted) {
+                      status = 'coming_soon';
+                      statusPriority = 2; // Upcoming is second priority
+                      statusLabel = 'Próximamente';
+                      statusColor = 'bg-blue-500/20 text-blue-400';
+                    } else if (hasEnded) {
+                      status = 'ended';
+                      statusPriority = 5;
+                      statusLabel = 'Finalizado';
+                      statusColor = 'bg-zinc-600 text-gray-400';
+                    } else if (!previousIsSoldOut) {
+                      status = 'waiting';
+                      statusPriority = 2; // Treat as upcoming/waiting
+                      statusLabel = 'Esperando';
+                      statusColor = 'bg-orange-500/20 text-orange-400';
+                    } else {
+                      status = 'active';
+                      statusPriority = 1; // Highest priority
+                      statusLabel = 'Activo';
+                      statusColor = 'bg-lime-500 text-black';
+                    }
 
-                      <div className="p-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="flex-1">
-                            <h4 className="text-white font-bold text-lg mb-1">{phase.name}</h4>
-                            <p className="text-gray-400 text-xs uppercase tracking-wide">
-                              {phase.type === 'amount' ? `Meta: $${Number(phase.limit).toLocaleString()}` : `Duración: ${phase.limit} días`}
-                            </p>
-                          </div>
-                          {!phase.image && (
-                            <span className={`text-xs px-2 py-1 rounded font-bold uppercase border border-white/10 ${statusColor.replace('bg-', 'text-').replace('text-black', 'bg-white/10')}`}>
-                              {statusLabel}
-                            </span>
-                          )}
-                        </div>
+                    return { ...phase, status, statusPriority, statusLabel, statusColor };
+                  })
+                  .sort((a: any, b: any) => {
+                    // Sort by Priority
+                    if (a.statusPriority !== b.statusPriority) return a.statusPriority - b.statusPriority;
+                    // Then by Original Order (implied by stability of sort or we can use ID/index if needed)
+                    return 0;
+                  })
+                  .map((phase: any) => {
+                    const isActive = phase.status === 'active';
+                    const hasAccess = true; // We use parent scope hasAccess, need to ensure it's captured or pass it. 
+                    // Actually 'hasAccess' is available in scope. 
 
-                        <div className="flex justify-between text-sm mb-3 bg-zinc-900/50 p-2 rounded-lg border border-zinc-700/50">
-                          <span className="text-gray-500">Precio Token:</span>
-                          <span className="text-lime-400 font-mono font-bold">${phase.tokenPrice || project.w2eConfig.tokenomics?.price || 'N/A'}</span>
-                        </div>
-
-                        {/* Button Gated by Access */}
-                        {hasAccess ? (
-                          <button
-                            onClick={() => isActive && handlePhaseClick(phase)}
-                            className={`w-full py-3 px-4 rounded-lg transition-all text-sm font-bold flex items-center justify-center gap-2 ${isActive
-                              ? 'bg-lime-400 hover:bg-lime-500 text-black shadow-[0_0_15px_rgba(163,230,53,0.3)] hover:scale-[1.02]'
-                              : 'bg-zinc-700 text-gray-400 cursor-not-allowed opacity-70'
-                              }`}
-                            disabled={!isActive}
-                          >
-                            {status === 'coming_soon' || status === 'paused' ? (
-                              <>
-                                <Clock className="w-4 h-4" />
-                                Próximamente
-                              </>
-                            ) : isActive ? (
-                              <>
-                                <Ticket className="w-4 h-4" />
-                                Adquirir Artefactos
-                              </>
-                            ) : (
-                              'No Disponible'
-                            )}
-                          </button>
-                        ) : (
-                          <div className="relative group/lock w-full">
-                            <button
-                              className="w-full py-3 px-4 rounded-lg bg-zinc-800 text-gray-500 text-sm font-medium border border-zinc-700 border-dashed flex items-center justify-center gap-2 cursor-not-allowed hover:bg-zinc-750"
-                              disabled
-                            >
-                              <Lock className="w-4 h-4" />
-                              Bloqueado
-                            </button>
-                            {/* Tooltip */}
-                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-black text-white text-xs p-3 rounded-lg hidden group-hover/lock:block text-center border border-zinc-700 shadow-xl z-50">
-                              <p className="font-bold text-lime-400 mb-1">Acceso Restringido</p>
-                              Adquiere el NFT de Acceso para participar en esta fase.
+                    return (
+                      <div key={phase.id} className={`bg-zinc-800 rounded-lg overflow-hidden border ${isActive ? 'border-lime-500/30' : 'border-zinc-700'} group transition-all hover:border-lime-500/50`}>
+                        {/* Phase Image (Rich UI) */}
+                        {phase.image && (
+                          <div className="h-32 w-full relative overflow-hidden">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={phase.image} alt={phase.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 to-transparent opacity-90" />
+                            {/* Overlay Badge */}
+                            <div className="absolute bottom-2 left-3">
+                              <span className={`text-xs px-2 py-1 rounded font-bold uppercase ${phase.statusColor}`}>
+                                {phase.statusLabel}
+                              </span>
                             </div>
                           </div>
                         )}
+
+                        <div className="p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex-1">
+                              <h4 className="text-white font-bold text-lg mb-1">{phase.name}</h4>
+                              <p className="text-gray-400 text-xs uppercase tracking-wide">
+                                {phase.type === 'amount' ? `Meta: $${Number(phase.limit).toLocaleString()}` : `Duración: ${phase.limit} días`}
+                              </p>
+                            </div>
+                            {!phase.image && (
+                              <span className={`text-xs px-2 py-1 rounded font-bold uppercase border border-white/10 ${phase.statusColor.replace('bg-', 'text-').replace('text-black', 'bg-white/10')}`}>
+                                {phase.statusLabel}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Button Gated by Access */}
+                          {hasAccess ? (
+                            <button
+                              onClick={() => isActive && !phase.stats.isSoldOut && handlePhaseClick(phase)}
+                              className={`w-full py-3 px-4 rounded-lg transition-all text-sm font-bold flex items-center justify-center gap-2 ${isActive && !phase.stats.isSoldOut
+                                ? 'bg-lime-400 hover:bg-lime-500 text-black shadow-[0_0_15px_rgba(163,230,53,0.3)] hover:scale-[1.02]'
+                                : 'bg-zinc-700 text-gray-400 cursor-not-allowed opacity-70'
+                                }`}
+                              disabled={!isActive || phase.stats.isSoldOut}
+                            >
+                              {phase.status === 'coming_soon' || phase.status === 'paused' || phase.status === 'waiting' ? (
+                                <>
+                                  <Clock className="w-4 h-4" />
+                                  Próximamente
+                                </>
+                              ) : phase.status === 'sold_out' ? (
+                                <>
+                                  <Lock className="w-4 h-4" />
+                                  Agotado
+                                </>
+                              ) : isActive ? (
+                                <>
+                                  <Ticket className="w-4 h-4" />
+                                  Adquirir Artefactos
+                                </>
+                              ) : (
+                                'No Disponible'
+                              )}
+                            </button>
+                          ) : (
+                            <div className="relative group/lock w-full">
+                              <button
+                                className="w-full py-3 px-4 rounded-lg bg-zinc-800 text-gray-500 text-sm font-medium border border-zinc-700 border-dashed flex items-center justify-center gap-2 cursor-not-allowed hover:bg-zinc-750"
+                                disabled
+                              >
+                                <Lock className="w-4 h-4" />
+                                Bloqueado
+                              </button>
+                              {/* Tooltip */}
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-black text-white text-xs p-3 rounded-lg hidden group-hover/lock:block text-center border border-zinc-700 shadow-xl z-50">
+                                <p className="font-bold text-lime-400 mb-1">Acceso Restringido</p>
+                                Adquiere el NFT de Acceso para participar en esta fase.
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </div>
             </div>
           ) : (

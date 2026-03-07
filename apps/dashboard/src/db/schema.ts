@@ -9,8 +9,11 @@ import {
   jsonb,
   pgEnum,
   boolean,
-  uniqueIndex
+  uniqueIndex,
+  index,
+  uuid
 } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 
 export const projectStatusEnum = pgEnum("project_status", [
   "draft",        // Borrador: Proyecto incompleto guardado por el solicitante
@@ -22,6 +25,16 @@ export const projectStatusEnum = pgEnum("project_status", [
   "incomplete",   // No completado: Denegado por información faltante
   "rejected",     // Denegado: Rechazado definitivamente después de revisión
 ]);
+
+export const deploymentJobStatusEnum = pgEnum("deployment_job_status", [
+  "pending",
+  "processing",
+  "completed",
+  "failed"
+]);
+
+export const marketPhaseEnum = pgEnum("market_phase", ["funding", "ready", "defense"]);
+
 
 export const tokenTypeEnum = pgEnum("token_type", [
   "erc20", // Token Fungible (ERC-20)
@@ -54,6 +67,9 @@ export const users = pgTable("users", {
   email: varchar("email", { length: 255 }).unique(),
   image: text("image"),
   walletAddress: varchar("walletAddress", { length: 42 }).unique(), // Restaurado nombre original
+  telegramId: varchar("telegram_id", { length: 255 }).unique(),
+  status: varchar("status", { length: 20 }).default('ACTIVE').notNull(),
+  role: varchar("role", { length: 20 }).default('user').notNull(),
   hasPandorasKey: boolean("hasPandorasKey").default(false).notNull(),
 
   // KYC Related Fields
@@ -64,6 +80,39 @@ export const users = pgTable("users", {
   connectionCount: integer("connectionCount").default(1).notNull(),
   lastConnectionAt: timestamp("lastConnectionAt").defaultNow(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export const sessions = pgTable("sessions", {
+  id: uuid("id").primaryKey().defaultRandom(), // sid
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  scope: varchar("scope", { length: 20 }).notNull(), // 'web' | 'telegram'
+  ip: varchar("ip", { length: 45 }),
+  userAgent: text("user_agent"),
+  issuedAt: timestamp("issued_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  revokedAt: timestamp("revoked_at"),
+  revokedReason: varchar("revoked_reason", { length: 100 }),
+});
+
+export const accountRecoveryTokens = pgTable("account_recovery_tokens", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  tokenHash: varchar("token_hash", { length: 255 }).notNull(),
+  scope: varchar("scope", { length: 20 }).default('recovery').notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const securityEvents = pgTable("security_events", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 255 }).references(() => users.id),
+  type: varchar("type", { length: 50 }).notNull(), // LOGIN, REVOKE, RECOVERY, LINK, UNLINK, FREEZE
+  metadata: jsonb("metadata"),
+  ip: varchar("ip", { length: 45 }),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const businessCategoryEnum = pgEnum("business_category", [
@@ -147,9 +196,13 @@ export const projects = pgTable("projects", {
   utilityContractAddress: varchar("utility_contract_address", { length: 42 }),
   loomContractAddress: varchar("loom_contract_address", { length: 42 }),
   governorContractAddress: varchar("governor_contract_address", { length: 42 }),
+  registryContractAddress: varchar("registry_contract_address", { length: 42 }), // V2
+  artifacts: jsonb("artifacts").default([]), // V2: Array of {type, address}
+  protocolVersion: integer("protocol_version").default(1), // V1 = Legacy, V2 = Modular
   chainId: integer("chain_id"),
   deploymentStatus: varchar("deployment_status", { length: 50 }).default('pending'),
   w2eConfig: jsonb("w2e_config").default({}),
+  pageLayoutType: varchar("page_layout_type", { length: 50 }), // access, identity, membership, coupon, reputation, yield
 
   // Sección 5: Seguridad y Auditoría
   legalStatus: text("legal_status"), // Estatus legal del activo
@@ -189,13 +242,15 @@ export const projects = pgTable("projects", {
   // Campos para featured projects
   featured: boolean("featured").default(false).notNull(),
   featuredButtonText: varchar("featured_button_text", { length: 100 }).default("Dime más"),
-
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
 
-export const projectsIndexes = {
-  slugIndex: { columns: ["slug"], name: "slug_index" },
-};
+  // Pricing & Access Metadata
+  accessType: varchar("access_type", { length: 20 }).default('free'), // free, license, gated, premium
+  price: decimal("price", { precision: 18, scale: 6 }).default("0.000000"),
+}, (table) => ({
+  slugIndex: index("project_slug_index").on(table.slug),
+}));
 
 // Gamification Enums
 export const eventTypeEnum = pgEnum("event_type", [
@@ -256,7 +311,14 @@ export const achievementTypeEnum = pgEnum("achievement_type", [
   "artifact_collector",
   "defi_starter",
   "governor",
-  "yield_hunter"
+  "yield_hunter",
+  "explorer",
+  "projects",
+  "investments",
+  "community",
+  "learning",
+  "streaks",
+  "special"
 ]);
 
 export const rewardTypeEnum = pgEnum("reward_type", [
@@ -276,6 +338,7 @@ export const gamificationProfiles = pgTable("gamification_profiles", {
 
   // Points and Level System
   totalPoints: integer("total_points").default(0).notNull(),
+  claimedPoints: integer("claimed_points").default(0).notNull(), // PBOX ya reclamados
   currentLevel: integer("current_level").default(1).notNull(),
   levelProgress: integer("level_progress").default(0).notNull(),
   pointsToNextLevel: integer("points_to_next_level").default(100).notNull(),
@@ -298,6 +361,19 @@ export const gamificationProfiles = pgTable("gamification_profiles", {
 
   // Metadata
   lastActivityDate: timestamp("last_activity_date").defaultNow().notNull(),
+  lastClaimedAt: timestamp("last_claimed_at"), // Tracking de rate limiting para claims
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// PBOX Claim Idempotency Table
+export const pboxClaims = pgTable("pbox_claims", {
+  id: uuid("id").primaryKey().defaultRandom(), // claimId
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  walletAddress: varchar("wallet_address", { length: 42 }).notNull(),
+  amount: integer("amount").notNull(),
+  status: varchar("status", { length: 20 }).default('PENDING').notNull(), // PENDING, CONFIRMED, FAILED
+  txHash: varchar("tx_hash", { length: 66 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -332,6 +408,7 @@ export const userPoints = pgTable("user_points", {
 
 export const achievements = pgTable("achievements", {
   id: serial("id").primaryKey(),
+  code: varchar("code", { length: 50 }).unique(), // Added code for stable seeding
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description").notNull(),
   icon: varchar("icon", { length: 10 }).notNull(),
@@ -457,14 +534,21 @@ export const userReferrals = pgTable("user_referrals", {
 // Estado conversacional para usuarios usando el formulario por WhatsApp
 // --- SHORTLINKS MANAGEMENT TABLES ---
 // Shortlinks personalizados creados por admins
+export const shortlinkTypeEnum = pgEnum("shortlink_type", ["redirect", "landing"]);
+
 export const shortlinks = pgTable("shortlinks", {
   id: serial("id").primaryKey(),
   slug: varchar("slug", { length: 100 }).notNull().unique(),
-  destinationUrl: text("destination_url").notNull(),
+  destinationUrl: text("destination_url").notNull(), // Primary URL or Fallback
   title: varchar("title", { length: 255 }),
   description: text("description"),
+
+  // Smart QR / Landing Page Features
+  type: shortlinkTypeEnum("type").default("redirect").notNull(),
+  landingConfig: jsonb("landing_config"), // { logo, slogan, links: [], social: {}, footer: {} }
+
   isActive: boolean("is_active").default(true).notNull(),
-  createdBy: varchar("created_by", { length: 255 }).references(() => users.id),
+  createdBy: varchar("created_by", { length: 255 }).references(() => users.walletAddress),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -606,6 +690,112 @@ export const governanceEvents = pgTable("governance_events", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+// --- GOVERNANCE INDEXER TABLES (HYBRID CORE) ---
+
+export const governorSyncState = pgTable("governor_sync_state", {
+  id: serial("id").primaryKey(),
+  governorAddress: varchar("governor_address", { length: 42 }).notNull().unique(),
+  chainId: integer("chain_id").notNull(),
+  lastProcessedBlock: integer("last_processed_block").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const governanceProposals = pgTable("governance_proposals", {
+  id: serial("id").primaryKey(),
+  proposalId: varchar("proposal_id", { length: 255 }).notNull(),
+  protocolId: integer("protocol_id").references(() => projects.id).notNull(),
+  governorAddress: varchar("governor_address", { length: 42 }).notNull(),
+  chainId: integer("chain_id").notNull(),
+  proposer: varchar("proposer", { length: 42 }).notNull(),
+  description: text("description").notNull(),
+  targets: jsonb("targets").notNull().default([]),
+  values: jsonb("values").notNull().default([]),
+  calldatas: jsonb("calldatas").notNull().default([]),
+  startBlock: integer("start_block").notNull(),
+  endBlock: integer("end_block").notNull(),
+
+  // Agregados Dinamicos
+  forVotes: decimal("for_votes", { precision: 78, scale: 0 }).notNull().default("0"),
+  againstVotes: decimal("against_votes", { precision: 78, scale: 0 }).notNull().default("0"),
+  abstainVotes: decimal("abstain_votes", { precision: 78, scale: 0 }).notNull().default("0"),
+  quorum: decimal("quorum", { precision: 78, scale: 0 }).notNull().default("0"),
+  participationRate: decimal("participation_rate", { precision: 10, scale: 4 }).notNull().default("0"),
+  quorumReached: boolean("quorum_reached").notNull().default(false),
+  totalVotingSupplySnapshot: decimal("total_voting_supply_snapshot", { precision: 78, scale: 0 }).notNull().default("0"),
+  quorumSnapshot: decimal("quorum_snapshot", { precision: 78, scale: 0 }).notNull().default("0"),
+
+  status: integer("status").notNull().default(0), // Governor State Enum (0=Pending, 1=Active, 7=Executed...)
+
+  isExecuted: boolean("is_executed").notNull().default(false),
+  isCanceled: boolean("is_canceled").notNull().default(false),
+
+  snapshotBlock: integer("snapshot_block"),
+  deadlineBlock: integer("deadline_block"),
+  isInvalid: boolean("is_invalid").notNull().default(false),
+
+  createdTxHash: varchar("created_tx_hash", { length: 66 }).notNull(),
+  createdBlockNumber: integer("created_block_number").notNull(),
+  blockHash: varchar("block_hash", { length: 66 }),
+
+  blockNumberIndexed: integer("block_number_indexed"),
+  indexerVersion: varchar("indexer_version", { length: 50 }).default("1.1.0"),
+  governorVersion: varchar("governor_version", { length: 50 }),
+
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  // The same numerical ID could technically be emitted by two different Governors.
+  unqProposal: uniqueIndex("unq_governance_proposal").on(t.proposalId, t.governorAddress, t.chainId),
+  protocolIdx: index("gov_proposals_protocol_idx").on(t.protocolId),
+  statusIdx: index("gov_proposals_status_idx").on(t.status),
+}));
+
+export const governanceVotes = pgTable("governance_votes", {
+  id: serial("id").primaryKey(),
+  proposalId: varchar("proposal_id", { length: 255 }).notNull(),
+  voterAddress: varchar("voter_address", { length: 42 }).notNull(),
+  support: integer("support").notNull(), // 0=Against, 1=For, 2=Abstain
+  weight: decimal("weight", { precision: 78, scale: 0 }).notNull(),
+  reason: text("reason"),
+
+  txHash: varchar("tx_hash", { length: 66 }).notNull(),
+  logIndex: integer("log_index").notNull().default(0),
+  blockNumber: integer("block_number").notNull(),
+  blockHash: varchar("block_hash", { length: 66 }),
+  chainId: integer("chain_id").notNull(),
+  governorAddress: varchar("governor_address", { length: 255 }).notNull(),
+
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  unqVoteLog: uniqueIndex("unq_governance_vote_log").on(t.txHash, t.logIndex, t.chainId),
+  unqVoterProposal: uniqueIndex("unq_governance_voter_proposal").on(t.voterAddress, t.proposalId, t.governorAddress, t.chainId),
+  blockIdx: index("gov_votes_block_idx").on(t.blockNumber),
+}));
+
+export const governanceExecutions = pgTable("governance_executions", {
+  id: serial("id").primaryKey(),
+  proposalId: varchar("proposal_id", { length: 255 }).notNull(),
+  executorAddress: varchar("executor_address", { length: 42 }).notNull(),
+  txHash: varchar("tx_hash", { length: 66 }).notNull().unique(),
+  blockNumber: integer("block_number").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  unqExecution: uniqueIndex("unq_governance_execution").on(t.proposalId),
+}));
+
+// --- AUTH CHALLENGES TABLE ---
+// Stores ephemeral nonces for SIWE authentication
+export const authChallenges = pgTable("auth_challenges", {
+  id: serial("id").primaryKey(),
+  address: varchar("address", { length: 42 }).notNull(), // User's wallet address
+  nonce: varchar("nonce", { length: 255 }).notNull().unique(), // The strict nonce
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  // Enforce 1 active nonce per address to prevent race conditions and clutter
+  addressIndex: uniqueIndex("auth_challenges_address_idx").on(table.address),
+}));
+
 // --- EMAIL METRICS TABLES ---
 
 // Tabla para almacenar métricas de envío de emails desde Resend webhooks
@@ -627,16 +817,13 @@ export const emailMetrics = pgTable("email_metrics", {
   metadata: jsonb("metadata").default({}), // Datos extras del webhook
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-});
-
-// Indexes para consultas eficientes
-export const emailMetricsIndexes = {
-  emailIdIndex: { columns: ["email_id"], name: "email_metrics_email_id_idx" },
-  typeStatusIndex: { columns: ["type", "status"], name: "email_metrics_type_status_idx" },
-  statusIndex: { columns: ["status"], name: "email_metrics_status_idx" },
-  recipientIndex: { columns: ["recipient"], name: "email_metrics_recipient_idx" },
-  createdAtIndex: { columns: ["created_at"], name: "email_metrics_created_at_idx" },
-};
+}, (table) => ({
+  emailIdIndex: uniqueIndex("email_metrics_email_id_idx").on(table.emailId),
+  typeStatusIndex: index("email_metrics_type_status_idx").on(table.type, table.status),
+  statusIndex: index("email_metrics_status_idx").on(table.status),
+  recipientIndex: index("email_metrics_recipient_idx").on(table.recipient),
+  createdAtIndex: index("email_metrics_created_at_idx").on(table.createdAt),
+}));
 
 // Shortlinks Types
 export type ShortlinkEvent = typeof shortlinkEvents.$inferSelect;
@@ -761,6 +948,7 @@ export type DaoThread = typeof daoThreads.$inferSelect;
 export type DaoPost = typeof daoPosts.$inferSelect;
 export type UserBalance = typeof userBalances.$inferSelect;
 export type PlatformSetting = typeof platformSettings.$inferSelect;
+export type AuthChallenge = typeof authChallenges.$inferSelect;
 
 // =========================================================
 // MARKETING OS TABLES
@@ -801,15 +989,103 @@ export const marketingExecutions = pgTable("marketing_executions", {
   currentStageIndex: integer("current_stage_index").default(0).notNull(),
   nextRunAt: timestamp("next_run_at"), // Critical for Cron
 
-  // History log: Array of events { timestamp, action, result }
-  historyLog: jsonb("history_log").default('[]'),
+  // Execution Data
+  data: jsonb("data").default({}).notNull(),
+  history: jsonb("history").default([]).notNull(),
+  metadata: jsonb("metadata").default({}).notNull(),
 
-  // Metadata: Store flow variations, priority answers, etc.
-  metadata: jsonb("metadata").default('{}'),
+  error: text("error"),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+// =========================================================
+// PANDORA CORE INTEGRATIONS MODULE
+// =========================================================
+
+export const integrationEnvironmentEnum = pgEnum("integration_environment", [
+  "staging",
+  "production"
+]);
+
+export const integrationPermissionEnum = pgEnum("integration_permission", [
+  "deploy",
+  "read",
+  "governance",
+  "treasury"
+]);
+
+export const auditActorTypeEnum = pgEnum("audit_actor_type", [
+  "integration",
+  "admin",
+  "system"
+]);
+
+export const webhookStatusEnum = pgEnum("webhook_status", [
+  "pending",
+  "sent",
+  "failed"
+]);
+
+export const integrationClients = pgTable("integration_clients", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  environment: integrationEnvironmentEnum("environment").default("staging").notNull(),
+
+  // Security
+  apiKeyHash: text("api_key_hash").notNull(),
+  keyFingerprint: varchar("key_fingerprint", { length: 255 }).notNull(), // for UI display/audit
+
+  // Webhooks
+  callbackUrl: text("callback_url"),
+  callbackSecretHash: text("callback_secret_hash"),
+
+  // Permissions & State
+  permissions: jsonb("permissions").default([]).notNull(), // Array of permissions
+  isActive: boolean("is_active").default(true).notNull(),
+
+  // Audit
+  lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const auditLogs = pgTable("audit_logs", {
+  id: serial("id").primaryKey(),
+  actorType: auditActorTypeEnum("actor_type").notNull(),
+  actorId: varchar("actor_id", { length: 255 }).notNull(), // UUID or Wallet
+
+  action: varchar("action", { length: 255 }).notNull(),
+  resource: varchar("resource", { length: 255 }).notNull(),
+
+  metadata: jsonb("metadata").default({}),
+
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const webhookEvents = pgTable("webhook_events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  clientId: uuid("client_id").references(() => integrationClients.id).notNull(),
+
+  event: varchar("event", { length: 255 }).notNull(),
+  payload: jsonb("payload").notNull(),
+
+  status: webhookStatusEnum("status").default("pending").notNull(),
+  attempts: integer("attempts").default(0).notNull(),
+  nextRetryAt: timestamp("next_retry_at", { withTimezone: true }),
+
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// Integrations Types
+export type IntegrationClient = typeof integrationClients.$inferSelect;
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type WebhookEvent = typeof webhookEvents.$inferSelect;
+
+
 
 // =========================================================
 // SOVEREIGN SCHEDULER TABLES
@@ -956,7 +1232,32 @@ export const transactions = pgTable("transactions", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// 4. SOW TEMPLATES
+// 5. PURCHASES (FOR TG MINIAPP & EMBEDDED PAYMENTS)
+export const purchases = pgTable("purchases", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: varchar("user_id", { length: 255 }).references(() => users.id).notNull(),
+  projectId: integer("project_id").references(() => projects.id).notNull(),
+
+  amount: decimal("amount", { precision: 18, scale: 6 }).notNull(),
+  currency: varchar("currency", { length: 10 }).default("USD").notNull(),
+
+  paymentMethod: varchar("payment_method", { length: 20 }).notNull(), // 'stripe', 'crypto'
+  status: transactionStatusEnum("status").default('pending').notNull(),
+
+  purchaseId: varchar("purchase_id", { length: 255 }).notNull().unique(), // External reference
+  idempotencyKey: varchar("idempotency_key", { length: 255 }).notNull().unique(),
+
+  thirdwebSessionId: varchar("thirdweb_session_id", { length: 255 }),
+  stripeSessionId: varchar("stripe_session_id", { length: 255 }),
+
+  metadata: jsonb("metadata").default({}),
+
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// 6. SOW TEMPLATES
 export const sowTemplates = pgTable("sow_templates", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   tier: varchar("tier", { length: 50 }).notNull(), // TIER_1, TIER_2, TIER_3
@@ -969,3 +1270,253 @@ export const sowTemplates = pgTable("sow_templates", {
 });
 
 export type SOWTemplate = typeof sowTemplates.$inferSelect;
+
+// ── Telegram Bridge Tables ──────────────────────────────────────────────────
+
+/**
+ * telegram_bindings — links Telegram user IDs to wallet addresses.
+ * 
+ * ⚠️  Do NOT store usernames or Telegram tokens here.
+ *     This is identity-only, not auth-critical storage.
+ * 
+ * `source` is reserved for future multi-platform support (Discord, Farcaster…)
+ */
+export const telegramBindings = pgTable("telegram_bindings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  telegramUserId: text("telegram_user_id").notNull().unique(),
+  walletAddress: text("wallet_address").notNull(),
+  source: text("source").notNull().default("telegram"), // future: 'discord', 'farcaster'
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type TelegramBinding = typeof telegramBindings.$inferSelect;
+
+/**
+ * pbox_balances — off-chain PBOX token accounting per wallet.
+ *
+ * Fields:
+ *   total_earned — cumulative PBOX from all gamification events
+ *   reserved     — PBOX locked for pending claim requests (not yet on-chain)
+ *   claimed      — PBOX already moved on-chain via claim flow
+ *
+ * Available balance = total_earned - reserved - claimed
+ */
+export const pboxBalances = pgTable("pbox_balances", {
+  walletAddress: text("wallet_address").primaryKey(),
+  totalEarned: integer("total_earned").notNull().default(0),
+  reserved: integer("reserved").notNull().default(0),   // pending claim
+  claimed: integer("claimed").notNull().default(0),     // settled on-chain
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type PboxBalance = typeof pboxBalances.$inferSelect;
+
+/**
+ * gamification_action_executions — action-level idempotency log.
+ *
+ * Primary key = (event_id, trigger_id, action_type) so the same action
+ * can never execute twice even during webhook retries or DLQ replays.
+ * This enables partial replay (retry specific triggers/actions safely).
+ */
+export const gamificationActionExecutions = pgTable("gamification_action_executions", {
+  eventId: text("event_id").notNull(),
+  triggerId: text("trigger_id").notNull(),
+  actionType: text("action_type").notNull(),
+  userId: text("user_id").notNull(),
+  executedAt: timestamp("executed_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  pk: { columns: [t.eventId, t.triggerId, t.actionType] },
+}));
+
+export type GamificationActionExecution = typeof gamificationActionExecutions.$inferSelect;
+export type Purchase = typeof purchases.$inferSelect;
+
+// =========================================================
+// AGORA MARKET (REGULATED LIQUIDITY & BUYBACKS)
+// =========================================================
+
+export const listingStatusEnum = pgEnum("listing_status", [
+  "ACTIVE",
+  "LOCKED",
+  "SOLD",
+  "CANCELLED",
+  "ROFR_PENDING"
+]);
+
+export const inventoryStatusEnum = pgEnum("inventory_status", [
+  "HELD",
+  "LISTED",
+  "SOLD"
+]);
+
+export const reservationStatusEnum = pgEnum("reservation_status", [
+  "ACTIVE",
+  "RELEASED",
+  "COMPLETED"
+]);
+
+export const agoraListings = pgTable("agora_listings", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  protocolId: integer("protocol_id").references(() => projects.id).notNull(),
+  artifactId: varchar("artifact_id", { length: 255 }).notNull(),
+  sellerTelegramId: varchar("seller_telegram_id", { length: 255 }).notNull(),
+  price: decimal("price", { precision: 24, scale: 8 }).notNull(),
+  status: listingStatusEnum("status").default("ACTIVE").notNull(),
+  lockedAt: timestamp("locked_at", { withTimezone: true }),
+  cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+  idempotencyKey: varchar("idempotency_key", { length: 255 }).unique(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const pandoraBuybackPools = pgTable("pandora_buyback_pools", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  protocolId: integer("protocol_id").references(() => projects.id).notNull().unique(),
+  allocatedCapital: decimal("allocated_capital", { precision: 24, scale: 8 }).notNull(),
+  availableCapital: decimal("available_capital", { precision: 24, scale: 8 }).notNull(),
+  targetReserveRatio: decimal("target_reserve_ratio", { precision: 5, scale: 4 }).notNull(),
+  lastRebalanceAt: timestamp("last_rebalance_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const pandoraInventories = pgTable("pandora_inventories", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  artifactId: varchar("artifact_id", { length: 255 }).notNull().unique(),
+  protocolId: integer("protocol_id").references(() => projects.id).notNull(),
+  acquisitionType: varchar("acquisition_type", { length: 50 }).notNull(), // ROFR or EARLY_EXIT
+  acquisitionNAV: decimal("acquisition_nav", { precision: 24, scale: 8 }).notNull(),
+  acquisitionPrice: decimal("acquisition_price", { precision: 24, scale: 8 }).notNull(),
+  acquiredAt: timestamp("acquired_at", { withTimezone: true }).defaultNow().notNull(),
+  relistEligibleAt: timestamp("relist_eligible_at", { withTimezone: true }),
+  status: inventoryStatusEnum("status").default("HELD").notNull(),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const buybackTransactions = pgTable("buyback_transactions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  poolId: uuid("pool_id").references(() => pandoraBuybackPools.id).notNull(),
+  listingId: uuid("listing_id").references(() => agoraListings.id), // Nullable for EARLY_EXIT
+  artifactId: varchar("artifact_id", { length: 255 }).notNull(),
+  amountPaid: decimal("amount_paid", { precision: 24, scale: 8 }).notNull(),
+  acquisitionType: varchar("acquisition_type", { length: 50 }).notNull(),
+  correlationId: varchar("correlation_id", { length: 255 }),
+  processedBy: varchar("processed_by", { length: 255 }),
+  note: text("note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const protocolNavs = pgTable("protocol_navs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  protocolId: integer("protocol_id").references(() => projects.id).notNull(),
+  nav: decimal("nav", { precision: 24, scale: 8 }).notNull(),
+  treasury: decimal("treasury", { precision: 24, scale: 8 }).notNull(),
+  supply: integer("supply").notNull(),
+  minPrice: decimal("min_price", { precision: 24, scale: 8 }).notNull(),
+  maxPrice: decimal("max_price", { precision: 24, scale: 8 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const buybackReservations = pgTable("buyback_reservations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  protocolId: integer("protocol_id").references(() => projects.id).notNull(),
+  artifactId: varchar("artifact_id", { length: 255 }).notNull(),
+  reservedAmount: decimal("reserved_amount", { precision: 24, scale: 8 }).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  status: reservationStatusEnum("status").default("ACTIVE").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const actionLogs = pgTable("action_logs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  correlationId: varchar("correlation_id", { length: 255 }).notNull(),
+  actionType: varchar("action_type", { length: 255 }).notNull(),
+  protocolId: integer("protocol_id").references(() => projects.id),
+  artifactId: varchar("artifact_id", { length: 255 }),
+  userId: varchar("user_id", { length: 255 }),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type AgoraListing = typeof agoraListings.$inferSelect;
+export type PandoraBuybackPool = typeof pandoraBuybackPools.$inferSelect;
+export type PandoraInventory = typeof pandoraInventories.$inferSelect;
+export type BuybackTransaction = typeof buybackTransactions.$inferSelect;
+export type ProtocolNAV = typeof protocolNavs.$inferSelect;
+export type BuybackReservation = typeof buybackReservations.$inferSelect;
+export type ActionLog = typeof actionLogs.$inferSelect;
+
+export const configQueueStatusEnum = pgEnum("config_queue_status", [
+  "PENDING",
+  "EXECUTED",
+  "CANCELLED"
+]);
+
+export const artifacts = pgTable("artifacts", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  ownerId: varchar("owner_id", { length: 255 }).notNull(),
+  lastListingCancelledAt: timestamp("last_listing_cancelled_at", { withTimezone: true })
+});
+
+export const protocolConfigs = pgTable("protocol_configs", {
+  protocolId: integer("protocol_id").references(() => projects.id).primaryKey(),
+  feeRate: decimal("fee_rate", { precision: 5, scale: 4 }).default("0.0200").notNull(),
+  inventoryMaxRatio: decimal("inventory_max_ratio", { precision: 5, scale: 4 }).default("0.2500").notNull(),
+  earlyExitPenalty: decimal("early_exit_penalty", { precision: 5, scale: 4 }).default("0.1500").notNull(), // Default 15% penalty
+  buybackAllocationRatio: decimal("buyback_allocation_ratio", { precision: 5, scale: 4 }).default("1.0000").notNull(), // Default 100% of availableBuybackPool
+  settlementPaused: boolean("settlement_paused").default(false).notNull(),
+  marketPhase: marketPhaseEnum("market_phase").default("funding").notNull(),
+  readySince: timestamp("ready_since", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedBy: varchar("updated_by", { length: 255 })
+});
+
+export const protocolConfigQueues = pgTable("protocol_config_queues", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  protocolId: integer("protocol_id").references(() => projects.id).notNull(),
+  proposedFeeRate: decimal("proposed_fee_rate", { precision: 5, scale: 4 }),
+  proposedInventoryMaxRatio: decimal("proposed_inventory_max_ratio", { precision: 5, scale: 4 }),
+  proposedEarlyExitPenalty: decimal("proposed_early_exit_penalty", { precision: 5, scale: 4 }),
+  proposedBuybackAllocationRatio: decimal("proposed_buyback_allocation_ratio", { precision: 5, scale: 4 }),
+  proposedSettlementPaused: boolean("proposed_settlement_paused"),
+  effectiveAt: timestamp("effective_at", { withTimezone: true }).notNull(),
+  status: configQueueStatusEnum("status").default("PENDING").notNull(),
+  proposedBy: varchar("proposed_by", { length: 255 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+});
+
+export type Artifact = typeof artifacts.$inferSelect;
+export type ProtocolConfig = typeof protocolConfigs.$inferSelect;
+export type ProtocolConfigQueue = typeof protocolConfigQueues.$inferSelect;
+
+// --- DEPLOYMENT JOBS TABLE ---
+// Queue for asynchronous contract deployments
+export const deploymentJobs = pgTable("deployment_jobs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  projectSlug: varchar("project_slug", { length: 256 }).notNull().references(() => projects.slug),
+  status: deploymentJobStatusEnum("status").default("pending").notNull(),
+  step: varchar("step", { length: 100 }).default("queued"), // e.g., "broadcasting", "mining", "wiring"
+  network: varchar("network", { length: 50 }).notNull(),
+  config: jsonb("config").notNull(), // W2EConfig
+  result: jsonb("result"), // Addresses and hashes
+  error: text("error"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().$onUpdate(() => new Date()).notNull(),
+});
+
+
+export type DeploymentJob = typeof deploymentJobs.$inferSelect;
+
+export const governanceProposalsRelations = relations(governanceProposals, ({ many }) => ({
+  votes: many(governanceVotes),
+}));
+
+export const governanceVotesRelations = relations(governanceVotes, ({ one }) => ({
+  proposal: one(governanceProposals, {
+    fields: [governanceVotes.proposalId],
+    references: [governanceProposals.proposalId],
+  }),
+}));

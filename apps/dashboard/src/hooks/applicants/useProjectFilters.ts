@@ -24,7 +24,7 @@ interface UseProjectFiltersProps {
 export function useProjectFilters({
   projects,
   initialViewMode = 'grid',
-  initialGridColumns = 4,
+  initialGridColumns = 3,
 }: UseProjectFiltersProps) {
   const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode);
   const [gridColumns, setGridColumns] = useState<GridColumns>(initialGridColumns);
@@ -54,11 +54,11 @@ export function useProjectFilters({
 
   const hasActiveFilters = useMemo(() => {
     return filters.search !== '' ||
-           filters.category !== 'all' ||
-           filters.network !== 'all' ||
-           filters.status !== 'all' ||
-           filters.minTokenPrice !== '' ||
-           filters.maxTokenPrice !== '';
+      filters.category !== 'all' ||
+      filters.network !== 'all' ||
+      filters.status !== 'all' ||
+      filters.minTokenPrice !== '' ||
+      filters.maxTokenPrice !== '';
   }, [filters]);
 
   const filteredProjects = useMemo(() => {

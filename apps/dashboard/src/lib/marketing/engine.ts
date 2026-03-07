@@ -51,7 +51,7 @@ export class MarketingEngine {
             status: 'active',
             currentStageIndex: 0,
             nextRunAt: nextRunAt,
-            historyLog: [],
+            history: [],
             metadata: {}
         }).returning();
 
@@ -238,7 +238,7 @@ export class MarketingEngine {
             nextRunAt: nextRunAt,
             status: newStatus,
             updatedAt: new Date(),
-            historyLog: sql`history_log || ${JSON.stringify(logEntry)}::jsonb`
+            history: sql`history || ${JSON.stringify(logEntry)}::jsonb`
         }).where(eq(marketingExecutions.id, execution.id));
     }
 

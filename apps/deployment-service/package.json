@@ -1,0 +1,29 @@
+{
+    "name": "deployment-service",
+    "version": "1.0.0",
+    "private": true,
+    "type": "module",
+    "main": "src/index.ts",
+    "scripts": {
+        "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+        "build": "echo 'Skipping TS build for Bun'",
+        "start": "bun src/index.ts"
+    },
+    "dependencies": {
+        "dotenv": "^16.4.5",
+        "ethers": "5.7.2",
+        "express": "^4.19.2",
+        "drizzle-orm": "^0.44.5",
+        "postgres": "^3.4.3",
+        "@pandoras/agora-engine": "workspace:*",
+        "@pandoras/protocol-deployer": "workspace:*"
+    },
+    "devDependencies": {
+        "@types/express": "^4.17.21",
+        "ts-node-dev": "^2.0.0",
+        "typescript": "^5.3.3"
+    },
+    "engines": {
+        "node": ">=18"
+    }
+}

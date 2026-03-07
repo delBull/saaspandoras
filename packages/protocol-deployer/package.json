@@ -1,11 +1,11 @@
 {
   "name": "@pandoras/protocol-deployer",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "SCaaS Protocol Deployer - Thirdweb Engine Integration",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "node scripts/fix-ethers.js && tsc",
+    "build": "node scripts/fix-ethers.js && tsc && cp -r src/artifacts dist/",
     "dev": "tsc --watch",
     "lint": "eslint src --ext .ts",
     "test": "jest",
@@ -16,8 +16,8 @@
     "test:all": "forge test -v",
     "coverage": "forge coverage --report lcov",
     "clean": "rm -rf dist out cache node_modules .pnpm",
-    "postinstall": "node scripts/fix-ethers.js",
-    "prebuild": "node scripts/fix-ethers.js",
+    "postinstall": "node scripts/fix-ethers.js && node scripts/prune-artifacts.js",
+    "prebuild": "node scripts/fix-ethers.js && node scripts/prune-artifacts.js",
     "deploy:local": "node scripts/fix-ethers.js && forge script script/Deploy.s.sol --fork-url http://localhost:8545 --broadcast",
     "deploy:testnet": "node scripts/fix-ethers.js && forge script script/Deploy.s.sol --rpc-url $BASE_GOERLI_RPC_URL --private-key $PRIVATE_KEY --broadcast --verify"
   },

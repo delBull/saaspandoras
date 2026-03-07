@@ -8,9 +8,25 @@ import type {
   LeaderboardEntry
 } from '@pandoras/gamification';
 
+export interface GamificationAchievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+
+  category: 'community' | 'investor' | 'creator' | 'expert';
+  rarity: 'first_steps' | 'investor' | 'community_builder' | 'early_adopter' | 'high_roller';
+
+  pointsReward: number;
+
+  progress: number;
+  required: number;
+  isUnlocked: boolean;
+}
+
 interface RealTimeGamificationData {
   profile: UserGamificationProfile | null;
-  achievements: UserAchievement[];
+  achievements: GamificationAchievement[];
   rewards: Reward[];
   leaderboard: LeaderboardEntry[];
   isLoading: boolean;
@@ -21,10 +37,36 @@ interface RealTimeGamificationData {
   trackNewEvent: (eventType: string, metadata?: Record<string, unknown>) => Promise<void>;
 }
 
+// 🔥 HELPER: Map database 'type' to UI 'category' for filtering and icons
+function mapTypeToCategory(type: string): 'community' | 'investor' | 'creator' | 'expert' {
+  if (!type) return 'community';
+
+  const t = type.toLowerCase();
+  if (t.includes('community')) return 'community';
+  if (t.includes('creator') || t.includes('projects') || t.includes('tokenization')) return 'creator';
+  if (t.includes('invest') || t.includes('defi') || t.includes('yield') || t.includes('staking') || t.includes('governor') || t.includes('dao')) return 'investor';
+  if (t.includes('learning') || t.includes('expert') || t.includes('streak') || t.includes('explorer')) return 'expert';
+
+  return 'community';
+}
+
+// 🔥 HELPER: Map database 'type' to UI 'rarity' for styling
+function mapTypeToRarity(type: string): 'first_steps' | 'investor' | 'community_builder' | 'early_adopter' | 'high_roller' {
+  if (!type) return 'first_steps';
+
+  const t = type.toLowerCase();
+  if (t.includes('early')) return 'early_adopter';
+  if (t.includes('collector') || t.includes('whale') || t.includes('high_roller')) return 'high_roller';
+  if (t.includes('community')) return 'community_builder';
+  if (t.includes('invest')) return 'investor';
+
+  return 'first_steps';
+}
+
 // Custom Hook para conectar con sistema gamificación real y persistente
 export function useRealGamification(userId?: string): RealTimeGamificationData {
   const [profile, setProfile] = useState<UserGamificationProfile | null>(null);
-  const [achievements, setAchievements] = useState<UserAchievement[]>([]);
+  const [achievements, setAchievements] = useState<GamificationAchievement[]>([]);
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -34,63 +76,64 @@ export function useRealGamification(userId?: string): RealTimeGamificationData {
 
   // Function to refresh all data synchronously
   const refreshData = useCallback(async () => {
-    if (!userId) return;
-
-    try {
-      console.log('🎮 Fetching real gamification data for user:', userId);
-      setIsLoading(true);
-
-      // Fetch data from new client-safe API
-      const response = await fetch(`/api/gamification/user/data/${userId}`);
-
-      if (!response.ok) {
-        console.warn('⚠️ Gamification API failed, using fallback');
-        // Fallback to empty data if API fails
-        setProfile(null);
-        setAchievements([]);
-        setRewards([]);
-        setLeaderboard([]);
-        setTotalPoints(0);
-        setCurrentLevel(1);
-        setLevelProgress(0);
-        return;
-      }
-
-      const data = await response.json() as {
-        profile: UserGamificationProfile | null;
-        achievements: UserAchievement[];
-        rewards: Reward[];
-        leaderboard: LeaderboardEntry[];
-        totalPoints: number;
-        currentLevel: number;
-        levelProgress: number;
-      };
-
-      // Update state with real data
-      setProfile(data.profile);
-      setAchievements(data.achievements);
-      setRewards(data.rewards);
-      setLeaderboard(data.leaderboard);
-      setTotalPoints(data.totalPoints);
-      setCurrentLevel(data.currentLevel);
-      setLevelProgress(data.levelProgress);
-
-      console.log('✅ Real gamification data loaded:', {
-        profile: !!data.profile,
-        achievements: data.achievements.length,
-        points: data.totalPoints
-      });
-
-    } catch (error) {
-      console.error('❌ Error fetching gamification data:', error);
-      // Fallback to empty data on error
-      setProfile(null);
+    if (!userId) {
       setAchievements([]);
-      setRewards([]);
-      setLeaderboard([]);
+      setProfile(null);
       setTotalPoints(0);
       setCurrentLevel(1);
       setLevelProgress(0);
+      return;
+    }
+
+    try {
+      console.log('🎮 [useRealGamification] Fetching data for user:', userId);
+      setIsLoading(true);
+
+      // Fetch data from new client-safe API
+      const response = await fetch(`/api/gamification/user/data/${userId}`, {
+        cache: 'no-store'
+      });
+
+      if (!response.ok) {
+        throw new Error(`API failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // 🔥 ANTI-CORRUPTION LAYER: Normalizar datos del backend
+      const normalizedAchievements: GamificationAchievement[] = (data.achievements || []).map((a: any) => ({
+        id: String(a.id || a.achievementId || a.achievement_id),
+        name: a.name || 'Logro sin nombre',
+        description: a.description || '',
+        icon: a.icon || '🏆',
+
+        // 🔥 EXPLICIT SEMANTICS (Fixing user mismatch)
+        // Asegura que lea 'type' de la BD o los campos ya mapeados del API
+        category: mapTypeToCategory(a.type || a.category),
+        rarity: mapTypeToRarity(a.type || a.rarity),
+
+        pointsReward: Number(a.pointsReward ?? a.points_reward ?? a.points ?? 0),
+
+        progress: Number(a.progress ?? 0),
+        required: Number(a.required ?? a.required_points ?? a.requiredPoints ?? 1),
+
+        isUnlocked: Boolean(a.isUnlocked ?? a.is_unlocked ?? a.isCompleted ?? false),
+      }));
+
+      // Update state with normalized data
+      setProfile(data.profile);
+      setAchievements(normalizedAchievements);
+      setRewards(data.rewards || []);
+      setLeaderboard(data.leaderboard || []);
+      setTotalPoints(Number(data.totalPoints ?? data.profile?.totalPoints ?? 0));
+      setCurrentLevel(Number(data.currentLevel ?? data.profile?.currentLevel ?? 1));
+      setLevelProgress(Number(data.levelProgress ?? data.profile?.levelProgress ?? 0));
+
+      console.log(`✅ [useRealGamification] Loaded ${normalizedAchievements.length} achievements`);
+
+    } catch (error) {
+      console.error('❌ [useRealGamification] Error:', error);
+      // Mantener silencio si falla para no romper UI, pero resetear cargando
     } finally {
       setIsLoading(false);
     }
@@ -105,7 +148,6 @@ export function useRealGamification(userId?: string): RealTimeGamificationData {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // Include wallet address for authentication
           'X-Wallet-Address': userId,
         },
         body: JSON.stringify({
@@ -120,18 +162,25 @@ export function useRealGamification(userId?: string): RealTimeGamificationData {
       }
 
       // Refresh data after event tracking attempt
-      void refreshData();
-      console.log('🎯 Event tracking attempted and data refreshed:', eventType);
+      refreshData();
     } catch (error) {
       console.error('❌ Error tracking gamification event:', error);
-      // Still refresh data even if tracking failed
-      void refreshData();
+      refreshData();
     }
   }, [userId, refreshData]);
 
-  // Load data on mount and user change
+  // Load data on mount and user change with periodic refresh
   useEffect(() => {
-    void refreshData();
+    refreshData();
+
+    // 🛡️ Optimization: Periodic refresh every 5 mins but ONLY if the tab is active
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        refreshData();
+      }
+    }, 300000); // 5 minutes
+
+    return () => clearInterval(interval);
   }, [refreshData]);
 
   return {
@@ -147,3 +196,5 @@ export function useRealGamification(userId?: string): RealTimeGamificationData {
     trackNewEvent
   };
 }
+
+

@@ -6,6 +6,7 @@ import type { Project } from '@/types/admin';
 import { DeploymentConfigModal } from './admin/DeploymentConfigModal';
 import DeploymentProgressModal from './admin/DeploymentProgressModal';
 import type { DeploymentConfig } from '@/types/deployment';
+import { AdminPayouts } from './dao/AdminPayouts';
 
 interface ProjectTableViewProps {
   projects: Project[];
@@ -59,15 +60,46 @@ export function ProjectTableView({
       setIsProgressModalOpen(true);
 
       try {
-        await onDeployProtocol(
+        const result = await onDeployProtocol(
           selectedProjectForDeployment.id,
           selectedProjectForDeployment.title,
           selectedProjectForDeployment.slug,
-          // Merge force flag into config (requires logic update in useProjectActions to extract it)
           { ...config, forceRedeploy: selectedProjectForDeployment.forceRedeploy } as any
         );
-        setDeploymentStatus('success');
+
+        const jobId = (result as any)?.jobId;
+
+        if (jobId) {
+          // Start Polling
+          const pollStatus = async () => {
+            try {
+              const pollRes = await fetch(`/api/admin/deployment-job/${jobId}`);
+              if (!pollRes.ok) throw new Error("Failed to poll status");
+              const { job } = await pollRes.json();
+
+              if (job.status === 'completed') {
+                setDeploymentStatus('success');
+                return; // Stop polling
+              } else if (job.status === 'failed') {
+                setDeploymentStatus('error');
+                setDeploymentError(job.error || "Deployment failed in background");
+                return; // Stop polling
+              }
+
+              // Continue polling
+              setTimeout(pollStatus, 3000);
+            } catch (pollErr) {
+              console.error("Polling error:", pollErr);
+              setTimeout(pollStatus, 5000);
+            }
+          };
+          pollStatus();
+        } else {
+          // Fallback if no jobId returned (sync legacy)
+          setDeploymentStatus('success');
+        }
       } catch (err) {
+
         setDeploymentStatus('error');
         setDeploymentError(err instanceof Error ? err.message : 'Error desconocido al desplegar');
       }
@@ -145,53 +177,18 @@ export function ProjectTableView({
                       const phone = p.applicantPhone?.trim();
                       const hasEmail = !!p.applicantEmail;
                       const createdAt = new Date(p.createdAt);
-
-                      // Fecha de referencia: cuando empezó el WhatsApp bot (aprox 18 nov 2025)
-                      const whatsappStartDate = new Date('2025-11-15T00:00:00Z');
-
+                      // Nueva Lógica Simplificada
                       let source = "unknown";
-                      let confidence = "low";
 
-                      // PATRÓN 1: Fecha reciente (después del whatsapp bot) + teléfono internacional
-                      if (createdAt >= whatsappStartDate && phone) {
-                        // Formatos internacionales comunes que indican WhatsApp
-                        const internationalPatterns = [
-                          /^\+/, // +52, +1, etc
-                          /^00\d/, // 00952, 001, etc
-                          /^52/, // 52XXXX (México directo)
-                          /^1/, // 1XXXX (USA directo)
-                        ];
-
-                        const isInternationalNumber = internationalPatterns.some(pattern => pattern.test(phone));
-                        const isRecentProject = (Date.now() - createdAt.getTime()) < (30 * 24 * 60 * 60 * 1000); // Últimos 30 días
-
-                        if (isInternationalNumber && phone.length >= 10) {
-                          source = "whatsapp";
-                          confidence = "high";
-                        } else if (isRecentProject && phone) {
-                          source = "whatsapp";
-                          confidence = "medium";
-                        }
-                      }
-
-                      // PATRÓN 2: Proyectos antiguos sin teléfono son definitivamente web
-                      if (source === "unknown" && createdAt < whatsappStartDate && hasEmail) {
+                      if (hasEmail) {
+                        // El form web siempre pide Email. Bot de whatsapp no.
                         source = "web";
-                      }
-
-                      // PATRÓN 3: Cualquier proyecto con email es web por defecto (máxima cobertura)
-                      if (source === "unknown" && hasEmail) {
+                      } else if (phone) {
+                        // Teléfono sin email -> Bot de WhatsApp.
+                        source = "whatsapp";
+                      } else {
+                        // Fallback
                         source = "web";
-                      }
-
-                      // PATRÓN 4: Si tiene teléfono pero es proyecto muy antiguo, es más probable que sea web
-                      if (source === "unknown" && phone && createdAt < whatsappStartDate) {
-                        source = "web"; // Proyectos antiguos con teléfono opcional
-                      }
-
-                      // ÚLTIMO FALLBACK: Todo lo que llegue aquí es web (por defecto)
-                      if (source === "unknown") {
-                        source = "web"; // Máxima cobertura - asumir web si no hay evidencia de whatsapp
                       }
 
                       return (
@@ -210,7 +207,7 @@ export function ProjectTableView({
                   {/* Featured Column */}
                   <td className="px-4 py-3 text-center">
                     <div className="flex items-center justify-center gap-2">
-                      {isFeatured(Number(p.id)) && (
+                      {p.featured && (
                         <div className="w-2 h-2 bg-lime-400 rounded-full animate-pulse"></div>
                       )}
                       <button
@@ -224,12 +221,12 @@ export function ProjectTableView({
                             console.error('🔧 Admin: Error updating featured status:', error);
                           }
                         }}
-                        className={`px-3 py-1.5 rounded text-xs font-medium transition-all duration-200 ${isFeatured(Number(p.id))
+                        className={`px-3 py-1.5 rounded text-xs font-medium transition-all duration-200 ${p.featured
                           ? 'bg-lime-500 hover:bg-lime-600 text-black shadow-lg ring-2 ring-lime-400/30'
                           : 'bg-zinc-700 hover:bg-zinc-600 text-gray-300 hover:text-white border border-zinc-600 hover:border-zinc-500'
                           }`}
                       >
-                        {isFeatured(Number(p.id)) ? '✓ Featured' : '☆ Feature'}
+                        {p.featured ? '✓ Featured' : '☆ Feature'}
                       </button>
                     </div>
                   </td>
@@ -487,6 +484,18 @@ export function ProjectTableView({
                                       )}
                                     </button>
                                   )}
+
+                                  {p.deploymentStatus === 'deployed' && (
+                                    <button
+                                      onClick={() => {
+                                        alert("🏛️ Transición Soberana a AGORA Market\n\nLa activación de la Fase de Defensa debe realizarse a través de una propuesta en la DAO del protocolo (W2EGovernor) o mediante interacción directa con los Smart Contracts si eres el propietario.\n\nEl sistema backend detectará automáticamente el cambio cuando las transferencias queden habilitadas on-chain.");
+                                      }}
+                                      className="px-2 py-0.5 bg-purple-900/50 hover:bg-purple-900 border border-purple-500/50 text-purple-200 text-xs font-bold rounded shadow-lg transition-all flex items-center gap-1 ml-2"
+                                      title="Instrucciones para transición soberana a Fase de Defensa"
+                                    >
+                                      🏛️ Lanza AGORA Market
+                                    </button>
+                                  )}
                                 </div>
                                 <span className={`px-2 py-0.5 rounded ${p.deploymentStatus === 'deployed' ? 'bg-indigo-900 text-indigo-300 border border-indigo-700' :
                                   p.deploymentStatus === 'pending' ? 'bg-amber-900 text-amber-300 border border-amber-700' :
@@ -529,7 +538,72 @@ export function ProjectTableView({
                                   {p.treasuryAddress ? `${p.treasuryAddress.substring(0, 8)}...${p.treasuryAddress.substring(36)}` : 'N/A'}
                                 </span>
                               </div>
+                              <div>
+                                <span className="text-gray-400 block mb-1">Registry Contract:</span>
+                                <span className="text-white break-all" title={(p as any).registryContractAddress || ''}>
+                                  {(p as any).registryContractAddress
+                                    ? `${(p as any).registryContractAddress.substring(0, 8)}...${(p as any).registryContractAddress.substring(36)}`
+                                    : 'N/A'}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400 block mb-1">Protocol Version:</span>
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${(p as any).protocolVersion === 2
+                                  ? 'bg-indigo-900 text-indigo-300 border border-indigo-700'
+                                  : 'bg-zinc-700 text-gray-400'
+                                  }`}>
+                                  V{(p as any).protocolVersion || 1}
+                                </span>
+                              </div>
                             </div>
+                            {/* V2 Artifacts List */}
+                            {(p as any).artifacts && (p as any).artifacts.length > 0 && (
+                              <div className="mt-3 pt-3 border-t border-zinc-700/50">
+                                <span className="text-gray-400 block mb-2 text-[10px] uppercase tracking-wider">Artefactos del Ecosistema</span>
+                                <div className="flex flex-wrap gap-2">
+                                  {((p as any).artifacts as Array<{ type: string; address: string; name?: string }>).map((art, idx) => (
+                                    <span key={idx} className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-900/30 border border-indigo-700/50 rounded-lg text-[10px] text-indigo-300" title={art.address}>
+                                      <span>{art.type === 'Access' ? '🔑' : art.type === 'Identity' ? '🪪' : art.type === 'Membership' ? '🏷️' : art.type === 'Coupon' ? '🎟️' : art.type === 'Reputation' ? '🏆' : '💰'}</span>
+                                      <span>{art.name || art.type}</span>
+                                      <span className="text-indigo-500">{art.address ? `${art.address.substring(0, 6)}…` : ''}</span>
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Protocol Safety Layer (Super Admin Override) */}
+                            {p.deploymentStatus === 'deployed' && (
+                              <div className="border-t border-red-900/30 pt-4 mt-4 bg-red-950/10 p-4 rounded-lg">
+                                <div className="flex justify-between items-center mb-4">
+                                  <h4 className="font-semibold text-red-400 text-sm flex items-center gap-2">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                    Protocol Safety Layer (Super Admin Override)
+                                  </h4>
+                                  <button
+                                    className="text-xs bg-red-900/30 hover:bg-red-800 text-red-300 px-2 py-1 rounded border border-red-800 transition-colors"
+                                    onClick={() => fetch(`/api/admin/check-delays?force=true&projectId=${p.id}`).then(() => alert("Alert System Triggered"))}
+                                  >
+                                    🛠️ Test Alert System
+                                  </button>
+                                </div>
+                                <div className="text-xs text-red-200/70 mb-4">
+                                  <p>⚠️ <strong>Emergency Power:</strong> Use this panel to force-distribute funds if the Protocol Owner is unresponsive.</p>
+                                  <p>Actions taken here use <strong>YOUR</strong> connected wallet (Super Admin). Ensure you have necessary authorization.</p>
+                                </div>
+
+                                <div className="bg-zinc-900 p-2 rounded border border-red-900/30">
+                                  {/* Using the same component as the Owner Dashboard, but context is Super Admin */}
+                                  <AdminPayouts
+                                    projectId={Number(p.id)}
+                                    project={p}
+                                    safeChainId={p.chainId || 1} // Default to Mainnet if missing, though unlikely for deployed
+                                  />
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
 
@@ -575,11 +649,13 @@ export function ProjectTableView({
         onClose={() => setIsConfigModalOpen(false)}
         onConfirm={handleConfigConfirm}
         projectTitle={selectedProjectForDeployment?.title || ''}
-        isLoading={false} // Loading handled by Progress Modal now
+        projectSlug={selectedProjectForDeployment?.slug}
+        projectTotalTokens={projects.find(p => p.id === selectedProjectForDeployment?.id)?.totalTokens ?? undefined}
+        isLoading={false}
       />
 
       {/* Visual Deployment Progress Modal */}
-      <DeploymentProgressModal
+      < DeploymentProgressModal
         isOpen={isProgressModalOpen}
         onClose={() => {
           setIsProgressModalOpen(false);

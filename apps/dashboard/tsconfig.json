@@ -41,6 +41,18 @@
       ],
       "@pandoras/protocol-deployer/*": [
         "../../packages/protocol-deployer/src/*"
+      ],
+      "@pandoras/agora-engine": [
+        "../../packages/agora-engine/src"
+      ],
+      "@pandoras/agora-engine/*": [
+        "../../packages/agora-engine/src/*"
+      ],
+      "@pandoras/core-webhooks": [
+        "../../packages/core-webhooks/src"
+      ],
+      "@pandoras/core-webhooks/*": [
+        "../../packages/core-webhooks/src/*"
       ]
     }
   },
