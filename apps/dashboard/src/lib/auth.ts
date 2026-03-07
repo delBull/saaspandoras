@@ -161,3 +161,15 @@ export function validateWalletAddress(address: string | undefined | null): boole
   if (!address) return false;
   return /^0x[a-fA-F0-9]{40}$/.test(address);
 }
+
+export const authConfig = {
+  domain: process.env.NEXT_PUBLIC_THIRDWEB_AUTH_DOMAIN!,
+  authUrl: "/api/auth",
+  cookieOptions: {
+    // Configuración de cookies para desarrollo y producción
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "none" as const,
+    maxAge: 60 * 60 * 24 * 7, // 1 semana
+    domain: process.env.NODE_ENV === "production" ? ".pandoras.app" : undefined,
+  },
+};
