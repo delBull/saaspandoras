@@ -1,26 +1,34 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
+import { jwtVerify, importSPKI } from "jose";
 
-// ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para evitar errores con jsonwebtoken
+// ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME
 export const runtime = "nodejs";
 
-const JWT_SECRET = process.env.JWT_SECRET || "super-secret-dev-key";
-
-interface JWTPayload {
-    userId?: string;
-    sub?: string;
-    address?: string;
-    walletAddress?: string; // Legacy fallback
-    role?: string;
-    scope?: string;
-    hasAccess?: boolean;
-    iat?: number;
-    exp?: number;
-}
+const JWT_PUBLIC_KEY_B64 = process.env.JWT_PUBLIC_KEY;
 
 export async function GET() {
     try {
+        // 🚀 DEV_FAST MODE: Instant Mock Session
+        if (process.env.NEXT_PUBLIC_DEV_FAST === "true" && process.env.NODE_ENV === "development") {
+            const cookieStore = await cookies();
+            const walletAddress = cookieStore.get("wallet-address")?.value || "0xDEV_USER";
+
+            return NextResponse.json({
+                authenticated: true,
+                user: {
+                    id: "dev-user-id",
+                    address: walletAddress,
+                    role: "admin",
+                    scope: "web",
+                    hasAccess: true,
+                    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+                }
+            }, {
+                headers: { "Cache-Control": "no-store" }
+            });
+        }
+
         const cookieStore = await cookies();
         const token = cookieStore.get("auth_token")?.value;
 
@@ -31,27 +39,42 @@ export async function GET() {
             });
         }
 
-        let verified: JWTPayload;
+        if (!JWT_PUBLIC_KEY_B64) {
+            console.error("❌ JWT_PUBLIC_KEY is not defined in environment variables");
+            return NextResponse.json({ error: "Server Configuration Error" }, { status: 500 });
+        }
+
+        let payload: any;
         try {
-            verified = jwt.verify(token, JWT_SECRET) as JWTPayload;
+            // Decode base64 PEM if necessary
+            const publicKeyPem = JWT_PUBLIC_KEY_B64.startsWith("-----")
+                ? JWT_PUBLIC_KEY_B64
+                : Buffer.from(JWT_PUBLIC_KEY_B64, "base64").toString("utf-8");
+
+            const publicKey = await importSPKI(publicKeyPem, "RS256");
+            const result = await jwtVerify(token, publicKey, {
+                algorithms: ["RS256"],
+            });
+            payload = result.payload;
         } catch (e) {
+            console.warn("⚠️ JWT Verification failed:", e instanceof Error ? e.message : e);
             return NextResponse.json({ authenticated: false, error: "Invalid or expired session" }, {
                 status: 401,
                 headers: { "Cache-Control": "no-store" }
             });
         }
 
-        const address = verified.address || verified.walletAddress || verified.sub;
+        const address = payload.address || payload.walletAddress || payload.sub;
 
         return NextResponse.json({
             authenticated: true,
             user: {
-                id: verified.sub || verified.userId,
+                id: payload.sub || payload.userId,
                 address: address,
-                role: verified.role || "user",
-                scope: verified.scope,
-                hasAccess: verified.hasAccess || false,
-                expiresAt: verified.exp ? new Date(verified.exp * 1000).toISOString() : null,
+                role: payload.role || "user",
+                scope: payload.scope,
+                hasAccess: payload.hasAccess || false,
+                expiresAt: payload.exp ? new Date(payload.exp * 1000).toISOString() : null,
             }
         }, {
             headers: { "Cache-Control": "no-store" }

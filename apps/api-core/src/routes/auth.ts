@@ -200,18 +200,21 @@ router.post("/login", authLimiter, async (req: Request, res: Response) => {
         });
 
         const isProd = process.env.NODE_ENV === "production";
-        // CRITICAL: Explicitly use .pandoras.finance for cross-subdomain support
-        const cookieDomain = process.env.COOKIE_DOMAIN || ".pandoras.finance";
+        const isRequestingLocalhost = req.headers.origin?.includes("localhost") || req.get('host')?.includes("localhost");
+
+        // CRITICAL: Explicitly use .pandoras.finance for cross-subdomain support in prod
+        // Omit domain for localhost to allow browser to accept it.
+        const cookieDomain = isRequestingLocalhost ? undefined : (process.env.COOKIE_DOMAIN || ".pandoras.finance");
+
         const cookieOptions: any = {
             httpOnly: true,
-            secure: true, // Required for cross-origin
-            sameSite: "none", // Required for cross-origin
+            secure: isRequestingLocalhost ? false : true,
+            sameSite: isRequestingLocalhost ? "lax" : "none",
             domain: cookieDomain,
             path: "/",
-            // 🛡️ Removed 'partitioned: true' as it breaks Next.js cross-subdomain routing
         };
 
-        console.log(`🍪 [LOGIN] Setting CROSS-ORIGIN cookies for domain: ${cookieDomain} | Secure: ${cookieOptions.secure}`);
+        console.log(`🍪 [LOGIN] Setting cookies - Domain: ${cookieDomain} | Secure: ${cookieOptions.secure} | SameSite: ${cookieOptions.sameSite}`);
 
         res.cookie("access_token", tokens.accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
         res.cookie("refresh_token", tokens.refreshToken, {
