@@ -4,6 +4,7 @@ const nextConfig = {
   // 🔧 Evita fallos de tracing en Vercel (muy importante para segmentos como (dashboard))
   experimental: {
     // Note: serverComponentsExternalPackages has been moved to serverExternalPackages
+    optimizePackageImports: ["ethers", "viem", "thirdweb", "lucide-react", "@tabler/icons-react", "@heroicons/react"]
   },
   serverExternalPackages: ["drizzle-orm", "postgres"],
 

@@ -1077,6 +1077,12 @@ export class GamificationService {
    */
   public static async initializeBasicAchievements(): Promise<void> {
     if (this.hasSeeded) return; // Prevent multiple seeds in same process
+
+    // 🚀 DEV_FAST MODE: Skip seeding to save DB time
+    if (process.env.NEXT_PUBLIC_DEV_FAST === "true" && process.env.NODE_ENV === "development") {
+      this.hasSeeded = true;
+      return;
+    }
     try {
       // 1. Get static seed accomplishments
       const { ACHIEVEMENTS } = await import('./seeds/achievements.seed');
