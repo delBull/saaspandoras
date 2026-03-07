@@ -77,6 +77,11 @@ router.post("/login", authLimiter, async (req: Request, res: Response) => {
             message: messageString
         } = payload;
 
+        if (!domain || !payloadAddress || !nonce) {
+            console.error("❌ Missing required SIWE fields: domain, address, or nonce");
+            return res.status(400).json({ error: "Invalid SIWE payload" });
+        }
+
         console.log(`🔐 Login Attempt: ${payloadAddress}`);
         if (executionAddress) {
             console.log(`📱 Execution Address (Smart Wallet): ${executionAddress}`);
@@ -125,6 +130,8 @@ router.post("/login", authLimiter, async (req: Request, res: Response) => {
             console.error(`❌ Domain mismatch in message string: Expected ${config.domain}`);
             return res.status(401).json({ error: "Domain mismatch in message" });
         }
+
+        console.log(`🔎 Query Params - Nonce: ${nonce} (${typeof nonce}), Address: ${payloadAddress} (${typeof payloadAddress}), Now: ${now} (${typeof now})`);
 
         const challenge = await db.query.authChallenges.findFirst({
             where: and(
