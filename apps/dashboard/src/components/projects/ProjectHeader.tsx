@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { BuildingLibraryIcon } from "@heroicons/react/24/outline";
+import { BuildingLibraryIcon, DocumentDuplicateIcon } from "@heroicons/react/24/outline";
 import { useActiveAccount } from "thirdweb/react";
+import { useRouter } from "next/navigation";
 import type { ProjectData } from "@/app/()/projects/types";
 
 interface ProjectHeaderProps {
@@ -28,6 +29,8 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
   // Estados para controlar las animaciones
   const [showVideoHint, setShowVideoHint] = useState(false);
   const [stopAnimations, setStopAnimations] = useState(false);
+  const [isCloning, setIsCloning] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     // Mostrar la animación después de 3 segundos
@@ -49,6 +52,33 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
   const handleVideoClick = () => {
     if (onVideoClick) {
       onVideoClick();
+    }
+  };
+
+  const handleClone = async () => {
+    if (!confirm("¿Estás seguro de que deseas clonar este proyecto? Se creará una copia con las mismas reglas pero sin contratos desplegados.")) {
+      return;
+    }
+
+    setIsCloning(true);
+    try {
+      const response = await fetch(`/api/projects/${project.slug || project.id}/clone`, {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert("Proyecto clonado exitosamente. Redirigiendo...");
+        router.push(`/projects/${data.newSlug}`);
+      } else {
+        alert(`Error al clonar: ${data.error}`);
+      }
+    } catch (error) {
+      console.error("Error cloning project:", error);
+      alert("Error al procesar la clonación.");
+    } finally {
+      setIsCloning(false);
     }
   };
 
@@ -133,13 +163,21 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
 
           {/* Manage DAO Button for Owner */}
           {isOwner && (
-            <div className="hidden md:block mb-2">
+            <div className="hidden md:flex flex-col gap-2 mb-2">
               <Link href={`/projects/${project.slug || project.id}/dao`}>
-                <button className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors shadow-lg shadow-purple-900/20 border border-purple-500/50">
+                <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors shadow-lg shadow-purple-900/20 border border-purple-500/50">
                   <BuildingLibraryIcon className="w-5 h-5" />
                   <span>Gestionar DAO</span>
                 </button>
               </Link>
+              <button
+                onClick={handleClone}
+                disabled={isCloning}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg font-medium transition-colors border border-zinc-700 disabled:opacity-50"
+              >
+                <DocumentDuplicateIcon className="w-5 h-5" />
+                <span>{isCloning ? "Clonando..." : "Clonar Proyecto"}</span>
+              </button>
             </div>
           )}
         </div>
