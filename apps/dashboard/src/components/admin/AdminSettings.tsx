@@ -24,7 +24,9 @@ import {
   PieChart,
   Landmark,
   Target,
-  TrendingUp
+  TrendingUp,
+  CheckCircle,
+  XCircle
 } from "lucide-react";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
 import Link from "next/link";
@@ -83,6 +85,8 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
       }
     }
   }, []);
+
+  const isSuperAdmin = walletAddress?.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase();
 
   // Filter out admins without wallet address and system admins (id: 999 or super admin wallet)
   const validAdmins = initialAdmins.filter(admin => {
@@ -222,6 +226,120 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
   return (
     <div className="space-y-8">
       {/* --- ADMIN MANAGEMENT SECTION --- */}
+      <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 mb-8">
+        <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+          <Users className="w-6 h-6 text-lime-400" />
+          Admin Wallet Management
+        </h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Add Admin Form */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Añadir Nuevo Administrador</h4>
+            <div className="space-y-4">
+              <div className="p-4 bg-zinc-800/30 rounded-lg border border-zinc-800">
+                <div className="mb-4">
+                  <label className="text-xs text-gray-500 block mb-1">Dirección de Wallet</label>
+                  <Input
+                    placeholder="0x..."
+                    value={newAddress}
+                    onChange={(e) => setNewAddress(e.target.value)}
+                    className="bg-zinc-900 border-zinc-700 h-10"
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="text-xs text-gray-500 block mb-1">Alias (Opcional)</label>
+                  <Input
+                    placeholder="Ej: Marketing Admin"
+                    value={newAlias}
+                    onChange={(e) => setNewAlias(e.target.value)}
+                    className="bg-zinc-900 border-zinc-700 h-10"
+                  />
+                </div>
+                <Button
+                  onClick={handleAddAdmin}
+                  disabled={isLoading || !isSuperAdmin}
+                  className={`w-full font-bold h-12 ${!isSuperAdmin ? 'bg-zinc-700 cursor-not-allowed opacity-50' : 'bg-lime-500 hover:bg-lime-600 text-black'}`}
+                >
+                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <PlusCircle className="w-4 h-4 mr-2" />}
+                  {isSuperAdmin ? "Añadir Acceso Admin" : "Only Super Admin can add admins"}
+                </Button>
+                {!isSuperAdmin && (
+                  <p className="mt-2 text-[10px] text-yellow-500/70 italic text-center">
+                    Solo la wallet maestra puede autorizar nuevos gestores.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Admin List */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Administradores Actuales ({admins.length})</h4>
+            <div className="max-h-[320px] overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+              {admins.length === 0 ? (
+                <div className="text-center py-12 bg-zinc-800/30 rounded-lg border border-dashed border-zinc-700">
+                  <p className="text-sm text-gray-500 font-mono italic">No secondary admins configured.</p>
+                </div>
+              ) : (
+                admins.map((admin) => (
+                  <div key={admin.id} className="flex items-center justify-between p-3 bg-zinc-800/50 border border-zinc-700 rounded-lg group hover:border-zinc-500 transition-colors">
+                    <div className="flex-1 min-w-0">
+                      {editingAliasId === admin.id ? (
+                        <div className="flex gap-2 pr-4">
+                          <Input
+                            size={1}
+                            value={editingAliasValue}
+                            onChange={(e) => setEditingAliasValue(e.target.value)}
+                            className="bg-zinc-900 border-zinc-600 h-8 text-xs text-white"
+                            autoFocus
+                          />
+                          <button onClick={handleUpdateAlias} className="text-lime-400 hover:text-lime-300">
+                            <CheckCircle className="w-4 h-4" />
+                          </button>
+                          <button onClick={handleCancelEditAlias} className="text-red-400 hover:text-red-300">
+                            <XCircle className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-white text-sm truncate">
+                            {admin.alias || 'Admin sin alias'}
+                          </p>
+                          {isSuperAdmin && (
+                            <button
+                              onClick={() => handleStartEditAlias(admin)}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-500 hover:text-white"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                      <p className="text-[10px] text-gray-500 font-mono truncate">
+                        {getWalletAddress(admin)}
+                      </p>
+                    </div>
+                    {isSuperAdmin && (
+                      <button
+                        onClick={() => handleDeleteAdmin(admin.id)}
+                        className="text-gray-500 hover:text-red-500 transition-colors p-2"
+                        title="Eliminar Admin"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+            <div className="mt-4 p-4 bg-blue-900/10 border border-blue-900/30 rounded-xl flex gap-3 text-xs text-blue-300 leading-relaxed shadow-inner">
+              <ShieldCheck className="w-5 h-5 shrink-0 text-blue-400 mt-0.5" />
+              <p>El Super Admin original posee el <span className="font-bold text-blue-100">Kill-Switch global</span> y tiene prioridad sobre el resto de gestores. Los admins secundarios pueden ver y gestionar proyectos, pero no alterar la infraestructura base.</p>
+            </div>
+          </div>
+        </div>
+      </div>
       {/* --- AGORA ARCHITECTURE GUIDE SECTION --- */}
       <div className="border-t-2 border-zinc-700/50 pt-8 mt-8">
         <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-6">
@@ -450,22 +568,27 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
                   <li><strong>Reactivation:</strong> Settlement unpausing ALWAYS requires a 6h Governance Delay.</li>
                 </ul>
               </div>
-              <div className="flex gap-2 text-xs text-yellow-400">
-                <span>🔒 Super Admin Only</span>
+              <div className="flex gap-2 text-xs text-yellow-500">
+                <span>{isSuperAdmin ? "✅ Access Granted" : "🔒 Super Admin Only"}</span>
                 <span>•</span>
                 <span>⚠️ High Risk Area</span>
               </div>
             </div>
             <div className="flex flex-col gap-3">
               <Link
-                href="/admin/operations"
-                className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold rounded-lg transition-colors flex items-center gap-2 shadow-lg"
+                href={isSuperAdmin ? "/admin/operations" : "#"}
+                className={`px-6 py-3 font-semibold rounded-lg transition-colors flex items-center gap-2 shadow-lg ${isSuperAdmin ? "bg-zinc-800 hover:bg-zinc-700 text-white" : "bg-zinc-900 text-zinc-600 cursor-not-allowed opacity-50"}`}
+                onClick={(e) => !isSuperAdmin && e.preventDefault()}
               >
                 <Settings className="w-4 h-4" />
                 Monitor Systems
               </Link>
               <Button
                 onClick={async () => {
+                  if (!isSuperAdmin) {
+                    toast.error("Solo el Super Admin puede activar el Kill-Switch.");
+                    return;
+                  }
                   if (confirm("⚠️ CRITICAL ACTION: Are you sure you want to PAUSE ALL Agora protocols? This will stop all settlements globally.")) {
                     try {
                       const res = await fetch("/api/v1/admin/agora/emergency/pause-all", {
@@ -481,9 +604,9 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
                     }
                   }
                 }}
-                className="px-6 py-6 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-all flex items-center gap-2 shadow-lg hover:shadow-red-600/50 uppercase tracking-wider"
+                className={`px-6 py-6 font-bold rounded-lg transition-all flex items-center gap-2 shadow-lg uppercase tracking-wider ${isSuperAdmin ? "bg-red-600 hover:bg-red-700 text-white hover:shadow-red-600/50" : "bg-zinc-900 text-zinc-600 cursor-not-allowed border border-zinc-800"}`}
               >
-                <Power className="w-5 h-5 fill-white" />
+                <Power className="w-5 h-5 fill-current" />
                 Global Kill-Switch
               </Button>
             </div>
@@ -510,17 +633,18 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
               </div>
             </div>
             <Link
-              href="/admin/telegram-bridge"
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors flex items-center gap-2 shadow-lg hover:shadow-blue-900/50"
+              href={isSuperAdmin ? "/admin/telegram-bridge" : "#"}
+              className={`px-6 py-3 font-semibold rounded-lg transition-colors flex items-center gap-2 shadow-lg ${isSuperAdmin ? "bg-blue-600 hover:bg-blue-700 text-white hover:shadow-blue-900/50" : "bg-zinc-950 text-zinc-600 cursor-not-allowed border border-zinc-800"}`}
+              onClick={(e) => !isSuperAdmin && e.preventDefault()}
             >
               <MessageCircle className="w-4 h-4" />
-              Open Bridge Control
+              {isSuperAdmin ? "Open Bridge Control" : "Control Restricted"}
             </Link>
           </div>
         </div>
       </div>
 
-      <MultiTenantSection />
+      <MultiTenantSection isSuperAdmin={isSuperAdmin} />
     </div>
   );
 }
@@ -553,7 +677,7 @@ function InfoTooltip({ content }: { content: string }) {
 // ============================================
 // MULTI-TENANT CONFIGURATION COMPONENT
 // ============================================
-function MultiTenantSection() {
+function MultiTenantSection({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -631,6 +755,10 @@ function MultiTenantSection() {
   };
 
   const handleCreateTenant = async () => {
+    if (!isSuperAdmin) {
+      toast.error("Acceso restringido al Super Admin");
+      return;
+    }
     if (!newTenantId || !newTenantName) {
       toast.error("Tenant ID y nombre son requeridos");
       return;

@@ -102,6 +102,14 @@ async function runDeploymentJob(jobId: string) {
                 chainId: result.chainId,
                 deploymentStatus: 'deployed',
                 status: 'live',
+                w2eConfig: {
+                    ...(job.config as any),
+                    artifacts: result.artifacts,
+                    licenseToken: {
+                        ...(job.config as any).licenseToken,
+                        address: result.licenseAddress || (result.artifacts?.[0]?.address)
+                    }
+                }
             })
             .where(eq(schema.projects.slug, job.projectSlug));
 
