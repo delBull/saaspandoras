@@ -88,7 +88,9 @@ router.post("/login", authLimiter, async (req: Request, res: Response) => {
             return res.status(400).json({ error: "Missing SIWE message" });
         }
 
-        if (domain !== config.domain) {
+        // Allow any localhost port in development
+        const isLocalhost = config.domain.startsWith('localhost') && domain.startsWith('localhost');
+        if (domain !== config.domain && !isLocalhost) {
             console.error(`❌ Domain mismatch: Received ${domain}, Expected ${config.domain}`);
             return res.status(401).json({ error: "Invalid domain" });
         }
@@ -118,7 +120,8 @@ router.post("/login", authLimiter, async (req: Request, res: Response) => {
             return res.status(401).json({ error: "Nonce mismatch in message" });
         }
 
-        if (!messageString.includes(config.domain)) {
+        const messageDomainMatch = isLocalhost ? messageString.includes('localhost') : messageString.includes(config.domain);
+        if (!messageDomainMatch) {
             console.error(`❌ Domain mismatch in message string: Expected ${config.domain}`);
             return res.status(401).json({ error: "Domain mismatch in message" });
         }
