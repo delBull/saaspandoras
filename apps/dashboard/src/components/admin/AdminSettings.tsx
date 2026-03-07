@@ -239,8 +239,9 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
             <div className="space-y-4">
               <div className="p-4 bg-zinc-800/30 rounded-lg border border-zinc-800">
                 <div className="mb-4">
-                  <label className="text-xs text-gray-500 block mb-1">Dirección de Wallet</label>
+                  <label htmlFor="admin-address" className="text-xs text-gray-500 block mb-1">Dirección de Wallet</label>
                   <Input
+                    id="admin-address"
                     placeholder="0x..."
                     value={newAddress}
                     onChange={(e) => setNewAddress(e.target.value)}
@@ -248,8 +249,9 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
                   />
                 </div>
                 <div className="mb-4">
-                  <label className="text-xs text-gray-500 block mb-1">Alias (Opcional)</label>
+                  <label htmlFor="admin-alias" className="text-xs text-gray-500 block mb-1">Alias (Opcional)</label>
                   <Input
+                    id="admin-alias"
                     placeholder="Ej: Marketing Admin"
                     value={newAlias}
                     onChange={(e) => setNewAlias(e.target.value)}
@@ -292,7 +294,6 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
                             value={editingAliasValue}
                             onChange={(e) => setEditingAliasValue(e.target.value)}
                             className="bg-zinc-900 border-zinc-600 h-8 text-xs text-white"
-                            autoFocus
                           />
                           <button onClick={handleUpdateAlias} className="text-lime-400 hover:text-lime-300">
                             <CheckCircle className="w-4 h-4" />
