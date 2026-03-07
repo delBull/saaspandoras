@@ -3,7 +3,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useReadContract, TransactionButton } from "thirdweb/react";
 import { usePersistedAccount } from "@/hooks/usePersistedAccount";
-import { useProfile } from "@/hooks/useProfile";
 import Link from "next/link";
 import { config } from "@/config";
 import { getContract, prepareContractCall } from "thirdweb";
@@ -16,10 +15,10 @@ import { base } from "thirdweb/chains";
 import { createWallet } from "thirdweb/wallets";
 import { NotificationsPanel } from "@/components/dashboard/notifications-panel";
 import { GovernanceParticipationModal } from "@/components/governance/GovernanceParticipationModal";
+import { waitForSession } from "@/lib/session";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
-// --- FALLBACK PROJECTS (Hardcoded as requested) ---
 const FALLBACK_PROJECTS = [
   {
     id: "fallback-1",
@@ -28,14 +27,6 @@ const FALLBACK_PROJECTS = [
     actionText: "Explorar",
     imageUrl: "/images/dhub3.png",
     projectSlug: "pandoras-protocol"
-  },
-  {
-    id: "fallback-2",
-    title: "BlockBunny",
-    subtitle: "Ecosistema de gamificación y recompensas.",
-    actionText: "Ver Proyecto",
-    imageUrl: "/images/blockbunny.jpg",
-    projectSlug: "blockbunny"
   }
 ];
 
@@ -351,7 +342,6 @@ function AccessArtifactsSection({ accessCards, artifacts }: { accessCards: any[]
 
 export default function DashboardPage() {
   const { account } = usePersistedAccount();
-  const { profile } = useProfile();
   const [isGovernanceModalOpen, setIsGovernanceModalOpen] = useState(false);
 
   // Hoist data fetching here to prevent layout shift/empty states
@@ -359,7 +349,8 @@ export default function DashboardPage() {
     featuredProjects: any[];
     accessCards: any[];
     artifacts: any[];
-    notifications?: any[]; // optional
+    notifications?: any[];
+    profile?: any;
     loading: boolean
   }>({
     featuredProjects: [],
@@ -369,30 +360,36 @@ export default function DashboardPage() {
   });
 
   useEffect(() => {
-    const fetchData = async () => {
+    const controller = new AbortController();
+
+    const load = async () => {
       try {
-        const query = account?.address ? `?wallet=${account.address}` : '';
-        const res = await fetch(`/api/home-data${query}`);
-        if (res.ok) {
-          const json = await res.json();
-          // Use DB projects if available, otherwise FALLBACK
-          const rawProjects = json.featuredProjects || [];
-          setHomeData({
-            featuredProjects: rawProjects.length > 0 ? rawProjects : FALLBACK_PROJECTS,
-            accessCards: json.accessCards || [],
-            artifacts: json.artifacts || [],
-            notifications: json.notifications || [], // Add notifications
-            loading: false
-          });
-        } else {
-          setHomeData(prev => ({
-            ...prev,
-            featuredProjects: FALLBACK_PROJECTS,
-            loading: false
-          }));
+        // 🛡️ CRITICAL: Wait for session hydration to unlock (so we don't fetch prematurely as guest)
+        await waitForSession();
+
+        const walletParam = account?.address ? `?wallet=${account.address}` : "";
+        const res = await fetch(`/api/bootstrap${walletParam}`, {
+          signal: controller.signal
+        });
+        const data = await res.json();
+
+        const rawProjects = data.featuredProjects || [];
+
+        setHomeData({
+          featuredProjects: rawProjects.length > 0 ? rawProjects : FALLBACK_PROJECTS,
+          accessCards: data.accessCards || [],
+          artifacts: data.artifacts || [],
+          notifications: data.notifications || [],
+          profile: data.profile || null,
+          loading: false
+        });
+
+      } catch (e: any) {
+        if (e.name === "AbortError") {
+          console.log("Bootstrap data fetch aborted (component unmounted)");
+          return;
         }
-      } catch (e) {
-        console.error("Failed to fetch data", e);
+        console.error("Failed to fetch dashboard bootstrap data", e);
         setHomeData(prev => ({
           ...prev,
           featuredProjects: FALLBACK_PROJECTS,
@@ -400,12 +397,15 @@ export default function DashboardPage() {
         }));
       }
     };
-    fetchData();
+
+    load();
+
+    return () => controller.abort();
   }, [account?.address]);
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <MobileHeader userName={null} walletAddress={account?.address} profile={profile} />
+      <MobileHeader userName={homeData.profile?.name || null} walletAddress={account?.address} profile={homeData.profile} />
 
       <div className="text-left pt-6 ml-5 mb-6 pr-5">
         <TypewriterText

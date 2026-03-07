@@ -1,8 +1,11 @@
 
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { transactions } from "@/db/schema";
+import { transactions, purchases } from "@/db/schema";
 import { sendPaymentNotification } from "@/lib/discord/notifier";
+import { WebhookService } from "@/lib/integrations/webhook-service";
+import { integrationClients } from "@/db/schema";
+import { eq, sql } from "drizzle-orm";
 import crypto from "crypto";
 
 // Security: Verify Thirdweb Signature
@@ -97,14 +100,76 @@ export async function POST(req: Request) {
             value = body.value || body.amount || "0";
         }
 
-        // 4. Record DB Entry
+        // 4. Record DB Entry & Resolve Purchase
+        const purchaseId = body.metadata?.purchaseId || body.purchaseId;
+
         await db.insert(transactions).values({
-            amount: value.toString(), // Note: Likely needs formatting from Wei to Eth/Tokens if raw
+            amount: value.toString(),
             currency: 'CRYPTO',
             method: 'crypto',
             status: 'completed',
             processedAt: new Date(),
         });
+
+        if (purchaseId) {
+            try {
+                // Update Purchase record
+                await db.execute(sql`
+                    UPDATE purchases 
+                    SET status = 'completed', updated_at = now() 
+                    WHERE purchaseId = ${purchaseId}
+                `);
+
+                // Fetch details for Edge notification
+                const purchase = await db.query.purchases.findFirst({
+                    where: eq(purchases.purchaseId, purchaseId)
+                });
+
+                if (purchase) {
+                    const metadata = purchase.metadata as any;
+                    const edgeWebhookUrl = process.env.TELEGRAM_EDGE_API_URL + '/core/callback';
+                    const edgeSecret = process.env.CORE_CALLBACK_SECRET;
+
+                    if (edgeWebhookUrl && edgeSecret) {
+                        const payload = {
+                            type: 'PURCHASE_COMPLETED',
+                            actionId: purchaseId,
+                            telegramUserId: metadata?.paymentConfig?.payOptions?.metadata?.telegramId,
+                            amount: Number(purchase.amount),
+                            protocolId: metadata?.paymentConfig?.payOptions?.metadata?.projectId,
+                            timestamp: Math.floor(Date.now() / 1000)
+                        };
+
+                        const signature = crypto
+                            .createHmac('sha256', edgeSecret)
+                            .update(JSON.stringify(payload))
+                            .digest('hex');
+
+                        await fetch(edgeWebhookUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'x-core-signature': signature
+                            },
+                            body: JSON.stringify(payload)
+                        });
+                        console.log(`📡 [Webhook] Notified Edge API of completed purchase: ${purchaseId}`);
+                    }
+                }
+            } catch (err) {
+                console.error(`⚠️ Error resolving purchase ${purchaseId}:`, err);
+            }
+        }
+
+        if (process.env.NODE_ENV === 'production') {
+            console.log(JSON.stringify({
+                type: 'PURCHASE_COMPLETED_WEBHOOK',
+                purchaseId,
+                amount: value.toString(),
+                txHash,
+                timestamp: new Date().toISOString()
+            }));
+        }
 
         // 5. Notify Discord
         await sendPaymentNotification({
@@ -120,6 +185,32 @@ export async function POST(req: Request) {
                 txHash: txHash
             }
         });
+
+        // 6. WEBHOOK: Notify external clients if it's a MINT (from null address)
+        const isMint = fromAddress === "0x0000000000000000000000000000000000000000" || fromAddress === "0x0";
+        if (isMint) {
+            try {
+                // Broadcast to all active clients
+                const clients = await db.query.integrationClients.findMany({
+                    where: eq(integrationClients.isActive, true)
+                });
+
+                for (const client of clients) {
+                    await WebhookService.queueEvent(client.id, 'nft.minted', {
+                        contractAddress: log?.address || "unknown",
+                        tokenId: log?.args?.tokenId || log?.args?.[0] || "unknown",
+                        recipient: toAddress,
+                        txHash: txHash,
+                        isSandbox: client.environment === 'staging'
+                    });
+                }
+                if (clients.length > 0) {
+                    console.log(`📡 Mint Webhook(s) queued for ${clients.length} clients.`);
+                }
+            } catch (webhookError) {
+                console.warn('⚠️ Failed to queue mint webhook:', webhookError);
+            }
+        }
 
         return NextResponse.json({ success: true });
     } catch (error) {

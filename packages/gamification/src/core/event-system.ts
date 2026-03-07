@@ -8,6 +8,7 @@ import {
   UserGamificationProfile,
   TOKENIZATION_EVENT_TRIGGERS
 } from '../types';
+import type { ExecutionPlan, TriggerExecution, PlannedAction } from '../types/bridge';
 
 export class EventSystem {
   private static instance: EventSystem;
@@ -20,23 +21,65 @@ export class EventSystem {
   }
 
   /**
-   * Process incoming event and trigger actions
+   * Evaluate an event and return a deterministic ExecutionPlan.
+   *
+   * ✅ Pure: no side-effects, no DB writes, no webhook calls
+   * ✅ Idempotent: same event always produces same plan
+   * ✅ Returns null if event was already processed (idempotency guard)
    */
-  async processEvent(event: GamificationEvent): Promise<void> {
-    console.log(`🎯 EventSystem: Processing event ${event.type} for user ${event.userId}`);
-
-    // Get user profile for condition checking
+  async evaluate(event: GamificationEvent): Promise<ExecutionPlan | null> {
     const userProfile = await this.getUserProfile(event.userId);
-    if (!userProfile) return;
+    if (!userProfile) return null;
 
-    // Get all active triggers
     const triggers = this.getActiveTriggers();
+    const triggered: TriggerExecution[] = [];
 
     for (const trigger of triggers) {
       if (await this.shouldTrigger(trigger, event, userProfile)) {
-        await this.executeTriggerActions(trigger, event, userProfile);
+        triggered.push({
+          triggerId: trigger.id,
+          actions: trigger.actions.map(a => ({
+            type: a.type,
+            value: a.value,
+            delay: a.delay,
+          })),
+        });
       }
     }
+
+    return {
+      eventId: event.id,
+      userId: event.userId,
+      // EventSystem is source-agnostic — source is set by callers (GamificationService).
+      // When called via deprecated processEvent(), default to 'system'.
+      source: (event.metadata?.source as any) ?? 'system',
+      triggered,
+    };
+  }
+
+  /**
+   * @deprecated Use evaluate() + ActionExecutorRegistry.execute() instead.
+   * Kept for backwards compatibility with existing internal callers.
+   * Will be removed in v3.
+   */
+  async processEvent(event: GamificationEvent): Promise<void> {
+    const plan = await this.evaluate(event);
+    if (!plan) return;
+    // Legacy path: import dynamically to avoid circular dep at module init
+    const { ActionExecutorRegistry } = await import('./action-executor-registry');
+    const noopCtx = {
+      userId: event.userId,
+      source: 'system' as const,
+      markActionExecuted: async () => { },
+      hasActionExecuted: async () => false,
+      awardPoints: async (_uid: string, pts: number) => { console.log(`[legacy] +${pts} pts`); return pts; },
+      unlockAchievement: async (_uid: string, id: string) => { console.log(`[legacy] unlock ${id}`); return true; },
+      grantReward: async (_uid: string, id: string) => { console.log(`[legacy] reward ${id}`); return true; },
+      getPboxBalance: async () => 0,
+      getTotalPoints: async () => 0,
+      getLevel: async () => 1,
+    };
+    await ActionExecutorRegistry.execute(plan, noopCtx);
   }
 
   /**

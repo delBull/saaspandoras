@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { userPoints, users } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, ilike } from "drizzle-orm";
 
 export async function GET(
   request: Request,
@@ -11,11 +11,11 @@ export async function GET(
     const { wallet } = await params;
     const walletAddress = wallet.toLowerCase();
 
-    // Find user by wallet
+    // Find user by wallet using case-insensitive search
     const user = await db
       .select({ id: users.id })
       .from(users)
-      .where(eq(users.walletAddress, walletAddress))
+      .where(ilike(users.walletAddress, walletAddress))
       .limit(1);
 
     if (!user || user.length === 0 || !user[0]) {
@@ -50,7 +50,7 @@ export async function GET(
       return {
         id: activity.id != null ? activity.id.toString() : '',
         type: activity.category?.toString() === 'referral_made' ? 'referral' :
-              activity.category?.toString() === 'daily_login' ? 'login' : 'other',
+          activity.category?.toString() === 'daily_login' ? 'login' : 'other',
         points: activity.points || 0,
         reason: (activity.reason || ''),
         category: activity.category,

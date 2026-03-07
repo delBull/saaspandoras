@@ -82,7 +82,7 @@ interface ProjectContentTabsProps {
 }
 
 export default function ProjectContentTabs({ project }: ProjectContentTabsProps) {
-  const [activeTab, setActiveTab] = useState("strategy");
+  const [activeTab, setActiveTab] = useState("campaign");
   const [selectedPhase, setSelectedPhase] = useState<any>(null);
   const [isArtifactModalOpen, setIsArtifactModalOpen] = useState(false);
   const [showHistorical, setShowHistorical] = useState(false);
@@ -141,7 +141,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
   // Actually, simplest is to track "Sold Tokens" for everything?
   // But legacy logic tracks USD.
 
-  let accumulatedUSD = 0;
+  // let accumulatedUSD = 0; // Unused
   let accumulatedTokens = 0;
 
   const phasesWithStats = allPhases.map((phase: any) => {
@@ -153,25 +153,31 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
       raised: 0,
       percent: 0,
       participants: 0,
-      metric: 'USD'
+      metric: price > 0 ? 'USD' : 'Tokens',
+      isSoldOut: false, // Default to not sold out
+      hasStarted: false,
     };
+
+    const now = new Date();
+    stats.hasStarted = !phase.startDate || new Date(phase.startDate) <= now;
+
+    // Calculate Phase Cap in Tokens (Allocation is usually reliable)
+    // If allocation is 0/infinite, we can't easily calculate sold out unless we look at USD cap.
+
+    // Calculate Raised Tokens using Total Supply (On-chain Truth)
+    const phaseStartTokens = accumulatedTokens;
+    const currentPhaseRaisedTokens = Math.max(0, Math.min(allocation, totalSupply - phaseStartTokens));
+
+    stats.participants = currentPhaseRaisedTokens;
 
     if (price === 0) {
       // Free Mint -> Track by Tokens
-      stats.metric = 'Tokens';
-      stats.cap = allocation; // Cap in Tokens
-      // Determine raised tokens for this phase
-      const phaseStart = accumulatedTokens;
-      const currentPhaseRaisedTokens = Math.max(0, Math.min(allocation, totalSupply - phaseStart));
-
+      stats.cap = allocation;
       stats.raised = currentPhaseRaisedTokens;
       stats.percent = allocation > 0 ? (currentPhaseRaisedTokens / allocation) * 100 : 0;
-      stats.participants = currentPhaseRaisedTokens; // 1 token = 1 participant usually
-
-      accumulatedTokens += allocation;
+      stats.isSoldOut = currentPhaseRaisedTokens >= allocation && allocation > 0;
     } else {
-      // Paid Mint -> Track by USD
-      stats.metric = 'USD';
+      // Paid Mint -> Display in USD, but Track Logic by Tokens (to match Sidebar)
       let phaseCapUSD = 0;
       if (phase.type === 'amount') {
         phaseCapUSD = Number(phase.limit);
@@ -180,16 +186,16 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
       }
       stats.cap = phaseCapUSD;
 
-      const phaseStart = accumulatedUSD;
-      const currentPhaseRaisedUSD = Math.max(0, Math.min(phaseCapUSD, fundsRaised - phaseStart));
+      // Infer USD raised from tokens (Stable)
+      const inferredRaisedUSD = currentPhaseRaisedTokens * price;
+      stats.raised = inferredRaisedUSD;
+      stats.percent = phaseCapUSD > 0 ? (inferredRaisedUSD / phaseCapUSD) * 100 : 0;
 
-      stats.raised = currentPhaseRaisedUSD;
-      stats.percent = phaseCapUSD > 0 ? (currentPhaseRaisedUSD / phaseCapUSD) * 100 : 0;
-      // Estimate participants
-      stats.participants = price > 0 ? Math.floor(currentPhaseRaisedUSD / price) : 0;
-
-      accumulatedUSD += phaseCapUSD;
+      // Sold Out Logic (Token based)
+      stats.isSoldOut = currentPhaseRaisedTokens >= allocation && allocation > 0;
     }
+
+    accumulatedTokens += allocation;
 
     return {
       ...phase,
@@ -231,9 +237,29 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
             </p>
           </SectionCard>
 
-
-          {/* Links removed from here, now displayed globally below */}
-
+          {/* Video Pitch - shown if available */}
+          {(project.video_pitch || (project as any).videoPitch) && (
+            <SectionCard title="Video de Presentación" icon={PlayCircle}>
+              <div className="aspect-video w-full rounded-lg overflow-hidden bg-black border border-zinc-800">
+                <iframe
+                  src={(() => {
+                    const url = project.video_pitch || (project as any).videoPitch || '';
+                    // Convert youtube watch URLs to embed
+                    const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+                    if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
+                    // Convert Loom share to embed
+                    const loomMatch = url.match(/loom\.com\/share\/([a-f0-9]+)/);
+                    if (loomMatch) return `https://www.loom.com/embed/${loomMatch[1]}`;
+                    return url;
+                  })()}
+                  title="Video de Presentación del Protocolo"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="w-full h-full"
+                />
+              </div>
+            </SectionCard>
+          )}
         </div>
       ),
     },
@@ -244,35 +270,35 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
       icon: Puzzle,
       content: (
         <div className="space-y-8 mb-8">
-          {/* Mecánica del Protocolo - Nueva clave */}
+          {/* Mecánica del Protocolo (nueva clave) */}
           {project.protoclMecanism && (
             <SectionCard title="Mecánica del Protocolo" icon={Puzzle}>
               <p className="text-zinc-300 whitespace-pre-line">{project.protoclMecanism}</p>
             </SectionCard>
           )}
 
-          {/* Utilidad a Largo Plazo - Nueva clave */}
+          {/* Utilidad a Largo Plazo (nueva clave) */}
           {project.artefactUtility && (
             <SectionCard title="Utilidad a Largo Plazo de los Artefactos" icon={Star}>
               <p className="text-zinc-300 whitespace-pre-line">{project.artefactUtility}</p>
             </SectionCard>
           )}
 
-          {/* Mecánica del Protocolo (desde ProjectDetails) */}
-          {project.fund_usage && (
+          {/* Uso de Fondos / Mecánica (campo legacy fund_usage) */}
+          {project.fund_usage && !project.protoclMecanism && (
             <SectionCard title="Mecánica del Protocolo" icon={Puzzle}>
               <p className="text-zinc-300 whitespace-pre-line">{project.fund_usage}</p>
             </SectionCard>
           )}
 
-          {/* Utilidad Continua (desde ProjectDetails) */}
-          {project.lockup_period && (
-            <SectionCard title="Utilidad Continua" icon={Star}>
+          {/* Período de Retención / Utilidad Continua (campo legacy lockup_period) */}
+          {project.lockup_period && !project.artefactUtility && (
+            <SectionCard title="Período de Retención / Utilidad Continua" icon={Clock}>
               <p className="text-zinc-300 whitespace-pre-line">{project.lockup_period}</p>
             </SectionCard>
           )}
 
-          {/* Sistema Work-to-Earn - Nueva clave */}
+          {/* Sistema Work-to-Earn (nueva clave) */}
           {project.worktoearnMecanism && (
             <SectionCard title="Sistema Work-to-Earn" icon={Briefcase}>
               <p className="text-zinc-300 whitespace-pre-line">{project.worktoearnMecanism}</p>
@@ -283,101 +309,164 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
               <LayoutGrid className="w-5 h-5 text-lime-400" />
-              <h3 className="text-lg font-bold text-white">Artefactos (Fases)</h3>
+              <h3 className="text-lg font-bold text-white">Artefactos (Venta Primaria)</h3>
             </div>
-            {project.w2eConfig?.phases && project.w2eConfig.phases.length > 0 ? (
+
+            {/* EDUCATIONAL VIEW: Primary Sale Closed */}
+            {project.marketPhase === 'defense' && (
+              <div className="mb-6 p-6 bg-red-900/10 border border-red-500/20 rounded-2xl">
+                <div className="flex items-center gap-3 mb-2">
+                  <Lock className="w-5 h-5 text-red-500" />
+                  <h4 className="font-bold text-white uppercase italic">Venta Primaria Finalizada</h4>
+                </div>
+                <p className="text-zinc-400 text-sm leading-relaxed">
+                  El protocolo ha transicionado a la fase de **Defensa (Mercado Secundario)**. La emisión directa de nuevos artefactos ha concluido para proteger la escasez del ecosistema.
+                </p>
+                <Link
+                  href={`/protocol/market/${project.id || project.slug}`}
+                  className="mt-4 inline-flex items-center gap-2 bg-white text-black px-4 py-2 rounded-lg text-xs font-black uppercase italic hover:bg-lime-400 transition-colors"
+                >
+                  Ir al AGORA Market <ArrowRight className="w-3 h-3" />
+                </Link>
+              </div>
+            )}
+
+            {project.marketPhase !== 'defense' && project.w2eConfig?.phases && project.w2eConfig.phases.length > 0 ? (
               <div className="space-y-6">
                 {/* Fases Activas */}
                 <div className="space-y-4">
                   {activePhasesWithStats
-                    .map((phase: any, index: number) => (
-                      <div
-                        key={`active-${index}`}
-                        onClick={() => {
-                          setSelectedPhase(phase);
-                          setIsArtifactModalOpen(true);
-                        }}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            setSelectedPhase(phase);
-                            setIsArtifactModalOpen(true);
-                          }
-                        }}
-                        className="bg-zinc-800/50 p-4 rounded-lg border border-zinc-700/50 hover:border-lime-500/50 cursor-pointer transition-all hover:bg-zinc-800 group"
-                      >
-                        <h4 className="font-bold text-white mb-2 flex items-center justify-between group-hover:text-lime-400 transition-colors">
-                          <div className="flex items-center gap-2">
-                            <span>{phase.name}</span>
-                            <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all text-lime-400" />
-                          </div>
-                          <span className="text-xs px-2 py-0.5 bg-zinc-700 rounded text-gray-300 uppercase">{phase.type === 'time' ? 'Tiempo' : 'Monto'}</span>
-                        </h4>
+                    .map((phase: any, index: number) => {
+                      // Status Logic
+                      const isSoldOut = phase.stats.isSoldOut;
+                      const hasStarted = phase.stats.hasStarted;
+                      const isNotPaused = phase.isActive !== false;
 
-                        {/* --- REAL DATA PROGRESS BAR (PHASE SPECIFIC) --- */}
-                        <div className="mb-4 bg-zinc-900/50 rounded-lg p-3 border border-zinc-800">
-                          <div className="flex justify-between items-end mb-1">
-                            <span className="text-xs text-zinc-400">Progreso Fase</span>
-                            <span className="text-lime-400 font-mono text-sm font-bold">
-                              {phase.stats.metric === 'Tokens' ?
-                                `${phase.stats.raised.toLocaleString()} / ${phase.stats.cap.toLocaleString()} Tokens` :
-                                `${formatCurrency(phase.stats.raised)} / ${formatCurrency(phase.stats.cap)}`
-                              }
-                            </span>
-                          </div>
-                          <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden mb-2">
-                            <div
-                              className="bg-lime-500 h-full rounded-full transition-all duration-1000"
-                              style={{ width: `${phase.stats.percent}%` }}
-                            />
-                          </div>
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="text-zinc-500">
-                              Faltan: <span className="text-zinc-300">
+                      let statusLabel = 'Monto';
+                      if (isSoldOut) statusLabel = 'Agotado';
+                      else if (!hasStarted) statusLabel = 'Próximamente';
+                      else if (!isNotPaused) statusLabel = 'Pausado';
+                      else if (phase.type === 'time') statusLabel = 'Tiempo';
+
+                      const isClickable = hasStarted && !isSoldOut && isNotPaused;
+
+                      const statusBadgeColor = isSoldOut
+                        ? 'bg-red-500/20 text-red-400 border border-red-500/50'
+                        : !hasStarted
+                          ? 'bg-blue-500/20 text-blue-400 border border-blue-500/50'
+                          : !isNotPaused
+                            ? 'bg-yellow-500/20 text-yellow-400'
+                            : 'bg-zinc-700 text-gray-300';
+
+                      const cardBorderColor = isSoldOut
+                        ? 'border-red-900/30'
+                        : !hasStarted
+                          ? 'border-blue-900/30'
+                          : isClickable
+                            ? 'border-zinc-700/50 hover:border-lime-500/50'
+                            : 'border-zinc-700/50';
+
+                      const titleColor = isSoldOut
+                        ? 'text-zinc-500'
+                        : !hasStarted
+                          ? 'text-zinc-400'
+                          : isClickable
+                            ? 'text-white group-hover:text-lime-400'
+                            : 'text-zinc-400';
+
+                      return (
+                        <div
+                          key={`active-${index}`}
+                          onClick={() => {
+                            if (isClickable) {
+                              setSelectedPhase(phase);
+                              setIsArtifactModalOpen(true);
+                            }
+                          }}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if ((e.key === 'Enter' || e.key === ' ') && isClickable) {
+                              setSelectedPhase(phase);
+                              setIsArtifactModalOpen(true);
+                            }
+                          }}
+                          className={`bg-zinc-800/50 p-4 rounded-lg border ${cardBorderColor} ${isClickable ? 'cursor-pointer hover:bg-zinc-800 group' : 'cursor-not-allowed opacity-75'} transition-all`}
+                        >
+                          <h4 className={`font-bold mb-2 flex items-center justify-between transition-colors ${titleColor}`}>
+                            <div className="flex items-center gap-2">
+                              <span>{phase.name}</span>
+                              {!isSoldOut && <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all text-lime-400" />}
+                            </div>
+                            <span className={`text-xs px-2 py-0.5 rounded uppercase ${statusBadgeColor}`}>{statusLabel}</span>
+                          </h4>
+
+                          {/* --- REAL DATA PROGRESS BAR (PHASE SPECIFIC) --- */}
+                          <div className="mb-4 bg-zinc-900/50 rounded-lg p-3 border border-zinc-800">
+                            <div className="flex justify-between items-end mb-1">
+                              <span className="text-xs text-zinc-400">Progreso Fase</span>
+                              <span className={`${isSoldOut ? 'text-red-400' : 'text-lime-400'} font-mono text-sm font-bold`}>
                                 {phase.stats.metric === 'Tokens' ?
-                                  `${Math.max(0, phase.stats.cap - phase.stats.raised).toLocaleString()} Tokens` :
-                                  formatCurrency(Math.max(0, phase.stats.cap - phase.stats.raised))
+                                  `${phase.stats.raised.toLocaleString()} / ${phase.stats.cap.toLocaleString()} Tokens` :
+                                  `${formatCurrency(phase.stats.raised)} / ${formatCurrency(phase.stats.cap)}`
                                 }
                               </span>
-                            </span>
-                            <span className="px-2 py-0.5 bg-lime-900/30 text-lime-400 rounded-full border border-lime-500/20">
-                              {phase.stats.participants.toLocaleString()} Partic.
-                            </span>
+                            </div>
+                            <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden mb-2">
+                              <div
+                                className={`${isSoldOut ? 'bg-red-500' : (!hasStarted ? 'bg-blue-500' : 'bg-lime-500')} h-full rounded-full transition-all duration-1000`}
+                                style={{ width: `${phase.stats.percent}%` }}
+                              />
+                            </div>
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-zinc-500">
+                                Faltan: <span className="text-zinc-300">
+                                  {phase.stats.metric === 'Tokens' ?
+                                    `${Math.max(0, phase.stats.cap - phase.stats.raised).toLocaleString()} Tokens` :
+                                    formatCurrency(Math.max(0, phase.stats.cap - phase.stats.raised))
+                                  }
+                                </span>
+                              </span>
+                              <span className="px-2 py-0.5 bg-lime-900/30 text-lime-400 rounded-full border border-lime-500/20">
+                                {phase.stats.participants.toLocaleString()} Partic.
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            {/* Token Price (Property: tokenPrice) */}
+                            <div>
+                              <span className="text-zinc-500 block text-xs">Precio Token</span>
+                              <span className={`${isSoldOut ? 'text-zinc-400' : 'text-lime-400'} font-mono`}>
+                                {Number(phase.tokenPrice) === 0 ? 'GRATIS' : `$${phase.tokenPrice}`}
+                              </span>
+                            </div>
+                            {/* Limit (Context sensitive) */}
+                            <div>
+                              <span className="text-zinc-500 block text-xs">Límite ({phase.type === 'time' ? 'Días' : (phase.stats.metric === 'Tokens' ? 'Tokens' : 'USD')})</span>
+                              <span className="text-white font-mono">{Number(phase.limit).toLocaleString()} {phase.type === 'time' ? 'd' : (phase.stats.metric === 'Tokens' ? 'T' : '$')}</span>
+                            </div>
+                            {/* Allocation (Property: tokenAllocation) */}
+                            <div>
+                              <span className="text-zinc-500 block text-xs">Asignación</span>
+                              <span className="text-white font-mono">{phase.tokenAllocation ? Number(phase.tokenAllocation).toLocaleString() : '∞'}</span>
+                            </div>
+                            {/* Status */}
+                            <div>
+                              <span className="text-zinc-500 block text-xs">Estado</span>
+                              <span className={`${isSoldOut ? 'text-red-400' : (!hasStarted ? 'text-blue-400' : 'text-lime-400')}`}>
+                                {isSoldOut ? 'Agotado' : (!hasStarted ? 'Próximamente' : 'Activo')}
+                              </span>
+                            </div>
                           </div>
                         </div>
-
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                          {/* Token Price (Property: tokenPrice) */}
-                          <div>
-                            <span className="text-zinc-500 block text-xs">Precio Token</span>
-                            <span className="text-lime-400 font-mono">
-                              {Number(phase.tokenPrice) === 0 ? 'GRATIS' : `$${phase.tokenPrice}`}
-                            </span>
-                          </div>
-                          {/* Limit (Context sensitive) */}
-                          <div>
-                            <span className="text-zinc-500 block text-xs">Límite ({phase.type === 'time' ? 'Días' : (phase.stats.metric === 'Tokens' ? 'Tokens' : 'USD')})</span>
-                            <span className="text-white font-mono">{Number(phase.limit).toLocaleString()} {phase.type === 'time' ? 'd' : (phase.stats.metric === 'Tokens' ? 'T' : '$')}</span>
-                          </div>
-                          {/* Allocation (Property: tokenAllocation) */}
-                          <div>
-                            <span className="text-zinc-500 block text-xs">Asignación</span>
-                            <span className="text-white font-mono">{phase.tokenAllocation ? Number(phase.tokenAllocation).toLocaleString() : '∞'}</span>
-                          </div>
-                          {/* Status */}
-                          <div>
-                            <span className="text-zinc-500 block text-xs">Estado</span>
-                            <span className="text-lime-400">Activo</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-
-                  {project.w2eConfig.phases.filter((p: any) => p.isActive).length === 0 && (
-                    <p className="text-zinc-400 italic text-sm">No hay fases activas en este momento.</p>
-                  )}
+                      )
+                    })}
                 </div>
+
+                {project.w2eConfig.phases.filter((p: any) => p.isActive).length === 0 && (
+                  <p className="text-zinc-400 italic text-sm">No hay fases activas en este momento.</p>
+                )}
 
                 {/* Botón Historial */}
                 {project.w2eConfig.phases.some((p: any) => !p.isActive) && (
@@ -439,9 +528,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
             ) : (
               <p className="text-zinc-400">No hay fases de artefactos definidas.</p>
             )}
-          </div >
-
-
+          </div>
 
           <ArtifactPurchaseModal
             isOpen={isArtifactModalOpen}
@@ -451,31 +538,60 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
             phase={selectedPhase}
           />
 
-          {/* Fases de Venta (Deployment Config) */}
-          {
-            project.w2eConfig?.phases && project.w2eConfig.phases.length > 0 && (
-              <SectionCard title="Fases de Venta Activas" icon={Crown}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {project.w2eConfig.phases.map((phase: any) => (
-                    <div key={phase.id} className={`p-4 rounded-lg border ${phase.isActive ? 'bg-lime-500/10 border-lime-500/30' : 'bg-zinc-800/50 border-zinc-700/50 opacity-60'}`}>
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-semibold text-white">{phase.name}</h4>
-                        {phase.isActive && <span className="px-2 py-0.5 rounded text-xs bg-lime-500/20 text-lime-400 border border-lime-500/30">Activa</span>}
-                      </div>
-                      <div className="text-sm text-zinc-400 space-y-1">
-                        <p>
-                          <span className="text-zinc-500">Condición:</span> {phase.type === 'time' ? 'Tiempo Limitado' : 'Monto Objetivo'}
-                        </p>
-                        <p>
-                          <span className="text-zinc-500">Límite:</span> {phase.limit} {phase.type === 'time' ? 'Días' : 'USD'}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+          {/* AGORA Market: Phase-Aware Preview */}
+          <SectionCard title="Mercado Secundario (AGORA)" icon={Zap}>
+            {project.marketPhase === 'defense' ? (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                  <Zap className="w-5 h-5 text-emerald-400" />
+                  <p className="text-emerald-400 font-bold text-sm">MERCADO ACTIVO: Liquidez Secundaria habilitada.</p>
                 </div>
-              </SectionCard>
-            )
-          }
+                <p className="text-zinc-300 text-sm">
+                  Ahora puedes comprar y vender artefactos directamente con otros miembros de la comunidad bajo las reglas de gobernanza institucional.
+                </p>
+                <Link
+                  href={`/protocol/market/${project.id || project.slug}`}
+                  className="w-full justify-center inline-flex items-center gap-2 bg-emerald-500 text-black py-4 rounded-xl text-md font-black uppercase italic hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20"
+                >
+                  Abrir AGORA Market <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 p-4 bg-zinc-800/50 border border-zinc-700/50 rounded-xl">
+                  <Lock className="w-5 h-5 text-zinc-500" />
+                  <p className="text-zinc-400 font-bold text-sm uppercase italic">Mercado en Funding (Fase 1)</p>
+                </div>
+
+                {/* Educational Metrics */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-zinc-900/50 rounded-lg border border-zinc-800">
+                    <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-1">Treasury Actual</p>
+                    <p className="text-xl font-mono text-white">{formatCurrency(fundsRaised)}</p>
+                  </div>
+                  <div className="p-4 bg-zinc-900/50 rounded-lg border border-zinc-800">
+                    <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-1">Meta Activación</p>
+                    <p className="text-xl font-mono text-lime-400">{formatCurrency(targetAmount)}</p>
+                  </div>
+                </div>
+
+                <div className="w-full bg-zinc-900 rounded-full h-2 overflow-hidden">
+                  <div
+                    className="bg-lime-500 h-full transition-all duration-1000"
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+
+                <p className="text-xs text-zinc-500 leading-relaxed italic">
+                  * El mercado secundario AGORA se activará automáticamente (Fase 2) al alcanzar el 100% de la meta de adopción o por decreto de gobernanza.
+                </p>
+
+                <button className="w-full py-4 bg-zinc-800 text-zinc-500 rounded-xl text-md font-bold uppercase italic cursor-not-allowed border border-zinc-700" disabled>
+                  AGORA Bloqueado
+                </button>
+              </div>
+            )}
+          </SectionCard>
 
           {/* Estructura de Recompensa Recurrente */}
           <SectionCard title="Estructura de Recompensa Recurrente" icon={Star}>
@@ -492,11 +608,10 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                 // Formato JSON: mostrar estructura detallada
                 return (
                   <div className="space-y-3">
-                    {/* ... (Implement specific reward type rendering if needed, for now just basic check) ... */}
                     {Object.entries(rewardsData).map(([key, value]) => {
                       if (key.includes('Enabled') && value === true) {
                         const detailKey = key.replace('Enabled', 'Details');
-                        const detailValue = rewardsData[detailKey];
+                        const detailValue = (rewardsData as any)[detailKey];
                         return (
                           <div key={key} className="p-3 bg-zinc-700/50 rounded-lg">
                             <p className="font-semibold text-white text-sm">{key.replace('Enabled', '')}</p>
@@ -517,7 +632,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
               }
             })()}
           </SectionCard>
-        </div >
+        </div>
       ),
     },
     // --- TAB 2: ESTRATEGIA Y SOSTENIBILIDAD (EL PLAN DE NEGOCIO) ---
@@ -582,7 +697,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
             <SectionCard title="Tokenomics y Gobernanza (On-Chain)" icon={Briefcase}>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-4 bg-zinc-800/30 rounded-lg border border-zinc-700/50">
-                  <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Precio Inicial</p>
+                  <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Precio Inicial (Deployment)</p>
                   <p className="text-xl font-mono text-white">${project.w2eConfig.tokenomics.price}</p>
                 </div>
                 <div className="p-4 bg-zinc-800/30 rounded-lg border border-zinc-700/50">
@@ -791,7 +906,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                 )}
 
                 {/* DAO Access */}
-                {projectObj.deploymentStatus === 'deployed' && (
+                {(['approved', 'live', 'deployed', 'active'].includes(String(projectObj.status).toLowerCase()) || projectObj.deploymentStatus === 'deployed') && (
                   <Link
                     href={`/projects/${String(projectObj.slug)}/dao`}
                     className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors group cursor-pointer"

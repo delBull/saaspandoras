@@ -2,9 +2,9 @@
 
 ## **Abstract**
 
-SCaaS (Service as a Code) represents a revolutionary paradigm in decentralized protocol deployment and management. Built on Ethereum Layer 2 (Base Network), SCaaS provides a modular, secure, and governance-enhanced framework for creating Work-to-Earn (W2E) protocols with atomic deployment, hybrid treasury management, and decentralized autonomous organization (DAO) governance.
+SCaaS (Service as a Code) represents a revolutionary paradigm in decentralized protocol deployment and management. Built on Ethereum Layer 2 (Base Network), SCaaS Protocol V2 provides a modular, "pluggable" ecosystem where logic is decoupled from specific assets through a central Registry. This framework enables Work-to-Earn (W2E) protocols with atomic deployment, multi-artifact gatekeeping, and decentralized autonomous organization (DAO) governance.
 
-This technical whitepaper presents the comprehensive architecture, smart contract ecosystem, economic mechanisms, and security implementations that constitute the SCaaS protocol infrastructure.
+This technical whitepaper presents the comprehensive architecture, smart contract ecosystem (V2), economic mechanisms, and security implementations that constitute the SCaaS modular protocol infrastructure.
 
 ---
 
@@ -30,9 +30,9 @@ SCaaS introduces a **modular factory pattern** that enables:
 
 The SCaaS architecture implements three fundamental innovations:
 
-1. **ModularFactory Contract**: Atomic deployment orchestrator
-2. **Hybrid Treasury System**: Dual-control fund management
-3. **W2E Engine**: Decentralized labor validation and rewards
+1. **ProtocolRegistry Contract**: Central authority for authorized artifacts
+2. **ModularFactory Contract**: Atomic deployment orchestrator (V2 Compatible)
+3. **W2E Engine (LoomV2)**: Modular logic validation decoupled from specific assets
 
 ---
 
@@ -75,6 +75,19 @@ The SCaaS architecture implements three fundamental innovations:
 - **Test Networks**: Base Goerli, Ethereum Sepolia
 - **Future Expansion**: Multi-chain support (Optimism, Polygon, Arbitrum)
 
+### **2.4 Type-Specific Routing & Pages**
+
+SCaaS Protocols leverage a dynamic App Router in Next.js to provide context-aware views based on the protocol category.
+
+**URL Structure:** `/projects/[slug]`
+
+**Dynamic Layout Resolution:**
+- **Standard Layout:** Default rendering for general W2E protocols showing tokenomics, governance, and treasury.
+- **DAO Layout (`/projects/[slug]/dao`):** Full-bleed immersive UI tailored for Decentralized Autonomous Organizations, hiding default padding and emphasizing voting power and delegate systems.
+- **Creator/Artist Layouts (Future):** Media-rich galleries with integrated royalty distribution UI linked directly to the `ProtocolRegistry` artifacts.
+
+This client-side decoupling allows the Smart Contract layer (LoomV2, Registry) to remain identical while delivering drastically different User Experiences based on the project's metadata.
+
 ---
 
 ## **3. Core Smart Contracts**
@@ -101,15 +114,39 @@ function deployProtocolStack(DeploymentConfig calldata config)
 - `votingPeriodHours`: Voting duration
 - `treasurySigners`: Multi-sig signers array
 - `initialCapital`: Initial treasury funding
+- `jobId`: Unique tracking ID for the asynchronous deployment worker
 
-#### **Deployment Sequence**
+#### **Deployment Architecture (Hardened V2)**
+
+To ensure institutional-grade reliability and prevent HTTP timeouts (502 errors), SCaaS V2 implements an **Asynchronous Job-Based Deployment** model:
+
+1.  **Atomic Job Creation**: The API validates parameters and persists a "Pending" job in the database immediately.
+2.  **Worker Delegation**: A specialized background worker (Deployment Service) picks up the job using **Atomic Locking** (Compare-and-Swap) to prevent double-processing.
+3.  **Granular Progress Tracking**: The worker updates the job state across four granular steps: `broadcasting`, `mining`, `wiring`, and `finalizing`.
+4.  **Zombie Protection**: Automatic cleanup processes identify and fail jobs stuck in "processing" due to unexpected worker crashes.
+5.  **Structured Observability**: All deployment events are emitted as structured JSON logs for post-mortem analysis and performance metrics.
+
 
 1. **Validation**: Input parameter verification
 2. **Rate Limiting**: Anti-spam deployment controls
-3. **Atomic Deployment**: Sequential contract instantiation
-4. **Vinculation**: Cross-contract authorization setup
+3. **Atomic Deployment**: Registry-first contract instantiation
+4. **Vinculation**: Modular authorization setup via Registry
 5. **Funding**: Initial capital allocation
-6. **Registration**: Protocol metadata storage
+6. **Registration**: Ecosystem metadata storage
+
+### **3.2 ProtocolRegistry (Modular Hub)**
+
+#### **Contract Overview**
+The `ProtocolRegistry` acts as the single source of truth for authorized artifacts (NFTs, SFTs, or Tokens) within a protocol ecosystem.
+
+#### **Key Features**
+- **Artifact Categorization**: Type-based grouping (Access, Identity, Membership, etc.).
+- **authorization Status**: On-chain enabling/disabling of assets.
+- **Universal "ANY" Policy**: Users gain protocol access if they hold **at least one** authorized artifact from the registry.
+- **Immediate Revocation**: Disabling an artifact in the registry immediately revokes its permissions across the Loom and Governor.
+
+#### **Mutability & Governance**
+Only the protocol `Owner` (initially the Deployer, then transferred to a Timelock/Governor) can modify the registry, ensuring decentralized authority over the ecosystem's entry points.
 
 ### **3.2 Treasury System**
 
@@ -167,13 +204,13 @@ function deployProtocolStack(DeploymentConfig calldata config)
 - **Funding Proposals**: Treasury fund allocation
 - **Emergency Proposals**: Critical protocol actions
 
-#### **3.3.3 W2ELoom**
+#### **3.3.3 W2ELoomV2 (Modular Engine)**
 
 **Core Logic Engine:**
-- **Task Management**: W2E task lifecycle
-- **Reward Distribution**: PHI token minting and allocation
-- **Staking System**: Participation incentives
-- **Validation Logic**: DAO-verified task completion
+- **Modular Authorization**: Queries `ProtocolRegistry` for user permissions instead of checking a single contract.
+- **Task Management**: W2E task lifecycle and validation.
+- **Reward Distribution**: PHI token minting and allocation based on cross-artifact activity.
+- **Protocol State**: Transitions between Pre-Live, Live, and Completed phases.
 
 #### **3.3.4 W2EUtility (PHI)**
 
@@ -186,6 +223,20 @@ function deployProtocolStack(DeploymentConfig calldata config)
 - **Staking Rewards**: 5% fixed APY
 - **Transaction Fees**: 0.5% per transfer
 - **Governance Rights**: Protocol voting power
+
+### **3.4 Safety & Security Framework**
+
+#### **3.4.1 Transversal Kill-Switch (Circuit Breaker)**
+SCaaS V2 includes a platform-wide **Circuit Breaker** mechanism. Authorized operators can instantaneously pause critical protocol functions cross-layer:
+- **Settlement Stop**: Halts all ROFR and Buyback interactions.
+- **Exit Pause**: Disables early exit and fee processing during volatility.
+- **Global Lock**: Freezes non-essential state transitions across the dynamic registry.
+
+#### **3.4.2 Monetary Policy Activations**
+Default deployments follow a disciplined **Phase-Based Activation** policy to protect treasury capitalization:
+- **Phase 1: Capital Accumulation (Funding)**: Protocols launch with `buybackAllocationRatio = 0%`. Logic focuses on accumulating fees without premature intervention.
+- **Phase 2: Market Defense (Active)**: Governance or Admin triggers the transition to active ROFR once capitalization thresholds (Phase 2) are met.
+
 
 ---
 
@@ -505,6 +556,111 @@ The technical architecture presented in this whitepaper demonstrates a robust fo
 
 ---
 
+## **11. Protocol V2 — Type-Specific Public Pages**
+
+### **11.1 Overview**
+
+In Protocol V2, each deployed protocol exposes a **type-specific public experience page** at `/projects/[slug]`. Rather than a single generic layout for all protocols, the frontend automatically selects a purpose-built layout based on the primary artifact type (set at deploy time via `pageLayoutType`).
+
+This ensures the user experience matches the economic and functional nature of each protocol — an investment product (Yield) looks and communicates differently from a community access pass (Access) or an event ticket (Coupon).
+
+---
+
+### **11.2 Dispatch Architecture**
+
+```
+/projects/[slug]/page.tsx
+    ↓ fetch project data from /api/projects/[slug]
+    ↓ detect isV2 (protocol_version === 2 OR w2eConfig.artifacts OR pageLayoutType)
+    ↓ if V2 → <ProtocolPageDispatcher project={...} />
+    ↓ detectLayoutType() → reads: pageLayoutType → primary artifact type → fallback 'Access'
+    ↓ routes to type-specific layout component (lazy-loaded)
+    ↓ if V1 → legacy layout (unchanged, backwards-compatible)
+```
+
+### **11.3 The Six Protocol Page Types**
+
+| Type | Icon | Palette | Primary CTA | Key Differentiator |
+|------|------|---------|-------------|-------------------|
+| **Access** | 🔑 | Lime/Emerald | Obtener Acceso | **ALWAYS FREE** — access card never charges the user |
+| **Identity** | 🪪 | Indigo/Blue | Verificar Identidad | SBT badge, non-transferable, KYC/credential emphasis |
+| **Membership** | 🏷️ | Purple/Violet | Suscribirme | Expiry countdown, renewal mechanics |
+| **Coupon** | 🎟️ | Yellow/Orange | Canjear Cupón | Burn-on-use mechanics, single-use clarity |
+| **Reputation** | 🏆 | Amber/Gold | Ver Logros | Merit-based acquisition, non-burnable, gamification focus |
+| **Yield** | 💰 | Emerald/Green | Invertir en el Protocolo | Live APY display, TVL, revenue-sharing explanation |
+
+### **11.4 Access Card Free Policy**
+
+By design and by platform policy, the **Access Pass artifact is always free to mint**. This is enforced both in the deploy modal (`DEFAULT_ARTIFACT` sets `price: '0'`) and in the `AccessProtocolPage` display where the price stat always shows **GRATIS**. This ensures protocol operators cannot inadvertently lock users behind a paid access gate.
+
+### **11.5 Page Type Selector in Admin Deploy Modal**
+
+The `DeploymentConfigModal` includes a **Page Type Selector** in the header alongside the network selector. Operators choose the layout type at deploy time — the selection is persisted as `pageLayoutType` inside `w2eConfig` (part of the project's deployment record). Contextual `ⓘ` tooltips explain each type's use case directly in the admin UI.
+
+### **11.6 V2 Detection Logic**
+
+A project is treated as V2 (and routed to `ProtocolPageDispatcher`) if **any** of the following are true:
+- `project.protocol_version === 2`
+- `project.w2eConfig.artifacts` array is non-empty
+- `project.artifacts` array is non-empty  
+- `project.pageLayoutType` is set
+
+This ensures backwards compatibility — all V1 protocols continue using the existing layout unchanged.
+
+---
+
+## **12. Sandbox & Simulation Infrastructure**
+
+### **12.1 Purpose**
+
+The SCaaS Sandbox is a dedicated simulation environment located at `staging.dash.pandoras.finance`. It serves as a high-fidelity staging area where protocol operators can:
+- **Test Deployments**: Verify atomic deployment logic without using real mainnet assets.
+- **Simulate Governance**: Conduct mock voting and proposal execution.
+- **Validate Economics**: Test APY distributions and reward logic in a risk-free environment.
+
+### **12.2 Integration & Synchronization**
+
+- **Domain Switching**: A seamless, animated portal transition allows users to toggle between Mainnet (Production) and Sandbox (Staging).
+- **Network Defaulting**: The Sandbox environment automatically defaults to Ethereum Sepolia or Base Sepolia for all contract interactions.
+- **State Separation**: Database and on-chain state remain strictly separated to prevent accidental production pollution.
+
+### **12.3 Gamification of Testing**
+
+To encourage thorough validation and security best practices, the platform incentivizes Sandbox usage through the gamification engine:
+- **Testing Rewards**: Users earn "XP" and tokens for completing their first Sandbox deployment.
+- **Verification Badges**: "Sandbox Pioneer" badges are awarded to active testers.
+- **Security Recognition**: Finding and validating potential misconfigurations in Sandbox grants higher reputation scores.
+
+---
+
+## **13. Telegram MiniApp Integration (Identity-First)**
+
+### **13.1 Architecture Overview**
+
+The SCaaS ecosystem extends its reach through a native Telegram MiniApp designed for viral onboarding. To eliminate Web3 friction for mainstream users, the integration employs an **Identity-first, Wallet-optional** architecture.
+
+This paradigm decouples protocol access from mandatory on-chain wallets, acting as a "Web2.5" bridge. 
+
+### **13.2 Hybrid Identity Resolution**
+
+User identities are handled dynamically based on their onboarding state:
+- **Standalone Telegram Users**: Authenticate purely via Telegram's `initData`. Their identity is represented by a `telegramUserId` and their points/activities are tracked natively within the Edge database without requiring a cryptographic wallet.
+- **Linked Users (Legacy Web)**: Users who have bound their core SaaS account. They possess a verifiable `userId` linked to an on-chain `walletAddress`.
+
+### **13.3 The Genesis NFT (Virtual vs On-Chain Minting)**
+
+The "Genesis NFT" serves as the foundational Identity Artifact for entering the Pandoras ecosystem. Its issuance follows a **Dual-Minting Path** to preserve UX without breaking blockchain verifiability:
+
+1. **Virtual Mint (Off-Chain)**: 
+   If a user registers through the MiniApp and lacks a linked wallet, the NFT is minted **virtually**. The `ProtocolRegistry` equivalent on the Edge Server creates an `Artefact` record associated strictly with their `telegramUserId`. The user gains immediate visual and functional access to the platform, receiving gamification points and real-time notifications, with **zero gas fees** and no wallet prompts.
+
+2. **Real Mint (On-Chain)**:
+   If the user has a pre-existing wallet linked to their core account, the system triggers a standard `claimAccessCard` transaction. The request is relayed to the blockchain (e.g., Base or Sepolia), formalizing the Genesis NFT through a smart contract interaction.
+
+By defaulting to the Virtual Protocol, the Telegram integration achieves instantaneous onboarding while retaining the capacity to formalize assets On-Chain once the user chooses to adopt full Web3 custody.
+
+---
+
 ## **References**
 
 1. **OpenZeppelin Contracts**: Security and standards library
@@ -520,4 +676,4 @@ This technical whitepaper is for informational purposes only and does not consti
 
 ---
 
-*SCaaS Technical Whitepaper v1.0 - November 2024*
+*SCaaS Technical Whitepaper v2.1 - March 2026*

@@ -4,6 +4,7 @@ const nextConfig = {
   // 🔧 Evita fallos de tracing en Vercel (muy importante para segmentos como (dashboard))
   experimental: {
     // Note: serverComponentsExternalPackages has been moved to serverExternalPackages
+    optimizePackageImports: ["ethers", "viem", "thirdweb", "lucide-react", "@tabler/icons-react", "@heroicons/react"]
   },
   serverExternalPackages: ["drizzle-orm", "postgres"],
 
@@ -28,7 +29,16 @@ const nextConfig = {
     ],
   },
 
-  transpilePackages: ["@pandoras/gamification", "@pandoras/protocol-deployer"],
+  transpilePackages: [
+    "@pandoras/core-webhooks",
+    "@saasfly/ui",
+    "react-markdown",
+    "remark-gfm",
+    "rehype-highlight",
+    "jose",
+    "viem",
+    "thirdweb"
+  ],
 
   webpack: (config, { isServer }) => {
     if (!isServer) {
@@ -40,9 +50,48 @@ const nextConfig = {
         postgres: "postgres",
         "drizzle-orm": "drizzle-orm",
       });
+
+      // 🛡️ SES / Lockdown Nuke
+      // Prevent these packages from being bundled in the client
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'ses': false,
+        'lockdown': false,
+        '@endo/env-options': false,
+      };
     }
 
     return config;
+  },
+
+  async rewrites() {
+    return [
+      {
+        source: "/auth/:path*",
+        destination: `${process.env.NEXT_PUBLIC_API_URL || "https://api.pandoras.finance"}/auth/:path*`,
+      },
+    ];
+  },
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          {
+            key: "Cross-Origin-Opener-Policy",
+            value: "same-origin-allow-popups", // 🔧 Fixed: Allows social login popups
+          },
+          {
+            key: "Cross-Origin-Embedder-Policy",
+            value: "unsafe-none",
+          },
+          {
+            key: "Cross-Origin-Resource-Policy",
+            value: "cross-origin",
+          },
+        ],
+      },
+    ];
   },
 };
 

@@ -1,0 +1,13 @@
+providers = ["node"]
+
+[phases.setup]
+nixPkgs = ["bun", "nodejs"]
+
+[phases.install]
+cmds = ["bun install"]
+
+[build]
+cmd = "bun run build:railway"
+
+[phases.start]
+cmd = "cd apps/deployment-service && bun src/index.ts"

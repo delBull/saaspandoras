@@ -24,7 +24,7 @@ import { defineChain, getContract, prepareContractCall } from "thirdweb";
 import { sepolia } from "thirdweb/chains";
 import { useSendTransaction, TransactionButton } from "thirdweb/react";
 import { client } from "@/lib/thirdweb-client";
-import { Artifacts } from "@pandoras/protocol-deployer";
+import { W2EUtilityABI } from "@/lib/abi/W2EUtility";
 import { encodeFunctionData } from "viem";
 
 
@@ -96,7 +96,7 @@ export default function DaoWizard({ project, governorAddress, onClose }: DaoWiza
 
         // Encode "setPhaseSchedule(1, newAPY)"
         const callData = encodeFunctionData({
-            abi: Artifacts.W2EUtility.abi as any,
+            abi: W2EUtilityABI as any,
             functionName: "setPhaseSchedule",
             args: [BigInt(1), BigInt(mechanics.currentAPY)] // Updating Phase 1 for demo
         });
@@ -451,7 +451,7 @@ export default function DaoWizard({ project, governorAddress, onClose }: DaoWiza
                                         transaction={() => {
                                             // 1. Encode "setPhaseSchedule(1, newAPY)"
                                             const callData = encodeFunctionData({
-                                                abi: Artifacts.W2EUtility.abi as any,
+                                                abi: W2EUtilityABI as any,
                                                 functionName: "setPhaseSchedule",
                                                 args: [BigInt(1), BigInt(mechanics.currentAPY)] // Updating Phase 1 for demo
                                             });

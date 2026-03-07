@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { daoActivitySubmissions, daoActivities } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
@@ -101,6 +101,20 @@ export async function POST(req: Request) {
                 .returning();
 
             return NextResponse.json(updated[0]);
+        }
+
+        if (action === 'payout') {
+            // Admin only - theoretically check session here or assume protected route middleware
+            const { submissionIds } = body;
+
+            if (!Array.isArray(submissionIds)) return NextResponse.json({ error: 'Invalid submission IDs' }, { status: 400 });
+
+            const updated = await db.update(daoActivitySubmissions)
+                .set({ proofData: 'PAID', statusUpdatedAt: new Date() })
+                .where(inArray(daoActivitySubmissions.id, submissionIds))
+                .returning();
+
+            return NextResponse.json(updated);
         }
 
         // Default create (legacy / simple)

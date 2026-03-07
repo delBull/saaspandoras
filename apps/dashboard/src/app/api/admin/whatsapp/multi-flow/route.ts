@@ -75,6 +75,7 @@ export async function GET(request: Request) {
         s.is_active,
         s.started_at,
         s.updated_at,
+        s.state->>'status' as internal_status,
 
         -- User info
         u.phone as user_phone,
@@ -100,7 +101,7 @@ export async function GET(request: Request) {
 
       FROM whatsapp_sessions s
       JOIN whatsapp_users u ON s.user_id = u.id
-      WHERE s.is_active = true
+      WHERE s.is_active = true OR (s.updated_at > now() - interval '30 days')
       ORDER BY s.updated_at DESC
     ` as any[];
 
@@ -110,7 +111,8 @@ export async function GET(request: Request) {
       user_phone: session.user_phone,
       flow_type: session.flow_type,
       priority_level: session.priority_level,
-      status: session.is_active ? 'active' : 'inactive',
+      // Map internal_status (from json) or fallback to 'pending' if active, 'completed' if inactive
+      status: session.internal_status || (session.is_active ? 'pending' : 'completed'),
       current_step: session.current_step || 0,
       applicant_name: session.user_name || null,
       last_message: session.last_message || null,

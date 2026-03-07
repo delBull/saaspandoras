@@ -27,7 +27,7 @@ El objetivo es separar la lógica de despliegue en un nuevo paquete (protocol-de
 |-------------|-----------------|--------------------------|--------|
 | 0.1 Definición del Paquete SCaaS | Crear el nuevo paquete saaspandoras/packages/protocol-deployer. Este contendrá los scripts de despliegue, la configuración de wallet (Admin Deployer Wallet) y las dependencias de Thirdweb SDK / Hardhat. | `saaspandoras/packages/protocol-deployer` | ✅ **COMPLETADO** |
 | 0.2 Configuración de Despliegue Seguro | Configurar la Admin Deployer Wallet (la cuenta que pagará el gas y ejecutará los despliegues) con un sistema de gestión de claves seguro (ej. HashiCorp Vault o secrets de entorno). | Archivos de configuración en protocol-deployer. | ✅ **COMPLETADO** |
-| 0.3 Interface de Activación del Oráculo | Crear un endpoint API seguro en el backend que reciba los parámetros del Administrador. Endpoint Ejemplo: POST /api/admin/deploy-protocol/[slug] | `saaspandoras/apps/dashboard/api/admin/deploy-protocol.ts` | 🔄 **EN PROGRESO** |
+| 0.3 Interface de Activación del Oráculo | Crear un endpoint API seguro en el backend que reciba los parámetros del Administrador. Endpoint: POST /api/admin/deploy-protocol/[slug] (Refactorizado a Modelo Asíncrono) | `saaspandoras/apps/dashboard/src/app/api/admin/deploy-protocol/[slug]/route.ts` | ✅ **COMPLETADO MARZO 2026** |
 | 0.4 Desacoplamiento de Contracts | Asegurarse de que el directorio saaspandoras/contracts contenga solo los archivos Solidity, y que protocol-deployer se encargue de la compilación, linking y despliegue. | `saaspandoras/contracts` | ✅ **COMPLETADO** |
 
 **🎉 LOGROS FASE 0 - NOVIEMBRE 2025:**
@@ -205,18 +205,17 @@ contract W2EGovernorVH is
 }
 ```
 
-## Fase 2: Pipeline de Despliegue Secuencial (protocol-deployer)
+## Fase 2: Pipeline de Despliegue Asíncrono (Hardened Worker)
 
-Este paquete será un script ejecutable desde el backend (`node saaspandoras/packages/protocol-deployer/deploy.js [parametros]`) que se encarga de la secuencia de despliegue y linking.
+En la versión V2, el despliegue no es una ejecución secuencial bloqueante, sino un **Sistema de Jobs Asíncronos** para evitar errores 502 (Gateway Timeout).
 
-| Paso del Pipeline | Acción a Nivel de Code (SDK/CLI) | Objetivo |
-|-------------------|----------------------------------|----------|
-| 2.1 Despliegue de Activos | Usar thirdweb SDK (o ethers.js) para desplegar el Artefacto PHI y la Licencia VHORA con sus nombres y símbolos únicos (ej. VH-PH-A, VHORA-A). | Crear los activos independientes para la Creación. |
-| 2.2 Despliegue del Loom | Desplegar el VHLoom, pasándole las direcciones de los contratos de Activo recién desplegados (del paso 2.1) en su constructor. | Crear el motor de lógica central. |
-| 2.3 Enlace de Seguridad (Setting Up) | Llamar a las funciones de inicialización en los contratos de Activos para establecer la dirección del VHLoom como el único minter/burner de los Artefactos y el controlador principal de las Licencias. | Blindar los contratos (garantía de Anti-Security). |
-| 2.4 Despliegue del DAO | Desplegar el Governor y el TimeLock (si se usa) y pasándoles la dirección de la Licencia VHORA como token de voto. | Establecer el sistema de gobernanza de la Creación. |
-| 2.5 Thirdweb CLI / Panel Visual | El uso del thirdweb SDK para el despliegue asegura que los contratos sean visibles automáticamente en tu Panel de Thirdweb, con ABIs verificados para una administración secundaria visual. | Proporcionar una herramienta visual para el Admin sin tener que usar comandos de línea. |
-| 2.6 Retorno de Direcciones | El script debe retornar un JSON con las 4 direcciones de contrato (Licencia, Artefacto, Loom, Governor) y el hash de transacción. | Proporcionar la data para el paso 3.3. |
+| Paso del Pipeline | Acción (Deployment Service Worker) | Estado / Objetivo |
+|-------------------|-----------------------------------|-------------------|
+| 2.1 Encolamiento (Enqueued) | El API del Dashboard crea un Job en estado `pending` y retorna un `jobId` inmediatamente. | ✅ **COMPLETADO** |
+| 2.2 Bloqueo Atómico (Locked) | El worker toma el job usando un `UPDATE ... RETURNING` atómico para evitar doble procesamiento. | ✅ **COMPLETADO** |
+| 2.3 Despliegue (Broadcasting) | Se ejecutan los despliegues en ráfaga paralela (Burst Parallel) de los 4 contratos core. | ✅ **COMPLETADO** |
+| 2.4 Vinculación (Wiring) | Se enlazan las direcciones (Loom -> PHI, Governor -> License) y se registra en la DB. | ✅ **COMPLETADO** |
+| 2.5 Finalización (Finalizing) | Se actualiza el estado del proyecto a `live` y el job a `completed`. | ✅ **COMPLETADO** |
 
 ## 🔐 **Fase 2.5: Backend como Oráculo de Pandora**
 

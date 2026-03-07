@@ -1,0 +1,62 @@
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+import { db } from "@/db";
+import { governanceProposals, governanceVotes } from "@/db/schema";
+import { eq, desc } from "drizzle-orm";
+
+export async function GET(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const { id } = await params;
+        const protocolId = parseInt(id);
+
+        if (isNaN(protocolId)) {
+            return NextResponse.json({ error: "Invalid protocol ID" }, { status: 400 });
+        }
+
+        // Fetch proposals with their votes
+        const proposals = await db.query.governanceProposals.findMany({
+            where: eq(governanceProposals.protocolId, protocolId),
+            orderBy: [desc(governanceProposals.startBlock)],
+            with: {
+                votes: true // Requiere relation en schema.ts
+            }
+        });
+
+        // Calculate aggregated metrics
+        const enrichedProposals = proposals.map(p => {
+            const votesFor = parseFloat(p.forVotes);
+            const votesAgainst = parseFloat(p.againstVotes);
+            const votesAbstain = parseFloat(p.abstainVotes);
+
+            if (!p.totalVotingSupplySnapshot || p.totalVotingSupplySnapshot === "0") {
+                throw new Error("Missing constitutional snapshot for proposal: " + p.proposalId);
+            }
+
+            const supplySnapshot = parseFloat(p.totalVotingSupplySnapshot);
+
+            const totalParticipation = votesFor + votesAgainst + votesAbstain;
+            const participationRate = totalParticipation / supplySnapshot;
+            const quorumReached = totalParticipation >= parseFloat(p.quorumSnapshot);
+
+            return {
+                ...p,
+                metrics: {
+                    votersCount: p.votes?.length || 0,
+                    participationRate,
+                    quorumReached,
+                    totalVotingSupplySnapshot: p.totalVotingSupplySnapshot,
+                    quorumSnapshot: p.quorumSnapshot
+                }
+            };
+        });
+
+        return NextResponse.json(enrichedProposals);
+
+    } catch (error) {
+        console.error("[API] Error fetching proposals:", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    }
+}

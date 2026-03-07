@@ -34,23 +34,44 @@ export async function POST(req: Request) {
 
         // 2. Parse Config
         const body = await req.json();
-        const { name, symbol, maxSupply, price, owner, treasuryAddress, oracleAddress, image } = body;
+        const {
+            name,
+            symbol,
+            maxSupply,
+            price,
+            owner,
+            treasuryAddress,
+            oracleAddress,
+            image,
+            description,
+            nftType = 'access',
+            targetUrl = null,
+            createLanding = false,
+            landingConfig = null,
+            shortlinkSlug = null // New field for dynamic QR slug
+        } = body;
 
         if (!name || !symbol || !owner) {
             return NextResponse.json({ error: "Missing required fields (name, symbol, owner)" }, { status: 400 });
         }
 
+        // 3. Configure Deployment
+        const MAX_UINT256 = "115792089237316195423570985008687907853269984665640564039457584007913129639935";
+        const isInfiniteSupply = String(maxSupply) === MAX_UINT256;
+
         const config: NFTPassConfig = {
             name,
             symbol,
-            maxSupply: Number(maxSupply) || 1000,
+            maxSupply: maxSupply, // Pass string directly to deployer (which now supports string | number)
             price: price ? String(price) : "0",
             owner,
             treasuryAddress,
-            oracleAddress
+            oracleAddress,
+            transferable: body.transferable ?? true,
+            burnable: body.burnable ?? false
         };
 
-        console.log(`🚀 API: Deploying NFT Pass: ${name} (${symbol}) for ${owner}`);
+        console.log(`🚀 API: Deploying NFT Pass: ${name} (${symbol}) for ${owner}. Supply: ${isInfiniteSupply ? "UNLIMITED" : maxSupply}. Type: ${nftType}`);
 
         // 3. Determine Network (same logic as deploy-protocol)
         host = req.headers.get("host") || "";
@@ -60,34 +81,64 @@ export async function POST(req: Request) {
         const isMainBranch = branchName === 'main';
         const isStagingBranch = branchName === 'staging';
 
-        // Network: Production domain or main branch → Base, else Sepolia
-        // Logic: 
-        // 1st Priority: Domain name (most reliable for Vercel)
-        // 2nd Priority: Branch name (main = base, staging = sepolia)
-        // Default: Sepolia (safe fallback)
         if (isProductionDomain || isMainBranch) {
             network = 'base';
         } else if (isStagingBranch) {
             network = 'sepolia';
         } else {
-            // Unknown environment, default to Sepolia for safety
             network = 'sepolia';
         }
 
         console.log(`🌍 Network Decision: Host="${host}", Branch="${branchName}" → Network="${network}"`);
 
-        const address = await deployNFTPass(config, network);
+        // 🚀 DEPLOYMENT SERVICE INTEGRATION
+        // We now delegate the actual deployment to a persistent service on Railway
+        // to avoid Vercel timeouts and "missing response" errors from public RPCs.
 
-        console.log("✅ Deployment Result:", address);
+        const DEPLOY_SERVICE_URL = process.env.DEPLOY_SERVICE_URL || "http://localhost:3000"; // Fallback for local dev
+        const DEPLOY_SECRET = process.env.DEPLOY_SECRET;
+
+        if (!DEPLOY_SECRET) {
+            throw new Error("Missing DEPLOY_SECRET in environment variables");
+        }
+
+        console.log(`📡 Forwarding deployment to: ${DEPLOY_SERVICE_URL}/deploy/nft-pass`);
+
+        const deployResponse = await fetch(`${DEPLOY_SERVICE_URL}/deploy/nft-pass`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "x-deploy-secret": DEPLOY_SECRET
+            },
+            body: JSON.stringify({
+                config,
+                network
+            })
+        });
+
+        if (!deployResponse.ok) {
+            const errorText = await deployResponse.text();
+            throw new Error(`Deployment Service failed: ${deployResponse.status} ${deployResponse.statusText} - ${errorText}`);
+        }
+
+        const deployResult = await deployResponse.json();
+
+        if (!deployResult.success || !deployResult.address) {
+            throw new Error(`Deployment Service returned failure: ${deployResult.error || "Unknown error"}`);
+        }
+
+        const address = deployResult.address;
+        console.log("✅ Deployment Result (from Service):", address);
 
         // 4. Create Project Record (for Metadata API integration)
         // Generate a slug from name + random suffix to avoid collisions
         const slug = `pass-${name.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${Date.now().toString().slice(-4)}`;
+        const shortlinkType = createLanding ? 'landing' : 'redirect';
 
         await db.insert(projects).values({
             title: name,
             slug: slug,
-            description: `System Access Pass: ${name}. Symbol: ${symbol}`,
+            description: description || `System Access Pass: ${name}. Symbol: ${symbol}`,
             // We use 'infrastructure' or 'other' as category
             businessCategory: 'infrastructure',
             // Set status to live or approved so it shows up? Or keep it specific.
@@ -97,12 +148,28 @@ export async function POST(req: Request) {
             applicantWalletAddress: owner,
             treasuryAddress: treasuryAddress || owner,
             w2eConfig: {
-                licenseToken: { name, symbol, maxSupply: Number(maxSupply), price: price || "0" },
-                accessCardImage: image || null // Store the image for metadata!
+                licenseToken: {
+                    name,
+                    symbol,
+                    type: nftType, // Store the type ('qr', 'access', 'identity', etc.)
+                    maxSupply: isInfiniteSupply ? "Unlimited" : Number(maxSupply), // Store clearer string for JSON or Number if finite
+                    price: price || "0",
+                    // New traits
+                    transferable: body.transferable ?? true,
+                    burnable: body.burnable ?? false,
+                    validUntil: body.validUntil || null,
+                    // New fields for shortlink creation
+                    shortlinkType: shortlinkType || null, // 'landing' or 'redirect'
+                    landingConfig: landingConfig || null, // Configuration for landing page if shortlinkType is 'landing'
+                    targetUrl: targetUrl, // Target URL for Smart QR redirects
+                    shortlinkSlug: shortlinkSlug // Store the dynamic shortlink slug
+                },
+                accessCardImage: image || null, // Store the image for metadata!
+                smartQRDestination: targetUrl // Store Smart QR destination separately for easy access
             },
             status: 'live', // Active by default
             isMintable: true,
-            totalTokens: Number(maxSupply),
+            totalTokens: isInfiniteSupply ? -1 : Number(maxSupply), // -1 for Unlimited to avoid Integer Overflow in DB
             // Minimal required fields
             targetAmount: "0",
         });
@@ -121,8 +188,12 @@ export async function POST(req: Request) {
                 branch: branchName
             },
             rpcStatus: {
-                sepolia: process.env.SEPOLIA_RPC_URL ? `Configured (Length: ${process.env.SEPOLIA_RPC_URL.length})` : 'MISSING',
-                base: process.env.BASE_RPC_URL ? `Configured (Length: ${process.env.BASE_RPC_URL.length})` : 'MISSING'
+                sepolia: process.env.SEPOLIA_RPC_URL ? `Configured (Custom)` : 'Using Internal Fallbacks',
+                base: process.env.BASE_RPC_URL ? `Configured (Custom)` : 'Using Internal Fallbacks'
+            },
+            rpcEnvVars: {
+                SEPOLIA_RPC_URL: process.env.SEPOLIA_RPC_URL ? 'Present' : 'Missing',
+                BASE_RPC_URL: process.env.BASE_RPC_URL ? 'Present' : 'Missing'
             },
             errorDetails: error?.message || error
         };

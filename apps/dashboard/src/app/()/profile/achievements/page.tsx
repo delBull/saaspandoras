@@ -27,11 +27,18 @@ import { useActiveAccount } from 'thirdweb/react';
 import { useRealGamification } from '@/hooks/useRealGamification';
 
 // Categories from real achievements in BD
+const categoryLabels: Record<string, string> = {
+  'community': 'Comunidad Activa',
+  'creator': 'Creador Activo',
+  'investor': 'Inversor Legendario',
+  'expert': 'Experto Especializado'
+};
+
 const categoryIcons = {
-  'Comunidad Activa': <Target className="w-6 h-6" />,
-  'Creador Activo': <Code className="w-6 h-6" />,
-  'Inversor Legendario': <Award className="w-6 h-6" />,
-  'Experto Especializado': <Puzzle className="w-6 h-6" />
+  'community': <Target className="w-6 h-6" />,
+  'creator': <Code className="w-6 h-6" />,
+  'investor': <Award className="w-6 h-6" />,
+  'expert': <Puzzle className="w-6 h-6" />
 };
 
 const rarityConfig = {
@@ -79,8 +86,6 @@ export default function AchievementsPage() {
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [filter] = useState<'all' | 'unlocked' | 'locked'>('all');
-  const [allAvailableAchievements, setAllAvailableAchievements] = useState<any[]>([]);
-  const [loadingAchievements, setLoadingAchievements] = useState(true);
 
   const account = useActiveAccount();
   const gamification = useRealGamification(account?.address ?? '');
@@ -93,106 +98,42 @@ export default function AchievementsPage() {
     }
   }, [account?.address, gamification.refreshData]);
 
-  // Use the gamification hook data directly - no need for separate API call
+  // 🔥 FIX 4: Debug log to verify mapping
   useEffect(() => {
-    if (gamification.achievements && gamification.achievements.length > 0) {
-      console.log('🎯 Using achievements from gamification hook:', gamification.achievements.length, 'items');
-
-      // Debug: Log first few achievements with their completion status
-      console.log('🔍 First 3 achievements from hook:', gamification.achievements.slice(0, 3).map((a: any) => ({
+    if (gamification.achievements.length > 0) {
+      console.log('🎮 [Achievements Debug Table]');
+      console.table(gamification.achievements.map(a => ({
         name: a.name,
-        isCompleted: a.isCompleted,
-        isUnlocked: a.isUnlocked,
-        progress: a.progress
+        category: a.category,
+        rarity: a.rarity,
+        unlocked: a.isUnlocked,
+        points: a.pointsReward
       })));
-
-      console.log('📊 Completion stats:', {
-        total: gamification.achievements.length,
-        unlocked: gamification.achievements.filter((a: any) => a.isCompleted).length,
-        locked: gamification.achievements.filter((a: any) => !a.isCompleted).length
-      });
-
-      // Transform hook data to match expected format
-      const transformedAchievements = gamification.achievements.map((achievement: any) => {
-        const isUnlocked = Boolean(achievement.isCompleted || achievement.isUnlocked);
-        console.log(`🔄 Transforming ${achievement.name}: isCompleted=${achievement.isCompleted}, isUnlocked=${achievement.isUnlocked} → final isUnlocked=${isUnlocked}`);
-
-        return {
-          id: achievement.achievementId || achievement.id,
-          name: achievement.name,
-          description: achievement.description,
-          icon: achievement.icon,
-          type: achievement.category || achievement.type,
-          pointsReward: achievement.points,
-          isUnlocked: isUnlocked,
-          progress: achievement.progress || 0,
-          required: achievement.required || 100,
-          category: achievement.category || 'general'
-        };
-      });
-
-      console.log('✅ Final transformed achievements:', transformedAchievements.slice(0, 3).map(a => ({
-        name: a.name,
-        isUnlocked: a.isUnlocked
-      })));
-
-      setAllAvailableAchievements(transformedAchievements);
-    } else {
-      console.log('⚠️ No achievements from gamification hook, using empty array');
-      setAllAvailableAchievements([]);
     }
-
-    setLoadingAchievements(false);
   }, [gamification.achievements]);
 
-  // Group achievements by real categories from BD
-  const generateAchievementsByCategory = () => {
-    // Group achievements by type for category organization
-    const categoryGroups: Record<string, any[]> = {};
+  // 🔥 CLEAN FILTERING LOGIC
+  const filteredAchievements = gamification.achievements
+    .filter(a => {
+      // Filter by Category
+      if (selectedCategory && a.category !== selectedCategory) return false;
 
-    allAvailableAchievements.forEach(achievement => {
-      // Map achievement types to category names (could enhance API to include category field)
-      let categoryName = 'Comunidad Activa'; // default
-      if (achievement.type === 'investor') categoryName = 'Inversor Legendario';
-      else if (achievement.type === 'community_builder') categoryName = 'Comunidad Activa';
-      else if (achievement.type === 'early_adopter') categoryName = 'Experto Especializado';
-      else if (achievement.type === 'high_roller') categoryName = 'Creador Activo';
+      // Filter by Unlocked/Locked status
+      if (filter === 'unlocked') return a.isUnlocked;
+      if (filter === 'locked') return !a.isUnlocked;
 
-      if (!categoryGroups[categoryName]) {
-        categoryGroups[categoryName] = [];
-      }
-      categoryGroups[categoryName]!.push({
-        ...achievement,
-        category: categoryName,
-        categoryName: categoryName,
-        icon: achievement.icon || '🏆', // fallback
-        points: achievement.pointsReward,
-        pointsReward: achievement.pointsReward,
-        unlocked: achievement.isUnlocked,
-        isUnlocked: achievement.isUnlocked
-      });
+      return true;
+    })
+    .sort((a, b) => {
+      // Primary: Unlocked first
+      if (a.isUnlocked && !b.isUnlocked) return -1;
+      if (!a.isUnlocked && b.isUnlocked) return 1;
+      // Secondary: Higher points first
+      return (b.pointsReward || 0) - (a.pointsReward || 0);
     });
 
-    // Convert to array format expected by component
-    return Object.entries(categoryGroups).map(([name, achievements]) => ({
-      name,
-      achievements
-    }));
-  };
-
-  const achievementCategories = generateAchievementsByCategory();
-
-  const allAchievements = achievementCategories.flatMap(cat =>
-    cat.achievements.map(achievement => ({ ...achievement, categoryName: cat.name }))
-  );
-
-  const filteredAchievements = selectedCategory
-    ? allAchievements.filter(a => a.category === selectedCategory)
-    : allAchievements.filter(a =>
-        filter === 'all' ||
-        (filter === 'unlocked' && a.isUnlocked) ||
-        (filter === 'locked' && !a.isUnlocked)
-      );
+  console.log(`🧮 TOTAL achievements from hook: ${gamification.achievements.length}`);
+  console.log(`🧮 TOTAL rendered matching filters: ${filteredAchievements.length}`);
 
   return (
     <div className="absolute inset-x-0 min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-black text-white">
@@ -256,14 +197,14 @@ export default function AchievementsPage() {
           <div className="text-center p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl backdrop-blur-sm">
             <Medal className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
             <div className="text-3xl font-bold text-yellow-400 mb-1">
-              {allAvailableAchievements.filter((a: any) => a.isUnlocked).length}
+              {gamification.achievements.filter((a: any) => a.isUnlocked).length}
             </div>
             <div className="text-sm text-zinc-400">Logros Obtenidos</div>
           </div>
           <div className="text-center p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl backdrop-blur-sm">
             <Target className="w-8 h-8 text-red-400 mx-auto mb-2" />
             <div className="text-3xl font-bold text-red-400 mb-1">
-              {Math.max(0, allAchievements.length - allAvailableAchievements.filter((a: any) => a.isUnlocked).length)}
+              {Math.max(0, gamification.achievements.length - gamification.achievements.filter((a: any) => a.isUnlocked).length)}
             </div>
             <div className="text-sm text-zinc-400">Pendientes</div>
           </div>
@@ -299,15 +240,17 @@ export default function AchievementsPage() {
             <span className="text-xs">Todos</span>
           </Button>
 
-          {Object.entries(categoryIcons).map(([categoryName, icon]) => (
+          {Object.entries(categoryIcons).map(([categorySlug, icon]) => (
             <Button
-              key={categoryName}
-              variant={selectedCategory === categoryName ? "default" : "outline"}
-              onClick={() => setSelectedCategory(categoryName)}
+              key={categorySlug}
+              variant={selectedCategory === categorySlug ? "default" : "outline"}
+              onClick={() => setSelectedCategory(categorySlug)}
               className="h-20 flex flex-col items-center gap-2 relative"
             >
               {icon}
-              <span className="text-xs text-center">{categoryName}</span>
+              <span className="text-xs text-center">
+                {categoryLabels[categorySlug as keyof typeof categoryLabels]}
+              </span>
             </Button>
           ))}
         </motion.div>
@@ -320,8 +263,7 @@ export default function AchievementsPage() {
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12"
         >
           {filteredAchievements.map((achievement, index) => {
-            const rarity = rarityConfig[achievement.type as keyof typeof rarityConfig];
-            if (!rarity) return null;
+            const rarity = rarityConfig[achievement.rarity] || rarityConfig.first_steps;
             const RarityIconComponent = rarity.icon;
 
             return (
@@ -330,19 +272,18 @@ export default function AchievementsPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 1.2 + index * 0.1 }}
-                className="group"
+                className="group relative transform-gpu"
+                style={{ willChange: "transform, opacity" }}
               >
-                <Card className={`relative overflow-hidden transition-all duration-300 hover:scale-105 border-2 ${
-                  achievement.isUnlocked
-                    ? 'border-yellow-500 bg-gradient-to-br from-yellow-900/20 to-orange-900/20 shadow-lg shadow-yellow-500/10'
-                    : `${rarity.bgColor} opacity-80 hover:opacity-100`
-                } backdrop-blur-sm`}>
+                <Card className={`relative overflow-hidden transition-all duration-300 transform-gpu will-change-transform hover:scale-105 border-2 ${achievement.isUnlocked
+                  ? 'border-yellow-500 bg-gradient-to-br from-yellow-900/30 to-orange-900/30 shadow-xl shadow-yellow-500/10'
+                  : `${rarity.bgColor} opacity-90 hover:opacity-100`
+                  } backdrop-blur-md`}>
                   {/* Rarity Badge */}
-                  <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${
-                    achievement.isUnlocked
-                      ? 'bg-yellow-500 text-black shadow-lg'
-                      : `bg-gradient-to-r ${rarity.color} text-white`
-                  }`}>
+                  <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${achievement.isUnlocked
+                    ? 'bg-yellow-500 text-black shadow-lg'
+                    : `bg-gradient-to-r ${rarity.color} text-white`
+                    }`}>
                     <RarityIconComponent className="w-3 h-3" />
                     <span>{rarity.name}</span>
                   </div>
@@ -354,11 +295,10 @@ export default function AchievementsPage() {
 
                   <CardHeader className="text-center pt-8">
                     <div className="text-5xl mb-4 relative">
-                      <div className={`absolute inset-0 ${
-                        achievement.isUnlocked
-                          ? 'bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full blur-xl opacity-30'
-                          : ''
-                      }`}></div>
+                      <div className={`absolute inset-0 ${achievement.isUnlocked
+                        ? 'bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full blur-xl opacity-30'
+                        : ''
+                        }`}></div>
                       <div className="relative">{achievement.icon}</div>
                     </div>
 
@@ -371,7 +311,9 @@ export default function AchievementsPage() {
 
                     {/* Category Badge */}
                     <div className="inline-flex items-center gap-1 px-3 py-1 mt-3 bg-zinc-800/50 border border-zinc-700 rounded-full text-xs">
-                      <span className="text-zinc-400 capitalize">{achievement.category}</span>
+                      <span className="text-zinc-400 capitalize">
+                        {categoryLabels[achievement.category as keyof typeof categoryLabels]}
+                      </span>
                     </div>
                   </CardHeader>
 
@@ -402,19 +344,17 @@ export default function AchievementsPage() {
                     <div className="flex justify-between items-center pt-2">
                       <div className="flex items-center gap-2">
                         <Zap className="w-5 h-5 text-yellow-400" />
-                        <span className={`font-bold ${
-                          achievement.isUnlocked ? 'text-yellow-400' : 'text-gray-500'
-                        }`}>
+                        <span className={`font-bold ${achievement.isUnlocked ? 'text-yellow-400' : 'text-gray-500'
+                          }`}>
                           +{achievement.pointsReward} tokens
                         </span>
                       </div>
 
                       {/* Status Badge */}
-                      <div className={`px-4 py-2 rounded-full text-sm font-medium ${
-                        achievement.isUnlocked
-                          ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-black shadow-lg'
-                          : 'bg-zinc-700/50 text-gray-400'
-                      }`}>
+                      <div className={`px-4 py-2 rounded-full text-sm font-medium ${achievement.isUnlocked
+                        ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-black shadow-lg'
+                        : 'bg-zinc-700/50 text-gray-400'
+                        }`}>
                         {achievement.isUnlocked ? '🏆 Completado' : '⏳ Pendiente'}
                       </div>
                     </div>

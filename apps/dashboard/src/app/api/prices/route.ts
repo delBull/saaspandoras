@@ -1,33 +1,58 @@
 import { NextResponse } from 'next/server';
 
+let cachedPrices: any = null;
+let lastFetch = 0;
+const CACHE_TTL = 60 * 1000; // 60 seconds
+
 export async function GET() {
+    const now = Date.now();
+
+    if (cachedPrices && (now - lastFetch < CACHE_TTL)) {
+        return NextResponse.json(cachedPrices, {
+            headers: {
+                'X-Cache': 'HIT',
+                'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=30',
+            }
+        });
+    }
+
     try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 🛡️ 8s strict limit
+
         const response = await fetch(
             'https://api.coingecko.com/api/v3/simple/price?ids=ethereum,polygon-ecosystem-token,matic-network,arbitrum,usd-coin,tether&vs_currencies=usd',
             {
+                signal: controller.signal,
                 headers: {
                     'Accept': 'application/json',
-                    // Add API Key here if available in env, e.g. 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY
                 },
-                next: { revalidate: 300 } // Cache for 300 seconds (5 mins)
+                next: { revalidate: 60 }
             }
         );
+
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
             throw new Error(`CoinGecko API Error: ${response.status}`);
         }
 
         const data = await response.json();
+        cachedPrices = data;
+        lastFetch = now;
 
-        // Return with Cache-Control header for Vercel Edge Cache
         return NextResponse.json(data, {
             headers: {
-                'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=59',
+                'X-Cache': 'MISS',
+                'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=30',
             }
         });
     } catch (error) {
         console.error('Error fetching token prices:', error);
-        // Return default fallback data to prevent UI crash
+
+        // Return cached data if available even if expired, rather than hard fallback
+        if (cachedPrices) return NextResponse.json(cachedPrices);
+
         return NextResponse.json({
             "ethereum": { "usd": 2200 },
             "polygon-ecosystem-token": { "usd": 0.8 },

@@ -28,6 +28,15 @@ contract W2ELicense is ERC721A, Ownable, ERC2981 {
     /// @notice Dirección de la tesorería para recaudar fondos
     address public treasuryAddress;
 
+    /// @notice Indica si los tokens son transferibles (False = Soulbound/SBT)
+    bool public isTransferable;
+
+    /// @notice Indica si los tokens pueden ser quemados por el dueño
+    bool public isBurnable;
+
+    /// @notice Indica si la venta primaria está abierta
+    bool public primaryOpen = true;
+
     /// @notice Fase actual del protocolo (1, 2, 3...)
     uint256 public phaseId;
 
@@ -45,6 +54,8 @@ contract W2ELicense is ERC721A, Ownable, ERC2981 {
     event TreasuryUpdated(address indexed oldTreasury, address indexed newTreasury);
     event LicensePriceUpdated(uint256 indexed oldPrice, uint256 indexed newPrice);
     event RoyaltyUpdated(address indexed receiver, uint96 feeNumerator);
+    event TransferabilityUpdated(bool indexed status);
+    event PrimarySaleClosed();
 
     // ========== CONSTRUCTOR ==========
 
@@ -64,7 +75,9 @@ contract W2ELicense is ERC721A, Ownable, ERC2981 {
         uint256 _licensePrice,
         address _pandoraOracle,
         address _treasuryAddress,
-        address initialOwner
+        address initialOwner,
+        bool _isTransferable,
+        bool _isBurnable
     ) ERC721A(name, symbol) Ownable() {
         require(_maxSupply > 0, "W2E: Max supply must be positive");
         // require(_licensePrice > 0, "W2E: License price must be positive"); // COMENTADO: Permitir precio 0 (Free)
@@ -75,6 +88,8 @@ contract W2ELicense is ERC721A, Ownable, ERC2981 {
         licensePrice = _licensePrice;
         pandoraOracle = _pandoraOracle;
         treasuryAddress = _treasuryAddress;
+        isTransferable = _isTransferable;
+        isBurnable = _isBurnable;
 
         // Inicializar fase 1 con el supply máximo total
         phaseId = 1;
@@ -82,6 +97,11 @@ contract W2ELicense is ERC721A, Ownable, ERC2981 {
 
         // Configurar Royalty por defecto (5% a la tesorería)
         _setDefaultRoyalty(_treasuryAddress, 500);
+        
+        // Transfer ownership to the specified initial owner if it's not the deployer
+        if (initialOwner != msg.sender && initialOwner != address(0)) {
+            _transferOwnership(initialOwner);
+        }
     }
 
     // ... (Existing modifiers and mint functions) ...
@@ -96,6 +116,23 @@ contract W2ELicense is ERC721A, Ownable, ERC2981 {
     function setRoyaltyInfo(address receiver, uint96 feeNumerator) external onlyOwner {
         _setDefaultRoyalty(receiver, feeNumerator);
         emit RoyaltyUpdated(receiver, feeNumerator);
+    }
+
+    /**
+     * @notice Habilita o deshabilita la transferencia de tokens
+     * @param _status Nuevo estado de transferibilidad
+     */
+    function setIsTransferable(bool _status) external onlyOwner {
+        isTransferable = _status;
+        emit TransferabilityUpdated(_status);
+    }
+
+    /**
+     * @notice Cierra la venta primaria de forma permanente
+     */
+    function closePrimarySale() external onlyOwner {
+        primaryOpen = false;
+        emit PrimarySaleClosed();
     }
 
     // ... (Existing setPandoraOracle, setTreasuryAddress, setLicensePrice) ...
@@ -134,6 +171,7 @@ contract W2ELicense is ERC721A, Ownable, ERC2981 {
         external
         onlyPandoraOracle
     {
+        require(primaryOpen, "W2E: Primary sale closed");
         uint256 newTotal = _totalMinted() + quantity;
         require(newTotal <= maxSupply, "W2E: Max supply reached");
         require(recipient != address(0), "W2E: Invalid recipient");
@@ -149,6 +187,7 @@ contract W2ELicense is ERC721A, Ownable, ERC2981 {
      * @param quantity Cantidad de licencias a mintear
      */
     function mintWithPayment(uint256 quantity) external payable {
+        require(primaryOpen, "W2E: Primary sale closed");
         require(quantity > 0, "W2E: Quantity must be positive");
         require(msg.value >= licensePrice * quantity, "W2E: Insufficient payment");
 
@@ -348,6 +387,40 @@ contract W2ELicense is ERC721A, Ownable, ERC2981 {
             } else {
                 break;
             }
+        }
+    }
+
+    /**
+     * @notice Quema (destruye) un token
+     * @dev Solo si isBurnable es true y el llamador es dueño o aprobado
+     * @param tokenId ID del token a quemar
+     */
+    function burn(uint256 tokenId) external {
+        require(isBurnable, "W2E: Burning is disabled");
+        require(
+            _msgSenderERC721A() == ownerOf(tokenId) || 
+            isApprovedForAll(ownerOf(tokenId), _msgSenderERC721A()) || 
+            getApproved(tokenId) == _msgSenderERC721A(),
+            "W2E: Caller is not owner nor approved"
+        );
+        _burn(tokenId);
+    }
+
+    /**
+     * @dev Hook que se ejecuta antes de cualquier transferencia de tokens
+     * @notice Bloquea transferencias si isTransferable es false (SBT), excepto minting/burning
+     */
+    function _beforeTokenTransfers(
+        address from,
+        address to,
+        uint256 startTokenId,
+        uint256 quantity
+    ) internal virtual override {
+        super._beforeTokenTransfers(from, to, startTokenId, quantity);
+
+        // Bloquear si no es transferible y no es minting (from == 0) ni burning (to == 0)
+        if (!isTransferable && from != address(0) && to != address(0)) {
+            revert("W2E: Token is non-transferable (SBT)");
         }
     }
 }

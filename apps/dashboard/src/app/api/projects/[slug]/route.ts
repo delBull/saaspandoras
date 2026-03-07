@@ -79,92 +79,130 @@ export async function GET(
 
     console.log('🔍 API: Fetching project with slug:', slug);
 
-    // Use the working pattern but with all fields needed
-    const projectResult = await db.execute(sql`
-      SELECT
-        "id",
-        "title",
-        "slug",
-        "description",
-        "status",
-        "video_pitch",
-        "cover_photo_url",
-        "logo_url",
-        "tagline",
-        "business_category",
-        "target_amount",
-        "raised_amount",
-        "website",
-        "twitter_url",
-        "discord_url",
-        "telegram_url",
-        "linkedin_url",
-        "whitepaper_url",
-        "total_valuation_usd",
-        "token_type",
-        "total_tokens",
-        "tokens_offered",
-        "token_price_usd",
-        "estimated_apy",
-        "yield_source",
-        "lockup_period",
-        "fund_usage",
-        "team_members",
-        "advisors",
-        "token_distribution",
-        "contract_address",
-        "contract_address" as "contractAddress",
-        "contract_address" as "governance_token_address",
-        "voting_contract_address",
-        "voting_contract_address" as "votingContractAddress",
-        "license_contract_address" as "licenseContractAddress",
-        "utility_contract_address" as "utilityContractAddress",
-        "governor_contract_address" as "governorContractAddress",
-        "treasury_address" as "treasuryAddress",
-        "loom_contract_address" as "loomContractAddress",
-        "deployment_status" as "deploymentStatus",
-        "chain_id" as "chainId",
-        "legal_status",
-        "valuation_document_url",
-        "fiduciary_entity",
-        "due_diligence_report_url",
-        "is_mintable",
-        "is_mutable",
-        "update_authority_address",
-        "chain_id" as "chainId",
-        "applicant_name",
-        "applicant_position",
-        "applicant_email",
-        "applicant_phone",
-        "applicant_wallet_address",
-        "verification_agreement",
-        "protoclMecanism",
-        "artefactUtility",
-        "worktoearnMecanism",
-        "integrationPlan",
-        "monetizationModel",
-        "adquireStrategy",
-        "mitigationPlan",
-        "recurring_rewards",
-        "integration_details",
-        "legal_entity_help",
-        "image_url",
-        "socials",
-        "returns_paid",
-        "featured",
-        "featured_button_text",
-        "w2e_config" as "w2eConfig",
-        "created_at"
-      FROM "projects"
-      WHERE "slug" = ${slug}
-      LIMIT 1
-    `);
+    let projectResult: any;
 
-    if (projectResult.length > 0) {
-      const project = projectResult[0] as unknown as ProjectData;
-      console.log('✅ API: Project found in database');
+    try {
+      projectResult = await db.query.projects.findFirst({
+        where: (projects, { eq }) => eq(projects.slug, slug)
+      });
+    } catch (ormError) {
+      console.warn('⚠️ API: ORM Error (legacy data?), trying raw SQL:', ormError);
+      const { sql } = await import('drizzle-orm');
+      const rawRes = await db.execute(sql`SELECT * FROM projects WHERE slug = ${slug} LIMIT 1`);
+      if (rawRes && rawRes.length > 0) {
+        projectResult = rawRes[0];
+      }
+    }
 
-      return NextResponse.json(project);
+    if (projectResult) {
+      console.log('✅ API: Project found:', (projectResult as any).title);
+      console.log('📊 API: Project keys:', Object.keys(projectResult));
+
+      try {
+        const resolveIpfs = (url: any) => {
+          if (typeof url === 'string' && url.startsWith('ipfs://')) {
+            return url.replace('ipfs://', 'https://gateway.pinata.cloud/ipfs/');
+          }
+          return url;
+        };
+
+        // Safely parse w2eConfig if it's a string
+        let parsedW2eConfig = projectResult.w2eConfig || {};
+        if (typeof parsedW2eConfig === 'string') {
+          try {
+            parsedW2eConfig = JSON.parse(parsedW2eConfig);
+          } catch (e) {
+            console.warn('⚠️ API: Failed to parse w2eConfig string', e);
+          }
+        }
+
+        // Map Drizzle ORM's camelCase to the snake_case expected by frontend ProjectData interface
+        const mappedProject = {
+          ...projectResult,
+          id: projectResult.id ? Number(projectResult.id) : (projectResult as any).id,
+          logo_url: resolveIpfs(projectResult.logoUrl || (projectResult as any).logo_url) || null,
+          cover_photo_url: resolveIpfs(projectResult.coverPhotoUrl || (projectResult as any).cover_photo_url) || null,
+          business_category: projectResult.businessCategory || null,
+          video_pitch: projectResult.videoPitch || null,
+          whitepaper_url: projectResult.whitepaperUrl || null,
+          twitter_url: projectResult.twitterUrl || null,
+          discord_url: projectResult.discordUrl || null,
+          telegram_url: projectResult.telegramUrl || null,
+          linkedin_url: projectResult.linkedinUrl || null,
+          target_amount: projectResult.targetAmount || null,
+          total_valuation_usd: projectResult.totalValuationUsd || null,
+          token_type: projectResult.tokenType || null,
+          total_tokens: projectResult.totalTokens || null,
+          tokens_offered: projectResult.tokensOffered || null,
+          token_price_usd: projectResult.tokenPriceUsd || null,
+          estimated_apy: projectResult.estimatedApy || null,
+          yield_source: projectResult.yieldSource || null,
+          lockup_period: projectResult.lockupPeriod || null,
+          fund_usage: projectResult.fundUsage || null,
+          team_members: projectResult.teamMembers || [],
+          token_distribution: projectResult.tokenDistribution || null,
+          contract_address: projectResult.contractAddress || null,
+          legal_status: projectResult.legalStatus || null,
+          valuation_document_url: projectResult.valuationDocumentUrl || null,
+          fiduciary_entity: projectResult.fiduciaryEntity || null,
+          due_diligence_report_url: projectResult.dueDiligenceReportUrl || null,
+          is_mintable: projectResult.isMintable || false,
+          is_mutable: projectResult.isMutable || false,
+          update_authority_address: projectResult.updateAuthorityAddress || null,
+          applicant_name: projectResult.applicantName || null,
+          applicant_position: projectResult.applicantPosition || null,
+          applicant_email: projectResult.applicantEmail || null,
+          applicant_phone: projectResult.applicantPhone || null,
+          applicant_wallet_address: projectResult.applicantWalletAddress || null,
+          verification_agreement: projectResult.verificationAgreement || false,
+          integration_details: projectResult.integrationDetails || null,
+          legal_entity_help: projectResult.legalEntityHelp || false,
+          image_url: projectResult.imageUrl || null,
+          raised_amount: projectResult.raisedAmount || "0.00",
+          returns_paid: projectResult.returnsPaid || "0.00",
+          featured_button_text: projectResult.featuredButtonText || null,
+          created_at: projectResult.createdAt || null,
+          w2eConfig: parsedW2eConfig,
+
+          // Technical / Governance Addresses (with snake_case fallbacks)
+          registryContractAddress: (projectResult as any).registryContractAddress || (projectResult as any).registry_contract_address || null,
+          governorContractAddress: (projectResult as any).governorContractAddress || (projectResult as any).votingContractAddress ||
+            (projectResult as any).governor_contract_address || (projectResult as any).voting_contract_address || null,
+          tokenContractAddress: (projectResult as any).contractAddress || (projectResult as any).contract_address || null,
+          timelockContractAddress: (projectResult as any).loomContractAddress || (projectResult as any).loom_contract_address || null,
+
+          // V2 Protocol Fields with extreme safety
+          protocol_version: (() => {
+            if ((projectResult as any).protocolVersion) return Number((projectResult as any).protocolVersion);
+            const artifacts = (projectResult as any).artifacts || parsedW2eConfig?.artifacts;
+            return (Array.isArray(artifacts) && artifacts.length > 0) ? 2 : 1;
+          })(),
+          artifacts: Array.isArray((projectResult as any).artifacts)
+            ? (projectResult as any).artifacts
+            : Array.isArray(parsedW2eConfig?.artifacts)
+              ? parsedW2eConfig.artifacts
+              : [],
+          pageLayoutType: (() => {
+            const raw = (projectResult as any).pageLayoutType || parsedW2eConfig?.pageLayoutType || 'Access';
+            if (typeof raw !== 'string') return 'Access';
+            // Capitalize first letter to match ProtocolLayoutType
+            return (raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase()) as any;
+          })(),
+        };
+
+        // Serialize manually to handle potential BigInts from database numeric fields
+        const safeJson = JSON.stringify(mappedProject, (key, value) =>
+          typeof value === 'bigint' ? value.toString() : value
+        );
+
+        return new NextResponse(safeJson, {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      } catch (mappingError) {
+        console.error('❌ API: Error mapping project data:', mappingError);
+        return NextResponse.json({ error: 'Data mapping error', details: String(mappingError) }, { status: 500 });
+      }
     }
 
     console.log('⚠️ API: Project not found for slug:', slug);

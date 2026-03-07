@@ -68,6 +68,7 @@ export async function GET() {
           "governor_contract_address" as "governorContractAddress",
           "w2e_config" as "w2eConfig"
         FROM "projects"
+        WHERE "business_category" != 'infrastructure'
         ORDER BY "created_at" DESC
       `);
 

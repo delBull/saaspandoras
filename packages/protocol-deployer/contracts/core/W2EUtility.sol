@@ -40,7 +40,37 @@ contract W2EUtility is ERC20, Ownable, ERC20Pausable, ReentrancyGuard {
     /// @notice Mapping of Phase ID -> Staking APY (Basis Points)
     mapping(uint256 => uint256) public phaseAPY;
 
-    // ...
+    /// @notice Habilita las transferencias de tokens (Fase 2)
+    bool public transfersEnabled = false;
+
+    event TransfersEnabled();
+
+    /**
+     * @notice Habilita las transferencias de forma permanente e irreversible
+     * @dev Solo callable por el dueño (Gobernanza)
+     */
+    function enableTransfers() external onlyOwner {
+        require(!transfersEnabled, "W2E: Transfers already enabled");
+        transfersEnabled = true;
+        emit TransfersPermanentlyEnabled();
+    }
+
+    /**
+     * @dev Hook que se ejecuta antes de cualquier transferencia
+     * @notice Bloquea transferencias si transfersEnabled es false, excepto minting/burning
+     */
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal virtual override(ERC20, ERC20Pausable) {
+        super._beforeTokenTransfer(from, to, amount);
+
+        // Bloquear si no están habilitadas y no es minting (from == 0) ni burning (to == 0)
+        if (!transfersEnabled && from != address(0) && to != address(0)) {
+            revert("W2E: Transfers not enabled yet");
+        }
+    }
 
 
     /// @notice Monto total quemado (para métricas deflacionarias)
@@ -72,6 +102,7 @@ contract W2EUtility is ERC20, Ownable, ERC20Pausable, ReentrancyGuard {
     event Unstaked(address indexed user, uint256 amount, uint256 reward);
     event FeeCollected(address indexed from, uint256 amount, uint256 fee);
     event LoomAddressUpdated(address indexed oldLoom, address indexed newLoom);
+    event TransfersPermanentlyEnabled();
 
     // ========== CONSTRUCTOR ==========
 
@@ -361,6 +392,7 @@ contract W2EUtility is ERC20, Ownable, ERC20Pausable, ReentrancyGuard {
      * @param loomAddress Nueva dirección del W2ELoom
      */
     function setW2ELoomAddress(address loomAddress) external onlyOwner {
+        require(!transfersEnabled, "W2E: Loom immutable after defense");
         require(loomAddress != address(0), "W2E: Invalid loom address");
         address oldLoom = w2eLoomAddress;
         w2eLoomAddress = loomAddress;
@@ -505,14 +537,4 @@ contract W2EUtility is ERC20, Ownable, ERC20Pausable, ReentrancyGuard {
         return _decimals;
     }
 
-    /**
-     * @dev Sobrescribe _beforeTokenTransfer para incluir pausa
-     */
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal override(ERC20, ERC20Pausable) {
-        super._beforeTokenTransfer(from, to, amount);
-    }
 }

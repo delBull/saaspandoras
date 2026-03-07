@@ -21,7 +21,7 @@ export function ProjectGrid({
 }: ProjectGridProps) {
   if (projects.length === 0) {
     return (
-      <div className="text-center mx-5 py-8 bg-gray-50 dark:bg-zinc-800/30 rounded-xl border-2 border-dashed border-gray-200 dark:border-zinc-700">
+      <div className="text-center mx-5 py-8 bg-gray-50/0 dark:bg-zinc-800/30 rounded-xl border-2 border-dashed border-gray-300/20 dark:border-zinc-700">
         <EyeIcon className="w-8 h-8 text-gray-400 dark:text-zinc-500 mx-auto mb-2" />
         <p className="text-gray-600 dark:text-gray-400 text-sm">
           {variant === 'pending'

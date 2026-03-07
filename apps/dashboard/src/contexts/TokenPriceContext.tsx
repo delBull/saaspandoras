@@ -20,113 +20,56 @@ export interface TokenPriceState extends TokenPrices {
 // Create context with null as default
 const TokenPriceContext = createContext<TokenPriceState | null>(null);
 
+import useSWR from 'swr';
+
+const fetcher = async (url: string) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
+  const response = await fetch(url, { signal: controller.signal, headers: { 'Accept': 'application/json' } });
+  clearTimeout(timeoutId);
+  if (!response.ok) throw new Error(`API responded with status: ${response.status}`);
+  return response.json();
+};
+
 // Custom hook for fetching real-time token prices
 function useTokenPrices(): TokenPriceState {
-  const [prices, setPrices] = useState<TokenPriceState>({
-    ETH: 2500,
-    POL: 0.8,
-    ARB: 0.6,
-    USDC: 1,
-    USDT: 1,
-    isLoading: false,
-    lastUpdated: null,
-    error: null,
+  const { data, error, isLoading } = useSWR('/api/prices', fetcher, {
+    // 🛡️ Optimization: SWR automatically caches, deduplicates, and manages focus
+    refreshInterval: 120000, // 120 seconds polling
+    revalidateOnFocus: false, // Do not spam requests on window focus
+    dedupingInterval: 60000, // Do not make same request within 1 min
   });
 
-  useEffect(() => {
-    const fetchPrices = async (): Promise<void> => {
-      // Set loading state
-      setPrices(prev => ({ ...prev, isLoading: true, error: null }));
+  if (error) {
+    if (error.name !== 'AbortError' && !error.message?.includes('Failed to fetch')) {
+      console.error('❌ Error fetching token prices:', error.message);
+    } else if (error.name === 'AbortError') {
+      console.warn('⚠️ Token price fetch timed out, using default prices');
+    }
+  }
 
-      try {
-        console.log('🔄 Fetching token prices from CoinGecko API...');
+  const typedData = data as {
+    ethereum?: { usd: number };
+    'polygon-ecosystem-token'?: { usd: number };
+    'matic-network'?: { usd: number };
+    arbitrum?: { usd: number };
+    'usd-coin'?: { usd: number };
+    tether?: { usd: number };
+  } | undefined;
 
-        // Using local API Proxy to avoid CORS issues
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+  // Use POL price (polygon-ecosystem-token) if available, fallback to MATIC
+  const polPrice = typedData?.['polygon-ecosystem-token']?.usd ?? typedData?.['matic-network']?.usd ?? 0.8;
 
-        const response = await fetch(
-          '/api/prices',
-          {
-            signal: controller.signal,
-            headers: {
-              'Accept': 'application/json',
-            }
-          }
-        );
-
-        clearTimeout(timeoutId);
-
-        if (response.ok) {
-          const data = await response.json() as {
-            ethereum?: { usd: number };
-            'polygon-ecosystem-token'?: { usd: number };
-            'matic-network'?: { usd: number };
-            arbitrum?: { usd: number };
-            'usd-coin'?: { usd: number };
-            tether?: { usd: number };
-          };
-
-          // Use POL price (polygon-ecosystem-token) if available, fallback to MATIC
-          const polPrice = data['polygon-ecosystem-token']?.usd ?? data['matic-network']?.usd ?? 0.8;
-
-          const newPrices: TokenPriceState = {
-            ETH: data.ethereum?.usd ?? 2500,
-            POL: polPrice, // ✅ Using POL price (new Polygon native token)
-            ARB: data.arbitrum?.usd ?? 0.6, // ✅ ARB token price
-            USDC: data['usd-coin']?.usd ?? 1,
-            USDT: data.tether?.usd ?? 1,
-            isLoading: false,
-            lastUpdated: new Date(),
-            error: null,
-          };
-
-          setPrices(newPrices);
-
-          console.log('✅ Token prices updated successfully:', {
-            ETH: newPrices.ETH,
-            POL: newPrices.POL,
-            ARB: newPrices.ARB,
-            USDC: newPrices.USDC,
-            USDT: newPrices.USDT,
-            lastUpdated: newPrices.lastUpdated,
-          });
-        } else {
-          console.warn('⚠️ CoinGecko API returned non-ok status:', response.status, response.statusText);
-          throw new Error(`API responded with status: ${response.status}`);
-        }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-
-        // Don't log "Failed to fetch" as error - it's usually network related
-        // and we have fallback prices
-        if (error instanceof Error && error.name === 'AbortError') {
-          console.warn('⚠️ Token price fetch timed out, using default prices');
-        } else if (!errorMessage.includes('Failed to fetch')) {
-          console.error('❌ Error fetching token prices:', errorMessage);
-        } else {
-          console.warn('⚠️ Network error fetching token prices, using defaults');
-        }
-
-        // Set error state but keep previous prices
-        setPrices(prev => ({
-          ...prev,
-          isLoading: false,
-          error: errorMessage,
-        }));
-      }
-    };
-
-    // Fetch prices immediately
-    void fetchPrices();
-
-    // Set up interval to fetch prices every 30 seconds
-    const interval = setInterval(() => void fetchPrices(), 30000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  return prices;
+  return {
+    ETH: typedData?.ethereum?.usd ?? 2500,
+    POL: polPrice,
+    ARB: typedData?.arbitrum?.usd ?? 0.6,
+    USDC: typedData?.['usd-coin']?.usd ?? 1,
+    USDT: typedData?.tether?.usd ?? 1,
+    isLoading,
+    lastUpdated: typedData ? new Date() : null,
+    error: error ? error.message : null,
+  };
 }
 
 // Provider component

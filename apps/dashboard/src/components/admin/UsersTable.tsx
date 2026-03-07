@@ -126,8 +126,8 @@ export function UsersTable({ users }: UsersTableProps) {
             <button
               onClick={() => setRoleFilter('all')}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${roleFilter === 'all'
-                  ? 'bg-cyan-500 text-black shadow-lg'
-                  : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600 hover:text-white'
+                ? 'bg-cyan-500 text-black shadow-lg'
+                : 'bg-zinc-700 text-gray-300 hover:bg-zinc-600 hover:text-white'
                 }`}
             >
               Todos ({users.length})
@@ -139,11 +139,11 @@ export function UsersTable({ users }: UsersTableProps) {
                   key={role}
                   onClick={() => setRoleFilter(role)}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${roleFilter === role
-                      ? 'bg-cyan-500 text-black shadow-lg'
-                      : `${role === 'applicant' ? 'text-green-300 bg-green-500/10 border border-green-500/20 hover:bg-green-500/20' :
-                        role === 'pandorian' ? 'text-blue-300 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20' :
-                          'text-red-300 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20'
-                      } bg-zinc-700 hover:bg-zinc-600`
+                    ? 'bg-cyan-500 text-black shadow-lg'
+                    : `${role === 'applicant' ? 'text-green-300 bg-green-500/10 border border-green-500/20 hover:bg-green-500/20' :
+                      role === 'pandorian' ? 'text-blue-300 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20' :
+                        'text-red-300 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20'
+                    } bg-zinc-700 hover:bg-zinc-600`
                     }`}
                 >
                   {text} ({count})
@@ -165,13 +165,12 @@ export function UsersTable({ users }: UsersTableProps) {
               <th className="px-4 py-3 text-left font-semibold text-gray-300">Protocolos</th>
               <th className="px-4 py-3 text-left font-semibold text-gray-300">Conexiones</th>
               <th className="px-4 py-3 text-left font-semibold text-gray-300">Última Conex.</th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-300">Pandoras Key</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-700 bg-zinc-900">
             {filteredUsers.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-gray-500">
+                <td colSpan={6} className="px-4 py-6 text-center text-gray-500">
                   No hay usuarios registrados{roleFilter !== 'all' ? ` con rol "${roleFilter}"` : ''}.
                 </td>
               </tr>
@@ -221,9 +220,6 @@ export function UsersTable({ users }: UsersTableProps) {
                   </td>
                   <td className="px-4 py-3 text-gray-300 text-xs">
                     {formatDate(user.lastConnectionAt)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <UserKeyStatus walletAddress={user.walletAddress} />
                   </td>
                 </tr>
               );

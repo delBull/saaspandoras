@@ -88,7 +88,7 @@ contract PBOXTokenTest is Test {
         uint256 amount = 1000 * 10**18;
 
         vm.prank(factory);
-        token.mint(user1, amount, "test mint");
+        token.mint(user1, amount, PBOXToken.MintReason.OTHER);
 
         assertEq(token.balanceOf(user1), amount);
         assertEq(token.totalSupply(), amount);
@@ -99,7 +99,7 @@ contract PBOXTokenTest is Test {
 
         vm.prank(user1);
         vm.expectRevert("AccessControl: account 0x0000000000000000000000000000000000000001 is missing role 0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b84012186bb8d1f2ffd703a83");
-        token.mint(user1, amount, "test mint");
+        token.mint(user1, amount, PBOXToken.MintReason.OTHER);
     }
 
     function test_Mint_ExceedMaxSupply() public {
@@ -107,13 +107,13 @@ contract PBOXTokenTest is Test {
 
         vm.prank(factory);
         vm.expectRevert("PBOX: Max supply exceeded");
-        token.mint(user1, amount, "test mint");
+        token.mint(user1, amount, PBOXToken.MintReason.OTHER);
     }
 
     function test_Mint_ZeroAmount() public {
         vm.prank(factory);
         vm.expectRevert("PBOX: Amount must be positive");
-        token.mint(user1, 0, "test mint");
+        token.mint(user1, 0, PBOXToken.MintReason.OTHER);
     }
 
     function test_Mint_InvalidRecipient() public {
@@ -121,7 +121,7 @@ contract PBOXTokenTest is Test {
 
         vm.prank(factory);
         vm.expectRevert("PBOX: Invalid recipient");
-        token.mint(address(0), amount, "test mint");
+        token.mint(address(0), amount, PBOXToken.MintReason.OTHER);
     }
 
     // ========== TESTS DE BURNING ==========
@@ -131,7 +131,7 @@ contract PBOXTokenTest is Test {
 
         // First mint some tokens
         vm.prank(factory);
-        token.mint(user1, amount, "mint for burn test");
+        token.mint(user1, amount, PBOXToken.MintReason.OTHER);
 
         // Burn from authorized burner
         vm.prank(burner);
@@ -145,7 +145,7 @@ contract PBOXTokenTest is Test {
         uint256 amount = 500 * 10**18;
 
         vm.prank(factory);
-        token.mint(user1, amount, "mint for burn test");
+        token.mint(user1, amount, PBOXToken.MintReason.OTHER);
 
         vm.prank(user2);
         vm.expectRevert("AccessControl: account 0x0000000000000000000000000000000000000002 is missing role 0x3c11d16cba7c8f84e3aac36caeba3ce5a466f4705");
@@ -166,7 +166,7 @@ contract PBOXTokenTest is Test {
 
         // Mint tokens to user
         vm.prank(factory);
-        token.mint(user1, amount, "mint for conversion");
+        token.mint(user1, amount, PBOXToken.MintReason.OTHER);
 
         // Convert to liquidity
         vm.prank(user1);
@@ -184,7 +184,7 @@ contract PBOXTokenTest is Test {
         uint256 amount = 50 * 10**18; // Below minimum
 
         vm.prank(factory);
-        token.mint(user1, amount, "mint for conversion");
+        token.mint(user1, amount, PBOXToken.MintReason.OTHER);
 
         vm.prank(user1);
         vm.expectRevert("PBOX: Below minimum conversion");
@@ -195,7 +195,7 @@ contract PBOXTokenTest is Test {
         uint256 amount = MAX_DAILY_CONVERSION + 1;
 
         vm.prank(factory);
-        token.mint(user1, amount, "mint for conversion");
+        token.mint(user1, amount, PBOXToken.MintReason.OTHER);
 
         vm.prank(user1);
         vm.expectRevert("PBOX: Daily conversion limit exceeded");
@@ -206,7 +206,7 @@ contract PBOXTokenTest is Test {
         uint256 amount = MIN_CONVERSION;
 
         vm.prank(factory);
-        token.mint(user1, amount, "mint for conversion");
+        token.mint(user1, amount, PBOXToken.MintReason.OTHER);
 
         vm.prank(user1);
         vm.expectRevert("PBOX: Invalid backing asset");
@@ -301,7 +301,7 @@ contract PBOXTokenTest is Test {
 
         // Mint tokens
         vm.prank(factory);
-        token.mint(user1, amount, "test");
+        token.mint(user1, amount, PBOXToken.MintReason.OTHER);
 
         // Now should return true
         assertTrue(token.canConvert(user1, amount));
@@ -328,7 +328,7 @@ contract PBOXTokenTest is Test {
 
         vm.prank(factory);
         uint256 gasStart = gasleft();
-        token.mint(user1, amount, "gas test");
+        token.mint(user1, amount, PBOXToken.MintReason.OTHER);
         uint256 gasUsed = gasStart - gasleft();
 
         assertLt(gasUsed, 100000, "Mint gas usage too high");
@@ -338,7 +338,7 @@ contract PBOXTokenTest is Test {
         uint256 amount = 1000 * 10**18;
 
         vm.prank(factory);
-        token.mint(user1, amount, "mint for transfer");
+        token.mint(user1, amount, PBOXToken.MintReason.OTHER);
 
         vm.prank(user1);
         uint256 gasStart = gasleft();
@@ -354,7 +354,7 @@ contract PBOXTokenTest is Test {
         uint256 amount = 1000 * 10**18;
 
         vm.prank(factory);
-        token.mint(user1, amount, "mint for direct burn");
+        token.mint(user1, amount, PBOXToken.MintReason.OTHER);
 
         vm.prank(user1);
         vm.expectRevert("AccessControl: account 0x0000000000000000000000000000000000000001 is missing role 0x3c11d16cba7c8f84e3aac36caeba3ce5a466f4705");
@@ -365,7 +365,7 @@ contract PBOXTokenTest is Test {
         uint256 amount = 1000 * 10**18;
 
         vm.prank(factory);
-        token.mint(user1, amount, "mint for direct burnFrom");
+        token.mint(user1, amount, PBOXToken.MintReason.OTHER);
 
         vm.prank(user1);
         vm.expectRevert("AccessControl: account 0x0000000000000000000000000000000000000001 is missing role 0x3c11d16cba7c8f84e3aac36caeba3ce5a466f4705");

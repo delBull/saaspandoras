@@ -45,7 +45,7 @@ export function WalletInfo({
   };
 
   return (
-    <Card>
+    <Card className="bg-black/40 border-zinc-800 backdrop-blur-sm">
       <CardHeader className="relative">
         <div className="flex items-center gap-4">
           <div className="relative">
