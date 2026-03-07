@@ -119,8 +119,8 @@ export default function AdminDashboardPage() {
         const address = user?.address;
 
         if (!address) {
-          setAuthError('No se pudo verificar tu sesión. Inicia de nuevo.');
-          setIsAdmin(false);
+          // 🛡️ If state is guest but we haven't given it time, don't fail yet
+          // Wait for the AutoLoginGate or AuthProvider to settle.
           return;
         }
 

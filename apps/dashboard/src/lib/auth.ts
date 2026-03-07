@@ -37,9 +37,11 @@ export async function isAdmin(address?: string | null, isVerified = false): Prom
       .from(administrators)
       .where(eq(administrators.walletAddress, lower));
 
-    return result.length > 0;
+    const isAdm = result.length > 0;
+    console.log(`🛡️ [isAdmin] Check for ${lower}: ${isAdm ? 'AUTHORIZED' : 'DENIED'} (${result.length} matches)`);
+    return isAdm;
   } catch (error) {
-    console.error("💥 isAdmin: Database query FAILED:", error);
+    console.error("💥 isAdmin: Database query FAILED for", lower, ":", error);
     return false;
   }
 }

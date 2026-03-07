@@ -37,8 +37,13 @@ export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGa
     if (!isClientReady || authState === "booting" || isConnecting) return;
 
     if (authState === "guest" && pathname !== "/") {
-      console.log("[AutoLoginGate] Guest state confirmed by AuthProvider, redirecting to Home.");
-      router.push("/");
+      // ⏳ Patience: If we just reached guest state, give it 3 seconds to recover (e.g. if SIWE is starting)
+      // This prevents the "immediate redirect" problem when auth/me resets.
+      const timer = setTimeout(() => {
+        console.log("[AutoLoginGate] Guest state confirmed for 3s, redirecting to Home.");
+        router.push("/");
+      }, 3000);
+      return () => clearTimeout(timer);
     }
   }, [isClientReady, authState, isConnecting, pathname, router]);
 
