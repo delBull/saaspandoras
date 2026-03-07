@@ -18,9 +18,9 @@ if (!connectionString) {
 }
 
 export const sql = globalForPostgres.sqlInstance ?? postgres(connectionString, {
-  max: 10, // Increased back to 10 to avoid hangs during concurrent API calls
-  idle_timeout: 20,
-  connect_timeout: 10,
+  max: 100, // Increased to 100 to handle parallel API calls from dashboard hydration
+  idle_timeout: 30, // Increased to 30 to keep connections alive longer
+  connect_timeout: 20, // Increased to 20 to allow more time during high concurrency peaks
   prepare: false,
   ssl: isProduction ? 'require' : false,
   debug: (connection, query, params) => {

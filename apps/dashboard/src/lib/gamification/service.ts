@@ -1070,10 +1070,13 @@ export class GamificationService {
     }
   }
 
+  private static hasSeeded = false;
+
   /**
    * Initialize basic achievements in database if they don't exist
    */
   public static async initializeBasicAchievements(): Promise<void> {
+    if (this.hasSeeded) return; // Prevent multiple seeds in same process
     try {
       // 1. Get static seed accomplishments
       const { ACHIEVEMENTS } = await import('./seeds/achievements.seed');
@@ -1143,6 +1146,7 @@ export class GamificationService {
           }
         });
 
+      this.hasSeeded = true;
       console.log(`✅ Achievements successfully seeded/updated.`);
     } catch (error) {
       console.error('⚠️ Critical Error initializing basic achievements:', error);
