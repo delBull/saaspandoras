@@ -14,6 +14,7 @@ import { waitForSession } from "@/lib/session";
 import { config } from "@/config";
 import { client } from "@/lib/thirdweb-client";
 import { useEOAIdentity } from "@/hooks/useEOAIdentity";
+import { bustSessionCache } from "@/lib/session";
 
 
 type AuthState =
@@ -134,13 +135,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const login = async () => {
-        console.log('[Auth] 🔐 Login function called');
-        if (!account) {
+        if (!account || state === "authenticating") {
+            console.log('[Auth] 🔐 Login ignored: no account or already authenticating');
             return;
         }
 
+        console.log('[Auth] 🔐 Login function starting...');
         try {
             setState("authenticating");
+
+            // 🛡️ Bust session cache immediately to ensure fresh start
+            bustSessionCache();
 
             const identityAddress = eoaIdentity || account.address;
 
@@ -211,12 +216,15 @@ ${executionAddress !== identityAddress ? `\nExecution Address: ${executionAddres
 
             const data = await loginRes.json();
 
-            // 🆕 Store full unified identity
+            // 🆕 Store full unified identity and bust cache to ensure it's propagated
+            bustSessionCache();
+
             if (data.user) {
                 setUser(data.user);
+                setState("authenticated");
             } else {
                 // 🛑 Fix crítico: Dar tiempo al navegador de registrar la cookie cross-domain (SameSite=Lax/None)
-                await new Promise(resolve => setTimeout(resolve, 200));
+                await new Promise(resolve => setTimeout(resolve, 300));
                 // Fallback for transition
                 checkSession();
             }
