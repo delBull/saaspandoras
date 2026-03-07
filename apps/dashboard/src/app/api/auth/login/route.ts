@@ -261,7 +261,16 @@ export async function POST(request: Request) {
             maxAge: 60 * 60 * 24 // 24 hours
         });
 
-        return NextResponse.json({ success: true, hasAccess });
+        return NextResponse.json({
+            success: true,
+            hasAccess,
+            user: {
+                id: userId,
+                address: walletAddress,
+                role: "user", // Default, payload-based role could be added if needed
+                hasAccess
+            }
+        });
 
     } catch (error) {
         console.error("Login Error:", error);

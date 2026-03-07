@@ -215,18 +215,27 @@ ${executionAddress !== identityAddress ? `\nExecution Address: ${executionAddres
             if (!loginRes.ok) throw new Error("Login failed");
 
             const data = await loginRes.json();
+            console.log('[Auth] 🔑 Login response data received:', { hasUser: !!data.user, hasAccess: data.hasAccess });
 
-            // 🆕 Store full unified identity and bust cache to ensure it's propagated
-            bustSessionCache();
-
+            // 🆕 Store full unified identity from response
             if (data.user) {
                 setUser(data.user);
                 setState("authenticated");
+                console.log('[Auth] ✅ State set to authenticated with user data');
             } else {
+                console.warn('[Auth] ⚠️ No user data in login response, falling back to session check');
                 // 🛑 Fix crítico: Dar tiempo al navegador de registrar la cookie cross-domain (SameSite=Lax/None)
-                await new Promise(resolve => setTimeout(resolve, 300));
-                // Fallback for transition
-                checkSession();
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // Bust cache again and try one last time to fetch session
+                bustSessionCache();
+                const sessionData = await waitForSession(identityAddress);
+                if (sessionData?.authenticated) {
+                    setUser(sessionData.user);
+                    setState("authenticated");
+                } else {
+                    setState("guest");
+                }
             }
             toast({ title: "Welcome back!", description: "Successfully logged in." });
 
