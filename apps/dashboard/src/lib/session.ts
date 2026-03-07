@@ -14,6 +14,7 @@ export async function waitForSession(walletAddress?: string): Promise<any> {
         }
 
         sessionPromise = fetch("/api/auth/me", {
+            credentials: "include",
             headers: {
                 "Cache-Control": "no-store", // Prevent 304 stale cache during auth flow
                 "x-thirdweb-address": currentWalletAddress || "",

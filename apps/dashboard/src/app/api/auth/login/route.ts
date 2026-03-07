@@ -250,10 +250,13 @@ export async function POST(request: Request) {
             iat: Math.floor(Date.now() / 1000),
         }, secret, { expiresIn: '24h' });
 
+        const cookieDomain = process.env.COOKIE_DOMAIN || ".pandoras.finance";
+
         (await cookies()).set("auth_token", token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
+            secure: true, // Required for sameSite: "none"
+            sameSite: "none", // Required for cross-subdomain/cross-origin calls
+            domain: cookieDomain,
             path: "/",
             maxAge: 60 * 60 * 24 // 24 hours
         });
