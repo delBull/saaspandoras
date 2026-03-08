@@ -170,8 +170,8 @@ export const authConfig = {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax" as const,
     maxAge: 60 * 60 * 24 * 7, // 1 semana
-    domain: process.env.NODE_ENV === "production"
-      ? (process.env.COOKIE_DOMAIN || ".pandoras.finance")
-      : undefined,
+    // Default to strict host match (undefined) unless explicitly configured
+    // This allows staging environments (e.g., railway.app) to work out-of-the-box
+    domain: process.env.COOKIE_DOMAIN || undefined,
   },
 };
