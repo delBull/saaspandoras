@@ -52,9 +52,22 @@ const applyPassNftAddress = process.env.NEXT_PUBLIC_APPLY_PASS_NFT_ADDRESS || "0
 
 // Security: Expected Domain & Origin for SIWE
 // In production, these should be set via env vars.
-// In dev (localhost), they can be inferred or set to localhost.
-const expectedDomain = process.env.NEXT_PUBLIC_DOMAIN || (process.env.NODE_ENV === 'development' ? 'localhost:3000' : 'app.pandoras.org');
-const expectedOrigin = process.env.NEXT_PUBLIC_ORIGIN || (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://app.pandoras.org');
+// We use a helper to detect the current domain if possible, or fallback to sensible defaults.
+const getAppHostname = () => {
+  if (process.env.NEXT_PUBLIC_DOMAIN) return process.env.NEXT_PUBLIC_DOMAIN;
+  if (typeof window !== 'undefined') return window.location.host;
+  return isStaging ? 'staging.dash.pandoras.finance' : 'app.pandoras.org';
+};
+
+const getAppOrigin = () => {
+  if (process.env.NEXT_PUBLIC_ORIGIN) return process.env.NEXT_PUBLIC_ORIGIN;
+  if (typeof window !== 'undefined') return window.location.origin;
+  const hostname = getAppHostname();
+  return hostname.includes('localhost') ? `http://${hostname}` : `https://${hostname}`;
+};
+
+const expectedDomain = getAppHostname();
+const expectedOrigin = getAppOrigin();
 
 // --- 5. Exporta la configuración final con tipos 100% seguros ---
 export const config = {

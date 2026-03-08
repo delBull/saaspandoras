@@ -62,28 +62,31 @@ export async function POST(request: Request) {
 
         // Domain Check
         if (domain !== config.domain) {
-            console.error(`❌ Domain mismatch: expected ${config.domain}, got ${domain}`);
+            console.error(`❌ [Login] Domain mismatch: expected ${config.domain}, got ${domain}`);
             return NextResponse.json({ error: "Invalid domain" }, { status: 401 });
         }
         // Simple containment check to ensure message matches payload intent
         if (!message.includes(config.domain)) {
+            console.error(`❌ [Login] Message does not contain valid domain: ${config.domain}`);
             return NextResponse.json({ error: "Message does not contain valid domain" }, { status: 401 });
         }
 
         // URI Check
         if (uri !== config.origin) {
-            console.error(`❌ URI mismatch: expected ${config.origin}, got ${uri}`);
+            console.error(`❌ [Login] URI mismatch: expected ${config.origin}, got ${uri}`);
             return NextResponse.json({ error: "Invalid URI" }, { status: 401 });
         }
         if (!message.includes(config.origin)) {
+            console.error(`❌ [Login] Message does not contain valid URI: ${config.origin}`);
             return NextResponse.json({ error: "Message does not contain valid URI" }, { status: 401 });
         }
 
         // Chain ID Check
         if (chainId !== config.chain.id) {
-            console.error(`❌ Chain ID mismatch: expected ${config.chain.id}, got ${chainId}`);
+            console.error(`❌ [Login] Chain ID mismatch: expected ${config.chain.id}, got ${chainId}`);
             return NextResponse.json({ error: "Invalid Chain ID" }, { status: 401 });
         }
+        console.log("✅ [Login] SIWE Fields validated successfully");
 
         // Expiration Check
         const now = new Date();
@@ -286,7 +289,14 @@ export async function POST(request: Request) {
         });
 
     } catch (error) {
-        console.error("Login Error:", error);
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+        console.error("❌ [Dashboard /api/auth/login] CRITICAL FAILURE:", error);
+        if (error instanceof Error) {
+            console.error("Error Message:", error.message);
+            console.error("Error Stack:", error.stack);
+        }
+        return NextResponse.json({
+            error: "Internal Server Error",
+            details: error instanceof Error ? error.message : String(error)
+        }, { status: 500 });
     }
 }
