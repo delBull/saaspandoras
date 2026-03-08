@@ -105,23 +105,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 const sessionData = await waitForSession(account.address);
 
                 if (!sessionData) {
-                    // ⚠️ If fetch failed with a network error (null), do NOT immediately downgrade to guest
-                    // if we have a valid wallet connected. Retrying login is better.
+                    console.log('[Auth] No session found. Setting state to guest.');
                     setUser(null);
-
-                    if (!loginRequested.current[account.address]) {
-                        console.log('[Auth] 🔐 Connected but no session/network error, attempting SIWE login...');
-                        loginRequested.current[account.address] = true;
-                        login().catch((err) => {
-                            console.error('[Auth] SIWE auto-login failed:', err);
-                            setState("guest"); // Only now go to guest
-                        });
-                    } else {
-                        // If already tried and still null, we keep current state or go guest
-                        // To avoid infinite loop, we only go guest if it's a definitive 401 (handled in session.ts resolving to null)
-                        console.log('[Auth] Still no session, confirming guest status.');
-                        setState("guest");
-                    }
+                    setState("guest");
                 } else if (sessionData.authenticated) {
                     setUser(sessionData.user);
                     setState("authenticated");
