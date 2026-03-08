@@ -63,7 +63,7 @@ export async function GET() {
       return NextResponse.json({ message: "No autorizado" }, { status: 403 });
     }
 
-    const SUPER_ADMIN_WALLETS = [getSuperAdminWallet()] as const;
+    const SUPER_ADMIN_WALLETS = [getSuperAdminWallet() || "0x_no_super_admin"] as const;
 
     const sql = getDatabaseConnection();
 
