@@ -435,99 +435,105 @@ export function ProjectTableView({
                               Información del Protocolo (SCaaS)
                             </h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs font-mono">
-                              <div>
-                                <div className="flex items-center gap-3 mb-1">
-                                  <span className="text-gray-400">Status:</span>
-                                  {p.deploymentStatus !== 'deployed' && (p.status === 'approved' || p.status === 'live') && (
-                                    <button
-                                      onClick={() => handleDeployClick(p.id, p.title, p.slug!)}
-                                      disabled={actionsLoading?.[p.id]}
-                                      className="px-2 py-0.5 bg-lime-500 hover:bg-lime-600 disabled:bg-zinc-600 disabled:cursor-not-allowed text-black text-xs font-bold rounded shadow-lg transition-all flex items-center gap-1"
-                                      title="Desplegar contratos en Blockchain"
-                                    >
-                                      {actionsLoading?.[p.id] ? (
-                                        <>
-                                          <svg className="animate-spin h-3 w-3 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                          </svg>
-                                          Deploying...
-                                        </>
-                                      ) : (
-                                        <>
-                                          🚀 Deploy
-                                        </>
-                                      )}
-                                    </button>
-                                  )}
-                                  {p.deploymentStatus === 'deployed' && (
-                                    <button
-                                      onClick={() => {
-                                        if (window.confirm("⚠️ ¿Estás seguro de que quieres REDESPLEGAR este protocolo?\n\nEsta acción es PELIGROSA:\n- Se crearán NUEVOS contratos.\n- Los contratos anteriores quedarán huérfanos.\n- Tendrás que actualizar manualmente cualquier frontend externo.\n\n¿Continuar?")) {
-                                          handleDeployClick(p.id, p.title, p.slug!, true);
-                                        }
-                                      }}
-                                      disabled={actionsLoading?.[p.id]}
-                                      className="px-2 py-0.5 bg-red-900/50 hover:bg-red-900 border border-red-500/50 text-red-200 text-xs font-bold rounded shadow-lg transition-all flex items-center gap-1 ml-2"
-                                      title="PELIGRO: Crea nuevos contratos y reemplaza los actuales"
-                                    >
-                                      {actionsLoading?.[p.id] ? (
-                                        <>
-                                          <svg className="animate-spin h-3 w-3 text-red-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                          </svg>
-                                          Redeploying...
-                                        </>
-                                      ) : (
-                                        <>
-                                          ⚠️ Redeploy
-                                        </>
-                                      )}
-                                    </button>
-                                  )}
+                              <div className="col-span-1 md:col-span-2 lg:col-span-4 mb-2">
+                                <div className="flex flex-col gap-3">
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-gray-400">Status:</span>
+                                    <span className={`px-2 py-0.5 rounded font-bold ${p.deploymentStatus === 'deployed' ? 'bg-indigo-900 text-indigo-300 border border-indigo-700' :
+                                      p.deploymentStatus === 'pending' ? 'bg-amber-900 text-amber-300 border border-amber-700' :
+                                        'bg-zinc-700 text-gray-400'
+                                      }`}>
+                                      {p.deploymentStatus || 'N/A'}
+                                    </span>
+                                  </div>
 
-                                  {p.deploymentStatus === 'deployed' && onCloneProject && (
-                                    <button
-                                      onClick={() => onCloneProject(p.id, p.title, p.slug!)}
-                                      disabled={actionsLoading?.[`clone-${p.id}`]}
-                                      className="px-2 py-0.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-gray-300 text-xs font-bold rounded shadow-lg transition-all flex items-center gap-1 ml-2"
-                                      title="Clonar este proyecto (Crea una copia sin contratos)"
-                                    >
-                                      {actionsLoading?.[`clone-${p.id}`] ? (
-                                        <>
-                                          <svg className="animate-spin h-3 w-3 text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                          </svg>
-                                          Clonando...
-                                        </>
-                                      ) : (
-                                        <>
-                                          📂 Clonar
-                                        </>
-                                      )}
-                                    </button>
-                                  )}
+                                  <div className="flex flex-wrap gap-2 items-center">
+                                    {p.deploymentStatus !== 'deployed' && (p.status === 'approved' || p.status === 'live') && (
+                                      <button
+                                        onClick={() => handleDeployClick(p.id, p.title, p.slug!)}
+                                        disabled={actionsLoading?.[p.id]}
+                                        className="px-3 py-1.5 bg-lime-500 hover:bg-lime-600 disabled:bg-zinc-600 disabled:cursor-not-allowed text-black text-xs font-bold rounded shadow-lg transition-all flex items-center gap-1.5"
+                                        title="Desplegar contratos en Blockchain"
+                                      >
+                                        {actionsLoading?.[p.id] ? (
+                                          <>
+                                            <svg className="animate-spin h-3 w-3 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Deploying...
+                                          </>
+                                        ) : (
+                                          <>
+                                            🚀 Deploy
+                                          </>
+                                        )}
+                                      </button>
+                                    )}
 
-                                  {p.deploymentStatus === 'deployed' && (
-                                    <button
-                                      onClick={() => {
-                                        alert("🏛️ Transición Soberana a AGORA Market\n\nLa activación de la Fase de Defensa debe realizarse a través de una propuesta en la DAO del protocolo (W2EGovernor) o mediante interacción directa con los Smart Contracts si eres el propietario.\n\nEl sistema backend detectará automáticamente el cambio cuando las transferencias queden habilitadas on-chain.");
-                                      }}
-                                      className="px-2 py-0.5 bg-purple-900/50 hover:bg-purple-900 border border-purple-500/50 text-purple-200 text-xs font-bold rounded shadow-lg transition-all flex items-center gap-1 ml-2"
-                                      title="Instrucciones para transición soberana a Fase de Defensa"
-                                    >
-                                      🏛️ Lanza AGORA Market
-                                    </button>
-                                  )}
+                                    {p.deploymentStatus === 'deployed' && (
+                                      <button
+                                        onClick={() => {
+                                          if (window.confirm("⚠️ ¿Estás seguro de que quieres REDESPLEGAR este protocolo?\n\nEsta acción es PELIGROSA:\n- Se crearán NUEVOS contratos.\n- Los contratos anteriores quedarán huérfanos.\n- Tendrás que actualizar manualmente cualquier frontend externo.\n\n¿Continuar?")) {
+                                            handleDeployClick(p.id, p.title, p.slug!, true);
+                                          }
+                                        }}
+                                        disabled={actionsLoading?.[p.id]}
+                                        className="px-3 py-1.5 bg-red-900/50 hover:bg-red-900 border border-red-500/50 text-red-200 text-xs font-bold rounded shadow-lg transition-all flex items-center gap-1.5"
+                                        title="PELIGRO: Crea nuevos contratos y reemplaza los actuales"
+                                      >
+                                        {actionsLoading?.[p.id] ? (
+                                          <>
+                                            <svg className="animate-spin h-3 w-3 text-red-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Redeploying...
+                                          </>
+                                        ) : (
+                                          <>
+                                            ⚠️ Redeploy
+                                          </>
+                                        )}
+                                      </button>
+                                    )}
+
+                                    {p.deploymentStatus === 'deployed' && onCloneProject && (
+                                      <button
+                                        onClick={() => onCloneProject(p.id, p.title, p.slug!)}
+                                        disabled={actionsLoading?.[`clone-${p.id}`]}
+                                        className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-gray-300 text-xs font-bold rounded shadow-lg transition-all flex items-center gap-1.5"
+                                        title="Clonar este proyecto (Crea una copia sin contratos)"
+                                      >
+                                        {actionsLoading?.[`clone-${p.id}`] ? (
+                                          <>
+                                            <svg className="animate-spin h-3 w-3 text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Clonando...
+                                          </>
+                                        ) : (
+                                          <>
+                                            📂 Clonar
+                                          </>
+                                        )}
+                                      </button>
+                                    )}
+
+                                    {p.deploymentStatus === 'deployed' && (
+                                      <button
+                                        onClick={() => {
+                                          alert("🏛️ Transición Soberana a AGORA Market\n\nLa activación de la Fase de Defensa debe realizarse a través de una propuesta en la DAO del protocolo (W2EGovernor) o mediante interacción directa con los Smart Contracts si eres el propietario.\n\nEl sistema backend detectará automáticamente el cambio cuando las transferencias queden habilitadas on-chain.");
+                                        }}
+                                        className="px-3 py-1.5 bg-purple-900/50 hover:bg-purple-900 border border-purple-500/50 text-purple-200 text-xs font-bold rounded shadow-lg transition-all flex items-center gap-1.5"
+                                        title="Instrucciones para transición soberana a Fase de Defensa"
+                                      >
+                                        🏛️ Lanza AGORA Market
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
-                                <span className={`px-2 py-0.5 rounded ${p.deploymentStatus === 'deployed' ? 'bg-indigo-900 text-indigo-300 border border-indigo-700' :
-                                  p.deploymentStatus === 'pending' ? 'bg-amber-900 text-amber-300 border border-amber-700' :
-                                    'bg-zinc-700 text-gray-400'
-                                  }`}>
-                                  {p.deploymentStatus || 'N/A'}
-                                </span>
                               </div>
                               <div>
                                 <span className="text-gray-400 block mb-1">Chain ID:</span>
