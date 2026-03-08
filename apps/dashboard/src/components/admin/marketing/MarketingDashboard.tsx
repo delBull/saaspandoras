@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, RefreshCw, Play, Settings2, User, ChevronDown, ChevronUp } from "lucide-react";
-import { MarketingCampaignList } from "@/app/admin/marketing/DashboardClient";
+import { MarketingCampaignList } from "@/app/()/admin/marketing/DashboardClient";
 import { Info } from "lucide-react";
 import { MarketingStats } from "./MarketingStats";
 import { MarketingHelpModal } from "./MarketingHelpModal";

@@ -105,9 +105,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 const sessionData = await waitForSession(account.address);
 
                 if (!sessionData) {
-                    console.log('[Auth] No session found. Setting state to guest.');
                     setUser(null);
-                    setState("guest");
+
+                    // 🛡️ Safe Auto-login: Only for Staging/Dev environments.
+                    // Main production (dash.pandoras.finance) requires manual click to avoid the "Request expired" loop.
+                    const isMainProd = typeof window !== 'undefined' && window.location.hostname === "dash.pandoras.finance";
+
+                    if (!isMainProd && !loginRequested.current[account.address]) {
+                        console.log('[Auth] 🔐 Connected but no session (Staging/Dev), attempting auto-login...');
+                        loginRequested.current[account.address] = true;
+                        login().catch((err) => {
+                            console.error('[Auth] SIWE auto-login failed:', err);
+                            setState("guest");
+                        });
+                    } else {
+                        console.log('[Auth] No session found (Main/Guest). Staying in guest state.');
+                        setState("guest");
+                    }
                 } else if (sessionData.authenticated) {
                     setUser(sessionData.user);
                     setState("authenticated");
