@@ -48,7 +48,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const contextParams = await params;
   const { session } = await getAuth(await headers());
 
-  if (session?.userId?.toLowerCase() !== getSuperAdminWallet()) {
+  if (session?.userId?.toLowerCase() !== getSuperAdminWallet()?.toLowerCase()) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
   }
 
@@ -88,7 +88,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   const contextParams = await params;
   const { session } = await getAuth(await headers());
 
-  if (session?.userId?.toLowerCase() !== getSuperAdminWallet()) {
+  if (session?.userId?.toLowerCase() !== getSuperAdminWallet()?.toLowerCase()) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
   }
 
@@ -102,7 +102,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     where: eq(administrators.id, adminId),
   });
 
-  if (adminToDelete?.walletAddress.toLowerCase() === getSuperAdminWallet()) {
+  if (adminToDelete?.walletAddress.toLowerCase() === getSuperAdminWallet()?.toLowerCase()) {
     return NextResponse.json(
       { message: "No se puede eliminar al Super Administrador." },
       { status: 403 }

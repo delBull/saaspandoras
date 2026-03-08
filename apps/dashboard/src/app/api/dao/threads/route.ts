@@ -53,7 +53,7 @@ export async function POST(request: Request) {
 
         const isProjectOwner = project?.applicantWalletAddress?.toLowerCase() === authorAddress.toLowerCase();
         const superAdminWallet = getSuperAdminWallet();
-        const isSuperAdmin = authorAddress.toLowerCase() === superAdminWallet.toLowerCase();
+        const isSuperAdmin = superAdminWallet ? authorAddress.toLowerCase() === superAdminWallet.toLowerCase() : false;
 
         // Auto-official if owner or super admin
         const shouldBeOfficial = isProjectOwner || isSuperAdmin || isOfficial;
