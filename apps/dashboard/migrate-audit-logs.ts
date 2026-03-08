@@ -6,8 +6,9 @@ async function main() {
         throw new Error('DATABASE_URL is not set');
     }
 
-    // Create a direct connection with SSL required for Neon
-    const sql = postgres(connectionString, { ssl: 'require' });
+    // Determine if SSL is needed (Neon defaults require it, localhost usually doesn't)
+    const isLocal = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+    const sql = postgres(connectionString, { ssl: isLocal ? false : 'require' });
 
     console.log('Running custom migration for audit_logs.id...');
 
