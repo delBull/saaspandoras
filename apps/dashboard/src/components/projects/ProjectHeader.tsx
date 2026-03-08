@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { BuildingLibraryIcon } from "@heroicons/react/24/outline";
+import { BuildingLibraryIcon, DocumentDuplicateIcon } from "@heroicons/react/24/outline";
 import { useActiveAccount } from "thirdweb/react";
 import { useRouter } from "next/navigation";
 import type { ProjectData } from "@/app/()/projects/types";
@@ -156,6 +156,14 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
                   <span>Gestionar DAO</span>
                 </button>
               </Link>
+              <button
+                onClick={handleClone}
+                disabled={isCloning}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg font-medium transition-colors border border-zinc-700 disabled:opacity-50"
+              >
+                <DocumentDuplicateIcon className="w-5 h-5" />
+                <span>{isCloning ? "Clonando..." : "Clonar Proyecto"}</span>
+              </button>
             </div>
           )}
         </div>
