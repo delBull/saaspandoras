@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useRouter } from 'next/navigation';
 import { usePersistedAccount } from "@/hooks/usePersistedAccount";
 
@@ -10,25 +10,7 @@ interface UnauthorizedAccessProps {
 
 export function UnauthorizedAccess({ authError }: UnauthorizedAccessProps) {
   const router = useRouter();
-  const [countdown, setCountdown] = useState<number>(5);
-
-  // Countdown effect
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCountdown((prev) => prev - 1);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
   const { logout } = usePersistedAccount();
-
-  // Redirect effect when countdown reaches 0
-  useEffect(() => {
-    if (countdown <= 0) {
-      router.push('/');
-    }
-  }, [countdown, router]);
 
   return (
     <div className="flex items-center justify-center min-h-screen">
@@ -40,7 +22,7 @@ export function UnauthorizedAccess({ authError }: UnauthorizedAccessProps) {
           Acceso No Autorizado
         </h1>
         <p className="text-gray-300 mb-6">
-          No tienes permisos para acceder a esta sección administrativa.
+          No tienes permisos para acceder a esta sección administrativa, o tu sesión ha expirado.
           {authError && <span className="block text-orange-400 mt-2 text-sm bg-orange-900/20 p-2 rounded border border-orange-500/20">{authError}</span>}
         </p>
 
@@ -52,7 +34,7 @@ export function UnauthorizedAccess({ authError }: UnauthorizedAccessProps) {
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 group-hover:-translate-x-1 transition-transform">
               <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
             </svg>
-            Volver al Inicio
+            Volver al Inicio para Conectar Wallet
           </button>
 
           <button
@@ -67,10 +49,6 @@ export function UnauthorizedAccess({ authError }: UnauthorizedAccessProps) {
             </svg>
             Desconectar Wallet y Salir
           </button>
-        </div>
-
-        <div className="mt-6 text-xs text-gray-500">
-          Redirigiendo automáticamente en <span className="font-mono text-lime-400">{countdown}s</span>
         </div>
       </div>
     </div>

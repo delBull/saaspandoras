@@ -115,13 +115,13 @@ export function ProjectTableView({
         <table className="w-full divide-y divide-zinc-700 text-sm">
           <thead className="bg-zinc-800">
             <tr>
-              <th className="px-4 py-3 text-left font-semibold text-gray-300">Título</th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-300">Monto (USD)</th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-300">Estado</th>
-              <th className="px-4 py-3 text-center font-semibold text-gray-300">Flujo</th>
-              <th className="px-4 py-3 text-center font-semibold text-gray-300">Featured</th>
-              <th className="px-4 py-3 text-center font-semibold text-gray-300">Detalles</th>
-              <th className="px-4 py-3 text-right font-semibold text-gray-300">Acciones</th>
+              <th className="px-4 py-3 text-left font-semibold text-gray-300 whitespace-nowrap min-w-[200px]">Título</th>
+              <th className="px-4 py-3 text-left font-semibold text-gray-300 whitespace-nowrap">Monto (USD)</th>
+              <th className="px-4 py-3 text-left font-semibold text-gray-300 whitespace-nowrap">Estado</th>
+              <th className="px-4 py-3 text-center font-semibold text-gray-300 whitespace-nowrap">Flujo</th>
+              <th className="px-4 py-3 text-center font-semibold text-gray-300 whitespace-nowrap">Featured</th>
+              <th className="px-4 py-3 text-center font-semibold text-gray-300 whitespace-nowrap">Detalles</th>
+              <th className="px-4 py-3 text-right font-semibold text-gray-300 whitespace-nowrap">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-700 bg-zinc-900">
@@ -137,25 +137,25 @@ export function ProjectTableView({
                 <tr className="hover:bg-zinc-800">
                   <td className="px-4 py-3 text-gray-200">
                     <div className="flex items-center gap-2">
-                      <span>{p.title}</span>
+                      <span className="font-medium whitespace-nowrap">{p.title}</span>
                       {/* Badge for NFT Access Passes */}
                       {p.businessCategory === 'infrastructure' && p.licenseContractAddress && !p.utilityContractAddress && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 whitespace-nowrap">
                           🎫 Access Pass
                         </span>
                       )}
                       {/* Badge for Full Protocols */}
                       {p.utilityContractAddress && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 whitespace-nowrap">
                           🔮 Full Protocol
                         </span>
                       )}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-gray-200">
+                  <td className="px-4 py-3 text-gray-200 whitespace-nowrap">
                     ${Number(p.targetAmount).toLocaleString()}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 whitespace-nowrap">
                     <div className="relative">
                       <button
                         onClick={() => setStatusDropdown(statusDropdown === p.id ? null : p.id)}
@@ -207,43 +207,43 @@ export function ProjectTableView({
                   </td>
 
                   {/* Featured Column */}
-                  <td className="px-4 py-3 text-center">
+                  <td className="px-4 py-3 text-center whitespace-nowrap">
                     <div className="flex items-center justify-center gap-2">
-                      {p.featured && (
+                      {isFeatured(Number(p.id)) && (
                         <div className="w-2 h-2 bg-lime-400 rounded-full animate-pulse"></div>
                       )}
                       <button
-                        onClick={() => {
+                        onClick={async () => {
                           try {
                             const projectId = Number(p.id);
                             console.log('🔧 Admin: Toggling featured status for project:', projectId);
-                            void toggleFeatured(projectId);
+                            await toggleFeatured(projectId);
                             console.log('🔧 Admin: Featured status updated globally for project:', projectId);
                           } catch (error) {
                             console.error('🔧 Admin: Error updating featured status:', error);
                           }
                         }}
-                        className={`px-3 py-1.5 rounded text-xs font-medium transition-all duration-200 ${p.featured
+                        className={`px-3 py-1.5 rounded text-xs font-medium transition-all duration-200 ${isFeatured(Number(p.id))
                           ? 'bg-lime-500 hover:bg-lime-600 text-black shadow-lg ring-2 ring-lime-400/30'
                           : 'bg-zinc-700 hover:bg-zinc-600 text-gray-300 hover:text-white border border-zinc-600 hover:border-zinc-500'
                           }`}
                       >
-                        {p.featured ? '✓ Featured' : '☆ Feature'}
+                        {isFeatured(Number(p.id)) ? '✓ Featured' : '☆ Feature'}
                       </button>
                     </div>
                   </td>
 
-                  <td className="px-4 py-3 text-center">
+                  <td className="px-4 py-3 text-center min-w-[160px]">
                     <div className="space-y-2 md:space-y-0 md:grid md:grid-cols-2 md:gap-2">
                       <button
                         onClick={() => setExpandedProject(expandedProject === p.id ? null : p.id)}
-                        className="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 hover:text-zinc-200 rounded text-xs font-medium transition-colors block w-full border border-zinc-600 hover:border-zinc-500"
+                        className="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 hover:text-zinc-200 rounded text-xs font-medium transition-colors block w-full border border-zinc-600 hover:border-zinc-500 whitespace-nowrap"
                       >
                         {expandedProject === p.id ? 'Ocultar' : 'Ver'}
                       </button>
                       <Link
                         href={`/admin/projects/${p.id}/report`}
-                        className="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 hover:text-zinc-200 rounded text-xs font-medium transition-colors block w-full border border-zinc-600 hover:border-zinc-500"
+                        className="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 hover:text-zinc-200 rounded text-xs font-medium transition-colors flex items-center justify-center w-full border border-zinc-600 hover:border-zinc-500 whitespace-nowrap"
                       >
                         📄 One Pager
                       </Link>
