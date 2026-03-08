@@ -173,3 +173,7 @@ export const authConfig = {
     domain: process.env.COOKIE_DOMAIN || ".pandoras.finance",
   },
 };
+
+if (typeof window === 'undefined') {
+  console.log(`🛡️ [Auth] Cookie Domain Configuration: ${authConfig.cookieOptions.domain || 'UNSET (Browser Default)'}`);
+}

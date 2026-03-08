@@ -60,10 +60,19 @@ export async function GET() {
         } catch (e) {
             const error = e as Error;
             console.warn("⚠️ [Dashboard /api/auth/me] JWT Verification failed:", error.message);
+            console.warn("   - Error Code:", (error as any).code);
+            console.warn("   - Token present:", !!token);
 
             let errorType = "Invalid session";
-            if (error.message.includes("expired")) errorType = "Session expired";
-            else if (error.message.includes("signature")) errorType = "Invalid signature - Check JWT keys";
+            if (error.message.includes("expired")) {
+                errorType = "Session expired";
+                console.log("⏰ Token is expired.");
+            } else if (error.message.includes("signature") || (error as any).code === "ERR_JWS_SIGNATURE_VERIFICATION_FAILED") {
+                errorType = "Invalid signature - Check JWT keys";
+                console.error("🔑 SIGNATURE MISMATCH: The token signature does not match the public key.");
+            } else if ((error as any).code === "ERR_JOSE_INVALID_KEY_INPUT") {
+                errorType = "Invalid Public Key Configuration";
+            }
 
             return NextResponse.json({ authenticated: false, error: errorType }, {
                 status: 401,
