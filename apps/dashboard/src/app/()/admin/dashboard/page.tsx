@@ -127,16 +127,15 @@ export default function AdminDashboardPage() {
         // Store wallet address for use in hooks
         setWalletAddress(address);
 
-        await waitForSession(); // 🛡️ Garantiza que cookies cross-domain estén establecidas
-
-        // 🔥 Removidos los headers manuales. La API usará getAuth() y leerá las cookies.
-        const response = await fetch('/api/admin/verify');
-
-        if (!response.ok) {
-          setAuthError(`Verificación fallida: ${response.status}`);
-          setIsAdmin(false);
-          return;
-        }
+        // Restore manual headers to allow `auth.ts` legacy fallback
+        const response = await fetch('/api/admin/verify', {
+          headers: {
+            'Content-Type': 'application/json',
+            'x-thirdweb-address': address,
+            'x-wallet-address': address,
+            'x-user-address': address,
+          }
+        });
 
         const data = await response.json() as { isAdmin?: boolean; isSuperAdmin?: boolean };
 
@@ -173,8 +172,16 @@ export default function AdminDashboardPage() {
           const controller = new AbortController();
           const id = setTimeout(() => controller.abort(), timeout);
           try {
-            // 🔥 Request limpio sin Headers manuales para evitar preflights OPTIONS
-            const response = await fetch(url, { signal: controller.signal });
+            // Restore manual headers for legacy fallback data fetching
+            const response = await fetch(url, {
+              signal: controller.signal,
+              headers: {
+                'Content-Type': 'application/json',
+                'x-thirdweb-address': walletAddress || '',
+                'x-wallet-address': walletAddress || '',
+                'x-user-address': walletAddress || '',
+              }
+            });
             clearTimeout(id);
             return response;
           } catch (e) {
@@ -763,7 +770,32 @@ export default function AdminDashboardPage() {
                       )}
                     </button>
                   );
-                } else {
+                }
+
+                // BOTÓN CLONAR - disponible para TODOS los proyectos
+                actions.push(
+                  <button
+                    key="clone"
+                    onClick={async () => {
+                      if (window.confirm(`¿Estás seguro de que quieres clonar el proyecto "${currentProject.title}"?`)) {
+                        await cloneProject(currentProject.id, currentProject.title, currentProject.slug);
+                        setActionsDropdown(null);
+                      }
+                    }}
+                    disabled={actionsLoading[`clone-${currentProject.id}`]}
+                    className={`w-full text-left px-4 py-3 text-sm hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between text-zinc-300 hover:text-white`}
+                    role="menuitem"
+                    type="button"
+                    tabIndex={0}
+                  >
+                    <span>📂 Clonar</span>
+                    {actionsLoading[`clone-${currentProject.id}`] && (
+                      <div className="w-2 h-2 border border-current border-t-transparent rounded-full animate-spin"></div>
+                    )}
+                  </button>
+                );
+
+                if (currentProject.status !== 'pending') {
                   // BOTÓN TRANSFERIR - disponible para TODOS los proyectos
                   actions.unshift(
                     <button

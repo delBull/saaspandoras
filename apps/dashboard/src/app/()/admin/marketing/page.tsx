@@ -2,7 +2,7 @@
 import { db } from "@/db";
 import { marketingCampaigns } from "@/db/schema";
 import { desc } from "drizzle-orm";
-import { MarketingHeaderActions, MarketingCampaignList } from "@/app/admin/marketing/DashboardClient";
+import { MarketingHeaderActions, MarketingCampaignList } from "@/app/()/admin/marketing/DashboardClient";
 import { AdminAuthGuard } from "@/components/admin/AdminAuthGuard";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { headers } from "next/headers";

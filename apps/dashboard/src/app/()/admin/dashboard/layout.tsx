@@ -39,16 +39,12 @@ export default async function AdminDashboardLayout({
 
     const isAuthorized = userIsAdmin || userIsSuperAdmin;
 
-    console.log("🔒 [AdminLayout] Debug:");
+    console.log("🔒 [AdminLayout] Auth Status:");
     console.log(`   - Environment: ${process.env.NODE_ENV}`);
-    console.log(`   - Super Admin Wallet: ${SUPER_ADMIN_WALLET.substring(0, 6)}... (from constants)`);
-    console.log(`   - Env SUPER_ADMIN_WALLET: ${process.env.SUPER_ADMIN_WALLET ? process.env.SUPER_ADMIN_WALLET.substring(0, 6) + '...' : 'NOT SET'}`);
-    console.log(`   - Cookie domain: ${process.env.COOKIE_DOMAIN || 'NOT SET'}`);
-    console.log(`   - Cookie Wallet: ${walletFromCookies}`);
-    console.log(`   - Session Address: ${session?.userId}`);
-    console.log(`   - Is Admin: ${userIsAdmin}`);
-    console.log(`   - Is Super Admin: ${userIsSuperAdmin}`);
-    console.log(`   - AUTHORIZED: ${isAuthorized}`);
+    console.log(`   - Super Admin (Env): ${process.env.SUPER_ADMIN_WALLET ? 'SET' : 'NOT SET'}`);
+    console.log(`   - Cookie Wallet: ${walletFromCookies ? walletFromCookies.substring(0, 10) + '...' : 'NULL'}`);
+    console.log(`   - User: ${session?.userId ?? 'NONE'} | Admin: ${userIsAdmin} | Super: ${userIsSuperAdmin}`);
+    console.log(`   - Final Access: ${isAuthorized ? 'GRANTED' : 'DENIED'}`);
 
     // 3. Block unauthorized access
     if (!isAuthorized) {
