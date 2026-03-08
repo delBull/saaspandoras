@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { jose, importSPKI, jwtVerify } from 'jose';
+import { importSPKI, jwtVerify } from 'jose';
 import dotenv from 'dotenv';
 import path from 'path';
 
