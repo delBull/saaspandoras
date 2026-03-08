@@ -1,10 +1,19 @@
 "use client";
 
 let API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-// 🛡️ Bulletproof override: If API_URL points back to the Next.js frontend or is empty/root, force it to the backend.
-// This permanently bypasses Next.js proxy rewrite cookie-stripping bugs.
-if (API_URL === "/" || API_URL === "" || API_URL.includes("dash.pandoras.finance") || API_URL.includes("localhost:3000")) {
-    API_URL = "https://api.pandoras.finance";
+
+// 🛡️ Bulletproof override: If API_URL points back to the Next.js frontend or is empty/root, force it to relative `/api` for same-domain Next.js API Routes.
+// This prevents CORS and cookie issues when the frontend and backend are hosted together on Vercel.
+if (typeof window !== 'undefined') {
+    const isProd = window.location.hostname.includes("pandoras.finance") || window.location.hostname.includes("vercel.app");
+    if (isProd || API_URL === "/" || API_URL === "") {
+        API_URL = "/api";
+    }
+} else {
+    // SSR Fallback (though this is a "use client" component)
+    if (API_URL === "/" || API_URL === "" || API_URL.includes("dash.pandoras.finance")) {
+        API_URL = "/api";
+    }
 }
 
 import React, { createContext, useContext, useEffect, useState, useRef } from "react";
