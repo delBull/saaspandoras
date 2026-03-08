@@ -234,7 +234,7 @@ export async function POST(request: Request) {
         console.error("❌ [Dashboard /api/auth/login] CRITICAL FAILURE:", error);
 
         let detailedError = "Internal Server Error";
-        let status = 500;
+        const status = 500;
 
         if (error.message === "JWT_PRIVATE_KEY_MISSING") {
             detailedError = "Server Configuration Error: Private Key Missing";
