@@ -110,15 +110,19 @@ export async function getAuth(headersData?: any, userAddress?: string) {
     if (authToken) {
       // En un entorno Node, podríamos usar jwt.verify, pero asumimos que el middleware ya lo validó.
       const decoded = jwt.decode(authToken) as JWTPayload | null;
-      if (decoded?.address && validateWalletAddress(decoded.address)) {
-        address = decoded.address; // JWT address is the source of truth for verified identity
-        isVerified = true;
-        console.log("🔒 [Dashboard getAuth] VERIFIED Address found in JWT Cookie:", address);
-      } else if (decoded?.walletAddress && validateWalletAddress(decoded.walletAddress)) {
-        // Fallback temporal para sesiones generadas con la estructura anterior
-        address = decoded.walletAddress;
-        isVerified = true;
-        console.log("🔒 [Dashboard getAuth] VERIFIED Address found in JWT Cookie (legacy):", address);
+      const jwtAddress = (decoded?.address || decoded?.walletAddress)?.toLowerCase();
+
+      if (jwtAddress && validateWalletAddress(jwtAddress)) {
+        // Validation: If we already had an address (from headers/params), it MUST match the JWT address
+        // This prevents "Session Cross-Pollination" where a JWT for user A verifies a request for user B.
+        if (address && address.toLowerCase() !== jwtAddress) {
+          console.warn(`🔒 [Dashboard getAuth] SESSION MISMATCH: JWT(${jwtAddress}) !== Requested(${address.toLowerCase()})`);
+          isVerified = false;
+        } else {
+          address = jwtAddress; // JWT address is the source of truth for verified identity
+          isVerified = true;
+          console.log("🔒 [Dashboard getAuth] VERIFIED Address found in JWT Cookie:", address);
+        }
       }
     }
 
@@ -144,8 +148,8 @@ export async function getAuth(headersData?: any, userAddress?: string) {
 
   return {
     session: {
-      userId: (address ? address.toLowerCase() : null) as string | null, // Compatibilidad superficial
-      address: (address ? address.toLowerCase() : null) as string | null,
+      userId: (isVerified && address ? address.toLowerCase() : null) as string | null,
+      address: (isVerified && address ? address.toLowerCase() : null) as string | null,
       unverifiedAddress: (address ? address.toLowerCase() : null) as string | null,
     },
     isVerified,
@@ -165,8 +169,7 @@ export const authConfig = {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax" as const,
     maxAge: 60 * 60 * 24 * 7, // 1 semana
-    // Default to strict host match (undefined) unless explicitly configured
-    // This allows staging environments (e.g., railway.app) to work out-of-the-box
-    domain: process.env.COOKIE_DOMAIN || undefined,
+    // Default to .pandoras.finance for both staging and production to support subdomains
+    domain: process.env.COOKIE_DOMAIN || ".pandoras.finance",
   },
 };
