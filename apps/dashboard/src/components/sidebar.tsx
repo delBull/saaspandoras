@@ -136,13 +136,12 @@ export function Sidebar({
       return;
     }
 
-    // When wallet disconnects, DON'T reset admin status if we have server confirmation
-    // This prevents flickering during wallet reconnection
+    // When wallet disconnects, reset admin status
     if (account?.address === undefined && !isInitialLoad) {
       if (process.env.NODE_ENV === 'development') {
-        console.log("🔌 Wallet disconnected - preserving server admin status");
+        console.log("🔌 Wallet disconnected - resetting admin status");
       }
-      // Don't reset admin status - keep server-side confirmation
+      setAdminStatus({ isAdmin: false, isSuperAdmin: false, verified: true });
       return;
     }
 
@@ -283,10 +282,10 @@ export function Sidebar({
     };
   }, [profileDropdown, networkDropdown, dropdownOpenedAt]);
 
-  // The final isAdmin status - Trust server props when API verification fails or is pending
-  const isSuperAdminWallet = account?.address?.toLowerCase() === SUPER_ADMIN_WALLET;
-  const isAdmin = (adminStatus.verified && (adminStatus.isAdmin || adminStatus.isSuperAdmin || isSuperAdminWallet)) ||
-    (!adminStatus.verified && (isAdminProp || isSuperAdminProp || isSuperAdminWallet));
+  // The final isAdmin status - STRICT: Only trust verified API status or hardcoded super admin wallet
+  // We no longer fallback to unverified props to prevent spoofing in Staging
+  const isSuperAdminWallet = account?.address?.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase();
+  const isAdmin = (adminStatus.verified && (adminStatus.isAdmin || adminStatus.isSuperAdmin)) || isSuperAdminWallet;
 
   // Use centralized network configuration
   const supportedNetworks = SUPPORTED_NETWORKS;

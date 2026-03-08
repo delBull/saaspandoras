@@ -3,17 +3,16 @@
  */
 
 // SUPER_ADMIN_WALLET validation function for critical operations
-export function getSuperAdminWallet(): string {
+export function getSuperAdminWallet(): string | null {
   const wallet = process.env.SUPER_ADMIN_WALLET;
-  if (!wallet) {
-    throw new Error("Missing critical env: SUPER_ADMIN_WALLET. Set this env var to secure admin operations.");
+  if (!wallet && process.env.NODE_ENV === 'production') {
+    console.warn("⚠️ Missing critical env: SUPER_ADMIN_WALLET.");
   }
-  return wallet.toLowerCase();
+  return wallet?.toLowerCase() ?? null;
 }
 
-// Legacy constant (DEPRECATED - use getSuperAdminWallet() for critical operations)
-// Only for backward compatibility - prefers env var but allows fallback for non-critical operations
-export const SUPER_ADMIN_WALLET = process.env.SUPER_ADMIN_WALLET ?? "0x00c9f7EE6d1808C09B61E561Af6c787060BFE7C9";
+// Global constant (NO FALLBACK for security)
+export const SUPER_ADMIN_WALLET = process.env.SUPER_ADMIN_WALLET?.toLowerCase() ?? "0x_undefined_admin";
 
 // Other constants can be added here as needed
 export const SUPPORTED_CHAINS = ["ethereum", "polygon", "arbitrum"] as const;
