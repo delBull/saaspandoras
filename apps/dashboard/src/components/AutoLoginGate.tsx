@@ -32,6 +32,7 @@ export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGa
   // This is safely declared at the top level to obey Rules of Hooks
   const { state: authState } = useAuth();
 
+  /* 
   // ❌ Redirect guests away from protected routes automatically
   useEffect(() => {
     if (!isClientReady || authState === "booting" || authState === "authenticating" || isConnecting) return;
@@ -46,6 +47,7 @@ export function AutoLoginGate({ children, fallback, serverSession }: AutoLoginGa
       return () => clearTimeout(timer);
     }
   }, [isClientReady, authState, isConnecting, pathname, router]);
+  */
 
   // 🟢 SIEMPRE permitir acceso a la Home Page ("/") para marketing/landing
   if (pathname === "/") {
