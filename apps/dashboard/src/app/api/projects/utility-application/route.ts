@@ -96,6 +96,13 @@ export async function POST(request: NextRequest) {
       applicantPhone: body.applicantPhone || null,
       applicantWalletAddress: body.applicantWalletAddress || null,
       verificationAgreement: body.verificationAgreement === 'true' || body.verificationAgreement === true,
+      // --- NUEVOS CAMPOS DE ESTRATEGIA Y MECÁNICA ---
+      protoclMecanism: body.protoclMecanism || null,
+      artefactUtility: body.artefactUtility || null,
+      worktoearnMecanism: body.worktoearnMecanism || null,
+      monetizationModel: body.monetizationModel || null,
+      adquireStrategy: body.adquireStrategy || null,
+      mitigationPlan: body.mitigationPlan || null,
       status: body.status || 'draft',
       featured: body.featured || false,
     };

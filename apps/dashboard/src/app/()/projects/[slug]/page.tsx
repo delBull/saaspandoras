@@ -92,6 +92,11 @@ function normalizeV1Project(p: ProjectData): ProjectData {
       || (p as any).creator_wallet
       || null,
 
+    integrationPlan:
+      p.integrationPlan
+      || (p as any).integration_plan
+      || false,
+
     // ── Contract addresses: pre-resolve so sidebar can use a single field ──
     licenseContractAddress:
       p.licenseContractAddress
