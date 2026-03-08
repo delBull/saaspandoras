@@ -56,9 +56,16 @@ export async function GET() {
                 algorithms: ["RS256"],
             });
             payload = result.payload;
+            console.log("✅ [Dashboard /api/auth/me] Verified session for:", payload.address || payload.sub);
         } catch (e) {
-            console.warn("⚠️ JWT Verification failed:", e instanceof Error ? e.message : e);
-            return NextResponse.json({ authenticated: false, error: "Invalid or expired session" }, {
+            const error = e as Error;
+            console.warn("⚠️ [Dashboard /api/auth/me] JWT Verification failed:", error.message);
+
+            let errorType = "Invalid session";
+            if (error.message.includes("expired")) errorType = "Session expired";
+            else if (error.message.includes("signature")) errorType = "Invalid signature - Check JWT keys";
+
+            return NextResponse.json({ authenticated: false, error: errorType }, {
                 status: 401,
                 headers: { "Cache-Control": "no-store" }
             });
