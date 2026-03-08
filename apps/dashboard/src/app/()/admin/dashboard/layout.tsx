@@ -54,9 +54,10 @@ export default async function AdminDashboardLayout({
     if (!isAuthorized) {
         // If we have a session but no admin rights, showing specific error
         // If no session at all, might refer to login (but UnauthorizedAccess handles redirect)
-        const errorMsg = session
-            ? "Tu cuenta no tiene permisos de administrador."
-            : "No se detectó una sesión válida. Por favor conecta tu wallet.";
+        const debugInfo = `[ENV: ${process.env.NODE_ENV}] [SA: ${process.env.SUPER_ADMIN_WALLET ? 'SET' : 'MISSING'}] [Wallet: ${walletFromCookies ? 'FOUND' : 'NULL'}] [Session: ${session?.userId ? 'ACTIVE' : 'NONE'}]`;
+        const errorMsg = session?.userId
+            ? `Tu cuenta (${session.userId}) no tiene permisos de administrador. ${debugInfo}`
+            : `No se detectó una sesión válida. Por favor conecta tu wallet. ${debugInfo}`;
 
         return <UnauthorizedAccess authError={errorMsg} />;
     }
