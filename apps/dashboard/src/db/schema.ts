@@ -227,6 +227,14 @@ export const projects = pgTable("projects", {
   integrationDetails: text("integration_details"), // Detalles de integraciones
   legalEntityHelp: boolean("legal_entity_help").default(false), // Necesita ayuda con entidad legal
 
+  // --- NUEVOS CAMPOS DE ESTRATEGIA Y MECÁNICA (CONVERSATIONAL FORM) ---
+  protoclMecanism: text("protocl_mecanism"),
+  artefactUtility: text("artefact_utility"),
+  worktoearnMecanism: text("worktoearn_mecanism"),
+  monetizationModel: text("monetization_model"),
+  adquireStrategy: text("adquire_strategy"),
+  mitigationPlan: text("mitigation_plan"),
+
   // Campos existentes (mantener compatibilidad)
   imageUrl: text("image_url"),
   socials: jsonb("socials"), // Mantener para compatibilidad

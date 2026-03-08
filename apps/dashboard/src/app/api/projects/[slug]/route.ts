@@ -161,6 +161,13 @@ export async function GET(
           raised_amount: projectResult.raisedAmount || "0.00",
           returns_paid: projectResult.returnsPaid || "0.00",
           featured_button_text: projectResult.featuredButtonText || null,
+          // --- Mapeo de nuevos campos ---
+          protoclMecanism: projectResult.protoclMecanism || null,
+          artefactUtility: projectResult.artefactUtility || null,
+          worktoearnMecanism: projectResult.worktoearnMecanism || null,
+          monetizationModel: projectResult.monetizationModel || null,
+          adquireStrategy: projectResult.adquireStrategy || null,
+          mitigationPlan: projectResult.mitigationPlan || null,
           created_at: projectResult.createdAt || null,
           w2eConfig: parsedW2eConfig,
 

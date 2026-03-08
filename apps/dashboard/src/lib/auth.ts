@@ -170,6 +170,8 @@ export const authConfig = {
     secure: process.env.NODE_ENV === "production",
     sameSite: "none" as const,
     maxAge: 60 * 60 * 24 * 7, // 1 semana
-    domain: process.env.NODE_ENV === "production" ? ".pandoras.app" : undefined,
+    domain: process.env.NODE_ENV === "production"
+      ? (process.env.COOKIE_DOMAIN || ".pandoras.finance")
+      : undefined,
   },
 };

@@ -29,7 +29,6 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
   // Estados para controlar las animaciones
   const [showVideoHint, setShowVideoHint] = useState(false);
   const [stopAnimations, setStopAnimations] = useState(false);
-  const [isCloning, setIsCloning] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -55,32 +54,17 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
     }
   };
 
-  const handleClone = async () => {
-    if (!confirm("¿Estás seguro de que deseas clonar este proyecto? Se creará una copia con las mismas reglas pero sin contratos desplegados.")) {
-      return;
-    }
 
-    setIsCloning(true);
-    try {
-      const response = await fetch(`/api/projects/${project.slug || project.id}/clone`, {
-        method: 'POST',
+  // Debug ownership in console
+  useEffect(() => {
+    if (account?.address) {
+      console.log('[ProjectHeader] Ownership check:', {
+        userAddress: account.address.toLowerCase(),
+        ownerWallet: ownerWallet?.toLowerCase(),
+        isOwner
       });
-
-      const data = await response.json();
-
-      if (data.success) {
-        alert("Proyecto clonado exitosamente. Redirigiendo...");
-        router.push(`/projects/${data.newSlug}`);
-      } else {
-        alert(`Error al clonar: ${data.error}`);
-      }
-    } catch (error) {
-      console.error("Error cloning project:", error);
-      alert("Error al procesar la clonación.");
-    } finally {
-      setIsCloning(false);
     }
-  };
+  }, [account?.address, ownerWallet, isOwner]);
 
   return (
     <div className="relative w-full h-96 overflow-hidden rounded-xl mb-8">
@@ -95,14 +79,14 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
 
       {/* Contenedor Unificado del Video - Solo mostrar si existe video_pitch */}
       {project.video_pitch && (
-        <div className="absolute bottom-4 right-4 z-10">
+        <div className="absolute top-4 right-4 z-10 md:bottom-4 md:top-auto">
           {/* Contenedor principal unificado */}
           <div className="flex flex-col items-center space-y-2">
             {/* Animación de Texto y Flecha - Solo cuando está visible */}
             <div className={`transition-all duration-1000 ${showVideoHint ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
               <div className="flex flex-col items-center">
                 {/* Texto en cursiva */}
-                <p className={`text-white text-xs italic mb-1 font-light ${!stopAnimations ? 'animate-pulse' : ''}`}>
+                <p className={`text-white text-[10px] md:text-xs italic mb-1 font-light ${!stopAnimations ? 'animate-pulse' : ''}`}>
                   Ver el video Pitch
                 </p>
 
@@ -110,7 +94,7 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
                 {!stopAnimations && (
                   <div className="relative">
                     <svg
-                      className="w-4 h-6 text-lime-400 animate-bounce"
+                      className="w-3 h-5 md:w-4 md:h-6 text-lime-400 animate-bounce"
                       fill="currentColor"
                       viewBox="0 0 24 24"
                     >
@@ -124,12 +108,12 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
             {/* Icono de Video con efecto de blink unificado */}
             <button
               onClick={handleVideoClick}
-              className={`bg-black/70 backdrop-blur-sm rounded-full p-3 border border-zinc-700 hover:bg-black/80 transition-all duration-300 cursor-pointer group hover:scale-110 hover:border-lime-400 ${showVideoHint && !stopAnimations ? 'animate-pulse' : ''
+              className={`bg-black/70 backdrop-blur-sm rounded-full p-2 md:p-3 border border-zinc-700 hover:bg-black/80 transition-all duration-300 cursor-pointer group hover:scale-110 hover:border-lime-400 ${showVideoHint && !stopAnimations ? 'animate-pulse' : ''
                 }`}
               type="button"
             >
               <svg
-                className="w-6 h-6 text-white group-hover:text-lime-400 transition-colors"
+                className="w-5 h-5 md:w-6 md:h-6 text-white group-hover:text-lime-400 transition-colors"
                 fill="currentColor"
                 viewBox="0 0 24 24"
               >
@@ -141,21 +125,23 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
       )}
 
       {/* Superposición Oscura y Contenido */}
-      <div className="absolute inset-0 bg-black/60 flex items-end p-6 md:p-12">
-        <div className="flex items-end gap-6 w-full justify-between">
-          <div className="flex items-end gap-6">
+      <div className="absolute inset-0 bg-black/60 flex items-end p-4 md:p-12">
+        <div className="flex flex-col md:flex-row items-start md:items-end gap-4 md:gap-6 w-full justify-between">
+          <div className="flex items-center md:items-end gap-4 md:gap-6">
             {/* Logo */}
-            <Image
-              src={logoUrl as string}
-              alt={`${project.title} logo`}
-              width={100}
-              height={100}
-              className="rounded-xl border-4 border-zinc-900 bg-zinc-800"
-            />
+            <div className="hidden sm:block">
+              <Image
+                src={logoUrl as string}
+                alt={`${project.title} logo`}
+                width={80}
+                height={80}
+                className="rounded-xl border-2 md:border-4 border-zinc-900 bg-zinc-800 md:w-[100px] md:h-[100px]"
+              />
+            </div>
             <div className="flex flex-col">
-              <h1 className="text-4xl font-bold text-white leading-tight">{project.title}</h1>
-              <p className="text-xl text-lime-400 mt-1">{tagline as string}</p>
-              <div className="mt-2 text-sm text-zinc-400">
+              <h1 className="text-2xl md:text-4xl font-bold text-white leading-tight">{project.title}</h1>
+              <p className="text-sm md:text-xl text-lime-400 mt-1">{tagline as string}</p>
+              <div className="mt-1 text-[10px] md:text-sm text-zinc-400">
                 {businessCategory ? businessCategory.toUpperCase().replace(/_/g, ' ') : 'Sin Categoría'}
               </div>
             </div>
@@ -163,10 +149,10 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
 
           {/* Manage DAO Button for Owner */}
           {isOwner && (
-            <div className="hidden md:flex flex-col gap-2 mb-2">
-              <Link href={`/projects/${project.slug || project.id}/dao`}>
-                <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors shadow-lg shadow-purple-900/20 border border-purple-500/50">
-                  <BuildingLibraryIcon className="w-5 h-5" />
+            <div className="flex flex-col gap-2 w-full md:w-auto mb-2">
+              <Link href={`/projects/${project.slug || project.id}/dao`} className="w-full">
+                <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors shadow-lg shadow-purple-900/20 border border-purple-500/50 text-sm md:text-base">
+                  <BuildingLibraryIcon className="w-4 h-4 md:w-5 md:h-5" />
                   <span>Gestionar DAO</span>
                 </button>
               </Link>

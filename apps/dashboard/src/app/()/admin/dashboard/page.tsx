@@ -89,7 +89,7 @@ export default function AdminDashboardPage() {
   };
 
   // Use project actions hook with refresh callback
-  const { deleteProject, approveProject, rejectProject, changeProjectStatus, transferProject, deployProtocol, certifySale } = useProjectActions({
+  const { deleteProject, approveProject, rejectProject, changeProjectStatus, transferProject, deployProtocol, certifySale, cloneProject } = useProjectActions({
     setActionsLoading,
     walletAddress: walletAddress ?? undefined,
     refreshCallback: refreshData,
@@ -556,6 +556,7 @@ export default function AdminDashboardPage() {
                       setStatusDropdown={setStatusDropdown}
                       statusDropdown={statusDropdown}
                       onDeployProtocol={deployProtocol}
+                      onCloneProject={cloneProject}
                       actionsLoading={actionsLoading}
                     />
                   )}
