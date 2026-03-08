@@ -763,7 +763,32 @@ export default function AdminDashboardPage() {
                       )}
                     </button>
                   );
-                } else {
+                }
+
+                // BOTÓN CLONAR - disponible para TODOS los proyectos
+                actions.push(
+                  <button
+                    key="clone"
+                    onClick={async () => {
+                      if (window.confirm(`¿Estás seguro de que quieres clonar el proyecto "${currentProject.title}"?`)) {
+                        await cloneProject(currentProject.id, currentProject.title, currentProject.slug);
+                        setActionsDropdown(null);
+                      }
+                    }}
+                    disabled={actionsLoading[`clone-${currentProject.id}`]}
+                    className={`w-full text-left px-4 py-3 text-sm hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between text-zinc-300 hover:text-white`}
+                    role="menuitem"
+                    type="button"
+                    tabIndex={0}
+                  >
+                    <span>📂 Clonar</span>
+                    {actionsLoading[`clone-${currentProject.id}`] && (
+                      <div className="w-2 h-2 border border-current border-t-transparent rounded-full animate-spin"></div>
+                    )}
+                  </button>
+                );
+
+                if (currentProject.status !== 'pending') {
                   // BOTÓN TRANSFERIR - disponible para TODOS los proyectos
                   actions.unshift(
                     <button
