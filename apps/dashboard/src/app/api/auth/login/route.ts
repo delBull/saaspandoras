@@ -10,21 +10,14 @@ import jwt from "jsonwebtoken";
 import { getContract, readContract } from "thirdweb";
 import { config } from "@/config";
 import { PANDORAS_KEY_ABI } from "@/lib/pandoras-key-abi";
+import crypto from "crypto";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
     try {
-        // 🛡️ SECURITY: No fallback using dev secret in production
-        const JWT_SECRET = process.env.JWT_SECRET;
-        if (!JWT_SECRET) {
-            if (process.env.NODE_ENV === 'production') {
-                console.error("❌ CRITICAL: JWT_SECRET not set in production");
-                return NextResponse.json({ error: "Configuration Error" }, { status: 500 });
-            }
-            console.warn("⚠️ Warning: Using insecure dev secret for JWT");
-        }
-        const secret = JWT_SECRET || "super-secret-dev-key";
+        // 🛡️ SECURITY: Using RS256 with JWT_PRIVATE_KEY
+        // Legacy JWT_SECRET is no longer used for signing, so we don't strictly require it.
 
         const body = await request.json();
         const { payload, signature } = body;
@@ -259,7 +252,7 @@ export async function POST(request: Request) {
             scope: 'web',
             hasAccess,
             chainId: config.chain.id,
-            v: 1, // Using version 1 to match api-core or consistent with dashboard expectations
+            v: parseInt(process.env.JWT_VERSION || "1"),
             iat: Math.floor(Date.now() / 1000),
         }, privateKeyPem, {
             algorithm: 'RS256',
