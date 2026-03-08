@@ -85,8 +85,8 @@ export function ApplicantsDesktop({
         onToggleCollapse={onTogglePanelCollapse}
       />
 
-      {/* Contenedor principal con ajuste automático de márgenes */}
-      <div className={`min-h-screen transition-all duration-500 ease-in-out ${isPendingPanelCollapsed ? 'mr-8 lg:mr-12' : 'mr-[240px] lg:mr-[270px]'
+      {/* Contenedor principal con ajuste automático de márgenes y un poco de padding extra a la derecha */}
+      <div className={`min-h-screen transition-all duration-500 ease-in-out pr-6 ${isPendingPanelCollapsed ? 'mr-8 lg:mr-12' : 'mr-[240px] lg:mr-[270px]'
         }`}>
         {/* Fila 1: Header con filtros */}
         <div className="top-0 z-10 flex flex-col gap-4 px-6 lg:px-0 py-6">
