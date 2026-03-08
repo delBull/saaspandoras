@@ -127,16 +127,15 @@ export default function AdminDashboardPage() {
         // Store wallet address for use in hooks
         setWalletAddress(address);
 
-        await waitForSession(); // 🛡️ Garantiza que cookies cross-domain estén establecidas
-
-        // 🔥 Removidos los headers manuales. La API usará getAuth() y leerá las cookies.
-        const response = await fetch('/api/admin/verify');
-
-        if (!response.ok) {
-          setAuthError(`Verificación fallida: ${response.status}`);
-          setIsAdmin(false);
-          return;
-        }
+        // Restore manual headers to allow `auth.ts` legacy fallback
+        const response = await fetch('/api/admin/verify', {
+          headers: {
+            'Content-Type': 'application/json',
+            'x-thirdweb-address': address,
+            'x-wallet-address': address,
+            'x-user-address': address,
+          }
+        });
 
         const data = await response.json() as { isAdmin?: boolean; isSuperAdmin?: boolean };
 
@@ -173,8 +172,16 @@ export default function AdminDashboardPage() {
           const controller = new AbortController();
           const id = setTimeout(() => controller.abort(), timeout);
           try {
-            // 🔥 Request limpio sin Headers manuales para evitar preflights OPTIONS
-            const response = await fetch(url, { signal: controller.signal });
+            // Restore manual headers for legacy fallback data fetching
+            const response = await fetch(url, {
+              signal: controller.signal,
+              headers: {
+                'Content-Type': 'application/json',
+                'x-thirdweb-address': walletAddress || '',
+                'x-wallet-address': walletAddress || '',
+                'x-user-address': walletAddress || '',
+              }
+            });
             clearTimeout(id);
             return response;
           } catch (e) {
