@@ -59,92 +59,87 @@ export async function getAuth(headersData?: any, userAddress?: string) {
 
   let isVerified = false;
 
-  if (headersData && !address) {
+  if (headersData) {
     try {
       // Handle both Headers object and plain record
       if (typeof (headersData as any).get === 'function') {
-        address = (headersData as any).get('x-thirdweb-address') ??
+        const headerAddr = (headersData as any).get('x-thirdweb-address') ??
           (headersData as any).get('x-wallet-address') ??
           (headersData as any).get('x-user-address');
+        if (headerAddr) address = headerAddr;
       } else {
-        address = (headersData as any)['x-thirdweb-address'] ??
+        const headerAddr = (headersData as any)['x-thirdweb-address'] ??
           (headersData as any)['x-wallet-address'] ??
           (headersData as any)['x-user-address'];
+        if (headerAddr) address = headerAddr;
       }
     } catch (e) {
       console.warn("🔍 [Dashboard getAuth] Error reading headers:", e);
     }
   }
 
-  if (!address) {
-    try {
-      // 🚨 CRITICAL BUGFIX: We CANNOT use `await cookies()` inside this utility function on Vercel Serverless.
-      // Next.js 15 has a crippling bug where `await cookies()` occasionally deadlocks the V8 event loop
-      // when executed outside the immediate route handler scope, causing 10s silent timeouts.
-      // We manually parse the raw cookie header instead.
-
-      let rawCookieHeader = '';
-      if (headersData && typeof (headersData as any).get === 'function') {
-        rawCookieHeader = (headersData as any).get('cookie') || '';
-      } else if (headersData && typeof headersData === 'object') {
-        rawCookieHeader = headersData.cookie || headersData.Cookie || '';
-      } else {
-        // Fallback for Server Components calling getAuth without args (via next/headers)
-        try {
-          const { headers: nextHeaders } = await import('next/headers');
-          const hdrs = await nextHeaders();
-          rawCookieHeader = hdrs.get('cookie') || '';
-        } catch (e) {
-          // Silent catch in case it's executed outside a server component boundary
-        }
+  try {
+    // Parse raw cookie header (manually to avoid Next.js 15 deadlock bug)
+    let rawCookieHeader = '';
+    if (headersData && typeof (headersData as any).get === 'function') {
+      rawCookieHeader = (headersData as any).get('cookie') || '';
+    } else if (headersData && typeof headersData === 'object') {
+      rawCookieHeader = headersData.cookie || headersData.Cookie || '';
+    } else {
+      // Fallback for Server Components calling getAuth without args (via next/headers)
+      try {
+        const { headers: nextHeaders } = await import('next/headers');
+        const hdrs = await nextHeaders();
+        rawCookieHeader = hdrs.get('cookie') || '';
+      } catch (e) {
+        // Silent catch in case it's executed outside a server component boundary
       }
-
-      // Parse specific cookies
-      const cookiesMap = new Map();
-      rawCookieHeader.split(';').forEach((cookie: string) => {
-        const parts = cookie.trim().split('=');
-        if (parts.length >= 2) {
-          cookiesMap.set(parts[0], parts.slice(1).join('='));
-        }
-      });
-
-      const authToken = cookiesMap.get('auth_token');
-
-      if (authToken) {
-        // En un entorno Node, podríamos usar jwt.verify, pero asumimos que el middleware ya lo validó.
-        const decoded = jwt.decode(authToken) as JWTPayload | null;
-        if (decoded?.address && validateWalletAddress(decoded.address)) {
-          address = decoded.address;
-          isVerified = true;
-          console.log("🔒 [Dashboard getAuth] VERIFIED Address found in JWT Cookie:", address);
-        } else if (decoded?.walletAddress && validateWalletAddress(decoded.walletAddress)) {
-          // Fallback temporal para sesiones generadas con la estructura anterior
-          address = decoded.walletAddress;
-          isVerified = true;
-          console.log("🔒 [Dashboard getAuth] VERIFIED Address found in JWT Cookie (legacy):", address);
-        }
-      }
-
-      if (!address) {
-        // Fallback inseguro (solo para UI superficial, nunca para DB o Admin)
-        const addrCookie = cookiesMap.get('wallet-address') ?? cookiesMap.get('thirdweb:wallet-address');
-        if (validateWalletAddress(addrCookie)) {
-          // WE DO NOT SET address HERE. This prevents session.address from being spoofed!
-          isVerified = false;
-          console.log("⚠️ [Dashboard getAuth] Address found in unverified WALLET Cookie:", addrCookie);
-          return {
-            session: {
-              userId: null,
-              address: null,
-              unverifiedAddress: addrCookie?.toLowerCase() ?? null,
-            },
-            isVerified,
-          };
-        }
-      }
-    } catch (error) {
-      console.error("🔍 [Dashboard getAuth] Error parsing headers cookies:", error);
     }
+
+    // Parse specific cookies
+    const cookiesMap = new Map();
+    rawCookieHeader.split(';').forEach((cookie: string) => {
+      const parts = cookie.trim().split('=');
+      if (parts.length >= 2) {
+        cookiesMap.set(parts[0], parts.slice(1).join('='));
+      }
+    });
+
+    const authToken = cookiesMap.get('auth_token');
+
+    if (authToken) {
+      // En un entorno Node, podríamos usar jwt.verify, pero asumimos que el middleware ya lo validó.
+      const decoded = jwt.decode(authToken) as JWTPayload | null;
+      if (decoded?.address && validateWalletAddress(decoded.address)) {
+        address = decoded.address; // JWT address is the source of truth for verified identity
+        isVerified = true;
+        console.log("🔒 [Dashboard getAuth] VERIFIED Address found in JWT Cookie:", address);
+      } else if (decoded?.walletAddress && validateWalletAddress(decoded.walletAddress)) {
+        // Fallback temporal para sesiones generadas con la estructura anterior
+        address = decoded.walletAddress;
+        isVerified = true;
+        console.log("🔒 [Dashboard getAuth] VERIFIED Address found in JWT Cookie (legacy):", address);
+      }
+    }
+
+    if (!isVerified) {
+      // Fallback inseguro (solo para UI superficial, nunca para DB o Admin)
+      const addrCookie = cookiesMap.get('wallet-address') ?? cookiesMap.get('thirdweb:wallet-address');
+      if (!address && validateWalletAddress(addrCookie)) {
+        // WE DO NOT SET address HERE if not already set by headers. This prevents session.address from being spoofed!
+        console.log("⚠️ [Dashboard getAuth] Unverified Address found in WALLET Cookie:", addrCookie);
+        return {
+          session: {
+            userId: null,
+            address: null,
+            unverifiedAddress: addrCookie?.toLowerCase() ?? null,
+          },
+          isVerified: false,
+        };
+      }
+    }
+  } catch (error) {
+    console.error("🔍 [Dashboard getAuth] Error parsing headers cookies:", error);
   }
 
   return {
