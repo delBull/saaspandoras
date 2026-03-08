@@ -366,6 +366,46 @@ export function useProjectActions({ setActionsLoading, walletAddress, refreshCal
     }
   };
 
+  // Function to clone a project
+  const cloneProject = async (projectId: string, projectTitle: string, projectSlug: string | undefined) => {
+    const confirmMessage = `¿Estás seguro de que deseas clonar el proyecto "${projectTitle}"?\n\nSe creará una copia con las mismas reglas pero sin contratos desplegados.`;
+    if (!window.confirm(confirmMessage)) return;
+
+    if (!walletAddress) {
+      alert('Error: No se pudo obtener la dirección de tu wallet. Conecta tu wallet primero.');
+      return;
+    }
+
+    const actionKey = `clone-${projectId}`;
+    setActionsLoading((prev) => ({ ...prev, [actionKey]: true }));
+
+    try {
+      const response = await fetch(`/api/projects/${projectSlug || projectId}/clone`, {
+        method: 'POST',
+        headers: {
+          'x-thirdweb-address': walletAddress,
+          'x-wallet-address': walletAddress,
+          'x-user-address': walletAddress,
+        },
+      });
+
+      if (response.ok) {
+        toast.success('Proyecto clonado exitosamente');
+        if (refreshCallback) {
+          await refreshCallback();
+        }
+      } else {
+        const errorText = await response.text().catch(() => 'Error desconocido');
+        toast.error(`Error al clonar: ${errorText}`);
+      }
+    } catch (error) {
+      alert('Error de conexión al clonar el proyecto');
+      console.error('Error cloning project:', error);
+    } finally {
+      setActionsLoading((prev) => ({ ...prev, [actionKey]: false }));
+    }
+  };
+
   return {
     deleteProject,
     approveProject,
@@ -374,5 +414,6 @@ export function useProjectActions({ setActionsLoading, walletAddress, refreshCal
     transferProject,
     deployProtocol,
     certifySale,
+    cloneProject,
   };
 }

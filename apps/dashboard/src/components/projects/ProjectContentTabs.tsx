@@ -59,6 +59,40 @@ const formatCurrency = (amount: number | string) => {
 };
 import SectionCard from "./SectionCard";
 
+const TagIcon = ({ category }: { category: string }) => {
+  switch (category) {
+    case 'residential_real_estate':
+    case 'commercial_real_estate':
+      return <Building className="w-3 h-3" />;
+    case 'tech_startup':
+      return <Zap className="w-3 h-3" />;
+    case 'renewable_energy':
+      return <Globe className="w-3 h-3" />;
+    case 'art_collectibles':
+      return <Award className="w-3 h-3" />;
+    case 'intellectual_property':
+      return <Scale className="w-3 h-3" />;
+    default:
+      return <TagIconInner className="w-3 h-3" />;
+  }
+};
+
+// Simple internal tag icon if no match
+const TagIconInner = ({ className }: { className?: string }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z" />
+    <path d="M7 7h.01" />
+  </svg>
+);
+
 function ArtifactsStats({ licenseContract }: { licenseContract: any }) {
   const { data: artifactsMinted } = useReadContract({
     contract: licenseContract,
@@ -232,6 +266,19 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
       content: (
         <div className="space-y-8 mb-8">
           <SectionCard title="Descripción del Protocolo" icon={Star}>
+            <div className="mb-6">
+              {project.tagline && (
+                <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 italic">
+                  "{project.tagline}"
+                </h2>
+              )}
+              {project.business_category && (
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lime-500/10 border border-lime-500/20 text-lime-400 text-xs font-bold uppercase tracking-wider">
+                  <TagIcon category={project.business_category} />
+                  {project.business_category.replace(/_/g, ' ')}
+                </div>
+              )}
+            </div>
             <p className="text-zinc-300 whitespace-pre-line text-lg leading-relaxed">
               {project.description ?? 'No hay descripción disponible para este proyecto.'}
             </p>
