@@ -238,7 +238,17 @@ export async function POST(request: Request) {
             console.error("Failed to persist session/security event:", sessionError);
         }
 
-        // 9. Issue Scoped JWT with sid
+        // 9. Issue Scoped JWT with sid - UNIFIED RS256
+        const JWT_PRIVATE_KEY_B64 = process.env.JWT_PRIVATE_KEY;
+        if (!JWT_PRIVATE_KEY_B64) {
+            console.error("❌ CRITICAL: JWT_PRIVATE_KEY is not defined");
+            return NextResponse.json({ error: "Server Configuration Error" }, { status: 500 });
+        }
+
+        const privateKeyPem = JWT_PRIVATE_KEY_B64.startsWith("-----")
+            ? JWT_PRIVATE_KEY_B64
+            : Buffer.from(JWT_PRIVATE_KEY_B64, "base64").toString("utf-8");
+
         const token = jwt.sign({
             sub: userId,
             sid: sid,
@@ -246,9 +256,12 @@ export async function POST(request: Request) {
             scope: 'web',
             hasAccess,
             chainId: config.chain.id,
-            v: 2,
+            v: 1, // Using version 1 to match api-core or consistent with dashboard expectations
             iat: Math.floor(Date.now() / 1000),
-        }, secret, { expiresIn: '24h' });
+        }, privateKeyPem, {
+            algorithm: 'RS256',
+            expiresIn: '24h'
+        });
 
         const cookieDomain = process.env.COOKIE_DOMAIN || ".pandoras.finance";
 
