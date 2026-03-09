@@ -159,7 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const identityAddress = eoaIdentity || account.address;
 
             // 1. Get Nonce
-            const nonceRes = await fetch(`${API_URL}/auth/nonce?address=${identityAddress}`, { credentials: "include" });
+            const nonceRes = await fetch(`/api/auth/nonce?address=${identityAddress}`, { credentials: "include" });
             if (!nonceRes.ok) {
                 const errData = await nonceRes.json().catch(() => ({}));
                 throw new Error(errData.error || `Nonce fetch failed (${nonceRes.status})`);
@@ -214,7 +214,7 @@ ${executionAddress !== identityAddress ? `\nExecution Address: ${executionAddres
                 message,
             };
 
-            const loginRes = await fetch(`${API_URL}/auth/login`, {
+            const loginRes = await fetch(`/api/auth/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ payload, signature }),
@@ -264,7 +264,7 @@ ${executionAddress !== identityAddress ? `\nExecution Address: ${executionAddres
     const logout = async () => {
         try {
             console.log('[Auth] 🚪 Logging out...');
-            await fetch(`${API_URL}/auth/logout`, { method: "POST", credentials: "include" });
+            await fetch(`/api/auth/logout`, { method: "POST", credentials: "include" });
             setUser(null);
             setState("guest");
 

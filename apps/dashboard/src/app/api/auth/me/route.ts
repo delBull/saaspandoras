@@ -1,13 +1,10 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { jwtVerify, importSPKI } from "jose";
+import jwt from "jsonwebtoken";
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME
 export const runtime = "nodejs";
-
-const JWT_PUBLIC_KEY_B64 = process.env.JWT_PUBLIC_KEY;
-
-export async function GET() {
+export async function GET(request: Request) {
     try {
         // 🚀 DEV_FAST MODE: Instant Mock Session
         if (process.env.NEXT_PUBLIC_DEV_FAST === "true" && process.env.NODE_ENV === "development") {
@@ -39,23 +36,16 @@ export async function GET() {
             });
         }
 
-        if (!JWT_PUBLIC_KEY_B64) {
-            console.error("❌ JWT_PUBLIC_KEY is not defined in environment variables");
+        const secret = process.env.JWT_SECRET || process.env.JWT_PRIVATE_KEY;
+        if (!secret) {
+            console.error("❌ JWT_SECRET is not defined in environment variables");
             return NextResponse.json({ error: "Server Configuration Error" }, { status: 500 });
         }
 
         let payload: any;
         try {
-            // Decode base64 PEM if necessary
-            const publicKeyPem = JWT_PUBLIC_KEY_B64.startsWith("-----")
-                ? JWT_PUBLIC_KEY_B64
-                : Buffer.from(JWT_PUBLIC_KEY_B64, "base64").toString("utf-8");
-
-            const publicKey = await importSPKI(publicKeyPem, "RS256");
-            const result = await jwtVerify(token, publicKey, {
-                algorithms: ["RS256"],
-            });
-            payload = result.payload;
+            // Unify with login: use jsonwebtoken syntax
+            payload = jwt.verify(token, secret);
             console.log("✅ [Dashboard /api/auth/me] Verified session for:", payload.address || payload.sub);
         } catch (e) {
             const error = e as Error;
@@ -81,6 +71,28 @@ export async function GET() {
         }
 
         const address = payload.address || payload.walletAddress || payload.sub;
+
+        // Verify if requested address matches JWT session (prevents session cross-pollination locally & prod)
+        const reqAddress = request.headers.get("x-thirdweb-address") || request.headers.get("x-wallet-address");
+        if (reqAddress && address && reqAddress.toLowerCase() !== address.toLowerCase()) {
+            console.warn(`❌ [Dashboard /api/auth/me] Session Mismatch: Token(${address.toLowerCase()}) !== Requested(${reqAddress.toLowerCase()})`);
+
+            // Clear the stale cookie
+            const cookieDomain = process.env.NODE_ENV === "production" ? (process.env.COOKIE_DOMAIN || ".pandoras.finance") : undefined;
+
+            const cookieOptions = {
+                name: "auth_token",
+                path: "/",
+                ...(cookieDomain && { domain: cookieDomain })
+            };
+
+            (await cookies()).delete(cookieOptions as any);
+
+            return NextResponse.json({ authenticated: false, error: "Session mismatch" }, {
+                status: 401,
+                headers: { "Cache-Control": "no-store" }
+            });
+        }
 
         return NextResponse.json({
             authenticated: true,

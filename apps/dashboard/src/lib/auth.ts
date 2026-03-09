@@ -130,12 +130,11 @@ export async function getAuth(headersData?: any, userAddress?: string) {
       // Fallback inseguro (solo para UI superficial, nunca para DB o Admin)
       const addrCookie = cookiesMap.get('wallet-address') ?? cookiesMap.get('thirdweb:wallet-address');
       if (!address && validateWalletAddress(addrCookie)) {
-        // WE DO NOT SET address HERE if not already set by headers. This prevents session.address from being spoofed!
         console.log("⚠️ [Dashboard getAuth] Unverified Address found in WALLET Cookie:", addrCookie);
         return {
           session: {
             userId: null,
-            address: null,
+            address: null, // ONLY verified addresses go here
             unverifiedAddress: addrCookie?.toLowerCase() ?? null,
           },
           isVerified: false,
