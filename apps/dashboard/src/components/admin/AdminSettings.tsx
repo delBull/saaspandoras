@@ -309,7 +309,7 @@ export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: Ad
                     {isSuperAdmin && (
                       <button
                         onClick={() => handleDeleteAdmin(admin.id, getWalletAddress(admin))}
-                        className="text-gray-500 hover:text-red-500 transition-all p-2 bg-zinc-700/30 hover:bg-red-500/10 rounded-md ml-2"
+                        className="text-gray-500 hover:text-red-500 transition-all p-2 bg-zinc-700/30 hover:bg-red-500/10 rounded-md ml-2 border border-transparent hover:border-red-500/30"
                         title="Eliminar Administrador"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -396,139 +396,141 @@ export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: Ad
       </div>
 
       {/* --- ARCHITECTURE GUIDE MODAL --- */}
-      {showGuideModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="p-8">
-              <div className="flex items-center justify-between mb-8 pb-4 border-b border-zinc-800">
-                <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-                  <Landmark className="w-8 h-8 text-lime-400" />
-                  AGORA Architecture: Visual Flow
-                </h2>
-                <Button variant="ghost" onClick={() => setShowGuideModal(false)} className="text-gray-400 hover:text-white">✕</Button>
-              </div>
-
-              <div className="space-y-12">
-                <div className="relative flex flex-col md:flex-row items-center justify-between gap-8 py-8">
-                  <div className="flex flex-col items-center gap-4 text-center group">
-                    <div className="w-16 h-16 rounded-2xl bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center group-hover:border-lime-400 transition-colors">
-                      <Users className="w-8 h-8 text-lime-400" />
-                    </div>
-                    <div>
-                      <div className="text-sm font-bold text-white">LISTING</div>
-                      <div className="text-[10px] text-gray-500 uppercase">Input</div>
-                    </div>
-                  </div>
-                  <ArrowRight className="hidden md:block w-6 h-6 text-zinc-700" />
-                  <div className="flex flex-col items-center gap-4 text-center group">
-                    <div className="w-20 h-20 rounded-2xl bg-zinc-800 border-2 border-lime-500/50 flex items-center justify-center shadow-[0_0_20px_rgba(163,230,53,0.1)] group-hover:border-lime-400 transition-colors">
-                      <Settings className="w-10 h-10 text-lime-400" />
-                    </div>
-                    <div>
-                      <div className="text-sm font-bold text-white uppercase">Settlement Engine</div>
-                      <div className="text-[10px] text-gray-500 uppercase">Atomic Validation</div>
-                    </div>
-                  </div>
-                  <ArrowRight className="hidden md:block w-6 h-6 text-zinc-700" />
-                  <div className="flex flex-col items-center gap-4 text-center group">
-                    <div className="w-16 h-16 rounded-2xl bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center group-hover:border-lime-400 transition-colors">
-                      <Building2 className="w-8 h-8 text-lime-400" />
-                    </div>
-                    <div>
-                      <div className="text-sm font-bold text-white uppercase">Treasury / NAV</div>
-                      <div className="text-[10px] text-gray-500 uppercase">Stability</div>
-                    </div>
-                  </div>
+      {
+        showGuideModal && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+            <div className="bg-zinc-900 border border-zinc-700 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+              <div className="p-8">
+                <div className="flex items-center justify-between mb-8 pb-4 border-b border-zinc-800">
+                  <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                    <Landmark className="w-8 h-8 text-lime-400" />
+                    AGORA Architecture: Visual Flow
+                  </h2>
+                  <Button variant="ghost" onClick={() => setShowGuideModal(false)} className="text-gray-400 hover:text-white">✕</Button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-zinc-950/50 rounded-xl p-6 border border-zinc-800">
-                  <div className="space-y-4">
-                    <h5 className="text-lime-400 font-bold text-sm uppercase tracking-widest">Economic Logic</h5>
-                    <ul className="space-y-4">
-                      <li className="flex gap-3">
-                        <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-lime-400 shrink-0">1</div>
-                        <p className="text-xs text-gray-400 leading-relaxed">
-                          <strong>NAV Calculation:</strong> Net Asset Value = Treasury / Supply. This is the "Truth" price of the platform.
-                        </p>
-                      </li>
-                      <li className="flex gap-3">
-                        <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-lime-400 shrink-0">2</div>
-                        <p className="text-xs text-gray-400 leading-relaxed">
-                          <strong>Buyback (ROFR):</strong> If a Listing price is &lt; NAV, the protocol can exercise its Right of First Refusal to stabilize the market.
-                        </p>
-                      </li>
-                      <li className="flex gap-3">
-                        <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-lime-400 shrink-0">3</div>
-                        <p className="text-xs text-gray-400 leading-relaxed">
-                          <strong>Early Exit:</strong> Users can sell back directly to Treasury, but pay a penalty (default 15%) to discourage bank runs.
-                        </p>
-                      </li>
-                    </ul>
+                <div className="space-y-12">
+                  <div className="relative flex flex-col md:flex-row items-center justify-between gap-8 py-8">
+                    <div className="flex flex-col items-center gap-4 text-center group">
+                      <div className="w-16 h-16 rounded-2xl bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center group-hover:border-lime-400 transition-colors">
+                        <Users className="w-8 h-8 text-lime-400" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-bold text-white">LISTING</div>
+                        <div className="text-[10px] text-gray-500 uppercase">Input</div>
+                      </div>
+                    </div>
+                    <ArrowRight className="hidden md:block w-6 h-6 text-zinc-700" />
+                    <div className="flex flex-col items-center gap-4 text-center group">
+                      <div className="w-20 h-20 rounded-2xl bg-zinc-800 border-2 border-lime-500/50 flex items-center justify-center shadow-[0_0_20px_rgba(163,230,53,0.1)] group-hover:border-lime-400 transition-colors">
+                        <Settings className="w-10 h-10 text-lime-400" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-bold text-white uppercase">Settlement Engine</div>
+                        <div className="text-[10px] text-gray-500 uppercase">Atomic Validation</div>
+                      </div>
+                    </div>
+                    <ArrowRight className="hidden md:block w-6 h-6 text-zinc-700" />
+                    <div className="flex flex-col items-center gap-4 text-center group">
+                      <div className="w-16 h-16 rounded-2xl bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center group-hover:border-lime-400 transition-colors">
+                        <Building2 className="w-8 h-8 text-lime-400" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-bold text-white uppercase">Treasury / NAV</div>
+                        <div className="text-[10px] text-gray-500 uppercase">Stability</div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-4">
-                    <h5 className="text-red-400 font-bold text-sm uppercase tracking-widest">Operational Safety</h5>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-zinc-950/50 rounded-xl p-6 border border-zinc-800">
                     <div className="space-y-4">
-                      <div className="p-4 bg-red-950/10 border border-red-900/20 rounded-lg">
-                        <div className="text-xs font-bold text-red-400 mb-1">GLOBAL KILL-SWITCH</div>
-                        <p className="text-[11px] text-gray-400">
-                          Immmediate pause. Bypasses 6h delay. Use ONLY in case of exploit or extreme volatility.
+                      <h5 className="text-lime-400 font-bold text-sm uppercase tracking-widest">Economic Logic</h5>
+                      <ul className="space-y-4">
+                        <li className="flex gap-3">
+                          <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-lime-400 shrink-0">1</div>
+                          <p className="text-xs text-gray-400 leading-relaxed">
+                            <strong>NAV Calculation:</strong> Net Asset Value = Treasury / Supply. This is the "Truth" price of the platform.
+                          </p>
+                        </li>
+                        <li className="flex gap-3">
+                          <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-lime-400 shrink-0">2</div>
+                          <p className="text-xs text-gray-400 leading-relaxed">
+                            <strong>Buyback (ROFR):</strong> If a Listing price is &lt; NAV, the protocol can exercise its Right of First Refusal to stabilize the market.
+                          </p>
+                        </li>
+                        <li className="flex gap-3">
+                          <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-lime-400 shrink-0">3</div>
+                          <p className="text-xs text-gray-400 leading-relaxed">
+                            <strong>Early Exit:</strong> Users can sell back directly to Treasury, but pay a penalty (default 15%) to discourage bank runs.
+                          </p>
+                        </li>
+                      </ul>
+                    </div>
+                    <div className="space-y-4">
+                      <h5 className="text-red-400 font-bold text-sm uppercase tracking-widest">Operational Safety</h5>
+                      <div className="space-y-4">
+                        <div className="p-4 bg-red-950/10 border border-red-900/20 rounded-lg">
+                          <div className="text-xs font-bold text-red-400 mb-1">GLOBAL KILL-SWITCH</div>
+                          <p className="text-[11px] text-gray-400">
+                            Immmediate pause. Bypasses 6h delay. Use ONLY in case of exploit or extreme volatility.
+                          </p>
+                        </div>
+                        <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-lg">
+                          <div className="text-xs font-bold text-white mb-1">LOCK ORDERING</div>
+                          <p className="text-[11px] text-gray-400">
+                            To prevent deadlocks, the engine always locks artifacts in strict order: [Listing] then [Artifact].
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-lime-400/5 border border-lime-400/20 rounded-xl p-6">
+                    <h5 className="text-lime-400 font-bold text-sm uppercase tracking-widest mb-4 flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4" />
+                      Strategic Roadmap: Policy Transition
+                    </h5>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <div className="text-xs font-bold text-white flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-blue-400" />
+                          PHASE 1: FUNDING (Initial)
+                        </div>
+                        <p className="text-[11px] text-gray-400 pl-4 border-l border-zinc-800">
+                          Buyback Ratio is 0%. The protocol focuses on treasury growth. Market operates within bands but without protocol intervention.
                         </p>
                       </div>
-                      <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-lg">
-                        <div className="text-xs font-bold text-white mb-1">LOCK ORDERING</div>
-                        <p className="text-[11px] text-gray-400">
-                          To prevent deadlocks, the engine always locks artifacts in strict order: [Listing] then [Artifact].
+                      <div className="space-y-2">
+                        <div className="text-xs font-bold text-white flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-lime-400 animate-pulse" />
+                          PHASE 2: DEFENSE (Active)
+                        </div>
+                        <p className="text-[11px] text-gray-400 pl-4 border-l border-zinc-800">
+                          Governance increases Ratio &gt; 0%. ROFR becomes active. Protocol automatedly defends the floor based on NAV.
                         </p>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="bg-lime-400/5 border border-lime-400/20 rounded-xl p-6">
-                  <h5 className="text-lime-400 font-bold text-sm uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4" />
-                    Strategic Roadmap: Policy Transition
-                  </h5>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <div className="text-xs font-bold text-white flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-blue-400" />
-                        PHASE 1: FUNDING (Initial)
-                      </div>
-                      <p className="text-[11px] text-gray-400 pl-4 border-l border-zinc-800">
-                        Buyback Ratio is 0%. The protocol focuses on treasury growth. Market operates within bands but without protocol intervention.
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="text-xs font-bold text-white flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-lime-400 animate-pulse" />
-                        PHASE 2: DEFENSE (Active)
-                      </div>
-                      <p className="text-[11px] text-gray-400 pl-4 border-l border-zinc-800">
-                        Governance increases Ratio &gt; 0%. ROFR becomes active. Protocol automatedly defends the floor based on NAV.
-                      </p>
-                    </div>
+                  <div className="mt-4 text-center">
+                    <p className="text-xs text-gray-500 italic">
+                      "AGORA is not just a marketplace; it is an economic buffer system designed to protect long-term value."
+                    </p>
                   </div>
-                </div>
-
-                <div className="mt-4 text-center">
-                  <p className="text-xs text-gray-500 italic">
-                    "AGORA is not just a marketplace; it is an economic buffer system designed to protect long-term value."
-                  </p>
-                </div>
-                <div className="flex justify-end pt-4">
-                  <Button
-                    onClick={() => setShowGuideModal(false)}
-                    className="bg-lime-500 hover:bg-lime-600 text-zinc-900 font-bold px-8"
-                  >
-                    Understood
-                  </Button>
+                  <div className="flex justify-end pt-4">
+                    <Button
+                      onClick={() => setShowGuideModal(false)}
+                      className="bg-lime-500 hover:bg-lime-600 text-zinc-900 font-bold px-8"
+                    >
+                      Understood
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* --- OPERATIONS CONTROL LINK --- */}
       <div className="border-t-2 border-zinc-700/50 pt-8 mt-8">
@@ -631,7 +633,7 @@ export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: Ad
       </div>
 
       <MultiTenantSection isSuperAdmin={isSuperAdmin} />
-    </div>
+    </div >
   );
 }
 
@@ -695,14 +697,15 @@ function MultiTenantSection({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   const handleTenantSearchChange = (value: string) => {
     setTenantSearchQuery(value);
     setShowTenantSuggestions(true);
-    // Also update the form fields if we find a match
-    const matchedTenant = tenants.find(t => t.id === value || t.name.toLowerCase() === value.toLowerCase());
+
+    // Auto-match if exactly equal to an ID
+    const matchedTenant = tenants.find(t => t.id === value.toLowerCase().trim());
     if (matchedTenant) {
       setNewTenantId(matchedTenant.id);
       setNewTenantName(matchedTenant.name);
       setNewTenantDescription(matchedTenant.description || "");
-    } else {
-      // It's a new tenant, keep the ID from input
+    } else if (value.trim()) {
+      // It's a new tenant ID suggestion
       setNewTenantId(value.toLowerCase().replace(/\s+/g, '-'));
     }
   };

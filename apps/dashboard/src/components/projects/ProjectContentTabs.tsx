@@ -173,8 +173,24 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
       const config = typeof project.w2eConfig === 'string'
         ? JSON.parse(project.w2eConfig)
         : (project.w2eConfig || {});
-      return config.phases || (project as any).phases || [];
+
+      // 1. Direct phases in config (V1 style)
+      let phases = config.phases || (project as any).phases || [];
+
+      // 2. If V2, check artifacts for phases
+      if (phases.length === 0 && project.artifacts && project.artifacts.length > 0) {
+        const artifactPhases = project.artifacts
+          .flatMap((a: any) => a.phases || [])
+          .filter((p: any) => p && p.name);
+
+        if (artifactPhases.length > 0) {
+          phases = artifactPhases;
+        }
+      }
+
+      return phases;
     } catch (e) {
+      console.error("[Tabs] Error parsing w2eConfig:", e);
       return (project as any).phases || [];
     }
   };
@@ -389,7 +405,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
             )}
 
             {project.marketPhase !== 'defense' && allPhases.length > 0 ? (
-              <div id="sidebar-phases" className="space-y-6">
+              <div id="tab-phases" className="space-y-6">
                 {/* Fases Activas */}
                 <div className="space-y-4">
                   {activePhasesWithStats

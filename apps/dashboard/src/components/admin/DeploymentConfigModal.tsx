@@ -31,10 +31,14 @@ function InfoTooltip({ title, children }: { title: string; children: React.React
                 <InformationCircleIcon className="w-4 h-4" />
             </button>
             {open && (
-                <div className="absolute z-[9000] left-5 -top-1 w-72 p-4 bg-zinc-800 border border-indigo-500/40 rounded-xl shadow-2xl shadow-black/50">
+                <div className="fixed z-[9999] p-4 bg-zinc-900 border border-indigo-500/40 rounded-xl shadow-2xl shadow-black/50 w-72 pointer-events-auto"
+                    style={{
+                        top: ref.current ? ref.current.getBoundingClientRect().top + 24 : 0,
+                        left: ref.current ? Math.min(ref.current.getBoundingClientRect().left, window.innerWidth - 300) : 0
+                    }}
+                >
                     <p className="font-bold text-white text-xs mb-1.5">{title}</p>
                     <div className="text-xs text-gray-300 space-y-1.5 leading-relaxed">{children}</div>
-                    <div className="absolute -left-1.5 top-3 w-3 h-3 bg-zinc-800 border-l border-t border-indigo-500/40 rotate-45" />
                 </div>
             )}
         </div>
@@ -167,8 +171,8 @@ export function DeploymentConfigModal({
     ] as const;
 
     return (
-        <div className="fixed inset-0 z-[5000] flex flex-col bg-zinc-950">
-            <div className="flex-1 flex flex-col w-full h-full overflow-hidden">
+        <div className="fixed inset-0 z-[5000] flex flex-col bg-zinc-950/98 backdrop-blur-md">
+            <div className="flex-1 flex flex-col w-full h-full overflow-hidden border-none rounded-none shadow-none">
 
                 {/* Header */}
                 <div className="p-6 border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-xl sticky top-0 z-50 shrink-0">
@@ -207,7 +211,7 @@ export function DeploymentConfigModal({
                         </button>
                     </div>
 
-                    <div className="flex gap-1.5 p-1 bg-zinc-800/50 rounded-xl border border-zinc-700/50">
+                    <div className="flex gap-1.5 p-1 bg-zinc-800/80 rounded-xl border border-zinc-700/50 backdrop-blur-md">
                         {/* Page Layout Type Selector */}
                         <div className="flex items-center gap-1">
                             <select

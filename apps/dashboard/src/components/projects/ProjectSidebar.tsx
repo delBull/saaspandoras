@@ -127,8 +127,23 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
         ? JSON.parse(project.w2eConfig)
         : (project.w2eConfig || {});
 
-      // Support both V1 (phases) and potential V2 aliases
-      return config.phases || (project as any).phases || [];
+      // 1. Direct phases in config (V1 style)
+      let phases = config.phases || (project as any).phases || [];
+
+      // 2. If V2, check artifacts for phases
+      if (phases.length === 0 && project.artifacts && project.artifacts.length > 0) {
+        // Collect phases from all artifacts (V2 modular approach)
+        // Usually, the primary artifact has the phases the user configured in the modal
+        const artifactPhases = project.artifacts
+          .flatMap((a: any) => a.phases || [])
+          .filter((p: any) => p && p.name);
+
+        if (artifactPhases.length > 0) {
+          phases = artifactPhases;
+        }
+      }
+
+      return phases;
     } catch (e) {
       console.error("[Sidebar] Error parsing w2eConfig:", e);
       return (project as any).phases || [];
@@ -298,7 +313,11 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                     Acceso Verificado
                   </div>
                   <button
-                    onClick={() => document.getElementById('sidebar-phases')?.scrollIntoView({ behavior: 'smooth' })}
+                    onClick={() => {
+                      // Attempt to scroll to tab content if it exists
+                      const phasesEl = document.getElementById('tab-phases') || document.getElementById('sidebar-phases');
+                      phasesEl?.scrollIntoView({ behavior: 'smooth' });
+                    }}
                     className="w-full py-1 text-xs text-zinc-400 hover:text-lime-400 hover:bg-white/5 rounded flex items-center justify-center gap-1 transition-colors"
                   >
                     <span>Ver Fases</span>
@@ -319,7 +338,10 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                     <span>Obtener Acceso</span>
                   </button>
                   <button
-                    onClick={() => document.getElementById('sidebar-phases')?.scrollIntoView({ behavior: 'smooth' })}
+                    onClick={() => {
+                      const phasesEl = document.getElementById('tab-phases') || document.getElementById('sidebar-phases');
+                      phasesEl?.scrollIntoView({ behavior: 'smooth' });
+                    }}
                     className="w-full py-1 text-xs text-zinc-400 hover:text-white hover:bg-white/5 rounded flex items-center justify-center gap-1 transition-colors"
                   >
                     <span>Ver Fases</span>
