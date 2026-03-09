@@ -206,10 +206,7 @@ export async function POST(request: Request) {
             chainId: config.chain.id,
             v: parseInt(process.env.JWT_VERSION || "1"),
             iat: Math.floor(Date.now() / 1000),
-        }, privateKeyPem, {
-            algorithm: 'RS256',
-            expiresIn: '24h'
-        });
+        }, secret, { expiresIn: '24h' });
 
         const isProd = process.env.NODE_ENV === "production";
         const cookieDomain = isProd ? (process.env.COOKIE_DOMAIN || ".pandoras.finance") : undefined;
