@@ -178,10 +178,10 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
       let phases = config.phases || (project as any).phases || [];
 
       // 2. If V2, check artifacts for phases
-      if (phases.length === 0 && project.artifacts && project.artifacts.length > 0) {
+      if (phases.length === 0 && project.artifacts?.length) {
         const artifactPhases = project.artifacts
           .flatMap((a: any) => a.phases || [])
-          .filter((p: any) => p && p.name);
+          .filter((p: any) => p?.name);
 
         if (artifactPhases.length > 0) {
           phases = artifactPhases;
