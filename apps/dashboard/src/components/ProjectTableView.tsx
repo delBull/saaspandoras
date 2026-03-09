@@ -244,10 +244,9 @@ export function ProjectTableView({
                       </button>
                       <Link
                         href={`/admin/projects/${p.id}/report`}
-                        className="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 hover:text-zinc-200 rounded text-xs font-medium transition-colors flex items-center justify-center gap-1.5 w-full border border-zinc-600 hover:border-zinc-500 whitespace-nowrap"
+                        className="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 hover:text-zinc-200 rounded text-[10px] sm:text-xs font-medium transition-colors flex items-center justify-center gap-1 w-full border border-zinc-600 hover:border-zinc-500"
                       >
-                        <FileText className="w-3.5 h-3.5" />
-                        <span>One Pager</span>
+                        <span className="truncate">One Pager</span>
                       </Link>
                     </div>
                   </td>
