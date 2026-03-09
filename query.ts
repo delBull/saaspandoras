@@ -1,0 +1,1 @@
+import { db } from "./apps/dashboard/src/db/index"; import { projects } from "./apps/dashboard/src/db/schema"; import { eq } from "drizzle-orm"; async function run() { const p = await db.query.projects.findFirst({where: eq(projects.slug, "escuela-libre-digital-clone-8934")}); console.log(JSON.stringify(p, null, 2)); process.exit(0); } run();
