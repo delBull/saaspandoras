@@ -121,7 +121,21 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
   const raisedPercentage = progressPercent;
 
   // --- Phase Stats Calculation (Replicated from Tabs for Robustness) ---
-  const allPhases = project.w2eConfig?.phases || [];
+  const getPhases = () => {
+    try {
+      const config = typeof project.w2eConfig === 'string'
+        ? JSON.parse(project.w2eConfig)
+        : (project.w2eConfig || {});
+
+      // Support both V1 (phases) and potential V2 aliases
+      return config.phases || (project as any).phases || [];
+    } catch (e) {
+      console.error("[Sidebar] Error parsing w2eConfig:", e);
+      return (project as any).phases || [];
+    }
+  };
+
+  const allPhases = getPhases();
   // let accumulatedUSD = 0; // Unused
   let accumulatedTokens = 0;
 
@@ -393,11 +407,11 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
         </div>
 
         {/* Sticky section - Tokenomics & Offers (from here down) */}
-        <div className="sticky top-6 space-y-6">
+        <div id="sidebar-phases" className="sticky top-6 space-y-6">
 
           {/* Utility Offers Panel (Dynamic Phases) */}
-          {(project.w2eConfig?.phases && project.w2eConfig.phases.length > 0) ? (
-            <div id="sidebar-phases" className="bg-black/40 backdrop-blur-xl rounded-xl border border-white/10 p-6">
+          {(allPhases && allPhases.length > 0) ? (
+            <div className="bg-black/40 backdrop-blur-xl rounded-xl border border-white/10 p-6">
               <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                 <Ticket className="w-5 h-5 text-lime-400" /> Fases de Venta
               </h3>

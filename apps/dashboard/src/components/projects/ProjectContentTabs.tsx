@@ -168,7 +168,17 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
   const totalSupply = totalSupplyBN ? Number(totalSupplyBN) : 0;
 
   // --- Calculate Phase Stats ---
-  const allPhases = project.w2eConfig?.phases || [];
+  const getPhases = () => {
+    try {
+      const config = typeof project.w2eConfig === 'string'
+        ? JSON.parse(project.w2eConfig)
+        : (project.w2eConfig || {});
+      return config.phases || (project as any).phases || [];
+    } catch (e) {
+      return (project as any).phases || [];
+    }
+  };
+  const allPhases = getPhases();
 
   // We need to track BOTH USD accumulation and Token accumulation because phases might mix free/paid? 
   // For simplicity, let's assume if price is 0, we track tokens. If price > 0, we track USD.
@@ -779,6 +789,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                 {[
                   { label: "Licencia de Acceso (NFT)", address: project.licenseContractAddress, type: "License" },
                   { label: "Token de Utilidad (ERC-20)", address: project.utilityContractAddress, type: "Utility" },
+                  { label: "Protocol Registry (V2 Hub)", address: project.registryContractAddress, type: "Registry" },
                   { label: "W2E Loom (Lógica Central)", address: project.loomContractAddress, type: "Loom" },
                   { label: "Gobernador (DAO)", address: project.governorContractAddress, type: "Governor" },
                   { label: "Tesorería Comunitaria", address: project.treasuryAddress, type: "Treasury" },
