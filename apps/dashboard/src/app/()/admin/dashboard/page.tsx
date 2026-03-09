@@ -43,6 +43,7 @@ export default function AdminDashboardPage() {
   const [admins, setAdmins] = useState<AdminData[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [isSuperAdminState, setIsSuperAdminState] = useState<boolean>(false);
   // statusFilter is now declared later in the component
   const [expandedProject, setExpandedProject] = useState<string | null>(null); // Para controlar el dropdown de detalles
   const [statusDropdown, setStatusDropdown] = useState<string | null>(null); // Para controlar el dropdown de estado
@@ -143,6 +144,7 @@ export default function AdminDashboardPage() {
         const userIsAdmin = (data.isAdmin ?? false) || (data.isSuperAdmin ?? false);
 
         setIsAdmin(userIsAdmin);
+        setIsSuperAdminState(data.isSuperAdmin ?? false);
         setAuthError(null);
 
       } catch (error) {
@@ -572,7 +574,12 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Tab de configuración */}
-            <AdminSettings key="settings-tab" initialAdmins={admins} />
+            <AdminSettings
+              key="settings-tab"
+              initialAdmins={admins}
+              isSuperAdmin={isSuperAdminState}
+              currentWallet={walletAddress}
+            />
 
             {/* Tab de Shortlinks Analytics */}
             <ShortlinksAnalyticsTab key="shortlinks-tab" />
