@@ -131,12 +131,12 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
       let phases = config.phases || (project as any).phases || [];
 
       // 2. If V2, check artifacts for phases
-      if (phases.length === 0 && project.artifacts && project.artifacts.length > 0) {
+      if (phases.length === 0 && project.artifacts?.length) {
         // Collect phases from all artifacts (V2 modular approach)
         // Usually, the primary artifact has the phases the user configured in the modal
         const artifactPhases = project.artifacts
           .flatMap((a: any) => a.phases || [])
-          .filter((p: any) => p && p.name);
+          .filter((p: any) => p?.name);
 
         if (artifactPhases.length > 0) {
           phases = artifactPhases;
