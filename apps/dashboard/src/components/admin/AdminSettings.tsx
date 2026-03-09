@@ -54,6 +54,8 @@ interface Tenant {
 
 interface AdminSettingsProps {
   initialAdmins: Admin[];
+  isSuperAdmin: boolean;
+  currentWallet: string | null;
 }
 
 // Helper function to get wallet address safely
@@ -67,26 +69,8 @@ const truncateWallet = (address: string, length = 6) => {
   return `${address.slice(0, length)}...${address.slice(-length)}`;
 };
 
-export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
-  // Get wallet address from localStorage (same as dashboard page)
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const sessionData = localStorage.getItem('wallet-session');
-        if (sessionData) {
-          const parsedSession = JSON.parse(sessionData) as { address?: string };
-          const address = parsedSession.address?.toLowerCase() ?? null;
-          setWalletAddress(address);
-        }
-      } catch (e) {
-        console.warn('Error getting wallet address for AdminSettings:', e);
-      }
-    }
-  }, []);
-
-  const isSuperAdmin = walletAddress?.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase();
+export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: AdminSettingsProps) {
+  const walletAddress = currentWallet;
 
   // Filter out admins without wallet address and system admins (id: 999 or super admin wallet)
   const validAdmins = initialAdmins.filter(admin => {
@@ -147,8 +131,9 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
     }
   };
 
-  const handleDeleteAdmin = async (id: number) => {
-    if (!confirm("¿Estás seguro de que quieres eliminar a este administrador?")) {
+  const handleDeleteAdmin = async (id: number, wallet?: string) => {
+    const adminLabel = wallet ? ` (${truncateWallet(wallet)})` : "";
+    if (!confirm(`⚠️ ALERTA: ¿Estás seguro de que quieres eliminar a este administrador${adminLabel}? Esta acción es irreversible.`)) {
       return;
     }
 
@@ -323,9 +308,9 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
                     </div>
                     {isSuperAdmin && (
                       <button
-                        onClick={() => handleDeleteAdmin(admin.id)}
-                        className="text-gray-500 hover:text-red-500 transition-colors p-2"
-                        title="Eliminar Admin"
+                        onClick={() => handleDeleteAdmin(admin.id, getWalletAddress(admin))}
+                        className="text-gray-500 hover:text-red-500 transition-all p-2 bg-zinc-700/30 hover:bg-red-500/10 rounded-md ml-2"
+                        title="Eliminar Administrador"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -628,7 +613,7 @@ export function AdminSettings({ initialAdmins }: AdminSettingsProps) {
                 Kill-switches, economy config, observabilidad y playbooks del Telegram bridge.
               </p>
               <div className="flex gap-2 text-xs text-yellow-400">
-                <span>🔒 Super Admin Only</span>
+                <span>{isSuperAdmin ? "✅ Access Granted" : "🔒 Super Admin Only"}</span>
                 <span>•</span>
                 <span>💬 Telegram Integration</span>
               </div>
@@ -971,12 +956,14 @@ function MultiTenantSection({ isSuperAdmin }: { isSuperAdmin: boolean }) {
 
       {/* Existing Tenants List */}
       <div className="space-y-3">
-        <h4 className="text-sm font-semibold text-gray-400">Tenants Existentes</h4>
+        <div className="flex items-center justify-between">
+          <h4 className="text-sm font-semibold text-gray-400">Tenants Existentes</h4>
+        </div>
         {tenants.length === 0 ? (
           <p className="text-gray-500 text-sm">No hay tenants configurados</p>
         ) : (
           <div className="grid gap-3">
-            {tenants.map((tenant) => (
+            {filteredTenants.map((tenant) => (
               <div
                 key={tenant.id}
                 className={`p-4 rounded-lg border ${tenant.isActive

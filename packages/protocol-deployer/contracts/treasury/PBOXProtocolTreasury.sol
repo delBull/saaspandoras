@@ -159,6 +159,16 @@ contract PBOXProtocolTreasury is Ownable, ReentrancyGuard, Pausable {
     
     // ========== FUNCIONES DE PROPUESTAS ==========
     
+    // ========== SETTERS FOR TWO-STEP DEPLOYMENT ==========
+
+    /**
+     * @notice Permite actualizar la direccion post-despliegue (útil para factory CREATE2)
+     */
+    function setProtocolGovernor(address _newGovernor) external onlyOwner {
+        require(_newGovernor != address(0), "W2E: Invalid governor");
+        protocolGovernor = _newGovernor;
+    }
+
     /**
      * @notice Crea propuesta de retiro con aprobación dual
      * @param recipient Destinatario de los fondos

@@ -187,6 +187,16 @@ contract W2ELoomV2 is Ownable, ReentrancyGuard, Pausable {
         _;
     }
 
+    // ========== SETTERS FOR TWO-STEP DEPLOYMENT ==========
+
+    /**
+     * @notice Permite actualizar la direccion post-despliegue (útil para factory CREATE2)
+     */
+    function setProtocolTreasuryAddress(address _newTreasury) external onlyOwner {
+        require(_newTreasury != address(0), "W2E: Invalid treasury address");
+        protocolTreasuryAddress = _newTreasury;
+    }
+
     // ========== FUNCIONES CORE (Simplified placeholders for V2 logic) ==========
 
     function createValidationTask(

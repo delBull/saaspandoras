@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { FileText } from 'lucide-react';
 import type { Project } from '@/types/admin';
 import { DeploymentConfigModal } from './admin/DeploymentConfigModal';
 import DeploymentProgressModal from './admin/DeploymentProgressModal';
@@ -243,9 +244,10 @@ export function ProjectTableView({
                       </button>
                       <Link
                         href={`/admin/projects/${p.id}/report`}
-                        className="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 hover:text-zinc-200 rounded text-xs font-medium transition-colors flex items-center justify-center w-full border border-zinc-600 hover:border-zinc-500 whitespace-nowrap"
+                        className="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 hover:text-zinc-200 rounded text-xs font-medium transition-colors flex items-center justify-center gap-1.5 w-full border border-zinc-600 hover:border-zinc-500 whitespace-nowrap"
                       >
-                        📄 One Pager
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>One Pager</span>
                       </Link>
                     </div>
                   </td>
