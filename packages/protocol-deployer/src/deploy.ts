@@ -149,12 +149,12 @@ export async function deployW2EProtocol(
     utilityTokenSymbol: config.utilityToken.symbol,
     utilityFeePercentage: config.utilityToken.feePercentage || 50,
 
-    licenseName: artifactsToDeploy[0].name,
-    licenseSymbol: artifactsToDeploy[0].symbol,
-    licenseMaxSupply: artifactsToDeploy[0].maxSupply || config.maxLicenses || 10000,
-    licensePrice: parseEther(artifactsToDeploy[0].price || "0"),
-    licenseTransferable: artifactsToDeploy[0].transferable ?? true,
-    licenseBurnable: artifactsToDeploy[0].burnable ?? false,
+    licenseName: artifactsToDeploy[0]!.name,
+    licenseSymbol: artifactsToDeploy[0]!.symbol,
+    licenseMaxSupply: artifactsToDeploy[0]!.maxSupply || config.maxLicenses || 10000,
+    licensePrice: parseEther(artifactsToDeploy[0]!.price || "0"),
+    licenseTransferable: artifactsToDeploy[0]!.transferable ?? true,
+    licenseBurnable: artifactsToDeploy[0]!.burnable ?? false,
 
     treasuryPandoraConfirmations: Math.min(2, (config.treasurySigners?.length || 2)),
     treasuryDaoConfirmations: 2,
@@ -238,7 +238,7 @@ export async function deployW2EProtocol(
       treasuryAddress: finalTreasury,
       registryAddress: finalRegistry,
       artifacts: [{
-        type: artifactsToDeploy[0].type || 'Access',
+        type: artifactsToDeploy[0]!.type || 'Access',
         address: finalLicense
       }],
       timelockAddress: "0x0000000000000000000000000000000000000000",
