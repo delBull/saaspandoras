@@ -77,52 +77,6 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
         priority
       />
 
-      {/* Contenedor Unificado del Video - Solo mostrar si existe video_pitch */}
-      {project.video_pitch && (
-        <div className="absolute top-4 right-4 z-10 md:bottom-4 md:top-auto">
-          {/* Contenedor principal unificado */}
-          <div className="flex flex-col items-center space-y-2">
-            {/* Animación de Texto y Flecha - Solo cuando está visible */}
-            <div className={`transition-all duration-1000 ${showVideoHint ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
-              <div className="flex flex-col items-center">
-                {/* Texto en cursiva */}
-                <p className={`text-white text-[10px] md:text-xs italic mb-1 font-light ${!stopAnimations ? 'animate-pulse' : ''}`}>
-                  Ver el video Pitch
-                </p>
-
-                {/* Flecha apuntando hacia el icono - Solo se muestra si no se han detenido las animaciones */}
-                {!stopAnimations && (
-                  <div className="relative">
-                    <svg
-                      className="w-3 h-5 md:w-4 md:h-6 text-lime-400 animate-bounce"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M12 2l-3 4h6l-3 4 3-4h-6l3-4zm0 8l-3 4h6l-3 4 3-4h-6l3-4z" />
-                    </svg>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Icono de Video con efecto de blink unificado */}
-            <button
-              onClick={handleVideoClick}
-              className={`bg-black/70 backdrop-blur-sm rounded-full p-2 md:p-3 border border-zinc-700 hover:bg-black/80 transition-all duration-300 cursor-pointer group hover:scale-110 hover:border-lime-400 ${showVideoHint && !stopAnimations ? 'animate-pulse' : ''
-                }`}
-              type="button"
-            >
-              <svg
-                className="w-5 h-5 md:w-6 md:h-6 text-white group-hover:text-lime-400 transition-colors"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Superposición Oscura y Contenido */}
       <div className="absolute inset-0 bg-black/60 flex items-end p-4 md:p-12">
