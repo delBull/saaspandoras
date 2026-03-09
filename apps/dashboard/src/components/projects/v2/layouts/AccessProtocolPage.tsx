@@ -149,22 +149,6 @@ export default function AccessProtocolPage({ project, currentSlug }: Props) {
                 ))}
             </div>
 
-            {/* ProtocolRegistry Address (V2 Transparency) */}
-            {registryAddress && (
-                <div className="mb-6 p-3 bg-zinc-800/30 rounded-xl border border-zinc-700/50 flex items-center gap-3">
-                    <Shield className="w-4 h-4 text-indigo-400 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                        <p className="text-[10px] text-gray-500 uppercase tracking-wider">Protocol Registry V2</p>
-                        <p className="text-xs font-mono text-gray-300 truncate">{registryAddress}</p>
-                    </div>
-                    <button onClick={() => copyAddress(registryAddress)} className="text-gray-500 hover:text-lime-400 transition-colors">
-                        {copied ? <CheckCircle className="w-4 h-4 text-lime-400" /> : <Copy className="w-4 h-4" />}
-                    </button>
-                    <a href={`https://${safeChainId === 8453 ? '' : 'sepolia.'}etherscan.io/address/${registryAddress}`} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-lime-400 transition-colors">
-                        <ExternalLink className="w-4 h-4" />
-                    </a>
-                </div>
-            )}
 
             {/* Additional Artifacts in ecosystem */}
             {project.artifacts && project.artifacts.length > 1 && (
