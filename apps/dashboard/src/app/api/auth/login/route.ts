@@ -6,7 +6,7 @@ import { db } from "@/db";
 import { authChallenges, users, sessions, securityEvents } from "@/db/schema";
 import { eq, and, gt } from "drizzle-orm";
 import { cookies } from "next/headers";
-import { SignJWT, importPKCS8 } from "jose";
+import jwt from "jsonwebtoken";
 import { getContract, readContract } from "thirdweb";
 import { config } from "@/config";
 import { PANDORAS_KEY_ABI } from "@/lib/pandoras-key-abi";
@@ -46,14 +46,25 @@ export async function POST(request: Request) {
         }
 
         // Domain Check
-        if (domain !== config.domain) {
+        // Domain Check
+        const isLocalDev = process.env.NODE_ENV !== "production";
+
+        if (!isLocalDev && domain !== config.domain) {
             console.error(`❌ [Login] Domain mismatch: expected ${config.domain}, got ${domain}`);
+            return NextResponse.json({ error: "Invalid domain" }, { status: 401 });
+        } else if (isLocalDev && domain !== config.domain && !domain.includes("localhost")) {
+            // In dev allow configured domain or localhost
+            console.error(`❌ [Login] Domain mismatch (Dev): expected ${config.domain} or localhost, got ${domain}`);
             return NextResponse.json({ error: "Invalid domain" }, { status: 401 });
         }
 
         // URI Check
-        if (uri !== config.origin) {
+        if (!isLocalDev && uri !== config.origin) {
             console.error(`❌ [Login] URI mismatch: expected ${config.origin}, got ${uri}`);
+            return NextResponse.json({ error: "Invalid URI" }, { status: 401 });
+        } else if (isLocalDev && uri !== config.origin && !uri.includes("localhost")) {
+            // In dev allow configured origin or localhost
+            console.error(`❌ [Login] URI mismatch (Dev): expected ${config.origin} or localhost, got ${uri}`);
             return NextResponse.json({ error: "Invalid URI" }, { status: 401 });
         }
 
@@ -179,19 +190,14 @@ export async function POST(request: Request) {
         });
         console.log(`✅ Session ${sid} created for user ${userId}`);
 
-        // 9. Issue Scoped JWT with sid - UNIFIED RS256 using 'jose'
-        const JWT_PRIVATE_KEY_B64 = process.env.JWT_PRIVATE_KEY;
-        if (!JWT_PRIVATE_KEY_B64) {
-            throw new Error("JWT_PRIVATE_KEY_MISSING");
+        // 9. Issue Scoped JWT with sid - REVERTED TO jsonwebtoken (HS256)
+        const secret = process.env.JWT_SECRET || process.env.JWT_PRIVATE_KEY;
+        if (!secret) {
+            console.error("❌ CRITICAL: JWT_SECRET (or PRIVATE_KEY) is not defined");
+            throw new Error("SERVER_CONFIG_ERROR");
         }
 
-        const privateKeyPem = JWT_PRIVATE_KEY_B64.startsWith("-----")
-            ? JWT_PRIVATE_KEY_B64
-            : Buffer.from(JWT_PRIVATE_KEY_B64, "base64").toString("utf-8");
-
-        const privateKey = await importPKCS8(privateKeyPem, "RS256");
-
-        const token = await new SignJWT({
+        const token = jwt.sign({
             sub: userId,
             sid: sid,
             address: walletAddress,
@@ -199,22 +205,20 @@ export async function POST(request: Request) {
             hasAccess,
             chainId: config.chain.id,
             v: parseInt(process.env.JWT_VERSION || "1"),
-        })
-            .setProtectedHeader({ alg: "RS256" })
-            .setIssuedAt()
-            .setExpirationTime("24h")
-            .sign(privateKey);
+            iat: Math.floor(Date.now() / 1000),
+        }, secret, { expiresIn: '24h' });
 
-        const cookieDomain = process.env.COOKIE_DOMAIN || ".pandoras.finance";
-        console.log(`🍪 [LOGIN] Setting cookies - Domain: ${cookieDomain} | Secure: true | SameSite: none`);
+        const isProd = process.env.NODE_ENV === "production";
+        const cookieDomain = isProd ? (process.env.COOKIE_DOMAIN || ".pandoras.finance") : undefined;
+        console.log(`🍪 [LOGIN] Setting cookies - Domain: ${cookieDomain || 'localhost'} | Secure: ${isProd} | SameSite: ${isProd ? "none" : "lax"}`);
 
         (await cookies()).set("auth_token", token, {
             httpOnly: true,
-            secure: true,
-            sameSite: "none",
-            domain: cookieDomain,
+            secure: isProd,
+            sameSite: isProd ? "none" : "lax", // 'none' requires secure: true, handled correctly now
+            ...(cookieDomain && { domain: cookieDomain }), // Only set domain if on production/staging
             path: "/",
-            maxAge: 60 * 60 * 24
+            maxAge: 60 * 60 * 24 // 24 hours
         });
 
         console.log(`✅ [LOGIN] SUCCESS: Session created for ${walletAddress}`);
@@ -236,10 +240,8 @@ export async function POST(request: Request) {
         let detailedError = "Internal Server Error";
         const status = 500;
 
-        if (error.message === "JWT_PRIVATE_KEY_MISSING") {
-            detailedError = "Server Configuration Error: Private Key Missing";
-        } else if (error.code === "ERR_JOSE_INVALID_KEY_INPUT" || error.message?.includes("key")) {
-            detailedError = "Invalid Private Key Format (RS256/jose)";
+        if (error.message === "SERVER_CONFIG_ERROR") {
+            detailedError = "Server Configuration Error: Missing Secret";
         } else if (error.message) {
             detailedError = error.message;
         }
