@@ -388,8 +388,8 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
               </div>
             )}
 
-            {project.marketPhase !== 'defense' && project.w2eConfig?.phases && project.w2eConfig.phases.length > 0 ? (
-              <div className="space-y-6">
+            {project.marketPhase !== 'defense' && allPhases.length > 0 ? (
+              <div id="sidebar-phases" className="space-y-6">
                 {/* Fases Activas */}
                 <div className="space-y-4">
                   {activePhasesWithStats
@@ -521,12 +521,12 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                     })}
                 </div>
 
-                {project.w2eConfig.phases.filter((p: any) => p.isActive).length === 0 && (
+                {allPhases.filter((p: any) => p.isActive).length === 0 && (
                   <p className="text-zinc-400 italic text-sm">No hay fases activas en este momento.</p>
                 )}
 
                 {/* Botón Historial */}
-                {project.w2eConfig.phases.some((p: any) => !p.isActive) && (
+                {allPhases.some((p: any) => !p.isActive) && (
                   <div className="pt-4 border-t border-zinc-800">
                     <button
                       onClick={() => setShowHistorical(!showHistorical)}

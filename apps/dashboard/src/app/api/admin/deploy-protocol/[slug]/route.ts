@@ -160,7 +160,8 @@ export async function POST(
                     price: "0",
                     type: "Access"
                 }
-            ]
+            ],
+            phases: reqConfig?.phases || (project.w2eConfig as any)?.phases || []
         };
 
         console.log(`🚀 API: Deploying ${slug}`);
