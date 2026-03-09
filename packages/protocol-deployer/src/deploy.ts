@@ -130,6 +130,9 @@ export async function deployW2EProtocol(
   const factory = new eth.Contract(factoryAddress, PandorasProtocolFactoryArtifact.abi, wallet);
 
   // 4. Construct Factory Payload
+  const primaryArtifact = artifactsToDeploy[0];
+  if (!primaryArtifact) throw new Error("No artifacts found to deploy. Ensure artifacts list is not empty.");
+
   const salt = eth.utils.id(projectSlug || `w2e-project-${Date.now()}`);
 
   const configStruct = {
@@ -149,12 +152,12 @@ export async function deployW2EProtocol(
     utilityTokenSymbol: config.utilityToken.symbol,
     utilityFeePercentage: config.utilityToken.feePercentage || 50,
 
-    licenseName: artifactsToDeploy[0]!.name,
-    licenseSymbol: artifactsToDeploy[0]!.symbol,
-    licenseMaxSupply: artifactsToDeploy[0]!.maxSupply || config.maxLicenses || 10000,
-    licensePrice: parseEther(artifactsToDeploy[0]!.price || "0"),
-    licenseTransferable: artifactsToDeploy[0]!.transferable ?? true,
-    licenseBurnable: artifactsToDeploy[0]!.burnable ?? false,
+    licenseName: primaryArtifact.name,
+    licenseSymbol: primaryArtifact.symbol,
+    licenseMaxSupply: primaryArtifact.maxSupply || config.maxLicenses || 10000,
+    licensePrice: parseEther(primaryArtifact.price || "0"),
+    licenseTransferable: primaryArtifact.transferable ?? true,
+    licenseBurnable: primaryArtifact.burnable ?? false,
 
     treasuryPandoraConfirmations: Math.min(2, (config.treasurySigners?.length || 2)),
     treasuryDaoConfirmations: 2,
@@ -238,7 +241,7 @@ export async function deployW2EProtocol(
       treasuryAddress: finalTreasury,
       registryAddress: finalRegistry,
       artifacts: [{
-        type: artifactsToDeploy[0]!.type || 'Access',
+        type: primaryArtifact.type || 'Access',
         address: finalLicense
       }],
       timelockAddress: "0x0000000000000000000000000000000000000000",
