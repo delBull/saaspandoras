@@ -336,6 +336,24 @@ contract W2EGovernor is Ownable, ReentrancyGuard {
         votingPeriod = newPeriod;
     }
 
+    // ========== SETTERS FOR TWO-STEP DEPLOYMENT ==========
+
+    /**
+     * @notice Permite actualizar la direccion post-despliegue (útil para factory CREATE2)
+     */
+    function setW2ELoomAddress(address _newLoom) external onlyOwner {
+        require(_newLoom != address(0), "W2E: Invalid loom address");
+        w2eLoomAddress = _newLoom;
+    }
+
+    /**
+     * @notice Permite actualizar la direccion post-despliegue (útil para factory CREATE2)
+     */
+    function setLicenseToken(address _newLicense) external onlyOwner {
+        require(_newLicense != address(0), "W2E: Invalid license token");
+        licenseToken = IW2ELicense(_newLicense);
+    }
+
     // ========== FUNCIONES DE VISTA ==========
 
     /**

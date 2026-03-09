@@ -12,7 +12,7 @@ export function getSuperAdminWallet(): string | null {
 }
 
 // Global constant (NO FALLBACK for security)
-export const SUPER_ADMIN_WALLET = process.env.SUPER_ADMIN_WALLET?.toLowerCase() ?? "0x_undefined_admin";
+export const SUPER_ADMIN_WALLET = (process.env.NEXT_PUBLIC_SUPER_ADMIN_WALLET || process.env.SUPER_ADMIN_WALLET)?.toLowerCase() ?? "0x_undefined_admin";
 
 // Other constants can be added here as needed
 export const SUPPORTED_CHAINS = ["ethereum", "polygon", "arbitrum"] as const;
