@@ -27,6 +27,8 @@ envPaths.forEach(p => {
   }
 });
 
+import PandorasProtocolFactoryArtifact from "./artifacts/PandorasProtocolFactory.json";
+
 /**
  * Despliega un protocolo W2E completo en la red especificada (Sepolia/Base)
  * utilizando ethers.js v5 (compatible con Thirdweb SDK v4).
@@ -53,7 +55,6 @@ export async function deployW2EProtocol(
   const ContractFactory = eth.ContractFactory;
   const parseEther = isV6 ? eth.parseEther : eth.utils.parseEther;
   const isAddress = isV6 ? eth.isAddress : eth.utils.isAddress;
-  const getCreateAddress = isV6 ? eth.getCreateAddress : eth.utils.getContractAddress;
 
   // 1. Setup Provider & Wallet (Ethers v5) with AUTOMATIC FALLBACK
   const CHAIN_IDS = {
@@ -107,220 +108,150 @@ export async function deployW2EProtocol(
   let oracleAddress = isValidAddress(process.env.PANDORA_ORACLE_ADDRESS) ? process.env.PANDORA_ORACLE_ADDRESS! : wallet.address;
   let feeRecipient = isValidAddress(process.env.PANDORA_PLATFORM_FEE_WALLET) ? process.env.PANDORA_PLATFORM_FEE_WALLET! : wallet.address;
 
-  // Helper wait
-  const waitForDeploy = async (contract: any) => {
-    if (contract.waitForDeployment) await contract.waitForDeployment();
-    else await contract.deployed();
-    return contract.address;
+  // Artifacts definition
+  const artifactsToDeploy = config.artifacts || (config.licenseToken ? [config.licenseToken] : []);
+  if (artifactsToDeploy.length === 0) {
+    artifactsToDeploy.push({ name: "Genesis License", symbol: "GEN", maxSupply: 1000, price: "0" });
+  }
+
+  // 3. Obtain Factory Address
+  let factoryAddress = process.env.PANDORAS_FACTORY_ADDRESS;
+  if (!isValidAddress(factoryAddress)) {
+    console.log("🏭 No valid Factory Address found. Deploying PandorasProtocolFactory on-the-fly...");
+    const FactoryDeployer = new ContractFactory(PandorasProtocolFactoryArtifact.abi, PandorasProtocolFactoryArtifact.bytecode, wallet);
+    const factoryContract = await FactoryDeployer.deploy();
+    await factoryContract.deployed(); // or waitForDeployment based on ethers v5
+    factoryAddress = factoryContract.address;
+    console.log(`🏭 Factory deployed at: ${factoryAddress}`);
+  } else {
+    console.log(`🏭 Using existing Factory at: ${factoryAddress}`);
+  }
+
+  const factory = new eth.Contract(factoryAddress, PandorasProtocolFactoryArtifact.abi, wallet);
+
+  // 4. Construct Factory Payload
+  const primaryArtifact = artifactsToDeploy[0];
+  if (!primaryArtifact) throw new Error("No artifacts found to deploy. Ensure artifacts list is not empty.");
+
+  const salt = eth.utils.id(projectSlug || `w2e-project-${Date.now()}`);
+
+  const configStruct = {
+    pandoraRootTreasury: rootTreasury,
+    pandoraOracle: oracleAddress,
+    platformFeeWallet: feeRecipient,
+    creatorWallet: config.creatorWallet || wallet.address,
+    creatorPayoutPct: config.creatorPayoutPct || 80,
+    minQuorumPercentage: config.quorumPercentage || 10,
+    votingPeriodSeconds: (config.votingPeriodHours || 168) * 3600,
+    emergencyPeriodSeconds: (config.emergencyPeriodHours || 360) * 3600,
+    emergencyQuorumPct: config.emergencyQuorumPct || 20,
+    stakingRewardRate: config.stakingRewardRate || "1585489599",
+    phiFundSplitPct: config.phiFundSplitPct || 20,
+
+    utilityTokenName: config.utilityToken.name,
+    utilityTokenSymbol: config.utilityToken.symbol,
+    utilityFeePercentage: config.utilityToken.feePercentage || 50,
+
+    licenseName: primaryArtifact.name,
+    licenseSymbol: primaryArtifact.symbol,
+    licenseMaxSupply: primaryArtifact.maxSupply || config.maxLicenses || 10000,
+    licensePrice: parseEther(primaryArtifact.price || "0"),
+    licenseTransferable: primaryArtifact.transferable ?? true,
+    licenseBurnable: primaryArtifact.burnable ?? false,
+
+    treasuryPandoraConfirmations: Math.min(2, (config.treasurySigners?.length || 2)),
+    treasuryDaoConfirmations: 2,
+    treasuryEmergencyThreshold: parseEther("5.0"),
+    treasuryEmergencyInactivityDays: 30,
+    treasuryDirectOperationLimit: parseEther("0.1"),
+    treasuryDailySpendingLimit: parseEther("1.0"),
+
+    initialOwner: wallet.address
   };
 
-  // 3. Address Prediction for Ecosystem
-  const currentNonce = await (wallet.getNonce ? wallet.getNonce() : wallet.getTransactionCount());
-  const predictAddr = (nonce: number) => getCreateAddress({ from: wallet.address, nonce });
+  const actorsStruct = {
+    treasuryPandoraSigners: (config.treasurySigners && config.treasurySigners.length >= 2) ? config.treasurySigners : [wallet.address, Wallet.createRandom().address],
+    treasuryDaoSigners: [wallet.address, Wallet.createRandom().address, Wallet.createRandom().address]
+  };
 
-  const addrRegistry = predictAddr(currentNonce);
-  const addrUtility = predictAddr(currentNonce + 1);
-  const addrLoom = predictAddr(currentNonce + 2);
-  const addrTreasury = predictAddr(currentNonce + 3);
-  const addrGovernor = predictAddr(currentNonce + 4);
+  const getBytecode = (artifact: any) => {
+    if (typeof artifact.bytecode === "string") return artifact.bytecode;
+    if (artifact.bytecode && typeof artifact.bytecode.object === "string") return artifact.bytecode.object;
+    return "0x";
+  };
 
-  // Artifacts will follow Governor
-  const artifactsToDeploy = config.artifacts || (config.licenseToken ? [config.licenseToken] : []);
-  const artifactCount = artifactsToDeploy.length;
-  const artifactAddresses: string[] = [];
-  for (let i = 0; i < artifactCount; i++) {
-    artifactAddresses.push(predictAddr(currentNonce + 5 + i));
-  }
+  const bytecodesStruct = {
+    registry: getBytecode(ProtocolRegistryArtifact),
+    utility: getBytecode(W2EUtilityArtifact),
+    loom: getBytecode(W2ELoomV2Artifact),
+    treasury: getBytecode(PBOXProtocolTreasuryArtifact),
+    governor: getBytecode(W2EGovernorArtifact),
+    license: getBytecode(W2ELicenseArtifact)
+  };
 
-  console.log("🔮 Predicted Ecosystem Addresses:", {
-    Registry: addrRegistry,
-    Utility: addrUtility,
-    Loom: addrLoom,
-    Treasury: addrTreasury,
-    Governor: addrGovernor,
-    Artifacts: artifactAddresses
-  });
+  console.log(`⚛️ Predicting addresses with CREATE2 Factory...`);
 
-  // --- HARDENING: Address Pre-checks ---
-  const addressesToCheck = [addrRegistry, addrUtility, addrLoom, addrTreasury, addrGovernor, ...artifactAddresses];
-  console.log("🔍 Checking predicted addresses for existing code...");
-  for (const addr of addressesToCheck) {
-    const code = await provider.getCode(addr);
-    if (code !== '0x') {
-      console.warn(`⚠️ WARNING: Address ${addr} already has code! This deployment step WILL fail (CREATE/CREATE2 collision).`);
-      // We don't throw here to allow partial success or custom logic, but usually this is a terminal state for the nonce.
-    }
-  }
+  // Predict Ecosystem Addresses
+  // We recreate the prediction logic locally or use static calls to the factory predictAddress function.
+  const predictAddr = async (bytecode: string) => {
+    return await factory.predictAddress(salt, bytecode);
+  };
 
-  // 4. Contract Factories
-  const RegistryFactory = new ContractFactory(ProtocolRegistryArtifact.abi, ProtocolRegistryArtifact.bytecode, wallet);
-  const UtilityFactory = new ContractFactory(W2EUtilityArtifact.abi, W2EUtilityArtifact.bytecode, wallet);
-  const LoomV2Factory = new ContractFactory(W2ELoomV2Artifact.abi, W2ELoomV2Artifact.bytecode, wallet);
-  const TreasuryFactory = new ContractFactory(PBOXProtocolTreasuryArtifact.abi, PBOXProtocolTreasuryArtifact.bytecode, wallet);
-  const GovernorFactory = new ContractFactory(W2EGovernorArtifact.abi, W2EGovernorArtifact.bytecode, wallet);
-  const LicenseFactory = new ContractFactory(W2ELicenseArtifact.abi, W2ELicenseArtifact.bytecode, wallet);
+  const regInit = eth.utils.solidityPack(["bytes", "bytes"], [bytecodesStruct.registry, eth.utils.defaultAbiCoder.encode(["address"], [factoryAddress])]);
+  const addrRegistry = await predictAddr(regInit);
 
-  // 5. Execute Deployments (PARALLEL v2)
-  const getOverrides = (nonce: number) => ({
-    nonce,
-    gasLimit: 8000000
-  });
+  console.log(`⚛️ Expected Registry: ${addrRegistry}`);
 
+  // 5. Execute Atomic Deployment
+  console.log(`📦 Sending atomic deployment transaction...`);
   try {
-    const corePromises = [
-      // 0. Registry
-      RegistryFactory.deploy(wallet.address, getOverrides(currentNonce)),
+    const tx = await factory.deployProtocol(
+      salt,
+      configStruct,
+      actorsStruct,
+      bytecodesStruct,
+      { gasLimit: 12000000 }
+    );
 
-      // 1. PHI
-      UtilityFactory.deploy(
-        config.utilityToken.name,
-        config.utilityToken.symbol,
-        18,
-        config.utilityToken.feePercentage || 50,
-        feeRecipient,
-        wallet.address,
-        getOverrides(currentNonce + 1)
-      ),
+    console.log(`⏳ Waiting for block confirmation: ${tx.hash}`);
+    const receipt = await tx.wait(1);
 
-      // 2. Loom V2 (Ecosystem Enabled)
-      LoomV2Factory.deploy(
-        addrRegistry,
-        addrUtility,
-        rootTreasury,
-        addrTreasury,
-        oracleAddress,
-        feeRecipient,
-        config.creatorWallet,
-        config.creatorPayoutPct || 80,
-        config.quorumPercentage || 10,
-        (config.votingPeriodHours || 168) * 3600,
-        (config.emergencyPeriodHours || 360) * 3600,
-        config.emergencyQuorumPct || 20,
-        config.stakingRewardRate || "1585489599",
-        config.phiFundSplitPct || 20,
-        wallet.address,
-        getOverrides(currentNonce + 2)
-      ),
-
-      // 3. Treasury
-      TreasuryFactory.deploy(
-        (config.treasurySigners && config.treasurySigners.length >= 2) ? config.treasurySigners : [wallet.address, Wallet.createRandom().address],
-        [wallet.address, Wallet.createRandom().address, Wallet.createRandom().address],
-        oracleAddress,
-        addrGovernor,
-        Math.min(2, (config.treasurySigners?.length || 2)),
-        2,
-        parseEther("5.0"),
-        30,
-        parseEther("0.1"),
-        parseEther("1.0"),
-        wallet.address,
-        getOverrides(currentNonce + 3)
-      ),
-
-      // 4. Governor (Using predicted first artifact as vote token)
-      GovernorFactory.deploy(
-        artifactAddresses[0] || addrLoom, // Fallback to Loom if no artifacts (unlikely)
-        addrLoom,
-        config.quorumPercentage || 10,
-        100, // votingDelay = 100 blocks
-        (config.votingPeriodHours || 168) * 3600, // votingPeriod
-        86400, // executionDelaySeconds = 24 hours (Institutional Timelock)
-        wallet.address,
-        getOverrides(currentNonce + 4)
-      )
-    ];
-
-    // Deploy Artifacts in parallel with core
-    const artifactPromises = artifactsToDeploy.map((art, i) => {
-      return LicenseFactory.deploy(
-        art.name,
-        art.symbol,
-        art.maxSupply || config.maxLicenses,
-        parseEther(art.price || "0"),
-        oracleAddress,
-        addrTreasury,
-        wallet.address,
-        art.transferable ?? true,
-        art.burnable ?? false,
-        getOverrides(currentNonce + 5 + i)
-      );
-    });
-
-    const [registry, utility, loom, treasury, governor] = await Promise.all(corePromises);
-    const artifactsMined = await Promise.all(artifactPromises);
-
-    console.log("⏳ Waiting for confirmations...");
-    await Promise.all([
-      waitForDeploy(registry),
-      waitForDeploy(utility),
-      waitForDeploy(loom),
-      waitForDeploy(treasury),
-      waitForDeploy(governor),
-      ...artifactsMined.map(waitForDeploy)
-    ]);
-
-    console.log("✅ Core stack and artifacts deployed!");
-
-    // 6. Wiring & Registration (Serial for Nonce management simplicity or parallel with offsets)
-    const wiringStartNonce = currentNonce + 5 + artifactCount;
-    let wiringIndex = 0;
-    const wiringPromises: Promise<any>[] = [];
-
-    const pushWiringTx = async (contract: any, method: string, ...args: any[]) => {
-      const tx = await contract[method](...args);
-      wiringPromises.push(tx);
-      wiringIndex++;
-    };
-
-    // a. Link Utility to Loom
-    await pushWiringTx(utility, 'setW2ELoomAddress', addrLoom, getOverrides(wiringStartNonce + wiringIndex));
-
-    // b. Register Artifacts in Registry
-    for (let i = 0; i < artifactCount; i++) {
-      const typeId = 0; // Access by default for Access Pass
-      // Mapping ArtifactType string to Enum uint8
-      const typeMap: Record<ArtifactType, number> = {
-        'Access': 0, 'Identity': 1, 'Membership': 2, 'Coupon': 3, 'Reputation': 4, 'Yield': 5
-      };
-      const art = artifactsToDeploy[i];
-      if (!art) continue;
-      const artType = art.type || 'Access';
-      await pushWiringTx(registry, 'registerArtifact', artifactAddresses[i], typeMap[artType], getOverrides(wiringStartNonce + wiringIndex));
+    // Parse emitted event to get final addresses
+    const event = receipt.events?.find((e: any) => e.event === "ProtocolDeployed");
+    if (!event) {
+      throw new Error("ProtocolDeployed event missing from transaction receipt!");
     }
 
-    // c. Transfer Ownerships to Governor
-    await pushWiringTx(registry, 'transferOwnership', addrGovernor, getOverrides(wiringStartNonce + wiringIndex));
-    await pushWiringTx(utility, 'transferOwnership', addrGovernor, getOverrides(wiringStartNonce + wiringIndex));
-    await pushWiringTx(loom, 'transferOwnership', addrGovernor, getOverrides(wiringStartNonce + wiringIndex));
-    await pushWiringTx(treasury, 'transferOwnership', addrGovernor, getOverrides(wiringStartNonce + wiringIndex));
-    for (const art of artifactsMined) {
-      await pushWiringTx(art, 'transferOwnership', addrGovernor, getOverrides(wiringStartNonce + wiringIndex));
-    }
+    const {
+      registry: finalRegistry,
+      utilityToken: finalUtility,
+      loom: finalLoom,
+      treasury: finalTreasury,
+      governor: finalGovernor,
+      licenseToken: finalLicense
+    } = event.args;
 
-    console.log(`🚀 Finalizing ${wiringPromises.length} wiring actions...`);
-    const txs = await Promise.all(wiringPromises);
-    await Promise.all(txs.map((tx: any) => tx.wait()));
+    console.log("✅ Core stack deployed atomically!", { finalLoom, finalGovernor });
 
     return {
-      licenseAddress: artifactAddresses[0],
-      phiAddress: addrUtility,
-      loomAddress: addrLoom,
-      governorAddress: addrGovernor,
-      treasuryAddress: addrTreasury,
-      registryAddress: addrRegistry,
-      artifacts: artifactAddresses.map((addr, i) => ({
-        type: artifactsToDeploy[i]?.type || 'Access',
-        address: addr
-      })),
+      licenseAddress: finalLicense,
+      phiAddress: finalUtility,
+      loomAddress: finalLoom,
+      governorAddress: finalGovernor,
+      treasuryAddress: finalTreasury,
+      registryAddress: finalRegistry,
+      artifacts: [{
+        type: primaryArtifact.type || 'Access',
+        address: finalLicense
+      }],
       timelockAddress: "0x0000000000000000000000000000000000000000",
-      deploymentTxHash: (loom as any).deployTransaction?.hash || (loom as any).hash || "",
+      deploymentTxHash: tx.hash,
       network: network,
       chainId: targetChainId
     };
 
   } catch (e) {
-    console.error("❌ PARALLEL DEPLOYMENT FAILED:", e);
+    console.error("❌ ATOMIC DEPLOYMENT FAILED:", (e as any).message || e);
     throw e;
   }
 }
