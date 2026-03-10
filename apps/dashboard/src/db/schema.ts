@@ -256,8 +256,10 @@ export const projects = pgTable("projects", {
   // Pricing & Access Metadata
   accessType: varchar("access_type", { length: 20 }).default('free'), // free, license, gated, premium
   price: decimal("price", { precision: 18, scale: 6 }).default("0.000000"),
+  isDeleted: boolean("is_deleted").default(false).notNull(),
 }, (table) => ({
   slugIndex: index("project_slug_index").on(table.slug),
+  isDeletedIndex: index("project_is_deleted_index").on(table.isDeleted),
 }));
 
 // Gamification Enums

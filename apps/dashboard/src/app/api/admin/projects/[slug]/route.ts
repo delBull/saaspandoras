@@ -14,7 +14,7 @@ import { projects as projectsSchema } from "@/db/schema";
 import { projectApiSchema } from "@/lib/project-schema-api";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { headers } from "next/headers";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import slugify from "slugify";
 import { sanitizeLogData, validateRequestBody } from "@/lib/security-utils";
 
@@ -114,12 +114,12 @@ export async function GET(_request: Request, { params }: RouteParams) {
 
     if (isId) {
       project = await db.query.projects.findFirst({
-        where: eq(projectsSchema.id, projectId),
+        where: and(eq(projectsSchema.id, projectId), eq(projectsSchema.isDeleted, false)),
         columns: columns
       });
     } else {
       project = await db.query.projects.findFirst({
-        where: eq(projectsSchema.slug, slug), // Use slug here
+        where: and(eq(projectsSchema.slug, slug), eq(projectsSchema.isDeleted, false)), // Use slug here
         columns: columns
       });
     }
@@ -434,9 +434,11 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       return NextResponse.json({ message: "Proyecto no encontrado" }, { status: 404 });
     }
 
-    // Eliminar el proyecto de la base de datos
+    // Soft-delete: Marcar como eliminado en lugar de borrar físicamente
+    // Esto evita errores de integridad referencial y permite auditoría
     await db
-      .delete(projectsSchema)
+      .update(projectsSchema)
+      .set({ isDeleted: true })
       .where(eq(projectsSchema.id, projectId));
 
     return NextResponse.json({ message: "Proyecto eliminado exitosamente" }, { status: 200 });
