@@ -210,7 +210,7 @@ export function ProjectTableView({
                   {/* Featured Column */}
                   <td className="px-4 py-3 text-center whitespace-nowrap">
                     <div className="flex items-center justify-center gap-2">
-                      {isFeatured(Number(p.id)) && (
+                      {(p.featured || isFeatured(Number(p.id))) && (
                         <div className="w-2 h-2 bg-lime-400 rounded-full animate-pulse"></div>
                       )}
                       <button
@@ -219,17 +219,19 @@ export function ProjectTableView({
                             const projectId = Number(p.id);
                             console.log('🔧 Admin: Toggling featured status for project:', projectId);
                             await toggleFeatured(projectId);
+                            // We don't call refreshData here because toggleFeatured already updates local hook state
+                            // and the pulse uses both p.featured and isFeatured.
                             console.log('🔧 Admin: Featured status updated globally for project:', projectId);
                           } catch (error) {
                             console.error('🔧 Admin: Error updating featured status:', error);
                           }
                         }}
-                        className={`px-3 py-1.5 rounded text-xs font-medium transition-all duration-200 ${isFeatured(Number(p.id))
+                        className={`px-3 py-1.5 rounded text-xs font-medium transition-all duration-200 ${(p.featured || isFeatured(Number(p.id)))
                           ? 'bg-lime-500 hover:bg-lime-600 text-black shadow-lg ring-2 ring-lime-400/30'
                           : 'bg-zinc-700 hover:bg-zinc-600 text-gray-300 hover:text-white border border-zinc-600 hover:border-zinc-500'
                           }`}
                       >
-                        {isFeatured(Number(p.id)) ? '✓ Featured' : '☆ Feature'}
+                        {(p.featured || isFeatured(Number(p.id))) ? '✓ Featured' : '☆ Feature'}
                       </button>
                     </div>
                   </td>

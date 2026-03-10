@@ -43,6 +43,9 @@ export interface Project {
   w2eConfig?: any;
   treasuryAddress?: string;
   totalTokens?: number;
+  // Financial data
+  totalValuationUsd?: number | string;
+  estimatedApy?: string;
   // V2 Modular Fields
   registryContractAddress?: string;
   artifacts?: Array<{ type: string; address: string; name?: string }>;
