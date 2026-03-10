@@ -72,6 +72,9 @@ const truncateWallet = (address: string, length = 6) => {
 export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: AdminSettingsProps) {
   const walletAddress = currentWallet;
 
+  // Combine prop state with a direct client-side check against the constant for robustness
+  const effectiveIsSuperAdmin = isSuperAdmin || (currentWallet?.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase());
+
   // Filter out admins without wallet address and system admins (id: 999 or super admin wallet)
   const validAdmins = initialAdmins.filter(admin => {
     const walletAddr = getWalletAddress(admin);
@@ -88,7 +91,6 @@ export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: Ad
   const [editingAliasId, setEditingAliasId] = useState<number | null>(null);
   const [editingAliasValue, setEditingAliasValue] = useState("");
   const [showGuideModal, setShowGuideModal] = useState(false);
-
 
   const handleAddAdmin = async () => {
     if (!/^0x[a-fA-F0-9]{40}$/.test(newAddress)) {
@@ -132,8 +134,8 @@ export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: Ad
   };
 
   const handleDeleteAdmin = async (id: number, wallet?: string) => {
-    const adminLabel = wallet ? ` (${truncateWallet(wallet)})` : "";
-    if (!confirm(`⚠️ ALERTA: ¿Estás seguro de que quieres eliminar a este administrador${adminLabel}? Esta acción es irreversible.`)) {
+    const adminLabel = wallet ? ` (${wallet})` : "";
+    if (!confirm(`⚠️ ALERTA DE SEGURIDAD: Estás a punto de eliminar el acceso administrativo para la wallet${adminLabel}. ¿Deseas continuar? Esta acción es irreversible.`)) {
       return;
     }
 
@@ -245,11 +247,11 @@ export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: Ad
                 </div>
                 <Button
                   onClick={handleAddAdmin}
-                  disabled={isLoading || !isSuperAdmin}
-                  className={`w-full font-bold h-12 ${!isSuperAdmin ? 'bg-zinc-700 cursor-not-allowed opacity-50' : 'bg-lime-500 hover:bg-lime-600 text-black'}`}
+                  disabled={isLoading || !effectiveIsSuperAdmin}
+                  className={`w-full font-bold h-12 ${!effectiveIsSuperAdmin ? 'bg-zinc-700 cursor-not-allowed opacity-50' : 'bg-lime-500 hover:bg-lime-600 text-black'}`}
                 >
                   {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <PlusCircle className="w-4 h-4 mr-2" />}
-                  {isSuperAdmin ? "Añadir Acceso Admin" : "Only Super Admin can add admins"}
+                  {effectiveIsSuperAdmin ? "Añadir Acceso Admin" : "Only Super Admin can add admins"}
                 </Button>
                 {!isSuperAdmin && (
                   <p className="mt-2 text-[10px] text-yellow-500/70 italic text-center">
@@ -292,7 +294,7 @@ export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: Ad
                           <p className="font-medium text-white text-sm truncate">
                             {admin.alias || 'Admin sin alias'}
                           </p>
-                          {isSuperAdmin && (
+                          {effectiveIsSuperAdmin && (
                             <button
                               onClick={() => handleStartEditAlias(admin)}
                               className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-500 hover:text-white"
@@ -306,13 +308,13 @@ export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: Ad
                         {getWalletAddress(admin)}
                       </p>
                     </div>
-                    {isSuperAdmin && (
+                    {effectiveIsSuperAdmin && (
                       <button
                         onClick={() => handleDeleteAdmin(admin.id, getWalletAddress(admin))}
                         className="text-gray-500 hover:text-red-500 transition-all p-2 bg-zinc-700/30 hover:bg-red-500/10 rounded-md ml-2 border border-transparent hover:border-red-500/30"
                         title="Eliminar Administrador"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <XCircle className="w-4 h-4" />
                       </button>
                     )}
                   </div>
@@ -557,23 +559,23 @@ export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: Ad
                 </ul>
               </div>
               <div className="flex gap-2 text-xs text-yellow-500">
-                <span>{isSuperAdmin ? "✅ Access Granted" : "🔒 Super Admin Only"}</span>
+                <span>{effectiveIsSuperAdmin ? "✅ Access Granted" : "🔒 Super Admin Only"}</span>
                 <span>•</span>
                 <span>⚠️ High Risk Area</span>
               </div>
             </div>
             <div className="flex flex-col gap-3">
               <Link
-                href={isSuperAdmin ? "/admin/operations" : "#"}
-                className={`px-6 py-3 font-semibold rounded-lg transition-colors flex items-center gap-2 shadow-lg ${isSuperAdmin ? "bg-zinc-800 hover:bg-zinc-700 text-white" : "bg-zinc-900 text-zinc-600 cursor-not-allowed opacity-50"}`}
-                onClick={(e) => !isSuperAdmin && e.preventDefault()}
+                href={effectiveIsSuperAdmin ? "/admin/operations" : "#"}
+                className={`px-6 py-3 font-semibold rounded-lg transition-colors flex items-center gap-2 shadow-lg ${effectiveIsSuperAdmin ? "bg-zinc-800 hover:bg-zinc-700 text-white" : "bg-zinc-900 text-zinc-600 cursor-not-allowed opacity-50"}`}
+                onClick={(e) => !effectiveIsSuperAdmin && e.preventDefault()}
               >
                 <Settings className="w-4 h-4" />
                 Monitor Systems
               </Link>
               <Button
                 onClick={async () => {
-                  if (!isSuperAdmin) {
+                  if (!effectiveIsSuperAdmin) {
                     toast.error("Solo el Super Admin puede activar el Kill-Switch.");
                     return;
                   }
@@ -615,24 +617,24 @@ export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: Ad
                 Kill-switches, economy config, observabilidad y playbooks del Telegram bridge.
               </p>
               <div className="flex gap-2 text-xs text-yellow-400">
-                <span>{isSuperAdmin ? "✅ Access Granted" : "🔒 Super Admin Only"}</span>
+                <span>{effectiveIsSuperAdmin ? "✅ Access Granted" : "🔒 Super Admin Only"}</span>
                 <span>•</span>
                 <span>💬 Telegram Integration</span>
               </div>
             </div>
             <Link
-              href={isSuperAdmin ? "/admin/telegram-bridge" : "#"}
-              className={`px-6 py-3 font-semibold rounded-lg transition-colors flex items-center gap-2 shadow-lg ${isSuperAdmin ? "bg-blue-600 hover:bg-blue-700 text-white hover:shadow-blue-900/50" : "bg-zinc-950 text-zinc-600 cursor-not-allowed border border-zinc-800"}`}
-              onClick={(e) => !isSuperAdmin && e.preventDefault()}
+              href={effectiveIsSuperAdmin ? "/admin/telegram-bridge" : "#"}
+              className={`px-6 py-3 font-semibold rounded-lg transition-colors flex items-center gap-2 shadow-lg ${effectiveIsSuperAdmin ? "bg-blue-600 hover:bg-blue-700 text-white hover:shadow-blue-900/50" : "bg-zinc-950 text-zinc-600 cursor-not-allowed border border-zinc-800"}`}
+              onClick={(e) => !effectiveIsSuperAdmin && e.preventDefault()}
             >
               <MessageCircle className="w-4 h-4" />
-              {isSuperAdmin ? "Open Bridge Control" : "Control Restricted"}
+              {effectiveIsSuperAdmin ? "Open Bridge Control" : "Control Restricted"}
             </Link>
           </div>
         </div>
       </div>
 
-      <MultiTenantSection isSuperAdmin={isSuperAdmin} />
+      <MultiTenantSection isSuperAdmin={effectiveIsSuperAdmin} />
     </div >
   );
 }
@@ -667,6 +669,7 @@ function InfoTooltip({ content }: { content: string }) {
 // ============================================
 function MultiTenantSection({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
@@ -678,10 +681,15 @@ function MultiTenantSection({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   const [tenantSearchQuery, setTenantSearchQuery] = useState("");
   const [showTenantSuggestions, setShowTenantSuggestions] = useState(false);
 
-  // Filtered tenants based on search
+  // Filtered tenants and projects based on search
   const filteredTenants = tenants.filter(t =>
     t.id.toLowerCase().includes(tenantSearchQuery.toLowerCase()) ||
     t.name.toLowerCase().includes(tenantSearchQuery.toLowerCase())
+  );
+
+  const filteredProjects = projects.filter(p =>
+    p.title?.toLowerCase().includes(tenantSearchQuery.toLowerCase()) ||
+    p.slug?.toLowerCase().includes(tenantSearchQuery.toLowerCase())
   );
 
   // Handle selecting a tenant from the list
@@ -690,6 +698,15 @@ function MultiTenantSection({ isSuperAdmin }: { isSuperAdmin: boolean }) {
     setNewTenantName(tenant.name);
     setNewTenantDescription(tenant.description || "");
     setTenantSearchQuery(tenant.name);
+    setShowTenantSuggestions(false);
+  };
+
+  // Handle selecting a project to link as a tenant
+  const handleSelectProject = (project: any) => {
+    setNewTenantId(project.slug);
+    setNewTenantName(project.title);
+    setNewTenantDescription(`Comunidad oficial del protocolo ${project.title}`);
+    setTenantSearchQuery(project.title);
     setShowTenantSuggestions(false);
   };
 
@@ -722,7 +739,7 @@ function MultiTenantSection({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   });
 
   useEffect(() => {
-    fetchTenants();
+    Promise.all([fetchTenants(), fetchProjects()]).finally(() => setIsLoading(false));
   }, []);
 
   const fetchTenants = async () => {
@@ -738,8 +755,18 @@ function MultiTenantSection({ isSuperAdmin }: { isSuperAdmin: boolean }) {
       }
     } catch (error) {
       console.error("Error fetching tenants:", error);
-    } finally {
-      setIsLoading(false);
+    }
+  };
+
+  const fetchProjects = async () => {
+    try {
+      const response = await fetch("/api/admin/projects");
+      if (response.ok) {
+        const data = await response.json();
+        setProjects(data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching projects:", error);
     }
   };
 
@@ -891,10 +918,10 @@ function MultiTenantSection({ isSuperAdmin }: { isSuperAdmin: boolean }) {
 
         {/* Search/Select Existing or Create New */}
         <div className="relative mb-3">
-          <label htmlFor="tenant-search" className="text-xs text-gray-400 block mb-1">Buscar tenant existente o crear nuevo</label>
+          <label htmlFor="tenant-search" className="text-xs text-gray-400 block mb-1">Buscar tenant o protocolos existentes...</label>
           <Input
             id="tenant-search"
-            placeholder="Escribe para buscar tenants existentes..."
+            placeholder="Escribe para buscar tenants o proyectos..."
             value={tenantSearchQuery}
             onChange={(e) => handleTenantSearchChange(e.target.value)}
             onFocus={() => setShowTenantSuggestions(true)}
@@ -902,8 +929,11 @@ function MultiTenantSection({ isSuperAdmin }: { isSuperAdmin: boolean }) {
             className="bg-zinc-900 border-zinc-700"
           />
           {/* Autocomplete Suggestions */}
-          {showTenantSuggestions && filteredTenants.length > 0 && (
-            <div className="absolute z-50 w-full mt-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+          {showTenantSuggestions && (filteredTenants.length > 0 || filteredProjects.length > 0) && (
+            <div className="absolute z-50 w-full mt-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl max-h-64 overflow-y-auto">
+              {filteredTenants.length > 0 && (
+                <div className="px-3 py-1 bg-zinc-900/50 text-[10px] font-bold text-gray-500 uppercase">Tenants Existentes</div>
+              )}
               {filteredTenants.map((tenant) => (
                 <button
                   key={tenant.id}
@@ -917,6 +947,26 @@ function MultiTenantSection({ isSuperAdmin }: { isSuperAdmin: boolean }) {
                   </div>
                   <span className={`text-xs ${tenant.isActive ? 'text-lime-400' : 'text-gray-500'}`}>
                     {tenant.isActive ? 'Activo' : 'Inactivo'}
+                  </span>
+                </button>
+              ))}
+
+              {filteredProjects.length > 0 && (
+                <div className="px-3 py-1 bg-zinc-900/50 text-[10px] font-bold text-gray-500 uppercase mt-2">Protocolos Existentes (V2)</div>
+              )}
+              {filteredProjects.map((project) => (
+                <button
+                  key={project.id}
+                  type="button"
+                  onClick={() => handleSelectProject(project)}
+                  className="w-full px-3 py-2 text-left hover:bg-zinc-700 flex items-center justify-between border-b border-zinc-700 last:border-0"
+                >
+                  <div>
+                    <span className="text-lime-400 font-medium">✨ {project.title}</span>
+                    <span className="text-gray-400 text-xs ml-2">({project.slug})</span>
+                  </div>
+                  <span className="text-[10px] bg-lime-900/30 text-lime-500 px-1 rounded border border-lime-800/50">
+                    V2 Protocol
                   </span>
                 </button>
               ))}
