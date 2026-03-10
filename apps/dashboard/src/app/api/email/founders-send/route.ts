@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { whatsappPreapplyLeads } from "@/db/schema";
 import { Resend } from 'resend';
 import { sql } from 'drizzle-orm';
+import { notifyNewLead } from '@/lib/discord';
 // Import a specific Founders Template if exists, otherwise reuse generic or simple html
 import PandorasWelcomeEmail from '@/emails/creator-email';
 
@@ -61,7 +62,22 @@ export async function POST(request: Request) {
             return NextResponse.json({ message: 'Error sending email' }, { status: 500 });
         }
 
+        // 1.1 Notify Discord (High Ticket Lead)
+        try {
+            await notifyNewLead(
+                name || 'Founder Premium',
+                email,
+                10, // Fixed high score for founders
+                'Founders Inner Circle',
+                `High Ticket Inquiry from ${source || 'Founders Landing'}. Project: ${name || 'N/A'}`
+            );
+            console.log('👾 Discord notification sent (Founders)');
+        } catch (discordError) {
+            console.error('❌ Discord Error:', discordError);
+        }
+
         return NextResponse.json({ success: true });
+
 
     } catch (error) {
         console.error('❌ Server Error:', error);

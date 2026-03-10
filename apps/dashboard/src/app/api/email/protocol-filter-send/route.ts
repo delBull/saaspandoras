@@ -4,6 +4,7 @@ import { whatsappPreapplyLeads } from "@/db/schema";
 import { Resend } from 'resend';
 import PandorasWelcomeEmail from '@/emails/creator-email'; // Reuse or create new template if needed
 import { sql } from 'drizzle-orm';
+import { notifyNewLead } from '@/lib/discord';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
@@ -65,7 +66,22 @@ export async function POST(request: Request) {
             return NextResponse.json({ message: 'Error sending email' }, { status: 500 });
         }
 
+        // 1.1 Notify Discord
+        try {
+            await notifyNewLead(
+                name || 'Utility Architect',
+                email,
+                5, // Average score for filter
+                'Utility Protocol Filter',
+                `User interested in Utility Protocol Architecture from ${source || 'Utility Landing'}. Email: ${email}`
+            );
+            console.log('👾 Discord notification sent (Protocol Filter)');
+        } catch (discordError) {
+            console.error('❌ Discord Error:', discordError);
+        }
+
         return NextResponse.json({ success: true });
+
 
     } catch (error) {
         console.error('❌ Server Error:', error);

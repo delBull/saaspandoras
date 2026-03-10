@@ -129,3 +129,19 @@ export async function notifyPaymentSuccess(projectTitle: string, amount: string,
     // Send to ALERTS webhook for high visibility
     await sendDiscordNotification(DISCORD_WEBHOOK_ALERTS, '<@&MANAGER_ROLE_ID> 🚀 NEW ACTIVE CLIENT!', [embed]);
 }
+/**
+ * Notify about a New Newsletter Subscription
+ */
+export async function notifyNewsletterSubscription(email: string, source: string) {
+    const embed: DiscordEmbed = {
+        title: `📧 New Newsletter Subscriber`,
+        description: `Source: **${source}**`,
+        color: COLORS.INFO,
+        fields: [
+            { name: 'Email', value: email, inline: true }
+        ],
+        timestamp: new Date().toISOString()
+    };
+
+    await sendDiscordNotification(DISCORD_WEBHOOK_LEADS, '', [embed]);
+}
