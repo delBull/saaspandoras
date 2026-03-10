@@ -419,9 +419,9 @@ export default function ProjectReportPage() {
               </h2>
               <div className="space-y-2 print:space-y-1">
                 <div className="flex justify-between items-center text-sm print:text-xs border-b border-zinc-700/50 print:border-gray-200 pb-1">
-                  <span className="text-zinc-400 font-medium print:text-gray-600">Capital Objetivo:</span>
+                  <span className="text-zinc-400 font-medium print:text-gray-600">Total Value Locked (TVL):</span>
                   <span className="print-metric-value text-white print:text-purple-700">
-                    {formatCurrency(project.targetAmount)}
+                    {formatCurrency(project.totalValuationUsd || project.targetAmount)}
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-sm print:text-xs">
@@ -438,9 +438,9 @@ export default function ProjectReportPage() {
                 </div>
                 <div className="flex justify-between items-center text-sm print:text-xs pt-1 border-t border-zinc-700/50 print:border-gray-200">
                   <span className="text-zinc-400 font-medium print:text-gray-600 flex items-center gap-1">
-                    <TrendingUp className='w-3 h-3' /> Rendimiento Esperado:
+                    <TrendingUp className='w-3 h-3' /> Annual Return (APR):
                   </span>
-                  <span className="font-semibold text-purple-400 print:text-purple-700">10-20% Anual</span>
+                  <span className="font-semibold text-purple-400 print:text-purple-700">{project.estimatedApy || 'N/A'}</span>
                 </div>
               </div>
             </div>
