@@ -173,8 +173,24 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
       const config = typeof project.w2eConfig === 'string'
         ? JSON.parse(project.w2eConfig)
         : (project.w2eConfig || {});
-      return config.phases || (project as any).phases || [];
+
+      // 1. Direct phases in config (V1 style)
+      let phases = config.phases || (project as any).phases || [];
+
+      // 2. If V2, check artifacts for phases
+      if (phases.length === 0 && project.artifacts?.length) {
+        const artifactPhases = project.artifacts
+          .flatMap((a: any) => a.phases || [])
+          .filter((p: any) => p?.name);
+
+        if (artifactPhases.length > 0) {
+          phases = artifactPhases;
+        }
+      }
+
+      return phases;
     } catch (e) {
+      console.error("[Tabs] Error parsing w2eConfig:", e);
       return (project as any).phases || [];
     }
   };
@@ -388,8 +404,8 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
               </div>
             )}
 
-            {project.marketPhase !== 'defense' && project.w2eConfig?.phases && project.w2eConfig.phases.length > 0 ? (
-              <div className="space-y-6">
+            {project.marketPhase !== 'defense' && allPhases.length > 0 ? (
+              <div id="tab-phases" className="space-y-6">
                 {/* Fases Activas */}
                 <div className="space-y-4">
                   {activePhasesWithStats
@@ -521,12 +537,12 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                     })}
                 </div>
 
-                {project.w2eConfig.phases.filter((p: any) => p.isActive).length === 0 && (
+                {allPhases.filter((p: any) => p.isActive).length === 0 && (
                   <p className="text-zinc-400 italic text-sm">No hay fases activas en este momento.</p>
                 )}
 
                 {/* Botón Historial */}
-                {project.w2eConfig.phases.some((p: any) => !p.isActive) && (
+                {allPhases.some((p: any) => !p.isActive) && (
                   <div className="pt-4 border-t border-zinc-800">
                     <button
                       onClick={() => setShowHistorical(!showHistorical)}
@@ -789,7 +805,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                 {[
                   { label: "Licencia de Acceso (NFT)", address: project.licenseContractAddress, type: "License" },
                   { label: "Token de Utilidad (ERC-20)", address: project.utilityContractAddress, type: "Utility" },
-                  { label: "Protocol Registry (V2 Hub)", address: project.registryContractAddress, type: "Registry" },
+                  { label: "Protocol Registry V2", address: project.registryContractAddress, type: "Registry" },
                   { label: "W2E Loom (Lógica Central)", address: project.loomContractAddress, type: "Loom" },
                   { label: "Gobernador (DAO)", address: project.governorContractAddress, type: "Governor" },
                   { label: "Tesorería Comunitaria", address: project.treasuryAddress, type: "Treasury" },

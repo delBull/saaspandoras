@@ -27,26 +27,7 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
   const isOwner = account?.address && ownerWallet && account.address.toLowerCase() === ownerWallet.toLowerCase();
 
   // Estados para controlar las animaciones
-  const [showVideoHint, setShowVideoHint] = useState(false);
-  const [stopAnimations, setStopAnimations] = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    // Mostrar la animación después de 3 segundos
-    const timer1 = setTimeout(() => {
-      setShowVideoHint(true);
-    }, 3000);
-
-    // Detener las animaciones después de 20 segundos más (total 23 segundos)
-    const timer2 = setTimeout(() => {
-      setStopAnimations(true);
-    }, 23000);
-
-    return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-    };
-  }, []);
 
   const handleVideoClick = () => {
     if (onVideoClick) {

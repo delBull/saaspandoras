@@ -50,6 +50,7 @@ export interface W2EConfig {
 
   inactivityThresholdSeconds: number;
   targetNetwork: NetworkType;
+  phases?: any[]; // Sale phases / Offers
 }
 
 export interface W2EDeploymentResult {

@@ -72,6 +72,9 @@ const truncateWallet = (address: string, length = 6) => {
 export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: AdminSettingsProps) {
   const walletAddress = currentWallet;
 
+  // Combine prop state with a direct client-side check against the constant for robustness
+  const effectiveIsSuperAdmin = isSuperAdmin || (currentWallet?.toLowerCase() === SUPER_ADMIN_WALLET.toLowerCase());
+
   // Filter out admins without wallet address and system admins (id: 999 or super admin wallet)
   const validAdmins = initialAdmins.filter(admin => {
     const walletAddr = getWalletAddress(admin);
@@ -88,7 +91,6 @@ export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: Ad
   const [editingAliasId, setEditingAliasId] = useState<number | null>(null);
   const [editingAliasValue, setEditingAliasValue] = useState("");
   const [showGuideModal, setShowGuideModal] = useState(false);
-
 
   const handleAddAdmin = async () => {
     if (!/^0x[a-fA-F0-9]{40}$/.test(newAddress)) {
@@ -132,8 +134,8 @@ export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: Ad
   };
 
   const handleDeleteAdmin = async (id: number, wallet?: string) => {
-    const adminLabel = wallet ? ` (${truncateWallet(wallet)})` : "";
-    if (!confirm(`⚠️ ALERTA: ¿Estás seguro de que quieres eliminar a este administrador${adminLabel}? Esta acción es irreversible.`)) {
+    const adminLabel = wallet ? ` (${wallet})` : "";
+    if (!confirm(`⚠️ ALERTA DE SEGURIDAD: Estás a punto de eliminar el acceso administrativo para la wallet${adminLabel}. ¿Deseas continuar? Esta acción es irreversible.`)) {
       return;
     }
 
@@ -245,11 +247,11 @@ export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: Ad
                 </div>
                 <Button
                   onClick={handleAddAdmin}
-                  disabled={isLoading || !isSuperAdmin}
-                  className={`w-full font-bold h-12 ${!isSuperAdmin ? 'bg-zinc-700 cursor-not-allowed opacity-50' : 'bg-lime-500 hover:bg-lime-600 text-black'}`}
+                  disabled={isLoading || !effectiveIsSuperAdmin}
+                  className={`w-full font-bold h-12 ${!effectiveIsSuperAdmin ? 'bg-zinc-700 cursor-not-allowed opacity-50' : 'bg-lime-500 hover:bg-lime-600 text-black'}`}
                 >
                   {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <PlusCircle className="w-4 h-4 mr-2" />}
-                  {isSuperAdmin ? "Añadir Acceso Admin" : "Only Super Admin can add admins"}
+                  {effectiveIsSuperAdmin ? "Añadir Acceso Admin" : "Only Super Admin can add admins"}
                 </Button>
                 {!isSuperAdmin && (
                   <p className="mt-2 text-[10px] text-yellow-500/70 italic text-center">
@@ -292,7 +294,7 @@ export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: Ad
                           <p className="font-medium text-white text-sm truncate">
                             {admin.alias || 'Admin sin alias'}
                           </p>
-                          {isSuperAdmin && (
+                          {effectiveIsSuperAdmin && (
                             <button
                               onClick={() => handleStartEditAlias(admin)}
                               className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-500 hover:text-white"
@@ -306,13 +308,13 @@ export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: Ad
                         {getWalletAddress(admin)}
                       </p>
                     </div>
-                    {isSuperAdmin && (
+                    {effectiveIsSuperAdmin && (
                       <button
                         onClick={() => handleDeleteAdmin(admin.id, getWalletAddress(admin))}
-                        className="text-gray-500 hover:text-red-500 transition-all p-2 bg-zinc-700/30 hover:bg-red-500/10 rounded-md ml-2"
+                        className="text-gray-500 hover:text-red-500 transition-all p-2 bg-zinc-700/30 hover:bg-red-500/10 rounded-md ml-2 border border-transparent hover:border-red-500/30"
                         title="Eliminar Administrador"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <XCircle className="w-4 h-4" />
                       </button>
                     )}
                   </div>
@@ -396,139 +398,141 @@ export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: Ad
       </div>
 
       {/* --- ARCHITECTURE GUIDE MODAL --- */}
-      {showGuideModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="p-8">
-              <div className="flex items-center justify-between mb-8 pb-4 border-b border-zinc-800">
-                <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-                  <Landmark className="w-8 h-8 text-lime-400" />
-                  AGORA Architecture: Visual Flow
-                </h2>
-                <Button variant="ghost" onClick={() => setShowGuideModal(false)} className="text-gray-400 hover:text-white">✕</Button>
-              </div>
-
-              <div className="space-y-12">
-                <div className="relative flex flex-col md:flex-row items-center justify-between gap-8 py-8">
-                  <div className="flex flex-col items-center gap-4 text-center group">
-                    <div className="w-16 h-16 rounded-2xl bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center group-hover:border-lime-400 transition-colors">
-                      <Users className="w-8 h-8 text-lime-400" />
-                    </div>
-                    <div>
-                      <div className="text-sm font-bold text-white">LISTING</div>
-                      <div className="text-[10px] text-gray-500 uppercase">Input</div>
-                    </div>
-                  </div>
-                  <ArrowRight className="hidden md:block w-6 h-6 text-zinc-700" />
-                  <div className="flex flex-col items-center gap-4 text-center group">
-                    <div className="w-20 h-20 rounded-2xl bg-zinc-800 border-2 border-lime-500/50 flex items-center justify-center shadow-[0_0_20px_rgba(163,230,53,0.1)] group-hover:border-lime-400 transition-colors">
-                      <Settings className="w-10 h-10 text-lime-400" />
-                    </div>
-                    <div>
-                      <div className="text-sm font-bold text-white uppercase">Settlement Engine</div>
-                      <div className="text-[10px] text-gray-500 uppercase">Atomic Validation</div>
-                    </div>
-                  </div>
-                  <ArrowRight className="hidden md:block w-6 h-6 text-zinc-700" />
-                  <div className="flex flex-col items-center gap-4 text-center group">
-                    <div className="w-16 h-16 rounded-2xl bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center group-hover:border-lime-400 transition-colors">
-                      <Building2 className="w-8 h-8 text-lime-400" />
-                    </div>
-                    <div>
-                      <div className="text-sm font-bold text-white uppercase">Treasury / NAV</div>
-                      <div className="text-[10px] text-gray-500 uppercase">Stability</div>
-                    </div>
-                  </div>
+      {
+        showGuideModal && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+            <div className="bg-zinc-900 border border-zinc-700 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+              <div className="p-8">
+                <div className="flex items-center justify-between mb-8 pb-4 border-b border-zinc-800">
+                  <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                    <Landmark className="w-8 h-8 text-lime-400" />
+                    AGORA Architecture: Visual Flow
+                  </h2>
+                  <Button variant="ghost" onClick={() => setShowGuideModal(false)} className="text-gray-400 hover:text-white">✕</Button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-zinc-950/50 rounded-xl p-6 border border-zinc-800">
-                  <div className="space-y-4">
-                    <h5 className="text-lime-400 font-bold text-sm uppercase tracking-widest">Economic Logic</h5>
-                    <ul className="space-y-4">
-                      <li className="flex gap-3">
-                        <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-lime-400 shrink-0">1</div>
-                        <p className="text-xs text-gray-400 leading-relaxed">
-                          <strong>NAV Calculation:</strong> Net Asset Value = Treasury / Supply. This is the "Truth" price of the platform.
-                        </p>
-                      </li>
-                      <li className="flex gap-3">
-                        <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-lime-400 shrink-0">2</div>
-                        <p className="text-xs text-gray-400 leading-relaxed">
-                          <strong>Buyback (ROFR):</strong> If a Listing price is &lt; NAV, the protocol can exercise its Right of First Refusal to stabilize the market.
-                        </p>
-                      </li>
-                      <li className="flex gap-3">
-                        <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-lime-400 shrink-0">3</div>
-                        <p className="text-xs text-gray-400 leading-relaxed">
-                          <strong>Early Exit:</strong> Users can sell back directly to Treasury, but pay a penalty (default 15%) to discourage bank runs.
-                        </p>
-                      </li>
-                    </ul>
+                <div className="space-y-12">
+                  <div className="relative flex flex-col md:flex-row items-center justify-between gap-8 py-8">
+                    <div className="flex flex-col items-center gap-4 text-center group">
+                      <div className="w-16 h-16 rounded-2xl bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center group-hover:border-lime-400 transition-colors">
+                        <Users className="w-8 h-8 text-lime-400" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-bold text-white">LISTING</div>
+                        <div className="text-[10px] text-gray-500 uppercase">Input</div>
+                      </div>
+                    </div>
+                    <ArrowRight className="hidden md:block w-6 h-6 text-zinc-700" />
+                    <div className="flex flex-col items-center gap-4 text-center group">
+                      <div className="w-20 h-20 rounded-2xl bg-zinc-800 border-2 border-lime-500/50 flex items-center justify-center shadow-[0_0_20px_rgba(163,230,53,0.1)] group-hover:border-lime-400 transition-colors">
+                        <Settings className="w-10 h-10 text-lime-400" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-bold text-white uppercase">Settlement Engine</div>
+                        <div className="text-[10px] text-gray-500 uppercase">Atomic Validation</div>
+                      </div>
+                    </div>
+                    <ArrowRight className="hidden md:block w-6 h-6 text-zinc-700" />
+                    <div className="flex flex-col items-center gap-4 text-center group">
+                      <div className="w-16 h-16 rounded-2xl bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center group-hover:border-lime-400 transition-colors">
+                        <Building2 className="w-8 h-8 text-lime-400" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-bold text-white uppercase">Treasury / NAV</div>
+                        <div className="text-[10px] text-gray-500 uppercase">Stability</div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-4">
-                    <h5 className="text-red-400 font-bold text-sm uppercase tracking-widest">Operational Safety</h5>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-zinc-950/50 rounded-xl p-6 border border-zinc-800">
                     <div className="space-y-4">
-                      <div className="p-4 bg-red-950/10 border border-red-900/20 rounded-lg">
-                        <div className="text-xs font-bold text-red-400 mb-1">GLOBAL KILL-SWITCH</div>
-                        <p className="text-[11px] text-gray-400">
-                          Immmediate pause. Bypasses 6h delay. Use ONLY in case of exploit or extreme volatility.
+                      <h5 className="text-lime-400 font-bold text-sm uppercase tracking-widest">Economic Logic</h5>
+                      <ul className="space-y-4">
+                        <li className="flex gap-3">
+                          <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-lime-400 shrink-0">1</div>
+                          <p className="text-xs text-gray-400 leading-relaxed">
+                            <strong>NAV Calculation:</strong> Net Asset Value = Treasury / Supply. This is the "Truth" price of the platform.
+                          </p>
+                        </li>
+                        <li className="flex gap-3">
+                          <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-lime-400 shrink-0">2</div>
+                          <p className="text-xs text-gray-400 leading-relaxed">
+                            <strong>Buyback (ROFR):</strong> If a Listing price is &lt; NAV, the protocol can exercise its Right of First Refusal to stabilize the market.
+                          </p>
+                        </li>
+                        <li className="flex gap-3">
+                          <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-lime-400 shrink-0">3</div>
+                          <p className="text-xs text-gray-400 leading-relaxed">
+                            <strong>Early Exit:</strong> Users can sell back directly to Treasury, but pay a penalty (default 15%) to discourage bank runs.
+                          </p>
+                        </li>
+                      </ul>
+                    </div>
+                    <div className="space-y-4">
+                      <h5 className="text-red-400 font-bold text-sm uppercase tracking-widest">Operational Safety</h5>
+                      <div className="space-y-4">
+                        <div className="p-4 bg-red-950/10 border border-red-900/20 rounded-lg">
+                          <div className="text-xs font-bold text-red-400 mb-1">GLOBAL KILL-SWITCH</div>
+                          <p className="text-[11px] text-gray-400">
+                            Immmediate pause. Bypasses 6h delay. Use ONLY in case of exploit or extreme volatility.
+                          </p>
+                        </div>
+                        <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-lg">
+                          <div className="text-xs font-bold text-white mb-1">LOCK ORDERING</div>
+                          <p className="text-[11px] text-gray-400">
+                            To prevent deadlocks, the engine always locks artifacts in strict order: [Listing] then [Artifact].
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-lime-400/5 border border-lime-400/20 rounded-xl p-6">
+                    <h5 className="text-lime-400 font-bold text-sm uppercase tracking-widest mb-4 flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4" />
+                      Strategic Roadmap: Policy Transition
+                    </h5>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <div className="text-xs font-bold text-white flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-blue-400" />
+                          PHASE 1: FUNDING (Initial)
+                        </div>
+                        <p className="text-[11px] text-gray-400 pl-4 border-l border-zinc-800">
+                          Buyback Ratio is 0%. The protocol focuses on treasury growth. Market operates within bands but without protocol intervention.
                         </p>
                       </div>
-                      <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-lg">
-                        <div className="text-xs font-bold text-white mb-1">LOCK ORDERING</div>
-                        <p className="text-[11px] text-gray-400">
-                          To prevent deadlocks, the engine always locks artifacts in strict order: [Listing] then [Artifact].
+                      <div className="space-y-2">
+                        <div className="text-xs font-bold text-white flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-lime-400 animate-pulse" />
+                          PHASE 2: DEFENSE (Active)
+                        </div>
+                        <p className="text-[11px] text-gray-400 pl-4 border-l border-zinc-800">
+                          Governance increases Ratio &gt; 0%. ROFR becomes active. Protocol automatedly defends the floor based on NAV.
                         </p>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="bg-lime-400/5 border border-lime-400/20 rounded-xl p-6">
-                  <h5 className="text-lime-400 font-bold text-sm uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4" />
-                    Strategic Roadmap: Policy Transition
-                  </h5>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <div className="text-xs font-bold text-white flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-blue-400" />
-                        PHASE 1: FUNDING (Initial)
-                      </div>
-                      <p className="text-[11px] text-gray-400 pl-4 border-l border-zinc-800">
-                        Buyback Ratio is 0%. The protocol focuses on treasury growth. Market operates within bands but without protocol intervention.
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="text-xs font-bold text-white flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-lime-400 animate-pulse" />
-                        PHASE 2: DEFENSE (Active)
-                      </div>
-                      <p className="text-[11px] text-gray-400 pl-4 border-l border-zinc-800">
-                        Governance increases Ratio &gt; 0%. ROFR becomes active. Protocol automatedly defends the floor based on NAV.
-                      </p>
-                    </div>
+                  <div className="mt-4 text-center">
+                    <p className="text-xs text-gray-500 italic">
+                      "AGORA is not just a marketplace; it is an economic buffer system designed to protect long-term value."
+                    </p>
                   </div>
-                </div>
-
-                <div className="mt-4 text-center">
-                  <p className="text-xs text-gray-500 italic">
-                    "AGORA is not just a marketplace; it is an economic buffer system designed to protect long-term value."
-                  </p>
-                </div>
-                <div className="flex justify-end pt-4">
-                  <Button
-                    onClick={() => setShowGuideModal(false)}
-                    className="bg-lime-500 hover:bg-lime-600 text-zinc-900 font-bold px-8"
-                  >
-                    Understood
-                  </Button>
+                  <div className="flex justify-end pt-4">
+                    <Button
+                      onClick={() => setShowGuideModal(false)}
+                      className="bg-lime-500 hover:bg-lime-600 text-zinc-900 font-bold px-8"
+                    >
+                      Understood
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* --- OPERATIONS CONTROL LINK --- */}
       <div className="border-t-2 border-zinc-700/50 pt-8 mt-8">
@@ -555,23 +559,23 @@ export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: Ad
                 </ul>
               </div>
               <div className="flex gap-2 text-xs text-yellow-500">
-                <span>{isSuperAdmin ? "✅ Access Granted" : "🔒 Super Admin Only"}</span>
+                <span>{effectiveIsSuperAdmin ? "✅ Access Granted" : "🔒 Super Admin Only"}</span>
                 <span>•</span>
                 <span>⚠️ High Risk Area</span>
               </div>
             </div>
             <div className="flex flex-col gap-3">
               <Link
-                href={isSuperAdmin ? "/admin/operations" : "#"}
-                className={`px-6 py-3 font-semibold rounded-lg transition-colors flex items-center gap-2 shadow-lg ${isSuperAdmin ? "bg-zinc-800 hover:bg-zinc-700 text-white" : "bg-zinc-900 text-zinc-600 cursor-not-allowed opacity-50"}`}
-                onClick={(e) => !isSuperAdmin && e.preventDefault()}
+                href={effectiveIsSuperAdmin ? "/admin/operations" : "#"}
+                className={`px-6 py-3 font-semibold rounded-lg transition-colors flex items-center gap-2 shadow-lg ${effectiveIsSuperAdmin ? "bg-zinc-800 hover:bg-zinc-700 text-white" : "bg-zinc-900 text-zinc-600 cursor-not-allowed opacity-50"}`}
+                onClick={(e) => !effectiveIsSuperAdmin && e.preventDefault()}
               >
                 <Settings className="w-4 h-4" />
                 Monitor Systems
               </Link>
               <Button
                 onClick={async () => {
-                  if (!isSuperAdmin) {
+                  if (!effectiveIsSuperAdmin) {
                     toast.error("Solo el Super Admin puede activar el Kill-Switch.");
                     return;
                   }
@@ -613,25 +617,25 @@ export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: Ad
                 Kill-switches, economy config, observabilidad y playbooks del Telegram bridge.
               </p>
               <div className="flex gap-2 text-xs text-yellow-400">
-                <span>{isSuperAdmin ? "✅ Access Granted" : "🔒 Super Admin Only"}</span>
+                <span>{effectiveIsSuperAdmin ? "✅ Access Granted" : "🔒 Super Admin Only"}</span>
                 <span>•</span>
                 <span>💬 Telegram Integration</span>
               </div>
             </div>
             <Link
-              href={isSuperAdmin ? "/admin/telegram-bridge" : "#"}
-              className={`px-6 py-3 font-semibold rounded-lg transition-colors flex items-center gap-2 shadow-lg ${isSuperAdmin ? "bg-blue-600 hover:bg-blue-700 text-white hover:shadow-blue-900/50" : "bg-zinc-950 text-zinc-600 cursor-not-allowed border border-zinc-800"}`}
-              onClick={(e) => !isSuperAdmin && e.preventDefault()}
+              href={effectiveIsSuperAdmin ? "/admin/telegram-bridge" : "#"}
+              className={`px-6 py-3 font-semibold rounded-lg transition-colors flex items-center gap-2 shadow-lg ${effectiveIsSuperAdmin ? "bg-blue-600 hover:bg-blue-700 text-white hover:shadow-blue-900/50" : "bg-zinc-950 text-zinc-600 cursor-not-allowed border border-zinc-800"}`}
+              onClick={(e) => !effectiveIsSuperAdmin && e.preventDefault()}
             >
               <MessageCircle className="w-4 h-4" />
-              {isSuperAdmin ? "Open Bridge Control" : "Control Restricted"}
+              {effectiveIsSuperAdmin ? "Open Bridge Control" : "Control Restricted"}
             </Link>
           </div>
         </div>
       </div>
 
-      <MultiTenantSection isSuperAdmin={isSuperAdmin} />
-    </div>
+      <MultiTenantSection isSuperAdmin={effectiveIsSuperAdmin} />
+    </div >
   );
 }
 
@@ -665,6 +669,7 @@ function InfoTooltip({ content }: { content: string }) {
 // ============================================
 function MultiTenantSection({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
@@ -676,10 +681,15 @@ function MultiTenantSection({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   const [tenantSearchQuery, setTenantSearchQuery] = useState("");
   const [showTenantSuggestions, setShowTenantSuggestions] = useState(false);
 
-  // Filtered tenants based on search
+  // Filtered tenants and projects based on search
   const filteredTenants = tenants.filter(t =>
     t.id.toLowerCase().includes(tenantSearchQuery.toLowerCase()) ||
     t.name.toLowerCase().includes(tenantSearchQuery.toLowerCase())
+  );
+
+  const filteredProjects = projects.filter(p =>
+    p.title?.toLowerCase().includes(tenantSearchQuery.toLowerCase()) ||
+    p.slug?.toLowerCase().includes(tenantSearchQuery.toLowerCase())
   );
 
   // Handle selecting a tenant from the list
@@ -691,18 +701,28 @@ function MultiTenantSection({ isSuperAdmin }: { isSuperAdmin: boolean }) {
     setShowTenantSuggestions(false);
   };
 
+  // Handle selecting a project to link as a tenant
+  const handleSelectProject = (project: any) => {
+    setNewTenantId(project.slug);
+    setNewTenantName(project.title);
+    setNewTenantDescription(`Comunidad oficial del protocolo ${project.title}`);
+    setTenantSearchQuery(project.title);
+    setShowTenantSuggestions(false);
+  };
+
   // Handle typing in the search field
   const handleTenantSearchChange = (value: string) => {
     setTenantSearchQuery(value);
     setShowTenantSuggestions(true);
-    // Also update the form fields if we find a match
-    const matchedTenant = tenants.find(t => t.id === value || t.name.toLowerCase() === value.toLowerCase());
+
+    // Auto-match if exactly equal to an ID
+    const matchedTenant = tenants.find(t => t.id === value.toLowerCase().trim());
     if (matchedTenant) {
       setNewTenantId(matchedTenant.id);
       setNewTenantName(matchedTenant.name);
       setNewTenantDescription(matchedTenant.description || "");
-    } else {
-      // It's a new tenant, keep the ID from input
+    } else if (value.trim()) {
+      // It's a new tenant ID suggestion
       setNewTenantId(value.toLowerCase().replace(/\s+/g, '-'));
     }
   };
@@ -719,7 +739,7 @@ function MultiTenantSection({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   });
 
   useEffect(() => {
-    fetchTenants();
+    Promise.all([fetchTenants(), fetchProjects()]).finally(() => setIsLoading(false));
   }, []);
 
   const fetchTenants = async () => {
@@ -735,8 +755,18 @@ function MultiTenantSection({ isSuperAdmin }: { isSuperAdmin: boolean }) {
       }
     } catch (error) {
       console.error("Error fetching tenants:", error);
-    } finally {
-      setIsLoading(false);
+    }
+  };
+
+  const fetchProjects = async () => {
+    try {
+      const response = await fetch("/api/admin/projects");
+      if (response.ok) {
+        const data = await response.json();
+        setProjects(data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching projects:", error);
     }
   };
 
@@ -888,10 +918,10 @@ function MultiTenantSection({ isSuperAdmin }: { isSuperAdmin: boolean }) {
 
         {/* Search/Select Existing or Create New */}
         <div className="relative mb-3">
-          <label htmlFor="tenant-search" className="text-xs text-gray-400 block mb-1">Buscar tenant existente o crear nuevo</label>
+          <label htmlFor="tenant-search" className="text-xs text-gray-400 block mb-1">Buscar tenant o protocolos existentes...</label>
           <Input
             id="tenant-search"
-            placeholder="Escribe para buscar tenants existentes..."
+            placeholder="Escribe para buscar tenants o proyectos..."
             value={tenantSearchQuery}
             onChange={(e) => handleTenantSearchChange(e.target.value)}
             onFocus={() => setShowTenantSuggestions(true)}
@@ -899,8 +929,11 @@ function MultiTenantSection({ isSuperAdmin }: { isSuperAdmin: boolean }) {
             className="bg-zinc-900 border-zinc-700"
           />
           {/* Autocomplete Suggestions */}
-          {showTenantSuggestions && filteredTenants.length > 0 && (
-            <div className="absolute z-50 w-full mt-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+          {showTenantSuggestions && (filteredTenants.length > 0 || filteredProjects.length > 0) && (
+            <div className="absolute z-50 w-full mt-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl max-h-64 overflow-y-auto">
+              {filteredTenants.length > 0 && (
+                <div className="px-3 py-1 bg-zinc-900/50 text-[10px] font-bold text-gray-500 uppercase">Tenants Existentes</div>
+              )}
               {filteredTenants.map((tenant) => (
                 <button
                   key={tenant.id}
@@ -914,6 +947,26 @@ function MultiTenantSection({ isSuperAdmin }: { isSuperAdmin: boolean }) {
                   </div>
                   <span className={`text-xs ${tenant.isActive ? 'text-lime-400' : 'text-gray-500'}`}>
                     {tenant.isActive ? 'Activo' : 'Inactivo'}
+                  </span>
+                </button>
+              ))}
+
+              {filteredProjects.length > 0 && (
+                <div className="px-3 py-1 bg-zinc-900/50 text-[10px] font-bold text-gray-500 uppercase mt-2">Protocolos Existentes (V2)</div>
+              )}
+              {filteredProjects.map((project) => (
+                <button
+                  key={project.id}
+                  type="button"
+                  onClick={() => handleSelectProject(project)}
+                  className="w-full px-3 py-2 text-left hover:bg-zinc-700 flex items-center justify-between border-b border-zinc-700 last:border-0"
+                >
+                  <div>
+                    <span className="text-lime-400 font-medium">✨ {project.title}</span>
+                    <span className="text-gray-400 text-xs ml-2">({project.slug})</span>
+                  </div>
+                  <span className="text-[10px] bg-lime-900/30 text-lime-500 px-1 rounded border border-lime-800/50">
+                    V2 Protocol
                   </span>
                 </button>
               ))}
