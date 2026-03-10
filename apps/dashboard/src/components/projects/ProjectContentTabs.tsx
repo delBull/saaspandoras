@@ -805,7 +805,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
                 {[
                   { label: "Licencia de Acceso (NFT)", address: project.licenseContractAddress, type: "License" },
                   { label: "Token de Utilidad (ERC-20)", address: project.utilityContractAddress, type: "Utility" },
-                  { label: "Protocol Registry (V2 Hub)", address: project.registryContractAddress, type: "Registry" },
+                  { label: "Protocol Registry V2", address: project.registryContractAddress, type: "Registry" },
                   { label: "W2E Loom (Lógica Central)", address: project.loomContractAddress, type: "Loom" },
                   { label: "Gobernador (DAO)", address: project.governorContractAddress, type: "Governor" },
                   { label: "Tesorería Comunitaria", address: project.treasuryAddress, type: "Treasury" },

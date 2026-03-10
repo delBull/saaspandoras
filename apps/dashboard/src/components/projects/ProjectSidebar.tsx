@@ -314,9 +314,10 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                   </div>
                   <button
                     onClick={() => {
-                      // Attempt to scroll to tab content if it exists
-                      const phasesEl = document.getElementById('tab-phases') || document.getElementById('sidebar-phases');
-                      phasesEl?.scrollIntoView({ behavior: 'smooth' });
+                      const url = new URL(window.location.href);
+                      url.searchParams.set('tab', 'utility');
+                      url.hash = 'tab-phases';
+                      window.location.href = url.toString();
                     }}
                     className="w-full py-1 text-xs text-zinc-400 hover:text-lime-400 hover:bg-white/5 rounded flex items-center justify-center gap-1 transition-colors"
                   >
@@ -339,8 +340,10 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                   </button>
                   <button
                     onClick={() => {
-                      const phasesEl = document.getElementById('tab-phases') || document.getElementById('sidebar-phases');
-                      phasesEl?.scrollIntoView({ behavior: 'smooth' });
+                      const url = new URL(window.location.href);
+                      url.searchParams.set('tab', 'utility');
+                      url.hash = 'tab-phases';
+                      window.location.href = url.toString();
                     }}
                     className="w-full py-1 text-xs text-zinc-400 hover:text-white hover:bg-white/5 rounded flex items-center justify-center gap-1 transition-colors"
                   >
