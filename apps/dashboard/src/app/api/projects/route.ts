@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "~/db";
 import { projects } from "~/db/schema";
-import { inArray, desc, ne, and } from "drizzle-orm";
+import { inArray, desc, ne, and, eq } from "drizzle-orm";
 
 export const dynamic = 'force-dynamic'; // Asegura que la ruta sea siempre dinámica
 
@@ -98,7 +98,8 @@ export async function GET() {
         .where(
           and(
             inArray(projects.status, ['pending', 'approved', 'live', 'completed']),
-            ne(projects.businessCategory, 'infrastructure') // Exclude NFT Passes/System contracts
+            ne(projects.businessCategory, 'infrastructure'), // Exclude NFT Passes/System contracts
+            eq(projects.isDeleted, false)
           )
         )
         .orderBy(desc(projects.createdAt));

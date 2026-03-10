@@ -83,12 +83,12 @@ export async function GET(
 
     try {
       projectResult = await db.query.projects.findFirst({
-        where: (projects, { eq }) => eq(projects.slug, slug)
+        where: (projects, { eq, and }) => and(eq(projects.slug, slug), eq(projects.isDeleted, false))
       });
     } catch (ormError) {
       console.warn('⚠️ API: ORM Error (legacy data?), trying raw SQL:', ormError);
       const { sql } = await import('drizzle-orm');
-      const rawRes = await db.execute(sql`SELECT * FROM projects WHERE slug = ${slug} LIMIT 1`);
+      const rawRes = await db.execute(sql`SELECT * FROM projects WHERE slug = ${slug} AND is_deleted = false LIMIT 1`);
       if (rawRes && rawRes.length > 0) {
         projectResult = rawRes[0];
       }
