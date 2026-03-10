@@ -8,6 +8,8 @@ import { sql } from 'drizzle-orm';
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
 
+import { notifyNewsletterSubscription } from '@/lib/discord';
+
 export async function POST(request: Request) {
     try {
         const body = await request.json();
@@ -73,6 +75,13 @@ export async function POST(request: Request) {
         } catch (emailError) {
             console.error('❌ Email Logic Error:', emailError);
             return NextResponse.json({ message: 'Error sending email' }, { status: 500 });
+        }
+
+        // 3. Notify Discord
+        try {
+            await notifyNewsletterSubscription(email, source || 'start_landing');
+        } catch (discordError) {
+            console.warn('⚠️ Discord notification issue (non-blocking):', discordError);
         }
 
         return NextResponse.json({ success: true });
