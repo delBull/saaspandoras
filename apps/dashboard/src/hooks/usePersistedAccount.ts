@@ -4,7 +4,7 @@ import { useEffect, useCallback, useState } from "react";
 import { useActiveAccount, useActiveWallet, useConnect, useDisconnect } from "thirdweb/react";
 import { createWallet, type WalletId, smartWallet } from "thirdweb/wallets";
 import { client } from "@/lib/thirdweb-client";
-import { accountAbstractionConfig } from "@/config/wallets";
+import { accountAbstractionConfig } from "@/lib/wallets";
 
 interface SavedSession {
   address: string;
