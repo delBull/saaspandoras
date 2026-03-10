@@ -42,7 +42,8 @@ export async function GET() {
             .where(
                 and(
                     inArray(projects.status, ['approved', 'live', 'completed']),
-                    ne(projects.businessCategory, 'infrastructure')
+                    ne(projects.businessCategory, 'infrastructure'),
+                    eq(projects.isDeleted, false)
                 )
             )
             .orderBy(desc(projects.updatedAt));
