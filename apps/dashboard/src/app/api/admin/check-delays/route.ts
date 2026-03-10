@@ -40,6 +40,20 @@ export async function GET(req: Request) {
             .where(and(...whereClause));
 
         if (pendingSubmissions.length === 0) {
+            if (force) {
+                // Send a test alert if forced
+                const testProject = filterProjectId ? await db.query.projects.findFirst({
+                    where: eq(projects.id, Number(filterProjectId))
+                }) : null;
+                
+                await sendDelayedDistributionAlert(
+                    testProject || { title: "TEST PROTOCOL", id: 0 } as any, 
+                    7, 
+                    1, 
+                    100
+                );
+                return NextResponse.json({ message: "Test alert sent.", forced: true });
+            }
             return NextResponse.json({ message: "No delays detected." });
         }
 

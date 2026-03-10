@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { clients, paymentLinks, transactions, sowTemplates } from "@/db/schema";
 import { desc, eq, sql } from "drizzle-orm";
 import { sendEmail } from "@/lib/email/client";
+import { sendPaymentNotification } from "@/lib/discord/notifier";
 
 export async function getClients() {
     try {
@@ -77,6 +78,20 @@ export async function updatePaymentStatus(linkId: string, status: 'pending' | 'p
         // Trigger Business Logic if Paid
         if (status === 'paid') {
             await processPaymentSuccess(linkId);
+
+            // Notify Discord
+            await sendPaymentNotification({
+                type: "payment_received",
+                amount: Number(link.amount),
+                currency: link.currency || "USD",
+                method: method,
+                status: "completed",
+                linkId: link.id,
+                clientId: link.clientId,
+                metadata: {
+                    message: `Pago manual confirmado por administrador para enlace ${link.id}`
+                }
+            });
         }
 
         return { success: true };
