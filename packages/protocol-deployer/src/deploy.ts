@@ -148,12 +148,12 @@ export async function deployW2EProtocol(
     stakingRewardRate: config.stakingRewardRate || "1585489599",
     phiFundSplitPct: config.phiFundSplitPct || 20,
 
-    utilityTokenName: config.utilityToken.name,
-    utilityTokenSymbol: config.utilityToken.symbol,
+    utilityTokenName: config.utilityToken.name || `${projectSlug} Utility`,
+    utilityTokenSymbol: config.utilityToken.symbol || "PHI",
     utilityFeePercentage: config.utilityToken.feePercentage || 50,
 
-    licenseName: primaryArtifact.name,
-    licenseSymbol: primaryArtifact.symbol,
+    licenseName: primaryArtifact.name || `Licencia ${projectSlug}`,
+    licenseSymbol: primaryArtifact.symbol || "VHORA",
     licenseMaxSupply: primaryArtifact.maxSupply || config.maxLicenses || 10000,
     licensePrice: parseEther(primaryArtifact.price || "0"),
     licenseTransferable: primaryArtifact.transferable ?? true,

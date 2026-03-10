@@ -244,7 +244,7 @@ export function ProjectTableView({
                       </button>
                       <Link
                         href={`/admin/projects/${p.id}/report`}
-                        className="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 hover:text-zinc-200 rounded text-[10px] sm:text-xs font-medium transition-colors flex items-center justify-center gap-1 w-full border border-zinc-600 hover:border-zinc-500"
+                        className="px-2 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 hover:text-zinc-200 rounded text-[10px] sm:text-xs font-medium transition-colors flex items-center justify-center w-full border border-zinc-600 hover:border-zinc-500"
                       >
                         <span className="truncate">One Pager</span>
                       </Link>
@@ -472,32 +472,6 @@ export function ProjectTableView({
                                       </button>
                                     )}
 
-                                    {p.deploymentStatus === 'deployed' && (
-                                      <button
-                                        onClick={() => {
-                                          if (window.confirm("⚠️ ¿Estás seguro de que quieres REDESPLEGAR este protocolo?\n\nEsta acción es PELIGROSA:\n- Se crearán NUEVOS contratos.\n- Los contratos anteriores quedarán huérfanos.\n- Tendrás que actualizar manualmente cualquier frontend externo.\n\n¿Continuar?")) {
-                                            handleDeployClick(p.id, p.title, p.slug!, true);
-                                          }
-                                        }}
-                                        disabled={actionsLoading?.[p.id]}
-                                        className="px-3 py-1.5 bg-red-900/50 hover:bg-red-900 border border-red-500/50 text-red-200 text-xs font-bold rounded shadow-lg transition-all flex items-center gap-1.5"
-                                        title="PELIGRO: Crea nuevos contratos y reemplaza los actuales"
-                                      >
-                                        {actionsLoading?.[p.id] ? (
-                                          <>
-                                            <svg className="animate-spin h-3 w-3 text-red-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
-                                            Redeploying...
-                                          </>
-                                        ) : (
-                                          <>
-                                            ⚠️ Redeploy
-                                          </>
-                                        )}
-                                      </button>
-                                    )}
 
                                     {p.deploymentStatus === 'deployed' && onCloneProject && (
                                       <button
