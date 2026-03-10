@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useApplicantsDataBasic, type Project } from "@/hooks/applicants/useApplicantsDataBasic";
 import { useActiveAccount } from "thirdweb/react";
 import { getContract, readContract } from "thirdweb";
+import { defineChain } from "thirdweb/chains";
 import { config } from "@/config";
 import { client } from "@/lib/thirdweb-client";
 
@@ -30,11 +31,19 @@ export function useUserAssets() {
 
             if (isMounted) setLoading(true);
             const foundAssets: Asset[] = [];
-            const chain = config.governanceChain;
+            const processedAddresses = new Set<string>();
 
             // Helper to read balance
             const checkBalance = async (address: string, contractType: 'access' | 'utility', project: Project) => {
+                const normalizedAddr = address.toLowerCase();
+                if (processedAddresses.has(normalizedAddr)) return;
+                processedAddresses.add(normalizedAddr);
+
                 try {
+                    // Use project chain or default governance chain
+                    const chainId = project.chainId || Number(config.governanceChain.id);
+                    const chain = defineChain(chainId);
+
                     const contract = getContract({ client, chain, address });
                     const balance = await readContract({
                         contract,
@@ -58,23 +67,32 @@ export function useUserAssets() {
 
             await Promise.all(approvedProjects.flatMap(project => {
                 const checks = [];
-                // Check License (Access) - V1
+
+                // 1. Check Legacy/Direct Fields (V1)
                 const licenseAddr = project.licenseContractAddress || project.contractAddress;
                 if (licenseAddr) checks.push(checkBalance(licenseAddr, 'access', project));
 
-                // Check Utility (Artifact) - V1
-                if (project.utilityContractAddress) checks.push(checkBalance(project.utilityContractAddress, 'utility', project));
+                if (project.utilityContractAddress) {
+                    checks.push(checkBalance(project.utilityContractAddress, 'utility', project));
+                }
 
-                // Check V2 Artifacts (w2eConfig)
-                const artifacts = project.w2eConfig?.artifacts;
-                if (Array.isArray(artifacts)) {
-                    artifacts.forEach((artifact: any) => {
+                // 2. Check V2 Artifacts (NEW Column)
+                if (Array.isArray(project.artifacts)) {
+                    project.artifacts.forEach((artifact: any) => {
                         if (artifact.address) {
-                            checks.push(checkBalance(
-                                artifact.address,
-                                artifact.type === 'Access' ? 'access' : 'utility',
-                                project
-                            ));
+                            const type = artifact.type?.toLowerCase() === 'access' ? 'access' : 'utility';
+                            checks.push(checkBalance(artifact.address, type as any, project));
+                        }
+                    });
+                }
+
+                // 3. Check V2 Artifacts (Legacy w2eConfig field)
+                const w2eArtifacts = project.w2eConfig?.artifacts;
+                if (Array.isArray(w2eArtifacts)) {
+                    w2eArtifacts.forEach((artifact: any) => {
+                        if (artifact.address) {
+                            const type = artifact.type?.toLowerCase() === 'access' ? 'access' : 'utility';
+                            checks.push(checkBalance(artifact.address, type as any, project));
                         }
                     });
                 }

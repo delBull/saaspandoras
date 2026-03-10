@@ -22,6 +22,9 @@ interface ProjectQueryResult {
   utilityContractAddress?: string | null;
   governorContractAddress?: string | null;
   w2eConfig?: any;
+  artifacts?: any[];
+  chainId?: number | string | null;
+  protocolVersion?: number | null;
 }
 
 // Type for formatted project response
@@ -41,6 +44,9 @@ interface FormattedProject {
   utilityContractAddress?: string;
   governorContractAddress?: string;
   w2eConfig?: any;
+  artifacts?: any[];
+  chainId?: number | null;
+  protocolVersion?: number | null;
 }
 
 export async function GET() {
@@ -66,9 +72,13 @@ export async function GET() {
           "license_contract_address" as "licenseContractAddress",
           "utility_contract_address" as "utilityContractAddress",
           "governor_contract_address" as "governorContractAddress",
-          "w2e_config" as "w2eConfig"
+          "w2e_config" as "w2eConfig",
+          "artifacts" as "artifacts",
+          "chain_id" as "chainId",
+          "protocol_version" as "protocolVersion"
         FROM "projects"
         WHERE "business_category" != 'infrastructure'
+          AND "is_deleted" = false
         ORDER BY "created_at" DESC
       `);
 
@@ -92,7 +102,10 @@ export async function GET() {
           licenseContractAddress: project.licenseContractAddress ? String(project.licenseContractAddress) : undefined,
           utilityContractAddress: project.utilityContractAddress ? String(project.utilityContractAddress) : undefined,
           governorContractAddress: project.governorContractAddress ? String(project.governorContractAddress) : undefined,
-          w2eConfig: project.w2eConfig ?? {}
+          w2eConfig: project.w2eConfig ?? {},
+          artifacts: Array.isArray(project.artifacts) ? project.artifacts : [],
+          chainId: project.chainId ? Number(project.chainId) : null,
+          protocolVersion: project.protocolVersion ? Number(project.protocolVersion) : 1
         }));
 
         console.log('📊 Basic API: Returning real projects from database');

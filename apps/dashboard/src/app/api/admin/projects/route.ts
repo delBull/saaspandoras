@@ -52,14 +52,16 @@ export async function GET(_request: Request) {
     try {
       const projectsData = await db.query.projects.findMany({
         orderBy: (projects, { desc }) => desc(projects.createdAt),
-        where: (projects, { ne, and, or, isNull }) =>
+        where: (projects, { ne, and, or, isNull, eq }) =>
           // Filter out 'infrastructure' category (NFT Passes)
           // They have their own tab/view
+          // AND filter out deleted projects
           and(
             or(
               ne(projects.businessCategory, 'infrastructure'),
               isNull(projects.businessCategory)
-            )
+            ),
+            eq(projects.isDeleted, false)
           ),
         columns: {
           // Basic info
@@ -152,6 +154,7 @@ export async function GET(_request: Request) {
         const fallbackProjects = await db.execute(sql`
           SELECT * FROM projects 
           WHERE business_category IS DISTINCT FROM 'infrastructure'
+          AND is_deleted = false
           ORDER BY created_at DESC
         `);
         console.log(`📊 Admin API: Fallback query found ${fallbackProjects.length} projects`);

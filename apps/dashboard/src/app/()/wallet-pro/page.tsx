@@ -263,7 +263,6 @@ export default function WalletProPage() {
                   <div className="text-sm text-green-400">Base Network</div>
                 </motion.div>
 
-                {/* Accesos and Artefactos - 2 columns */}
                 <div className="grid grid-cols-2 gap-4">
                   <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
@@ -277,8 +276,8 @@ export default function WalletProPage() {
                       </div>
                       <div className="text-sm text-zinc-400">Accesos</div>
                     </div>
-                    <div className="text-2xl font-bold text-white mb-1">0</div>
-                    <div className="text-sm text-green-400">Próximamente</div>
+                    <div className="text-2xl font-bold text-white mb-1">{accessCount}</div>
+                    <div className="text-sm text-green-400">Activos</div>
                   </motion.div>
 
                   <motion.div
@@ -293,8 +292,8 @@ export default function WalletProPage() {
                       </div>
                       <div className="text-sm text-zinc-400">Artefactos</div>
                     </div>
-                    <div className="text-2xl font-bold text-white mb-1">0</div>
-                    <div className="text-sm text-green-400">Próximamente</div>
+                    <div className="text-2xl font-bold text-white mb-1">{artifactCount}</div>
+                    <div className="text-sm text-green-400">Activos</div>
                   </motion.div>
                 </div>
               </div>
