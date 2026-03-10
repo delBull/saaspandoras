@@ -786,10 +786,138 @@ function TelegramUsersManager() {
     );
 }
 
+// ── Bridge Ops Tab ────────────────────────────────────────────────────────
+
+function BridgeOpsTab() {
+    const [requests, setRequests] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [processing, setProcessing] = useState<string | null>(null);
+
+    const fetchRequests = useCallback(async () => {
+        setLoading(true);
+        try {
+            const res = await fetch("/api/admin/telegram-bridge/faucet", { headers: authHdrs() });
+            if (res.ok) setRequests(await res.json());
+            else toast.error("Failed to fetch requests");
+        } catch { toast.error("Network error"); }
+        finally { setLoading(false); }
+    }, []);
+
+    useEffect(() => {
+        fetchRequests();
+    }, [fetchRequests]);
+
+    const handleAction = async (id: string, action: 'approve' | 'reject') => {
+        setProcessing(id);
+        try {
+            const res = await fetch("/api/admin/telegram-bridge/faucet", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", ...authHdrs() },
+                body: JSON.stringify({ id, action })
+            });
+            if (res.ok) {
+                toast.success(`Request ${action === 'approve' ? 'approved' : 'rejected'}`);
+                setRequests(prev => prev.filter(r => r.id !== id));
+            } else {
+                const data = await res.json();
+                toast.error(data.error || `Failed to ${action} request`);
+            }
+        } catch { toast.error("Network error"); }
+        finally { setProcessing(null); }
+    };
+
+    return (
+        <div className="space-y-6 slide-in-bottom">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h4 className="text-lg font-bold text-white">Pending Faucet Requests</h4>
+                    <p className="text-xs text-gray-400">Manual approval for additional Sepolia ETH claims</p>
+                </div>
+                <Button size="sm" variant="outline" onClick={fetchRequests} disabled={loading}>
+                    <RefreshCw className={`w-3.5 h-3.5 mr-2 ${loading ? "animate-spin" : ""}`} />
+                    Refresh
+                </Button>
+            </div>
+
+            <div className="bg-zinc-900/40 border border-zinc-700/50 rounded-xl overflow-hidden">
+                <table className="w-full text-left text-sm">
+                    <thead className="bg-zinc-800/30 text-[10px] text-gray-400 uppercase font-bold tracking-widest border-b border-zinc-800">
+                        <tr>
+                            <th className="px-4 py-3">User</th>
+                            <th className="px-4 py-3">Wallet</th>
+                            <th className="px-4 py-3">Requested At</th>
+                            <th className="px-4 py-3 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-800">
+                        {requests.length === 0 ? (
+                            <tr>
+                                <td colSpan={4} className="px-4 py-10 text-center text-gray-500">
+                                    {loading ? "Cargando solicitudes..." : "No hay solicitudes pendientes"}
+                                </td>
+                            </tr>
+                        ) : (
+                            requests.map(req => (
+                                <tr key={req.id} className="hover:bg-zinc-800/20 transition-colors">
+                                    <td className="px-4 py-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-[10px] font-bold text-blue-400 border border-blue-500/20">
+                                                {req.telegramUser?.username?.[0]?.toUpperCase() || "?"}
+                                            </div>
+                                            <div>
+                                                <div className="font-semibold text-white">@{req.telegramUser?.username || req.metadata?.username || "unknown"}</div>
+                                                <div className="text-[10px] text-gray-500">{req.telegramUserId}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-4">
+                                        <div className="flex items-center gap-1.5 font-mono text-[11px] text-gray-400">
+                                            <Wallet className="w-3 h-3" />
+                                            {req.metadata?.walletAddress?.slice(0, 6)}...{req.metadata?.walletAddress?.slice(-4)}
+                                            <a href={`https://sepolia.etherscan.io/address/${req.metadata?.walletAddress}`} target="_blank" rel="noreferrer" className="text-gray-600 hover:text-blue-400">
+                                                <ExternalLink className="w-3 h-3" />
+                                            </a>
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-4 text-xs text-gray-400">
+                                        {new Date(req.createdAt).toLocaleString()}
+                                    </td>
+                                    <td className="px-4 py-4 text-right">
+                                        <div className="flex justify-end gap-2">
+                                            <Button 
+                                                size="sm" 
+                                                variant="outline"
+                                                className="h-8 border-red-900/30 text-red-400 hover:bg-red-900/10"
+                                                onClick={() => handleAction(req.id, 'reject')}
+                                                disabled={processing === req.id}
+                                            >
+                                                Denegar
+                                            </Button>
+                                            <Button 
+                                                size="sm"
+                                                className="h-8 bg-green-600 hover:bg-green-700 text-white"
+                                                onClick={() => handleAction(req.id, 'approve')}
+                                                disabled={processing === req.id}
+                                            >
+                                                {processing === req.id ? <RefreshCw className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3 mr-1.5" />}
+                                                Aprobar
+                                            </Button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+
 // ── Main Component ─────────────────────────────────────────────────────────
 
 export function TelegramBridgePanel() {
-    const [tab, setTab] = useState<"status" | "economy" | "analytics" | "alerts" | "playbooks" | "guide" | "users">("status");
+    const [tab, setTab] = useState<"status" | "economy" | "analytics" | "alerts" | "playbooks" | "guide" | "users" | "bridge-ops">("status");
     const [status, setStatus] = useState<BridgeStatus | null>(null);
     const [economy, setEconomy] = useState<EconomyParams | null>(null);
     const [loading, setLoading] = useState(true);
@@ -915,6 +1043,7 @@ export function TelegramBridgePanel() {
         { id: "analytics", label: "Analytics", icon: BarChart3 },
         { id: "alerts", label: "Alerts", icon: Bell, badge: alerts?.activeCount },
         { id: "playbooks", label: "Playbooks", icon: AlertTriangle },
+        { id: "bridge-ops", label: "Bridge Ops", icon: Zap },
         { id: "guide", label: "Ops Guide", icon: BookOpen },
     ] as const;
 
@@ -1659,6 +1788,13 @@ export function TelegramBridgePanel() {
             {tab === "users" && (
                 <div className="space-y-6">
                     <TelegramUsersManager />
+                </div>
+            )}
+
+            {/* ── TAB: Bridge Ops ─────────────────────────────────────────── */}
+            {tab === "bridge-ops" && (
+                <div className="space-y-6">
+                    <BridgeOpsTab />
                 </div>
             )}
 
