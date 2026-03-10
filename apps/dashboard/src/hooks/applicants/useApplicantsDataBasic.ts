@@ -20,6 +20,9 @@ export interface Project {
   utilityContractAddress?: string;
   governorContractAddress?: string;
   w2eConfig?: any;
+  artifacts?: any[];
+  chainId?: number | null;
+  protocolVersion?: number | null;
 }
 
 export interface ApplicantsData {

@@ -49,6 +49,7 @@ export async function GET(
       FROM projects
       WHERE slug = ${slug}
         AND status IN ('approved', 'live', 'completed')
+        AND is_deleted = false
       LIMIT 1
     `);
 
