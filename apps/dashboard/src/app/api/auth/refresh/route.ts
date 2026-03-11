@@ -82,6 +82,7 @@ export async function GET(request: Request) {
 
         const cookieStoreObj = await cookies();
         cookieStoreObj.set("auth_token", newToken, {
+        (await cookies()).set("auth_token", newToken, {
             httpOnly: true,
             secure: isProd,
             sameSite: isProd ? "none" : "lax",
@@ -109,5 +110,8 @@ export async function GET(request: Request) {
         console.error("Message:", error.message);
         console.error("Stack:", error.stack);
         return NextResponse.json({ error: "Internal Error", details: error.message }, { status: 500 });
+    } catch (error) {
+        console.error("Refresh route error:", error);
+        return NextResponse.json({ error: "Internal Error" }, { status: 500 });
     }
 }
