@@ -56,6 +56,21 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/**
+ * 🚨 CRITICAL COMPONENT: AUTHENTICATION PROVIDER 🚨
+ * ============================================================================
+ * WARNING: DO NOT MODIFY THIS FILE WITHOUT UNDERSTANDING THE SIWE & EIP-7702 FLOW.
+ * 
+ * 1. Thirdweb Social Logins use EIP-7702 under the hood to sponsor gas while 
+ *    keeping the EOA as the signer. Do NOT force `smartAccount` wrappers here, 
+ *    or SIWE signatures will fail Backend verification (401 Unauthorized).
+ * 2. Session caches are heavily reliant on `waitForSession` and `bustSessionCache`.
+ * 3. The `refreshSession` function uses a custom backend route `/api/auth/refresh`
+ *    to bypass SIWE signatures when a user just auto-minted the Pandora's Key.
+ * 
+ * IF YOU BREAK THIS FILE, NO USERS WILL BE ABLE TO LOGIN OR ACCESS THE DASHBOARD.
+ * ============================================================================
+ */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const account = useActiveAccount();
     const isAutoConnecting = useIsAutoConnecting();
@@ -262,6 +277,11 @@ ${executionAddress !== identityAddress ? `\nExecution Address: ${executionAddres
         }
     };
 
+    /**
+     * ⚠️ DO NOT MODIFY: 
+     * Silently refreshes the JWT cookie by asking the backend to check the on-chain balance.
+     * Used exclusively after the `nft-gate` auto-mints to grant access without a second SIWE prompt.
+     */
     const refreshSession = async () => {
         if (!account) return;
         try {
