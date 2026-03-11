@@ -105,7 +105,7 @@ export async function POST(request: Request) {
     } catch (error: any) {
         console.error("❌ [FAUCET] Error:", error);
         // Specifically look for insufficient funds on the treasury side
-        if (error.message && error.message.includes('insufficient funds')) {
+        if (error.message?.includes('insufficient funds')) {
              return NextResponse.json({ error: "La tesorería de pruebas se ha quedado sin Sepolia ETH temporalmente." }, { status: 500 });
         }
         return NextResponse.json({ error: "Error interno al procesar la solicitud del Faucet" }, { status: 500 });
