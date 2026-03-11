@@ -51,7 +51,11 @@ export async function GET(request: Request) {
                 coverPhotoUrl: projects.coverPhotoUrl,
                 logoUrl: projects.logoUrl,
                 featured: projects.featured
-            }).from(projects).where(and(eq(projects.featured, true), inArray(projects.status, ['approved', 'live', 'completed'])));
+            }).from(projects).where(and(
+                eq(projects.featured, true),
+                eq(projects.isDeleted, false),
+                inArray(projects.status, ['approved', 'live', 'completed'])
+            ));
 
             // 2. Fetch Strictly LIVE & DEPLOYED projects for Access/Artifacts
             const liveProjects = await db.select({
@@ -70,6 +74,7 @@ export async function GET(request: Request) {
             }).from(projects).where(
                 and(
                     eq(projects.status, 'live'),
+                    eq(projects.isDeleted, false),
                     eq(projects.deploymentStatus, 'deployed'),
                     sql`(${projects.utilityContractAddress} IS NOT NULL OR ${projects.businessCategory} != 'infrastructure' OR ${projects.businessCategory} IS NULL)`
                 )

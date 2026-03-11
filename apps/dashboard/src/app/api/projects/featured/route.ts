@@ -26,7 +26,11 @@ export async function GET() {
         createdAt: projects.createdAt,
       })
       .from(projects)
-      .where(and(eq(projects.featured, true), inArray(projects.status, ['approved', 'live', 'completed'])))
+      .where(and(
+        eq(projects.featured, true),
+        eq(projects.isDeleted, false),
+        inArray(projects.status, ['approved', 'live', 'completed'])
+      ))
       .orderBy(projects.id);
 
     console.log(`🎯 Featured API: Found ${featuredProjects.length} featured projects`);
