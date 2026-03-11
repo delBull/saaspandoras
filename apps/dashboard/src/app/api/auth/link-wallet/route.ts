@@ -98,7 +98,8 @@ export async function POST(request: Request) {
             iat: Math.floor(Date.now() / 1000),
         }, JWT_SECRET, { expiresIn: '24h' });
 
-        (await cookies()).set("auth_token", newToken, {
+        const cookieStore = await cookies();
+        cookieStore.set("auth_token", newToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: "lax",
