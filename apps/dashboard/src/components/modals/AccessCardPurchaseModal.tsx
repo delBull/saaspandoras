@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Ticket, ShieldCheck, ArrowRight } from 'lucide-react';
-import { useActiveAccount, TransactionButton, useReadContract } from "thirdweb/react";
+import { useActiveAccount, useSendTransaction, useReadContract } from "thirdweb/react";
 import { prepareContractCall, ContractOptions, getContract, defineChain } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { toast } from "sonner";
@@ -35,10 +35,40 @@ export default function AccessCardPurchaseModal({ isOpen, onClose, project, lice
         queryOptions: { enabled: !!licenseContract }
     });
 
+    const { mutate: sendTransaction } = useSendTransaction();
+
     const handleSuccess = () => {
         setStep('success');
         toast.success("¡Access Card obtenida exitosamente!");
         // Removed auto-close timeout to allow user to read next steps
+    };
+
+    const handlePurchase = () => {
+        if (!licenseContract || !account) return;
+        
+        setStep('processing');
+        
+        try {
+            const transaction = prepareContractCall({
+                contract: licenseContract as any,
+                method: "function mintWithPayment(uint256 quantity) payable",
+                params: [BigInt(1)],
+                value: mintPrice ? BigInt(mintPrice) : BigInt(0),
+            });
+
+            sendTransaction(transaction, {
+                onSuccess: (txResult) => {
+                    handleSuccess();
+                },
+                onError: (error) => {
+                    toast.error(`Error: ${error.message}`);
+                    setStep('review');
+                }
+            });
+        } catch (error: any) {
+            toast.error(`Error preparando transacción: ${error.message}`);
+            setStep('review');
+        }
     };
 
     return (
@@ -113,22 +143,9 @@ export default function AccessCardPurchaseModal({ isOpen, onClose, project, lice
 
                                     {/* Action Button */}
                                     {licenseContract && account ? (
-                                        <TransactionButton
-                                            transaction={() =>
-                                                prepareContractCall({
-                                                    contract: licenseContract as any,
-                                                    method: "function mintWithPayment(uint256 quantity) payable",
-                                                    params: [BigInt(1)],
-                                                    // CRITICAL FIX: If mintPrice (on-chain) is not read, DEFAULT TO 0 (FREE).
-                                                    // Do NOT fallback to tokenomics.price, as that is for the ERC20 token, not the Access Card.
-                                                    value: mintPrice ? BigInt(mintPrice) : BigInt(0),
-                                                })
-                                            }
-                                            theme="dark"
-                                            onTransactionSent={() => setStep('processing')}
-                                            onTransactionConfirmed={handleSuccess}
-                                            onError={(error) => toast.error(`Error: ${error.message}`)}
-                                            className="!w-full !bg-lime-400 hover:!bg-lime-500 !text-black !font-bold !py-4 !rounded-xl !shadow-lg !shadow-lime-500/20"
+                                        <button
+                                            onClick={handlePurchase}
+                                            className="w-full flex justify-center items-center bg-lime-400 hover:bg-lime-500 text-black font-bold py-4 rounded-xl shadow-lg shadow-lime-500/20 transition-colors"
                                         >
                                             <span className="flex items-center gap-2 text-base">
                                                 {mintPrice && Number(mintPrice) > 0
@@ -136,7 +153,7 @@ export default function AccessCardPurchaseModal({ isOpen, onClose, project, lice
                                                     : "Obtener Gratis"}
                                                 <ArrowRight className="w-4 h-4" />
                                             </span>
-                                        </TransactionButton>
+                                        </button>
                                     ) : (
                                         <button disabled className="w-full bg-zinc-700 text-gray-400 font-bold py-4 rounded-xl cursor-not-allowed">
                                             {licenseContract ? "Conecta tu Wallet" : "Contrato No Disponible"}

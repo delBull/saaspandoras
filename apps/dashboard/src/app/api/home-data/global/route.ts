@@ -17,7 +17,6 @@ export async function GET() {
 
     try {
         const handler = async () => {
-            // 1. Fetch Featured Projects (Allow 'approved' or 'live', even if not deployed yet)
             const featuredProjectsRaw = await db.select({
                 id: projects.id,
                 title: projects.title,
@@ -26,7 +25,11 @@ export async function GET() {
                 coverPhotoUrl: projects.coverPhotoUrl,
                 logoUrl: projects.logoUrl,
                 featured: projects.featured
-            }).from(projects).where(and(eq(projects.featured, true), inArray(projects.status, ['approved', 'live', 'completed'])));
+            }).from(projects).where(and(
+                eq(projects.featured, true),
+                eq(projects.isDeleted, false),
+                inArray(projects.status, ['approved', 'live', 'completed'])
+            ));
 
             // 2. Fetch Strictly LIVE & DEPLOYED projects for Access/Artifacts
             const liveProjects = await db.select({
@@ -45,6 +48,7 @@ export async function GET() {
             }).from(projects).where(
                 and(
                     eq(projects.status, 'live'),
+                    eq(projects.isDeleted, false),
                     eq(projects.deploymentStatus, 'deployed'),
                     sql`(${projects.utilityContractAddress} IS NOT NULL OR ${projects.businessCategory} != 'infrastructure' OR ${projects.businessCategory} IS NULL)`
                 )
