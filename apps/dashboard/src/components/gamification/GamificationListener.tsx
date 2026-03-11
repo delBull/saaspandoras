@@ -68,7 +68,13 @@ export function GamificationListener() {
             }
         };
 
-        checkAndClaim();
+        // Retrasar 25 segundos para no sobreponerse con la pantalla de Minting de Pandora's Key 
+        // y darle tiempo al usuario de ver el Dashboard principal
+        const timer = setTimeout(() => {
+            checkAndClaim();
+        }, 25000);
+
+        return () => clearTimeout(timer);
     }, [account, balance, isLoading, toast]);
 
     return null; // Invisible component

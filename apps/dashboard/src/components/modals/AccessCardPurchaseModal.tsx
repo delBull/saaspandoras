@@ -7,8 +7,6 @@ import { useActiveAccount, useSendTransaction, useReadContract } from "thirdweb/
 import { prepareContractCall, ContractOptions, getContract, defineChain } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { toast } from "sonner";
-import { accountAbstractionConfig } from "@/lib/wallets";
-
 interface AccessCardPurchaseModalProps {
     isOpen: boolean;
     onClose: () => void;
