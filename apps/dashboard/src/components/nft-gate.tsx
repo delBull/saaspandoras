@@ -101,6 +101,8 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
     abi: PANDORAS_KEY_ABI,
   });
 
+  const hasAttemptedAutoMint = useRef(false);
+
   const handleMint = () => {
     if (hasStartedProcessing.current) return;
     hasStartedProcessing.current = true;
@@ -151,6 +153,13 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
       hasStartedProcessing.current = false;
     }
   };
+
+  useEffect(() => {
+    if (!account || !user || user?.hasAccess || hasAttemptedAutoMint.current) return;
+    
+    hasAttemptedAutoMint.current = true;
+    handleMint();
+  }, [account, user]);
 
   if (gateStatus === "success" && showSuccessAnimation) {
     return <SuccessNFTCard onAnimationComplete={() => {
