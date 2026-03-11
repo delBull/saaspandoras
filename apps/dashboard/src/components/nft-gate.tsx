@@ -17,6 +17,26 @@ import { Loader2 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 
+/**
+ * 🚨 CRITICAL COMPONENT: NFT GATE (WELCOME / FREE MINT SCREEN) 🚨
+ * ============================================================================
+ * WARNING: CAUTION WHEN MODIFYING THIS COMPONENT.
+ * 
+ * This component is the bridge between a successful thirdweb login and entering
+ * the dashboard. It checks if the user has the "Pandora's Key" NFT. If not,
+ * it auto-mints it on component mount using `handleMint`.
+ * 
+ * ⚠️ KEY LOGIC TO PRESERVE ⚠️
+ * 1. DO NOT call `login()` after a successful mint. This will cause the 
+ *    application to prompt the user to sign a SIWE message AGAIN (UX Failure).
+ * 2. ALWAYS call `refreshSession()` and then `router.push("/")`. This hits the
+ *    silent backend refresh route to verify the chain and issue a new JWT.
+ * 3. The `catch` block MUST catch "Max per wallet reached" and "Already owned",
+ *    and treat it as a SUCCESS. This rescues users who already own the NFT
+ *    but are stuck with a stale JWT cookie.
+ * 
+ * ============================================================================
+ */
 export function NFTGate({ children }: { children: React.ReactNode }) {
   const account = useActiveAccount();
   const { user, login, state, refreshSession } = useAuth();
@@ -72,6 +92,7 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
           const msg = error instanceof Error ? error.message : "Unknown error";
 
           if (msg.includes("already minted") || msg.toLowerCase().includes("max per wallet") || msg.toLowerCase().includes("transfer prohibited")) {
+            // 🚨 CRITICAL FALLBACK: Do NOT remove this. Rescues owners with stale JWTs.
             toast({ title: "Acceso Verificado", description: "Entrando a SaaS... 🚀" });
             setGateStatus("has_key");
             refreshSession().then(() => {

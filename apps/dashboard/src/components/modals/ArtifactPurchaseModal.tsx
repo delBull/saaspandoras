@@ -21,6 +21,8 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
     const account = useActiveAccount();
     const [step, setStep] = useState<'review' | 'processing' | 'success'>('review');
     const [amount, setAmount] = useState<string>("1"); // Default amount 1 for License
+    const [isFauceting, setIsFauceting] = useState(false);
+    const [needsFaucet, setNeedsFaucet] = useState(false);
 
     // License Price is usually in Wei or Native Token
     const price = phase?.tokenPrice || 0;
@@ -53,6 +55,27 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
         setStep('success');
         toast.success("¡Artefactos adquiridos exitosamente!");
         // Trigger generic confetti or sound if available (later)
+    };
+
+    const handleFaucet = async () => {
+        if (!account) return;
+        setIsFauceting(true);
+        try {
+            const res = await fetch('/api/faucet/request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ walletAddress: account.address })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error al solicitar fondos (Múltiples requests no autorizados)');
+            
+            toast.success(data.message);
+            setNeedsFaucet(false);
+        } catch (err: any) {
+            toast.error(err.message);
+        } finally {
+            setIsFauceting(false);
+        }
     };
 
     if (!isOpen) return null;
@@ -231,7 +254,13 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                                                 }}
                                                 onError={(error) => {
                                                     console.error("Purchase failed", error);
-                                                    toast.error(`Error: ${error.message}`);
+                                                    if (error.message.includes('insufficient funds')) {
+                                                        setNeedsFaucet(true);
+                                                        toast.error("Fondos insuficientes para cubrir el gas y el costo del artefacto.");
+                                                    } else {
+                                                        toast.error(`Error: ${error.message}`);
+                                                    }
+                                                    setStep('review');
                                                 }}
                                                 className="!w-full !bg-lime-400 hover:!bg-lime-500 !text-black !font-bold !py-4 !rounded-xl"
                                             >
@@ -247,6 +276,26 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                                 ) : (
                                     <button disabled className="w-full bg-zinc-700 text-gray-400 font-bold py-4 rounded-xl">
                                         Conecta tu Wallet
+                                    </button>
+                                )}
+
+                                {needsFaucet && account && (
+                                    <button 
+                                        onClick={handleFaucet} 
+                                        disabled={isFauceting}
+                                        className="w-full mt-3 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 font-bold py-3 rounded-xl border border-blue-500/30 flex items-center justify-center gap-2 transition-all"
+                                    >
+                                        {isFauceting ? (
+                                            <>
+                                                <Loader2 className="w-5 h-5 animate-spin" />
+                                                Obteniendo fondos...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Coins className="w-5 h-5" />
+                                                Obtener Sepolia ETH de Prueba
+                                            </>
+                                        )}
                                     </button>
                                 )}
                             </div>

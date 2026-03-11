@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Ticket, ShieldCheck, ArrowRight } from 'lucide-react';
 import { useActiveAccount, useSendTransaction, useReadContract } from "thirdweb/react";
-import { prepareContractCall, ContractOptions, getContract, defineChain } from "thirdweb";
+import { prepareContractCall, ContractOptions, getContract, defineChain, waitForReceipt } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { toast } from "sonner";
 interface AccessCardPurchaseModalProps {
@@ -55,8 +55,18 @@ export default function AccessCardPurchaseModal({ isOpen, onClose, project, lice
             });
 
             sendTransaction(transaction, {
-                onSuccess: (txResult) => {
-                    handleSuccess();
+                onSuccess: async (txResult) => {
+                    try {
+                        await waitForReceipt({
+                            client,
+                            chain: licenseContract.chain,
+                            transactionHash: txResult.transactionHash
+                        });
+                        handleSuccess();
+                    } catch (err: any) {
+                        toast.error(`Error de confirmación: ${err.message}`);
+                        setStep('review');
+                    }
                 },
                 onError: (error) => {
                     toast.error(`Error: ${error.message}`);

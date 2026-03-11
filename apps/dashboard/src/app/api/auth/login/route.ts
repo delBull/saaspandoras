@@ -14,6 +14,19 @@ import crypto from "crypto";
 
 export const runtime = "nodejs";
 
+/**
+ * 🚨 CRITICAL AUTHENTICATION ROUTE 🚨
+ * ============================================================================
+ * WARNING: DO NOT MODIFY THE SIWE VERIFICATION LOGIC.
+ * 
+ * This route verifies the EIP-4361 (SIWE) signature. 
+ * Because the frontend uses EIP-7702 (Gas Sponsorship), the `signature` here 
+ * is signed by the EOA, NOT a Smart Account.
+ * 
+ * If you change the verification method to expect an ERC-1271 Smart Wallet 
+ * signature, ALL SOCIAL LOGINS WILL FAIL with a 401 Unauthorized error.
+ * ============================================================================
+ */
 export async function POST(request: Request) {
     try {
         console.log("🔐 [LOGIN] ========== REQUEST RECEIVED ==========");
