@@ -159,6 +159,13 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
   // Show Minting UI.
 
 
+  useEffect(() => {
+    if (!account || !user || user?.hasAccess || hasAttemptedAutoMint.current) return;
+    
+    hasAttemptedAutoMint.current = true;
+    handleMint();
+  }, [account, user]);
+
   if (gateStatus === "success" && showSuccessAnimation) {
     return <SuccessNFTCard onAnimationComplete={() => {
       setShowSuccessAnimation(false);
