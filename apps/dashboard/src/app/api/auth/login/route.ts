@@ -225,7 +225,8 @@ export async function POST(request: Request) {
         const cookieDomain = isProd ? (process.env.COOKIE_DOMAIN || ".pandoras.finance") : undefined;
         console.log(`🍪 [LOGIN] Setting cookies - Domain: ${cookieDomain || 'localhost'} | Secure: ${isProd} | SameSite: ${isProd ? "none" : "lax"}`);
 
-        (await cookies()).set("auth_token", token, {
+        const cookieStore = await cookies();
+        cookieStore.set("auth_token", token, {
             httpOnly: true,
             secure: isProd,
             sameSite: isProd ? "none" : "lax", // 'none' requires secure: true, handled correctly now
