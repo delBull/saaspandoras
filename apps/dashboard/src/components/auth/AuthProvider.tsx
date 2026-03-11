@@ -51,6 +51,7 @@ interface AuthContextType {
     login: () => Promise<void>;
     logout: () => Promise<void>;
     checkSession: () => void;
+    refreshSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -261,6 +262,28 @@ ${executionAddress !== identityAddress ? `\nExecution Address: ${executionAddres
         }
     };
 
+    const refreshSession = async () => {
+        if (!account) return;
+        try {
+            console.log('[Auth] 🔄 Refreshing session state via API...');
+            const res = await fetch(`/api/auth/refresh`);
+            
+            if (res.ok) {
+                const sessionData = await res.json();
+                if (sessionData.authenticated && sessionData.user) {
+                    bustSessionCache();
+                    setUser(sessionData.user);
+                    setState("authenticated");
+                    console.log('[Auth] ✅ Session refreshed, access updated:', sessionData.user.hasAccess);
+                }
+            } else {
+                console.log('[Auth] ❌ Refresh API returned error:', await res.text());
+            }
+        } catch (e) {
+            console.error('[Auth] ❌ Failed to refresh session:', e);
+        }
+    };
+
     const logout = async () => {
         try {
             console.log('[Auth] 🚪 Logging out...');
@@ -281,7 +304,8 @@ ${executionAddress !== identityAddress ? `\nExecution Address: ${executionAddres
             isAuthenticated: state === "authenticated",
             login,
             logout,
-            checkSession
+            checkSession,
+            refreshSession
         }}>
             {children}
         </AuthContext.Provider>

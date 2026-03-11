@@ -21,7 +21,7 @@ import { usePathname } from "next/navigation";
 import { PendingRewardsNotification } from "@/components/PendingRewardsNotification";
 import { client } from "@/lib/thirdweb-client";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
-import { wallets, accountAbstractionConfig } from "@/lib/wallets";
+import { wallets } from "@/lib/wallets";
 import { config } from "@/config";
 import { useTour } from "@/components/onboarding/TourEngine";
 import { RocketLaunchIcon, BeakerIcon, GlobeAltIcon } from "@heroicons/react/24/outline";
@@ -322,7 +322,6 @@ export function TopNavbar({
                     connect({
                       client,
                       chain: config.chain,
-                      accountAbstraction: accountAbstractionConfig,
                       showThirdwebBranding: false,
                       showAllWallets: false,
                       size: "compact",

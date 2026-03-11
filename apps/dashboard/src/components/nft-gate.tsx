@@ -14,14 +14,15 @@ import { MintingProgressModal } from "./nft-gating/minting-progress-modal";
 import { SuccessNFTCard } from "./nft-gating/success-nft-card";
 import { useToast } from "@saasfly/ui/use-toast";
 import { Loader2 } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 export function NFTGate({ children }: { children: React.ReactNode }) {
   const account = useActiveAccount();
-  const { user, login, state } = useAuth();
+  const { user, login, state, refreshSession } = useAuth();
   const isAuthLoading = state !== "authenticated" && state !== "guest";
   const pathname = usePathname();
+  const router = useRouter();
   const { mutate: sendTransaction } = useSendTransaction();
   const { toast } = useToast();
 
@@ -63,16 +64,20 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
 
           toast({ title: "Verifying Access..." });
           setTimeout(() => {
-            login().catch(e => console.error("Re-login failed", e));
+            refreshSession().catch(e => console.error("Re-login failed", e));
           }, 4000);
         },
         onError: (error) => {
           console.error("Mint Error:", error);
           const msg = error instanceof Error ? error.message : "Unknown error";
 
-          if (msg.includes("already minted")) {
-            toast({ title: "Already owned", description: "Verifying access..." });
-            login();
+          if (msg.includes("already minted") || msg.toLowerCase().includes("max per wallet") || msg.toLowerCase().includes("transfer prohibited")) {
+            toast({ title: "Acceso Verificado", description: "Entrando a SaaS... 🚀" });
+            setGateStatus("has_key");
+            refreshSession().then(() => {
+              router.refresh();
+              router.push("/");
+            }).catch(e => console.error(e));
           } else {
             toast({ title: "Mint Failed", description: "Please try again.", variant: "destructive" });
             setGateStatus("error");
@@ -99,8 +104,14 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
 
   // NFTGate just reads isAuthLoading and user — no duplicate login() call here.
 
-  // If user has access, render children immediately
+  // If user has access, render children immediately OR redirect if stuck on root layout
   if (user?.hasAccess) {
+    // If the gate is somehow showing "Get Free Key" but they have access, 
+    // force a router refresh and render children.
+    if (gateStatus === "has_key") {
+      router.refresh();
+      router.push("/");
+    }
     return <>{children}</>;
   }
 
