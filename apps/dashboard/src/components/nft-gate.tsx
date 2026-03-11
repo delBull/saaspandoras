@@ -93,7 +93,10 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
     handleMint();
   }, [account, user]);
 
+
+
   // ℹ️ Auto-login is handled by AuthProvider.useEffect.
+
   // NFTGate just reads isAuthLoading and user — no duplicate login() call here.
 
   // If user has access, render children immediately
@@ -159,12 +162,7 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
   // Show Minting UI.
 
 
-  useEffect(() => {
-    if (!account || !user || user?.hasAccess || hasAttemptedAutoMint.current) return;
-    
-    hasAttemptedAutoMint.current = true;
-    handleMint();
-  }, [account, user]);
+
 
   if (gateStatus === "success" && showSuccessAnimation) {
     return <SuccessNFTCard onAnimationComplete={() => {
