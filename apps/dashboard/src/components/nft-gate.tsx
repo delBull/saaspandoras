@@ -28,6 +28,70 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
   const [gateStatus, setGateStatus] = useState("idle");
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const hasStartedProcessing = useRef(false);
+  const hasAttemptedAutoMint = useRef(false);
+
+  const contract = getContract({
+    client,
+    chain: config.chain,
+    address: config.nftContractAddress,
+    abi: PANDORAS_KEY_ABI,
+  });
+
+  const handleMint = () => {
+    if (hasStartedProcessing.current) return;
+    hasStartedProcessing.current = true;
+
+    toast({
+      title: "Minting Access Key...",
+      description: "Please confirm transaction in your wallet.",
+    });
+
+    try {
+      const transaction = prepareContractCall({
+        contract,
+        method: "freeMint",
+        params: [],
+      });
+
+      setGateStatus("awaiting_confirmation");
+
+      sendTransaction(transaction, {
+        onSuccess: (txResult) => {
+          console.log("✅ Mint Successful:", txResult);
+          setGateStatus("success");
+          setShowSuccessAnimation(true);
+
+          toast({ title: "Verifying Access..." });
+          setTimeout(() => {
+            login().catch(e => console.error("Re-login failed", e));
+          }, 4000);
+        },
+        onError: (error) => {
+          console.error("Mint Error:", error);
+          const msg = error instanceof Error ? error.message : "Unknown error";
+
+          if (msg.includes("already minted")) {
+            toast({ title: "Already owned", description: "Verifying access..." });
+            login();
+          } else {
+            toast({ title: "Mint Failed", description: "Please try again.", variant: "destructive" });
+            setGateStatus("error");
+          }
+          hasStartedProcessing.current = false;
+        },
+      });
+    } catch (e) {
+      console.error(e);
+      hasStartedProcessing.current = false;
+    }
+  };
+
+  useEffect(() => {
+    if (!account || !user || user?.hasAccess || hasAttemptedAutoMint.current) return;
+    
+    hasAttemptedAutoMint.current = true;
+    handleMint();
+  }, [account, user]);
 
   // ℹ️ Auto-login is handled by AuthProvider.useEffect.
   // NFTGate just reads isAuthLoading and user — no duplicate login() call here.
@@ -94,72 +158,6 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
   // If we differ to here, it means: User is Logged In (user exists) BUT hasAccess is false.
   // Show Minting UI.
 
-  const contract = getContract({
-    client,
-    chain: config.chain,
-    address: config.nftContractAddress,
-    abi: PANDORAS_KEY_ABI,
-  });
-
-  const hasAttemptedAutoMint = useRef(false);
-
-  const handleMint = () => {
-    if (hasStartedProcessing.current) return;
-    hasStartedProcessing.current = true;
-
-    toast({
-      title: "Minting Access Key...",
-      description: "Please confirm transaction in your wallet.",
-    });
-
-    try {
-      const transaction = prepareContractCall({
-        contract,
-        method: "freeMint",
-        params: [],
-      });
-
-      setGateStatus("awaiting_confirmation");
-
-      sendTransaction(transaction, {
-        onSuccess: (txResult) => {
-          console.log("✅ Mint Successful:", txResult);
-          setGateStatus("success");
-          setShowSuccessAnimation(true);
-
-          // Refresh Session (Re-Login to update JWT with hasAccess: true)
-          // Wait a bit for indexing?
-          toast({ title: "Verifying Access..." });
-          setTimeout(() => {
-            login().catch(e => console.error("Re-login failed", e));
-          }, 4000);
-        },
-        onError: (error) => {
-          console.error("Mint Error:", error);
-          const msg = error instanceof Error ? error.message : "Unknown error";
-
-          if (msg.includes("already minted")) {
-            toast({ title: "Already owned", description: "Verifying access..." });
-            login();
-          } else {
-            toast({ title: "Mint Failed", description: "Please try again.", variant: "destructive" });
-            setGateStatus("error");
-          }
-          hasStartedProcessing.current = false;
-        },
-      });
-    } catch (e) {
-      console.error(e);
-      hasStartedProcessing.current = false;
-    }
-  };
-
-  useEffect(() => {
-    if (!account || !user || user?.hasAccess || hasAttemptedAutoMint.current) return;
-    
-    hasAttemptedAutoMint.current = true;
-    handleMint();
-  }, [account, user]);
 
   if (gateStatus === "success" && showSuccessAnimation) {
     return <SuccessNFTCard onAnimationComplete={() => {
