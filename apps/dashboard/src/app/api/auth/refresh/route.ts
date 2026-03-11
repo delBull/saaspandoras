@@ -60,12 +60,15 @@ export async function GET(request: Request) {
              return NextResponse.json({ error: "Access denied on-chain" }, { status: 403 });
         }
 
+        console.log(`🔄 [API Refresh] Step 4 - Updating DB for ${address}`);
         // Update DB
         const walletAddressLower = typeof address === 'string' ? address.toLowerCase() : String(address).toLowerCase();
         
         await db.update(users)
             .set({ hasPandorasKey: true })
             .where(eq(users.walletAddress, walletAddressLower));
+
+        console.log(`🔄 [API Refresh] Step 5 - Re-issuing session token`);
 
         // Re-issue Token
         const newToken = jwt.sign({
@@ -77,6 +80,8 @@ export async function GET(request: Request) {
         const isProd = process.env.NODE_ENV === "production";
         const cookieDomain = isProd ? (process.env.COOKIE_DOMAIN || ".pandoras.finance") : undefined;
 
+        const cookieStoreObj = await cookies();
+        cookieStoreObj.set("auth_token", newToken, {
         (await cookies()).set("auth_token", newToken, {
             httpOnly: true,
             secure: isProd,
@@ -100,6 +105,11 @@ export async function GET(request: Request) {
             }
         });
 
+    } catch (error: any) {
+        console.error("🔥 [API Refresh] CRITICAL ERROR:");
+        console.error("Message:", error.message);
+        console.error("Stack:", error.stack);
+        return NextResponse.json({ error: "Internal Error", details: error.message }, { status: 500 });
     } catch (error) {
         console.error("Refresh route error:", error);
         return NextResponse.json({ error: "Internal Error" }, { status: 500 });
