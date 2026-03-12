@@ -33,13 +33,13 @@ export async function GET(request: Request) {
         const address = payload.address || payload.sub;
         if (!address) return NextResponse.json({ error: "Invalid token structure" }, { status: 401 });
 
-        console.log(`🔄 [API Refresh] Re-verifying access for ${address}`);
+        console.log(`🔄 [API Refresh] Re-verifying access for ${address} (NFT: ${config.nftContractAddress})`);
 
         // Check Blockchain
         const contract = getContract({
             client,
             chain: config.chain,
-            address: config.nftContractAddress,
+            address: config.nftContractAddress as string,
             abi: PANDORAS_KEY_ABI
         });
 
@@ -56,8 +56,11 @@ export async function GET(request: Request) {
         }
 
         if (!hasAccess) {
-             console.log(`❌ [API Refresh] Still no access on-chain for ${address}`);
-             return NextResponse.json({ error: "Access denied on-chain" }, { status: 403 });
+             console.log(`❌ [API Refresh] Still no access on-chain for ${address} at ${config.nftContractAddress}`);
+             return NextResponse.json({ 
+                error: "Access denied on-chain", 
+                details: `Wallet ${address} does not hold NFT at ${config.nftContractAddress}` 
+             }, { status: 403 });
         }
 
         console.log(`🔄 [API Refresh] Step 4 - Updating DB for ${address}`);
@@ -69,10 +72,12 @@ export async function GET(request: Request) {
             .where(eq(users.walletAddress, walletAddressLower));
 
         console.log(`🔄 [API Refresh] Step 5 - Re-issuing session token`);
-
-        // Re-issue Token
+        // Re-issue Token - Strip reserved claims to avoid collision with sign options
+        const { exp, iat, nbf, iss, sub, ...cleanPayload } = payload;
+        
         const newToken = jwt.sign({
-            ...payload,
+            ...cleanPayload,
+            sub: address, // Ensure sub remains the same
             hasAccess: true,
             iat: Math.floor(Date.now() / 1000)
         }, secret, { expiresIn: '24h' });
