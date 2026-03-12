@@ -40,9 +40,6 @@ export function useUserAssets() {
                 processedAddresses.add(normalizedAddr);
 
                 try {
-                    // 1. Prioritize artifact-specific chainId
-                    // 2. Fallback to project-level chainId
-                    // 3. Fallback to global config governance chain
                     const chainId = artifactChainId || project.chainId || Number(config.governanceChain.id);
                     const chain = defineChain(chainId);
 
@@ -54,13 +51,34 @@ export function useUserAssets() {
                     }) as bigint;
 
                     if (balance > 0n) {
-                        foundAssets.push({
-                            type: contractType === 'access' ? 'access' : 'artifact',
-                            project,
-                            balance: balance.toString(),
-                            name: contractType === 'access' ? `${project.title} Access` : `${project.title} Utility`,
-                            tokenAddress: address
-                        });
+                        const totalBalance = Number(balance);
+                        
+                        if (contractType === 'access' && totalBalance > 1) {
+                            // Split: 1 Access + (Balance - 1) Artifacts
+                            foundAssets.push({
+                                type: 'access',
+                                project,
+                                balance: "1",
+                                name: `${project.title} Access`,
+                                tokenAddress: address
+                            });
+                            
+                            foundAssets.push({
+                                type: 'artifact',
+                                project,
+                                balance: (totalBalance - 1).toString(),
+                                name: `${project.title} Artifact (Utility)`,
+                                tokenAddress: address
+                            });
+                        } else {
+                            foundAssets.push({
+                                type: contractType === 'access' ? 'access' : 'artifact',
+                                project,
+                                balance: balance.toString(),
+                                name: contractType === 'access' ? `${project.title} Access` : `${project.title} Artifact`,
+                                tokenAddress: address
+                            });
+                        }
                     }
                 } catch (e) {
                     console.warn(`Failed to check balance for ${project.slug} at ${address} on chain ${artifactChainId || project.chainId}`, e);
