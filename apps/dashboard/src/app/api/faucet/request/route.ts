@@ -14,9 +14,10 @@ export async function POST(request: Request) {
     try {
         console.log("💧 [FAUCET] ========== REQUEST RECEIVED ==========");
         
-        // 1. Verify we are NOT in production
-        if (process.env.NODE_ENV === 'production') {
-             console.error("❌ [FAUCET] Request denied: Faucet is not available in production.");
+        // 1. Verify we are NOT in a Production Chain (Allow if it's a testnet)
+        const isTestnet = config.chain.id === 11155111 || config.chain.id === 84532;
+        if (!isTestnet && process.env.NODE_ENV === 'production') {
+             console.error("❌ [FAUCET] Request denied: Faucet is not available on non-testnet chains in production.");
              return NextResponse.json({ error: "El Faucet de pruebas no está disponible en producción." }, { status: 403 });
         }
 
@@ -31,15 +32,6 @@ export async function POST(request: Request) {
         console.log(`💧 Faucet Attempt: ${walletAddressLower}`);
 
         // 2. Check Sybil/Rate Limiting in actionLogs
-        const existingClaim = await db.query.actionLogs.findFirst({
-            where: and(
-                eq(actionLogs.actionType, 'FAUCET_CLAIM'),
-                // We use metadata->>walletAddress for filtering or just fetch and filter
-            )
-        });
-        
-        // Drizzle jsonb query is a bit tricky, let's fetch recent claims limited to this exact user or just query all recent and filter
-        // Actually since we only want 1 per wallet, we can do a raw query or just fetch where correlationId = walletAddress
         const userClaim = await db.query.actionLogs.findFirst({
             where: and(
                 eq(actionLogs.actionType, 'FAUCET_CLAIM'),

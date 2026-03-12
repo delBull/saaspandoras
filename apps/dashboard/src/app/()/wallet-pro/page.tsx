@@ -1,4 +1,5 @@
 'use client';
+import { useEffect } from 'react';
 import { useUserAssets } from '@/hooks/useUserAssets';
 // Force dynamic rendering - this page uses auth
 export const dynamic = 'force-dynamic';
@@ -21,7 +22,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useActiveAccount, ConnectButton, useWalletBalance } from 'thirdweb/react';
 import { inAppWallet, createWallet } from 'thirdweb/wallets';
-import { base } from 'thirdweb/chains';
+import { base, sepolia, baseSepolia } from 'thirdweb/chains';
 import { client } from '@/lib/thirdweb-client';
 import { SUPPORTED_NETWORKS } from '@/config/networks';
 import { getContract } from "thirdweb";
@@ -51,18 +52,40 @@ export default function WalletProPage() {
   });
 
   // --- 1. NFT Pass Logic ---
-  const applyPassContract = getContract({
-    client,
-    chain: config.chain,
-    address: config.applyPassNftAddress,
-  });
-
-  const { data: hasKeyOnChain } = useReadContract({
-    contract: applyPassContract,
+  const { data: hasKeyOnSepolia } = useReadContract({
+    contract: getContract({ 
+      client, 
+      chain: SUPPORTED_NETWORKS.find(n => n.chain.id === 11155111)?.chain || sepolia, 
+      address: config.applyPassNftAddress 
+    }),
     method: "function isGateHolder(address) view returns (bool)",
     params: [account?.address || "0x0000000000000000000000000000000000000000"],
     queryOptions: { enabled: !!account }
   });
+
+  const { data: hasKeyOnBaseSepolia } = useReadContract({
+    contract: getContract({ 
+      client, 
+      chain: SUPPORTED_NETWORKS.find(n => n.chain.id === 84532)?.chain || baseSepolia, 
+      address: config.applyPassNftAddress 
+    }),
+    method: "function isGateHolder(address) view returns (bool)",
+    params: [account?.address || "0x0000000000000000000000000000000000000000"],
+    queryOptions: { enabled: !!account }
+  });
+
+  const hasKeyOnChain = hasKeyOnSepolia || hasKeyOnBaseSepolia;
+
+  useEffect(() => {
+    if (account) {
+        console.log(`🔍 [VAULT_DEBUG] Multi-chain Key Check:`, {
+            user: account.address,
+            onSepolia: hasKeyOnSepolia,
+            onBaseSepolia: hasKeyOnBaseSepolia,
+            contract: config.applyPassNftAddress
+        });
+    }
+  }, [account, hasKeyOnSepolia, hasKeyOnBaseSepolia]);
 
   // Get new user assets
   const { assets: rawAssets, loading: loadingAssets } = useUserAssets();
