@@ -504,8 +504,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                   })
                   .map((phase: any) => {
                     const isActive = phase.status === 'active';
-                    const hasAccess = true; // We use parent scope hasAccess, need to ensure it's captured or pass it. 
-                    // Actually 'hasAccess' is available in scope. 
+                    // Using hasAccess from the parent scope (on-chain verification result)
 
                     return (
                       <div key={phase.id} className={`bg-zinc-800 rounded-lg overflow-hidden border ${isActive ? 'border-lime-500/30' : 'border-zinc-700'} group transition-all hover:border-lime-500/50`}>
