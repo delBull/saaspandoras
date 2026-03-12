@@ -57,9 +57,9 @@ export default function WalletProPage() {
     address: config.applyPassNftAddress,
   });
 
-  const { data: passBalance } = useReadContract({
+  const { data: hasKeyOnChain } = useReadContract({
     contract: applyPassContract,
-    method: "balanceOf",
+    method: "function isGateHolder(address) view returns (bool)",
     params: [account?.address || "0x0000000000000000000000000000000000000000"],
     queryOptions: { enabled: !!account }
   });
@@ -70,9 +70,7 @@ export default function WalletProPage() {
   const assets = React.useMemo(() => {
     const list = [...rawAssets];
     // Inject Apply Pass if owned
-    if (passBalance && Number(passBalance) > 0) {
-      // Inject Apply Pass if owned
-      if (passBalance && Number(passBalance) > 0) {
+    if (hasKeyOnChain) {
         // Mock Project for Asset Interface
         const mockProject = {
           title: "Pandoras Apply Pass",
@@ -84,14 +82,13 @@ export default function WalletProPage() {
         list.push({
           name: 'Apply Pass',
           type: 'access',
-          balance: passBalance.toString(),
+          balance: "1",
           tokenAddress: config.applyPassNftAddress,
           project: mockProject
         });
-      }
     }
     return list;
-  }, [rawAssets, passBalance]);
+  }, [rawAssets, hasKeyOnChain]);
 
   const accessCount = assets.filter(a => a.type === 'access').length;
   const artifactCount = assets.filter(a => a.type === 'utility' || a.type === 'artifact').length;
