@@ -230,7 +230,15 @@ export class GamificationService {
       }
 
       // 🔥 UNIFIED HISTORY: Add to action_logs for all important ecosystem actions
-      const actionsToLog = ['artifact_purchased', 'daily_login', 'achievement_unlocked', 'project_submitted'];
+      const actionsToLog = [
+        'artifact_purchased', 
+        'daily_login', 
+        'achievement_unlocked', 
+        'project_submitted',
+        'referral_made',
+        'referral_joined',
+        'referral_completed'
+      ];
       if (actionsToLog.includes(eventType)) {
         try {
           await db.insert(actionLogs).values({
@@ -868,7 +876,10 @@ export class GamificationService {
       'project_application_approved': 'projects',
       'investment_made': 'investments',
       'user_registered': 'community',
-      'daily_login': 'daily'
+      'daily_login': 'daily',
+      'referral_made': 'community',
+      'referral_joined': 'community',
+      'referral_completed': 'community'
     };
 
     return categoryMap[normalizedEventType] ?? 'special';
@@ -885,7 +896,9 @@ export class GamificationService {
       'project_application_submitted': 'project_application',
       'project_application_approved': 'project_application',
       'investment_made': 'investment',
-      'daily_login': 'daily_login'
+      'daily_login': 'daily_login',
+      'referral_made': 'community',
+      'referral_joined': 'community'
     };
 
     return categoryMap[normalizedEventType] ?? 'special_event';

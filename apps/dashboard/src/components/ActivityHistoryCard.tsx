@@ -115,11 +115,11 @@ export function ActivityHistoryCard({ walletAddress }: ActivityHistoryCardProps)
                       +{activity.points} tokens
                     </span>
                     <div className={`px-2 py-1 rounded text-xs ${
-                      activity.category === 'referral_made' ? 'bg-green-900/50 text-green-400' :
+                      (activity.category === 'referral_made' || activity.category === 'referral_joined' || activity.category === 'referral_completed') ? 'bg-green-900/50 text-green-400' :
                       activity.category === 'daily_login' ? 'bg-blue-900/50 text-blue-400' :
                       'bg-purple-900/50 text-purple-400'
                     }`}>
-                      {activity.category === 'referral_made' ? 'Referido' :
+                      {(activity.category === 'referral_made' || activity.category === 'referral_joined' || activity.category === 'referral_completed') ? 'Referido' :
                        activity.category === 'daily_login' ? 'Login' : 'Especial'}
                     </div>
                   </div>
