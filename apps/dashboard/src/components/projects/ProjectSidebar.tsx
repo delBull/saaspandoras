@@ -454,6 +454,8 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                     // Note: We use original index from phasesWithStats to check previous
                     const previousPhase = index > 0 ? phasesWithStats[index - 1] : null;
                     const previousIsSoldOut = previousPhase ? (previousPhase.stats?.isSoldOut || false) : true;
+                    const previousHasEnded = previousPhase && previousPhase.endDate && new Date(previousPhase.endDate) < now;
+                    const previousIsComplete = previousIsSoldOut || previousHasEnded;
 
                     let status = 'inactive';
                     let statusPriority = 99; // Lower is better
@@ -480,7 +482,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                       statusPriority = 5;
                       statusLabel = 'Finalizado';
                       statusColor = 'bg-zinc-600 text-gray-400';
-                    } else if (!previousIsSoldOut) {
+                    } else if (!previousIsComplete) {
                       status = 'waiting';
                       statusPriority = 2; // Treat as upcoming/waiting
                       statusLabel = 'Esperando';
