@@ -56,7 +56,7 @@ export default function WalletProPage() {
     contract: getContract({ 
       client, 
       chain: SUPPORTED_NETWORKS.find(n => n.chain.id === 11155111)?.chain || sepolia, 
-      address: config.applyPassNftAddress 
+      address: config.nftContractAddress || config.applyPassNftAddress 
     }),
     method: "function isGateHolder(address) view returns (bool)",
     params: [account?.address || "0x0000000000000000000000000000000000000000"],
@@ -67,7 +67,7 @@ export default function WalletProPage() {
     contract: getContract({ 
       client, 
       chain: SUPPORTED_NETWORKS.find(n => n.chain.id === 84532)?.chain || baseSepolia, 
-      address: config.applyPassNftAddress 
+      address: config.nftContractAddress || config.applyPassNftAddress 
     }),
     method: "function isGateHolder(address) view returns (bool)",
     params: [account?.address || "0x0000000000000000000000000000000000000000"],
@@ -106,7 +106,7 @@ export default function WalletProPage() {
           name: 'Apply Pass',
           type: 'access',
           balance: "1",
-          tokenAddress: config.applyPassNftAddress,
+          tokenAddress: config.nftContractAddress || config.applyPassNftAddress,
           project: mockProject
         });
     }
