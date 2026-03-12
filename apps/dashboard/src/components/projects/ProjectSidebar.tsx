@@ -453,8 +453,8 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                     // Check previous phase for sequential logic
                     // Note: We use original index from phasesWithStats to check previous
                     const previousPhase = index > 0 ? phasesWithStats[index - 1] : null;
-                    const previousIsSoldOut = previousPhase ? (previousPhase.stats?.isSoldOut || false) : true;
-                    const previousHasEnded = previousPhase && previousPhase.endDate && new Date(previousPhase.endDate) < now;
+                    const previousIsSoldOut = previousPhase?.stats?.isSoldOut ?? true;
+                    const previousHasEnded = !!(previousPhase?.endDate && new Date(previousPhase.endDate) < now);
                     const previousIsComplete = previousIsSoldOut || previousHasEnded;
 
                     let status = 'inactive';
