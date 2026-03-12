@@ -1,0 +1,15 @@
+# Railway ignore to reduce build context size
+# Exclude huge app directories that are not needed for the deployment-service
+apps/dashboard/
+apps/nextjs/
+apps/api-core/
+apps/mobile-app/
+
+# Exclude large documentation/assets
+DOCUMENTACIÓN/
+local-data-export.json
+
+# Exclude contract artifacts which are huge and not needed for runtime (if they are compiled elsewhere)
+# But wait, protocol-deployer might need the artifacts if it deploys them.
+# Let's check protocol-deployer/src/index.ts to see if it needs artifacts.
+# For now, let's just ignore the most massive apps.
