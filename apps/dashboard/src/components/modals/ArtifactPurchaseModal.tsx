@@ -53,14 +53,18 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
         try {
             await fetch('/api/gamification/track-event', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-wallet-address': account?.address || ""
+                },
                 body: JSON.stringify({
                     eventType: 'artifact_purchased',
                     metadata: {
                         amount: amount,
                         price: price,
                         project: project.slug,
-                        phase: phase.name
+                        phase: phase.name,
+                        protocolId: project.id // Added for action logs
                     }
                 })
             });

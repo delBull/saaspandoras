@@ -228,6 +228,24 @@ export class GamificationService {
         userId = userRecord[0].id.toString();
       }
 
+      // 🔥 NEW: Add to action_logs for unified history if it's a purchase or important action
+      if (eventType === 'artifact_purchased') {
+        try {
+          const { actionLogs } = await import('@/db/schema');
+          await db.insert(actionLogs).values({
+            actionType: 'artifact_purchased',
+            correlationId: `event_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+            protocolId: metadata?.protocolId ? Number(metadata.protocolId) : null,
+            userId: userId,
+            metadata: metadata || {},
+            createdAt: new Date()
+          });
+          console.log(`📝 Logged artifact purchase to action_logs for user ${userId}`);
+        } catch (logError) {
+          console.warn('⚠️ Failed to log action to action_logs:', logError);
+        }
+      }
+
       // Get points for this event type
       let points = this.getEventPoints(eventType);
 
