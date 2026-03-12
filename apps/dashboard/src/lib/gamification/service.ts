@@ -248,7 +248,9 @@ export class GamificationService {
       }
 
       // Get points for this event type
-      let points = this.getEventPoints(eventType);
+      let points = metadata?.pointsOverride && typeof metadata.pointsOverride === 'number'
+        ? metadata.pointsOverride
+        : this.getEventPoints(eventType);
 
       // 🔥 FIX: Special case for achievement unlocks from S2S/Edge
       if (eventType === 'ACHIEVEMENT_UNLOCKED' && metadata?.achievementId) {
@@ -831,6 +833,7 @@ export class GamificationService {
       'investment_made': 25,
       'daily_login': 10,
       'user_registered': 20,
+      'referral_joined': 50, // Puntos para el referido por unirse
       'referral_made': 200,
       'referral_completed': 100, // Bonus adicional cuando referido completa onboarding + proyecto
       'course_started': 10,

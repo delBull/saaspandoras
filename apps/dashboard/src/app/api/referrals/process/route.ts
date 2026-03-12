@@ -80,12 +80,12 @@ export async function POST(request: Request) {
     try {
       await GamificationService.trackEvent(
         currentUserWallet,
-        'DAILY_LOGIN', // Reutilizando evento de login para el referido
+        'referral_joined',
         {
           eventSubtype: 'referral_joined',
           referrerWallet: referrerWalletNormalized,
           source,
-          referralBonus: 50
+          pointsOverride: 50
         }
       );
       console.log(`✅ Referral joined event tracked for new user: ${currentUserWallet.slice(0, 6)}...`);
