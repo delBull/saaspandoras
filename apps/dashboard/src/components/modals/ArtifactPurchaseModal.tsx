@@ -155,8 +155,6 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                                                 if (max > 0 && val > max) {
                                                     // Strict clamp or just warning? 
                                                     // "Don't let them" implies strict or disable button.
-                                                    // Let's warn and disable button, but maybe strict clamp input too to be safe?
-                                                    // Let's just set to max if they type more? No, that's annoying while typing "100".
                                                     // Let's allow typing but show error.
                                                     setAmount(e.target.value);
                                                 } else {
@@ -208,7 +206,7 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                                     {isTestnet && account && balanceData && (
                                         (() => {
                                             const balanceInEth = Number(balanceData.displayValue);
-                                            const totalWithGas = totalCost + 0.005; // 0.005 ETH for gas margin
+                                            const totalWithGas = totalCost + 0.002; // Reduced gas margin to 0.002 ETH for Sepolia
                                             const isLow = balanceInEth < totalWithGas;
                                             
                                             if (isLow && !needsFaucet) {
