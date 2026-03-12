@@ -20,10 +20,10 @@ export async function validateTelegramLinkAction(challenge: string): Promise<{ s
 
         // Directly call the Edge API 
         const edgeUrl = process.env.NEXT_PUBLIC_PANDORAS_EDGE_URL || 'https://pandorasminiapp-staging.up.railway.app/api';
-        const PANDORA_CORE_KEY = process.env.PANDORA_CORE_KEY;
+        const PANDORA_CORE_KEY = process.env.PANDORA_CORE_KEY || process.env.PANDORA_CORE_S2S_KEY;
 
         if (!PANDORA_CORE_KEY) {
-            console.error('Missing PANDORA_CORE_KEY in env');
+            console.error('Missing PANDORA_CORE_KEY / PANDORA_CORE_S2S_KEY in env');
             return { success: false, message: 'Error de configuración del servidor Core' };
         }
 
@@ -54,7 +54,7 @@ export async function validateTelegramLinkAction(challenge: string): Promise<{ s
 export async function resolveTelegramUserAction(telegramId: string, initData: string): Promise<{ success: boolean; data?: any; message?: string }> {
     try {
         const edgeUrl = process.env.NEXT_PUBLIC_PANDORAS_EDGE_URL || 'https://pandorasminiapp-staging.up.railway.app/api';
-        const PANDORA_CORE_KEY = process.env.PANDORA_CORE_KEY;
+        const PANDORA_CORE_KEY = process.env.PANDORA_CORE_KEY || process.env.PANDORA_CORE_S2S_KEY;
 
         if (!PANDORA_CORE_KEY) {
             return { success: false, message: 'Configuración de servidor incompleta (Core Key)' };
