@@ -23,6 +23,7 @@ import { client } from "@/lib/thirdweb-client";
 import { toast } from "sonner";
 import { useState } from "react";
 import { OnChainProposalsList } from "./OnChainProposalsList";
+import { DAOMembersList } from "./DAOMembersList";
 
 interface DAODashboardProps {
     project: any;
@@ -716,10 +717,7 @@ export function DAODashboard({ project, activeView, isOwner = false }: DAODashbo
                     {activeView === 'docs' && <DAODocs />}
 
                     {activeView === 'members' && (
-                        <div className="flex flex-col items-center justify-center py-20 text-zinc-500">
-                            <UsersIcon className="w-12 h-12 mb-4 opacity-50" />
-                            <p>Directorio de miembros en construcción</p>
-                        </div>
+                        <DAOMembersList licenseContract={licenseContract} projectId={project.id} />
                     )}
                 </motion.div>
             </div>

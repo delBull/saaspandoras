@@ -63,6 +63,11 @@ export function TransactionHistory() {
                 <div className="flex-1">
                   <p className="text-sm font-medium text-white capitalize">
                     {event.type.replace(/_/g, ' ')}
+                    {event.protocolName && (
+                        <span className="ml-2 text-[10px] text-zinc-500 font-normal">
+                          en {event.protocolName}
+                        </span>
+                    )}
                   </p>
                   <p className="text-xs text-zinc-500">
                     {formatDistanceToNow(new Date(event.createdAt), { addSuffix: true, locale: es })}
