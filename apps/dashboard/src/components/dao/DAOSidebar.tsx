@@ -110,7 +110,7 @@ export function DAOSidebar({
                                     transaction={() => {
                                         const rawChainId = Number((project as any).chainId);
                                         const chainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
-                                        const govTokenAddress = project?.governance_token_address;
+                                        const govTokenAddress = project?.governance_token_address || project?.licenseContractAddress;
 
                                         if (!govTokenAddress) throw new Error("No governance token found");
 

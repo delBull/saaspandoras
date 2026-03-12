@@ -57,7 +57,7 @@ const MobileVaultTree: React.FC<{ assets: Asset[], isLoading: boolean }> = ({
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="relative z-20"
+          className="relative z-20 mt-8"
         >
           <div className={`p-0.5 rounded-full shadow-lg transition-all duration-700 ${hasKey
             ? 'bg-gradient-to-br from-purple-600 via-pink-600 to-orange-600 shadow-purple-500/40'

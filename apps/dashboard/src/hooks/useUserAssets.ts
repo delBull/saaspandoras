@@ -34,14 +34,16 @@ export function useUserAssets() {
             const processedAddresses = new Set<string>();
 
             // Helper to read balance
-            const checkBalance = async (address: string, contractType: 'access' | 'utility', project: Project) => {
+            const checkBalance = async (address: string, contractType: 'access' | 'utility', project: Project, artifactChainId?: number) => {
                 const normalizedAddr = address.toLowerCase();
                 if (processedAddresses.has(normalizedAddr)) return;
                 processedAddresses.add(normalizedAddr);
 
                 try {
-                    // Use project chain or default governance chain
-                    const chainId = project.chainId || Number(config.governanceChain.id);
+                    // 1. Prioritize artifact-specific chainId
+                    // 2. Fallback to project-level chainId
+                    // 3. Fallback to global config governance chain
+                    const chainId = artifactChainId || project.chainId || Number(config.governanceChain.id);
                     const chain = defineChain(chainId);
 
                     const contract = getContract({ client, chain, address });
@@ -61,7 +63,7 @@ export function useUserAssets() {
                         });
                     }
                 } catch (e) {
-                    console.warn(`Failed to check balance for ${project.slug} at ${address}`, e);
+                    console.warn(`Failed to check balance for ${project.slug} at ${address} on chain ${artifactChainId || project.chainId}`, e);
                 }
             };
 
@@ -81,7 +83,7 @@ export function useUserAssets() {
                     project.artifacts.forEach((artifact: any) => {
                         if (artifact.address) {
                             const type = artifact.type?.toLowerCase() === 'access' ? 'access' : 'utility';
-                            checks.push(checkBalance(artifact.address, type as any, project));
+                            checks.push(checkBalance(artifact.address, type as any, project, artifact.chainId ? Number(artifact.chainId) : undefined));
                         }
                     });
                 }
@@ -92,7 +94,7 @@ export function useUserAssets() {
                     w2eArtifacts.forEach((artifact: any) => {
                         if (artifact.address) {
                             const type = artifact.type?.toLowerCase() === 'access' ? 'access' : 'utility';
-                            checks.push(checkBalance(artifact.address, type as any, project));
+                            checks.push(checkBalance(artifact.address, type as any, project, artifact.chainId ? Number(artifact.chainId) : undefined));
                         }
                     });
                 }
