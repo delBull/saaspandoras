@@ -506,12 +506,15 @@ export class GamificationService {
       const hasCompletedOnboarding = (user?.kycCompleted ?? false) && user?.kycLevel === 'basic';
       const hasFirstProject = userProjects.length > 0;
       const hasUnlockedAchievements = unlockedAchievementsExcludingLogin > 0;
+      const hasLinkedTelegram = !!(user as any)?.telegramId;
 
       // Si ya tenía estos valores, no actualizar
       if (referral.referredCompletedOnboarding === hasCompletedOnboarding &&
         referral.referredFirstProject === hasFirstProject) {
-        return;
+        // Continue checking if we can mark as completed now via telegram or achievements
       }
+
+      const isNowCompleted = hasCompletedOnboarding || hasFirstProject || hasUnlockedAchievements || hasLinkedTelegram;
 
       // Actualizar progreso
       await db
@@ -519,13 +522,13 @@ export class GamificationService {
         .set({
           referredCompletedOnboarding: hasCompletedOnboarding,
           referredFirstProject: hasFirstProject,
-          // Si completó al menos una acción importante (KYC, proyecto o achievement), marcar como completed
-          status: (hasCompletedOnboarding || hasFirstProject || hasUnlockedAchievements) ? 'completed' : 'pending',
-          completedAt: (hasCompletedOnboarding || hasFirstProject || hasUnlockedAchievements) ? new Date() : null
+          // Si completó al menos una acción importante (KYC, proyecto, achievement O TELEGRAM), marcar como completed
+          status: isNowCompleted ? 'completed' : 'pending',
+          completedAt: isNowCompleted ? new Date() : null
         })
         .where(eq(userReferrals.referredWalletAddress, userWallet));
 
-      console.log(`✅ Referral progress updated for ${userWallet.slice(0, 6)}...: onboarding=${hasCompletedOnboarding}, project=${hasFirstProject}, achievements=${hasUnlockedAchievements}, status=${(hasCompletedOnboarding || hasFirstProject || hasUnlockedAchievements) ? 'completed' : 'pending'}`);
+      console.log(`✅ Referral progress updated for ${userWallet.slice(0, 6)}...: onboarding=${hasCompletedOnboarding}, project=${hasFirstProject}, achievements=${hasUnlockedAchievements}, telegram=${hasLinkedTelegram}, status=${isNowCompleted ? 'completed' : 'pending'}`);
 
     } catch (error) {
       console.error('Error updating referral progress:', error);
