@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardContent } from '@saasfly/ui/card';
 import { useActiveAccount } from 'thirdweb/react';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 
 // Asset type definition
 interface Asset {
@@ -167,11 +168,21 @@ const MobileVaultTree: React.FC<{ assets: Asset[], isLoading: boolean }> = ({
         </div>
       ) : (
         <div className="text-center py-20 px-6 bg-zinc-900/20 rounded-[40px] border border-dashed border-zinc-800/50 max-w-sm mx-auto mt-8">
-          <div className="text-5xl mb-6 opacity-10">🛡️</div>
-          <p className="text-zinc-500 text-base font-bold mb-2 tracking-tight">Tu Bóveda está protegida</p>
-          <p className="text-zinc-600 text-xs leading-relaxed max-w-[200px] mx-auto font-medium">
-            No se han detectado activos en tu dirección. Adquiere tu <span className="text-zinc-400">Pandora's Key</span> para comenzar a desplegar protocolos.
+          <div className="text-5xl mb-6 opacity-10">{hasKey ? '✨' : '🛡️'}</div>
+          <p className="text-zinc-500 text-base font-bold mb-2 tracking-tight">
+            {hasKey ? 'Tu Bóveda está lista' : 'Tu Bóveda está protegida'}
           </p>
+          <p className="text-zinc-600 text-xs leading-relaxed max-w-[200px] mx-auto font-medium">
+            {hasKey 
+              ? 'Aún no has adquirido artefactos de protocolos. Explora los proyectos disponibles para comenzar.'
+              : <>No se han detectado activos en tu dirección. Adquiere tu <span className="text-zinc-400">Pandora\'s Key</span> para comenzar a desplegar protocolos.</>
+            }
+          </p>
+          {hasKey && (
+            <Link href="/projects" className="mt-6 inline-block text-xs text-orange-400 hover:text-orange-300 font-bold uppercase tracking-widest border border-orange-500/20 px-4 py-2 rounded-full bg-orange-500/5 transition-all">
+              Explorar Protocolos
+            </Link>
+          )}
         </div>
       )}
     </div>

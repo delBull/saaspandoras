@@ -31,11 +31,22 @@ export function ActivityHistoryCard({ walletAddress }: ActivityHistoryCardProps)
 
       setIsLoading(true);
       try {
-        const response = await fetch(`/api/gamification/activity/${walletAddress}`);
+        // Fetch from the unified history API instead of just gamification activity
+        const response = await fetch(`/api/user/history?wallet=${walletAddress}&limit=20`);
         if (response.ok) {
-          const data = (await response.json()) as { activities?: ActivityItem[] };
-          const activityData = (data as { activities?: ActivityItem[] }).activities ?? [];
-          setRealActivity(activityData);
+          const data = await response.json();
+          // Map history events to ActivityItem interface
+          const mappedActivities = (data.events || []).map((event: any) => ({
+            id: event.id,
+            type: event.type.includes('referral') ? 'referral' : (event.type.includes('login') ? 'login' : 'other'),
+            points: event.points || 0,
+            reason: event.type.replace(/_/g, ' ').toUpperCase(), // Simple formatting
+            category: event.type,
+            createdAt: new Date(event.createdAt),
+            date: new Date(event.createdAt).toLocaleDateString(),
+            time: new Date(event.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          }));
+          setRealActivity(mappedActivities);
         } else {
           console.warn('Failed to fetch activity data');
           setRealActivity([]);
