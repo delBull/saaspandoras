@@ -29,6 +29,7 @@ export async function GET(request: Request) {
         }
 
         // 2. Fetch Action Logs (Purchases, Mints) - Can be by userId OR wallet
+        // Ensure we search by both to catch legacy and new logs
         const aLogs = await db.select({
             id: actionLogs.id,
             type: actionLogs.actionType,
@@ -39,12 +40,17 @@ export async function GET(request: Request) {
         .from(actionLogs)
         .leftJoin(projects, eq(actionLogs.protocolId, projects.id))
         .where(
-            userId 
-                ? or(eq(actionLogs.userId, userId), eq(actionLogs.userId, wallet.toLowerCase()))
-                : eq(actionLogs.userId, wallet.toLowerCase())
+            or(
+                eq(actionLogs.userId, wallet.toLowerCase()),
+                ...(userId ? [eq(actionLogs.userId, userId)] : [])
+            )
         )
         .orderBy(desc(actionLogs.createdAt))
         .limit(limit);
+
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`[History] Found ${gEvents.length} gEvents and ${aLogs.length} aLogs for ${wallet}`);
+        }
 
         // 3. Unify and Sort
         const unified = [

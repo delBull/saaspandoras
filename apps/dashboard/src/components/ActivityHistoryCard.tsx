@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 // Activity interface
 interface ActivityItem {
   id: string;
-  type: 'login' | 'referral' | 'other';
+  type: 'login' | 'referral' | 'faucet' | 'artifact' | 'other';
   points: number;
   reason: string;
   category: string;
@@ -38,9 +38,13 @@ export function ActivityHistoryCard({ walletAddress }: ActivityHistoryCardProps)
           // Map history events to ActivityItem interface
           const mappedActivities = (data.events || []).map((event: any) => ({
             id: event.id,
-            type: event.type.includes('referral') ? 'referral' : (event.type.includes('login') ? 'login' : 'other'),
+            type: event.type.includes('referral') ? 'referral' : 
+                  (event.type.includes('login') ? 'login' : 
+                  (event.type.includes('faucet') ? 'faucet' : 'other')),
             points: event.points || 0,
-            reason: event.type.replace(/_/g, ' ').toUpperCase(), // Simple formatting
+            reason: event.type === 'FAUCET_CLAIM' ? ' RECLAMACIÓN DE FAUCET' : 
+                    event.type === 'artifact_purchased' ? 'COMPRA DE ARTEFACTO' :
+                    event.type.replace(/_/g, ' ').toUpperCase(),
             category: event.type,
             createdAt: new Date(event.createdAt),
             date: new Date(event.createdAt).toLocaleDateString(),
@@ -86,14 +90,17 @@ export function ActivityHistoryCard({ walletAddress }: ActivityHistoryCardProps)
                   <div className="flex items-center gap-3">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                       activity.type === 'referral' ? 'bg-green-500/20' :
-                      activity.type === 'login' ? 'bg-blue-500/20' : 'bg-purple-500/20'
+                      activity.type === 'login' ? 'bg-blue-500/20' : 
+                      activity.type === 'faucet' ? 'bg-yellow-500/20' : 'bg-purple-500/20'
                     }`}>
                       <span className={`text-sm ${
                         activity.type === 'referral' ? 'text-green-400' :
-                        activity.type === 'login' ? 'text-blue-400' : 'text-purple-400'
+                        activity.type === 'login' ? 'text-blue-400' : 
+                        activity.type === 'faucet' ? 'text-yellow-400' : 'text-purple-400'
                       }`}>
                         {activity.type === 'referral' ? '👥' :
-                         activity.type === 'login' ? '🔗' : '🎯'}
+                         activity.type === 'login' ? '🔗' : 
+                         activity.type === 'faucet' ? '💧' : '🎯'}
                       </span>
                     </div>
                     <div>
