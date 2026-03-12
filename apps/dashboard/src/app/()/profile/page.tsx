@@ -15,7 +15,6 @@ import { ReferralsCard } from '../../../components/ReferralsCard';
 import {
   ProfileHeader,
   WalletInfo,
-  BasicInfo,
   KycInfo,
   AddressInfo,
   AccountStatus,
