@@ -95,9 +95,23 @@ export const TelegramLinkCard = () => {
                                 </>
                             )}
                         </Button>
-                        <p className="text-[10px] text-gray-500 text-center uppercase tracking-widest mt-2">
+                        <p className="text-[10px] text-gray-500 text-center uppercase tracking-widest mt-2 px-4">
                             Abre la MiniApp en tu teléfono, pulsa "Generar Enlace" y pega el resultado arriba.
                         </p>
+                        
+                        <div className="pt-2 mt-4 border-t border-zinc-800/50 text-center">
+                             <p className="text-[11px] text-zinc-400">
+                                ¿Aún no tienes la app de Pandoras? <br/>
+                                <a 
+                                    href="https://t.me/pandorasAlphaBot" 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-blue-400 hover:text-blue-300 underline font-medium"
+                                >
+                                    Ábrela aquí en Telegram
+                                </a>
+                             </p>
+                        </div>
                     </div>
                 )}
             </CardContent>

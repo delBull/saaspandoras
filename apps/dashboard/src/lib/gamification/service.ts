@@ -19,6 +19,7 @@ import {
   projects,
   userReferrals,
   gamificationEvents,
+  actionLogs,
   type GamificationProfile as DrizzleGamificationProfile
 } from '@/db/schema';
 import { eq, sql, desc, or, and } from 'drizzle-orm';
@@ -228,21 +229,21 @@ export class GamificationService {
         userId = userRecord[0].id.toString();
       }
 
-      // 🔥 NEW: Add to action_logs for unified history if it's a purchase or important action
-      if (eventType === 'artifact_purchased') {
+      // 🔥 UNIFIED HISTORY: Add to action_logs for all important ecosystem actions
+      const actionsToLog = ['artifact_purchased', 'daily_login', 'achievement_unlocked', 'project_submitted'];
+      if (actionsToLog.includes(eventType)) {
         try {
-          const { actionLogs } = await import('@/db/schema');
           await db.insert(actionLogs).values({
-            actionType: 'artifact_purchased',
+            actionType: eventType,
             correlationId: `event_${Date.now()}_${Math.random().toString(36).substring(7)}`,
             protocolId: metadata?.protocolId ? Number(metadata.protocolId) : null,
             userId: userId,
             metadata: metadata || {},
             createdAt: new Date()
           });
-          console.log(`📝 Logged artifact purchase to action_logs for user ${userId}`);
+          console.log(`📝 Logged action ${eventType} to action_logs for user ${userId}`);
         } catch (logError) {
-          console.warn('⚠️ Failed to log action to action_logs:', logError);
+          console.warn('⚠️ Failed to log activity to action_logs:', logError);
         }
       }
 
