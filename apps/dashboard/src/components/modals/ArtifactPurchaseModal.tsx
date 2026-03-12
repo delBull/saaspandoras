@@ -256,17 +256,18 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                                                     const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
 
                                                     // Prepare Contract
-                                                    const licenseContract = getContract({
+                                                    const targetAddress = utilityContract?.address || licenseAddress;
+                                                    const targetContract = getContract({
                                                         client,
                                                         chain: defineChain(safeChainId),
-                                                        address: licenseAddress
+                                                        address: targetAddress
                                                     });
 
                                                     const quantity = BigInt(Math.floor(Number(amount)));
                                                     const costInWei = BigInt(Math.floor(totalCost * 1e18)); // Assume price is ETH/Matic-like unit
 
                                                     return prepareContractCall({
-                                                        contract: licenseContract,
+                                                        contract: targetContract,
                                                         method: "function mintWithPayment(uint256 quantity) payable",
                                                         params: [quantity],
                                                         value: costInWei

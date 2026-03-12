@@ -115,8 +115,8 @@ export default function WalletProPage() {
     return list;
   }, [rawAssets, hasKeyOnChain]);
 
-  const accessCount = assets.filter(a => a.type === 'access').length;
-  const artifactCount = assets.filter(a => a.type === 'utility' || a.type === 'artifact').length;
+  const accessCount = assets.filter(a => a.type === 'access').reduce((acc, c) => acc + Number(c.balance || 0), 0);
+  const artifactCount = assets.filter(a => a.type === 'utility' || a.type === 'artifact').reduce((acc, c) => acc + Number(c.balance || 0), 0);
 
   // Formatear el balance en USD
   const walletBalance = React.useMemo(() => {
