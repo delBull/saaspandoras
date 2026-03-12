@@ -16,19 +16,19 @@ export async function GET(request: Request) {
         }
 
         const user = await db.select({ id: users.id }).from(users).where(eq(users.walletAddress, wallet.toLowerCase())).limit(1);
+        const userId = (user && user.length > 0) ? user[0]?.id : null;
 
-        if (!user || user.length === 0 || !user[0]) {
-            return NextResponse.json({ events: [] });
+        // 1. Fetch Gamification Events (Only if user exists)
+        let gEvents: any[] = [];
+        if (userId) {
+            gEvents = await db.select()
+                .from(gamificationEvents)
+                .where(eq(gamificationEvents.userId, userId))
+                .orderBy(desc(gamificationEvents.createdAt))
+                .limit(limit);
         }
 
-        // 1. Fetch Gamification Events
-        const gEvents = await db.select()
-            .from(gamificationEvents)
-            .where(eq(gamificationEvents.userId, user[0].id))
-            .orderBy(desc(gamificationEvents.createdAt))
-            .limit(limit);
-
-        // 2. Fetch Action Logs (Purchases, Mints)
+        // 2. Fetch Action Logs (Purchases, Mints) - Can be by userId OR wallet
         const aLogs = await db.select({
             id: actionLogs.id,
             type: actionLogs.actionType,
@@ -39,10 +39,9 @@ export async function GET(request: Request) {
         .from(actionLogs)
         .leftJoin(projects, eq(actionLogs.protocolId, projects.id))
         .where(
-            or(
-                eq(actionLogs.userId, user[0].id.toString()),
-                eq(actionLogs.userId, wallet.toLowerCase())
-            )
+            userId 
+                ? or(eq(actionLogs.userId, userId), eq(actionLogs.userId, wallet.toLowerCase()))
+                : eq(actionLogs.userId, wallet.toLowerCase())
         )
         .orderBy(desc(actionLogs.createdAt))
         .limit(limit);

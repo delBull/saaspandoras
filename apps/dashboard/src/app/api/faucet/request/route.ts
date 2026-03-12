@@ -80,6 +80,7 @@ export async function POST(request: Request) {
         await db.insert(actionLogs).values({
             id: crypto.randomUUID(),
             actionType: 'FAUCET_CLAIM',
+            userId: walletAddressLower,
             correlationId: `faucet_${walletAddressLower}`,
             metadata: {
                 walletAddress: walletAddressLower,
