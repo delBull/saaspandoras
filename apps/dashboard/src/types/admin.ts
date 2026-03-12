@@ -98,6 +98,7 @@ export interface UserData {
   kycLevel: 'N/A' | 'basic';
   kycCompleted: boolean;
   kycData?: KYCData | null;
+  telegramId?: string | null;
 }
 
 export type UserRole = "applicant" | "pandorian" | "admin";
