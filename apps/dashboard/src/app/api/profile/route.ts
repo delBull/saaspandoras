@@ -74,7 +74,7 @@ export async function GET(request: Request) {
       FROM "users"
       WHERE LOWER("walletAddress") = LOWER(${walletAddress})
     `;
-    let user = usersResult[0];
+    const user = usersResult[0];
 
     // 🔥 SELF-HEALING SYNC: If user is connected to web but telegramId is missing in dashboard DB,
     // try to fetch it from Edge and sync it. This fixes issues for users who linked but didn't 
