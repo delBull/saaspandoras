@@ -1248,6 +1248,7 @@ export class GamificationService {
       if (existingRows.length > 0 && existingRows[0].is_unlocked) {
         return; // Already unlocked
       }
+      const pointsReward = achievement[0].pointsReward || 0;
 
       if (existingRows.length > 0) {
         // Update existing using raw SQL
@@ -1270,6 +1271,22 @@ export class GamificationService {
       }
 
       console.log(`🎉 Achievement unlocked: ${achievementName} for user ${userIdString}`);
+
+      // 💰 AWARD POINTS for achievement
+      if (pointsReward > 0) {
+        try {
+          await this.awardPointsToDb(
+            userIdString,
+            pointsReward,
+            `Logro Desbloqueado: ${achievementName}`,
+            achievement[0].type || 'achievement',
+            { achievementId: achievementId.toString(), achievementName }
+          );
+          console.log(`💎 Awarded ${pointsReward} points for achievement: ${achievementName}`);
+        } catch (pointError) {
+          console.warn(`⚠️ Failed to award points for achievement ${achievementName}:`, pointError);
+        }
+      }
 
       // 🎯 UPDATE REFERRAL PROGRESS: Si el usuario desbloqueó un achievement, actualizar progreso de referidos
       if (achievementName !== 'Primer Login') { // Excluir "Primer Login" ya que es automático
