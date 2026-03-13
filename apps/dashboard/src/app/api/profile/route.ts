@@ -113,7 +113,7 @@ export async function GET(request: Request) {
     }
 
     // 🎯 UPDATE REFERRAL PROGRESS: Ensure referrals are updated if identity is linked
-    if (user && user.telegramId) {
+    if (user?.telegramId) {
         try {
             const { GamificationService } = await import('@/lib/gamification/service');
             await GamificationService.checkReferralProgressForAchievements(walletAddress);
