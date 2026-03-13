@@ -70,8 +70,8 @@ export async function GET(request: Request) {
       SELECT "id", "name", "email", "image", "walletAddress",
               "connectionCount", "lastConnectionAt", "createdAt",
               "kycLevel", "kycCompleted", "kycData", "hasPandorasKey",
-              "telegram_id" AS "telegramId"
-      FROM "users"
+              "telegramId"
+      FROM "User"
       WHERE LOWER("walletAddress") = LOWER(${walletAddress})
     `;
     const user = users[0];
