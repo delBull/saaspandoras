@@ -166,87 +166,8 @@ function FeaturedCarousel({ projects }: { projects: any[] }) {
   );
 }
 
-function GovernanceSection({ onParticipate }: { onParticipate: () => void }) {
-  // Contract Interaction Setup removed from here as it moved to Modal (or unused for the trigger button)
-  const isSepolia = config.chain.id !== base.id; // Any testnet/sepolia
 
-  return (
-    <div className="flex flex-col gap-4 px-5">
-      <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest pl-1">Gobernanza Pandora&#39;s</h3>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Governance Participation Card */}
-        <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5 relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-900/10 to-transparent group-hover:from-purple-900/20 transition-all duration-500" />
-
-          <div className="relative z-10 flex flex-col gap-4">
-            <div className="flex justify-between items-start">
-              <div className="p-3 bg-purple-500/20 rounded-lg">
-                <ShieldCheckIcon className="w-8 h-8 text-purple-400" />
-              </div>
-              <span className="px-2 py-1 bg-purple-500/20 text-purple-300 text-xs font-bold rounded-full uppercase border border-purple-500/30">
-                {isSepolia ? 'Testnet' : 'Oficial'}
-              </span>
-            </div>
-
-            <div>
-              <h4 className="text-xl font-bold text-white mb-1">Participación Gobernanza</h4>
-              <p className="text-sm text-gray-400 leading-relaxed">
-                Adquiere participación en la gobernanza de Pandora&#39;s.
-                Los fondos impulsan el crecimiento de la plataforma.
-              </p>
-            </div>
-
-            <div className="mt-2">
-              <button
-                onClick={onParticipate}
-                className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg py-3 px-4 transition-all shadow-lg shadow-purple-900/20 flex items-center justify-center gap-2"
-              >
-                <ShieldCheckIcon className="w-5 h-5" />
-                {isSepolia ? 'Participar (0.001 ETH)' : 'Participar (50 USDC)'}
-              </button>
-              <p className="text-[10px] text-center text-gray-500 mt-2 uppercase tracking-wide">
-                {isSepolia ? 'Red Base Sepolia • ETH' : 'Red Base • Min 50 USDC'}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* PBOX Coming Soon Card - NEW */}
-        <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5 relative overflow-hidden group flex flex-col justify-between">
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/10 to-transparent group-hover:from-indigo-900/20 transition-all duration-500" />
-
-          <div className="relative z-10 flex flex-col gap-4">
-            <div className="flex justify-between items-start">
-              <div className="p-3 bg-indigo-500/20 rounded-lg">
-                <RocketLaunchIcon className="w-8 h-8 text-indigo-400" />
-              </div>
-              <span className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs font-bold rounded-full uppercase border border-blue-500/30 animate-pulse">
-                Coming Soon
-              </span>
-            </div>
-
-            <div>
-              <h4 className="text-xl font-bold text-white mb-1">PBOX Governance Token</h4>
-              <p className="text-sm text-gray-400 leading-relaxed">
-                El token principal de gobernanza del ecosistema. Público y transferible.
-              </p>
-              <div className="mt-3 flex items-center gap-2">
-                <span className="text-xs bg-zinc-800 px-2 py-1 rounded border border-white/5 text-gray-300">ICO Loading...</span>
-                <span className="text-xs bg-zinc-800 px-2 py-1 rounded border border-white/5 text-gray-300">ERC-20</span>
-              </div>
-            </div>
-
-            <button disabled className="w-full bg-zinc-800 text-gray-500 cursor-not-allowed py-2 px-4 rounded-lg font-bold text-sm mt-2 border border-white/5">
-              Próximamente
-            </button>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  );
-}
+// New list item component for Access/Artifacts
 
 // New list item component for Access/Artifacts
 function ListItem({ item, isArtifact }: { item: any, isArtifact: boolean }) {
@@ -342,7 +263,6 @@ function AccessArtifactsSection({ accessCards, artifacts }: { accessCards: any[]
 
 export default function DashboardPage() {
   const { account } = usePersistedAccount();
-  const [isGovernanceModalOpen, setIsGovernanceModalOpen] = useState(false);
 
   // Hoist data fetching here to prevent layout shift/empty states
   const [homeData, setHomeData] = useState<{
@@ -444,11 +364,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Governance Section */}
-      <div id="tour-governance" className="mt-8">
-        <GovernanceSection onParticipate={() => setIsGovernanceModalOpen(true)} />
-      </div>
-
       {/* Access & Artifacts Tabs Section */}
       {homeData.loading ? (
         <div className="mt-8 px-5 pb-24 flex flex-col gap-4">
@@ -461,11 +376,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Governance Participation Modal */}
-      <GovernanceParticipationModal
-        isOpen={isGovernanceModalOpen}
-        onClose={() => setIsGovernanceModalOpen(false)}
-      />
 
     </div>
   );
