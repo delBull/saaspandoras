@@ -474,7 +474,8 @@ export class GamificationService {
         columns: {
           id: true,
           kycCompleted: true,
-          kycLevel: true
+          kycLevel: true,
+          telegramId: true
         }
       });
 

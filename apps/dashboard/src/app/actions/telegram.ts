@@ -1,6 +1,7 @@
 'use server'
 import { getAuth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { sql } from "@/lib/database";
 
 export async function validateTelegramLinkAction(challenge: string): Promise<{ success: boolean; message?: string }> {
     try {
@@ -42,6 +43,22 @@ export async function validateTelegramLinkAction(challenge: string): Promise<{ s
         if (!res.ok) {
             const error = await res.json().catch(() => ({}));
             return { success: false, message: error.message || 'Código inválido o expirado' };
+        }
+
+        const result = await res.json();
+
+        // 🔥 SYNC: Update the local dashboard database with the telegramId
+        if (result.success && result.telegramId) {
+            try {
+                await sql`
+                    UPDATE "users" 
+                    SET "telegram_id" = ${result.telegramId} 
+                    WHERE LOWER("walletAddress") = LOWER(${walletAddress})
+                `;
+                console.log(`✅ Dashboard DB synced: Linked ${walletAddress} to Telegram ${result.telegramId}`);
+            } catch (dbError) {
+                console.warn('⚠️ Linked in Edge but failed to update Dashboard DB:', dbError);
+            }
         }
 
         return { success: true, message: '¡Cuenta vinculada exitosamente!' };
