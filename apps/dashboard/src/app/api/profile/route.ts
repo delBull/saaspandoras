@@ -66,15 +66,51 @@ export async function GET(request: Request) {
     await ensureUser(walletAddress);
 
     // Get user data directly from users table - optimized query
-    const users = await sql`
+    const usersResult = await sql`
       SELECT "id", "name", "email", "image", "walletAddress",
               "connectionCount", "lastConnectionAt", "createdAt",
               "kycLevel", "kycCompleted", "kycData", "hasPandorasKey",
-              "telegramId"
-      FROM "User"
+              "telegram_id" AS "telegramId"
+      FROM "users"
       WHERE LOWER("walletAddress") = LOWER(${walletAddress})
     `;
-    const user = users[0];
+    let user = usersResult[0];
+
+    // 🔥 SELF-HEALING SYNC: If user is connected to web but telegramId is missing in dashboard DB,
+    // try to fetch it from Edge and sync it. This fixes issues for users who linked but didn't 
+    // have their dashboard records updated correctly.
+    if (user && !user.telegramId) {
+        try {
+            const edgeUrl = process.env.NEXT_PUBLIC_PANDORAS_EDGE_URL || 'https://pandorasminiapp-staging.up.railway.app/api';
+            const PANDORA_CORE_KEY = process.env.PANDORA_CORE_KEY || process.env.PANDORA_CORE_S2S_KEY;
+            
+            if (PANDORA_CORE_KEY) {
+                const res = await fetch(`${edgeUrl}/internal/user/resolve-by-wallet`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-core-webhook-key': PANDORA_CORE_KEY
+                    },
+                    body: JSON.stringify({ walletAddress })
+                });
+
+                if (res.ok) {
+                    const edgeData = await res.json();
+                    if (edgeData.telegramId) {
+                        await sql`
+                            UPDATE "users" 
+                            SET "telegram_id" = ${edgeData.telegramId} 
+                            WHERE "id" = ${user.id}
+                        `;
+                        user.telegramId = edgeData.telegramId;
+                        console.log(`✨ Profile API Auto-Sync: Recovered telegramId for ${walletAddress}`);
+                    }
+                }
+            }
+        } catch (syncError) {
+            console.warn(`⚠️ Profile API Auto-Sync failed for ${walletAddress}:`, syncError);
+        }
+    }
 
     // Get user projects - Get ALL projects for the user, accounting for legacy property 'update_authority_address'
     const projects = await sql`
