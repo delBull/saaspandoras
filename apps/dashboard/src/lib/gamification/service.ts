@@ -508,11 +508,10 @@ export class GamificationService {
       const hasUnlockedAchievements = unlockedAchievementsExcludingLogin > 0;
       const hasLinkedTelegram = !!(user as any)?.telegramId;
 
-      // Si ya tenía estos valores, no actualizar
-      if (referral.referredCompletedOnboarding === hasCompletedOnboarding &&
-        referral.referredFirstProject === hasFirstProject) {
-        // Continue checking if we can mark as completed now via telegram or achievements
-      }
+      // Si ya tenía estos valores, no actualizar flags de onboarding o proyecto, 
+      // pero CONTINUAR para ver si podemos marcar como completado por otras razones (telegram, logros)
+      const shouldUpdateFlags = referral.referredCompletedOnboarding !== hasCompletedOnboarding ||
+        referral.referredFirstProject !== hasFirstProject;
 
       const isNowCompleted = hasCompletedOnboarding || hasFirstProject || hasUnlockedAchievements || hasLinkedTelegram;
 
