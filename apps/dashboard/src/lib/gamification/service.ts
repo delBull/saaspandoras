@@ -404,7 +404,11 @@ export class GamificationService {
     try {
       // Get user numeric ID
       const user = await db
-        .select({ id: users.id })
+        .select({ 
+          id: users.id,
+          telegramId: users.telegramId,
+          hasPandorasKey: users.hasPandorasKey
+        })
         .from(users)
         .where(eq(users.walletAddress, userId))
         .limit(1);
@@ -414,6 +418,8 @@ export class GamificationService {
       }
 
       const userIdInt = user[0].id;
+      const telegramId = user[0].telegramId;
+      const hasPandorasKey = user[0].hasPandorasKey;
 
       // Check if user has any unlocked achievements (excluding "Primer Login")
       const primerLoginAchievement = await db.query.achievements.findFirst({
@@ -430,14 +436,15 @@ export class GamificationService {
         ua => ua.isUnlocked && (!primerLoginAchievement || ua.achievementId !== primerLoginAchievement.id)
       );
 
-      if (hasUnlockedAchievementsExcludingLogin) {
+      // 🎯 TRIGGER UPDATE if they have achievements OR linked Telegram OR Pandora's Key
+      if (hasUnlockedAchievementsExcludingLogin || !!telegramId || hasPandorasKey) {
         // Update referral progress directly (avoiding circular imports)
         await this.updateReferralProgress(userId);
 
-        // 🎯 CHECK REFERRAL COMPLETION: Si el usuario desbloqueó un achievement, verificar si completa un referido
+        // 🎯 CHECK REFERRAL COMPLETION: Si el usuario desbloqueó un achievement o vinculó telegram, verificar si completa un referido
         await this.checkAndAwardReferralCompletionBonus(userId);
 
-        console.log(`✅ Referral progress checked for existing achievements: ${userId.slice(0, 6)}...`);
+        console.log(`✅ Referral progress checked for achievements/telegram: ${userId.slice(0, 6)}... (achs=${hasUnlockedAchievementsExcludingLogin}, tg=${!!telegramId})`);
       }
     } catch (error) {
       console.warn('⚠️ Failed to check referral progress for achievements:', error);
@@ -468,14 +475,15 @@ export class GamificationService {
         return; // No hay referral o ya está completado
       }
 
-      // Verificar progreso del referido - obtener tanto KYC como ID
+      // Verificar progreso del referido - obtener tanto KYC, ID como Pandora's Key
       const user = await db.query.users.findFirst({
         where: eq(users.walletAddress, userWallet),
         columns: {
           id: true,
           kycCompleted: true,
           kycLevel: true,
-          telegramId: true
+          telegramId: true,
+          hasPandorasKey: true
         }
       });
 
@@ -507,14 +515,12 @@ export class GamificationService {
       const hasCompletedOnboarding = (user?.kycCompleted ?? false) && user?.kycLevel === 'basic';
       const hasFirstProject = userProjects.length > 0;
       const hasUnlockedAchievements = unlockedAchievementsExcludingLogin > 0;
-      const hasLinkedTelegram = !!(user as any)?.telegramId;
+      const hasLinkedTelegram = !!user?.telegramId;
+      const hasPandorasKey = !!user?.hasPandorasKey;
 
       // Si ya tenía estos valores, no actualizar flags de onboarding o proyecto, 
-      // pero CONTINUAR para ver si podemos marcar como completado por otras razones (telegram, logros)
-      const shouldUpdateFlags = referral.referredCompletedOnboarding !== hasCompletedOnboarding ||
-        referral.referredFirstProject !== hasFirstProject;
-
-      const isNowCompleted = hasCompletedOnboarding || hasFirstProject || hasUnlockedAchievements || hasLinkedTelegram;
+      // pero CONTINUAR para ver si podemos marcar como completado por otras razones (telegram, logros, key)
+      const isNowCompleted = hasCompletedOnboarding || hasFirstProject || hasUnlockedAchievements || hasLinkedTelegram || hasPandorasKey;
 
       // Actualizar progreso
       await db
