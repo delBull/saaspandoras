@@ -112,6 +112,17 @@ export async function GET(request: Request) {
         }
     }
 
+    // 🎯 UPDATE REFERRAL PROGRESS: Ensure referrals are updated if identity is linked
+    if (user && user.telegramId) {
+        try {
+            const { GamificationService } = await import('@/lib/gamification/service');
+            await GamificationService.checkReferralProgressForAchievements(walletAddress);
+            console.log(`✅ Profile API: Referral progress checked for ${walletAddress.slice(0, 6)}...`);
+        } catch (referralError) {
+            console.warn('⚠️ Profile API: Failed to update referral progress:', referralError);
+        }
+    }
+
     // Get user projects - Get ALL projects for the user, accounting for legacy property 'update_authority_address'
     const projects = await sql`
       SELECT id, title, description, status, created_at, business_category, logo_url, cover_photo_url, applicant_wallet_address, update_authority_address, target_amount, raised_amount, slug, applicant_name, applicant_email, applicant_phone
