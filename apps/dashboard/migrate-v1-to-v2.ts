@@ -24,11 +24,11 @@ function inferArtifactType(project: any): ArtifactType {
     // Priority rules (order matters)
     // Note: only count lockup_period; fund_usage alone is not a strong Membership signal
     if (project.lockup_period) return 'Membership';
-    if (project.worktoearnMecanism || project['worktoearnMecanism']) return 'Reputation';
+    if (project.worktoearnMecanism || project.worktoearnMecanism) return 'Reputation';
     const textFields = [
         project.description,
-        project['protoclMecanism'],
-        project['artefactUtility'],
+        project.protoclMecanism,
+        project.artefactUtility,
         project.fund_usage,
     ].filter(Boolean).join(' ').toLowerCase();
     if (textFields.includes('coupon') || textFields.includes('descuento') || textFields.includes('reward')) return 'Coupon';
@@ -46,7 +46,7 @@ function resolveContractAddress(project: any): string | null {
         project.contract_address,
         project.utility_contract_address,
     ];
-    return candidates.find(a => a && a.startsWith('0x') && a.length === 42) ?? null;
+    return candidates.find(a => a?.startsWith('0x') && a.length === 42) ?? null;
 }
 
 // ── Build V2 artifact from V1 project ─────────────────────────────────────────

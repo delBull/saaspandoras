@@ -77,6 +77,16 @@ export const users = pgTable("users", {
   kycCompleted: boolean("kycCompleted").default(false).notNull(),
   kycData: jsonb("kycData"),
 
+  // Telegram Standalone Identity support
+  username: varchar("username", { length: 255 }),
+  firstName: varchar("first_name", { length: 255 }),
+  lastName: varchar("last_name", { length: 255 }),
+  isFrozen: boolean("is_frozen").default(false).notNull(),
+  acquisitionSource: varchar("acquisition_source", { length: 255 }),
+  referrerCoreUserId: varchar("referrer_core_user_id", { length: 255 }),
+  lastHarvestAt: timestamp("last_harvest_at"),
+  tags: jsonb("tags").default([]),
+
   connectionCount: integer("connectionCount").default(1).notNull(),
   lastConnectionAt: timestamp("lastConnectionAt").defaultNow(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -588,6 +598,52 @@ export const shortlinkEvents = pgTable("shortlink_events", {
 
 // --- WHATSAPP BOT SUPPORT TABLES ---
 
+export const gamificationRules = pgTable("gamification_rules", {
+    id: uuid("id").defaultRandom().primaryKey(),
+    ruleId: varchar("rule_id", { length: 50 }).notNull().unique(), // TG_001
+    trigger: varchar("trigger", { length: 50 }).notNull(), // daily_login, etc
+    xpReward: integer("xp_reward").default(0).notNull(),
+    creditsReward: integer("credits_reward").default(0).notNull(),
+    isRepeatable: boolean("is_repeatable").default(false).notNull(),
+    cooldownHours: integer("cooldown_hours").default(0).notNull(),
+    isActive: boolean("is_active").default(true).notNull(),
+    condition: jsonb("condition").default({}).notNull(),
+    copyTitle: text("copy_title"),
+    copyBody: text("copy_body"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
+});
+
+export const gamificationLogs = pgTable("gamification_logs", {
+    id: uuid("id").defaultRandom().primaryKey(),
+    eventId: varchar("event_id", { length: 255 }).unique(), // Deterministic Hash
+    userId: varchar("user_id", { length: 255 }),
+    telegramUserId: varchar("telegram_user_id", { length: 255 }),
+    actionType: varchar("action_type", { length: 50 }).notNull(),
+    pointsXP: integer("points_xp").default(0).notNull(),
+    pointsCredits: integer("points_credits").default(0).notNull(),
+    riskScore: decimal("risk_score", { precision: 5, scale: 2 }).default("0.00").notNull(),
+    status: varchar("status", { length: 20 }).default('PENDING').notNull(),
+    metadata: jsonb("metadata").default({}).notNull(),
+    
+    // Audit & Blockchain support
+    ipfsHash: varchar("ipfs_hash", { length: 255 }),
+    adminId: varchar("admin_id", { length: 255 }),
+    coreActionId: varchar("core_action_id", { length: 255 }),
+    txHash: varchar("tx_hash", { length: 66 }),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const telegramPoints = pgTable("telegram_points", {
+    telegramUserId: varchar("telegram_user_id", { length: 255 }).primaryKey(),
+    totalXP: integer("total_xp").default(0).notNull(),
+    harvestCredits: integer("harvest_credits").default(0).notNull(),
+    lockedCredits: integer("locked_credits").default(0).notNull(),
+    claimableCredits: integer("claimable_credits").default(0).notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Tabla para el flujo conversacional actual (33 preguntas)
 export const whatsappApplicationStates = pgTable("whatsapp_application_states", {
   id: serial("id").primaryKey(),
@@ -1066,15 +1122,16 @@ export const integrationClients = pgTable("integration_clients", {
 });
 
 export const auditLogs = pgTable("audit_logs", {
-  id: serial("id").primaryKey(),
-  actorType: auditActorTypeEnum("actor_type").notNull(),
-  actorId: varchar("actor_id", { length: 255 }).notNull(), // UUID or Wallet
-
-  action: varchar("action", { length: 255 }).notNull(),
-  resource: varchar("resource", { length: 255 }).notNull(),
-
+  id: uuid("id").primaryKey().defaultRandom(),
+  event: varchar("event", { length: 50 }).notNull(),
+  category: varchar("category", { length: 50 }).notNull(),
+  address: varchar("address", { length: 42 }),
+  tenantId: varchar("tenant_id", { length: 100 }),
+  ip: varchar("ip", { length: 45 }).notNull(),
+  userAgent: text("userAgent"),
+  success: boolean("success").notNull(),
+  errorCode: varchar("error_code", { length: 50 }),
   metadata: jsonb("metadata").default({}),
-
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -1507,7 +1564,7 @@ export type ProtocolConfigQueue = typeof protocolConfigQueues.$inferSelect;
 // --- DEPLOYMENT JOBS TABLE ---
 // Queue for asynchronous contract deployments
 export const deploymentJobs = pgTable("deployment_jobs", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: serial("id").primaryKey(),
   projectSlug: varchar("project_slug", { length: 256 }).notNull().references(() => projects.slug),
   status: deploymentJobStatusEnum("status").default("pending").notNull(),
   step: varchar("step", { length: 100 }).default("queued"), // e.g., "broadcasting", "mining", "wiring"
