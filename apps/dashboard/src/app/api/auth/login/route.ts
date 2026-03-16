@@ -204,7 +204,17 @@ export async function POST(request: Request) {
         console.log(`✅ Session ${sid} created for user ${userId}`);
 
         // 9. Issue Scoped JWT with sid - Support RS256 or HS256
-        const privateKey = process.env.JWT_PRIVATE_KEY?.replace(/\\n/g, '\n');
+        let privateKey = process.env.JWT_PRIVATE_KEY;
+        
+        // Handle Base64 encoded keys (Starts with LS0tLS1 which is '-----')
+        if (privateKey && privateKey.startsWith('LS0tLS1')) {
+            console.log("🔐 [LOGIN] Detected Base64 encoded JWT_PRIVATE_KEY. Decoding...");
+            privateKey = Buffer.from(privateKey, 'base64').toString('utf-8');
+        }
+
+        // Clean up PEM formatting and replace literal \n
+        privateKey = privateKey?.replace(/\\n/g, '\n');
+        
         const secret = privateKey || process.env.JWT_SECRET;
         
         if (!secret) {
@@ -212,19 +222,29 @@ export async function POST(request: Request) {
             throw new Error("SERVER_CONFIG_ERROR");
         }
 
-        const token = jwt.sign({
-            sub: userId,
-            sid: sid,
-            address: walletAddress,
-            scope: 'web',
-            hasAccess,
-            chainId: config.chain.id,
-            v: parseInt(process.env.JWT_VERSION || "2"), // Prefer JWT_VERSION 2 for new sessions
-            iat: Math.floor(Date.now() / 1000),
-        }, secret, { 
-            expiresIn: '24h',
-            algorithm: privateKey ? 'RS256' : 'HS256'
-        });
+        const algorithm = privateKey ? 'RS256' : 'HS256';
+        console.log(`🔐 [LOGIN] JWT Algorithm: ${algorithm} | Version: ${process.env.JWT_VERSION || "2"}`);
+
+        let token: string;
+        try {
+            token = jwt.sign({
+                sub: userId,
+                sid: sid,
+                address: walletAddress,
+                scope: 'web',
+                hasAccess,
+                chainId: config.chain.id,
+                v: parseInt(process.env.JWT_VERSION || "2"),
+                iat: Math.floor(Date.now() / 1000),
+            }, secret, { 
+                expiresIn: '24h',
+                algorithm: algorithm as jwt.Algorithm
+            });
+            console.log("✅ [LOGIN] JWT Signed successfully");
+        } catch (signingError: any) {
+            console.error("❌ [LOGIN] JWT SIGNING FAILED:", signingError.message);
+            throw new Error(`JWT_SIGNING_FAILED: ${signingError.message}`);
+        }
 
         const isProd = process.env.NODE_ENV === "production";
         const cookieDomain = isProd ? (process.env.COOKIE_DOMAIN || ".pandoras.finance") : undefined;

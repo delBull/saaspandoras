@@ -36,9 +36,19 @@ export async function GET(request: Request) {
             });
         }
 
-        const publicKey = process.env.JWT_PUBLIC_KEY?.replace(/\\n/g, '\n');
-        const secret = publicKey || process.env.JWT_SECRET || process.env.JWT_PRIVATE_KEY;
+        let publicKey = process.env.JWT_PUBLIC_KEY;
+        
+        // Handle Base64 encoded keys (Starts with LS0tLS1 which is '-----')
+        if (publicKey && publicKey.startsWith('LS0tLS1')) {
+            console.log("✅ [Dashboard /api/auth/me] Detected Base64 encoded JWT_PUBLIC_KEY. Decoding...");
+            publicKey = Buffer.from(publicKey, 'base64').toString('utf-8');
+        }
 
+        // Clean up PEM formatting and replace literal \n
+        publicKey = publicKey?.replace(/\\n/g, '\n');
+        
+        const secret = publicKey || process.env.JWT_SECRET || process.env.JWT_PRIVATE_KEY;
+        
         if (!secret) {
             console.error("❌ JWT Configuration Error: Missing Secret/Public Key");
             return NextResponse.json({ error: "Server Configuration Error" }, { status: 500 });
