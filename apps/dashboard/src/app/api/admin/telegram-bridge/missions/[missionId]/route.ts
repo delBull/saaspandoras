@@ -9,15 +9,15 @@ const CORE_KEY = process.env.PANDORA_CORE_KEY;
 
 export async function PATCH(
     req: NextRequest,
-    { params }: { params: { missionId: string } }
+    { params }: { params: Promise<{ missionId: string }> }
 ) {
     try {
+        const { missionId } = await params;
         const { session } = await getAuth();
         if (!session?.address || !await isAdmin(session.address)) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const missionId = params.missionId;
         const body = await req.json();
 
         const response = await fetch(`${EDGE_API_URL}/gamification/admin/missions/${missionId}`, {
