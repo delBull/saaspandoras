@@ -77,7 +77,8 @@ export const users = pgTable("users", {
   kycCompleted: boolean("kycCompleted").default(false).notNull(),
   kycData: jsonb("kycData"),
 
-  // Telegram Standalone Identity support
+  // Telegram Standalone Identity support (Pending DB migration)
+  /*
   username: varchar("username", { length: 255 }),
   firstName: varchar("first_name", { length: 255 }),
   lastName: varchar("last_name", { length: 255 }),
@@ -86,6 +87,7 @@ export const users = pgTable("users", {
   referrerCoreUserId: varchar("referrer_core_user_id", { length: 255 }),
   lastHarvestAt: timestamp("last_harvest_at"),
   tags: jsonb("tags").default([]),
+  */
 
   connectionCount: integer("connectionCount").default(1).notNull(),
   lastConnectionAt: timestamp("lastConnectionAt").defaultNow(),
