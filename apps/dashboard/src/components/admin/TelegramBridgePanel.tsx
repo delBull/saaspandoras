@@ -8,7 +8,7 @@ import {
     Activity, AlertTriangle, BarChart3, Bell, BookOpen, CheckCircle,
     ChevronDown, ChevronRight, Coins, ExternalLink, MessageCircle, Play, Power,
     RefreshCw, Shield, Skull, TrendingUp, Wallet, XCircle, Zap, Info, User, Search, HelpCircle, FileText,
-    Plus, Settings, Check
+    Plus, Settings, Check, Flag
 } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -928,7 +928,7 @@ function BridgeOpsTab() {
 // ── Main Component ─────────────────────────────────────────────────────────
 
 export function TelegramBridgePanel() {
-    const [tab, setTab] = useState<"status" | "economy" | "analytics" | "alerts" | "playbooks" | "guide" | "users" | "bridge-ops">("status");
+    const [tab, setTab] = useState<"status" | "economy" | "analytics" | "alerts" | "playbooks" | "guide" | "users" | "bridge-ops" | "missions">("status");
     const [status, setStatus] = useState<BridgeStatus | null>(null);
     const [economy, setEconomy] = useState<EconomyParams | null>(null);
     const [loading, setLoading] = useState(true);
@@ -1939,28 +1939,28 @@ function MissionManager({ authHdrs }: { authHdrs: () => any }) {
                     <h4 className="text-sm font-bold text-white mb-4">{editingId ? "Edit Mission" : "Create Engagement Mission"}</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div className="space-y-1">
-                            <label className="text-gray-400">Mission ID (Internal)</label>
-                            <input type="text" placeholder="SOCIAL_TW_01" disabled={!!editingId} value={formData.missionId} onChange={e => setFormData({...formData, missionId: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white outline-none focus:border-blue-500 disabled:opacity-50" />
+                            <label htmlFor="missionId" className="text-gray-400">Mission ID (Internal)</label>
+                            <input id="missionId" type="text" placeholder="SOCIAL_TW_01" disabled={!!editingId} value={formData.missionId} onChange={e => setFormData({...formData, missionId: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white outline-none focus:border-blue-500 disabled:opacity-50" />
                         </div>
                         <div className="space-y-1">
-                            <label className="text-gray-400">Display Title</label>
-                            <input type="text" placeholder="Follow on Twitter" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white outline-none focus:border-blue-500" />
+                            <label htmlFor="title" className="text-gray-400">Display Title</label>
+                            <input id="title" type="text" placeholder="Follow on Twitter" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white outline-none focus:border-blue-500" />
                         </div>
                         <div className="space-y-1 md:col-span-2">
-                            <label className="text-gray-400">Description</label>
-                            <textarea placeholder="Join our community..." value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white outline-none focus:border-blue-500 h-20" />
+                            <label htmlFor="description" className="text-gray-400">Description</label>
+                            <textarea id="description" placeholder="Join our community..." value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white outline-none focus:border-blue-500 h-20" />
                         </div>
                         <div className="space-y-1">
-                            <label className="text-gray-400">Type</label>
-                            <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white outline-none">
+                            <label htmlFor="type" className="text-gray-400">Type</label>
+                            <select id="type" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white outline-none">
                                 <option value="SOCIAL">SOCIAL</option>
                                 <option value="CONTENT">CONTENT</option>
                                 <option value="SPECIAL">SPECIAL</option>
                             </select>
                         </div>
                         <div className="space-y-1">
-                            <label className="text-gray-400">Platform</label>
-                            <select value={formData.platform} onChange={e => setFormData({...formData, platform: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white outline-none">
+                            <label htmlFor="platform" className="text-gray-400">Platform</label>
+                            <select id="platform" value={formData.platform} onChange={e => setFormData({...formData, platform: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white outline-none">
                                 <option value="TWITTER">Twitter</option>
                                 <option value="DISCORD">Discord</option>
                                 <option value="TELEGRAM">Telegram</option>
@@ -1969,17 +1969,17 @@ function MissionManager({ authHdrs }: { authHdrs: () => any }) {
                             </select>
                         </div>
                         <div className="space-y-1">
-                            <label className="text-gray-400">Action URL</label>
-                            <input type="text" placeholder="https://x.com/..." value={formData.url} onChange={e => setFormData({...formData, url: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white outline-none focus:border-blue-500" />
+                            <label htmlFor="url" className="text-gray-400">Action URL</label>
+                            <input id="url" type="text" placeholder="https://x.com/..." value={formData.url} onChange={e => setFormData({...formData, url: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white outline-none focus:border-blue-500" />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1">
-                                <label className="text-gray-400">XP Reward</label>
-                                <input type="number" value={formData.xpReward} onChange={e => setFormData({...formData, xpReward: parseInt(e.target.value)})} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white outline-none focus:border-blue-500" />
+                                <label htmlFor="xpReward" className="text-gray-400">XP Reward</label>
+                                <input id="xpReward" type="number" value={formData.xpReward} onChange={e => setFormData({...formData, xpReward: parseInt(e.target.value)})} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white outline-none focus:border-blue-500" />
                             </div>
                             <div className="space-y-1">
-                                <label className="text-gray-400">Credits Reward</label>
-                                <input type="number" value={formData.creditsReward} onChange={e => setFormData({...formData, creditsReward: parseInt(e.target.value)})} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white outline-none focus:border-blue-500" />
+                                <label htmlFor="creditsReward" className="text-gray-400">Credits Reward</label>
+                                <input id="creditsReward" type="number" value={formData.creditsReward} onChange={e => setFormData({...formData, creditsReward: parseInt(e.target.value)})} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white outline-none focus:border-blue-500" />
                             </div>
                         </div>
                         <div className="flex items-center gap-6 mt-4">
@@ -2033,7 +2033,7 @@ function MissionManager({ authHdrs }: { authHdrs: () => any }) {
                                 <td className="px-4 py-4">
                                     <div className="font-bold text-white flex items-center gap-2">
                                         {m.title}
-                                        {m.isRepeatable && <RefreshCw className="w-2.5 h-2.5 text-blue-400" title={`Repeatable every ${m.cooldownHours}h`} />}
+                                        {m.isRepeatable && <RefreshCw className="w-2.5 h-2.5 text-blue-400" />}
                                     </div>
                                     <div className="text-[10px] text-gray-500 font-mono">{m.missionId}</div>
                                 </td>
