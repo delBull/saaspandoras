@@ -203,10 +203,12 @@ export async function POST(request: Request) {
         });
         console.log(`✅ Session ${sid} created for user ${userId}`);
 
-        // 9. Issue Scoped JWT with sid - REVERTED TO jsonwebtoken (HS256)
-        const secret = process.env.JWT_SECRET || process.env.JWT_PRIVATE_KEY;
+        // 9. Issue Scoped JWT with sid - Support RS256 or HS256
+        const privateKey = process.env.JWT_PRIVATE_KEY?.replace(/\\n/g, '\n');
+        const secret = privateKey || process.env.JWT_SECRET;
+        
         if (!secret) {
-            console.error("❌ CRITICAL: JWT_SECRET (or PRIVATE_KEY) is not defined");
+            console.error("❌ CRITICAL: JWT_PRIVATE_KEY (or JWT_SECRET) is not defined");
             throw new Error("SERVER_CONFIG_ERROR");
         }
 
@@ -217,9 +219,12 @@ export async function POST(request: Request) {
             scope: 'web',
             hasAccess,
             chainId: config.chain.id,
-            v: parseInt(process.env.JWT_VERSION || "1"),
+            v: parseInt(process.env.JWT_VERSION || "2"), // Prefer JWT_VERSION 2 for new sessions
             iat: Math.floor(Date.now() / 1000),
-        }, secret, { expiresIn: '24h' });
+        }, secret, { 
+            expiresIn: '24h',
+            algorithm: privateKey ? 'RS256' : 'HS256'
+        });
 
         const isProd = process.env.NODE_ENV === "production";
         const cookieDomain = isProd ? (process.env.COOKIE_DOMAIN || ".pandoras.finance") : undefined;

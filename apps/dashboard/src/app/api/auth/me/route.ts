@@ -36,16 +36,20 @@ export async function GET(request: Request) {
             });
         }
 
-        const secret = process.env.JWT_SECRET || process.env.JWT_PRIVATE_KEY;
+        const publicKey = process.env.JWT_PUBLIC_KEY?.replace(/\\n/g, '\n');
+        const secret = publicKey || process.env.JWT_SECRET || process.env.JWT_PRIVATE_KEY;
+
         if (!secret) {
-            console.error("❌ JWT_SECRET is not defined in environment variables");
+            console.error("❌ JWT Configuration Error: Missing Secret/Public Key");
             return NextResponse.json({ error: "Server Configuration Error" }, { status: 500 });
         }
 
         let payload: any;
         try {
             // Unify with login: use jsonwebtoken syntax
-            payload = jwt.verify(token, secret);
+            payload = jwt.verify(token, secret, {
+                algorithms: publicKey ? ['RS256'] : ['HS256']
+            });
             console.log("✅ [Dashboard /api/auth/me] Verified session for:", payload.address || payload.sub);
         } catch (e) {
             const error = e as Error;
