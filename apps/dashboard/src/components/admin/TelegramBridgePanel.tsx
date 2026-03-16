@@ -7,7 +7,8 @@ import { Input } from "@saasfly/ui/input";
 import {
     Activity, AlertTriangle, BarChart3, Bell, BookOpen, CheckCircle,
     ChevronDown, ChevronRight, Coins, ExternalLink, MessageCircle, Play, Power,
-    RefreshCw, Shield, Skull, TrendingUp, Wallet, XCircle, Zap, Info, User, Search, HelpCircle, FileText
+    RefreshCw, Shield, Skull, TrendingUp, Wallet, XCircle, Zap, Info, User, Search, HelpCircle, FileText,
+    Plus, Settings, Check
 } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -489,6 +490,16 @@ function OperationsGuide() {
                 <div>
                     <h4 className="font-bold text-white text-sm">How to Operate the Telegram Bridge</h4>
                     <p className="text-xs text-gray-400">Internal operations guide for admins and on-call engineers</p>
+                    <div className="mt-2">
+                        <Button 
+                            variant="link" 
+                            className="p-0 h-auto text-[10px] text-blue-400 hover:text-blue-300 font-bold uppercase tracking-widest gap-2"
+                            onClick={() => window.open('https://github.com/delBull/saaspandoras/blob/main/docs/gamification_whitepaper.md', '_blank')}
+                        >
+                            <FileText className="w-3 h-3" />
+                            Ver Whitepaper Completo
+                        </Button>
+                    </div>
                 </div>
             </div>
 
@@ -1044,6 +1055,7 @@ export function TelegramBridgePanel() {
         { id: "alerts", label: "Alerts", icon: Bell, badge: alerts?.activeCount },
         { id: "playbooks", label: "Playbooks", icon: AlertTriangle },
         { id: "bridge-ops", label: "Bridge Ops", icon: Zap },
+        { id: "missions", label: "Missions", icon: Flag },
         { id: "guide", label: "Ops Guide", icon: BookOpen },
     ] as const;
 
@@ -1800,6 +1812,269 @@ export function TelegramBridgePanel() {
 
             {/* ── TAB: Ops Guide ──────────────────────────────────────────── */}
             {tab === "guide" && <OperationsGuide />}
+
+            {/* ── TAB: Missions ────────────────────────────────────────────── */}
+            {tab === "missions" && <MissionManager authHdrs={authHdrs} />}
+        </div>
+    );
+}
+
+// ── SUB-COMPONENT: MISSION MANAGER ──────────────────────────────────────────
+
+function MissionManager({ authHdrs }: { authHdrs: () => any }) {
+    const [metrics, setMetrics] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [creating, setCreating] = useState(false);
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [formData, setFormData] = useState({
+        missionId: "",
+        title: "",
+        description: "",
+        type: "SOCIAL",
+        platform: "TWITTER",
+        xpReward: 100,
+        creditsReward: 10,
+        url: "",
+        isRepeatable: false,
+        cooldownHours: 24,
+        isActive: true
+    });
+
+    const fetchMetrics = async () => {
+        try {
+            const res = await fetch("/api/admin/telegram-bridge/missions-metrics", { headers: authHdrs() });
+            if (res.ok) setMetrics(await res.json());
+        } catch { toast.error("Failed to load metrics"); }
+        finally { setLoading(false); }
+    };
+
+    useEffect(() => { fetchMetrics(); }, []);
+
+    const handleSave = async () => {
+        if (!formData.missionId || !formData.title) return toast.error("Missing fields");
+        try {
+            const url = editingId 
+                ? `/api/admin/telegram-bridge/missions/${editingId}`
+                : "/api/admin/telegram-bridge/missions";
+            
+            const res = await fetch(url, {
+                method: editingId ? "PATCH" : "POST",
+                headers: { "Content-Type": "application/json", ...authHdrs() },
+                body: JSON.stringify({
+                    missionId: formData.missionId,
+                    title: formData.title,
+                    description: formData.description,
+                    type: formData.type,
+                    platform: formData.platform,
+                    xpReward: formData.xpReward,
+                    creditsReward: formData.creditsReward,
+                    isRepeatable: formData.isRepeatable,
+                    cooldownHours: formData.cooldownHours,
+                    isActive: formData.isActive,
+                    metadata: { url: formData.url }
+                }),
+            });
+            if (res.ok) {
+                toast.success(editingId ? "Mission updated!" : "Mission created!");
+                setCreating(false);
+                setEditingId(null);
+                fetchMetrics();
+            } else { toast.error("Save failed"); }
+        } catch { toast.error("Network error"); }
+    };
+
+    const startEdit = (m: any) => {
+        setFormData({
+            missionId: m.missionId,
+            title: m.title,
+            description: m.description || "",
+            type: m.type || "SOCIAL",
+            platform: m.platform || "GENERAL",
+            xpReward: m.xpReward || 0,
+            creditsReward: m.creditsReward || 0,
+            url: m.metadata?.url || "",
+            isRepeatable: m.isRepeatable || false,
+            cooldownHours: m.cooldownHours || 0,
+            isActive: m.isActive ?? true
+        });
+        setEditingId(m.missionId);
+        setCreating(true);
+    };
+
+    if (loading) return <div className="text-gray-500 animate-pulse">Loading Mission Control...</div>;
+
+    return (
+        <div className="space-y-6 slide-in-bottom">
+            {/* Header / Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+                    <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Total Completions</div>
+                    <div className="text-2xl font-bold text-white">{metrics?.totalCompletions || 0}</div>
+                </div>
+                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+                    <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Active Missions</div>
+                    <div className="text-2xl font-bold text-blue-400">{metrics?.missions?.filter((m:any)=>m.isActive).length || 0}</div>
+                </div>
+                <button 
+                    onClick={() => {
+                        setEditingId(null);
+                        setFormData({
+                            missionId: "", title: "", description: "", type: "SOCIAL", 
+                            platform: "GENERAL", xpReward: 100, creditsReward: 10, url: "",
+                            isRepeatable: false, cooldownHours: 24, isActive: true
+                        });
+                        setCreating(true);
+                    }}
+                    className="bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-900/20"
+                >
+                    <Plus className="w-4 h-4" />
+                    New Mission
+                </button>
+            </div>
+
+            {/* Creation/Edit Form */}
+            {creating && (
+                <div className="bg-zinc-900 border border-blue-500/30 rounded-xl p-6 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1 h-full bg-blue-500" />
+                    <h4 className="text-sm font-bold text-white mb-4">{editingId ? "Edit Mission" : "Create Engagement Mission"}</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div className="space-y-1">
+                            <label className="text-gray-400">Mission ID (Internal)</label>
+                            <input type="text" placeholder="SOCIAL_TW_01" disabled={!!editingId} value={formData.missionId} onChange={e => setFormData({...formData, missionId: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white outline-none focus:border-blue-500 disabled:opacity-50" />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-gray-400">Display Title</label>
+                            <input type="text" placeholder="Follow on Twitter" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white outline-none focus:border-blue-500" />
+                        </div>
+                        <div className="space-y-1 md:col-span-2">
+                            <label className="text-gray-400">Description</label>
+                            <textarea placeholder="Join our community..." value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white outline-none focus:border-blue-500 h-20" />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-gray-400">Type</label>
+                            <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white outline-none">
+                                <option value="SOCIAL">SOCIAL</option>
+                                <option value="CONTENT">CONTENT</option>
+                                <option value="SPECIAL">SPECIAL</option>
+                            </select>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-gray-400">Platform</label>
+                            <select value={formData.platform} onChange={e => setFormData({...formData, platform: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white outline-none">
+                                <option value="TWITTER">Twitter</option>
+                                <option value="DISCORD">Discord</option>
+                                <option value="TELEGRAM">Telegram</option>
+                                <option value="LINKEDIN">LinkedIn</option>
+                                <option value="GENERAL">General/App</option>
+                            </select>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-gray-400">Action URL</label>
+                            <input type="text" placeholder="https://x.com/..." value={formData.url} onChange={e => setFormData({...formData, url: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white outline-none focus:border-blue-500" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                                <label className="text-gray-400">XP Reward</label>
+                                <input type="number" value={formData.xpReward} onChange={e => setFormData({...formData, xpReward: parseInt(e.target.value)})} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white outline-none focus:border-blue-500" />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-gray-400">Credits Reward</label>
+                                <input type="number" value={formData.creditsReward} onChange={e => setFormData({...formData, creditsReward: parseInt(e.target.value)})} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white outline-none focus:border-blue-500" />
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-6 mt-4">
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <input type="checkbox" checked={formData.isRepeatable} onChange={e => setFormData({...formData, isRepeatable: e.target.checked})} className="hidden" />
+                                <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${formData.isRepeatable ? 'bg-blue-600 border-blue-500' : 'border-zinc-700 bg-zinc-950 group-hover:border-zinc-500'}`}>
+                                    {formData.isRepeatable && <Check className="w-3 h-3 text-white" />}
+                                </div>
+                                <span className="text-gray-300">Repeatable?</span>
+                            </label>
+                            {formData.isRepeatable && (
+                                <div className="flex items-center gap-2">
+                                    <span className="text-gray-500">Every</span>
+                                    <input type="number" value={formData.cooldownHours} onChange={e => setFormData({...formData, cooldownHours: parseInt(e.target.value)})} className="w-16 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-white outline-none focus:border-blue-500 text-center" />
+                                    <span className="text-gray-500">hours</span>
+                                </div>
+                            )}
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <input type="checkbox" checked={formData.isActive} onChange={e => setFormData({...formData, isActive: e.target.checked})} className="hidden" />
+                                <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${formData.isActive ? 'bg-lime-600 border-lime-500' : 'border-zinc-700 bg-zinc-950 group-hover:border-zinc-500'}`}>
+                                    {formData.isActive && <Check className="w-3 h-3 text-white" />}
+                                </div>
+                                <span className="text-gray-300">Active</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div className="flex justify-end gap-3 mt-6">
+                        <button onClick={() => { setCreating(false); setEditingId(null); }} className="px-4 py-2 text-gray-400 hover:text-white transition-colors">Cancel</button>
+                        <button onClick={handleSave} className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition-colors">
+                            {editingId ? "Update Mission" : "Publish Mission"}
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Metrics List */}
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden">
+                <table className="w-full text-left text-xs">
+                    <thead className="bg-zinc-900 text-gray-500 font-bold uppercase tracking-wider border-b border-zinc-800">
+                        <tr>
+                            <th className="px-4 py-3">Mission</th>
+                            <th className="px-4 py-3">Type / Platform</th>
+                            <th className="px-4 py-3">Rewards</th>
+                            <th className="px-4 py-3">Performance</th>
+                            <th className="px-4 py-3 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-800">
+                        {metrics?.missions?.map((m: any) => (
+                            <tr key={m.missionId} className="hover:bg-zinc-800/30 transition-colors group">
+                                <td className="px-4 py-4">
+                                    <div className="font-bold text-white flex items-center gap-2">
+                                        {m.title}
+                                        {m.isRepeatable && <RefreshCw className="w-2.5 h-2.5 text-blue-400" title={`Repeatable every ${m.cooldownHours}h`} />}
+                                    </div>
+                                    <div className="text-[10px] text-gray-500 font-mono">{m.missionId}</div>
+                                </td>
+                                <td className="px-4 py-4">
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-zinc-400 font-bold">{m.type}</span>
+                                        <span className="text-[10px] text-zinc-500">{m.platform}</span>
+                                    </div>
+                                </td>
+                                <td className="px-4 py-4">
+                                    <div className="flex flex-col gap-1 font-mono">
+                                        <div className="flex items-center gap-1 text-orange-400/80">
+                                            <Zap className="w-3 h-3" /> {m.xpReward} XP
+                                        </div>
+                                        <div className="flex items-center gap-1 text-green-400/80">
+                                            <Coins className="w-3 h-3" /> {m.creditsReward} CR
+                                        </div>
+                                    </div>
+                                </td>
+                                <td className="px-4 py-4">
+                                    <div className="text-sm font-bold text-blue-400">{m.completions}</div>
+                                    <div className="text-[9px] text-gray-600">Total Completions</div>
+                                </td>
+                                <td className="px-4 py-4 text-right">
+                                    <div className="flex justify-end items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button 
+                                            onClick={() => startEdit(m)}
+                                            className="p-2 hover:bg-zinc-700 rounded-lg text-gray-400 hover:text-white transition-colors"
+                                        >
+                                            <Settings className="w-4 h-4" />
+                                        </button>
+                                        <div className={`text-[10px] font-bold uppercase ${m.isActive ? 'text-lime-500' : 'text-zinc-500'}`}>
+                                            {m.isActive ? 'Active' : 'Paused'}
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 }
