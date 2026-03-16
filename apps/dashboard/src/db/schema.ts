@@ -77,8 +77,7 @@ export const users = pgTable("users", {
   kycCompleted: boolean("kycCompleted").default(false).notNull(),
   kycData: jsonb("kycData"),
 
-  // Telegram Standalone Identity support (Pending DB migration)
-  /*
+  // Telegram Standalone Identity support
   username: varchar("username", { length: 255 }),
   firstName: varchar("first_name", { length: 255 }),
   lastName: varchar("last_name", { length: 255 }),
@@ -87,7 +86,6 @@ export const users = pgTable("users", {
   referrerCoreUserId: varchar("referrer_core_user_id", { length: 255 }),
   lastHarvestAt: timestamp("last_harvest_at"),
   tags: jsonb("tags").default([]),
-  */
 
   connectionCount: integer("connectionCount").default(1).notNull(),
   lastConnectionAt: timestamp("lastConnectionAt").defaultNow(),
@@ -612,6 +610,12 @@ export const gamificationRules = pgTable("gamification_rules", {
     condition: jsonb("condition").default({}).notNull(),
     copyTitle: text("copy_title"),
     copyBody: text("copy_body"),
+
+    // Legacy/Sync columns found in production
+    pointsXP: integer("points_xp"),
+    pointsCredits: integer("points_credits"),
+    ipfsMetadata: jsonb("ipfs_metadata"),
+
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
 });
