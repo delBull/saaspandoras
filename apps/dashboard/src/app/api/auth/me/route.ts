@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME
 export const runtime = "nodejs";
@@ -50,15 +51,9 @@ export async function GET(request: Request) {
             }
 
             // 3. Remove all headers, footers, spaces, and newlines to get pure base64 core
-            const isRSA = cleanKey.includes('BEGIN RSA');
-            const headerType = isRSA ? `RSA ${type}` : type;
-
-            const headerRegex = new RegExp(`-----BEGIN (?:RSA )?${type} KEY-----`, 'g');
-            const footerRegex = new RegExp(`-----END (?:RSA )?${type} KEY-----`, 'g');
-            
             const base64Core = cleanKey
-                .replace(headerRegex, '')
-                .replace(footerRegex, '')
+                .replace(/-----BEGIN.*?-----/g, '')
+                .replace(/-----END.*?-----/g, '')
                 .replace(/\\n/g, '')
                 .replace(/\s+/g, '');
 
@@ -66,8 +61,23 @@ export async function GET(request: Request) {
             const chunks = base64Core.match(/.{1,64}/g) || [];
             const formattedCore = chunks.join('\n');
 
-            // 5. Reassemble with required headers
-            return `-----BEGIN ${headerType} KEY-----\n${formattedCore}\n-----END ${headerType} KEY-----\n`;
+            // 5. Try PKCS#1 wrapper first
+            const pkcs1 = `-----BEGIN RSA ${type} KEY-----\n${formattedCore}\n-----END RSA ${type} KEY-----\n`;
+            try {
+                if (type === 'PRIVATE') crypto.createPrivateKey(pkcs1);
+                else crypto.createPublicKey(pkcs1);
+                return pkcs1; 
+            } catch (e1) {
+                // 6. Fallback to PKCS#8 (PRIVATE) or SPKI (PUBLIC) wrapper
+                const pkcs8 = `-----BEGIN ${type} KEY-----\n${formattedCore}\n-----END ${type} KEY-----\n`;
+                try {
+                    if (type === 'PRIVATE') crypto.createPrivateKey(pkcs8);
+                    else crypto.createPublicKey(pkcs8);
+                    return pkcs8; 
+                } catch (e2: any) {
+                    throw new Error(`RSA_FORMAT_ERROR: Rejecting key. PKCS1 fails (${(e1 as Error).message}) and PKCS8 fails (${e2.message})`);
+                }
+            }
         };
 
         const hasPublicKey = !!process.env.JWT_PUBLIC_KEY;
