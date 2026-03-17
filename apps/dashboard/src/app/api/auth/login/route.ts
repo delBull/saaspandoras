@@ -251,7 +251,10 @@ export async function POST(request: Request) {
                         else crypto.createPublicKey(pkcs8);
                         return pkcs8; 
                     } catch (e2: any) {
-                        throw new Error(`RSA_FORMAT_ERROR: Rejecting key. PKCS1 fails (${(e1 as Error).message}) and PKCS8 fails (${e2.message})`);
+                        const len = base64Core.length;
+                        const prefix = base64Core.substring(0, 10);
+                        const isShort = len < 500;
+                        throw new Error(`RSA_FORMAT_ERROR: Rejecting key. Length: ${len} chars. IsShort: ${isShort}. Prefix: ${prefix}... PKCS1 fails (${(e1 as Error).message}) and PKCS8 fails (${e2.message})`);
                     }
                 }
             };
