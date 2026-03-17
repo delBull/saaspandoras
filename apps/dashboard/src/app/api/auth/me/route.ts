@@ -50,6 +50,9 @@ export async function GET(request: Request) {
             }
 
             // 3. Remove all headers, footers, spaces, and newlines to get pure base64 core
+            const isRSA = cleanKey.includes('BEGIN RSA');
+            const headerType = isRSA ? `RSA ${type}` : type;
+
             const headerRegex = new RegExp(`-----BEGIN (?:RSA )?${type} KEY-----`, 'g');
             const footerRegex = new RegExp(`-----END (?:RSA )?${type} KEY-----`, 'g');
             
@@ -64,7 +67,7 @@ export async function GET(request: Request) {
             const formattedCore = chunks.join('\n');
 
             // 5. Reassemble with required headers
-            return `-----BEGIN ${type === 'PUBLIC' ? 'PUBLIC' : 'RSA PRIVATE'} KEY-----\n${formattedCore}\n-----END ${type === 'PUBLIC' ? 'PUBLIC' : 'RSA PRIVATE'} KEY-----\n`;
+            return `-----BEGIN ${headerType} KEY-----\n${formattedCore}\n-----END ${headerType} KEY-----\n`;
         };
 
         const hasPublicKey = !!process.env.JWT_PUBLIC_KEY;
