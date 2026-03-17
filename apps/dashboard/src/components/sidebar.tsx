@@ -91,9 +91,13 @@ export function Sidebar({
   // Track if we've already set the initial state for /applicants page
   const autoCloseStateSet = useRef(false);
 
-  // Auto-close sidebar when navigating to /applicants or /profile (but allow manual opening)
+  // Auto-close sidebar when navigating to /applicants, /profile, or course pages (but allow manual opening)
   useEffect(() => {
-    const shouldAutoClose = pathname === '/applicants' || pathname.startsWith('/projects/') || pathname === '/profile';
+    const shouldAutoClose = 
+      pathname === '/applicants' || 
+      pathname.startsWith('/projects/') || 
+      pathname === '/profile' ||
+      pathname.startsWith('/education/course/');
 
     if (shouldAutoClose && !autoCloseStateSet.current) {
       console.log('📍 Auto-close page detected - setting initial closed state for:', pathname);

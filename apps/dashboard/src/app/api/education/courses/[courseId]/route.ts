@@ -3,7 +3,7 @@ import { getAuth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { db } from "~/db";
 import { courses, courseEnrollments } from "~/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 
 export const dynamic = 'force-dynamic';
 
@@ -31,6 +31,21 @@ export async function GET(
       return NextResponse.json({ message: "Curso no encontrado" }, { status: 404 });
     }
 
+    // Get dynamic stats for this course
+    const [stats] = await db
+      .select({
+        total: sql<number>`count(*)::int`,
+        completed: sql<number>`count(*) filter (where status = 'completed')::int`,
+      })
+      .from(courseEnrollments)
+      .where(eq(courseEnrollments.courseId, courseId));
+
+    const enrolledCount = stats?.total ?? 0;
+    const completedCount = stats?.completed ?? 0;
+    const completionRate = enrolledCount > 0 
+      ? Math.round((completedCount / enrolledCount) * 100) 
+      : 0;
+
     // Get user's enrollment
     const [enrollment] = await db
       .select()
@@ -46,8 +61,8 @@ export async function GET(
         difficulty: course.difficulty.charAt(0).toUpperCase() + course.difficulty.slice(1),
         points: course.xpReward,
         skills_covered: course.skillsCovered,
-        enrolled_students: course.enrolledCount,
-        completion_rate: course.completionRate,
+        enrolled_students: enrolledCount,
+        completion_rate: completionRate,
       },
       enrollment: enrollment
         ? {

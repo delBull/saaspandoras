@@ -318,19 +318,30 @@ export async function GET(_request: Request) {
 
     const allCourses = await db
       .select({
-        course: courses,
-        totalEnrollments: sql<number>`(select count(*) from course_enrollments where course_id = ${courses.id})`,
-        completedEnrollments: sql<number>`(select count(*) from course_enrollments where course_id = ${courses.id} and status = 'completed')`,
+        id: courses.id,
+        title: courses.title,
+        description: courses.description,
+        category: courses.category,
+        difficulty: courses.difficulty,
+        duration: courses.duration,
+        xpReward: courses.xpReward,
+        creditsReward: courses.creditsReward,
+        instructor: courses.instructor,
+        orderIndex: courses.orderIndex,
+        isActive: courses.isActive,
+        imageUrl: courses.imageUrl,
+        createdAt: courses.createdAt,
+        updatedAt: courses.updatedAt,
+        totalEnrollments: sql<number>`cast(count(${courseEnrollments.id}) as integer)`,
+        completedEnrollments: sql<number>`cast(count(case when ${courseEnrollments.status} = 'completed' then 1 end) as integer)`,
       })
       .from(courses)
+      .leftJoin(courseEnrollments, eq(courses.id, courseEnrollments.courseId))
+      .groupBy(courses.id)
       .orderBy(courses.orderIndex);
 
     return NextResponse.json({
-      courses: allCourses.map(r => ({
-        ...r.course,
-        totalEnrollments: Number(r.totalEnrollments),
-        completedEnrollments: Number(r.completedEnrollments),
-      })),
+      courses: allCourses,
       total: allCourses.length,
     });
 
