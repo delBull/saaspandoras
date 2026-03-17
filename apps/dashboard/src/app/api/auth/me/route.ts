@@ -39,7 +39,7 @@ export async function GET(request: Request) {
         let publicKey = process.env.JWT_PUBLIC_KEY;
         
         // Handle Base64 encoded keys (Starts with LS0tLS1 which is '-----')
-        if (publicKey && publicKey.startsWith('LS0tLS1')) {
+        if (publicKey?.startsWith('LS0tLS1')) {
             console.log("✅ [Dashboard /api/auth/me] Detected Base64 encoded JWT_PUBLIC_KEY. Decoding...");
             publicKey = Buffer.from(publicKey, 'base64').toString('utf-8');
         }

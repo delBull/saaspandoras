@@ -57,8 +57,9 @@ async function run() {
     }
     console.log(`📡 Fetching schema from ${env.name}...`);
     try {
-      results[env.name] = await getSchema(env.url);
-      console.log(`✅ ${env.name}: Found ${results[env.name].tables.size} tables.`);
+      const schema = await getSchema(env.url);
+      results[env.name] = schema;
+      console.log(`✅ ${env.name}: Found ${schema.tables.size} tables.`);
     } catch (e) {
       console.error(`❌ Failed to fetch ${env.name}:`, (e as Error).message);
     }
@@ -75,7 +76,7 @@ async function run() {
   const baseline = results[baselineName];
 
   if (!baseline) {
-    console.error('❌ Baseline (LOCAL) schema not found.');
+    console.error(`❌ Baseline (${baselineName}) schema not found among fetched results: ${envNames.join(', ')}`);
     process.exit(1);
   }
 
@@ -84,6 +85,8 @@ async function run() {
   for (const name of envNames) {
     if (name === baselineName) continue;
     const target = results[name];
+    if (!target) continue;
+
     console.log(`\n🔍 Comparing ${baselineName} ➡️ ${name}:`);
 
     // Missing Tables
@@ -101,16 +104,18 @@ async function run() {
     // Column Mismatches
     for (const table of baseline.tables) {
       if (target.tables.has(table)) {
-        const baseCols = baseline.columns.get(table)!;
-        const targetCols = target.columns.get(table)!;
+        const baseCols = baseline.columns.get(table);
+        const targetCols = target.columns.get(table);
 
-        const missingCols = [...baseCols].filter(c => !targetCols.has(c));
-        const extraCols = [...targetCols].filter(c => !baseCols.has(c));
+        if (baseCols && targetCols) {
+          const missingCols = [...baseCols].filter(c => !targetCols.has(c));
+          const extraCols = [...targetCols].filter(c => !baseCols.has(c));
 
-        if (missingCols.length > 0 || extraCols.length > 0) {
-          console.log(`  📁 Table '${table}':`);
-          if (missingCols.length > 0) console.log(`      ❌ Missing COLUMNS: ${missingCols.join(', ')}`);
-          if (extraCols.length > 0) console.log(`      ➕ Extra COLUMNS: ${extraCols.join(', ')}`);
+          if (missingCols.length > 0 || extraCols.length > 0) {
+            console.log(`  📁 Table '${table}':`);
+            if (missingCols.length > 0) console.log(`      ❌ Missing COLUMNS: ${missingCols.join(', ')}`);
+            if (extraCols.length > 0) console.log(`      ➕ Extra COLUMNS: ${extraCols.join(', ')}`);
+          }
         }
       }
     }
