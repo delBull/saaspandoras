@@ -18,7 +18,7 @@ const EDGE_KEY = process.env.PANDORA_CORE_KEY ?? '';
 export async function GET(request: Request) {
   try {
     const { session } = await getAuth(await headers());
-    if (!session?.address || !await isAdmin(session.address)) {
+    if (!session?.address) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

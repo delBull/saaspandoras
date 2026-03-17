@@ -74,6 +74,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
   const [completing, setCompleting] = useState(false);
+  const [selectedModule, setSelectedModule] = useState<Module | null>(null);
 
   useEffect(() => {
     params.then(p => setCourseId(p.courseId));
@@ -263,9 +264,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
                           });
                           return;
                         }
-                        toast.info(`Abriendo: ${mod.title}`, {
-                          description: 'Este módulo se abrirá próximamente en formato interactivo'
-                        });
+                        setSelectedModule(mod);
                       }}
                       className={`flex items-start gap-3 p-4 rounded-xl border transition-all ${
                         isLocked
@@ -425,6 +424,120 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
           </div>
         </div>
       </div>
+
+      {/* Module Modal */}
+      {selectedModule && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setSelectedModule(null)} />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="relative w-full max-w-4xl bg-zinc-950 border border-zinc-800 rounded-[2.5rem] overflow-hidden shadow-2xl"
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-zinc-800 bg-zinc-900/50">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${MODULE_COLORS[selectedModule.type] ?? ''}`}>
+                  {MODULE_ICONS[selectedModule.type] ?? <BookOpen className="w-5 h-5" />}
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white leading-tight uppercase italic">{selectedModule.title}</h3>
+                  <p className="text-xs text-zinc-500 font-medium uppercase tracking-widest">{selectedModule.type} · {selectedModule.duration || '5 min'}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedModule(null)}
+                className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-zinc-800 text-zinc-500 transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5 rotate-90" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+              <div className="space-y-6">
+                {selectedModule.type === 'video' ? (
+                  <div className="aspect-video bg-zinc-900 rounded-3xl flex flex-col items-center justify-center border border-zinc-800 group relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/5 to-purple-500/5" />
+                    <Play className="w-16 h-16 text-cyan-500 mb-4 drop-shadow-2xl active:scale-95 cursor-pointer transition-transform" />
+                    <p className="text-sm font-bold text-zinc-400 uppercase tracking-widest">Video del Módulo de Educación</p>
+                    <p className="text-[10px] text-zinc-600 mt-2">Haz clic para iniciar el reproductor interactivo</p>
+                    <div className="absolute bottom-4 left-4 right-4 h-1 bg-zinc-800 rounded-full overflow-hidden">
+                        <div className="h-full bg-cyan-500 w-1/3 rounded-full shadow-[0_0_10px_rgba(6,182,212,0.5)]" />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="p-6 bg-zinc-900/40 border border-zinc-800 rounded-3xl">
+                       <h4 className="text-white font-bold mb-4 flex items-center gap-2">
+                           <BookOpen className="w-4 h-4 text-cyan-400" />
+                           Resumen del Módulo
+                       </h4>
+                       <p className="text-zinc-400 text-sm leading-relaxed italic">
+                        {selectedModule.description || `En este módulo exploraremos los conceptos fundamentales de ${course.title} enfocados en ${selectedModule.title}. Aprenderás los mecanismos clave, riesgos y oportunidades dentro del ecosistema Pandoras.`}
+                       </p>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="p-4 bg-zinc-900/60 border border-zinc-800 rounded-2xl">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1">Dificultad</p>
+                            <p className="text-xs text-white font-bold">{course.difficulty}</p>
+                        </div>
+                        <div className="p-4 bg-zinc-900/60 border border-zinc-800 rounded-2xl">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1">Categoría</p>
+                            <p className="text-xs text-white font-bold uppercase">{course.category}</p>
+                        </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-4 pt-4">
+                  <h4 className="text-sm font-bold text-white uppercase tracking-tight flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-cyan-400" />
+                      Lo que aprenderás
+                  </h4>
+                  <ul className="space-y-3">
+                    {['Conceptos básicos y terminología', 'Mecanismos de operación en Pandoras', 'Mejores prácticas y seguridad'].map((item, i) => (
+                      <li key={i} className="flex items-start gap-3 text-sm text-zinc-400">
+                        <div className="w-5 h-5 rounded-full bg-cyan-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <CheckCircle2 className="w-3 h-3 text-cyan-500" />
+                        </div>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-zinc-800 bg-zinc-900/30 flex items-center justify-between">
+               <button
+                onClick={() => setSelectedModule(null)}
+                className="text-zinc-500 hover:text-white text-xs font-bold uppercase tracking-widest transition-colors"
+              >
+                Cerrar Módulo
+              </button>
+              <button
+                onClick={() => {
+                    toast.success('¡Módulo completado!', {
+                        description: 'Has progresado en tu formación.'
+                    });
+                    setSelectedModule(null);
+                    // Update local progress if in progress
+                    if (enrollment && enrollment.status === 'in_progress') {
+                        const newPct = Math.min(enrollment.progressPct + Math.floor(100 / totalModules), 100);
+                        setEnrollment({...enrollment, progressPct: newPct});
+                    }
+                }}
+                className="px-8 py-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-cyan-900/20"
+              >
+                Completar Módulo
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
