@@ -733,6 +733,51 @@ export type WhatsAppMessage = typeof whatsappMessages.$inferSelect;
 export type WhatsAppApplicationState = typeof whatsappApplicationStates.$inferSelect;
 export type WhatsAppPreapplyLead = typeof whatsappPreapplyLeads.$inferSelect;
 
+// --- EDUCATION / COURSES TABLES ---
+
+export const courseDifficultyEnum = pgEnum("course_difficulty", [
+  "beginner",
+  "intermediate",
+  "advanced",
+]);
+
+export const courses = pgTable("courses", {
+  id: text("id").primaryKey(),              // slug: "defi-basics"
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  category: text("category").notNull(),     // DeFi, NFTs, Security, DAO, etc.
+  difficulty: courseDifficultyEnum("difficulty").default("beginner").notNull(),
+  duration: text("duration").notNull(),     // "2 horas"
+  imageUrl: text("image_url"),
+  xpReward: integer("xp_reward").default(50).notNull(),
+  creditsReward: integer("credits_reward").default(10).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  orderIndex: integer("order_index").default(0).notNull(),
+  prerequisites: jsonb("prerequisites").$type<string[]>().default([]).notNull(),
+  modules: jsonb("modules").$type<Record<string, unknown>[]>().default([]).notNull(),
+  skillsCovered: jsonb("skills_covered").$type<string[]>().default([]).notNull(),
+  instructor: text("instructor").default("Pandora's Team").notNull(),
+  enrolledCount: integer("enrolled_count").default(0).notNull(),
+  completionRate: integer("completion_rate").default(0).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().$onUpdate(() => new Date()).notNull(),
+});
+
+export const courseEnrollments = pgTable("course_enrollments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: text("user_id").notNull(),        // walletAddress (lowercase)
+  courseId: text("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
+  status: text("status").default("in_progress").notNull(), // in_progress | completed
+  progressPct: integer("progress_pct").default(0).notNull(),
+  startedAt: timestamp("started_at", { withTimezone: true }).defaultNow().notNull(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+}, (table) => ({
+  uniqueEnrollment: uniqueIndex("unique_course_enrollment").on(table.userId, table.courseId),
+}));
+
+// Education types
+export type Course = typeof courses.$inferSelect;
+export type CourseEnrollment = typeof courseEnrollments.$inferSelect;
 
 
 // --- GOVERNANCE CALENDAR TABLES ---
