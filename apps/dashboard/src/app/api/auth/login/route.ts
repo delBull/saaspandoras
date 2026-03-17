@@ -227,6 +227,9 @@ export async function POST(request: Request) {
                 }
 
                 // 3. Remove all headers, footers, spaces, and newlines to get pure base64 core
+                const isRSA = cleanKey.includes('BEGIN RSA');
+                const headerType = isRSA ? `RSA ${type}` : type;
+                
                 const headerRegex = new RegExp(`-----BEGIN (?:RSA )?${type} KEY-----`, 'g');
                 const footerRegex = new RegExp(`-----END (?:RSA )?${type} KEY-----`, 'g');
                 
@@ -241,7 +244,7 @@ export async function POST(request: Request) {
                 const formattedCore = chunks.join('\n');
 
                 // 5. Reassemble with required headers
-                return `-----BEGIN RSA ${type} KEY-----\n${formattedCore}\n-----END RSA ${type} KEY-----\n`;
+                return `-----BEGIN ${headerType} KEY-----\n${formattedCore}\n-----END ${headerType} KEY-----\n`;
             };
 
             const algorithm = privateKeyRaw ? 'RS256' : 'HS256';
@@ -251,7 +254,7 @@ export async function POST(request: Request) {
             const finalSecret = algorithm === 'RS256' ? reconstructPEM(privateKeyRaw!, 'PRIVATE') : (process.env.JWT_SECRET || 'fallback');
 
             // Quick check
-            if (algorithm === 'RS256' && !finalSecret.includes('-----BEGIN RSA PRIVATE KEY-----')) {
+            if (algorithm === 'RS256' && !finalSecret.includes('-----BEGIN ')) {
                  throw new Error("INVALID_PEM_KEY: The reconstructed JWT_PRIVATE_KEY failed the structural check.");
             }
 
