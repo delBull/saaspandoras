@@ -207,7 +207,7 @@ export async function POST(request: Request) {
         let privateKey = process.env.JWT_PRIVATE_KEY;
         
         // Handle Base64 encoded keys (Starts with LS0tLS1 which is '-----')
-        if (privateKey && privateKey.startsWith('LS0tLS1')) {
+        if (privateKey?.startsWith('LS0tLS1')) {
             console.log("🔐 [LOGIN] Detected Base64 encoded JWT_PRIVATE_KEY. Decoding...");
             privateKey = Buffer.from(privateKey, 'base64').toString('utf-8');
         }

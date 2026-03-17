@@ -28,7 +28,7 @@ function processKey(key: string | undefined, name: string): string | undefined {
     return processedKey;
 }
 
-async function test() {
+function test() {
     console.log("🚀 Starting JWT Key Diagnostic...");
 
     const pri = processKey(process.env.JWT_PRIVATE_KEY, 'JWT_PRIVATE_KEY');
