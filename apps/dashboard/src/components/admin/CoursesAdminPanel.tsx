@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import {
     BookOpen, Plus, Pencil, Trash2, RefreshCw, Check, X,
     Zap, Coins, Users, BarChart3, Database, Eye, EyeOff, GripVertical,
-    ChevronDown, ChevronUp, Tag
+    ChevronDown, ChevronUp, Tag, HelpCircle
 } from 'lucide-react';
 
 interface CourseModule {
@@ -90,6 +90,7 @@ export function CoursesAdminPanel() {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
+    const [showModuleHelp, setShowModuleHelp] = useState(false);
 
     const [form, setForm] = useState({ ...EMPTY_FORM });
 
@@ -463,9 +464,17 @@ export function CoursesAdminPanel() {
                                 className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-cyan-500"
                             />
                         </div>
-                        {/* Modules JSON */}
                         <div className="space-y-1 md:col-span-2">
-                            <label htmlFor="course-modules" className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Módulos (JSON Array)</label>
+                            <div className="flex items-center justify-between">
+                                <label htmlFor="course-modules" className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Módulos (JSON Array)</label>
+                                <button 
+                                    onClick={() => setShowModuleHelp(true)}
+                                    className="text-[10px] text-cyan-500 hover:text-cyan-400 flex items-center gap-1 font-bold"
+                                >
+                                    <HelpCircle className="w-3 h-3" />
+                                    Ver Formato
+                                </button>
+                            </div>
                             <textarea
                                 id="course-modules"
                                 placeholder='[{"id":"m1","title":"Intro","type":"video","duration":"15 min"}]'
@@ -652,6 +661,74 @@ export function CoursesAdminPanel() {
                             )}
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* Module JSON Help Modal */}
+            {showModuleHelp && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                    <div className="bg-zinc-950 border border-zinc-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h5 className="font-bold text-white flex items-center gap-2">
+                                <Database className="w-4 h-4 text-cyan-400" />
+                                Formato de Módulos (JSON)
+                            </h5>
+                            <button onClick={() => setShowModuleHelp(false)} className="text-gray-500 hover:text-white">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        
+                        <div className="space-y-3">
+                            <p className="text-xs text-gray-400">
+                                Copia y pega este ejemplo para estructurar los módulos del curso. Asegúrate de que el JSON sea un array válido.
+                            </p>
+                            
+                            <div className="relative">
+                                <pre className="bg-zinc-900 p-4 rounded-xl border border-zinc-800 text-[10px] text-cyan-300 font-mono overflow-auto max-h-60 custom-scrollbar">
+{`[
+  {
+    "id": "mod-1",
+    "title": "Introducción a DeFi",
+    "type": "video",
+    "duration": "10 min",
+    "description": "Conceptos clave y ecosistema"
+  },
+  {
+    "id": "quiz-1",
+    "title": "Evaluación Inicial",
+    "type": "quiz",
+    "passing_score": 80,
+    "question_count": 5
+  },
+  {
+    "id": "mod-2",
+    "title": "Pools de Liquidez",
+    "type": "article",
+    "duration": "15 min"
+  }
+]`}
+                                </pre>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 text-[10px]">
+                                <div className="p-2 bg-zinc-900 rounded-lg border border-zinc-800">
+                                    <span className="text-white font-bold block mb-1">types:</span>
+                                    video, article, quiz
+                                </div>
+                                <div className="p-2 bg-zinc-900 rounded-lg border border-zinc-800">
+                                    <span className="text-white font-bold block mb-1">passing_score:</span>
+                                    Requerido para tipo "quiz"
+                                </div>
+                            </div>
+                        </div>
+
+                        <button 
+                            onClick={() => setShowModuleHelp(false)}
+                            className="w-full py-2 bg-cyan-600 text-white font-bold rounded-lg text-xs"
+                        >
+                            Cerrar Ayuda
+                        </button>
+                    </div>
                 </div>
             )}
         </div>

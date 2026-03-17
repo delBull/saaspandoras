@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Clock, Users, Trophy, BookOpen, Play, CheckCircle2, Lock, Zap, Coins, Award, ChevronRight, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Clock, Users, Trophy, BookOpen, Play, CheckCircle2, Lock, Zap, Coins, Award, ChevronRight, AlertCircle, HelpCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 
@@ -14,6 +14,8 @@ interface Module {
   type: 'video' | 'article' | 'quiz';
   duration?: string;
   description?: string;
+  content_url?: string | null;
+  content?: string | null;
   is_free_preview?: boolean;
   passing_score?: number;
   question_count?: number;
@@ -75,6 +77,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
   const [starting, setStarting] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [selectedModule, setSelectedModule] = useState<Module | null>(null);
+  const [showInfo, setShowInfo] = useState(false);
 
   useEffect(() => {
     params.then(p => setCourseId(p.courseId));
@@ -238,9 +241,17 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
 
           {/* Modules */}
           <div>
-            <h2 className="text-base font-bold text-white mb-3 flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-cyan-400" />
-              Contenido del Curso
+            <h2 className="text-base font-bold text-white mb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-cyan-400" />
+                Contenido del Curso
+              </div>
+              <button 
+                onClick={() => setShowInfo(true)}
+                className="p-1 hover:bg-zinc-800 rounded-full text-zinc-500 hover:text-cyan-400 transition-all"
+              >
+                <HelpCircle className="w-4 h-4" />
+              </button>
             </h2>
             <div className="space-y-2">
               {(course.modules ?? []).length === 0 ? (
@@ -464,14 +475,42 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
             <div className="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
               <div className="space-y-6">
                 {selectedModule.type === 'video' ? (
-                  <div className="aspect-video bg-zinc-900 rounded-3xl flex flex-col items-center justify-center border border-zinc-800 group relative overflow-hidden group">
-                    <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/5 to-purple-500/5" />
-                    <Play className="w-16 h-16 text-cyan-500 mb-4 drop-shadow-2xl active:scale-95 cursor-pointer transition-transform" />
-                    <p className="text-sm font-bold text-zinc-400 uppercase tracking-widest">Video del Módulo de Educación</p>
-                    <p className="text-[10px] text-zinc-600 mt-2">Haz clic para iniciar el reproductor interactivo</p>
-                    <div className="absolute bottom-4 left-4 right-4 h-1 bg-zinc-800 rounded-full overflow-hidden">
-                        <div className="h-full bg-cyan-500 w-1/3 rounded-full shadow-[0_0_10px_rgba(6,182,212,0.5)]" />
-                    </div>
+                  <div className="bg-zinc-900 rounded-3xl overflow-hidden border border-zinc-800">
+                    {selectedModule.content_url ? (
+                      <div className="aspect-video relative w-full">
+                        <iframe
+                          src={selectedModule.content_url}
+                          title={selectedModule.title}
+                          className="absolute inset-0 w-full h-full border-0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                        />
+                      </div>
+                    ) : (
+                      <div className="aspect-video flex flex-col items-center justify-center p-6 text-center">
+                        <Play className="w-16 h-16 text-cyan-500 mb-4 opacity-50" />
+                        <p className="text-sm font-bold text-zinc-400 uppercase tracking-widest">Video no disponible</p>
+                      </div>
+                    )}
+                    {selectedModule.description && (
+                        <div className="p-6 border-t border-zinc-800 bg-zinc-950/50">
+                            <p className="text-zinc-400 text-sm leading-relaxed">{selectedModule.description}</p>
+                        </div>
+                    )}
+                  </div>
+                ) : selectedModule.type === 'article' && selectedModule.content ? (
+                  <div className="space-y-6">
+                    {selectedModule.description && (
+                      <div className="p-6 bg-zinc-900/40 border border-zinc-800 rounded-2xl">
+                        <p className="text-zinc-400 text-sm leading-relaxed italic border-l-2 border-cyan-500 pl-4">
+                          {selectedModule.description}
+                        </p>
+                      </div>
+                    )}
+                    <div 
+                      className="prose prose-invert prose-zinc max-w-none text-zinc-300 text-sm leading-loose prose-headings:text-white prose-a:text-cyan-400 prose-strong:text-white prose-strong:font-bold prose-ul:list-disc prose-ol:list-decimal rounded-2xl p-6 bg-zinc-900/20 border border-zinc-800/50"
+                      dangerouslySetInnerHTML={{ __html: selectedModule.content }}
+                    />
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -542,6 +581,54 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
                 Completar Módulo
               </button>
             </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Info Modal (Unified Retrieve/Educational Info) */}
+      {showInfo && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-black/90 backdrop-blur-md" 
+            onClick={() => setShowInfo(false)}
+            onKeyDown={(e) => e.key === 'Escape' && setShowInfo(false)}
+            role="button"
+            tabIndex={0}
+            aria-label="Cerrar info"
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative w-full max-w-lg bg-zinc-950 border border-zinc-800 rounded-[2rem] p-8 shadow-2xl space-y-6"
+          >
+            <div className="w-12 h-12 bg-cyan-500/10 rounded-2xl flex items-center justify-center border border-cyan-500/20 mb-2">
+                <HelpCircle className="w-6 h-6 text-cyan-400" />
+            </div>
+            
+            <div className="space-y-2">
+                <h3 className="text-xl font-bold text-white uppercase italic">Academia Modular Pandoras</h3>
+                <p className="text-zinc-400 text-sm leading-relaxed">
+                    Nuestros cursos están diseñados para ser consumidos en pequeñas dosis. Cada módulo completado otorga <span className="text-orange-400 font-bold">XP</span> para tu rango y <span className="text-green-400 font-bold">Credits</span> para el ecosistema.
+                </p>
+            </div>
+
+            <div className="bg-zinc-900/50 rounded-2xl p-4 border border-zinc-800 space-y-3">
+                <div className="flex items-start gap-3">
+                    <div className="w-5 h-5 bg-cyan-500 text-black rounded text-[10px] flex items-center justify-center font-black mt-0.5">1</div>
+                    <p className="text-xs text-zinc-300"><span className="text-white font-bold">Sincronización:</span> Tus logros se guardan localmente y se sincronizan con tu perfil de Telegram al marcar el curso como terminado.</p>
+                </div>
+                <div className="flex items-start gap-3">
+                    <div className="w-5 h-5 bg-cyan-500 text-black rounded text-[10px] flex items-center justify-center font-black mt-0.5">2</div>
+                    <p className="text-xs text-zinc-300"><span className="text-white font-bold">Multi-formato:</span> Combina videos, lecturas y evaluaciones para una mejor retención.</p>
+                </div>
+            </div>
+
+            <button
+                onClick={() => setShowInfo(false)}
+                className="w-full py-4 bg-zinc-100 text-black rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-white transition-all active:scale-95"
+            >
+                Entendido
+            </button>
           </motion.div>
         </div>
       )}
