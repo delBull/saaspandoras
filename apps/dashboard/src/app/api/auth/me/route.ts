@@ -36,18 +36,39 @@ export async function GET(request: Request) {
             });
         }
 
-        let publicKey = process.env.JWT_PUBLIC_KEY;
-        
-        // Handle Base64 encoded keys (Starts with LS0tLS1 which is '-----')
-        if (publicKey?.startsWith('LS0tLS1')) {
-            console.log("✅ [Dashboard /api/auth/me] Detected Base64 encoded JWT_PUBLIC_KEY. Decoding...");
-            publicKey = Buffer.from(publicKey, 'base64').toString('utf-8');
-        }
+        // Function to forcibly reconstruct a valid PEM string
+        const reconstructPEM = (keyString: string, type: 'PRIVATE' | 'PUBLIC'): string => {
+            if (!keyString) return keyString;
+            
+            // 1. Remove obvious invalid wrapping quotes if they exist
+            let cleanKey = keyString.replace(/^["']|["']$/g, '');
 
-        // Clean up PEM formatting and replace literal \n
-        publicKey = publicKey?.replace(/\\n/g, '\n');
-        
-        const secret = publicKey || process.env.JWT_SECRET || process.env.JWT_PRIVATE_KEY;
+            // 2. Decode Base64 if it's base64 encoded (starts with LS0)
+            if (cleanKey.startsWith('LS0tLS1')) {
+                console.log(`✅ [Dashboard /api/auth/me] Decoding Base64 ${type} KEY...`);
+                cleanKey = Buffer.from(cleanKey, 'base64').toString('utf-8');
+            }
+
+            // 3. Remove all headers, footers, spaces, and newlines to get pure base64 core
+            const headerRegex = new RegExp(`-----BEGIN (?:RSA )?${type} KEY-----`, 'g');
+            const footerRegex = new RegExp(`-----END (?:RSA )?${type} KEY-----`, 'g');
+            
+            const base64Core = cleanKey
+                .replace(headerRegex, '')
+                .replace(footerRegex, '')
+                .replace(/\\n/g, '')
+                .replace(/\s+/g, '');
+
+            // 4. Chunk into 64-character lines (RFC 1421 standard)
+            const chunks = base64Core.match(/.{1,64}/g) || [];
+            const formattedCore = chunks.join('\n');
+
+            // 5. Reassemble with required headers
+            return `-----BEGIN ${type === 'PUBLIC' ? 'PUBLIC' : 'RSA PRIVATE'} KEY-----\n${formattedCore}\n-----END ${type === 'PUBLIC' ? 'PUBLIC' : 'RSA PRIVATE'} KEY-----\n`;
+        };
+
+        const hasPublicKey = !!process.env.JWT_PUBLIC_KEY;
+        const secret = hasPublicKey ? reconstructPEM(process.env.JWT_PUBLIC_KEY!, 'PUBLIC') : process.env.JWT_SECRET;
         
         if (!secret) {
             console.error("❌ JWT Configuration Error: Missing Secret/Public Key");
@@ -58,7 +79,7 @@ export async function GET(request: Request) {
         try {
             // Unify with login: use jsonwebtoken syntax
             payload = jwt.verify(token, secret, {
-                algorithms: publicKey ? ['RS256'] : ['HS256']
+                algorithms: hasPublicKey ? ['RS256'] : ['HS256']
             });
             console.log("✅ [Dashboard /api/auth/me] Verified session for:", payload.address || payload.sub);
         } catch (e) {

@@ -204,8 +204,8 @@ export async function POST(request: Request) {
         console.log(`✅ Session ${sid} created for user ${userId}`);
 
         // 9. Issue Scoped JWT with sid - Support RS256 or HS256
-        let privateKey = process.env.JWT_PRIVATE_KEY;
-        const secret = privateKey || process.env.JWT_SECRET;
+        const privateKeyRaw = process.env.JWT_PRIVATE_KEY;
+        const secret = privateKeyRaw || process.env.JWT_SECRET;
         
         if (!secret) {
             console.error("❌ CRITICAL: JWT_PRIVATE_KEY (or JWT_SECRET) is not defined");
@@ -213,22 +213,46 @@ export async function POST(request: Request) {
         }
 
         try {
-            // Check Base64 and process inside try-catch to catch OpenSSL/Crypto crashes
-            if (privateKey?.startsWith('LS0tLS1')) {
-                console.log("🔐 [LOGIN] Detected Base64 encoded JWT_PRIVATE_KEY. Decoding...");
-                privateKey = Buffer.from(privateKey, 'base64').toString('utf-8');
-            }
-            
-            // Clean up PEM formatting
-            privateKey = privateKey?.replace(/\\n/g, '\n');
-            const finalSecret = privateKey || secret;
-            const algorithm = privateKey ? 'RS256' : 'HS256';
-            
+            // Function to forcibly reconstruct a valid PEM string
+            const reconstructPEM = (keyString: string, type: 'PRIVATE' | 'PUBLIC'): string => {
+                if (!keyString) return keyString;
+                
+                // 1. Remove obvious invalid wrapping quotes if they exist
+                let cleanKey = keyString.replace(/^["']|["']$/g, '');
+
+                // 2. Decode Base64 if it's base64 encoded (starts with LS0)
+                if (cleanKey.startsWith('LS0tLS1')) {
+                    console.log(`🔐 [LOGIN] Decoding Base64 ${type} KEY...`);
+                    cleanKey = Buffer.from(cleanKey, 'base64').toString('utf-8');
+                }
+
+                // 3. Remove all headers, footers, spaces, and newlines to get pure base64 core
+                const headerRegex = new RegExp(`-----BEGIN (?:RSA )?${type} KEY-----`, 'g');
+                const footerRegex = new RegExp(`-----END (?:RSA )?${type} KEY-----`, 'g');
+                
+                const base64Core = cleanKey
+                    .replace(headerRegex, '')
+                    .replace(footerRegex, '')
+                    .replace(/\\n/g, '') // Remove literal \n
+                    .replace(/\s+/g, ''); // Remove all whitespace (including actual newlines)
+
+                // 4. Chunk into 64-character lines (RFC 1421 standard)
+                const chunks = base64Core.match(/.{1,64}/g) || [];
+                const formattedCore = chunks.join('\n');
+
+                // 5. Reassemble with required headers
+                return `-----BEGIN RSA ${type} KEY-----\n${formattedCore}\n-----END RSA ${type} KEY-----\n`;
+            };
+
+            const algorithm = privateKeyRaw ? 'RS256' : 'HS256';
             console.log(`🔐 [LOGIN] JWT Algorithm: ${algorithm} | Version: ${process.env.JWT_VERSION || "2"}`);
             
-            // Validate PEM format roughly before passing to crypto
-            if (algorithm === 'RS256' && !privateKey?.includes('-----BEGIN')) {
-                 throw new Error("INVALID_PEM_KEY: The decoded JWT_PRIVATE_KEY does not appear to be a valid PEM key.");
+            // Apply formatting if using RS256
+            const finalSecret = algorithm === 'RS256' ? reconstructPEM(privateKeyRaw!, 'PRIVATE') : (process.env.JWT_SECRET || 'fallback');
+
+            // Quick check
+            if (algorithm === 'RS256' && !finalSecret.includes('-----BEGIN RSA PRIVATE KEY-----')) {
+                 throw new Error("INVALID_PEM_KEY: The reconstructed JWT_PRIVATE_KEY failed the structural check.");
             }
 
             const token = jwt.sign({
