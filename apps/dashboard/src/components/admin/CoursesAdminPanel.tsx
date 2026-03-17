@@ -314,8 +314,9 @@ export function CoursesAdminPanel() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         {/* ID */}
                         <div className="space-y-1">
-                            <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider">ID (slug) *</label>
+                            <label htmlFor="course-id" className="text-xs text-gray-400 font-semibold uppercase tracking-wider">ID (slug) *</label>
                             <input
+                                id="course-id"
                                 type="text"
                                 placeholder="defi-basics"
                                 disabled={!!editingId}
@@ -326,8 +327,9 @@ export function CoursesAdminPanel() {
                         </div>
                         {/* Title */}
                         <div className="space-y-1">
-                            <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Título *</label>
+                            <label htmlFor="course-title" className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Título *</label>
                             <input
+                                id="course-title"
                                 type="text"
                                 placeholder="Fundamentos de DeFi"
                                 value={form.title}
@@ -337,8 +339,9 @@ export function CoursesAdminPanel() {
                         </div>
                         {/* Description */}
                         <div className="space-y-1 md:col-span-2">
-                            <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Descripción *</label>
+                            <label htmlFor="course-desc" className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Descripción *</label>
                             <textarea
+                                id="course-desc"
                                 placeholder="Aprende los conceptos básicos de..."
                                 value={form.description}
                                 onChange={e => setForm({ ...form, description: e.target.value })}
@@ -347,8 +350,9 @@ export function CoursesAdminPanel() {
                         </div>
                         {/* Category */}
                         <div className="space-y-1">
-                            <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Categoría</label>
+                            <label htmlFor="course-category" className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Categoría</label>
                             <select
+                                id="course-category"
                                 value={form.category}
                                 onChange={e => setForm({ ...form, category: e.target.value })}
                                 className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm outline-none"
@@ -358,8 +362,9 @@ export function CoursesAdminPanel() {
                         </div>
                         {/* Difficulty */}
                         <div className="space-y-1">
-                            <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Dificultad</label>
+                            <label htmlFor="course-difficulty" className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Dificultad</label>
                             <select
+                                id="course-difficulty"
                                 value={form.difficulty}
                                 onChange={e => setForm({ ...form, difficulty: e.target.value as any })}
                                 className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm outline-none"
@@ -371,8 +376,9 @@ export function CoursesAdminPanel() {
                         </div>
                         {/* Duration */}
                         <div className="space-y-1">
-                            <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Duración</label>
+                            <label htmlFor="course-duration" className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Duración</label>
                             <input
+                                id="course-duration"
                                 type="text"
                                 placeholder="2 horas"
                                 value={form.duration}
@@ -382,8 +388,9 @@ export function CoursesAdminPanel() {
                         </div>
                         {/* Instructor */}
                         <div className="space-y-1">
-                            <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Instructor</label>
+                            <label htmlFor="course-instructor" className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Instructor</label>
                             <input
+                                id="course-instructor"
                                 type="text"
                                 placeholder="Pandora's Team"
                                 value={form.instructor}
@@ -393,8 +400,9 @@ export function CoursesAdminPanel() {
                         </div>
                         {/* Image URL */}
                         <div className="space-y-1 md:col-span-2">
-                            <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Image URL (opcional)</label>
+                            <label htmlFor="course-image" className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Image URL (opcional)</label>
                             <input
+                                id="course-image"
                                 type="text"
                                 placeholder="https://..."
                                 value={form.imageUrl}
@@ -405,10 +413,11 @@ export function CoursesAdminPanel() {
                         {/* XP / Credits */}
                         <div className="grid grid-cols-2 gap-3 md:col-span-2">
                             <div className="space-y-1">
-                                <label className="text-xs text-orange-400 font-semibold uppercase tracking-wider flex items-center gap-1">
+                                <label htmlFor="course-xp" className="text-xs text-orange-400 font-semibold uppercase tracking-wider flex items-center gap-1">
                                     <Zap className="w-3 h-3" /> XP Reward
                                 </label>
                                 <input
+                                    id="course-xp"
                                     type="number"
                                     value={form.xpReward}
                                     onChange={e => setForm({ ...form, xpReward: parseInt(e.target.value) || 0 })}
@@ -416,10 +425,11 @@ export function CoursesAdminPanel() {
                                 />
                             </div>
                             <div className="space-y-1">
-                                <label className="text-xs text-green-400 font-semibold uppercase tracking-wider flex items-center gap-1">
+                                <label htmlFor="course-credits" className="text-xs text-green-400 font-semibold uppercase tracking-wider flex items-center gap-1">
                                     <Coins className="w-3 h-3" /> Credits Reward
                                 </label>
                                 <input
+                                    id="course-credits"
                                     type="number"
                                     value={form.creditsReward}
                                     onChange={e => setForm({ ...form, creditsReward: parseInt(e.target.value) || 0 })}
@@ -429,10 +439,11 @@ export function CoursesAdminPanel() {
                         </div>
                         {/* Skills */}
                         <div className="space-y-1">
-                            <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider flex items-center gap-1">
+                            <label htmlFor="course-skills" className="text-xs text-gray-400 font-semibold uppercase tracking-wider flex items-center gap-1">
                                 <Tag className="w-3 h-3" /> Skills (separados por coma)
                             </label>
                             <input
+                                id="course-skills"
                                 type="text"
                                 placeholder="Lending, Borrowing, Yield Farming"
                                 value={form.skillsCovered}
@@ -442,8 +453,9 @@ export function CoursesAdminPanel() {
                         </div>
                         {/* Prerequisites */}
                         <div className="space-y-1">
-                            <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Prerequisites (IDs separados por coma)</label>
+                            <label htmlFor="course-prereqs" className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Prerequisites (IDs separados por coma)</label>
                             <input
+                                id="course-prereqs"
                                 type="text"
                                 placeholder="defi-basics, web3-security"
                                 value={form.prerequisites}
@@ -453,8 +465,9 @@ export function CoursesAdminPanel() {
                         </div>
                         {/* Modules JSON */}
                         <div className="space-y-1 md:col-span-2">
-                            <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Módulos (JSON Array)</label>
+                            <label htmlFor="course-modules" className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Módulos (JSON Array)</label>
                             <textarea
+                                id="course-modules"
                                 placeholder='[{"id":"m1","title":"Intro","type":"video","duration":"15 min"}]'
                                 value={form.modules}
                                 onChange={e => setForm({ ...form, modules: e.target.value })}
@@ -463,9 +476,14 @@ export function CoursesAdminPanel() {
                         </div>
                         {/* Active toggle */}
                         <div className="flex items-center gap-3">
-                            <label className="flex items-center gap-2 cursor-pointer">
+                            <label htmlFor="course-active-toggle" className="flex items-center gap-2 cursor-pointer">
                                 <div
+                                    id="course-active-toggle"
+                                    role="button"
+                                    tabIndex={0}
+                                    aria-label="Toggle active status"
                                     onClick={() => setForm({ ...form, isActive: !form.isActive })}
+                                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setForm({ ...form, isActive: !form.isActive }); } }}
                                     className={`w-10 h-5 rounded-full transition-colors relative cursor-pointer ${form.isActive ? 'bg-cyan-600' : 'bg-zinc-700'}`}
                                 >
                                     <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${form.isActive ? 'left-5' : 'left-0.5'}`} />
@@ -475,8 +493,9 @@ export function CoursesAdminPanel() {
                         </div>
                         {/* Order */}
                         <div className="space-y-1">
-                            <label className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Order Index</label>
+                            <label htmlFor="course-order" className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Order Index</label>
                             <input
+                                id="course-order"
                                 type="number"
                                 value={form.orderIndex}
                                 onChange={e => setForm({ ...form, orderIndex: parseInt(e.target.value) || 0 })}
