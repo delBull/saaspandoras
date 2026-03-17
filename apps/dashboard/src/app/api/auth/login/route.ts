@@ -205,16 +205,6 @@ export async function POST(request: Request) {
 
         // 9. Issue Scoped JWT with sid - Support RS256 or HS256
         let privateKey = process.env.JWT_PRIVATE_KEY;
-        
-        // Handle Base64 encoded keys (Starts with LS0tLS1 which is '-----')
-        if (privateKey?.startsWith('LS0tLS1')) {
-            console.log("🔐 [LOGIN] Detected Base64 encoded JWT_PRIVATE_KEY. Decoding...");
-            privateKey = Buffer.from(privateKey, 'base64').toString('utf-8');
-        }
-
-        // Clean up PEM formatting and replace literal \n
-        privateKey = privateKey?.replace(/\\n/g, '\n');
-        
         const secret = privateKey || process.env.JWT_SECRET;
         
         if (!secret) {
@@ -222,12 +212,26 @@ export async function POST(request: Request) {
             throw new Error("SERVER_CONFIG_ERROR");
         }
 
-        const algorithm = privateKey ? 'RS256' : 'HS256';
-        console.log(`🔐 [LOGIN] JWT Algorithm: ${algorithm} | Version: ${process.env.JWT_VERSION || "2"}`);
-
-        let token: string;
         try {
-            token = jwt.sign({
+            // Check Base64 and process inside try-catch to catch OpenSSL/Crypto crashes
+            if (privateKey?.startsWith('LS0tLS1')) {
+                console.log("🔐 [LOGIN] Detected Base64 encoded JWT_PRIVATE_KEY. Decoding...");
+                privateKey = Buffer.from(privateKey, 'base64').toString('utf-8');
+            }
+            
+            // Clean up PEM formatting
+            privateKey = privateKey?.replace(/\\n/g, '\n');
+            const finalSecret = privateKey || secret;
+            const algorithm = privateKey ? 'RS256' : 'HS256';
+            
+            console.log(`🔐 [LOGIN] JWT Algorithm: ${algorithm} | Version: ${process.env.JWT_VERSION || "2"}`);
+            
+            // Validate PEM format roughly before passing to crypto
+            if (algorithm === 'RS256' && !privateKey?.includes('-----BEGIN')) {
+                 throw new Error("INVALID_PEM_KEY: The decoded JWT_PRIVATE_KEY does not appear to be a valid PEM key.");
+            }
+
+            const token = jwt.sign({
                 sub: userId,
                 sid: sid,
                 address: walletAddress,
@@ -236,42 +240,46 @@ export async function POST(request: Request) {
                 chainId: config.chain.id,
                 v: parseInt(process.env.JWT_VERSION || "2"),
                 iat: Math.floor(Date.now() / 1000),
-            }, secret, { 
+            }, finalSecret, { 
                 expiresIn: '24h',
                 algorithm: algorithm as jwt.Algorithm
             });
             console.log("✅ [LOGIN] JWT Signed successfully");
-        } catch (signingError: any) {
-            console.error("❌ [LOGIN] JWT SIGNING FAILED:", signingError.message);
-            throw new Error(`JWT_SIGNING_FAILED: ${signingError.message}`);
+
+            const isProd = process.env.NODE_ENV === "production";
+            const cookieDomain = isProd ? (process.env.COOKIE_DOMAIN || ".pandoras.finance") : undefined;
+            console.log(`🍪 [LOGIN] Setting cookies - Domain: ${cookieDomain || 'localhost'} | Secure: ${isProd} | SameSite: ${isProd ? "none" : "lax"}`);
+
+            const cookieStore = await cookies();
+            cookieStore.set("auth_token", token, {
+                httpOnly: true,
+                secure: isProd,
+                sameSite: isProd ? "none" : "lax",
+                ...(cookieDomain && { domain: cookieDomain }),
+                path: "/",
+                maxAge: 60 * 60 * 24 // 24 hours
+            });
+
+            console.log(`✅ [LOGIN] SUCCESS: Session created for ${walletAddress}`);
+
+            return NextResponse.json({
+                success: true,
+                hasAccess,
+                user: {
+                    id: userId,
+                    address: walletAddress,
+                    role: "user",
+                    hasAccess
+                }
+            });
+
+        } catch (jwtOrCookieError: any) {
+            console.error("💥 [LOGIN] SEVERE JWT/COOKIE FAILURE:", jwtOrCookieError);
+            return NextResponse.json({ 
+                error: "JWT_SIGNATURE_GENERATION_FAILED",
+                details: jwtOrCookieError?.message || String(jwtOrCookieError)
+            }, { status: 500 });
         }
-
-        const isProd = process.env.NODE_ENV === "production";
-        const cookieDomain = isProd ? (process.env.COOKIE_DOMAIN || ".pandoras.finance") : undefined;
-        console.log(`🍪 [LOGIN] Setting cookies - Domain: ${cookieDomain || 'localhost'} | Secure: ${isProd} | SameSite: ${isProd ? "none" : "lax"}`);
-
-        const cookieStore = await cookies();
-        cookieStore.set("auth_token", token, {
-            httpOnly: true,
-            secure: isProd,
-            sameSite: isProd ? "none" : "lax", // 'none' requires secure: true, handled correctly now
-            ...(cookieDomain && { domain: cookieDomain }), // Only set domain if on production/staging
-            path: "/",
-            maxAge: 60 * 60 * 24 // 24 hours
-        });
-
-        console.log(`✅ [LOGIN] SUCCESS: Session created for ${walletAddress}`);
-
-        return NextResponse.json({
-            success: true,
-            hasAccess,
-            user: {
-                id: userId,
-                address: walletAddress,
-                role: "user",
-                hasAccess
-            }
-        });
 
     } catch (error: any) {
         console.error("❌ [Dashboard /api/auth/login] CRITICAL FAILURE:", error);
