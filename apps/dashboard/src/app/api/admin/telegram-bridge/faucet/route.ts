@@ -20,7 +20,16 @@ export async function GET() {
             }
         });
 
-        const data = await res.json();
+        if (!res.ok) {
+            const errorText = await res.text().catch(() => 'No response body');
+            console.error(`[Dashboard Faucet Proxy GET] Edge API error ${res.status}:`, errorText);
+            return NextResponse.json({ error: `Edge API returned ${res.status}`, details: errorText.slice(0, 200) }, { status: res.status });
+        }
+
+        const data = await res.json().catch(() => null);
+        if (!data) {
+            return NextResponse.json({ error: 'Invalid JSON response from Edge API' }, { status: 502 });
+        }
         return NextResponse.json(data, { status: res.status });
     } catch (err: any) {
         console.error('[Dashboard Faucet Proxy GET]', err);
