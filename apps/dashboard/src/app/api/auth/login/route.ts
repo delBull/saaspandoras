@@ -255,6 +255,17 @@ export async function POST(request: Request) {
                  throw new Error("INVALID_PEM_KEY: The reconstructed JWT_PRIVATE_KEY failed the structural check.");
             }
 
+            // [DIAGNOSTIC BLOCK]: Test finalSecret natively with Node's crypto to expose internal Vercel OpenSSL errors
+            if (algorithm === 'RS256') {
+                try {
+                    crypto.createPrivateKey(finalSecret);
+                    console.log("✅ [LOGIN] Node internal crypto accepted the PEM format mathematically!");
+                } catch (cryptoErr: any) {
+                    console.error("❌ [LOGIN] OPENSSL NATIVE REJECTION:", cryptoErr);
+                    throw new Error(`OPENSSL_CRYPTO_ERROR: ${cryptoErr.message || String(cryptoErr)}`);
+                }
+            }
+
             const token = jwt.sign({
                 sub: userId,
                 sid: sid,
