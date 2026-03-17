@@ -324,6 +324,16 @@ export function Sidebar({
           setProfileDropdown(false);
           if (isMobile) setMobileOpen(false);
         }
+      },
+      {
+        href: "/education",
+        icon: <BookOpen className="w-5 h-5 text-gray-400" />,
+        label: "Educación",
+        description: "Cursos Web3 · XP & Credits",
+        onClick: () => {
+          setProfileDropdown(false);
+          if (isMobile) setMobileOpen(false);
+        }
       }
     ];
 

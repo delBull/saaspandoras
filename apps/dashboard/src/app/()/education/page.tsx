@@ -110,9 +110,10 @@ export default function EducationPage() {
             : course
         ));
 
-        // Show success message with points earned
-        toast.success(`¡Curso completado! +100 tokens ganados`, {
-          description: "Felicidades por completar este curso de Web3"
+        // Show success message with actual XP + credits earned
+        const completed = courses.find(c => c.id === courseId);
+        toast.success(`¡Curso completado! +${completed?.points ?? 100} XP`, {
+          description: `+${(completed as any)?.creditsReward ?? 10} Harvest Credits acreditados a tu perfil`
         });
       } else {
         console.error('Error completing course:', data.message);
@@ -304,7 +305,7 @@ export default function EducationPage() {
                         size="sm"
                       >
                         <TrophyIcon className="w-4 h-4 mr-2" />
-                        Marcar Completado (+100 tokens)
+                        Marcar Completado (+{course.points} XP)
                       </Button>
                     </div>
                   ) : (
