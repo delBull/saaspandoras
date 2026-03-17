@@ -171,7 +171,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
     <div className="min-h-screen bg-zinc-950 text-white pb-32">
       {/* Hero header */}
       <div className="relative bg-gradient-to-b from-zinc-900 to-zinc-950 border-b border-zinc-800/60">
-        <div className="max-w-4xl mx-auto px-6 pt-6 pb-8">
+        <div className="max-w-7xl mx-auto px-6 pt-6 pb-8">
           <button
             onClick={() => router.push('/education')}
             className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-6 text-sm"
@@ -197,7 +197,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
                 )}
               </div>
               <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">{course.title}</h1>
-              <p className="text-gray-400 text-sm leading-relaxed">{course.description}</p>
+              <p className="text-gray-400 text-sm leading-relaxed max-w-2xl">{course.description}</p>
             </div>
           </div>
 
@@ -211,7 +211,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="max-w-7xl mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main — Module List */}
         <div className="lg:col-span-2 space-y-6">
           {/* Progress bar */}
@@ -256,10 +256,21 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: idx * 0.04 }}
-                      className={`flex items-start gap-3 p-4 rounded-xl border transition-colors ${
+                      onClick={() => {
+                        if (isLocked) {
+                          toast.error('Módulo bloqueado', {
+                            description: 'Inicia el curso para desbloquear este contenido'
+                          });
+                          return;
+                        }
+                        toast.info(`Abriendo: ${mod.title}`, {
+                          description: 'Este módulo se abrirá próximamente en formato interactivo'
+                        });
+                      }}
+                      className={`flex items-start gap-3 p-4 rounded-xl border transition-all ${
                         isLocked
-                          ? 'bg-zinc-900/30 border-zinc-800/40 opacity-60'
-                          : 'bg-zinc-900/60 border-zinc-800 hover:border-zinc-700'
+                          ? 'bg-zinc-900/30 border-zinc-800/40 opacity-60 cursor-not-allowed'
+                          : 'bg-zinc-900/60 border-zinc-800 hover:border-cyan-500/50 hover:bg-zinc-800/40 cursor-pointer active:scale-[0.98]'
                       }`}
                     >
                       {/* Index / icon */}

@@ -78,7 +78,7 @@ export async function POST(
           courseId,
           courseName: course.title,
           startedAt: new Date().toISOString(),
-          xpReward: course.xpReward,
+          xpReward: Math.round(course.xpReward * 0.1),
         }
       );
     } catch (gamificationError) {
