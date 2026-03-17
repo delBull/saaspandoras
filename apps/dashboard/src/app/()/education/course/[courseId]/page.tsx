@@ -428,7 +428,14 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
       {/* Module Modal */}
       {selectedModule && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setSelectedModule(null)} />
+          <div 
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm" 
+            onClick={() => setSelectedModule(null)}
+            onKeyDown={(e) => e.key === 'Escape' && setSelectedModule(null)}
+            role="button"
+            tabIndex={0}
+            aria-label="Cerrar modal"
+          />
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
