@@ -4,8 +4,8 @@ import { getAuth, isAdmin } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-const EDGE_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-const CORE_KEY = process.env.PANDORA_CORE_KEY;
+const EDGE_API_URL = process.env.NEXT_PUBLIC_PANDORAS_EDGE_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api-edge.pandora.finance';
+const CORE_KEY = process.env.PANDORA_CORE_KEY || '';
 
 export async function GET(req: NextRequest) {
     try {
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
 
         const response = await fetch(`${EDGE_API_URL}/gamification/admin/missions/metrics`, {
             headers: {
-                'x-pandora-key': CORE_KEY || '',
+                'Authorization': `Bearer ${CORE_KEY}`,
                 'Content-Type': 'application/json',
             },
         });

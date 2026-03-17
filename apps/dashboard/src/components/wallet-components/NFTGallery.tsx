@@ -179,7 +179,7 @@ const MobileVaultTree: React.FC<{ assets: Asset[], isLoading: boolean }> = ({
             }
           </p>
           {hasKey && (
-            <Link href="/projects" className="mt-6 inline-block text-xs text-orange-400 hover:text-orange-300 font-bold uppercase tracking-widest border border-orange-500/20 px-4 py-2 rounded-full bg-orange-500/5 transition-all">
+            <Link href="/applicants" className="mt-6 inline-block text-xs text-orange-400 hover:text-orange-300 font-bold uppercase tracking-widest border border-orange-500/20 px-4 py-2 rounded-full bg-orange-500/5 transition-all">
               Explorar Protocolos
             </Link>
           )}
