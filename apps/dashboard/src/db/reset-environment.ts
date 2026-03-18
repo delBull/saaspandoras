@@ -31,8 +31,6 @@ const TABLES_TO_TRUNCATE = [
   'whatsapp_users',
   'whatsapp_sessions',
   'whatsapp_messages',
-  'whatsapp_application_states',
-  'whatsapp_preapply_leads',
   'marketing_campaigns',
   'marketing_executions',
   'governance_events',

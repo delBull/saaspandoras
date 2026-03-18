@@ -650,33 +650,6 @@ export const telegramPoints = pgTable("telegram_points", {
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Tabla para el flujo conversacional actual (33 preguntas)
-export const whatsappApplicationStates = pgTable("whatsapp_application_states", {
-  id: serial("id").primaryKey(),
-  userPhone: varchar("user_phone", { length: 20 }).notNull().unique(), // Número de WhatsApp del usuario
-  wallet: varchar("wallet", { length: 42 }), // Wallet cuando se completa sección de solicitante
-  currentStep: integer("current_step").default(0).notNull(), // Paso actual en el formulario (36 preguntas)
-  answers: jsonb("answers").default({}).notNull(), // Respuestas acumuladas
-  completed: boolean("completed").default(false).notNull(), // Si terminó el formulario
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-// Tabla dedicada para el flujo de 8 preguntas (filtrado) - MANTENER EXISTENTE
-export const whatsappPreapplyLeads = pgTable("whatsapp_preapply_leads", {
-  id: serial("id").primaryKey(),
-  userPhone: varchar("user_phone", { length: 20 }).notNull(), // Número de WhatsApp del usuario
-  step: integer("step").default(0).notNull(), // Paso actual (0-7 para las 8 preguntas)
-  status: varchar("status", { length: 20 }).default("in_progress").notNull(), // in_progress|completed|pending|approved|rejected
-  answers: jsonb("answers").default({}).notNull(), // Respuestas de las 8 preguntas
-  applicantName: varchar("applicant_name", { length: 256 }), // Extraído de respuesta Q3
-  applicantEmail: varchar("applicant_email", { length: 256 }), // Extraído de respuesta Q3
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => ({
-  uniquePhone: uniqueIndex("unique_whatsapp_lead_phone").on(table.userPhone),
-}));
-
 // --- MULTI-FLOW SYSTEM TABLES --- (NUEVO SISTEMA)
 
 // Tabla: whatsapp_users - Identidad base del usuario WhatsApp
@@ -728,10 +701,6 @@ export type UserReferral = typeof userReferrals.$inferSelect;
 export type WhatsAppUser = typeof whatsappUsers.$inferSelect;
 export type WhatsAppSession = typeof whatsappSessions.$inferSelect;
 export type WhatsAppMessage = typeof whatsappMessages.$inferSelect;
-
-// WhatsApp Legacy Types - MANTENER EXISTENTES
-export type WhatsAppApplicationState = typeof whatsappApplicationStates.$inferSelect;
-export type WhatsAppPreapplyLead = typeof whatsappPreapplyLeads.$inferSelect;
 
 // --- EDUCATION / COURSES TABLES ---
 
@@ -1296,6 +1265,7 @@ export const clients = pgTable("clients", {
   userId: varchar("user_id", { length: 255 }), // Link to platform user (optional initially)
   email: varchar("email", { length: 255 }).notNull(),
   phone: varchar("phone", { length: 50 }),
+  whatsapp: varchar("whatsapp", { length: 50 }), // WhatsApp contact number (may differ from phone)
   name: varchar("name", { length: 255 }),
   walletAddress: varchar("wallet_address", { length: 42 }),
 
