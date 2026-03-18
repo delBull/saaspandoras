@@ -12,6 +12,7 @@ import { whatsappUsers, whatsappSessions, whatsappMessages } from "@/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { notifySupportRequest } from "@/lib/discord"; // Dynamic or direct import
 import { sendWhatsAppMessage, sendInteractiveMessage } from "../utils/client";
+import { syncLeadAsClient } from "@/actions/leads";
 
 /**
  * INTERFACES SIMPLIFICADAS
@@ -103,26 +104,18 @@ async function handleUtilityFlow(message: string, step = 0, phone?: string): Pro
     if (phone) {
       try {
         const { MarketingEngine } = await import('@/lib/marketing/engine');
-        const { whatsappPreapplyLeads } = await import('@/db/schema');
+        
+        // Sync/Update client
+        const syncRes = await syncLeadAsClient({
+          whatsapp: phone,
+          source: 'utility_filter',
+          notes: 'Completed Utility Protocol Filter Q1-Q3',
+          metadata: { flow: 'utility' }
+        });
 
-        // Ensure lead exists or update context
-        const leadResults = await db.select().from(whatsappPreapplyLeads).where(eq(whatsappPreapplyLeads.userPhone, phone)).limit(1);
-
-        if (leadResults[0]) {
-          await MarketingEngine.startCampaign('Utility Protocol Follow-up', { leadId: leadResults[0].id });
+        if (syncRes.success && syncRes.data) {
+          await MarketingEngine.startCampaign('Utility Protocol Follow-up', { leadId: syncRes.data.id });
           console.log(`[Utility] 🚀 Campaign triggered for ${phone}`);
-        } else {
-          // Create lead if missing (critical for campaign)
-          const [newLead] = await db.insert(whatsappPreapplyLeads).values({
-            userPhone: phone,
-            applicantName: 'Utility Architect', // Placeholder
-            applicantEmail: `${phone}@whatsapp.user`, // Placeholder
-            status: 'pending',
-            answers: { source: 'utility_filter' }
-          }).returning();
-          if (newLead) {
-            await MarketingEngine.startCampaign('Utility Protocol Follow-up', { leadId: newLead.id });
-          }
         }
       } catch (e) { console.error('[Utility] Campaign Error:', e); }
     }
@@ -226,15 +219,17 @@ async function handleHighTicketFlow(message: string, step = 0, phone?: string): 
     if (phone) {
       try {
         const { MarketingEngine } = await import('@/lib/marketing/engine');
-        const { whatsappPreapplyLeads } = await import('@/db/schema');
+        
+        // Sync/Update client as High Ticket lead
+        const syncRes = await syncLeadAsClient({
+          whatsapp: phone,
+          source: 'founders_wa',
+          package: 'founders_program',
+          notes: 'Qualified High Ticket Founder via WA',
+        });
 
-        // Find lead (assuming previously created by landing or we create raw here?)
-        // Usually created by landing api. If not, we might miss the lead ID.
-        // For robustness, usually we search by phone.
-        const leadResults = await db.select().from(whatsappPreapplyLeads).where(eq(whatsappPreapplyLeads.userPhone, phone)).limit(1);
-
-        if (leadResults[0]) {
-          await MarketingEngine.startCampaign('Founders Nurture', { leadId: leadResults[0].id });
+        if (syncRes.success && syncRes.data) {
+          await MarketingEngine.startCampaign('Founders Nurture', { leadId: syncRes.data.id });
           console.log(`[Founders] 🚀 Campaign triggered for ${phone}`);
         }
       } catch (e) { console.error('[Founders] Campaign Error:', e); }
@@ -307,17 +302,19 @@ async function handleCreatorFlow(message: string, step = 0, phone?: string): Pro
     if (phone) {
       try {
         const { MarketingEngine } = await import('@/lib/marketing/engine');
-        const { whatsappPreapplyLeads } = await import('@/db/schema');
-        const leadResults = await db.select().from(whatsappPreapplyLeads).where(eq(whatsappPreapplyLeads.userPhone, phone)).limit(1);
+        
+        // Sync Lead
+        const syncRes = await syncLeadAsClient({
+          whatsapp: phone,
+          source: 'creator_filter_wa',
+          name: 'Creator Sovereign',
+          notes: 'Completed Start/Creator sovereignty filter',
+        });
 
-        let leadId = leadResults[0]?.id;
-        if (!leadId) {
-          const [newLead] = await db.insert(whatsappPreapplyLeads).values({
-            userPhone: phone, applicantName: 'Creator Sovereign', applicantEmail: `${phone}@whatsapp.user`, status: 'pending', answers: { source: 'start_filter' }
-          }).returning();
-          leadId = newLead?.id;
+        if (syncRes.success && syncRes.data) {
+          await MarketingEngine.startCampaign('Start Creator Nurture', { leadId: syncRes.data.id });
+          console.log(`[Creator] 🚀 Campaign triggered for ${phone}`);
         }
-        if (leadId) await MarketingEngine.startCampaign('Start Creator Nurture', { leadId });
       } catch (e) { console.error('[Creator] Campaign Error:', e); }
     }
 
@@ -344,14 +341,13 @@ async function handleCreatorFlow(message: string, step = 0, phone?: string): Pro
   return { handled: true, flowType: 'creator', response: `Continuemos... (Paso ${step})` };
 }
 
-// Deprecated Stub
+// Deprecated Stub - Redirect to Creator Flow
 async function handleEightQFlow(message: string, step = 0): Promise<FlowResult> {
-  await Promise.resolve();
   return {
     handled: true,
     flowType: 'creator',
-    response: `(Redirecting to Creator Flow)`,
-    action: 'redirect_utility' // Using this to trigger switch logic
+    response: `(Iniciando flujo de diagnóstico...)`,
+    action: 'redirect_creator'
   };
 }
 
@@ -471,35 +467,23 @@ async function handleProtocolApplicationFlow(message: string, step = 0, phone?: 
     if (phone) {
       try {
         const { MarketingEngine } = await import('@/lib/marketing/engine');
-        const { whatsappPreapplyLeads } = await import('@/db/schema');
-        const leadResults = await db.select().from(whatsappPreapplyLeads).where(eq(whatsappPreapplyLeads.userPhone, phone)).limit(1);
+        
+        // Sync Lead
+        const syncRes = await syncLeadAsClient({
+          whatsapp: phone,
+          source: 'protocol_app_wa',
+          notes: `Protocol Application - Budget: ${budgetLevel}`,
+          metadata: { budgetLevel }
+        });
 
-        if (leadResults[0]) {
-          // Start 'ApplyProtocol Hot Leads' (Day 0 Email)
-          await MarketingEngine.startCampaign('ApplyProtocol Hot Leads', { leadId: leadResults[0].id });
-        }
-      } catch (e) { console.error('[Protocol App] Campaign Trigger Error:', e); }
-    }
-
-    // 🚀 MARKETING AUTOMATION: Start Hot Leads Campaign
-    if (phone) {
-      try {
-        const { MarketingEngine } = await import('@/lib/marketing/engine');
-        const { whatsappPreapplyLeads } = await import('@/db/schema');
-
-        // Find lead ID for this phone
-        const leadResults = await db.select().from(whatsappPreapplyLeads).where(eq(whatsappPreapplyLeads.userPhone, phone)).limit(1);
-        const lead = leadResults[0];
-
-        if (lead) {
-          console.log(`[Protocol App] 🎯 Starting Hot Leads campaign for lead ${lead.id}`);
-          await MarketingEngine.startCampaign('ApplyProtocol Hot Leads', { leadId: lead.id });
+        if (syncRes.success && syncRes.data) {
+          console.log(`[Protocol App] 🎯 Starting Hot Leads campaign for lead ${syncRes.data.id}`);
+          await MarketingEngine.startCampaign('ApplyProtocol Hot Leads', { leadId: syncRes.data.id });
         } else {
-          console.warn(`[Protocol App] ⚠️ No lead found for phone ${phone}, cannot start campaign`);
+          console.warn(`[Protocol App] ⚠️ Could not sync lead for phone ${phone}, cannot start campaign`);
         }
       } catch (error) {
         console.error('[Protocol App] ❌ Failed to start marketing campaign:', error);
-        // Don't fail the user flow, just log
       }
     }
 
@@ -894,6 +878,18 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
 
     // Asignar flujo
     await assignFlow(phone, detectedFlow, payload.contactName || null);
+
+    // Sync WhatsApp lead to clients table for admin visibility
+    try {
+      await syncLeadAsClient({
+        whatsapp: phone,
+        name: payload.contactName || undefined,
+        source: `wa_${detectedFlow}`,
+        metadata: { flowType: detectedFlow, firstMessage: messageText.substring(0, 200) }
+      });
+    } catch (syncErr) {
+      console.warn('[SIMPLE-ROUTER] syncLeadAsClient failed (non-blocking):', syncErr);
+    }
 
     // Procesar mensaje inicial
     let result: FlowResult;

@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from "@/db";
-import { marketingExecutions, marketingCampaigns, users, whatsappPreapplyLeads } from "@/db/schema";
+import { marketingExecutions, marketingCampaigns, users, clients } from "@/db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { getAuth, isAdmin } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -62,17 +62,13 @@ export async function getMarketingDashboardStats() {
                     targetType = 'user';
                 }
             } else if (exec.leadId) {
-                // Assuming leadId points to whatsappPreapplyLeads table via ID (integer) or UUID string
-                // Schema said `leadId: varchar` and `whatsappPreapplyLeads.id: serial`.
-                // Need to cast if matching.
-                // If leadId is stored as string '123'
                 try {
-                    const l = await db.query.whatsappPreapplyLeads.findFirst({
-                        where: eq(whatsappPreapplyLeads.id, Number(exec.leadId)),
-                        columns: { applicantName: true, userPhone: true }
+                    const l = await db.query.clients.findFirst({
+                        where: eq(clients.id, exec.leadId),
+                        columns: { name: true, whatsapp: true, phone: true }
                     });
                     if (l) {
-                        targetName = l.applicantName || l.userPhone || 'Lead';
+                        targetName = l.name || l.whatsapp || l.phone || 'Lead';
                         targetType = 'lead';
                     }
                 } catch (e) {
