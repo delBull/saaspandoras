@@ -286,12 +286,19 @@ export default function EducationPage() {
                 {/* Action Button */}
                 <div className="pt-4 space-y-2">
                   {course.user_progress === 'completed' ? (
-                    <Button
-                      disabled
-                      className="w-full bg-green-600/20 text-green-400 border-green-600/50 cursor-not-allowed"
-                    >
-                      ✅ Completado
-                    </Button>
+                    <div className="space-y-2">
+                      <Link href={`/education/course/${course.id}`} className="w-full">
+                        <Button className="w-full bg-cyan-600 hover:bg-cyan-700">
+                          Revisar Curso
+                        </Button>
+                      </Link>
+                      <Button
+                        disabled
+                        className="w-full bg-green-600/20 text-green-400 border-green-600/50 cursor-default"
+                      >
+                        ✅ Completado
+                      </Button>
+                    </div>
                   ) : course.user_progress === 'in_progress' ? (
                     <div className="space-y-2">
                       <Link href={`/education/course/${course.id}`}>
