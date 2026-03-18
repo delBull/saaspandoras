@@ -110,9 +110,10 @@ export default function EducationPage() {
             : course
         ));
 
-        // Show success message with points earned
-        toast.success(`¡Curso completado! +100 tokens ganados`, {
-          description: "Felicidades por completar este curso de Web3"
+        // Show success message with actual XP + credits earned
+        const completed = courses.find(c => c.id === courseId);
+        toast.success(`¡Curso completado! +${completed?.points ?? 100} XP`, {
+          description: `+${(completed as any)?.creditsReward ?? 10} Harvest Credits acreditados a tu perfil`
         });
       } else {
         console.error('Error completing course:', data.message);
@@ -285,12 +286,19 @@ export default function EducationPage() {
                 {/* Action Button */}
                 <div className="pt-4 space-y-2">
                   {course.user_progress === 'completed' ? (
-                    <Button
-                      disabled
-                      className="w-full bg-green-600/20 text-green-400 border-green-600/50 cursor-not-allowed"
-                    >
-                      ✅ Completado
-                    </Button>
+                    <div className="space-y-2">
+                      <Link href={`/education/course/${course.id}`} className="w-full">
+                        <Button className="w-full bg-cyan-600 hover:bg-cyan-700">
+                          Revisar Curso
+                        </Button>
+                      </Link>
+                      <Button
+                        disabled
+                        className="w-full bg-green-600/20 text-green-400 border-green-600/50 cursor-default"
+                      >
+                        ✅ Completado
+                      </Button>
+                    </div>
                   ) : course.user_progress === 'in_progress' ? (
                     <div className="space-y-2">
                       <Link href={`/education/course/${course.id}`}>
@@ -304,7 +312,7 @@ export default function EducationPage() {
                         size="sm"
                       >
                         <TrophyIcon className="w-4 h-4 mr-2" />
-                        Marcar Completado (+100 tokens)
+                        Marcar Completado (+{course.points} XP)
                       </Button>
                     </div>
                   ) : (

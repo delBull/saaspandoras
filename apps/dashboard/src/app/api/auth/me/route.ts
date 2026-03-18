@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME
 export const runtime = "nodejs";
@@ -36,16 +37,63 @@ export async function GET(request: Request) {
             });
         }
 
-        const secret = process.env.JWT_SECRET || process.env.JWT_PRIVATE_KEY;
+        // Function to forcibly reconstruct a valid PEM string
+        const reconstructPEM = (keyString: string, type: 'PRIVATE' | 'PUBLIC'): string => {
+            if (!keyString) return keyString;
+            
+            // 1. Remove obvious invalid wrapping quotes if they exist
+            let cleanKey = keyString.replace(/^["']|["']$/g, '');
+
+            // 2. Decode Base64 if it's base64 encoded (starts with LS0)
+            if (cleanKey.startsWith('LS0tLS1')) {
+                console.log(`✅ [Dashboard /api/auth/me] Decoding Base64 ${type} KEY...`);
+                cleanKey = Buffer.from(cleanKey, 'base64').toString('utf-8');
+            }
+
+            // 3. Remove all headers, footers, spaces, and newlines to get pure base64 core
+            const base64Core = cleanKey
+                .replace(/-----BEGIN.*?-----/g, '')
+                .replace(/-----END.*?-----/g, '')
+                .replace(/\\n/g, '')
+                .replace(/\s+/g, '');
+
+            // 4. Chunk into 64-character lines (RFC 1421 standard)
+            const chunks = base64Core.match(/.{1,64}/g) || [];
+            const formattedCore = chunks.join('\n');
+
+            // 5. Try PKCS#1 wrapper first
+            const pkcs1 = `-----BEGIN RSA ${type} KEY-----\n${formattedCore}\n-----END RSA ${type} KEY-----\n`;
+            try {
+                if (type === 'PRIVATE') crypto.createPrivateKey(pkcs1);
+                else crypto.createPublicKey(pkcs1);
+                return pkcs1; 
+            } catch (e1) {
+                // 6. Fallback to PKCS#8 (PRIVATE) or SPKI (PUBLIC) wrapper
+                const pkcs8 = `-----BEGIN ${type} KEY-----\n${formattedCore}\n-----END ${type} KEY-----\n`;
+                try {
+                    if (type === 'PRIVATE') crypto.createPrivateKey(pkcs8);
+                    else crypto.createPublicKey(pkcs8);
+                    return pkcs8; 
+                } catch (e2: any) {
+                    throw new Error(`RSA_FORMAT_ERROR: Rejecting key. Both PKCS1 and PKCS8 wrappers failed validation. (Internal decoder error)`);
+                }
+            }
+        };
+
+        const hasPublicKey = !!process.env.JWT_PUBLIC_KEY;
+        const secret = hasPublicKey ? reconstructPEM(process.env.JWT_PUBLIC_KEY!, 'PUBLIC') : process.env.JWT_SECRET;
+        
         if (!secret) {
-            console.error("❌ JWT_SECRET is not defined in environment variables");
+            console.error("❌ JWT Configuration Error: Missing Secret/Public Key");
             return NextResponse.json({ error: "Server Configuration Error" }, { status: 500 });
         }
 
         let payload: any;
         try {
             // Unify with login: use jsonwebtoken syntax
-            payload = jwt.verify(token, secret);
+            payload = jwt.verify(token, secret, {
+                algorithms: hasPublicKey ? ['RS256'] : ['HS256']
+            });
             console.log("✅ [Dashboard /api/auth/me] Verified session for:", payload.address || payload.sub);
         } catch (e) {
             const error = e as Error;

@@ -244,12 +244,26 @@ export function NFTManager() {
                 abi: EXTENDED_ABI,
             });
 
-            const transaction = prepareContractCall({
-                contract: selectedContract,
-                method: "mintWithPayment",
-                params: [1n],
-                value: 0n
-            });
+            const pass = availablePasses.find(p => p.contractAddress === selectedPassAddress);
+            const isIdentity = (pass as any)?.nftType === 'identity';
+            const isSystemPass = pass?.id === 'system-apply-pass';
+
+            let transaction;
+            if (isIdentity || isSystemPass) {
+                // Identity tokens and the System Pass (which uses PandorasKey) require `adminMint`
+                transaction = prepareContractCall({
+                    contract: selectedContract,
+                    method: "adminMint",
+                    params: [airdropAddress]
+                });
+            } else {
+                transaction = prepareContractCall({
+                    contract: selectedContract,
+                    method: "mintWithPayment",
+                    params: [1n],
+                    value: 0n
+                });
+            }
 
             const selectedPass = availablePasses.find(p => p.contractAddress === selectedPassAddress);
             const passTitle = selectedPass?.title || 'NFT Pass';

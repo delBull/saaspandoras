@@ -56,6 +56,19 @@ export const PANDORAS_KEY_ABI = [
     "inputs": [
       {
         "internalType": "address",
+        "name": "to",
+        "type": "address"
+      }
+    ],
+    "name": "adminMint",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
         "name": "_address",
         "type": "address"
       }

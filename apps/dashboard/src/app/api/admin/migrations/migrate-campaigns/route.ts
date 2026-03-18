@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/db"; // Adjust import
 import { marketingCampaigns, marketingExecutions } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { getAuth, isAdmin } from "@/lib/auth";
+import { headers } from "next/headers";
 
 // Define the campaigns to migrate (Extracted from MarketingEngine hardcoded maps)
 const CAMPAIGNS_TO_MIGRATE = [
@@ -111,6 +113,11 @@ const CAMPAIGNS_TO_MIGRATE = [
 
 export async function GET() {
     try {
+        const { session } = await getAuth(await headers());
+        if (!session?.userId || !await isAdmin(session.userId)) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+        }
+
         const results = [];
         for (const camp of CAMPAIGNS_TO_MIGRATE) {
             // Check if exists

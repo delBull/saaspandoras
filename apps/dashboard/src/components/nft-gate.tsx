@@ -14,26 +14,125 @@ import { MintingProgressModal } from "./nft-gating/minting-progress-modal";
 import { SuccessNFTCard } from "./nft-gating/success-nft-card";
 import { useToast } from "@saasfly/ui/use-toast";
 import { Loader2 } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 
+/**
+ * 🚨 CRITICAL COMPONENT: NFT GATE (WELCOME / FREE MINT SCREEN) 🚨
+ * ============================================================================
+ * WARNING: CAUTION WHEN MODIFYING THIS COMPONENT.
+ * 
+ * This component is the bridge between a successful thirdweb login and entering
+ * the dashboard. It checks if the user has the "Pandora's Key" NFT. If not,
+ * it auto-mints it on component mount using `handleMint`.
+ * 
+ * ⚠️ KEY LOGIC TO PRESERVE ⚠️
+ * 1. DO NOT call `login()` after a successful mint. This will cause the 
+ *    application to prompt the user to sign a SIWE message AGAIN (UX Failure).
+ * 2. ALWAYS call `refreshSession()` and then `router.push("/")`. This hits the
+ *    silent backend refresh route to verify the chain and issue a new JWT.
+ * 3. The `catch` block MUST catch "Max per wallet reached" and "Already owned",
+ *    and treat it as a SUCCESS. This rescues users who already own the NFT
+ *    but are stuck with a stale JWT cookie.
+ * 
+ * ============================================================================
+ */
 export function NFTGate({ children }: { children: React.ReactNode }) {
   const account = useActiveAccount();
-  const { user, login, state } = useAuth();
+  const { user, login, state, refreshSession } = useAuth();
   const isAuthLoading = state !== "authenticated" && state !== "guest";
   const pathname = usePathname();
+  const router = useRouter();
   const { mutate: sendTransaction } = useSendTransaction();
   const { toast } = useToast();
 
   const [gateStatus, setGateStatus] = useState("idle");
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const hasStartedProcessing = useRef(false);
+  const hasAttemptedAutoMint = useRef(false);
+
+  const contract = getContract({
+    client,
+    chain: config.chain,
+    address: config.nftContractAddress,
+    abi: PANDORAS_KEY_ABI,
+  });
+
+  const handleMint = () => {
+    if (hasStartedProcessing.current) return;
+    hasStartedProcessing.current = true;
+
+    toast({
+      title: "Minting Access Key...",
+      description: "Please confirm transaction in your wallet.",
+    });
+
+    try {
+      const transaction = prepareContractCall({
+        contract,
+        method: "freeMint",
+        params: [],
+      });
+
+      setGateStatus("awaiting_confirmation");
+
+      sendTransaction(transaction, {
+        onSuccess: (txResult) => {
+          console.log("✅ Mint Successful:", txResult);
+          setGateStatus("success");
+          setShowSuccessAnimation(true);
+
+          toast({ title: "Verifying Access..." });
+          setTimeout(() => {
+            refreshSession().catch(e => console.error("Re-login failed", e));
+          }, 4000);
+        },
+        onError: (error) => {
+          console.error("Mint Error:", error);
+          const msg = error instanceof Error ? error.message : "Unknown error";
+
+          if (msg.includes("already minted") || msg.toLowerCase().includes("max per wallet") || msg.toLowerCase().includes("transfer prohibited")) {
+            // 🚨 CRITICAL FALLBACK: Do NOT remove this. Rescues owners with stale JWTs.
+            toast({ title: "Acceso Verificado", description: "Entrando a SaaS... 🚀" });
+            setGateStatus("has_key");
+            refreshSession().then(() => {
+              router.refresh();
+              router.push("/");
+            }).catch(e => console.error(e));
+          } else {
+            toast({ title: "Mint Failed", description: "Please try again.", variant: "destructive" });
+            setGateStatus("error");
+          }
+          hasStartedProcessing.current = false;
+        },
+      });
+    } catch (e) {
+      console.error(e);
+      hasStartedProcessing.current = false;
+    }
+  };
+
+  useEffect(() => {
+    if (!account || !user || user?.hasAccess || hasAttemptedAutoMint.current) return;
+    
+    hasAttemptedAutoMint.current = true;
+    handleMint();
+  }, [account, user]);
+
+
 
   // ℹ️ Auto-login is handled by AuthProvider.useEffect.
+
   // NFTGate just reads isAuthLoading and user — no duplicate login() call here.
 
-  // If user has access, render children immediately
+  // If user has access, render children immediately OR redirect if stuck on root layout
   if (user?.hasAccess) {
+    // If the gate is somehow showing "Get Free Key" but they have access, 
+    // force a router refresh and render children.
+    if (gateStatus === "has_key") {
+      router.refresh();
+      router.push("/");
+    }
     return <>{children}</>;
   }
 
@@ -94,63 +193,8 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
   // If we differ to here, it means: User is Logged In (user exists) BUT hasAccess is false.
   // Show Minting UI.
 
-  const contract = getContract({
-    client,
-    chain: config.chain,
-    address: config.nftContractAddress,
-    abi: PANDORAS_KEY_ABI,
-  });
 
-  const handleMint = () => {
-    if (hasStartedProcessing.current) return;
-    hasStartedProcessing.current = true;
 
-    toast({
-      title: "Minting Access Key...",
-      description: "Please confirm transaction in your wallet.",
-    });
-
-    try {
-      const transaction = prepareContractCall({
-        contract,
-        method: "freeMint",
-        params: [],
-      });
-
-      setGateStatus("awaiting_confirmation");
-
-      sendTransaction(transaction, {
-        onSuccess: (txResult) => {
-          console.log("✅ Mint Successful:", txResult);
-          setGateStatus("success");
-          setShowSuccessAnimation(true);
-
-          // Refresh Session (Re-Login to update JWT with hasAccess: true)
-          // Wait a bit for indexing?
-          toast({ title: "Verifying Access..." });
-          setTimeout(() => {
-            login().catch(e => console.error("Re-login failed", e));
-          }, 4000);
-        },
-        onError: (error) => {
-          console.error("Mint Error:", error);
-          const msg = error instanceof Error ? error.message : "Unknown error";
-
-          if (msg.includes("already minted")) {
-            toast({ title: "Already owned", description: "Verifying access..." });
-            login();
-          } else {
-            toast({ title: "Mint Failed", description: "Please try again.", variant: "destructive" });
-            setGateStatus("error");
-          }
-          hasStartedProcessing.current = false;
-        },
-      });
-    } catch (e) {
-      console.error(e);
-      hasStartedProcessing.current = false;
-    }
-  };
 
   if (gateStatus === "success" && showSuccessAnimation) {
     return <SuccessNFTCard onAnimationComplete={() => {

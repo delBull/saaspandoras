@@ -34,9 +34,11 @@ export function TransactionHistory() {
   if (!account) return null;
 
   const getIcon = (type: string) => {
-    if (type.includes('project') || type.includes('deployed')) return <ShieldCheck className="w-5 h-5 text-purple-400" />;
-    if (type.includes('investment') || type.includes('deposit')) return <CoinsIcon className="w-5 h-5 text-green-400" />;
-    if (type.includes('post') || type.includes('forum')) return <MessageSquare className="w-5 h-5 text-blue-400" />;
+    const t = type.toLowerCase();
+    if (t.includes('project') || t.includes('deployed') || t.includes('submitted')) return <ShieldCheck className="w-5 h-5 text-purple-400" />;
+    if (t.includes('investment') || t.includes('deposit') || t.includes('purchased')) return <CoinsIcon className="w-5 h-5 text-green-400" />;
+    if (t.includes('faucet')) return <CoinsIcon className="w-5 h-5 text-yellow-400" />;
+    if (t.includes('post') || t.includes('forum')) return <MessageSquare className="w-5 h-5 text-blue-400" />;
     return <ArrowRightLeft className="w-5 h-5 text-gray-400" />;
   };
 
@@ -62,7 +64,15 @@ export function TransactionHistory() {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-white capitalize">
-                    {event.type.replace(/_/g, ' ')}
+                    {event.type === 'FAUCET_CLAIM' ? 'Reclamación de Faucet' : 
+                     event.type === 'artifact_purchased' ? 'Compra de Artefacto' : 
+                     event.type === 'daily_login' ? 'Login Diario' : 
+                     event.type.replace(/_/g, ' ')}
+                    {event.protocolName && (
+                        <span className="ml-2 text-[10px] text-zinc-500 font-normal">
+                          en {event.protocolName}
+                        </span>
+                    )}
                   </p>
                   <p className="text-xs text-zinc-500">
                     {formatDistanceToNow(new Date(event.createdAt), { addSuffix: true, locale: es })}

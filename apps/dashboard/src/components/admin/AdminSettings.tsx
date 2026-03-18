@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { Input } from "@saasfly/ui/input";
 import { Button } from "@/components/ui/button";
@@ -91,6 +91,9 @@ export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: Ad
   const [editingAliasId, setEditingAliasId] = useState<number | null>(null);
   const [editingAliasValue, setEditingAliasValue] = useState("");
   const [showGuideModal, setShowGuideModal] = useState(false);
+  const [gamificationRules, setGamificationRules] = useState<any[]>([]);
+  const [riskLogs, setRiskLogs] = useState<any[]>([]);
+  const [isGamificationLoading, setIsGamificationLoading] = useState(false);
 
   const handleAddAdmin = async () => {
     if (!/^0x[a-fA-F0-9]{40}$/.test(newAddress)) {
@@ -174,6 +177,73 @@ export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: Ad
   const handleCancelEditAlias = () => {
     setEditingAliasId(null);
     setEditingAliasValue("");
+  };
+
+  const fetchGamificationData = useCallback(async () => {
+    if (!effectiveIsSuperAdmin || !walletAddress) return;
+    setIsGamificationLoading(true);
+    try {
+      const [rulesRes, logsRes] = await Promise.all([
+        fetch("/api/admin/gamification/rules", {
+          headers: { 'x-wallet-address': walletAddress }
+        }),
+        fetch("/api/admin/gamification/logs?risk=0.5", {
+          headers: { 'x-wallet-address': walletAddress }
+        })
+      ]);
+
+      if (rulesRes.ok) setGamificationRules(await rulesRes.json());
+      if (logsRes.ok) setRiskLogs(await logsRes.json());
+    } catch (error) {
+      console.error("Failed to fetch gamification data", error);
+    } finally {
+      setIsGamificationLoading(false);
+    }
+  }, [effectiveIsSuperAdmin, walletAddress]);
+
+  useEffect(() => {
+    fetchGamificationData();
+  }, [fetchGamificationData]);
+
+  const handleSeedRules = async () => {
+    if (!walletAddress) return;
+    setIsGamificationLoading(true);
+    try {
+      const res = await fetch("/api/admin/gamification/rules/seed", {
+        method: "POST",
+        headers: { 'x-wallet-address': walletAddress }
+      });
+      if (res.ok) {
+        toast.success("Reglas inicializadas correctamente");
+        fetchGamificationData();
+      } else {
+        toast.error("Error al inicializar reglas");
+      }
+    } catch (error) {
+      toast.error("Error de conexión");
+    } finally {
+      setIsGamificationLoading(false);
+    }
+  };
+
+  const handleToggleRule = async (ruleId: string, isActive: boolean) => {
+    if (!walletAddress) return;
+    try {
+      const res = await fetch(`/api/admin/gamification/rules/${ruleId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          'x-wallet-address': walletAddress
+        },
+        body: JSON.stringify({ isActive })
+      });
+      if (res.ok) {
+        toast.success("Regla actualizada");
+        setGamificationRules(prev => prev.map(r => r.id === ruleId ? { ...r, isActive } : r));
+      }
+    } catch (error) {
+      toast.error("Error al actualizar regla");
+    }
   };
 
   const handleUpdateAlias = async () => {
@@ -633,6 +703,171 @@ export function AdminSettings({ initialAdmins, isSuperAdmin, currentWallet }: Ad
           </div>
         </div>
       </div>
+
+      {/* --- GAMIFICATION ENGINE CONTROL SECTION --- */}
+      {effectiveIsSuperAdmin && (
+        <div className="border-t-2 border-zinc-700/50 pt-8 mt-8">
+          <div className="bg-gradient-to-r from-zinc-900 to-black border-2 border-lime-900/30 rounded-lg p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <Target className="w-6 h-6 text-lime-400" />
+                <div>
+                  <h3 className="text-xl font-bold text-white uppercase tracking-tighter italic">Gamification Engine Control</h3>
+                  <p className="text-xs text-gray-400 font-mono uppercase opacity-70">Super Admin Master Overrides</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={fetchGamificationData}
+                  variant="outline"
+                  size="sm"
+                  className="bg-zinc-800 border-zinc-700 text-xs gap-2"
+                  disabled={isGamificationLoading}
+                >
+                  <Activity className={`w-3 h-3 ${isGamificationLoading ? 'animate-spin' : ''}`} />
+                  Sync
+                </Button>
+                <Button
+                  onClick={handleSeedRules}
+                  variant="outline"
+                  size="sm"
+                  className="bg-lime-500/10 border-lime-500/20 text-lime-400 hover:bg-lime-500 hover:text-black text-xs gap-2"
+                  disabled={isGamificationLoading}
+                >
+                  <PlusCircle className="w-3 h-3" />
+                  Seed Rules
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              {/* Rules Management */}
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-black uppercase text-gray-500 tracking-widest flex items-center gap-2">
+                  <Settings className="w-3 h-3" />
+                  Active Rules Configuration
+                </h4>
+                <div className="bg-zinc-950/50 border border-zinc-800 rounded-xl overflow-hidden">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-zinc-900/80 border-b border-zinc-800 text-gray-500 uppercase text-[9px] font-bold">
+                      <tr>
+                        <th className="px-4 py-3">Rule ID</th>
+                        <th className="px-4 py-3">Rewards</th>
+                        <th className="px-4 py-3 text-right">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-800/50">
+                      {gamificationRules.length === 0 ? (
+                        <tr>
+                          <td colSpan={3} className="px-4 py-12 text-center text-gray-600 italic">
+                            No rules found. Please seed.
+                          </td>
+                        </tr>
+                      ) : (
+                        gamificationRules.map(rule => (
+                          <tr key={rule.id} className="hover:bg-white/5 transition-colors">
+                            <td className="px-4 py-4">
+                              <div className="font-bold text-white">{rule.ruleId}</div>
+                              <div className="text-[10px] text-gray-500">{rule.trigger}</div>
+                            </td>
+                            <td className="px-4 py-4">
+                              <div className="flex gap-2">
+                                <span className="text-blue-400 font-mono">{rule.xpReward} XP</span>
+                                <span className="text-yellow-500 font-mono">{rule.creditsReward} CR</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-4 text-right">
+                              <button
+                                onClick={() => handleToggleRule(rule.id, !rule.isActive)}
+                                className={`px-3 py-1 rounded-full text-[9px] font-bold uppercase transition-all ${rule.isActive ? 'bg-lime-400/20 text-lime-400 border border-lime-400/30' : 'bg-red-400/10 text-red-400 border border-red-400/20 opacity-50'}`}
+                              >
+                                {rule.isActive ? 'Enabled' : 'Disabled'}
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Risk Audit Log */}
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-black uppercase text-gray-500 tracking-widest flex items-center gap-2 text-red-400/80">
+                  <ShieldCheck className="w-3 h-3" />
+                  High Risk Behavioral Audit
+                </h4>
+                <div className="bg-zinc-950/50 border border-zinc-800 rounded-xl p-4 max-h-[400px] overflow-y-auto space-y-3 custom-scrollbar">
+                  {riskLogs.length === 0 ? (
+                    <div className="text-center py-12 text-gray-600 italic text-xs">
+                      No high-risk activity detected. System clear.
+                    </div>
+                  ) : (
+                    riskLogs.map(log => (
+                      <div key={log.id} className="p-3 bg-zinc-900/50 rounded-lg border border-zinc-700/50 flex flex-col gap-2 relative overflow-hidden group">
+                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${parseFloat(log.riskScore) > 0.8 ? 'bg-red-500' : 'bg-yellow-500'}`} />
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black text-white">{log.actionType}</span>
+                          <span className="text-[10px] font-mono font-black text-red-500">SCORE: {log.riskScore}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] text-gray-500 font-mono">
+                          <span>USR: {truncateWallet(log.userId || log.telegramUserId || 'UNKNOWN', 8)}</span>
+                          <span>{new Date(log.createdAt).toLocaleString()}</span>
+                        </div>
+                        <div className="flex gap-2 mt-1">
+                          <Button
+                            size="sm"
+                            className="h-6 text-[9px] bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white border border-red-500/20"
+                            onClick={() => {
+                              if (confirm("¿Marcar este evento como FRAUDE y anular recompensas?")) {
+                                toast.info("Funcionalidad en desarrollo: Anulando recompensas...");
+                              }
+                            }}
+                          >
+                            Mark Fraud
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="h-6 text-[9px] bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white border border-blue-500/20"
+                            onClick={async () => {
+                              const amount = prompt("Cantidad de créditos a desbloquear manualmente para este usuario:");
+                              if (!amount) return;
+                              try {
+                                const res = await fetch("/api/admin/gamification/audit/unlock", {
+                                  method: "POST",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                    'x-wallet-address': walletAddress!
+                                  },
+                                  body: JSON.stringify({
+                                    telegramUserId: log.telegramUserId || log.userId,
+                                    amount: parseInt(amount)
+                                  })
+                                });
+                                if (res.ok) {
+                                  toast.success("Créditos desbloqueados exitosamente");
+                                } else {
+                                  const err = await res.json();
+                                  toast.error(`Error: ${err.error}`);
+                                }
+                              } catch (e) {
+                                toast.error("Error de conexión");
+                              }
+                            }}
+                          >
+                            Release Credits
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <MultiTenantSection isSuperAdmin={effectiveIsSuperAdmin} />
     </div >

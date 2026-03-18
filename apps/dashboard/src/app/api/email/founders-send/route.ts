@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
-import { db } from "@/db";
-import { whatsappPreapplyLeads } from "@/db/schema";
 import { Resend } from 'resend';
-import { sql } from 'drizzle-orm';
+import { notifyNewLead } from '@/lib/discord';
+import { syncLeadAsClient } from '@/actions/leads';
 // Import a specific Founders Template if exists, otherwise reuse generic or simple html
 import PandorasWelcomeEmail from '@/emails/creator-email';
 
@@ -20,23 +19,19 @@ export async function POST(request: Request) {
 
         console.log(`📧 Processing Founders Inquiry for: ${email}`);
 
-        // 1. Sync Lead (High Ticket)
+        // 1. Sync Lead as Client (unified)
         try {
-            await db.insert(whatsappPreapplyLeads).values({
-                applicantEmail: email,
-                applicantName: name || 'Founder',
-                userPhone: email, // Placeholder
-                status: 'pending',
-                answers: {
+            await syncLeadAsClient({
+                email,
+                name: name || 'Founder',
+                source: source || 'founders_landing',
+                notes: 'High Ticket Founder Inquiry (Capital Ready)',
+                metadata: {
                     tier: 'founders_premium',
                     source: source || 'founders_landing',
-                    projectDescription: 'High Ticket Founder Inquiry (Capital Ready)'
                 }
-            }).onConflictDoUpdate({
-                target: whatsappPreapplyLeads.userPhone,
-                set: { updatedAt: new Date(), answers: sql`jsonb_set(whatsapp_preapply_leads.answers, '{projectDescription}', '"Re-inquiry Founders"'::jsonb)` }
             });
-            console.log('✅ Lead synced to DB');
+            console.log('✅ Lead synced to clients table');
         } catch (e) {
             console.warn('⚠️ DB Sync warning:', e);
         }
@@ -46,12 +41,13 @@ export async function POST(request: Request) {
             const { error } = await resend.emails.send({
                 from: FROM_EMAIL,
                 to: [email],
-                subject: 'Pandora’s Founders Inner Circle — Confirmación de Interés',
+                subject: 'Pandora\'s Founders Inner Circle — Confirmación de Interés',
                 react: PandorasWelcomeEmail({
                     email,
                     name: 'Founder',
                     source: 'founders-program',
                 }),
+                tags: [{ name: 'audience', value: 'founders' }]
             });
 
             if (error) throw error;
@@ -61,7 +57,22 @@ export async function POST(request: Request) {
             return NextResponse.json({ message: 'Error sending email' }, { status: 500 });
         }
 
+        // 3. Notify Discord (High Ticket Lead)
+        try {
+            await notifyNewLead(
+                name || 'Founder Premium',
+                email,
+                10, // Fixed high score for founders
+                'Founders Inner Circle',
+                `High Ticket Inquiry from ${source || 'Founders Landing'}. Project: ${name || 'N/A'}`
+            );
+            console.log('👾 Discord notification sent (Founders)');
+        } catch (discordError) {
+            console.error('❌ Discord Error:', discordError);
+        }
+
         return NextResponse.json({ success: true });
+
 
     } catch (error) {
         console.error('❌ Server Error:', error);

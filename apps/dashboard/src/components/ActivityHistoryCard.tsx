@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 // Activity interface
 interface ActivityItem {
   id: string;
-  type: 'login' | 'referral' | 'other';
+  type: 'login' | 'referral' | 'faucet' | 'artifact' | 'other';
   points: number;
   reason: string;
   category: string;
@@ -31,11 +31,26 @@ export function ActivityHistoryCard({ walletAddress }: ActivityHistoryCardProps)
 
       setIsLoading(true);
       try {
-        const response = await fetch(`/api/gamification/activity/${walletAddress}`);
+        // Fetch from the unified history API instead of just gamification activity
+        const response = await fetch(`/api/user/history?wallet=${walletAddress}&limit=20`);
         if (response.ok) {
-          const data = (await response.json()) as { activities?: ActivityItem[] };
-          const activityData = (data as { activities?: ActivityItem[] }).activities ?? [];
-          setRealActivity(activityData);
+          const data = await response.json();
+          // Map history events to ActivityItem interface
+          const mappedActivities = (data.events || []).map((event: any) => ({
+            id: event.id,
+            type: event.type.includes('referral') ? 'referral' : 
+                  (event.type.includes('login') ? 'login' : 
+                  (event.type.includes('faucet') ? 'faucet' : 'other')),
+            points: event.points || 0,
+            reason: event.type === 'FAUCET_CLAIM' ? ' RECLAMACIÓN DE FAUCET' : 
+                    event.type === 'artifact_purchased' ? 'COMPRA DE ARTEFACTO' :
+                    event.type.replace(/_/g, ' ').toUpperCase(),
+            category: event.type,
+            createdAt: new Date(event.createdAt),
+            date: new Date(event.createdAt).toLocaleDateString(),
+            time: new Date(event.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          }));
+          setRealActivity(mappedActivities);
         } else {
           console.warn('Failed to fetch activity data');
           setRealActivity([]);
@@ -75,14 +90,17 @@ export function ActivityHistoryCard({ walletAddress }: ActivityHistoryCardProps)
                   <div className="flex items-center gap-3">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                       activity.type === 'referral' ? 'bg-green-500/20' :
-                      activity.type === 'login' ? 'bg-blue-500/20' : 'bg-purple-500/20'
+                      activity.type === 'login' ? 'bg-blue-500/20' : 
+                      activity.type === 'faucet' ? 'bg-yellow-500/20' : 'bg-purple-500/20'
                     }`}>
                       <span className={`text-sm ${
                         activity.type === 'referral' ? 'text-green-400' :
-                        activity.type === 'login' ? 'text-blue-400' : 'text-purple-400'
+                        activity.type === 'login' ? 'text-blue-400' : 
+                        activity.type === 'faucet' ? 'text-yellow-400' : 'text-purple-400'
                       }`}>
                         {activity.type === 'referral' ? '👥' :
-                         activity.type === 'login' ? '🔗' : '🎯'}
+                         activity.type === 'login' ? '🔗' : 
+                         activity.type === 'faucet' ? '💧' : '🎯'}
                       </span>
                     </div>
                     <div>
@@ -97,11 +115,11 @@ export function ActivityHistoryCard({ walletAddress }: ActivityHistoryCardProps)
                       +{activity.points} tokens
                     </span>
                     <div className={`px-2 py-1 rounded text-xs ${
-                      activity.category === 'referral_made' ? 'bg-green-900/50 text-green-400' :
+                      (activity.category === 'referral_made' || activity.category === 'referral_joined' || activity.category === 'referral_completed') ? 'bg-green-900/50 text-green-400' :
                       activity.category === 'daily_login' ? 'bg-blue-900/50 text-blue-400' :
                       'bg-purple-900/50 text-purple-400'
                     }`}>
-                      {activity.category === 'referral_made' ? 'Referido' :
+                      {(activity.category === 'referral_made' || activity.category === 'referral_joined' || activity.category === 'referral_completed') ? 'Referido' :
                        activity.category === 'daily_login' ? 'Login' : 'Especial'}
                     </div>
                   </div>

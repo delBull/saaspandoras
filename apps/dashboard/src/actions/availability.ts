@@ -4,6 +4,8 @@ import { db } from "@/db";
 import { administrators, schedulingSlots } from "@/db/schema";
 import { eq, and, gte } from "drizzle-orm";
 import { addDays, format, isSameDay, setHours, setMinutes, startOfDay } from "date-fns";
+import { getAuth, isAdmin } from "@/lib/auth";
+import { headers } from "next/headers";
 
 export interface DayConfig {
     enabled: boolean;
@@ -36,6 +38,11 @@ const MAP_DAYS: Record<string, number> = {
 
 export async function getAdminAvailability(userId: string) {
     try {
+        const { session } = await getAuth(await headers());
+        if (!session?.userId || !await isAdmin(session.userId)) {
+            throw new Error("Unauthorized");
+        }
+
         const admin = await db.query.administrators.findFirst({
             where: eq(administrators.walletAddress, userId)
             // NOTE: schema says walletAddress is the unique identifier used effectively as ID in many places, 
@@ -58,6 +65,11 @@ export async function getAdminAvailability(userId: string) {
 
 export async function saveAvailability(userId: string, config: AvailabilityConfig) {
     try {
+        const { session } = await getAuth(await headers());
+        if (!session?.userId || !await isAdmin(session.userId)) {
+            throw new Error("Unauthorized");
+        }
+
         // 1. Update Admin Config
         await db.update(administrators)
             .set({ availability: config })

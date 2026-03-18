@@ -1,7 +1,8 @@
 
 import { NextResponse } from 'next/server';
-import { db } from "~/db";
-import { projects, whatsappPreapplyLeads } from "@/db/schema";
+import { db } from "@/db";
+import { projects } from "@/db/schema";
+import { syncLeadAsClient } from '@/actions/leads';
 import { sql } from "drizzle-orm";
 // import ProtocolApplicationEmail from '@/emails/protocol-application'; // Dynamic import used instead
 import { sendWhatsAppMessage } from '@/lib/whatsapp/utils/client';
@@ -202,31 +203,19 @@ export async function POST(request: Request) {
                         console.log('📱 WhatsApp welcome sent');
                     }
 
-                    // Sync with Marketing Engine (WhatsApp Leads Table)
+                    // Sync with Unified Client/Lead System
                     try {
-                        await db.insert(whatsappPreapplyLeads).values({
-                            userPhone: phone,
-                            applicantName: projectName || 'Lead',
-                            applicantEmail: contactEmail,
-                            status: 'pending',
-                            answers: {
-                                projectDescription: fullDescription,
-                                source: 'protocol_landing',
-                                rawStats: { score, suggestedPackage }
-                            }
-                        }).onConflictDoUpdate({
-                            target: whatsappPreapplyLeads.userPhone,
-                            set: {
-                                updatedAt: new Date(),
-                                answers: sql`jsonb_set(
-                                jsonb_set(whatsapp_preapply_leads.answers, '{projectDescription}', ${JSON.stringify(fullDescription)}::jsonb),
-                                '{source}', '"protocol_landing"'::jsonb
-                            )`
-                            }
+                        await syncLeadAsClient({
+                            whatsapp: phone,
+                            name: projectName || contactHandle || 'Lead',
+                            email: contactEmail || undefined,
+                            source: 'protocol_landing',
+                            notes: fullDescription,
+                            metadata: { score, suggestedPackage, body }
                         });
-                        console.log('✅ Lead synced to Marketing Engine (whatsappPreapplyLeads)');
+                        console.log('✅ Lead synced to Unified Client System');
                     } catch (marketingError) {
-                        console.error('❌ Failed to sync lead to Marketing DB:', marketingError);
+                        console.error('❌ Failed to sync lead to Client DB:', marketingError);
                     }
 
                 } catch (waError) {

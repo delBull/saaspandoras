@@ -77,6 +77,16 @@ export const users = pgTable("users", {
   kycCompleted: boolean("kycCompleted").default(false).notNull(),
   kycData: jsonb("kycData"),
 
+  // Telegram Standalone Identity support
+  username: varchar("username", { length: 255 }),
+  firstName: varchar("first_name", { length: 255 }),
+  lastName: varchar("last_name", { length: 255 }),
+  isFrozen: boolean("is_frozen").default(false).notNull(),
+  acquisitionSource: varchar("acquisition_source", { length: 255 }),
+  referrerCoreUserId: varchar("referrer_core_user_id", { length: 255 }),
+  lastHarvestAt: timestamp("last_harvest_at"),
+  tags: jsonb("tags").default([]),
+
   connectionCount: integer("connectionCount").default(1).notNull(),
   lastConnectionAt: timestamp("lastConnectionAt").defaultNow(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -272,6 +282,9 @@ export const eventTypeEnum = pgEnum("event_type", [
   "user_registered",
   "daily_login",
   "referral_made",
+  "referral_joined",
+  "referral_completed",
+  "onboarding_tour_completed",
   "profile_completed",
   "community_post",
   "course_started",
@@ -585,32 +598,57 @@ export const shortlinkEvents = pgTable("shortlink_events", {
 
 // --- WHATSAPP BOT SUPPORT TABLES ---
 
-// Tabla para el flujo conversacional actual (33 preguntas)
-export const whatsappApplicationStates = pgTable("whatsapp_application_states", {
-  id: serial("id").primaryKey(),
-  userPhone: varchar("user_phone", { length: 20 }).notNull().unique(), // Número de WhatsApp del usuario
-  wallet: varchar("wallet", { length: 42 }), // Wallet cuando se completa sección de solicitante
-  currentStep: integer("current_step").default(0).notNull(), // Paso actual en el formulario (36 preguntas)
-  answers: jsonb("answers").default({}).notNull(), // Respuestas acumuladas
-  completed: boolean("completed").default(false).notNull(), // Si terminó el formulario
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+export const gamificationRules = pgTable("gamification_rules", {
+    id: uuid("id").defaultRandom().primaryKey(),
+    ruleId: varchar("rule_id", { length: 50 }).notNull().unique(), // TG_001
+    trigger: varchar("trigger", { length: 50 }).notNull(), // daily_login, etc
+    xpReward: integer("xp_reward").default(0).notNull(),
+    creditsReward: integer("credits_reward").default(0).notNull(),
+    isRepeatable: boolean("is_repeatable").default(false).notNull(),
+    cooldownHours: integer("cooldown_hours").default(0).notNull(),
+    isActive: boolean("is_active").default(true).notNull(),
+    condition: jsonb("condition").default({}).notNull(),
+    copyTitle: text("copy_title"),
+    copyBody: text("copy_body"),
+
+    // Legacy/Sync columns found in production
+    pointsXP: integer("points_xp"),
+    pointsCredits: integer("points_credits"),
+    ipfsMetadata: jsonb("ipfs_metadata"),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
 });
 
-// Tabla dedicada para el flujo de 8 preguntas (filtrado) - MANTENER EXISTENTE
-export const whatsappPreapplyLeads = pgTable("whatsapp_preapply_leads", {
-  id: serial("id").primaryKey(),
-  userPhone: varchar("user_phone", { length: 20 }).notNull(), // Número de WhatsApp del usuario
-  step: integer("step").default(0).notNull(), // Paso actual (0-7 para las 8 preguntas)
-  status: varchar("status", { length: 20 }).default("in_progress").notNull(), // in_progress|completed|pending|approved|rejected
-  answers: jsonb("answers").default({}).notNull(), // Respuestas de las 8 preguntas
-  applicantName: varchar("applicant_name", { length: 256 }), // Extraído de respuesta Q3
-  applicantEmail: varchar("applicant_email", { length: 256 }), // Extraído de respuesta Q3
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => ({
-  uniquePhone: uniqueIndex("unique_whatsapp_lead_phone").on(table.userPhone),
-}));
+export const gamificationLogs = pgTable("gamification_logs", {
+    id: uuid("id").defaultRandom().primaryKey(),
+    eventId: varchar("event_id", { length: 255 }).unique(), // Deterministic Hash
+    userId: varchar("user_id", { length: 255 }),
+    telegramUserId: varchar("telegram_user_id", { length: 255 }),
+    actionType: varchar("action_type", { length: 50 }).notNull(),
+    pointsXP: integer("points_xp").default(0).notNull(),
+    pointsCredits: integer("points_credits").default(0).notNull(),
+    riskScore: decimal("risk_score", { precision: 5, scale: 2 }).default("0.00").notNull(),
+    status: varchar("status", { length: 20 }).default('PENDING').notNull(),
+    metadata: jsonb("metadata").default({}).notNull(),
+    
+    // Audit & Blockchain support
+    ipfsHash: varchar("ipfs_hash", { length: 255 }),
+    adminId: varchar("admin_id", { length: 255 }),
+    coreActionId: varchar("core_action_id", { length: 255 }),
+    txHash: varchar("tx_hash", { length: 66 }),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const telegramPoints = pgTable("telegram_points", {
+    telegramUserId: varchar("telegram_user_id", { length: 255 }).primaryKey(),
+    totalXP: integer("total_xp").default(0).notNull(),
+    harvestCredits: integer("harvest_credits").default(0).notNull(),
+    lockedCredits: integer("locked_credits").default(0).notNull(),
+    claimableCredits: integer("claimable_credits").default(0).notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
 
 // --- MULTI-FLOW SYSTEM TABLES --- (NUEVO SISTEMA)
 
@@ -664,10 +702,51 @@ export type WhatsAppUser = typeof whatsappUsers.$inferSelect;
 export type WhatsAppSession = typeof whatsappSessions.$inferSelect;
 export type WhatsAppMessage = typeof whatsappMessages.$inferSelect;
 
-// WhatsApp Legacy Types - MANTENER EXISTENTES
-export type WhatsAppApplicationState = typeof whatsappApplicationStates.$inferSelect;
-export type WhatsAppPreapplyLead = typeof whatsappPreapplyLeads.$inferSelect;
+// --- EDUCATION / COURSES TABLES ---
 
+export const courseDifficultyEnum = pgEnum("course_difficulty", [
+  "beginner",
+  "intermediate",
+  "advanced",
+]);
+
+export const courses = pgTable("courses", {
+  id: text("id").primaryKey(),              // slug: "defi-basics"
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  category: text("category").notNull(),     // DeFi, NFTs, Security, DAO, etc.
+  difficulty: courseDifficultyEnum("difficulty").default("beginner").notNull(),
+  duration: text("duration").notNull(),     // "2 horas"
+  imageUrl: text("image_url"),
+  xpReward: integer("xp_reward").default(50).notNull(),
+  creditsReward: integer("credits_reward").default(10).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  orderIndex: integer("order_index").default(0).notNull(),
+  prerequisites: jsonb("prerequisites").$type<string[]>().default([]).notNull(),
+  modules: jsonb("modules").$type<Record<string, unknown>[]>().default([]).notNull(),
+  skillsCovered: jsonb("skills_covered").$type<string[]>().default([]).notNull(),
+  instructor: text("instructor").default("Pandora's Team").notNull(),
+  enrolledCount: integer("enrolled_count").default(0).notNull(),
+  completionRate: integer("completion_rate").default(0).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().$onUpdate(() => new Date()).notNull(),
+});
+
+export const courseEnrollments = pgTable("course_enrollments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: text("user_id").notNull(),        // walletAddress (lowercase)
+  courseId: text("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
+  status: text("status").default("in_progress").notNull(), // in_progress | completed
+  progressPct: integer("progress_pct").default(0).notNull(),
+  startedAt: timestamp("started_at", { withTimezone: true }).defaultNow().notNull(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+}, (table) => ({
+  uniqueEnrollment: uniqueIndex("unique_course_enrollment").on(table.userId, table.courseId),
+}));
+
+// Education types
+export type Course = typeof courses.$inferSelect;
+export type CourseEnrollment = typeof courseEnrollments.$inferSelect;
 
 
 // --- GOVERNANCE CALENDAR TABLES ---
@@ -1063,15 +1142,16 @@ export const integrationClients = pgTable("integration_clients", {
 });
 
 export const auditLogs = pgTable("audit_logs", {
-  id: serial("id").primaryKey(),
-  actorType: auditActorTypeEnum("actor_type").notNull(),
-  actorId: varchar("actor_id", { length: 255 }).notNull(), // UUID or Wallet
-
-  action: varchar("action", { length: 255 }).notNull(),
-  resource: varchar("resource", { length: 255 }).notNull(),
-
+  id: uuid("id").primaryKey().defaultRandom(),
+  event: varchar("event", { length: 50 }).notNull(),
+  category: varchar("category", { length: 50 }).notNull(),
+  address: varchar("address", { length: 42 }),
+  tenantId: varchar("tenant_id", { length: 100 }),
+  ip: varchar("ip", { length: 45 }).notNull(),
+  userAgent: text("userAgent"),
+  success: boolean("success").notNull(),
+  errorCode: varchar("error_code", { length: 50 }),
   metadata: jsonb("metadata").default({}),
-
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -1185,6 +1265,7 @@ export const clients = pgTable("clients", {
   userId: varchar("user_id", { length: 255 }), // Link to platform user (optional initially)
   email: varchar("email", { length: 255 }).notNull(),
   phone: varchar("phone", { length: 50 }),
+  whatsapp: varchar("whatsapp", { length: 50 }), // WhatsApp contact number (may differ from phone)
   name: varchar("name", { length: 255 }),
   walletAddress: varchar("wallet_address", { length: 42 }),
 
@@ -1241,6 +1322,30 @@ export const transactions = pgTable("transactions", {
   processedAt: timestamp("processed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+export const clientsRelations = relations(clients, ({ many }) => ({
+  paymentLinks: many(paymentLinks),
+  transactions: many(transactions)
+}));
+
+export const paymentLinksRelations = relations(paymentLinks, ({ one, many }) => ({
+  client: one(clients, {
+    fields: [paymentLinks.clientId],
+    references: [clients.id]
+  }),
+  transactions: many(transactions)
+}));
+
+export const transactionsRelations = relations(transactions, ({ one }) => ({
+  client: one(clients, {
+    fields: [transactions.clientId],
+    references: [clients.id]
+  }),
+  paymentLink: one(paymentLinks, {
+    fields: [transactions.linkId],
+    references: [paymentLinks.id]
+  })
+}));
 
 // 5. PURCHASES (FOR TG MINIAPP & EMBEDDED PAYMENTS)
 export const purchases = pgTable("purchases", {
@@ -1504,7 +1609,7 @@ export type ProtocolConfigQueue = typeof protocolConfigQueues.$inferSelect;
 // --- DEPLOYMENT JOBS TABLE ---
 // Queue for asynchronous contract deployments
 export const deploymentJobs = pgTable("deployment_jobs", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: serial("id").primaryKey(),
   projectSlug: varchar("project_slug", { length: 256 }).notNull().references(() => projects.slug),
   status: deploymentJobStatusEnum("status").default("pending").notNull(),
   step: varchar("step", { length: 100 }).default("queued"), // e.g., "broadcasting", "mining", "wiring"

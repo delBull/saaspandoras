@@ -453,7 +453,9 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                     // Check previous phase for sequential logic
                     // Note: We use original index from phasesWithStats to check previous
                     const previousPhase = index > 0 ? phasesWithStats[index - 1] : null;
-                    const previousIsSoldOut = previousPhase ? (previousPhase.stats?.isSoldOut || false) : true;
+                    const previousIsSoldOut = previousPhase?.stats?.isSoldOut ?? true;
+                    const previousHasEnded = !!(previousPhase?.endDate && new Date(previousPhase.endDate) < now);
+                    const previousIsComplete = previousIsSoldOut || previousHasEnded;
 
                     let status = 'inactive';
                     let statusPriority = 99; // Lower is better
@@ -480,7 +482,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                       statusPriority = 5;
                       statusLabel = 'Finalizado';
                       statusColor = 'bg-zinc-600 text-gray-400';
-                    } else if (!previousIsSoldOut) {
+                    } else if (!previousIsComplete) {
                       status = 'waiting';
                       statusPriority = 2; // Treat as upcoming/waiting
                       statusLabel = 'Esperando';
@@ -502,8 +504,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                   })
                   .map((phase: any) => {
                     const isActive = phase.status === 'active';
-                    const hasAccess = true; // We use parent scope hasAccess, need to ensure it's captured or pass it. 
-                    // Actually 'hasAccess' is available in scope. 
+                    // Using hasAccess from the parent scope (on-chain verification result)
 
                     return (
                       <div key={phase.id} className={`bg-zinc-800 rounded-lg overflow-hidden border ${isActive ? 'border-lime-500/30' : 'border-zinc-700'} group transition-all hover:border-lime-500/50`}>

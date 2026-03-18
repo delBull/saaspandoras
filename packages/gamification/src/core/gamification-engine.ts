@@ -106,7 +106,7 @@ export class GamificationEngine {
       userId,
       type: eventType,
       category: this.getEventCategory(eventType),
-      points: this.getEventPoints(eventType) || (metadata?.completionBonus as number) || 0,
+      points: (metadata?.xpReward as number) || this.getEventPoints(eventType) || (metadata?.completionBonus as number) || 0,
       metadata,
       createdAt: new Date()
     };
