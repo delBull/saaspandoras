@@ -53,6 +53,7 @@ export async function POST(request: Request) {
                     name: 'Founder',
                     source: 'founders-program',
                 }),
+                tags: [{ name: 'audience', value: 'founders' }]
             });
 
             if (error) throw error;

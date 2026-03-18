@@ -1,3 +1,4 @@
+process.env.NODE_ENV = 'production';
 import { db } from './apps/dashboard/src/db';
 import { clients, paymentLinks, transactions } from './apps/dashboard/src/db/schema';
 import { eq } from 'drizzle-orm';
