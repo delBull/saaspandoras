@@ -170,6 +170,12 @@ async function getEmailMetrics(timeRange: '24h' | '7d' | '30d' = '7d') {
 // POST /api/admin/marketing/test-resend - Test Resend API connection and list emails
 export async function POST(request: NextRequest) {
   try {
+    // Admin auth check
+    const { session } = await getAuth(await headers());
+    if (!session?.userId || !await isAdmin(session.userId)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
     const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
     if (!RESEND_API_KEY) {

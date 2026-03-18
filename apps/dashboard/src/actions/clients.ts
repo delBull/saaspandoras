@@ -79,19 +79,23 @@ export async function updatePaymentStatus(linkId: string, status: 'pending' | 'p
         if (status === 'paid') {
             await processPaymentSuccess(linkId);
 
-            // Notify Discord
-            await sendPaymentNotification({
-                type: "payment_received",
-                amount: Number(link.amount),
-                currency: link.currency || "USD",
-                method: method,
-                status: "completed",
-                linkId: link.id,
-                clientId: link.clientId,
-                metadata: {
-                    message: `Pago manual confirmado por administrador para enlace ${link.id}`
-                }
-            });
+            // Notify Discord (Optional, do not fail entire process if this fails)
+            try {
+                await sendPaymentNotification({
+                    type: "payment_received",
+                    amount: Number(link.amount),
+                    currency: link.currency || "USD",
+                    method: method,
+                    status: "completed",
+                    linkId: link.id,
+                    clientId: link.clientId,
+                    metadata: {
+                        message: `Pago confirmado para enlace ${link.id}`
+                    }
+                });
+            } catch (discordErr) {
+                console.error("Non-fatal error: Discord notification failed", discordErr);
+            }
         }
 
         return { success: true };
@@ -104,8 +108,6 @@ export async function updatePaymentStatus(linkId: string, status: 'pending' | 'p
 export async function processPaymentSuccess(linkId: string) {
     try {
         // Fetch Link & Client details
-        // We re-fetch to ensure we have latest state or we could pass arguments. 
-        // Re-fetching is safer for standalone usage.
         const link = await db.query.paymentLinks.findFirst({
             where: eq(paymentLinks.id, linkId),
             with: { client: true }
@@ -115,22 +117,21 @@ export async function processPaymentSuccess(linkId: string) {
 
         const client = link.client as any;
         let newStatus = client.status;
-        const meta = (client.metadata as any) || {};
 
         // 1. Advance Protocol State based on Link Title (SOW)
-        if (link.title.includes("SOW Tier 1")) {
+        if (link.title.includes("SOW Tier 1") || link.title.includes("Tier 1")) {
             newStatus = 'closed_won';
             await advanceProtocolState(link.clientId, 'IN_PROGRESS_TIER_1');
-        } else if (link.title.includes("SOW Tier 2")) {
+        } else if (link.title.includes("SOW Tier 2") || link.title.includes("Tier 2")) {
             await advanceProtocolState(link.clientId, 'IN_PROGRESS_TIER_2');
-        } else if (link.title.includes("SOW Tier 3")) {
+        } else if (link.title.includes("SOW Tier 3") || link.title.includes("Tier 3")) {
             await advanceProtocolState(link.clientId, 'IN_PROGRESS_TIER_3');
         } else {
             // Standard payment
             newStatus = 'closed_won';
         }
 
-        // 2. Update Client Status in DB
+        // 2. Update Client Status in DB (Only if changed)
         if (newStatus !== client.status) {
             await db.update(clients)
                 .set({ status: newStatus })

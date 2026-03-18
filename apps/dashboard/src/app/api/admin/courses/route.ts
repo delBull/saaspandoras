@@ -446,13 +446,31 @@ export async function POST(request: Request) {
     if (body.action === 'seed') {
       const results = [];
       for (const course of SEED_COURSES) {
-        const existing = await db.select().from(courses).where(eq(courses.id, course.id));
-        if (existing.length === 0) {
-          const [inserted] = await db.insert(courses).values(course).returning();
-          results.push({ id: course.id, action: 'created', data: inserted });
-        } else {
-          results.push({ id: course.id, action: 'skipped' });
-        }
+        // Upsert logic: insert or update if exists based on id
+        const [upserted] = await db.insert(courses)
+          .values(course)
+          .onConflictDoUpdate({
+            target: courses.id,
+            set: {
+              title: course.title,
+              description: course.description,
+              category: course.category,
+              difficulty: course.difficulty,
+              duration: course.duration,
+              xpReward: course.xpReward,
+              creditsReward: course.creditsReward,
+              instructor: course.instructor,
+              prerequisites: course.prerequisites,
+              skillsCovered: course.skillsCovered,
+              orderIndex: course.orderIndex,
+              isActive: course.isActive,
+              modules: course.modules,
+              updatedAt: new Date()
+            }
+          })
+          .returning();
+        
+        results.push({ id: course.id, action: 'upserted', data: upserted });
       }
       return NextResponse.json({ success: true, results });
     }
