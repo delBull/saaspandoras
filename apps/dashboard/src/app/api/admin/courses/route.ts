@@ -162,6 +162,33 @@ const SEED_COURSES = [
         is_free_preview: false,
         passing_score: 80,
         question_count: 5,
+        questions: [
+          {
+            question: "¿Cuál es la principal diferencia entre una wallet Custodial y No Custodial?",
+            options: ["Las custodiales son más seguras", "En las No Custodiales, tú tienes el control total de tus claves privadas", "Las No Custodiales no soportan Ethereum", "Las custodiales no requieren contraseñas"],
+            correctIndex: 1
+          },
+          {
+            question: "¿Qué es el 'Impermanent Loss' en DeFi?",
+            options: ["Perder tu frase semilla", "Un bug en el smart contract", "El riesgo de que el valor de tus tokens cambie radicalmente al proveer liquidez frente a solo holdearlos", "Pagar demasiado gas"],
+            correctIndex: 2
+          },
+          {
+            question: "¿Qué mecanismo usan los DEXs modernos en lugar de un libro de órdenes tradicional?",
+            options: ["Brokers centralizados", "Automated Market Makers (AMM)", "Proof of Work", "Mineros"],
+            correctIndex: 1
+          },
+          {
+            question: "En Lending & Borrowing, ¿por qué los préstamos son sobre-colateralizados?",
+            options: ["Para ganar más intereses", "Porque los smart contracts no confían en historiales crediticios y necesitan asegurar la solvencia", "Para pagar menos gas", "Porque los bancos lo exigen"],
+            correctIndex: 1
+          },
+          {
+            question: "Si recibes tokens desconocidos (airdrop misterioso) en tu wallet, tu mejor acción en términos de OpSec es:",
+            options: ["Ir a la web que sugieren y conectarla para venderlos", "Ignorarlos por completo, suelen ser phishing", "Enviarlos a un amigo", "Hacer swap en Uniswap"],
+            correctIndex: 1
+          }
+        ],
       },
     ],
   },
