@@ -114,7 +114,7 @@ export async function processPaymentSuccess(linkId: string) {
             with: { client: true }
         });
 
-        if (!link || !link.client) return { success: false, error: "Link or Client not found" };
+        if (!link?.client) return { success: false, error: "Link or Client not found" };
 
         const client = link.client as any;
         let newStatus = client.status;
@@ -158,7 +158,7 @@ export async function manualSendReceipt(linkId: string) {
             }
         });
 
-        if (link && link.client) {
+        if (link?.client) {
             const c = link.client as any;
             await sendReceiptEmail(c.email, c.name || "Builder", link.title, link.amount);
             return { success: true };
