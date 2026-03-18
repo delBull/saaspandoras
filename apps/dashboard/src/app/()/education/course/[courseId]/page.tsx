@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Clock, Users, Trophy, BookOpen, Play, CheckCircle2, Lock, Zap, Coins, Award, ChevronRight, AlertCircle, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Clock, Users, Trophy, BookOpen, Play, CheckCircle2, Lock, Zap, Coins, Award, ChevronRight, AlertCircle, HelpCircle, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 
@@ -137,10 +137,19 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
       const res = await fetch(`/api/education/courses/${courseId}/complete`, { method: 'POST' });
       const data = await res.json() as any;
       if (res.ok) {
-        setEnrollment(prev => prev ? { ...prev, status: 'completed', progressPct: 100, completedAt: new Date().toISOString() } : prev);
-        toast.success(`🎉 ¡Curso completado! +${course.xpReward} XP, +${course.creditsReward} Credits`, {
-          description: 'Las recompensas se han acreditado a tu perfil'
-        });
+        if (!isCompleted) {
+          setEnrollment(prev => prev ? { ...prev, status: 'completed', progressPct: 100, completedAt: new Date().toISOString() } : prev);
+        }
+        
+        if (data.isReview) {
+          toast.success(`Revisión finalizada ✅`, {
+            description: 'Has vuelto a revisar el contenido del curso.'
+          });
+        } else {
+          toast.success(`🎉 ¡Curso completado! +${course.xpReward} XP, +${course.creditsReward} Credits`, {
+            description: 'Las recompensas se han acreditado a tu perfil'
+          });
+        }
       } else {
         toast.error(data.message ?? 'Error al completar');
       }
@@ -376,8 +385,22 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
 
               {/* CTA */}
               {isCompleted ? (
-                <div className="flex items-center gap-2 w-full py-3 px-4 bg-green-600/20 border border-green-500/30 text-green-400 rounded-xl text-sm font-bold justify-center">
-                  <CheckCircle2 className="w-4 h-4" /> Curso completado ✅
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 w-full py-3 px-4 bg-green-600/20 border border-green-500/30 text-green-400 rounded-xl text-sm font-bold justify-center">
+                    <CheckCircle2 className="w-4 h-4" /> Curso completado ✅
+                  </div>
+                  <button
+                    onClick={handleComplete}
+                    disabled={completing}
+                    className="w-full py-2 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 rounded-xl text-xs font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {completing ? (
+                      <div className="w-3 h-3 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-3 h-3" />
+                    )}
+                    Terminar Revisión
+                  </button>
                 </div>
               ) : isInProgress ? (
                 <div className="space-y-2">

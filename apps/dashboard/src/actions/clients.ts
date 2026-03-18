@@ -19,13 +19,13 @@ export async function getClients() {
 
 export async function getClientLinks(clientId: string) {
     try {
-        const results = await db.select().from(paymentLinks)
-            .where(eq(paymentLinks.clientId, clientId))
-            .orderBy(desc(paymentLinks.createdAt));
-
-        // Manual join for transactions status - simplfied for now
-        // We really want to know if it's "PAID".
-        // Let's attach the latest transaction status if possible, or just return links.
+        const results = await db.query.paymentLinks.findMany({
+            where: eq(paymentLinks.clientId, clientId),
+            with: {
+                transactions: true
+            },
+            orderBy: desc(paymentLinks.createdAt)
+        });
 
         return { success: true, data: results };
     } catch (e) {
