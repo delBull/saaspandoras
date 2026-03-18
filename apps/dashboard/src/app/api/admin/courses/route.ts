@@ -187,6 +187,31 @@ const SEED_COURSES = [
             question: "Si recibes tokens desconocidos (airdrop misterioso) en tu wallet, tu mejor acción en términos de OpSec es:",
             options: ["Ir a la web que sugieren y conectarla para venderlos", "Ignorarlos por completo, suelen ser phishing", "Enviarlos a un amigo", "Hacer swap en Uniswap"],
             correctIndex: 1
+          },
+          {
+            question: "¿Qué es una Stablecoin?",
+            options: ["Una criptomoneda cuyo valor está anclado a un activo estable como el Dólar (ej. USDC, USDT)", "Cualquier criptomoneda de la red Bitcoin", "Un token que no se puede vender", "Una blockchain privada"],
+            correctIndex: 0
+          },
+          {
+            question: "¿En qué se diferencia un protocolo DeFi de un Banco Tradicional?",
+            options: ["Los bancos son de código abierto", "DeFi requiere que presentes identificación oficial (KYC) antes de usarlo", "Los protocolos DeFi operan mediante Smart Contracts transparentes las 24/7 sin CEO ni horarios físicos", "DeFi solo funciona de Lunes a Viernes"],
+            correctIndex: 2
+          },
+          {
+            question: "¿Qué sucede durante una Liquidación en un protocolo de Préstamos (Lending)?",
+            options: ["El protocolo te perdona la deuda", "Tus garantías (colateral) son vendidas automáticamente por el Smart Contract porque su valor bajó demasiado respecto a tu deuda", "Recibes un bono extra de tokens", "Tienes 30 días adicionales para pagar"],
+            correctIndex: 1
+          },
+          {
+            question: "¿Por qué al hacer un Swap en un DEX apruebas primero el token y luego ejecutas el swap?",
+            options: ["Porque así cobras menos comisiones", "Porque es una regla del gobierno", "La aprobación ('Approve') le da permiso al Smart Contract para mover ese token de tu wallet, el swap es la ejecución de la orden", "Para verificar tu identidad"],
+            correctIndex: 2
+          },
+          {
+            question: "¿Qué significa el concepto de 'Yield Farming'?",
+            options: ["Cultivar vegetales en el metaverso", "Esconder tus tokens en una billetera fría", "Mover estratégicamente tus criptomonedas por diferentes protocolos DeFi para maximizar tus rendimientos e incentivos en forma de tokens", "Pagar para que un banco gestione tu portafolio"],
+            correctIndex: 2
           }
         ],
       },

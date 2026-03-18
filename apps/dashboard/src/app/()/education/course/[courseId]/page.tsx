@@ -85,11 +85,16 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [quizScore, setQuizScore] = useState(0);
 
-  // Reset quiz state when module changes
+  // Article state
+  const [articleChecklist, setArticleChecklist] = useState<boolean[]>([false, false, false]);
+  const isArticleCompleted = articleChecklist.every(v => v);
+
+  // Reset quiz & article state when module changes
   useEffect(() => {
     setQuizAnswers({});
     setQuizSubmitted(false);
     setQuizScore(0);
+    setArticleChecklist([false, false, false]);
   }, [selectedModule?.id]);
 
   useEffect(() => {
@@ -193,6 +198,21 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
   const isCompleted = enrollment?.status === 'completed';
   const totalModules = course.modules?.length ?? 0;
 
+  const totalDurationMin = (course.modules ?? []).reduce((acc, mod) => {
+    if (mod.type === 'quiz' && mod.questions) {
+      return acc + Math.max(1, Math.ceil(mod.questions.length * 0.5));
+    }
+    const minsMatch = mod.duration?.match(/(\d+)/);
+    const mins = minsMatch?.[1] ? parseInt(minsMatch[1], 10) : 0;
+    return acc + mins;
+  }, 0);
+  
+  const displayDuration = totalDurationMin > 0 
+    ? (totalDurationMin >= 60 
+        ? `${Math.floor(totalDurationMin / 60)}h ${totalDurationMin % 60 > 0 ? `${totalDurationMin % 60}m` : ''}`
+        : `${totalDurationMin} min`)
+    : course.duration || '0 min';
+
   return (
     <div className="min-h-screen bg-zinc-950 text-white pb-32">
       {/* Hero header */}
@@ -229,7 +249,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
 
           {/* Stats row */}
           <div className="flex flex-wrap items-center gap-6 mt-6 text-sm text-gray-400">
-            <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-cyan-400" />{course.duration}</div>
+            <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-cyan-400" />{displayDuration}</div>
             <div className="flex items-center gap-2"><BookOpen className="w-4 h-4 text-purple-400" />{totalModules} módulos</div>
             <div className="flex items-center gap-2"><Users className="w-4 h-4 text-blue-400" />{(course.enrolled_students ?? 0).toLocaleString()} estudiantes</div>
             <div className="flex items-center gap-2"><Trophy className="w-4 h-4 text-amber-400" />{course.completion_rate}% completan</div>
@@ -392,7 +412,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
                 </div>
                 <div className="flex items-center justify-between text-xs text-gray-500">
                   <span>Duración total</span>
-                  <span className="text-gray-300 font-medium">{course.duration}</span>
+                  <span className="text-gray-300 font-medium">{displayDuration}</span>
                 </div>
               </div>
 
@@ -496,7 +516,9 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-white leading-tight uppercase italic">{selectedModule.title}</h3>
-                  <p className="text-xs text-zinc-500 font-medium uppercase tracking-widest">{selectedModule.type} · {selectedModule.duration || '5 min'}</p>
+                  <p className="text-xs text-zinc-500 font-medium uppercase tracking-widest">
+                    {selectedModule.type} · {selectedModule.type === 'quiz' && selectedModule.questions ? `${Math.max(1, Math.ceil(selectedModule.questions.length * 0.5))} MIN` : selectedModule.duration || '5 MIN'}
+                  </p>
                 </div>
               </div>
               <button
@@ -547,6 +569,32 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
                       className="prose prose-invert prose-zinc max-w-none text-zinc-300 text-sm leading-loose prose-headings:text-white prose-a:text-cyan-400 prose-strong:text-white prose-strong:font-bold prose-ul:list-disc prose-ol:list-decimal rounded-2xl p-6 bg-zinc-900/20 border border-zinc-800/50"
                       dangerouslySetInnerHTML={{ __html: selectedModule.content }}
                     />
+                    
+                    {/* Interactive Completion Checklist */}
+                    <div className="mt-8 space-y-3 pt-6 border-t border-zinc-800">
+                      <h4 className="text-white font-bold text-sm mb-4 flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-cyan-400" />
+                          Checks de Comprensión
+                      </h4>
+                      {['Entiendo los conceptos principales de esta lectura.', 'He asimilado la información detallada en este módulo.', 'Estoy listo para aplicar este conocimiento.'].map((item, i) => (
+                        <label key={i} className={`flex items-start gap-4 p-4 border rounded-xl cursor-pointer transition-all duration-200 ${articleChecklist[i] ? 'bg-cyan-500/10 border-cyan-500/40 shadow-inner' : 'bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800/80 hover:border-zinc-600'}`}>
+                            <div className="mt-0.5 relative flex items-center justify-center">
+                                <input 
+                                    type="checkbox" 
+                                    className="peer w-5 h-5 appearance-none rounded border-2 border-zinc-600 checked:border-cyan-500 checked:bg-cyan-500 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+                                    checked={articleChecklist[i]}
+                                    onChange={(e) => {
+                                        const newChecks = [...articleChecklist];
+                                        newChecks[i] = e.target.checked;
+                                        setArticleChecklist(newChecks);
+                                    }}
+                                />
+                                <CheckCircle2 className="w-3.5 h-3.5 text-black absolute inset-0 m-auto opacity-0 peer-checked:opacity-100 pointer-events-none stroke-[3]" />
+                            </div>
+                            <span className={`text-sm tracking-wide transition-colors ${articleChecklist[i] ? 'text-cyan-50 font-medium' : 'text-zinc-400'}`}>{item}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 ) : selectedModule.type === 'quiz' && selectedModule.questions && selectedModule.questions.length > 0 ? (
                   <div className="space-y-6">
@@ -713,6 +761,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
               </button>
               {selectedModule.type !== 'quiz' && (
                   <button
+                    disabled={selectedModule.type === 'article' && !isArticleCompleted}
                     onClick={() => {
                         toast.success('¡Módulo completado!', {
                             description: 'Has progresado en tu formación.'
@@ -724,9 +773,9 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
                             setEnrollment({...enrollment, progressPct: newPct});
                         }
                     }}
-                    className="px-8 py-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-cyan-900/20"
+                    className="px-8 py-3 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-30 disabled:hover:bg-cyan-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-cyan-900/20"
                   >
-                    Completar Módulo
+                    {selectedModule.type === 'article' && !isArticleCompleted ? 'Verifica la Lectura' : 'Completar Módulo'}
                   </button>
               )}
             </div>
