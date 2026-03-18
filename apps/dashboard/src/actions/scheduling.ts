@@ -5,6 +5,8 @@ import { db } from "@/db";
 import { schedulingSlots, schedulingBookings, users } from "@/db/schema";
 import { eq, and, gte, desc } from "drizzle-orm";
 import { Resend } from 'resend';
+import { getAuth, isAdmin } from "@/lib/auth";
+import { headers } from "next/headers";
 
 // Helper: Ensure valid UUIDs are used (implement per your project needs or rely on crypto.randomUUID default in schema)
 
@@ -37,6 +39,11 @@ export async function getAvailableSlots(userId: string) {
  */
 export async function getAdminSlots(userId: string) {
     try {
+        const { session } = await getAuth(await headers());
+        if (!session?.userId || !await isAdmin(session.userId)) {
+            throw new Error("Unauthorized");
+        }
+
         // Fetch slots
         const slots = await db.query.schedulingSlots.findMany({
             where: eq(schedulingSlots.userId, userId),
@@ -123,6 +130,11 @@ export async function bookSlot(slotId: string, leadData: { name: string, email: 
  */
 export async function createSlots(userId: string, slots: { start: Date, end: Date }[]) {
     try {
+        const { session } = await getAuth(await headers());
+        if (!session?.userId || !await isAdmin(session.userId)) {
+            throw new Error("Unauthorized");
+        }
+
         if (!userId) return { success: false, error: "User ID required" };
 
         await db.insert(schedulingSlots).values(
@@ -146,6 +158,11 @@ export async function createSlots(userId: string, slots: { start: Date, end: Dat
  */
 export async function confirmBooking(bookingId: string) {
     try {
+        const { session } = await getAuth(await headers());
+        if (!session?.userId || !await isAdmin(session.userId)) {
+            throw new Error("Unauthorized");
+        }
+
         await db.update(schedulingBookings)
             .set({
                 status: 'confirmed',
@@ -167,6 +184,11 @@ export async function confirmBooking(bookingId: string) {
  */
 export async function rejectBooking(bookingId: string) {
     try {
+        const { session } = await getAuth(await headers());
+        if (!session?.userId || !await isAdmin(session.userId)) {
+            throw new Error("Unauthorized");
+        }
+
         // Get booking to free up slot? Or keep slot booked but status rejected?
         // Usually if rejected, the slot opens up again.
 
@@ -212,6 +234,11 @@ export async function createAdminBooking(userId: string, data: {
     meetingType: 'video' | 'phone' | 'person'
 }) {
     try {
+        const { session } = await getAuth(await headers());
+        if (!session?.userId || !await isAdmin(session.userId)) {
+            throw new Error("Unauthorized");
+        }
+
         const endTime = new Date(data.startTime.getTime() + data.durationMinutes * 60000);
 
         // 1. Create a "Booked" Slot directly

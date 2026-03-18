@@ -129,27 +129,33 @@ export async function GET(request: Request) {
       // Estadísticas por flujo independiente
       eight_q: {
         total: flowStats.find(s => s.flow_type === 'eight_q')?.total_sessions || 0,
-        active: flowStats.find(s => s.flow_type === 'eight_q')?.active_sessions || 0,
+        pending: leads.filter(l => l.flow_type === 'eight_q' && l.status === 'pending').length,
+        approved: leads.filter(l => l.flow_type === 'eight_q' && l.status === 'approved').length,
+        completed: leads.filter(l => l.flow_type === 'eight_q' && l.status === 'completed').length,
       },
 
       utility: {
         total: flowStats.find(s => s.flow_type === 'utility')?.total_sessions || 0,
-        active: flowStats.find(s => s.flow_type === 'utility')?.active_sessions || 0,
+        pending: leads.filter(l => l.flow_type === 'utility' && l.status === 'pending').length,
+        approved: leads.filter(l => l.flow_type === 'utility' && l.status === 'approved').length,
       },
 
       high_ticket: {
         total: flowStats.find(s => s.flow_type === 'high_ticket')?.total_sessions || 0,
-        active: flowStats.find(s => s.flow_type === 'high_ticket')?.active_sessions || 0,
+        contacted: leads.filter(l => l.flow_type === 'high_ticket' && ['approved', 'completed'].includes(l.status)).length,
+        scheduled: leads.filter(l => l.flow_type === 'high_ticket' && l.status === 'completed').length,
       },
 
       support: {
         total: flowStats.find(s => s.flow_type === 'support')?.total_sessions || 0,
-        active: flowStats.find(s => s.flow_type === 'support')?.active_sessions || 0,
+        escalated: leads.filter(l => l.flow_type === 'support' && l.status === 'pending').length,
+        resolved: leads.filter(l => l.flow_type === 'support' && ['approved', 'completed'].includes(l.status)).length,
       },
 
       human: {
         total: flowStats.find(s => s.flow_type === 'human')?.total_sessions || 0,
-        active: flowStats.find(s => s.flow_type === 'human')?.active_sessions || 0,
+        active: leads.filter(l => l.flow_type === 'human' && l.status === 'pending').length,
+        resolved: leads.filter(l => l.flow_type === 'human' && ['approved', 'completed'].includes(l.status)).length,
       },
 
       protocol_application: {
@@ -188,12 +194,12 @@ export async function GET(request: Request) {
         stats: {
           total: 0,
           active: 0,
-          eight_q: { total: 0, active: 0 },
-          utility: { total: 0, active: 0 },
-          high_ticket: { total: 0, active: 0 },
-          support: { total: 0, active: 0 },
-          human: { total: 0, active: 0 },
-          protocol_application: { total: 0, active: 0 },
+          eight_q: { total: 0, pending: 0, approved: 0, completed: 0 },
+          utility: { total: 0, pending: 0, approved: 0 },
+          high_ticket: { total: 0, scheduled: 0, contacted: 0 },
+          support: { total: 0, escalated: 0, resolved: 0 },
+          human: { total: 0, active: 0, resolved: 0 },
+          protocol_application: { total: 0, active: 0, resolved: 0 },
         },
         flow_stats: [],
         timestamp: new Date().toISOString(),

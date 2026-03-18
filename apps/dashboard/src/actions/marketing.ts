@@ -3,9 +3,16 @@
 import { db } from "@/db";
 import { marketingExecutions, marketingCampaigns, users, whatsappPreapplyLeads } from "@/db/schema";
 import { eq, desc, and } from "drizzle-orm";
+import { getAuth, isAdmin } from "@/lib/auth";
+import { headers } from "next/headers";
 
 export async function getMarketingDashboardStats() {
     try {
+        const { session } = await getAuth(await headers());
+        if (!session?.userId || !await isAdmin(session.userId)) {
+            throw new Error("Unauthorized");
+        }
+
         // 1. Fetch Summary Stats
         const executions = await db.select().from(marketingExecutions);
 
@@ -103,6 +110,11 @@ export async function getMarketingDashboardStats() {
 
 export async function createCampaign(data: { name: string; triggerType?: string }) {
     try {
+        const { session } = await getAuth(await headers());
+        if (!session?.userId || !await isAdmin(session.userId)) {
+            throw new Error("Unauthorized");
+        }
+
         const { name, triggerType = 'manual' } = data;
 
         const [newCampaign] = await db.insert(marketingCampaigns).values({
@@ -121,6 +133,11 @@ export async function createCampaign(data: { name: string; triggerType?: string 
 
 export async function toggleCampaignStatus(id: number, isActive: boolean) {
     try {
+        const { session } = await getAuth(await headers());
+        if (!session?.userId || !await isAdmin(session.userId)) {
+            throw new Error("Unauthorized");
+        }
+
         await db.update(marketingCampaigns)
             .set({ isActive })
             .where(eq(marketingCampaigns.id, id));
@@ -133,6 +150,11 @@ export async function toggleCampaignStatus(id: number, isActive: boolean) {
 
 export async function deleteCampaign(id: number) {
     try {
+        const { session } = await getAuth(await headers());
+        if (!session?.userId || !await isAdmin(session.userId)) {
+            throw new Error("Unauthorized");
+        }
+
         // Delete executions first (referential integrity usually requires this if no cascade)
         await db.delete(marketingExecutions).where(eq(marketingExecutions.campaignId, id));
 

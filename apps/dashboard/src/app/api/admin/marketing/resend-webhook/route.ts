@@ -1,7 +1,8 @@
 import crypto from 'crypto';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { sql } from '@/lib/database';
+import { db } from '@/db';
+import { emailMetrics } from '@/db/schema';
 
 // Resend Webhook Security
 const WEBHOOK_SECRET = process.env.RESEND_WEBHOOK_SECRET;
@@ -199,21 +200,24 @@ async function handleEmailDelivered(event: ResendWebhookEvent) {
 
     console.log(`✅ Email delivered: ${email_id} to ${recipient}`);
 
-    await sql`
-      INSERT INTO email_metrics (
-        email_id, type, status, recipient, email_subject,
-        delivered_at, metadata
-      )
-      VALUES (
-        ${email_id}, ${audienceTag}, 'delivered', ${recipient}, ${emailSubject},
-        NOW(), ${metadata}
-      )
-      ON CONFLICT (email_id)
-      DO UPDATE SET
-        status = 'delivered',
-        delivered_at = NOW(),
-        updated_at = NOW()
-    `;
+    await db.insert(emailMetrics)
+      .values({
+        emailId: email_id,
+        type: audienceTag,
+        status: 'delivered',
+        recipient: recipient,
+        emailSubject: emailSubject,
+        deliveredAt: new Date(),
+        metadata: event
+      })
+      .onConflictDoUpdate({
+        target: emailMetrics.emailId,
+        set: {
+          status: 'delivered',
+          deliveredAt: new Date(),
+          updatedAt: new Date()
+        }
+      });
 
   } catch (error) {
     console.error('Error handling email delivered:', error);
@@ -230,18 +234,24 @@ async function handleEmailOpened(event: ResendWebhookEvent) {
 
     console.log(`👁️ Email opened: ${email_id} by ${recipient} from ${ip}`);
 
-    await sql`
-      INSERT INTO email_metrics (email_id, type, status, recipient, opened_at, user_agent, ip_address, metadata)
-      VALUES (
-        ${email_id}, 'unknown', 'opened', ${recipient},
-        NOW(), NULL, NULL, ${JSON.stringify(event)}
-      )
-      ON CONFLICT (email_id)
-      DO UPDATE SET
-        status = COALESCE(email_metrics.status, 'opened'),
-        opened_at = NOW(),
-        updated_at = NOW()
-    `;
+    // Assuming we fetch it to not override existing type or subject if they exist
+    await db.insert(emailMetrics)
+      .values({
+        emailId: email_id,
+        status: 'opened',
+        recipient: recipient,
+        openedAt: new Date(),
+        userAgent: user_agent,
+        ipAddress: ip,
+        metadata: event
+      })
+      .onConflictDoUpdate({
+        target: emailMetrics.emailId,
+        set: {
+          openedAt: new Date(),
+          updatedAt: new Date()
+        }
+      });
 
   } catch (error) {
     console.error('Error handling email opened:', error);
@@ -259,19 +269,23 @@ async function handleEmailClicked(event: ResendWebhookEvent) {
 
     console.log(`👆 Email clicked: ${email_id} - ${clickedUrl} by ${recipient}`);
 
-    await sql`
-      INSERT INTO email_metrics (email_id, type, status, recipient, clicked_url, clicked_at, metadata)
-      VALUES (
-        ${email_id}, 'unknown', 'clicked', ${recipient},
-        ${clickedUrl}, NOW(), ${JSON.stringify(event)}
-      )
-      ON CONFLICT (email_id)
-      DO UPDATE SET
-        status = COALESCE(email_metrics.status, 'clicked'),
-        clicked_url = COALESCE(${clickedUrl}, email_metrics.clicked_url),
-        clicked_at = NOW(),
-        updated_at = NOW()
-    `;
+    await db.insert(emailMetrics)
+      .values({
+        emailId: email_id,
+        status: 'clicked',
+        recipient: recipient,
+        clickedUrl: clickedUrl,
+        clickedAt: new Date(),
+        metadata: event
+      })
+      .onConflictDoUpdate({
+        target: emailMetrics.emailId,
+        set: {
+          clickedUrl: clickedUrl,
+          clickedAt: new Date(),
+          updatedAt: new Date()
+        }
+      });
 
   } catch (error) {
     console.error('Error handling email clicked:', error);
@@ -288,18 +302,22 @@ async function handleEmailBounced(event: ResendWebhookEvent) {
 
     console.log(`❌ Email bounced: ${email_id} to ${recipient}`);
 
-    await sql`
-      INSERT INTO email_metrics (email_id, type, status, recipient, bounced_at, metadata)
-      VALUES (
-        ${email_id}, 'unknown', 'bounced', ${recipient},
-        NOW(), ${JSON.stringify(event)}
-      )
-      ON CONFLICT (email_id)
-      DO UPDATE SET
-        status = 'bounced',
-        bounced_at = NOW(),
-        updated_at = NOW()
-    `;
+    await db.insert(emailMetrics)
+      .values({
+        emailId: email_id,
+        status: 'bounced',
+        recipient: recipient,
+        bouncedAt: new Date(),
+        metadata: event
+      })
+      .onConflictDoUpdate({
+        target: emailMetrics.emailId,
+        set: {
+          status: 'bounced',
+          bouncedAt: new Date(),
+          updatedAt: new Date()
+        }
+      });
 
   } catch (error) {
     console.error('Error handling email bounced:', error);
@@ -316,20 +334,22 @@ async function handleEmailComplained(event: ResendWebhookEvent) {
 
     console.log(`🚨 Email complaint: ${email_id} marked as spam by ${recipient}`);
 
-    const metadata = JSON.stringify(event);
-
-    await sql`
-      INSERT INTO email_metrics (email_id, type, status, recipient, complaint_at, metadata)
-      VALUES (
-        ${email_id}, 'unknown', 'complained', ${recipient},
-        NOW(), ${metadata}
-      )
-      ON CONFLICT (email_id)
-      DO UPDATE SET
-        status = 'complained',
-        complaint_at = NOW(),
-        updated_at = NOW()
-    `;
+    await db.insert(emailMetrics)
+      .values({
+        emailId: email_id,
+        status: 'complained',
+        recipient: recipient,
+        complaintAt: new Date(),
+        metadata: event
+      })
+      .onConflictDoUpdate({
+        target: emailMetrics.emailId,
+        set: {
+          status: 'complained',
+          complaintAt: new Date(),
+          updatedAt: new Date()
+        }
+      });
 
   } catch (error) {
     console.error('Error handling email complaint:', error);
@@ -346,20 +366,22 @@ async function handleEmailSpam(event: ResendWebhookEvent) {
 
     console.log(`🚫 Email marked as spam: ${email_id} by ${recipient}`);
 
-    const metadata = JSON.stringify(event);
-
-    await sql`
-      INSERT INTO email_metrics (email_id, type, status, recipient, complaint_at, metadata)
-      VALUES (
-        ${email_id}, 'unknown', 'spam', ${recipient},
-        NOW(), ${metadata}
-      )
-      ON CONFLICT (email_id)
-      DO UPDATE SET
-        status = COALESCE(email_metrics.status, 'spam'),
-        complaint_at = NOW(),
-        updated_at = NOW()
-    `;
+    await db.insert(emailMetrics)
+      .values({
+        emailId: email_id,
+        status: 'spam',
+        recipient: recipient,
+        complaintAt: new Date(),
+        metadata: event
+      })
+      .onConflictDoUpdate({
+        target: emailMetrics.emailId,
+        set: {
+          status: 'spam',
+          complaintAt: new Date(),
+          updatedAt: new Date()
+        }
+      });
 
   } catch (error) {
     console.error('Error handling email spam:', error);

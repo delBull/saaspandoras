@@ -4,6 +4,8 @@ import { db } from "@/db";
 import { paymentLinks, clients, transactions } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { processPaymentSuccess } from "./clients";
+import { getAuth, isAdmin } from "@/lib/auth";
+import { headers } from "next/headers";
 
 export async function createPaymentLink(data: {
     title: string;
@@ -13,6 +15,11 @@ export async function createPaymentLink(data: {
     destinationWallet?: string;
 }) {
     try {
+        const { session } = await getAuth(await headers());
+        if (!session?.userId || !await isAdmin(session.userId)) {
+            throw new Error("Unauthorized");
+        }
+
         const { title, amount, currency, description, destinationWallet } = data;
 
         // Strategy: Create a 'General Public' client if not exists
@@ -50,6 +57,11 @@ export async function createPaymentLink(data: {
 
 export async function getPaymentsDashboardStats() {
     try {
+        const { session } = await getAuth(await headers());
+        if (!session?.userId || !await isAdmin(session.userId)) {
+            throw new Error("Unauthorized");
+        }
+
         // 1. Fetch Links and Transactions
         const links = await db.select().from(paymentLinks);
         // Using raw select for transactions to ensure we get everything
@@ -68,6 +80,9 @@ export async function getPaymentsDashboardStats() {
         const pendingTx = allTransactions.filter(t => t.status === 'pending');
         const pendingPayment = pendingTx.reduce((acc, curr) => acc + Number(curr.amount), 0);
 
+        const activeClientsSet = new Set(completedTx.map(t => t.clientId).filter(Boolean));
+        const activeClients = activeClientsSet.size;
+
         // 3. Recent Links (descending)
         const recentLinks = [...links].reverse().slice(0, 10);
 
@@ -84,7 +99,8 @@ export async function getPaymentsDashboardStats() {
                 totalRevenue,
                 activeLinks,
                 totalLinks,
-                pendingPayment
+                pendingPayment,
+                activeClients
             },
             links: recentLinks,
             pendingTransactions
@@ -97,6 +113,11 @@ export async function getPaymentsDashboardStats() {
 
 export async function deletePaymentLink(id: string) {
     try {
+        const { session } = await getAuth(await headers());
+        if (!session?.userId || !await isAdmin(session.userId)) {
+            throw new Error("Unauthorized");
+        }
+
         // Cascade delete transactions first (manual cleanup if no FK cascade)
         await db.delete(transactions).where(eq(transactions.linkId, id));
         await db.delete(paymentLinks).where(eq(paymentLinks.id, id));
@@ -109,6 +130,11 @@ export async function deletePaymentLink(id: string) {
 
 export async function updateTransactionStatus(transactionId: string, status: 'completed' | 'rejected') {
     try {
+        const { session } = await getAuth(await headers());
+        if (!session?.userId || !await isAdmin(session.userId)) {
+            throw new Error("Unauthorized");
+        }
+
         const [tx] = await db.update(transactions)
             .set({
                 status,
