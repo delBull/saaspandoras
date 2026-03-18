@@ -125,6 +125,7 @@ export async function POST(request: NextRequest) {
           to: [contactEmail],
           subject: '¡Bienvenido a Pandora\'s - La Evolución del Creador!',
           html: html,
+          tags: [{ name: 'audience', value: 'newsletter_generic' }]
         };
 
         const emailResponse = await fetch('https://api.resend.com/emails', {

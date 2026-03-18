@@ -57,6 +57,7 @@ export async function POST(request: Request) {
                     source: 'utility-protocol',
                     // We can pass a specific prop here if the template supports it
                 }),
+                tags: [{ name: 'audience', value: 'utility' }]
             });
 
             if (error) throw error;

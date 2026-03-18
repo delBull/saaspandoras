@@ -65,6 +65,7 @@ export async function POST(request: Request) {
                     name: name || 'Creador',
                     source: source || 'landing-start'
                 }),
+                tags: [{ name: 'audience', value: 'creator_welcome' }]
             });
 
             if (error) {

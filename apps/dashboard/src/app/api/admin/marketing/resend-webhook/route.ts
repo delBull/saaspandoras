@@ -120,22 +120,22 @@ export async function POST(request: NextRequest) {
     // 3. Process event based on type
     switch (payload.type) {
       case 'email.delivered':
-        handleEmailDelivered(payload);
+        await handleEmailDelivered(payload);
         break;
       case 'email.opened':
-        handleEmailOpened(payload);
+        await handleEmailOpened(payload);
         break;
       case 'email.clicked':
-        handleEmailClicked(payload);
+        await handleEmailClicked(payload);
         break;
       case 'email.bounced':
-        handleEmailBounced(payload);
+        await handleEmailBounced(payload);
         break;
       case 'email.complained':
-        handleEmailComplained(payload);
+        await handleEmailComplained(payload);
         break;
       case 'email.spam':
-        handleEmailSpam(payload);
+        await handleEmailSpam(payload);
         break;
       default:
         console.log(`⚠️ Unknown webhook event type: ${payload.type}`);
