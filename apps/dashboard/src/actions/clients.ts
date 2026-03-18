@@ -8,6 +8,7 @@ import { sendPaymentNotification } from "@/lib/discord/notifier";
 
 export async function getClients() {
     try {
+        // Fetches all clients from the database
         const results = await db.select().from(clients).orderBy(desc(clients.createdAt));
         return { success: true, data: results };
     } catch (e) {
