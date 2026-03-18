@@ -195,7 +195,7 @@ function ProtocolActions({ client, onSuccess, onSendSOW }: { client: Client, onS
 
 
 type Client = typeof clients.$inferSelect;
-type PaymentLink = typeof paymentLinks.$inferSelect;
+type PaymentLink = typeof paymentLinks.$inferSelect & { transactions?: any[] };
 
 export function ClientsManager() {
     const [clientsList, setClientsList] = useState<Client[]>([]);
@@ -228,7 +228,8 @@ export function ClientsManager() {
     const filteredClients = clientsList.filter(c =>
         c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.walletAddress?.toLowerCase().includes(searchTerm.toLowerCase())
+        c.walletAddress?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.whatsapp?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
@@ -271,6 +272,7 @@ export function ClientsManager() {
                             <TableHeader>
                                 <TableRow className="border-zinc-800 hover:bg-zinc-900">
                                     <TableHead>Cliente</TableHead>
+                                    <TableHead>WhatsApp</TableHead>
                                     <TableHead>Fuente</TableHead>
                                     <TableHead>Activity</TableHead>
                                     <TableHead>Stage</TableHead>
@@ -283,6 +285,20 @@ export function ClientsManager() {
                                         <TableCell>
                                             <div className="font-medium text-white">{client.name || "Sin Nombre"}</div>
                                             <div className="text-xs text-zinc-500">{client.email}</div>
+                                        </TableCell>
+                                        <TableCell>
+                                            {client.whatsapp ? (
+                                                <a
+                                                    href={`https://wa.me/${client.whatsapp.replace(/[^0-9]/g, '')}`}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="flex items-center gap-1 text-green-400 hover:text-green-300 text-xs"
+                                                >
+                                                    <Smartphone className="w-3 h-3" />{client.whatsapp}
+                                                </a>
+                                            ) : (
+                                                <span className="text-zinc-600 text-xs">—</span>
+                                            )}
                                         </TableCell>
                                         <TableCell><Badge variant="outline" className="text-xs bg-zinc-950">{client.source}</Badge></TableCell>
                                         <TableCell className="text-zinc-400 text-xs text-xs">
@@ -454,7 +470,7 @@ function StatusBadge({ status }: { status: string }) {
 // --- SUBCOMPONENTS (Clean separation) ---
 
 function CreateClientModal({ open, onOpenChange, onSuccess }: { open: boolean, onOpenChange: (v: boolean) => void, onSuccess: () => void }) {
-    const [form, setForm] = useState({ name: '', email: '', phone: '', source: 'manual' });
+    const [form, setForm] = useState({ name: '', email: '', phone: '', whatsapp: '', source: 'manual' });
     const [loading, setLoading] = useState(false);
 
     async function handleSubmit(e: React.FormEvent) {
@@ -465,7 +481,7 @@ function CreateClientModal({ open, onOpenChange, onSuccess }: { open: boolean, o
             toast.success("Cliente creado");
             onSuccess();
             onOpenChange(false);
-            setForm({ name: '', email: '', phone: '', source: 'manual' });
+            setForm({ name: '', email: '', phone: '', whatsapp: '', source: 'manual' });
         } else {
             toast.error("Error al crear cliente");
         }
@@ -490,6 +506,10 @@ function CreateClientModal({ open, onOpenChange, onSuccess }: { open: boolean, o
                     <div className="grid gap-2">
                         <Label>Phone (Optional)</Label>
                         <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className="bg-zinc-900" />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label>WhatsApp (Optional)</Label>
+                        <Input value={form.whatsapp} onChange={e => setForm({ ...form, whatsapp: e.target.value })} placeholder="521..." className="bg-zinc-900" />
                     </div>
                     <Button disabled={loading} type="submit" className="w-full bg-white text-black hover:bg-zinc-200">
                         {loading ? <Loader2 className="animate-spin" /> : "Guardar"}
@@ -635,9 +655,11 @@ function ClientHistoryModal({ open, onOpenChange, client }: { open: boolean, onO
                             {links.length === 0 ? <div className="text-zinc-500 text-center">Sin actividad reciente.</div> : (
                                 <div className="space-y-2">
                                     {links.map(link => (
-                                        <div key={link.id} className="bg-zinc-900 p-3 rounded border border-zinc-800 flex justify-between items-center bg-green-500">
+                                        <div key={link.id} className="bg-zinc-900 p-3 rounded border border-zinc-800 flex justify-between items-center">
                                             <div className="text-sm">
-                                                <div className="font-bold text-white">{link.title}</div>
+                                                <div className="font-bold text-white flex items-center gap-2">
+                                                    {link.title}
+                                                </div>
                                                 <div className="text-zinc-500 text-xs">${link.amount} USD &bull; {new Date(link.createdAt).toLocaleDateString()}</div>
                                                 <div className="mt-1 flex gap-2">
                                                     <span className="text-[10px] bg-zinc-800 px-1 rounded text-zinc-400 font-mono">{link.id.substring(0, 8)}...</span>
@@ -648,23 +670,31 @@ function ClientHistoryModal({ open, onOpenChange, client }: { open: boolean, onO
                                                     <FileText className="w-4 h-4 text-zinc-600" />
                                                 </Button>
 
-                                                {/* Logic for 'Paid' detection is weak here without transactions join, assuming manual mark for MVP */}
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={() => handleSendReceipt(link.id)}
-                                                    className="h-8 text-xs"
-                                                >
-                                                    Reenviar Recibo
-                                                </Button>
+                                                {/* Detect if already paid via transactions join */}
+                                                {(link.transactions?.some((t: any) => t.status === 'completed')) ? (
+                                                    <Badge className="bg-lime-500/10 text-lime-400 border-lime-500/30 gap-1 py-1 px-2 h-8">
+                                                        <CheckCircle className="w-3.5 h-3.5" /> Pagado
+                                                    </Badge>
+                                                ) : (
+                                                    <Button
+                                                        size="sm"
+                                                        className="bg-lime-900/30 text-lime-400 hover:bg-lime-900/50 h-8 text-xs border border-lime-500/30"
+                                                        onClick={() => handleMarkPaid(link.id)}
+                                                    >
+                                                        <CheckCircle className="w-3 h-3 mr-1" /> Marcar Pagado
+                                                    </Button>
+                                                )}
 
-                                                <Button
-                                                    size="sm"
-                                                    className="bg-lime-900/30 text-lime-400 hover:bg-lime-900/50 h-8 text-xs border border-lime-500/30"
-                                                    onClick={() => handleMarkPaid(link.id)}
-                                                >
-                                                    <CheckCircle className="w-3 h-3 mr-1" /> Marcar Pagado
-                                                </Button>
+                                                {(link.transactions?.length ?? 0) > 0 && (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => handleSendReceipt(link.id)}
+                                                        className="h-8 text-xs"
+                                                    >
+                                                        {link.transactions?.some((t: any) => t.status === 'completed') ? "Reenviar Recibo" : "Enviar Recibo"}
+                                                    </Button>
+                                                )}
                                             </div>
                                         </div>
                                     ))}

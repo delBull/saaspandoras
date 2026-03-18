@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { db } from "~/db";
 import { projects } from "~/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { getAuth } from "@/lib/auth";
 
 // GET - Obtener todos los proyectos featured
@@ -26,7 +26,11 @@ export async function GET() {
         createdAt: projects.createdAt,
       })
       .from(projects)
-      .where(and(eq(projects.featured, true), eq(projects.status, 'approved')))
+      .where(and(
+        eq(projects.featured, true),
+        eq(projects.isDeleted, false),
+        inArray(projects.status, ['approved', 'live', 'completed'])
+      ))
       .orderBy(projects.id);
 
     console.log(`🎯 Featured API: Found ${featuredProjects.length} featured projects`);
@@ -85,7 +89,7 @@ export async function POST(request: Request) {
     console.log('✅ Featured API: Updated project successfully:', updatedProject);
 
     return NextResponse.json({
-      message: `Proyecto ${featured ? 'marcado como featured' : 'removido de featured'}`,
+      message: `Proyecto ${featured ? 'marcado como featured' : 'removido de featured'} `,
       project: updatedProject
     });
 

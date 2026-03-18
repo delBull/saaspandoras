@@ -70,3 +70,10 @@ nft_lab.md
 
 # Note: PUBLIC_SECURITY_OVERVIEW.md is intentionally NOT ignored (safe for public)
 apps/dashboard/drizzle_backup/
+
+# Contracts ignore
+contracts/artifacts/
+contracts/cache/
+contracts/out/
+local-data-export.json
+*.log

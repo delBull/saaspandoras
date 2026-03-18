@@ -46,9 +46,9 @@ async function syncDatabases() {
     console.log('📤 Exporting data from local database...');
     var localData = {};
 
-    for (const table of tables) {
+    for (var table of tables) {
       console.log(`  📋 Exporting ${table}...`);
-      const data = await localSql`SELECT * FROM ${localSql.unsafe(table)}`;
+      var data = await localSql`SELECT * FROM ${localSql.unsafe(table)}`;
       localData[table] = data;
       console.log(`    ✅ Exported ${data.length} records`);
     }
@@ -73,9 +73,9 @@ async function syncDatabases() {
     console.log('📥 Importing data to staging database...');
 
     // Import data in dependency order
-    for (const table of tables) {
-      const stagingTableName = table === 'users' ? 'User' : table;
-      const data = localData[table];
+    for (var table of tables) {
+      var stagingTableName = table === 'users' ? 'User' : table;
+      var data = localData[table];
 
       if (data.length === 0) {
         console.log(`  ⏭️ Skipping ${stagingTableName} (no data)`);
@@ -85,26 +85,26 @@ async function syncDatabases() {
       console.log(`  📋 Importing ${data.length} records to ${stagingTableName}...`);
 
       // Insert data in batches to avoid memory issues
-      const batchSize = 100;
-      for (let i = 0; i < data.length; i += batchSize) {
-        const batch = data.slice(i, i + batchSize);
+      var batchSize = 100;
+      for (var i = 0; i < data.length; i += batchSize) {
+        var batch = data.slice(i, i + batchSize);
 
         // Build insert query dynamically
         if (batch.length > 0) {
-          const columns = Object.keys(batch[0]);
-          const values = batch.map(row =>
-            `(${columns.map(col => {
-              const value = row[col];
+          var columns = Object.keys(batch[0]);
+          var values = batch.map(function(row) {
+            return `(${columns.map(function(col) {
+              var value = row[col];
               if (value === null) return 'NULL';
               if (typeof value === 'string') return `'${value.replace(/'/g, "''")}'`;
               if (typeof value === 'object') return `'${JSON.stringify(value)}'`;
               return value;
-            }).join(', ')})`
-          ).join(', ');
+            }).join(', ')})`;
+          }).join(', ');
 
           // Use quoted table name for reserved words like "User"
-          const quotedTableName = stagingTableName === 'User' ? '"User"' : stagingTableName;
-          const insertSQL = `INSERT INTO ${quotedTableName} (${columns.map(c => `"${c}"`).join(', ')}) VALUES ${values}`;
+          var quotedTableName = stagingTableName === 'User' ? '"User"' : stagingTableName;
+          var insertSQL = `INSERT INTO ${quotedTableName} (${columns.map(function(c) { return `"${c}"`; }).join(', ')}) VALUES ${values}`;
           await stagingSql.unsafe(insertSQL);
         }
       }
@@ -115,13 +115,13 @@ async function syncDatabases() {
     // Verify the sync
     console.log('🔍 Verifying sync...');
 
-    const localCount = await localSql`SELECT COUNT(*) as count FROM users`;
-    const stagingCount = await stagingSql`SELECT COUNT(*) as count FROM ${stagingSql.unsafe('"User"')}`;
+    var localCount = await localSql`SELECT COUNT(*) as count FROM users`;
+    var stagingCount = await stagingSql`SELECT COUNT(*) as count FROM ${stagingSql.unsafe('"User"')}`;
 
     console.log(`📊 Users: Local=${localCount[0].count}, Staging=${stagingCount[0].count}`);
 
-    const localProjects = await localSql`SELECT COUNT(*) as count FROM projects`;
-    const stagingProjects = await stagingSql`SELECT COUNT(*) as count FROM projects`;
+    var localProjects = await localSql`SELECT COUNT(*) as count FROM projects`;
+    var stagingProjects = await stagingSql`SELECT COUNT(*) as count FROM projects`;
 
     console.log(`📁 Projects: Local=${localProjects[0].count}, Staging=${stagingProjects[0].count}`);
 

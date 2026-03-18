@@ -111,6 +111,33 @@ export default function ShortlinksSubTab() {
     alert(`URL copiada: ${fullUrl}`);
   };
 
+  const handleDelete = async (id: number) => {
+    if (!confirm('¿Estás seguro de que quieres eliminar este enlace? Esta acción no se puede deshacer.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/admin/shortlinks', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id }),
+      });
+
+      if (response.ok) {
+        alert('Enlace eliminado exitosamente.');
+        fetchShortlinks();
+      } else {
+        const data = await response.json();
+        alert(`Error: ${data.error || 'No se pudo eliminar el enlace.'}`);
+      }
+    } catch (error) {
+      console.error('Error deleting shortlink:', error);
+      alert('Hubo un problema de conexión al eliminar.');
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('es-ES');
   };
@@ -354,7 +381,7 @@ export default function ShortlinksSubTab() {
                       <BarChart3 className="h-4 w-4" />
                     </button>
                     <button
-                      onClick={() => alert('Eliminar shortlinks próximamente')}
+                      onClick={() => handleDelete(shortlink.id)}
                       className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
                       title="Eliminar"
                     >

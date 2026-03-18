@@ -12,6 +12,7 @@ export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
         const force = searchParams.get('force') === 'true'; // Allow manual trigger
+        const filterProjectId = searchParams.get('projectId');
 
         // 1. Define "Delayed": Approved tasks older than X days.
         // For verify: 7 days.
@@ -19,6 +20,16 @@ export async function GET(req: Request) {
         delayThreshold.setDate(delayThreshold.getDate() - 7);
 
         // 2. Find pending payments: status='approved' AND proofData != 'PAID' AND updatedAt < threshold
+        const whereClause = [
+            eq(daoActivitySubmissions.status, 'approved'),
+            not(eq(daoActivitySubmissions.proofData, 'PAID')), // Using our "Paid" flag
+            lt(daoActivitySubmissions.statusUpdatedAt, delayThreshold)
+        ];
+
+        if (filterProjectId) {
+            whereClause.push(eq(daoActivitySubmissions.projectId, Number(filterProjectId)));
+        }
+
         const pendingSubmissions = await db.select({
             projectId: daoActivitySubmissions.projectId,
             activityId: daoActivitySubmissions.activityId,
@@ -26,13 +37,23 @@ export async function GET(req: Request) {
         })
             .from(daoActivitySubmissions)
             .leftJoin(daoActivities, eq(daoActivitySubmissions.activityId, daoActivities.id))
-            .where(and(
-                eq(daoActivitySubmissions.status, 'approved'),
-                not(eq(daoActivitySubmissions.proofData, 'PAID')), // Using our "Paid" flag
-                lt(daoActivitySubmissions.statusUpdatedAt, delayThreshold)
-            ));
+            .where(and(...whereClause));
 
         if (pendingSubmissions.length === 0) {
+            if (force) {
+                // Send a test alert if forced
+                const testProject = filterProjectId ? await db.query.projects.findFirst({
+                    where: eq(projects.id, Number(filterProjectId))
+                }) : null;
+                
+                await sendDelayedDistributionAlert(
+                    testProject || { title: "TEST PROTOCOL", id: 0 } as any, 
+                    7, 
+                    1, 
+                    100
+                );
+                return NextResponse.json({ message: "Test alert sent.", forced: true });
+            }
             return NextResponse.json({ message: "No delays detected." });
         }
 
@@ -45,8 +66,8 @@ export async function GET(req: Request) {
 
             const current = projectMap.get(pid) || { count: 0, amount: 0 };
             current.count++;
-            // @ts-expect-error rewardAmount might be string in DB
-            current.amount += Number(sub.dao_activities?.rewardAmount || 0);
+            // Aggregate amount (casting rewardAmount string from DB to Number)
+            current.amount += Number(sub.rewardAmount || 0);
             projectMap.set(pid, current);
         }
 

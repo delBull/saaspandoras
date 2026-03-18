@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Coins, ArrowRight, Wallet, CheckCircle, Loader2 } from 'lucide-react';
-import { useActiveAccount, TransactionButton, useReadContract } from "thirdweb/react";
+import { X, Coins, ArrowRight, Wallet, CheckCircle, Loader2, ExternalLink, HelpCircle, Copy } from 'lucide-react';
+import { useActiveAccount, TransactionButton, useReadContract, useWalletBalance } from "thirdweb/react";
 import { prepareContractCall, prepareTransaction, defineChain, getContract } from "thirdweb";
 import { client } from "@/lib/thirdweb-client";
 import { toast } from "sonner";
@@ -21,6 +21,24 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
     const account = useActiveAccount();
     const [step, setStep] = useState<'review' | 'processing' | 'success'>('review');
     const [amount, setAmount] = useState<string>("1"); // Default amount 1 for License
+    const [isFauceting, setIsFauceting] = useState(false);
+    const [needsFaucet, setNeedsFaucet] = useState(false);
+    const [showFaucetGuide, setShowFaucetGuide] = useState(false);
+
+    // Chain detection
+    const rawChainId = Number((project as any).chainId);
+    const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
+    const chain = defineChain(safeChainId);
+    
+    // Faucet Gating: Only on Sepolia (11155111) or Base Sepolia (84532)
+    const isTestnet = safeChainId === 11155111 || safeChainId === 84532;
+
+    // Balance check
+    const { data: balanceData, isLoading: isBalanceLoading } = useWalletBalance({
+        client,
+        chain,
+        address: account?.address,
+    });
 
     // License Price is usually in Wei or Native Token
     const price = phase?.tokenPrice || 0;
@@ -35,14 +53,18 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
         try {
             await fetch('/api/gamification/track-event', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-wallet-address': account?.address || ""
+                },
                 body: JSON.stringify({
                     eventType: 'artifact_purchased',
                     metadata: {
                         amount: amount,
                         price: price,
                         project: project.slug,
-                        phase: phase.name
+                        phase: phase.name,
+                        protocolId: project.id // Added for action logs
                     }
                 })
             });
@@ -53,6 +75,27 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
         setStep('success');
         toast.success("¡Artefactos adquiridos exitosamente!");
         // Trigger generic confetti or sound if available (later)
+    };
+
+    const handleFaucet = async () => {
+        if (!account) return;
+        setIsFauceting(true);
+        try {
+            const res = await fetch('/api/faucet/request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ walletAddress: account.address })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error al solicitar fondos (Múltiples requests no autorizados)');
+            
+            toast.success(data.message);
+            setNeedsFaucet(false);
+        } catch (err: any) {
+            toast.error(err.message);
+        } finally {
+            setIsFauceting(false);
+        }
     };
 
     if (!isOpen) return null;
@@ -116,8 +159,6 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                                                 if (max > 0 && val > max) {
                                                     // Strict clamp or just warning? 
                                                     // "Don't let them" implies strict or disable button.
-                                                    // Let's warn and disable button, but maybe strict clamp input too to be safe?
-                                                    // Let's just set to max if they type more? No, that's annoying while typing "100".
                                                     // Let's allow typing but show error.
                                                     setAmount(e.target.value);
                                                 } else {
@@ -160,19 +201,37 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                                         })()}</span>
                                     </div>
                                     <div className="h-px bg-white/5" />
-                                    <div className="flex justify-between items-center">
+                                    <div className="flex justify-between items-center text-sm">
                                         <span className="text-gray-400">Total a Pagar</span>
-                                        <span className="text-lime-400 font-bold font-mono text-lg">{totalCost.toLocaleString()} {(() => {
-                                            const rawChainId = Number((project as any).chainId);
-                                            const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
-                                            return safeChainId === 8453 ? 'USDC' : 'ETH';
-                                        })()}</span>
+                                        <span className="text-lime-400 font-bold font-mono text-lg">{totalCost.toLocaleString()} {safeChainId === 8453 ? 'USDC' : 'ETH'}</span>
                                     </div>
+                                    
+                                    {/* Low Balance Warning (Testnet Only) */}
+                                    {isTestnet && account && balanceData && (
+                                        (() => {
+                                            const balanceInEth = Number(balanceData.displayValue);
+                                            const totalWithGas = totalCost + 0.002; // Reduced gas margin to 0.002 ETH for Sepolia
+                                            const isLow = balanceInEth < totalWithGas;
+                                            
+                                            if (isLow && !needsFaucet) {
+                                                // Automatically suggest faucet if low on testnet
+                                                setNeedsFaucet(true);
+                                            }
+                                            
+                                            return isLow ? (
+                                                <div className="mt-2 p-2 bg-orange-500/10 border border-orange-500/20 rounded-lg flex items-start gap-2">
+                                                    <span className="text-orange-400 mt-0.5">⚠️</span>
+                                                    <div className="text-xs text-orange-200/80 leading-tight">
+                                                        Tu saldo actual ({balanceInEth.toFixed(4)} {balanceData.symbol}) es insuficiente para el costo + gas.
+                                                    </div>
+                                                </div>
+                                            ) : null;
+                                        })()
+                                    )}
                                 </div>
 
                                 {/* Action */}
                                 {account ? (
-                                    // Check if Treasury is Configured
                                     // Check if Treasury is Configured
                                     (!project.treasuryAddress || project.treasuryAddress === "0x0000000000000000000000000000000000000000") ? (
                                         <div className="text-center">
@@ -197,25 +256,18 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                                                     const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
 
                                                     // Prepare Contract
-                                                    const licenseContract = getContract({
+                                                    const targetAddress = utilityContract?.address || licenseAddress;
+                                                    const targetContract = getContract({
                                                         client,
                                                         chain: defineChain(safeChainId),
-                                                        address: licenseAddress
+                                                        address: targetAddress
                                                     });
 
-                                                    // Calculate Value (Price * Quantity) - Native Token
-                                                    // Assuming price is in WEI or Native Unit. 
-                                                    // If price comes in as "0.1" (ETH), we convert. If it's raw "10000...", we use it.
-                                                    // Usually phase.tokenPrice is in params. 
-                                                    // Let's assume input `totalCost` is derived correctly.
-                                                    // CAUTION: If price is just a number logic, we need bigInt.
-
-                                                    // Logic: mintWithPayment(quantity) { value: totalCost }
                                                     const quantity = BigInt(Math.floor(Number(amount)));
                                                     const costInWei = BigInt(Math.floor(totalCost * 1e18)); // Assume price is ETH/Matic-like unit
 
                                                     return prepareContractCall({
-                                                        contract: licenseContract,
+                                                        contract: targetContract,
                                                         method: "function mintWithPayment(uint256 quantity) payable",
                                                         params: [quantity],
                                                         value: costInWei
@@ -231,7 +283,17 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                                                 }}
                                                 onError={(error) => {
                                                     console.error("Purchase failed", error);
-                                                    toast.error(`Error: ${error.message}`);
+                                                    if (error.message.includes('insufficient funds')) {
+                                                        if (isTestnet) {
+                                                            setNeedsFaucet(true);
+                                                            toast.error("Fondos insuficientes para cubrir el gas y el costo del artefacto.");
+                                                        } else {
+                                                            toast.error("Fondos insuficientes en tu wallet principal.");
+                                                        }
+                                                    } else {
+                                                        toast.error(`Error: ${error.message}`);
+                                                    }
+                                                    setStep('review');
                                                 }}
                                                 className="!w-full !bg-lime-400 hover:!bg-lime-500 !text-black !font-bold !py-4 !rounded-xl"
                                             >
@@ -248,6 +310,36 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                                     <button disabled className="w-full bg-zinc-700 text-gray-400 font-bold py-4 rounded-xl">
                                         Conecta tu Wallet
                                     </button>
+                                )}
+
+                                {needsFaucet && account && isTestnet && (
+                                    <div className="space-y-3 mt-3 text-center">
+                                        <button 
+                                            onClick={handleFaucet} 
+                                            disabled={isFauceting}
+                                            className="w-full bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 font-bold py-3 rounded-xl border border-blue-500/30 flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(59,130,246,0.1)]"
+                                        >
+                                            {isFauceting ? (
+                                                <>
+                                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                                    Obteniendo fondos...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Coins className="w-5 h-5" />
+                                                    Obtener Sepolia ETH de Prueba
+                                                </>
+                                            )}
+                                        </button>
+                                        
+                                        <button 
+                                            onClick={() => setShowFaucetGuide(true)}
+                                            className="inline-flex items-center gap-1.5 text-xs text-blue-400/60 hover:text-blue-400 transition-colors mx-auto group"
+                                        >
+                                            <HelpCircle className="w-3.5 h-3.5 group-hover:animate-pulse" />
+                                            ¿Necesitas aún más ETH Sepolia?
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                         )}
@@ -294,6 +386,108 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                         )}
                     </div>
                 </motion.div>
+
+                {/* External Faucet Guide Modal */}
+                <AnimatePresence>
+                    {showFaucetGuide && (
+                        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setShowFaucetGuide(false)}
+                                className="absolute inset-0 bg-black/80 backdrop-blur-md"
+                            />
+                            <motion.div
+                                initial={{ scale: 0.9, opacity: 0, y: 10 }}
+                                animate={{ scale: 1, opacity: 1, y: 0 }}
+                                exit={{ scale: 0.9, opacity: 0, y: 10 }}
+                                className="relative w-full max-w-sm bg-zinc-900 border border-blue-500/30 rounded-2xl shadow-2xl overflow-hidden"
+                            >
+                                <div className="p-6 space-y-5">
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                                                <HelpCircle className="w-6 h-6 text-blue-400" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-bold text-white leading-tight">Guía de Faucets Especializados</h3>
+                                                <p className="text-xs text-blue-400">Obtén más Sepolia para tus pruebas</p>
+                                            </div>
+                                        </div>
+                                        <button onClick={() => setShowFaucetGuide(false)} className="p-1.5 hover:bg-white/5 rounded-full transition-colors">
+                                            <X className="w-4 h-4 text-gray-500" />
+                                        </button>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div className="bg-zinc-800/40 rounded-xl p-4 border border-zinc-800">
+                                            <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                                                <span className="w-5 h-5 bg-blue-500 text-black rounded-full flex items-center justify-center text-[10px] font-bold">1</span>
+                                                Copia tu dirección
+                                            </h4>
+                                            <div className="flex items-center justify-between gap-3 bg-zinc-950 p-2.5 rounded-lg border border-zinc-700/50">
+                                                <span className="text-[10px] font-mono text-gray-400 truncate">
+                                                    {account?.address || "0x..."}
+                                                </span>
+                                                <button 
+                                                    onClick={() => {
+                                                        if (account?.address) {
+                                                            navigator.clipboard.writeText(account.address);
+                                                            toast.success("Dirección copiada");
+                                                        }
+                                                    }}
+                                                    className="p-1.5 hover:bg-white/10 rounded-md transition-colors text-blue-400"
+                                                >
+                                                    <Copy className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                            <p className="text-[11px] text-gray-500 mt-2">
+                                                Tu dirección empieza por "0x.." y puedes encontrarla también en el sidebar.
+                                            </p>
+                                        </div>
+
+                                        <div className="bg-zinc-800/40 rounded-xl p-4 border border-zinc-800">
+                                            <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                                                <span className="w-5 h-5 bg-blue-500 text-black rounded-full flex items-center justify-center text-[10px] font-bold">2</span>
+                                                Visita Google Faucet
+                                            </h4>
+                                            <p className="text-[11px] text-gray-400 mb-3">
+                                                Recomendamos el faucet oficial de Google Cloud por su velocidad y confiabilidad.
+                                            </p>
+                                            <a 
+                                                href="https://cloud.google.com/application/web3/faucet/ethereum/sepolia" 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="flex items-center justify-center gap-2 w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition-colors shadow-lg shadow-blue-900/20"
+                                            >
+                                                Ir a Google Faucet
+                                                <ExternalLink className="w-3.5 h-3.5" />
+                                            </a>
+                                        </div>
+
+                                        <div className="bg-zinc-800/40 rounded-xl p-4 border border-zinc-800">
+                                            <h4 className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
+                                                <span className="w-5 h-5 bg-blue-500 text-black rounded-full flex items-center justify-center text-[10px] font-bold">3</span>
+                                                Pega y Obtén
+                                            </h4>
+                                            <p className="text-[11px] text-gray-400 leading-relaxed">
+                                                Pega tu dirección en el campo "Dirección de Billetera" y haz clic en "Receive ETH". ¡Eso es todo!
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <button 
+                                        onClick={() => setShowFaucetGuide(false)}
+                                        className="w-full py-3 text-sm text-gray-400 hover:text-white transition-colors pt-2"
+                                    >
+                                        Entendido, volver
+                                    </button>
+                                </div>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>
             </div >
         </AnimatePresence >
     );

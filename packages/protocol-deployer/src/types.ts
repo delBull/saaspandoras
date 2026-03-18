@@ -179,5 +179,6 @@ export interface NFTPassConfig {
   transferable?: boolean;  // Default: true
   burnable?: boolean;      // Default: false
   artifactType?: ArtifactType; // V2 type classification
+  nftType?: string;        // Used to determine if it is an Identity pass
 }
 

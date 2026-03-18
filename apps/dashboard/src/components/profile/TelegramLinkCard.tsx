@@ -5,11 +5,15 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@saas
 import { Button } from '@saasfly/ui/button';
 import { DevicePhoneMobileIcon, CheckCircleIcon, LinkIcon, XCircleIcon } from '@heroicons/react/24/outline';
 import { validateTelegramLinkAction } from '@/app/actions/telegram';
+import { useProfile } from '@/hooks/useProfile';
 
 export const TelegramLinkCard = () => {
+    const { profile, isLoading: isProfileLoading } = useProfile();
     const [challenge, setChallenge] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [status, setStatus] = useState<{ success: boolean; message: string } | null>(null);
+
+    const isLinked = !!profile?.telegramId;
 
     const handleValidate = async () => {
         if (!challenge.trim()) {
@@ -35,8 +39,6 @@ export const TelegramLinkCard = () => {
 
         if (result.success) {
             setChallenge(''); // Limpiar tras éxito
-            // Optional: emit an event or force a router.refresh() 
-            // if we wanted to update global states instantly.
             setTimeout(() => {
                 window.location.reload();
             }, 1500);
@@ -53,25 +55,36 @@ export const TelegramLinkCard = () => {
                     Bóveda Telegram PBOX
                 </CardTitle>
                 <CardDescription>
-                    Pega aquí el enlace seguro o código 'Challenge' generado por la MiniApp de Pandoras en Telegram para vincular tu identidad Core y sincronizar tus retornos.
+                    {isLinked 
+                        ? 'Tu cuenta está correctamente vinculada con tu identidad en Telegram.'
+                        : 'Pega aquí el enlace seguro o código \'Challenge\' generado por la MiniApp de Pandoras en Telegram para vincular tu identidad Core.'
+                    }
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 relative z-10">
-                {status?.success ? (
+                {isLinked || status?.success ? (
                     <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 flex flex-col items-center justify-center space-y-2">
                         <CheckCircleIcon className="w-8 h-8 text-green-400" />
-                        <span className="text-sm font-medium text-green-400 text-center">{status.message}</span>
-                        <span className="text-xs text-green-400/70 text-center">Actualizando Perfil...</span>
+                        <span className="text-sm font-medium text-green-400 text-center">
+                            {isLinked ? 'CUENTA VINCULADA' : status?.message}
+                        </span>
+                        {isLinked && (
+                            <span className="text-xs text-green-400/70 text-center font-mono">
+                                ID: {profile?.telegramId}
+                            </span>
+                        )}
+                        {!isLinked && <span className="text-xs text-green-400/70 text-center">Actualizando Perfil...</span>}
                     </div>
                 ) : (
                     <div className="space-y-3">
                         <input
                             type="text"
                             placeholder="Ej: 550e8400-e29b-41d4-a716-446655440000"
-                            className="w-full bg-zinc-900/80 p-3 rounded-lg border border-zinc-800 text-sm text-gray-200 placeholder-zinc-600 focus:outline-none focus:border-blue-500 transition-colors"
+                            className="w-full bg-zinc-900/80 p-3 rounded-lg border border-zinc-800 text-sm text-gray-200 placeholder-zinc-600 focus:outline-none focus:border-blue-500 transition-colors disabled:opacity-50"
                             value={challenge}
                             onChange={(e) => setChallenge(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleValidate()}
+                            disabled={isProfileLoading}
                         />
 
                         {status && !status.success && (
@@ -83,7 +96,7 @@ export const TelegramLinkCard = () => {
 
                         <Button
                             onClick={handleValidate}
-                            disabled={isLoading}
+                            disabled={isLoading || isProfileLoading}
                             className="w-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2"
                         >
                             {isLoading ? (
@@ -95,9 +108,23 @@ export const TelegramLinkCard = () => {
                                 </>
                             )}
                         </Button>
-                        <p className="text-[10px] text-gray-500 text-center uppercase tracking-widest mt-2">
+                        <p className="text-[10px] text-gray-500 text-center uppercase tracking-widest mt-2 px-4">
                             Abre la MiniApp en tu teléfono, pulsa "Generar Enlace" y pega el resultado arriba.
                         </p>
+                        
+                        <div className="pt-2 mt-4 border-t border-zinc-800/50 text-center">
+                             <p className="text-[11px] text-zinc-400">
+                                ¿Aún no tienes la app de Pandoras? <br/>
+                                <a 
+                                    href="https://t.me/pandorasAlphaBot" 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-blue-400 hover:text-blue-300 underline font-medium"
+                                >
+                                    Ábrela aquí en Telegram
+                                </a>
+                             </p>
+                        </div>
                     </div>
                 )}
             </CardContent>

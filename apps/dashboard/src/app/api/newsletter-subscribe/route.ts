@@ -1,5 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { notifyNewsletterSubscription } from '@/lib/discord';
+
 
 // Configure Resend - SECURE ENVIRONMENT VARIABLES
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
@@ -93,7 +95,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-        // Send email via Resend with React Email template
+    // Send email via Resend with React Email template
     if (RESEND_API_KEY && contactEmail) {
       try {
         // Import React Email render function from correct package
@@ -123,6 +125,7 @@ export async function POST(request: NextRequest) {
           to: [contactEmail],
           subject: '¡Bienvenido a Pandora\'s - La Evolución del Creador!',
           html: html,
+          tags: [{ name: 'audience', value: 'newsletter_generic' }]
         };
 
         const emailResponse = await fetch('https://api.resend.com/emails', {
@@ -145,7 +148,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // 👾 Notify Discord
+    try {
+      await notifyNewsletterSubscription(contactEmail || email, source || 'newsletter_generic');
+    } catch (discordError) {
+      console.warn('⚠️ Discord notify failed (Newsletter):', discordError);
+    }
+
     // Log the subscription (backup)
+
     console.log('Newsletter Subscription:', {
       email: contactEmail || email,
       phone: phoneNumber,
@@ -174,9 +185,9 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Newsletter subscription error:', error);
-    
+
     return NextResponse.json(
-      { 
+      {
         success: false,
         message: 'Error interno del servidor. Inténtalo más tarde.',
         error: error instanceof Error ? error.message : 'Unknown error'

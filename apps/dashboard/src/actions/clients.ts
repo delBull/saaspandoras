@@ -4,9 +4,11 @@ import { db } from "@/db";
 import { clients, paymentLinks, transactions, sowTemplates } from "@/db/schema";
 import { desc, eq, sql } from "drizzle-orm";
 import { sendEmail } from "@/lib/email/client";
+import { sendPaymentNotification } from "@/lib/discord/notifier";
 
 export async function getClients() {
     try {
+        // Fetches all clients from the database
         const results = await db.select().from(clients).orderBy(desc(clients.createdAt));
         return { success: true, data: results };
     } catch (e) {
@@ -17,13 +19,13 @@ export async function getClients() {
 
 export async function getClientLinks(clientId: string) {
     try {
-        const results = await db.select().from(paymentLinks)
-            .where(eq(paymentLinks.clientId, clientId))
-            .orderBy(desc(paymentLinks.createdAt));
-
-        // Manual join for transactions status - simplfied for now
-        // We really want to know if it's "PAID".
-        // Let's attach the latest transaction status if possible, or just return links.
+        const results = await db.query.paymentLinks.findMany({
+            where: eq(paymentLinks.clientId, clientId),
+            with: {
+                transactions: true
+            },
+            orderBy: desc(paymentLinks.createdAt)
+        });
 
         return { success: true, data: results };
     } catch (e) {
@@ -77,6 +79,24 @@ export async function updatePaymentStatus(linkId: string, status: 'pending' | 'p
         // Trigger Business Logic if Paid
         if (status === 'paid') {
             await processPaymentSuccess(linkId);
+
+            // Notify Discord (Optional, do not fail entire process if this fails)
+            try {
+                await sendPaymentNotification({
+                    type: "payment_received",
+                    amount: Number(link.amount),
+                    currency: link.currency || "USD",
+                    method: method,
+                    status: "completed",
+                    linkId: link.id,
+                    clientId: link.clientId,
+                    metadata: {
+                        message: `Pago confirmado para enlace ${link.id}`
+                    }
+                });
+            } catch (discordErr) {
+                console.error("Non-fatal error: Discord notification failed", discordErr);
+            }
         }
 
         return { success: true };
@@ -89,33 +109,30 @@ export async function updatePaymentStatus(linkId: string, status: 'pending' | 'p
 export async function processPaymentSuccess(linkId: string) {
     try {
         // Fetch Link & Client details
-        // We re-fetch to ensure we have latest state or we could pass arguments. 
-        // Re-fetching is safer for standalone usage.
         const link = await db.query.paymentLinks.findFirst({
             where: eq(paymentLinks.id, linkId),
             with: { client: true }
         });
 
-        if (!link || !link.client) return { success: false, error: "Link or Client not found" };
+        if (!link?.client) return { success: false, error: "Link or Client not found" };
 
         const client = link.client as any;
         let newStatus = client.status;
-        const meta = (client.metadata as any) || {};
 
         // 1. Advance Protocol State based on Link Title (SOW)
-        if (link.title.includes("SOW Tier 1")) {
+        if (link.title.includes("SOW Tier 1") || link.title.includes("Tier 1")) {
             newStatus = 'closed_won';
             await advanceProtocolState(link.clientId, 'IN_PROGRESS_TIER_1');
-        } else if (link.title.includes("SOW Tier 2")) {
+        } else if (link.title.includes("SOW Tier 2") || link.title.includes("Tier 2")) {
             await advanceProtocolState(link.clientId, 'IN_PROGRESS_TIER_2');
-        } else if (link.title.includes("SOW Tier 3")) {
+        } else if (link.title.includes("SOW Tier 3") || link.title.includes("Tier 3")) {
             await advanceProtocolState(link.clientId, 'IN_PROGRESS_TIER_3');
         } else {
             // Standard payment
             newStatus = 'closed_won';
         }
 
-        // 2. Update Client Status in DB
+        // 2. Update Client Status in DB (Only if changed)
         if (newStatus !== client.status) {
             await db.update(clients)
                 .set({ status: newStatus })
@@ -141,7 +158,7 @@ export async function manualSendReceipt(linkId: string) {
             }
         });
 
-        if (link && link.client) {
+        if (link?.client) {
             const c = link.client as any;
             await sendReceiptEmail(c.email, c.name || "Builder", link.title, link.amount);
             return { success: true };

@@ -19,6 +19,7 @@ import {
   projects,
   userReferrals,
   gamificationEvents,
+  actionLogs,
   type GamificationProfile as DrizzleGamificationProfile
 } from '@/db/schema';
 import { eq, sql, desc, or, and } from 'drizzle-orm';
@@ -228,8 +229,36 @@ export class GamificationService {
         userId = userRecord[0].id.toString();
       }
 
+      // 🔥 UNIFIED HISTORY: Add to action_logs for all important ecosystem actions
+      const actionsToLog = [
+        'artifact_purchased', 
+        'daily_login', 
+        'achievement_unlocked', 
+        'project_submitted',
+        'referral_made',
+        'referral_joined',
+        'referral_completed'
+      ];
+      if (actionsToLog.includes(eventType)) {
+        try {
+          await db.insert(actionLogs).values({
+            actionType: eventType,
+            correlationId: `event_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+            protocolId: metadata?.protocolId ? Number(metadata.protocolId) : null,
+            userId: userId,
+            metadata: metadata || {},
+            createdAt: new Date()
+          });
+          console.log(`📝 Logged action ${eventType} to action_logs for user ${userId}`);
+        } catch (logError) {
+          console.warn('⚠️ Failed to log activity to action_logs:', logError);
+        }
+      }
+
       // Get points for this event type
-      let points = this.getEventPoints(eventType);
+      let points = metadata?.pointsOverride && typeof metadata.pointsOverride === 'number'
+        ? metadata.pointsOverride
+        : this.getEventPoints(eventType);
 
       // 🔥 FIX: Special case for achievement unlocks from S2S/Edge
       if (eventType === 'ACHIEVEMENT_UNLOCKED' && metadata?.achievementId) {
@@ -375,7 +404,11 @@ export class GamificationService {
     try {
       // Get user numeric ID
       const user = await db
-        .select({ id: users.id })
+        .select({ 
+          id: users.id,
+          telegramId: users.telegramId,
+          hasPandorasKey: users.hasPandorasKey
+        })
         .from(users)
         .where(eq(users.walletAddress, userId))
         .limit(1);
@@ -385,6 +418,8 @@ export class GamificationService {
       }
 
       const userIdInt = user[0].id;
+      const telegramId = user[0].telegramId;
+      const hasPandorasKey = user[0].hasPandorasKey;
 
       // Check if user has any unlocked achievements (excluding "Primer Login")
       const primerLoginAchievement = await db.query.achievements.findFirst({
@@ -401,14 +436,15 @@ export class GamificationService {
         ua => ua.isUnlocked && (!primerLoginAchievement || ua.achievementId !== primerLoginAchievement.id)
       );
 
-      if (hasUnlockedAchievementsExcludingLogin) {
+      // 🎯 TRIGGER UPDATE if they have achievements OR linked Telegram OR Pandora's Key
+      if (hasUnlockedAchievementsExcludingLogin || !!telegramId || hasPandorasKey) {
         // Update referral progress directly (avoiding circular imports)
         await this.updateReferralProgress(userId);
 
-        // 🎯 CHECK REFERRAL COMPLETION: Si el usuario desbloqueó un achievement, verificar si completa un referido
+        // 🎯 CHECK REFERRAL COMPLETION: Si el usuario desbloqueó un achievement o vinculó telegram, verificar si completa un referido
         await this.checkAndAwardReferralCompletionBonus(userId);
 
-        console.log(`✅ Referral progress checked for existing achievements: ${userId.slice(0, 6)}...`);
+        console.log(`✅ Referral progress checked for achievements/telegram: ${userId.slice(0, 6)}... (achs=${hasUnlockedAchievementsExcludingLogin}, tg=${!!telegramId})`);
       }
     } catch (error) {
       console.warn('⚠️ Failed to check referral progress for achievements:', error);
@@ -439,13 +475,15 @@ export class GamificationService {
         return; // No hay referral o ya está completado
       }
 
-      // Verificar progreso del referido - obtener tanto KYC como ID
+      // Verificar progreso del referido - obtener tanto KYC, ID como Pandora's Key
       const user = await db.query.users.findFirst({
         where: eq(users.walletAddress, userWallet),
         columns: {
           id: true,
           kycCompleted: true,
-          kycLevel: true
+          kycLevel: true,
+          telegramId: true,
+          hasPandorasKey: true
         }
       });
 
@@ -477,12 +515,12 @@ export class GamificationService {
       const hasCompletedOnboarding = (user?.kycCompleted ?? false) && user?.kycLevel === 'basic';
       const hasFirstProject = userProjects.length > 0;
       const hasUnlockedAchievements = unlockedAchievementsExcludingLogin > 0;
+      const hasLinkedTelegram = !!user?.telegramId;
+      const hasPandorasKey = !!user?.hasPandorasKey;
 
-      // Si ya tenía estos valores, no actualizar
-      if (referral.referredCompletedOnboarding === hasCompletedOnboarding &&
-        referral.referredFirstProject === hasFirstProject) {
-        return;
-      }
+      // Si ya tenía estos valores, no actualizar flags de onboarding o proyecto, 
+      // pero CONTINUAR para ver si podemos marcar como completado por otras razones (telegram, logros, key)
+      const isNowCompleted = hasCompletedOnboarding || hasFirstProject || hasUnlockedAchievements || hasLinkedTelegram || hasPandorasKey;
 
       // Actualizar progreso
       await db
@@ -490,13 +528,13 @@ export class GamificationService {
         .set({
           referredCompletedOnboarding: hasCompletedOnboarding,
           referredFirstProject: hasFirstProject,
-          // Si completó al menos una acción importante (KYC, proyecto o achievement), marcar como completed
-          status: (hasCompletedOnboarding || hasFirstProject || hasUnlockedAchievements) ? 'completed' : 'pending',
-          completedAt: (hasCompletedOnboarding || hasFirstProject || hasUnlockedAchievements) ? new Date() : null
+          // Si completó al menos una acción importante (KYC, proyecto, achievement O TELEGRAM), marcar como completed
+          status: isNowCompleted ? 'completed' : 'pending',
+          completedAt: isNowCompleted ? new Date() : null
         })
         .where(eq(userReferrals.referredWalletAddress, userWallet));
 
-      console.log(`✅ Referral progress updated for ${userWallet.slice(0, 6)}...: onboarding=${hasCompletedOnboarding}, project=${hasFirstProject}, achievements=${hasUnlockedAchievements}, status=${(hasCompletedOnboarding || hasFirstProject || hasUnlockedAchievements) ? 'completed' : 'pending'}`);
+      console.log(`✅ Referral progress updated for ${userWallet.slice(0, 6)}...: onboarding=${hasCompletedOnboarding}, project=${hasFirstProject}, achievements=${hasUnlockedAchievements}, telegram=${hasLinkedTelegram}, status=${isNowCompleted ? 'completed' : 'pending'}`);
 
     } catch (error) {
       console.error('Error updating referral progress:', error);
@@ -812,6 +850,7 @@ export class GamificationService {
       'investment_made': 25,
       'daily_login': 10,
       'user_registered': 20,
+      'referral_joined': 50, // Puntos para el referido por unirse
       'referral_made': 200,
       'referral_completed': 100, // Bonus adicional cuando referido completa onboarding + proyecto
       'course_started': 10,
@@ -846,7 +885,10 @@ export class GamificationService {
       'project_application_approved': 'projects',
       'investment_made': 'investments',
       'user_registered': 'community',
-      'daily_login': 'daily'
+      'daily_login': 'daily',
+      'referral_made': 'community',
+      'referral_joined': 'community',
+      'referral_completed': 'community'
     };
 
     return categoryMap[normalizedEventType] ?? 'special';
@@ -863,7 +905,9 @@ export class GamificationService {
       'project_application_submitted': 'project_application',
       'project_application_approved': 'project_application',
       'investment_made': 'investment',
-      'daily_login': 'daily_login'
+      'daily_login': 'daily_login',
+      'referral_made': 'community',
+      'referral_joined': 'community'
     };
 
     return categoryMap[normalizedEventType] ?? 'special_event';
@@ -1204,6 +1248,7 @@ export class GamificationService {
       if (existingRows.length > 0 && existingRows[0].is_unlocked) {
         return; // Already unlocked
       }
+      const pointsReward = achievement[0].pointsReward || 0;
 
       if (existingRows.length > 0) {
         // Update existing using raw SQL
@@ -1226,6 +1271,22 @@ export class GamificationService {
       }
 
       console.log(`🎉 Achievement unlocked: ${achievementName} for user ${userIdString}`);
+
+      // 💰 AWARD POINTS for achievement
+      if (pointsReward > 0) {
+        try {
+          await this.awardPointsToDb(
+            userIdString,
+            pointsReward,
+            `Logro Desbloqueado: ${achievementName}`,
+            achievement[0].type || 'achievement',
+            { achievementId: achievementId.toString(), achievementName }
+          );
+          console.log(`💎 Awarded ${pointsReward} points for achievement: ${achievementName}`);
+        } catch (pointError) {
+          console.warn(`⚠️ Failed to award points for achievement ${achievementName}:`, pointError);
+        }
+      }
 
       // 🎯 UPDATE REFERRAL PROGRESS: Si el usuario desbloqueó un achievement, actualizar progreso de referidos
       if (achievementName !== 'Primer Login') { // Excluir "Primer Login" ya que es automático

@@ -17,6 +17,7 @@ import {
   HelpCircle,
   MessageCircle,
   AlertCircle,
+  Trophy,
 } from "lucide-react";
 
 import { ModernBackground } from "@/components/ui/modern-background";
@@ -149,6 +150,16 @@ function QuickHelp() {
         "Seguridad en Web3",
       ]
     },
+    {
+      category: "Gamificación",
+      icon: Trophy,
+      questions: [
+        "Diferencia entre XP y Harvest Credits",
+        "Cómo reclamar tokens PBOX",
+        "Sistema de referidos y niveles",
+        "Límites de claim y auditoría",
+      ]
+    },
   ];
 
   return (
@@ -206,6 +217,14 @@ function FAQ() {
     {
       question: "¿Puedo integrar mi protocolo con Blockchain actual?",
       answer: "Sí. Diseñamos para interoperabilidad. Los contratos son upgradeables y podemos añadir bridges o integraciones multi-chain según evolución de tu proyecto."
+    },
+    {
+      question: "¿Qué es el sistema de Reputación (XP) y Harvest Credits?",
+      answer: "Es nuestro motor de incentivos. La XP mide tu contribución (no transferible), mientras que los Harvest Credits son canjeables 1:1 por tokens PBOX reales en la red de Base."
+    },
+    {
+      question: "¿Existe un límite para reclamar recompensas?",
+      answer: "Sí, para mantener la estabilidad económica, los reclamos mayores a 500 PBOX pasan por una validación automática de riesgo. Esto protege el valor del token para todos los participantes."
     },
   ];
 

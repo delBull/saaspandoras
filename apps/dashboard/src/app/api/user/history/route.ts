@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "~/db";
-import { gamificationEvents, users } from "~/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { gamificationEvents, users, actionLogs, projects } from "~/db/schema";
+import { eq, desc, or, and } from "drizzle-orm";
 
 export const dynamic = 'force-dynamic';
 
@@ -15,19 +15,66 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: "Wallet required" }, { status: 400 });
         }
 
-        const user = await db.select({ id: users.id }).from(users).where(eq(users.walletAddress, wallet)).limit(1);
+        const user = await db.select({ id: users.id }).from(users).where(eq(users.walletAddress, wallet.toLowerCase())).limit(1);
+        const userId = (user && user.length > 0) ? user[0]?.id : null;
 
-        if (!user || user.length === 0 || !user[0]) {
-            return NextResponse.json({ events: [] });
+        // 1. Fetch Gamification Events (Only if user exists)
+        let gEvents: any[] = [];
+        if (userId) {
+            gEvents = await db.select()
+                .from(gamificationEvents)
+                .where(eq(gamificationEvents.userId, userId))
+                .orderBy(desc(gamificationEvents.createdAt))
+                .limit(limit);
         }
 
-        const events = await db.select()
-            .from(gamificationEvents)
-            .where(eq(gamificationEvents.userId, user[0].id))
-            .orderBy(desc(gamificationEvents.createdAt))
-            .limit(limit);
+        // 2. Fetch Action Logs (Purchases, Mints) - Can be by userId OR wallet
+        // Ensure we search by both to catch legacy and new logs
+        const aLogs = await db.select({
+            id: actionLogs.id,
+            type: actionLogs.actionType,
+            createdAt: actionLogs.createdAt,
+            metadata: actionLogs.metadata,
+            protocolName: projects.title
+        })
+        .from(actionLogs)
+        .leftJoin(projects, eq(actionLogs.protocolId, projects.id))
+        .where(
+            or(
+                eq(actionLogs.userId, wallet.toLowerCase()),
+                ...(userId ? [eq(actionLogs.userId, userId)] : [])
+            )
+        )
+        .orderBy(desc(actionLogs.createdAt))
+        .limit(limit);
 
-        return NextResponse.json({ events });
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`[History] Found ${gEvents.length} gEvents and ${aLogs.length} aLogs for ${wallet}`);
+        }
+
+        // 3. Unify and Sort
+        const unified = [
+            ...gEvents.map(e => ({
+                id: `g_${e.id}`,
+                type: e.type,
+                description: e.metadata ? (e.metadata as any).description : "",
+                points: e.points,
+                createdAt: e.createdAt,
+                source: 'gamification'
+            })),
+            ...aLogs.map(a => ({
+                id: `a_${a.id}`,
+                type: a.type,
+                description: a.protocolName ? `Interacción con ${a.protocolName}` : "",
+                points: 0,
+                createdAt: a.createdAt,
+                source: 'action_log'
+            }))
+        ]
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, limit);
+
+        return NextResponse.json({ events: unified });
 
     } catch (error) {
         console.error("Error fetching user history:", error);

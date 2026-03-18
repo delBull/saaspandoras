@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { marketingExecutions, marketingCampaigns, whatsappPreapplyLeads, users } from "@/db/schema";
+import { marketingExecutions, marketingCampaigns, clients, users } from "@/db/schema";
 import { eq, and, lte, sql } from "drizzle-orm";
 import { sendEmail } from "@/lib/email/client";
 import { sendWhatsAppMessage } from "@/lib/whatsapp/utils/client";
@@ -27,7 +27,7 @@ export class MarketingEngine {
 
     // ... existing startCampaign and processDueExecutions ...
 
-    static async startCampaign(campaignName: string, targetId: { userId?: string, leadId?: number }) {
+    static async startCampaign(campaignName: string, targetId: { userId?: string, leadId?: string }) {
         console.log(`[MarketingEngine] Starting campaign '${campaignName}' for user ${JSON.stringify(targetId)}`);
 
         const [campaign] = await db
@@ -112,13 +112,12 @@ export class MarketingEngine {
         const contact = { phone: '', email: '', name: 'Friend' };
 
         if (execution.leadId) {
-            const leadId = parseInt(execution.leadId);
-            const results = await db.select().from(whatsappPreapplyLeads).where(eq(whatsappPreapplyLeads.id, leadId)).limit(1);
+            const results = await db.select().from(clients).where(eq(clients.id, execution.leadId)).limit(1);
             const lead = results[0];
             if (lead) {
-                contact.phone = lead.userPhone;
-                contact.email = lead.applicantEmail || '';
-                contact.name = lead.applicantName || 'Friend';
+                contact.phone = lead.whatsapp || lead.phone || '';
+                contact.email = lead.email || '';
+                contact.name = lead.name || 'Friend';
             }
         } else if (execution.userId) {
             const [user] = await db.select().from(users).where(eq(users.id, execution.userId)).limit(1);

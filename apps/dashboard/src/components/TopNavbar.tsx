@@ -21,6 +21,7 @@ import { usePathname } from "next/navigation";
 import { PendingRewardsNotification } from "@/components/PendingRewardsNotification";
 import { client } from "@/lib/thirdweb-client";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
+import { wallets } from "@/lib/wallets";
 import { config } from "@/config";
 import { useTour } from "@/components/onboarding/TourEngine";
 import { RocketLaunchIcon, BeakerIcon, GlobeAltIcon } from "@heroicons/react/24/outline";
@@ -324,14 +325,7 @@ export function TopNavbar({
                       showThirdwebBranding: false,
                       showAllWallets: false,
                       size: "compact",
-                      wallets: [
-                        inAppWallet({
-                          auth: {
-                            options: ["email", "google", "apple", "facebook", "passkey"],
-                          },
-                        }),
-                        createWallet("io.metamask"),
-                      ],
+                       wallets,
                     })
                   }}
                   className="flex items-center gap-2 px-4 py-2 bg-lime-400 hover:bg-lime-500 text-gray-900 rounded-lg transition-colors shadow-lg shadow-lime-400/20"

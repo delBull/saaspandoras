@@ -15,7 +15,6 @@ import { ReferralsCard } from '../../../components/ReferralsCard';
 import {
   ProfileHeader,
   WalletInfo,
-  BasicInfo,
   KycInfo,
   AddressInfo,
   AccountStatus,
@@ -128,12 +127,6 @@ export default function ProfilePage() {
         <div className="lg:col-span-1 space-y-4">
           <ProfileHeader />
 
-          <BasicInfo
-            name={profile?.name ?? undefined}
-            email={profile?.email ?? undefined}
-            occupation={profile?.kycData?.occupation}
-            taxId={profile?.kycData?.taxId}
-          />
 
           {profile?.kycCompleted && (
             <KycInfo

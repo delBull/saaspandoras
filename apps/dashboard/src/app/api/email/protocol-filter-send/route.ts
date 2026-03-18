@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import { db } from "@/db";
-import { whatsappPreapplyLeads } from "@/db/schema";
 import { Resend } from 'resend';
 import PandorasWelcomeEmail from '@/emails/creator-email'; // Reuse or create new template if needed
-import { sql } from 'drizzle-orm';
+import { syncLeadAsClient } from '@/actions/leads';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
@@ -21,22 +20,12 @@ export async function POST(request: Request) {
 
         // 1. Sync Lead
         try {
-            await db.insert(whatsappPreapplyLeads).values({
-                applicantEmail: email,
-                applicantName: name || 'Architect',
-                userPhone: email, // Placeholder logic
-                status: 'pending',
-                answers: {
-                    rawAnswers: answers,
-                    source: source || 'utility_protocol_landing',
-                    projectDescription: 'Interested in Utility Protocol Architecture'
-                }
-            }).onConflictDoUpdate({
-                target: whatsappPreapplyLeads.userPhone,
-                set: {
-                    updatedAt: new Date(),
-                    answers: sql`jsonb_set(whatsapp_preapply_leads.answers, '{projectDescription}', '"Updated Interest in Utility Protocol"'::jsonb)`
-                }
+            await syncLeadAsClient({
+                email,
+                name: name || 'Architect',
+                source: source || 'utility_protocol_landing',
+                notes: `Interested in Utility Protocol Architecture. Answers: ${JSON.stringify(answers)}`,
+                metadata: { answers }
             });
             console.log('✅ Lead synced to DB');
         } catch (e) {
@@ -56,6 +45,7 @@ export async function POST(request: Request) {
                     source: 'utility-protocol',
                     // We can pass a specific prop here if the template supports it
                 }),
+                tags: [{ name: 'audience', value: 'utility' }]
             });
 
             if (error) throw error;
@@ -65,7 +55,10 @@ export async function POST(request: Request) {
             return NextResponse.json({ message: 'Error sending email' }, { status: 500 });
         }
 
+        // Discord notification is already handled by syncLeadAsClient
+
         return NextResponse.json({ success: true });
+
 
     } catch (error) {
         console.error('❌ Server Error:', error);

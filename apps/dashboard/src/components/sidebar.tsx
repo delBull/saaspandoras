@@ -25,7 +25,7 @@ import { ethereum } from "thirdweb/chains";
 import { WalletBalance, NetworkSelector, ConnectWalletButton } from "@/components/wallet";
 import { SUPPORTED_NETWORKS, DEFAULT_NETWORK } from "@/config/networks";
 import { SUPER_ADMIN_WALLET } from "@/lib/constants";
-import { Hash, PackageCheckIcon, BookOpen, Lock } from "lucide-react";
+import { Hash, PackageCheckIcon, BookOpen, Lock, HelpCircle } from "lucide-react";
 import { usePathname } from 'next/navigation';
 import * as Tooltip from "@radix-ui/react-tooltip";
 
@@ -91,9 +91,13 @@ export function Sidebar({
   // Track if we've already set the initial state for /applicants page
   const autoCloseStateSet = useRef(false);
 
-  // Auto-close sidebar when navigating to /applicants or /profile (but allow manual opening)
+  // Auto-close sidebar when navigating to /applicants, /profile, or course pages (but allow manual opening)
   useEffect(() => {
-    const shouldAutoClose = pathname === '/applicants' || pathname.startsWith('/projects/') || pathname === '/profile';
+    const shouldAutoClose = 
+      pathname === '/applicants' || 
+      pathname.startsWith('/projects/') || 
+      pathname === '/profile' ||
+      pathname.startsWith('/education/course/');
 
     if (shouldAutoClose && !autoCloseStateSet.current) {
       console.log('📍 Auto-close page detected - setting initial closed state for:', pathname);
@@ -324,6 +328,16 @@ export function Sidebar({
           setProfileDropdown(false);
           if (isMobile) setMobileOpen(false);
         }
+      },
+      {
+        href: "/education",
+        icon: <BookOpen className="w-5 h-5 text-gray-400" />,
+        label: "Educación",
+        description: "Cursos Web3 · XP & Credits",
+        onClick: () => {
+          setProfileDropdown(false);
+          if (isMobile) setMobileOpen(false);
+        }
       }
     ];
 
@@ -409,7 +423,7 @@ export function Sidebar({
         : []),
     ],
     [isAdmin, account]
-  );
+);
 
   const logoVariants = {
     hidden: { opacity: 0, scale: 0.95, y: -10 },

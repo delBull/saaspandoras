@@ -34,14 +34,13 @@ export function useUserAssets() {
             const processedAddresses = new Set<string>();
 
             // Helper to read balance
-            const checkBalance = async (address: string, contractType: 'access' | 'utility', project: Project) => {
+            const checkBalance = async (address: string, contractType: 'access' | 'utility', project: Project, artifactChainId?: number) => {
                 const normalizedAddr = address.toLowerCase();
                 if (processedAddresses.has(normalizedAddr)) return;
                 processedAddresses.add(normalizedAddr);
 
                 try {
-                    // Use project chain or default governance chain
-                    const chainId = project.chainId || Number(config.governanceChain.id);
+                    const chainId = artifactChainId || project.chainId || Number(config.governanceChain.id);
                     const chain = defineChain(chainId);
 
                     const contract = getContract({ client, chain, address });
@@ -52,16 +51,37 @@ export function useUserAssets() {
                     }) as bigint;
 
                     if (balance > 0n) {
-                        foundAssets.push({
-                            type: contractType === 'access' ? 'access' : 'artifact',
-                            project,
-                            balance: balance.toString(),
-                            name: contractType === 'access' ? `${project.title} Access` : `${project.title} Utility`,
-                            tokenAddress: address
-                        });
+                        const totalBalance = Number(balance);
+                        
+                        if (contractType === 'access' && totalBalance > 1) {
+                            // Split: 1 Access + (Balance - 1) Artifacts
+                            foundAssets.push({
+                                type: 'access',
+                                project,
+                                balance: "1",
+                                name: `${project.title} Access`,
+                                tokenAddress: address
+                            });
+                            
+                            foundAssets.push({
+                                type: 'artifact',
+                                project,
+                                balance: (totalBalance - 1).toString(),
+                                name: `${project.title} Artifact (Utility)`,
+                                tokenAddress: address
+                            });
+                        } else {
+                            foundAssets.push({
+                                type: contractType === 'access' ? 'access' : 'artifact',
+                                project,
+                                balance: balance.toString(),
+                                name: contractType === 'access' ? `${project.title} Access` : `${project.title} Artifact`,
+                                tokenAddress: address
+                            });
+                        }
                     }
                 } catch (e) {
-                    console.warn(`Failed to check balance for ${project.slug} at ${address}`, e);
+                    console.warn(`Failed to check balance for ${project.slug} at ${address} on chain ${artifactChainId || project.chainId}`, e);
                 }
             };
 
@@ -81,7 +101,7 @@ export function useUserAssets() {
                     project.artifacts.forEach((artifact: any) => {
                         if (artifact.address) {
                             const type = artifact.type?.toLowerCase() === 'access' ? 'access' : 'utility';
-                            checks.push(checkBalance(artifact.address, type as any, project));
+                            checks.push(checkBalance(artifact.address, type as any, project, artifact.chainId ? Number(artifact.chainId) : undefined));
                         }
                     });
                 }
@@ -92,7 +112,7 @@ export function useUserAssets() {
                     w2eArtifacts.forEach((artifact: any) => {
                         if (artifact.address) {
                             const type = artifact.type?.toLowerCase() === 'access' ? 'access' : 'utility';
-                            checks.push(checkBalance(artifact.address, type as any, project));
+                            checks.push(checkBalance(artifact.address, type as any, project, artifact.chainId ? Number(artifact.chainId) : undefined));
                         }
                     });
                 }

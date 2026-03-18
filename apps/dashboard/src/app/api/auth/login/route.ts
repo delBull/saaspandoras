@@ -14,6 +14,19 @@ import crypto from "crypto";
 
 export const runtime = "nodejs";
 
+/**
+ * 🚨 CRITICAL AUTHENTICATION ROUTE 🚨
+ * ============================================================================
+ * WARNING: DO NOT MODIFY THE SIWE VERIFICATION LOGIC.
+ * 
+ * This route verifies the EIP-4361 (SIWE) signature. 
+ * Because the frontend uses EIP-7702 (Gas Sponsorship), the `signature` here 
+ * is signed by the EOA, NOT a Smart Account.
+ * 
+ * If you change the verification method to expect an ERC-1271 Smart Wallet 
+ * signature, ALL SOCIAL LOGINS WILL FAIL with a 401 Unauthorized error.
+ * ============================================================================
+ */
 export async function POST(request: Request) {
     try {
         console.log("🔐 [LOGIN] ========== REQUEST RECEIVED ==========");
@@ -190,49 +203,119 @@ export async function POST(request: Request) {
         });
         console.log(`✅ Session ${sid} created for user ${userId}`);
 
-        // 9. Issue Scoped JWT with sid - REVERTED TO jsonwebtoken (HS256)
-        const secret = process.env.JWT_SECRET || process.env.JWT_PRIVATE_KEY;
+        // 9. Issue Scoped JWT with sid - Support RS256 or HS256
+        const privateKeyRaw = process.env.JWT_PRIVATE_KEY;
+        const secret = privateKeyRaw || process.env.JWT_SECRET;
+        
         if (!secret) {
-            console.error("❌ CRITICAL: JWT_SECRET (or PRIVATE_KEY) is not defined");
+            console.error("❌ CRITICAL: JWT_PRIVATE_KEY (or JWT_SECRET) is not defined");
             throw new Error("SERVER_CONFIG_ERROR");
         }
 
-        const token = jwt.sign({
-            sub: userId,
-            sid: sid,
-            address: walletAddress,
-            scope: 'web',
-            hasAccess,
-            chainId: config.chain.id,
-            v: parseInt(process.env.JWT_VERSION || "1"),
-            iat: Math.floor(Date.now() / 1000),
-        }, secret, { expiresIn: '24h' });
+        try {
+            // Function to forcibly reconstruct a valid PEM string
+            const reconstructPEM = (keyString: string, type: 'PRIVATE' | 'PUBLIC'): string => {
+                if (!keyString) return keyString;
+                
+                // 1. Remove obvious invalid wrapping quotes if they exist
+                let cleanKey = keyString.replace(/^["']|["']$/g, '');
 
-        const isProd = process.env.NODE_ENV === "production";
-        const cookieDomain = isProd ? (process.env.COOKIE_DOMAIN || ".pandoras.finance") : undefined;
-        console.log(`🍪 [LOGIN] Setting cookies - Domain: ${cookieDomain || 'localhost'} | Secure: ${isProd} | SameSite: ${isProd ? "none" : "lax"}`);
+                // 2. Decode Base64 if it's base64 encoded (starts with LS0)
+                if (cleanKey.startsWith('LS0tLS1')) {
+                    console.log(`🔐 [LOGIN] Decoding Base64 ${type} KEY...`);
+                    cleanKey = Buffer.from(cleanKey, 'base64').toString('utf-8');
+                }
 
-        (await cookies()).set("auth_token", token, {
-            httpOnly: true,
-            secure: isProd,
-            sameSite: isProd ? "none" : "lax", // 'none' requires secure: true, handled correctly now
-            ...(cookieDomain && { domain: cookieDomain }), // Only set domain if on production/staging
-            path: "/",
-            maxAge: 60 * 60 * 24 // 24 hours
-        });
+                // 3. Remove all headers, footers, spaces, and newlines to get pure base64 core
+                const base64Core = cleanKey
+                    .replace(/-----BEGIN.*?-----/g, '')
+                    .replace(/-----END.*?-----/g, '')
+                    .replace(/\\n/g, '') 
+                    .replace(/\s+/g, ''); 
 
-        console.log(`✅ [LOGIN] SUCCESS: Session created for ${walletAddress}`);
+                // 4. Chunk into 64-character lines (RFC 1421 standard)
+                const chunks = base64Core.match(/.{1,64}/g) || [];
+                const formattedCore = chunks.join('\n');
 
-        return NextResponse.json({
-            success: true,
-            hasAccess,
-            user: {
-                id: userId,
-                address: walletAddress,
-                role: "user",
-                hasAccess
+                // 5. Try PKCS#1 wrapper first
+                const pkcs1 = `-----BEGIN RSA ${type} KEY-----\n${formattedCore}\n-----END RSA ${type} KEY-----\n`;
+                try {
+                    if (type === 'PRIVATE') crypto.createPrivateKey(pkcs1);
+                    else crypto.createPublicKey(pkcs1);
+                    return pkcs1; 
+                } catch (e1) {
+                    // 6. Fallback to PKCS#8 (PRIVATE) or SPKI (PUBLIC) wrapper
+                    const pkcs8 = `-----BEGIN ${type} KEY-----\n${formattedCore}\n-----END ${type} KEY-----\n`;
+                    try {
+                        if (type === 'PRIVATE') crypto.createPrivateKey(pkcs8);
+                        else crypto.createPublicKey(pkcs8);
+                        return pkcs8; 
+                    } catch (e2: any) {
+                        throw new Error(`RSA_FORMAT_ERROR: Rejecting key. Both PKCS1 and PKCS8 wrappers failed validation. (Internal decoder error)`);
+                    }
+                }
+            };
+
+            const algorithm = privateKeyRaw ? 'RS256' : 'HS256';
+            console.log(`🔐 [LOGIN] JWT Algorithm: ${algorithm} | Version: ${process.env.JWT_VERSION || "2"}`);
+            
+            // Apply formatting if using RS256
+            const finalSecret = algorithm === 'RS256' ? reconstructPEM(privateKeyRaw!, 'PRIVATE') : (process.env.JWT_SECRET || 'fallback');
+
+            // Quick check
+            if (algorithm === 'RS256' && !finalSecret.includes('-----BEGIN ')) {
+                 throw new Error("INVALID_PEM_KEY: The reconstructed JWT_PRIVATE_KEY failed the structural check.");
             }
-        });
+
+            const token = jwt.sign({
+                sub: userId,
+                sid: sid,
+                address: walletAddress,
+                scope: 'web',
+                hasAccess,
+                chainId: config.chain.id,
+                v: parseInt(process.env.JWT_VERSION || "2"),
+                iat: Math.floor(Date.now() / 1000),
+            }, finalSecret, { 
+                expiresIn: '24h',
+                algorithm: algorithm as jwt.Algorithm
+            });
+            console.log("✅ [LOGIN] JWT Signed successfully");
+
+            const isProd = process.env.NODE_ENV === "production";
+            const cookieDomain = isProd ? (process.env.COOKIE_DOMAIN || ".pandoras.finance") : undefined;
+            console.log(`🍪 [LOGIN] Setting cookies - Domain: ${cookieDomain || 'localhost'} | Secure: ${isProd} | SameSite: ${isProd ? "none" : "lax"}`);
+
+            const cookieStore = await cookies();
+            cookieStore.set("auth_token", token, {
+                httpOnly: true,
+                secure: isProd,
+                sameSite: isProd ? "none" : "lax",
+                ...(cookieDomain && { domain: cookieDomain }),
+                path: "/",
+                maxAge: 60 * 60 * 24 // 24 hours
+            });
+
+            console.log(`✅ [LOGIN] SUCCESS: Session created for ${walletAddress}`);
+
+            return NextResponse.json({
+                success: true,
+                hasAccess,
+                user: {
+                    id: userId,
+                    address: walletAddress,
+                    role: "user",
+                    hasAccess
+                }
+            });
+
+        } catch (jwtOrCookieError: any) {
+            console.error("💥 [LOGIN] SEVERE JWT/COOKIE FAILURE:", jwtOrCookieError);
+            return NextResponse.json({ 
+                error: "JWT_SIGNATURE_GENERATION_FAILED",
+                details: jwtOrCookieError?.message || String(jwtOrCookieError)
+            }, { status: 500 });
+        }
 
     } catch (error: any) {
         console.error("❌ [Dashboard /api/auth/login] CRITICAL FAILURE:", error);

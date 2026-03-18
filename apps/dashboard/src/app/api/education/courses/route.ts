@@ -1,115 +1,83 @@
 import { NextResponse } from "next/server";
-import { getAuth } from "@/lib/auth";
+import { getAuth, isAdmin } from "@/lib/auth";
 import { headers } from "next/headers";
-// import { gamificationEngine, EventType } from "@pandoras/gamification"; // TODO: usar para eventos
+import { db } from "~/db";
+import { courses, courseEnrollments } from "~/db/schema";
+import { eq, and, sql } from "drizzle-orm";
 
-// Simulación de base de datos de cursos - en producción vendría de DB
-const COURSES_DATA = [
-  {
-    id: "defi-basics",
-    title: "Fundamentos de DeFi",
-    description: "Aprende los conceptos básicos de las finanzas descentralizadas en Blockchain",
-    category: "DeFi",
-    difficulty: "Beginner",
-    duration: "2 horas",
-    points: 100,
-    prerequisites: [], // curso debe completarse antes
-    modules: [
-      {
-        id: "module-1",
-        title: "Introducción a DeFi",
-        completed: false,
-        type: "video",
-        duration: "15 min"
-      },
-      {
-        id: "module-2",
-        title: "Lending & Borrowing",
-        completed: false,
-        type: "video",
-        duration: "20 min"
-      },
-      {
-        id: "quiz-defi-basics",
-        title: "Quiz: Fundamentos DeFi",
-        completed: false,
-        type: "quiz",
-        duration: "10 min",
-        passing_score: 70,
-        questions: [
-          {
-            question: "¿Qué significa DeFi?",
-            options: [
-              "Decentralized Finance",
-              "Digital Finance Exchange",
-              "Decentralized Facebook Integration",
-              "Direct Finance Investment"
-            ],
-            correct_answer: 0
-          }
-        ]
-      }
-    ],
-    skills_covered: ["Lending", "Borrowing", "Yield Farming"],
-    instructor: "Pandora's Team",
-    enrolled_students: 1247,
-    completion_rate: 68
-  },
-  {
-    id: "nft-strategies",
-    title: "Estrategias NFTs Avanzadas",
-    description: "Domina el mundo de los NFTs: desde creación hasta flippeo profesional",
-    category: "NFTs",
-    difficulty: "Advanced",
-    duration: "4 horas",
-    points: 150,
-    prerequisites: [], // no prerequisites por ahora
-    modules: [],
-    skills_covered: ["NFT Creation", "Market Analysis", "Flipping"],
-    instructor: "NFT Expert",
-    enrolled_students: 892,
-    completion_rate: 45
-  },
-  {
-    id: "web3-security",
-    title: "Seguridad Web3 Essentials",
-    description: "Protege tus activos: wallets, privadas keys y mejores prácticas",
-    category: "Security",
-    difficulty: "Intermediate",
-    duration: "3 horas",
-    points: 125,
-    prerequisites: [],
-    modules: [],
-    skills_covered: ["Wallet Security", "Private Keys", "Scam Prevention"],
-    instructor: "Security Specialist",
-    enrolled_students: 1563,
-    completion_rate: 72
-  }
-];
+export const dynamic = 'force-dynamic';
 
-// GET - Listar todos los cursos disponibles
+// GET - Listar cursos activos + progreso del usuario
 export async function GET(_request: Request) {
   try {
     const { session } = await getAuth(await headers());
-    const walletAddress = session?.address;
+    const walletAddress = session?.address?.toLowerCase();
 
     if (!walletAddress) {
       return NextResponse.json({ message: "No autorizado" }, { status: 401 });
     }
 
-    // En producción, aquí consultaríamos la DB y el progreso del usuario
-    // Por ahora, devolvemos los cursos con status genérico
-    const courses = COURSES_DATA.map(course => ({
-      ...course,
-      // Simulate some users having started courses
-      user_progress: Math.random() > 0.7 ? "in_progress" : "not_started",
-      progress_percentage: Math.random() > 0.7 ? Math.floor(Math.random() * 100) : 0
-    }));
+    // Obtener todos los cursos activos
+    const allCourses = await db
+      .select()
+      .from(courses)
+      .where(eq(courses.isActive, true))
+      .orderBy(courses.orderIndex);
+
+    if (allCourses.length === 0) {
+      return NextResponse.json({ courses: [], total: 0, user_wallet: walletAddress });
+    }
+
+    // Obtener enrollments del usuario
+    const enrollments = await db
+      .select()
+      .from(courseEnrollments)
+      .where(eq(courseEnrollments.userId, walletAddress));
+
+    const enrollmentMap = new Map(enrollments.map(e => [e.courseId, e]));
+
+    // Obtener estadísticas globales agrupadas por curso
+    const globalStats = await db
+      .select({
+        courseId: courseEnrollments.courseId,
+        total: sql<number>`count(*)::int`,
+        completed: sql<number>`count(*) filter (where status = 'completed')::int`,
+      })
+      .from(courseEnrollments)
+      .groupBy(courseEnrollments.courseId);
+
+    const statsMap = new Map(globalStats.map(s => [s.courseId, s]));
+
+    // Combinar datos
+    const coursesWithProgress = allCourses.map(course => {
+      const enrollment = enrollmentMap.get(course.id);
+      const stats = statsMap.get(course.id);
+      
+      const enrolledCount = stats?.total ?? 0;
+      const completedCount = stats?.completed ?? 0;
+      const completionRate = enrolledCount > 0 
+        ? Math.round((completedCount / enrolledCount) * 100) 
+        : 0;
+
+      return {
+        ...course,
+        // translate difficulty for legacy frontend compat
+        difficulty: course.difficulty.charAt(0).toUpperCase() + course.difficulty.slice(1),
+        points: course.xpReward,
+        skills_covered: course.skillsCovered,
+        enrolled_students: enrolledCount,
+        completion_rate: completionRate,
+        user_progress: enrollment
+          ? (enrollment.status as 'in_progress' | 'completed')
+          : 'not_started',
+        progress_percentage: enrollment?.progressPct ?? 0,
+      };
+    });
 
     return NextResponse.json({
-      courses: courses,
-      total: courses.length,
-      user_wallet: walletAddress
+      courses: coursesWithProgress,
+      total: coursesWithProgress.length,
+      user_wallet: walletAddress,
     });
 
   } catch (error) {
@@ -119,51 +87,60 @@ export async function GET(_request: Request) {
 }
 
 // POST - Crear nuevo curso (solo admin)
-export async function POST(_request: Request) {
+export async function POST(request: Request) {
   try {
     const { session } = await getAuth(await headers());
-
-    // Verificar permisos de admin
-    if (!session?.address) {
+    if (!session?.address || !await isAdmin(session.address)) {
       return NextResponse.json({ message: "No autorizado" }, { status: 401 });
     }
 
-    // Aquí irían las validaciones de admin...
-    // Por ahora asumimos que es admin
-
-    const body = await _request.json() as {
+    const body = await request.json() as {
+      id: string;
       title: string;
       description: string;
       category: string;
-      difficulty: string;
+      difficulty: 'beginner' | 'intermediate' | 'advanced';
       duration: string;
-      points: number;
+      imageUrl?: string;
+      xpReward?: number;
+      creditsReward?: number;
       prerequisites?: string[];
+      modules?: Record<string, unknown>[];
+      skillsCovered?: string[];
+      instructor?: string;
+      orderIndex?: number;
     };
 
-    // Validaciones básicas
-    if (!body.title || !body.description) {
-      return NextResponse.json({ message: "Título y descripción requeridos" }, { status: 400 });
+    if (!body.id || !body.title || !body.description || !body.category || !body.difficulty || !body.duration) {
+      return NextResponse.json({ message: "Faltan campos requeridos: id, title, description, category, difficulty, duration" }, { status: 400 });
     }
 
-    // En producción, guardar en DB
-    const newCourse = {
-      id: `course-${Date.now()}`, // temporal
-      ...body,
-      modules: [],
-      skills_covered: [],
-      instructor: "Pandora's Team",
-      enrolled_students: 0,
-      completion_rate: 0
-    };
+    const newCourse = await db
+      .insert(courses)
+      .values({
+        id: body.id,
+        title: body.title,
+        description: body.description,
+        category: body.category,
+        difficulty: body.difficulty,
+        duration: body.duration,
+        imageUrl: body.imageUrl,
+        xpReward: body.xpReward ?? 50,
+        creditsReward: body.creditsReward ?? 10,
+        prerequisites: body.prerequisites ?? [],
+        modules: body.modules ?? [],
+        skillsCovered: body.skillsCovered ?? [],
+        instructor: body.instructor ?? "Pandora's Team",
+        orderIndex: body.orderIndex ?? 0,
+      })
+      .returning();
 
-    return NextResponse.json({
-      success: true,
-      course: newCourse,
-      message: "Curso creado exitosamente"
-    });
+    return NextResponse.json({ success: true, course: newCourse[0] }, { status: 201 });
 
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === '23505') {
+      return NextResponse.json({ message: "Ya existe un curso con ese ID" }, { status: 409 });
+    }
     console.error("Error creating course:", error);
     return NextResponse.json({ message: "Error interno del servidor" }, { status: 500 });
   }

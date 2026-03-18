@@ -22,7 +22,7 @@ export async function GET(
         }
 
         const job = await db.query.deploymentJobs.findFirst({
-            where: eq(deploymentJobs.id, jobId)
+            where: eq(deploymentJobs.id, Number(jobId))
         });
 
         if (!job) {

@@ -43,6 +43,9 @@ export interface Project {
   w2eConfig?: any;
   treasuryAddress?: string;
   totalTokens?: number;
+  // Financial data
+  totalValuationUsd?: number | string;
+  estimatedApy?: string;
   // V2 Modular Fields
   registryContractAddress?: string;
   artifacts?: Array<{ type: string; address: string; name?: string }>;
@@ -95,6 +98,7 @@ export interface UserData {
   kycLevel: 'N/A' | 'basic';
   kycCompleted: boolean;
   kycData?: KYCData | null;
+  telegramId?: string | null;
 }
 
 export type UserRole = "applicant" | "pandorian" | "admin";

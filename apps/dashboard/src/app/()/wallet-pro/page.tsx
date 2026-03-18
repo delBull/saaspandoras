@@ -1,4 +1,5 @@
 'use client';
+import { useEffect } from 'react';
 import { useUserAssets } from '@/hooks/useUserAssets';
 // Force dynamic rendering - this page uses auth
 export const dynamic = 'force-dynamic';
@@ -21,7 +22,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useActiveAccount, ConnectButton, useWalletBalance } from 'thirdweb/react';
 import { inAppWallet, createWallet } from 'thirdweb/wallets';
-import { base } from 'thirdweb/chains';
+import { base, sepolia, baseSepolia } from 'thirdweb/chains';
 import { client } from '@/lib/thirdweb-client';
 import { SUPPORTED_NETWORKS } from '@/config/networks';
 import { getContract } from "thirdweb";
@@ -51,18 +52,42 @@ export default function WalletProPage() {
   });
 
   // --- 1. NFT Pass Logic ---
-  const applyPassContract = getContract({
-    client,
-    chain: config.chain,
-    address: config.applyPassNftAddress,
-  });
-
-  const { data: passBalance } = useReadContract({
-    contract: applyPassContract,
-    method: "balanceOf",
+  const { data: hasKeyOnSepolia } = useReadContract({
+    contract: getContract({ 
+      client, 
+      chain: SUPPORTED_NETWORKS.find(n => n.chain.id === 11155111)?.chain || sepolia, 
+      address: (config.nftContractAddress && config.nftContractAddress !== "0x0000000000000000000000000000000000000000") ? config.nftContractAddress : config.applyPassNftAddress 
+    }),
+    method: "function isGateHolder(address) view returns (bool)",
     params: [account?.address || "0x0000000000000000000000000000000000000000"],
     queryOptions: { enabled: !!account }
   });
+
+  const { data: hasKeyOnBaseSepolia } = useReadContract({
+    contract: getContract({ 
+      client, 
+      chain: SUPPORTED_NETWORKS.find(n => n.chain.id === 84532)?.chain || baseSepolia, 
+      address: (config.nftContractAddress && config.nftContractAddress !== "0x0000000000000000000000000000000000000000") ? config.nftContractAddress : config.applyPassNftAddress 
+    }),
+    method: "function isGateHolder(address) view returns (bool)",
+    params: [account?.address || "0x0000000000000000000000000000000000000000"],
+    queryOptions: { enabled: !!account }
+  });
+
+  const hasKeyOnChain = hasKeyOnSepolia || hasKeyOnBaseSepolia;
+
+  useEffect(() => {
+    if (account) {
+        console.log(`🔍 [VAULT_DEBUG] Multi-chain Key Check:`, {
+            user: account.address,
+            onSepolia: hasKeyOnSepolia,
+            onBaseSepolia: hasKeyOnBaseSepolia,
+            nftContractAddress: config.nftContractAddress,
+            applyPassNftAddress: config.applyPassNftAddress,
+            finalUsedAddress: (config.nftContractAddress && config.nftContractAddress !== "0x0000000000000000000000000000000000000000") ? config.nftContractAddress : config.applyPassNftAddress
+        });
+    }
+  }, [account, hasKeyOnSepolia, hasKeyOnBaseSepolia]);
 
   // Get new user assets
   const { assets: rawAssets, loading: loadingAssets } = useUserAssets();
@@ -70,9 +95,7 @@ export default function WalletProPage() {
   const assets = React.useMemo(() => {
     const list = [...rawAssets];
     // Inject Apply Pass if owned
-    if (passBalance && Number(passBalance) > 0) {
-      // Inject Apply Pass if owned
-      if (passBalance && Number(passBalance) > 0) {
+    if (hasKeyOnChain) {
         // Mock Project for Asset Interface
         const mockProject = {
           title: "Pandoras Apply Pass",
@@ -84,17 +107,16 @@ export default function WalletProPage() {
         list.push({
           name: 'Apply Pass',
           type: 'access',
-          balance: passBalance.toString(),
-          tokenAddress: config.applyPassNftAddress,
+          balance: "1",
+          tokenAddress: (config.nftContractAddress && config.nftContractAddress !== "0x0000000000000000000000000000000000000000") ? config.nftContractAddress : config.applyPassNftAddress,
           project: mockProject
         });
-      }
     }
     return list;
-  }, [rawAssets, passBalance]);
+  }, [rawAssets, hasKeyOnChain]);
 
-  const accessCount = assets.filter(a => a.type === 'access').length;
-  const artifactCount = assets.filter(a => a.type === 'utility' || a.type === 'artifact').length;
+  const accessCount = assets.filter(a => a.type === 'access').reduce((acc, c) => acc + Number(c.balance || 0), 0);
+  const artifactCount = assets.filter(a => a.type === 'utility' || a.type === 'artifact').reduce((acc, c) => acc + Number(c.balance || 0), 0);
 
   // Formatear el balance en USD
   const walletBalance = React.useMemo(() => {
