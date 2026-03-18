@@ -446,6 +446,10 @@ export async function POST(request: Request) {
     if (body.action === 'seed') {
       const results = [];
       for (const course of SEED_COURSES) {
+        // Check if exists to report correctly to frontend
+        const [existing] = await db.select({ id: courses.id }).from(courses).where(eq(courses.id, course.id));
+        const action = existing ? 'skipped' : 'created';
+
         // Upsert logic: insert or update if exists based on id
         const [upserted] = await db.insert(courses)
           .values(course)
@@ -470,7 +474,7 @@ export async function POST(request: Request) {
           })
           .returning();
         
-        results.push({ id: course.id, action: 'upserted', data: upserted });
+        results.push({ id: course.id, action, data: upserted });
       }
       return NextResponse.json({ success: true, results });
     }

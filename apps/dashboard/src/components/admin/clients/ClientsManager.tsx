@@ -195,7 +195,7 @@ function ProtocolActions({ client, onSuccess, onSendSOW }: { client: Client, onS
 
 
 type Client = typeof clients.$inferSelect;
-type PaymentLink = typeof paymentLinks.$inferSelect;
+type PaymentLink = typeof paymentLinks.$inferSelect & { transactions?: any[] };
 
 export function ClientsManager() {
     const [clientsList, setClientsList] = useState<Client[]>([]);
@@ -635,9 +635,11 @@ function ClientHistoryModal({ open, onOpenChange, client }: { open: boolean, onO
                             {links.length === 0 ? <div className="text-zinc-500 text-center">Sin actividad reciente.</div> : (
                                 <div className="space-y-2">
                                     {links.map(link => (
-                                        <div key={link.id} className="bg-zinc-900 p-3 rounded border border-zinc-800 flex justify-between items-center bg-green-500">
+                                        <div key={link.id} className="bg-zinc-900 p-3 rounded border border-zinc-800 flex justify-between items-center">
                                             <div className="text-sm">
-                                                <div className="font-bold text-white">{link.title}</div>
+                                                <div className="font-bold text-white flex items-center gap-2">
+                                                    {link.title}
+                                                </div>
                                                 <div className="text-zinc-500 text-xs">${link.amount} USD &bull; {new Date(link.createdAt).toLocaleDateString()}</div>
                                                 <div className="mt-1 flex gap-2">
                                                     <span className="text-[10px] bg-zinc-800 px-1 rounded text-zinc-400 font-mono">{link.id.substring(0, 8)}...</span>
@@ -648,23 +650,31 @@ function ClientHistoryModal({ open, onOpenChange, client }: { open: boolean, onO
                                                     <FileText className="w-4 h-4 text-zinc-600" />
                                                 </Button>
 
-                                                {/* Logic for 'Paid' detection is weak here without transactions join, assuming manual mark for MVP */}
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={() => handleSendReceipt(link.id)}
-                                                    className="h-8 text-xs"
-                                                >
-                                                    Reenviar Recibo
-                                                </Button>
+                                                {/* Detect if already paid via transactions or manual status */}
+                                                {(link.status === 'paid' || (link.transactions && link.transactions.some((t: any) => t.status === 'completed'))) ? (
+                                                    <Badge className="bg-lime-500/10 text-lime-400 border-lime-500/30 gap-1 py-1 px-2 h-8">
+                                                        <CheckCircle className="w-3.5 h-3.5" /> Pagado
+                                                    </Badge>
+                                                ) : (
+                                                    <Button
+                                                        size="sm"
+                                                        className="bg-lime-900/30 text-lime-400 hover:bg-lime-900/50 h-8 text-xs border border-lime-500/30"
+                                                        onClick={() => handleMarkPaid(link.id)}
+                                                    >
+                                                        <CheckCircle className="w-3 h-3 mr-1" /> Marcar Pagado
+                                                    </Button>
+                                                )}
 
-                                                <Button
-                                                    size="sm"
-                                                    className="bg-lime-900/30 text-lime-400 hover:bg-lime-900/50 h-8 text-xs border border-lime-500/30"
-                                                    onClick={() => handleMarkPaid(link.id)}
-                                                >
-                                                    <CheckCircle className="w-3 h-3 mr-1" /> Marcar Pagado
-                                                </Button>
+                                                {(link.status === 'paid' || (link.transactions && link.transactions.length > 0)) && (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => handleSendReceipt(link.id)}
+                                                        className="h-8 text-xs"
+                                                    >
+                                                        {link.status === 'paid' ? "Reenviar Recibo" : "Enviar Recibo"}
+                                                    </Button>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
