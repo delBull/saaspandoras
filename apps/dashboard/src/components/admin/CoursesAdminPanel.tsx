@@ -678,46 +678,65 @@ export function CoursesAdminPanel() {
                             </button>
                         </div>
                         
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             <p className="text-xs text-gray-400">
                                 Copia y pega este ejemplo para estructurar los módulos del curso. Asegúrate de que el JSON sea un array válido.
                             </p>
                             
                             <div className="relative">
-                                <pre className="bg-zinc-900 p-4 rounded-xl border border-zinc-800 text-[10px] text-cyan-300 font-mono overflow-auto max-h-60 custom-scrollbar">
+                                <pre className="bg-zinc-900 p-4 rounded-xl border border-zinc-800 text-[10px] text-cyan-300 font-mono overflow-auto max-h-80 custom-scrollbar">
 {`[
   {
     "id": "mod-1",
     "title": "Introducción a DeFi",
     "type": "video",
     "duration": "10 min",
-    "description": "Conceptos clave y ecosistema"
-  },
-  {
-    "id": "quiz-1",
-    "title": "Evaluación Inicial",
-    "type": "quiz",
-    "passing_score": 80,
-    "question_count": 5
+    "description": "Conceptos clave y ecosistema",
+    "content_url": "https://www.youtube.com/embed/..."
   },
   {
     "id": "mod-2",
     "title": "Pools de Liquidez",
     "type": "article",
-    "duration": "15 min"
+    "duration": "15 min",
+    "content": "<h3>Contenido HTML</h3><p>Cuerpo del artículo...</p>"
+  },
+  {
+    "id": "quiz-1",
+    "title": "Evaluación Inicial",
+    "type": "quiz",
+    "description": "Prueba de conocimientos",
+    "passing_score": 80,
+    "question_count": 2,
+    "questions": [
+      {
+        "question": "¿Qué significa DeFi?",
+        "options": ["Decentralized Finance", "Digital Fiat", "Direct Finance"],
+        "correctIndex": 0
+      },
+      {
+        "question": "¿Cuál de estas NO es una wallet?",
+        "options": ["MetaMask", "Ethereum", "Rabby"],
+        "correctIndex": 1
+      }
+    ]
   }
 ]`}
                                 </pre>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-2 text-[10px]">
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-[10px]">
                                 <div className="p-2 bg-zinc-900 rounded-lg border border-zinc-800">
-                                    <span className="text-white font-bold block mb-1">types:</span>
+                                    <span className="text-white font-bold block mb-1">types válidos:</span>
                                     video, article, quiz
                                 </div>
                                 <div className="p-2 bg-zinc-900 rounded-lg border border-zinc-800">
                                     <span className="text-white font-bold block mb-1">passing_score:</span>
-                                    Requerido para tipo "quiz"
+                                    Requerido para el tipo "quiz" (ej. 80)
+                                </div>
+                                <div className="p-2 bg-zinc-900 rounded-lg border border-zinc-800 md:col-span-1 col-span-2">
+                                    <span className="text-white font-bold block mb-1">questions (quiz):</span>
+                                    Array con "question", "options" y un "correctIndex" (0-indexed).
                                 </div>
                             </div>
                         </div>
