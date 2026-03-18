@@ -1,6 +1,7 @@
 import { ethers, Wallet } from "ethers";
 import { StaticJsonRpcProvider } from "@ethersproject/providers";
 import W2ELicenseArtifact from "./artifacts/W2ELicense.json";
+import PandorasKeyArtifact from "./artifacts/PandorasKey.json";
 import { NFTPassConfig, NetworkType } from "./types";
 
 /**
@@ -92,41 +93,59 @@ export async function deployNFTPassServer(
     const wallet = new Wallet(privateKey, provider);
     console.log(`📡 [SERVER-MODE] Deployer Wallet: ${wallet.address}`);
 
-    const factory = new ethers.ContractFactory(
-        W2ELicenseArtifact.abi,
-        W2ELicenseArtifact.bytecode,
-        wallet
-    );
-
-    // 6. Prepare Args
-    const oracle = config.oracleAddress || wallet.address;
-    const treasury = config.treasuryAddress || wallet.address;
-    const priceWei = ethers.utils.parseEther(config.price || "0");
-
-    // Explicitly handle flags with defaults
-    const isTransferable = config.transferable ?? true;
-    const isBurnable = config.burnable ?? false;
-
-    // Ensure maxSupply is string for BigNumber safety
-    const maxSupply = config.maxSupply.toString();
-
+    let contract;
     console.log("⏳ [SERVER-MODE] Sending deployment transaction...");
 
-    // 7. Deploy with explicit Gas Limit (safer for some chains)
-    const contract = await factory.deploy(
-        config.name,
-        config.symbol,
-        maxSupply,
-        priceWei,
-        oracle,
-        treasury,
-        config.owner,
-        isTransferable,
-        isBurnable,
-        {
-            gasLimit: 3_000_000 // Explicit limit to avoid estimation errors on some RPCs
-        }
-    );
+    if (config.nftType === 'identity') {
+        const factory = new ethers.ContractFactory(
+            PandorasKeyArtifact.abi,
+            PandorasKeyArtifact.bytecode,
+            wallet
+        );
+        contract = await factory.deploy(
+            config.name,
+            config.symbol,
+            config.owner, // initialOwner
+            ethers.constants.AddressZero, // trustedForwarder
+            {
+                gasLimit: 3_000_000 // Explicit limit to avoid estimation errors on some RPCs
+            }
+        );
+    } else {
+        const factory = new ethers.ContractFactory(
+            W2ELicenseArtifact.abi,
+            W2ELicenseArtifact.bytecode,
+            wallet
+        );
+
+        // 6. Prepare Args
+        const oracle = config.oracleAddress || wallet.address;
+        const treasury = config.treasuryAddress || wallet.address;
+        const priceWei = ethers.utils.parseEther(config.price || "0");
+
+        // Explicitly handle flags with defaults
+        const isTransferable = config.transferable ?? true;
+        const isBurnable = config.burnable ?? false;
+
+        // Ensure maxSupply is string for BigNumber safety
+        const maxSupply = config.maxSupply.toString();
+
+        // 7. Deploy with explicit Gas Limit (safer for some chains)
+        contract = await factory.deploy(
+            config.name,
+            config.symbol,
+            maxSupply,
+            priceWei,
+            oracle,
+            treasury,
+            config.owner,
+            isTransferable,
+            isBurnable,
+            {
+                gasLimit: 3_000_000
+            }
+        );
+    }
 
     console.log(`📝 [SERVER-MODE] Tx Sent: ${contract.deployTransaction.hash}`);
 

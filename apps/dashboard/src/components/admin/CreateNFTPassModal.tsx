@@ -434,12 +434,21 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                     abi: EXTENDED_ABI,
                 });
 
-                const transaction = prepareContractCall({
-                    contract,
-                    method: "mintWithPayment",
-                    params: [1n],
-                    value: 0n
-                });
+                let transaction;
+                if (nftType === 'identity') {
+                    transaction = prepareContractCall({
+                        contract,
+                        method: "adminMint",
+                        params: [account.address]
+                    });
+                } else {
+                    transaction = prepareContractCall({
+                        contract,
+                        method: "mintWithPayment",
+                        params: [1n],
+                        value: 0n
+                    });
+                }
 
                 await new Promise((resolve, reject) => {
                     sendTransaction(transaction, {
@@ -472,6 +481,7 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
         setIsDynamic(true);
         setGeneratedShortlink(null);
         setDeploymentStatus('idle');
+        setAirdropToMe(false);
         setFormData({
             name: "",
             symbol: "",
@@ -592,6 +602,23 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                         </button>
                                     </div>
 
+                                    {deployedAddress && (
+                                        <div className="mb-6 flex justify-center">
+                                            <a
+                                                href={config.chain.id === 8453 ? `https://basescan.org/address/${deployedAddress}` : `https://sepolia.etherscan.io/address/${deployedAddress}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 underline"
+                                            >
+                                                Ver en Explorador
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
+                                                    <path fillRule="evenodd" d="M4.25 5.5a.75.75 0 0 0-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 0 0 .75-.75v-4a.75.75 0 0 1 1.5 0v4A2.25 2.25 0 0 1 12.75 17h-8.5A2.25 2.25 0 0 1 2 14.75v-8.5A2.25 2.25 0 0 1 4.25 4h5a.75.75 0 0 1 0 1.5h-5Z" clipRule="evenodd" />
+                                                    <path fillRule="evenodd" d="M6.194 12.753a.75.75 0 0 0 1.06.053L16.5 4.44v2.81a.75.75 0 0 0 1.5 0v-4.5a.75.75 0 0 0-.75-.75h-4.5a.75.75 0 0 0 0 1.5h2.553l-9.056 8.194a.75.75 0 0 0-.053 1.06Z" clipRule="evenodd" />
+                                                </svg>
+                                            </a>
+                                        </div>
+                                    )}
+
                                     {/* QR and Share Actions */}
                                     {generatedShortlink && (
                                         <div className="mb-6 space-y-4">
@@ -625,7 +652,10 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
 
 
                                     <button
-                                        onClick={handleSuccessClose}
+                                        onClick={() => {
+                                            reset();
+                                            handleSuccessClose();
+                                        }}
                                         className="w-full py-3 px-4 bg-white text-black font-bold rounded-xl hover:bg-gray-100 transition-colors shadow-lg"
                                     >
                                         Continuar
@@ -1006,34 +1036,45 @@ export function CreateNFTPassModal({ isOpen, onClose, onSuccess }: CreateNFTPass
                                         />
                                     </div>
 
-                                    {/* Advanced Traits Toggles */}
-                                    <div className="pt-2 border-t border-zinc-700/50 mt-2 space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <label htmlFor="switch-transferable" className="text-sm font-medium text-gray-300 block">Transferible</label>
-                                                <p className="text-xs text-zinc-500">¿Se puede enviar a otros usuarios?</p>
+                                    {/* Advanced Traits Toggles (Hidden for Identity since it is SBT) */}
+                                    {nftType !== 'identity' ? (
+                                        <div className="pt-2 border-t border-zinc-700/50 mt-2 space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <label htmlFor="switch-transferable" className="text-sm font-medium text-gray-300 block">Transferible</label>
+                                                    <p className="text-xs text-zinc-500">¿Se puede enviar a otros usuarios?</p>
+                                                </div>
+                                                <Switch
+                                                    id="switch-transferable"
+                                                    checked={formData.transferable}
+                                                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, transferable: checked }))}
+                                                    className="data-[state=checked]:bg-emerald-500"
+                                                />
                                             </div>
-                                            <Switch
-                                                id="switch-transferable"
-                                                checked={formData.transferable}
-                                                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, transferable: checked }))}
-                                                className="data-[state=checked]:bg-emerald-500"
-                                            />
-                                        </div>
 
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <label htmlFor="switch-burnable" className="text-sm font-medium text-gray-300 block">Burnable (Quemable)</label>
-                                                <p className="text-xs text-zinc-500">¿Se puede destruir para canjear?</p>
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <label htmlFor="switch-burnable" className="text-sm font-medium text-gray-300 block">Burnable (Quemable)</label>
+                                                    <p className="text-xs text-zinc-500">¿Se puede destruir para canjear?</p>
+                                                </div>
+                                                <Switch
+                                                    id="switch-burnable"
+                                                    checked={formData.burnable}
+                                                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, burnable: checked }))}
+                                                    className="data-[state=checked]:bg-rose-500"
+                                                />
                                             </div>
-                                            <Switch
-                                                id="switch-burnable"
-                                                checked={formData.burnable}
-                                                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, burnable: checked }))}
-                                                className="data-[state=checked]:bg-rose-500"
-                                            />
                                         </div>
-                                    </div>
+                                    ) : (
+                                        <div className="pt-2 border-t border-zinc-700/50 mt-2 space-y-3">
+                                            <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-start gap-2">
+                                                <InformationCircleIcon className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+                                                <p className="text-xs text-blue-300 leading-relaxed">
+                                                    Los pases de identidad digital son tokens <strong>Soulbound (SBT)</strong>. Por diseño, están bloqueados en la wallet del usuario, no son transferibles y no pueden quemarse, protegiendo así su seguridad de identificación en el protocolo.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     <div className="flex items-center gap-3 pt-2 border-t border-zinc-700/50 mt-2">
                                         <input
