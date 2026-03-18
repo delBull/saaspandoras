@@ -68,7 +68,8 @@ export async function POST(req: Request) {
             treasuryAddress,
             oracleAddress,
             transferable: body.transferable ?? true,
-            burnable: body.burnable ?? false
+            burnable: body.burnable ?? false,
+            nftType // Added nftType to config
         };
 
         console.log(`🚀 API: Deploying NFT Pass: ${name} (${symbol}) for ${owner}. Supply: ${isInfiniteSupply ? "UNLIMITED" : maxSupply}. Type: ${nftType}`);
