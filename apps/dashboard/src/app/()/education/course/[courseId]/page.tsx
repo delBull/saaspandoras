@@ -707,6 +707,117 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
                         </div>
                     )}
                   </div>
+                ) : selectedModule.type === 'quiz' && selectedModule.questions && selectedModule.questions.length > 0 ? (
+                  <div className="space-y-6">
+                    <div className="p-6 bg-amber-500/10 border border-amber-500/30 rounded-3xl">
+                       <h4 className="text-white font-bold mb-2 flex items-center gap-2">
+                           <Award className="w-4 h-4 text-amber-400" />
+                           {selectedModule.title}
+                       </h4>
+                       <p className="text-zinc-400 text-sm leading-relaxed mb-4">
+                        {selectedModule.description || 'Responde a las siguientes preguntas para completar este módulo.'}
+                       </p>
+                       <div className="flex items-center gap-4 text-xs font-bold">
+                           <span className="text-amber-400 px-2 py-1 bg-amber-400/10 rounded">Puntuación mínima: {selectedModule.passing_score ?? 0}%</span>
+                           <span className="text-zinc-400 px-2 py-1 bg-zinc-800 rounded">{(selectedModule.questions || []).length} Preguntas</span>
+                       </div>
+                    </div>
+
+                    <div className="space-y-8">
+                        {(selectedModule.questions || []).map((q, qIndex) => (
+                            <div key={qIndex} className="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-6">
+                                <h5 className="text-white font-bold mb-4">{qIndex + 1}. {q.question}</h5>
+                                <div className="space-y-2">
+                                    {q.options.map((opt, oIndex) => {
+                                        const isSelected = quizAnswers[qIndex] === oIndex;
+                                        const isCorrect = q.correctIndex === oIndex;
+                                        const showSuccess = quizSubmitted && isCorrect;
+                                        const showError = quizSubmitted && isSelected && !isCorrect;
+
+                                        let borderClass = 'border-zinc-700 hover:border-cyan-500/50 hover:bg-zinc-800';
+                                        if (isSelected) borderClass = 'border-cyan-500 bg-cyan-500/10';
+                                        if (showSuccess) borderClass = 'border-green-500 bg-green-500/10';
+                                        if (showError) borderClass = 'border-red-500 bg-red-500/10';
+
+                                        return (
+                                            <button
+                                                key={oIndex}
+                                                disabled={quizSubmitted}
+                                                onClick={() => setQuizAnswers(prev => ({ ...prev, [qIndex]: oIndex }))}
+                                                className={`w-full text-left p-4 rounded-xl border transition-all text-sm flex items-center gap-3 ${borderClass}`}
+                                            >
+                                                <div className={`w-4 h-4 rounded-full border flex-shrink-0 flex items-center justify-center
+                                                    ${isSelected ? 'border-cyan-500' : 'border-zinc-600'}
+                                                    ${showSuccess ? 'border-green-500' : ''}
+                                                    ${showError ? 'border-red-500' : ''}
+                                                `}>
+                                                    {(isSelected || showSuccess || showError) && (
+                                                        <div className={`w-2 h-2 rounded-full 
+                                                            ${(showSuccess) ? 'bg-green-500' : showError ? 'bg-red-500' : 'bg-cyan-500'}
+                                                        `} />
+                                                    )}
+                                                </div>
+                                                <span className={showSuccess ? 'text-green-400 font-medium' : showError ? 'text-red-400' : 'text-zinc-300'}>{opt}</span>
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {!quizSubmitted ? (
+                        <button
+                            onClick={() => {
+                                const total = (selectedModule.questions || []).length;
+                                let correct = 0;
+                                (selectedModule.questions || []).forEach((q, idx) => {
+                                    if (quizAnswers[idx] === q.correctIndex) correct++;
+                                });
+                                const score = total > 0 ? Math.round((correct / total) * 100) : 0;
+                                setQuizScore(score);
+                                setQuizSubmitted(true);
+                            }}
+                            disabled={Object.keys(quizAnswers).length !== (selectedModule.questions || []).length}
+                            className="w-full py-4 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 disabled:hover:bg-cyan-600 text-white font-bold rounded-2xl transition-colors shadow-lg shadow-cyan-900/20"
+                        >
+                            Enviar Respuestas
+                        </button>
+                    ) : (
+                        <div className={`p-6 rounded-2xl border text-center ${quizScore >= (selectedModule.passing_score ?? 0) ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+                            <h4 className={`text-2xl font-black mb-2 ${quizScore >= (selectedModule.passing_score ?? 0) ? 'text-green-400' : 'text-red-400'}`}>
+                                {quizScore}% — {quizScore >= (selectedModule.passing_score ?? 0) ? '¡Aprobado!' : 'No Aprobado'}
+                            </h4>
+                            <p className="text-zinc-400 text-sm mb-6">
+                                {quizScore >= (selectedModule.passing_score ?? 0) 
+                                    ? '¡Felicidades! Has superado la puntuación mínima requerida.' 
+                                    : `Necesitabas un ${selectedModule.passing_score ?? 0}% para aprobar. Por favor, revisa el material e inténtalo de nuevo.`}
+                            </p>
+                            {quizScore >= (selectedModule.passing_score ?? 0) ? (
+                                <button
+                                    onClick={() => {
+                                        toast.success('¡Quiz completado!', { description: 'Has progresado en tu formación.' });
+                                        setSelectedModule(null);
+                                        if (enrollment && enrollment.status === 'in_progress') {
+                                            const newPct = Math.min(enrollment.progressPct + Math.floor(100 / totalModules), 100);
+                                            setEnrollment({...enrollment, progressPct: newPct});
+                                        }
+                                    }}
+                                    className="px-8 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl transition-colors inline-block"
+                                >
+                                    Completar Módulo y Continuar
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => { setQuizSubmitted(false); setQuizAnswers({}); setQuizScore(0); }}
+                                    className="px-8 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl transition-colors inline-block border border-zinc-700"
+                                >
+                                    Reintentar Quiz
+                                </button>
+                            )}
+                        </div>
+                    )}
+                  </div>
                 ) : (
                   <div className="space-y-4">
                     <div className="p-6 bg-zinc-900/40 border border-zinc-800 rounded-3xl">
