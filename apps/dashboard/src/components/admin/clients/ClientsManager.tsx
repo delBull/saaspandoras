@@ -650,8 +650,8 @@ function ClientHistoryModal({ open, onOpenChange, client }: { open: boolean, onO
                                                     <FileText className="w-4 h-4 text-zinc-600" />
                                                 </Button>
 
-                                                {/* Detect if already paid via transactions or manual status */}
-                                                {(link.status === 'paid' || (link.transactions && link.transactions.some((t: any) => t.status === 'completed'))) ? (
+                                                {/* Detect if already paid via transactions join */}
+                                                {(link.transactions && link.transactions.some((t: any) => t.status === 'completed')) ? (
                                                     <Badge className="bg-lime-500/10 text-lime-400 border-lime-500/30 gap-1 py-1 px-2 h-8">
                                                         <CheckCircle className="w-3.5 h-3.5" /> Pagado
                                                     </Badge>
@@ -665,14 +665,14 @@ function ClientHistoryModal({ open, onOpenChange, client }: { open: boolean, onO
                                                     </Button>
                                                 )}
 
-                                                {(link.status === 'paid' || (link.transactions && link.transactions.length > 0)) && (
+                                                {(link.transactions && link.transactions.length > 0) && (
                                                     <Button
                                                         size="sm"
                                                         variant="outline"
                                                         onClick={() => handleSendReceipt(link.id)}
                                                         className="h-8 text-xs"
                                                     >
-                                                        {link.status === 'paid' ? "Reenviar Recibo" : "Enviar Recibo"}
+                                                        {link.transactions.some((t: any) => t.status === 'completed') ? "Reenviar Recibo" : "Enviar Recibo"}
                                                     </Button>
                                                 )}
                                             </div>
