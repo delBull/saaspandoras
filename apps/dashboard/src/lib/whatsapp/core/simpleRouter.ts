@@ -342,7 +342,7 @@ async function handleCreatorFlow(message: string, step = 0, phone?: string): Pro
 }
 
 // Deprecated Stub - Redirect to Creator Flow
-async function handleEightQFlow(message: string, step = 0): Promise<FlowResult> {
+function handleEightQFlow(message: string, step = 0): FlowResult {
   return {
     handled: true,
     flowType: 'creator',
@@ -790,7 +790,7 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
             }
             break;
           default:
-            result = await handleEightQFlow(messageText, 0);
+            result = handleEightQFlow(messageText, 0);
         }
 
         result.response = `🔄 **Cambiando a ${newFlow.replace('_', ' ').toUpperCase()}**\n\n${result.response || ''}`;
@@ -820,7 +820,7 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
             break;
           case 'eight_q':
             console.log(`🔍 [EIGHT_Q] Processing message for step ${currentState.step}: "${messageText}"`);
-            result = await handleEightQFlow(messageText, currentState.step);
+            result = handleEightQFlow(messageText, currentState.step);
             console.log(`📈 [EIGHT_Q] Result: action=${result.action}, progress=${result.progress}`);
 
             if (result.action === 'next_question') {
@@ -901,7 +901,7 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
         result = await handleHighTicketFlow(messageText, 0);
         break;
       case 'eight_q':
-        result = await handleEightQFlow(messageText, 0);
+        result = handleEightQFlow(messageText, 0);
         break;
       case 'support':
         result = handleSupportFlow(messageText);
@@ -913,7 +913,7 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
         result = await handleProtocolApplicationFlow(messageText, 1, phone);
         break;
       default:
-        result = await handleEightQFlow(messageText, 0);
+        result = handleEightQFlow(messageText, 0);
         result.flowType = 'eight_q';
     }
 
