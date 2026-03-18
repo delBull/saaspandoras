@@ -1353,6 +1353,30 @@ export const transactions = pgTable("transactions", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+export const clientsRelations = relations(clients, ({ many }) => ({
+  paymentLinks: many(paymentLinks),
+  transactions: many(transactions)
+}));
+
+export const paymentLinksRelations = relations(paymentLinks, ({ one, many }) => ({
+  client: one(clients, {
+    fields: [paymentLinks.clientId],
+    references: [clients.id]
+  }),
+  transactions: many(transactions)
+}));
+
+export const transactionsRelations = relations(transactions, ({ one }) => ({
+  client: one(clients, {
+    fields: [transactions.clientId],
+    references: [clients.id]
+  }),
+  paymentLink: one(paymentLinks, {
+    fields: [transactions.linkId],
+    references: [paymentLinks.id]
+  })
+}));
+
 // 5. PURCHASES (FOR TG MINIAPP & EMBEDDED PAYMENTS)
 export const purchases = pgTable("purchases", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
