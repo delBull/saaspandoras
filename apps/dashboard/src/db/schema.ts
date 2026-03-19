@@ -302,7 +302,8 @@ export const eventTypeEnum = pgEnum("event_type", [
   "activity_completed",
   "forum_post",
   "access_card_acquired",
-  "artifact_acquired"
+  "artifact_acquired",
+  "achievement_unlocked"
 ]);
 
 export const eventCategoryEnum = pgEnum("event_category", [
