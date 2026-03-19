@@ -43,14 +43,28 @@ export async function POST(request: Request) {
       }
     }
 
-    // Initialize achievements - keep it simple for now
-    console.log('🏆 Draft achievements initialization - simplified');
+    // Initialize achievements
+    let achievementsCreated = 0;
+    if (params.get('seedAchievements') === 'true') {
+      console.log('🏆 Initializing achievements via dedicated route...');
+      const { achievements: achievementsTable } = await import('@/db/schema');
+      const countBefore = await db.select({ count: sql`count(*)` }).from(achievementsTable);
+      
+      const { GamificationService } = await import('@/lib/gamification/service');
+      await GamificationService.initializeBasicAchievements();
+      
+      const countAfter = await db.select({ count: sql`count(*)` }).from(achievementsTable);
+      
+      const after = Number(countAfter[0]?.count || 0);
+      const before = Number(countBefore[0]?.count || 0);
+      achievementsCreated = after - before;
+    }
 
     return NextResponse.json({
       success: true,
       message: 'Gamification system initialized successfully',
       data: {
-        achievementsCreated: 0, // Simplified initialization
+        achievementsCreated,
         message: 'Ready for gamification events'
       }
     });
