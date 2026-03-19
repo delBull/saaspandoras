@@ -67,13 +67,18 @@ export async function GET(request: Request): Promise<NextResponse> {
         const decodedToken = jwt.decode(token, { complete: true }) as any;
         const tokenAlg = decodedToken?.header?.alg || (hasPublicKey ? 'RS256' : 'HS256');
         
-        const secret = tokenAlg === 'RS256' && process.env.JWT_PUBLIC_KEY 
+        // 🔑 Key Preparation: Separate verification (public/secret) and signing (private/secret)
+        const verificationKey = tokenAlg === 'RS256' && process.env.JWT_PUBLIC_KEY 
             ? reconstructPEM(process.env.JWT_PUBLIC_KEY, 'PUBLIC') 
+            : (process.env.JWT_SECRET || process.env.JWT_PRIVATE_KEY || "");
+
+        const signingKey = hasPublicKey && process.env.JWT_PRIVATE_KEY
+            ? reconstructPEM(process.env.JWT_PRIVATE_KEY, 'PRIVATE')
             : (process.env.JWT_SECRET || process.env.JWT_PRIVATE_KEY || "");
 
         let payload: any;
         try {
-            payload = jwt.verify(token, secret, {
+            payload = jwt.verify(token, verificationKey, {
                 algorithms: [tokenAlg as any]
             });
         } catch (e: any) {
@@ -107,14 +112,12 @@ export async function GET(request: Request): Promise<NextResponse> {
             console.error("Gate check error in refresh:", e);
             hasAccess = false;
         }
-        // 🛑 REMOVAL: We no longer return 403 if hasAccess is false. 
-        // This allows the frontend to receive the updated (false) status and handle it gracefully
-        // instead of being blocked by a failed request.
         
-        console.log(`🔄 [API Refresh] Step 4 - Updating DB for ${address} (Access: ${hasAccess})`);
+        console.log(`🔄 [API Refresh] Updating DB for ${address} (Access: ${hasAccess})`);
         // Update DB
         const walletAddressLower = typeof address === 'string' ? address.toLowerCase() : String(address).toLowerCase();
         
+        // 🧪 Diagnostic: We use the key names from the schema, Drizzle handles the mapping to snake_case literals
         await db.update(users)
             .set({ hasPandorasKey: hasAccess })
             .where(eq(users.walletAddress, walletAddressLower));
@@ -125,11 +128,11 @@ export async function GET(request: Request): Promise<NextResponse> {
         
         const newToken = jwt.sign({
             ...cleanPayload,
-            sub: userId, // Maintain original UUID
-            address: address, // Maintain original wallet
+            sub: userId, 
+            address: address, 
             hasAccess: hasAccess, // DYNAMIC! Re-verify with on-chain check
             iat: Math.floor(Date.now() / 1000)
-        }, secret, { 
+        }, signingKey, { 
             expiresIn: '24h',
             algorithm: hasPublicKey ? 'RS256' : 'HS256'
         });
@@ -176,7 +179,7 @@ export async function GET(request: Request): Promise<NextResponse> {
             details: error.message,
             ...( (!isProd || isStaging) && { 
                 stack: error.stack,
-                hint: "Check if 'walletAddress' vs 'wallet_address' mismatch exists in schema.ts" 
+                hint: "Check if 'wallet_address' and 'has_pandoras_key' naming matches accurately in src/db/schema.ts" 
             })
         }, { status: 500 });
     }
