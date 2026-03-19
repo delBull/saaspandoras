@@ -630,14 +630,6 @@ export class GamificationService {
 
       if (!user || user.length === 0 || !user[0]) {
         console.log(`❌ No user found for wallet address ${walletAddressLower}`);
-
-        // 🚀 CREATE PROFILE IF FIRST VISIT AND ENSURE BASIC ACHIEVEMENTS EXIST
-        try {
-          await this.getUserProfile(walletAddressLower); // This will create profile if needed
-          await this.initializeBasicAchievements(); // Ensure achievements exist
-        } catch (error) {
-          console.warn('⚠️ Failed to create profile/achievements on first access:', error);
-        }
         return [];
       }
 
@@ -1021,8 +1013,8 @@ export class GamificationService {
 
       const userIdInt = user[0].id;
 
-      // Create basic achievements if they don't exist
-      await this.initializeBasicAchievements();
+      // Achievements should be seeded via the /api/gamification/initialize endpoint
+      // to avoid overhead on user-facing events.
 
       // Check for specific achievements based on event
       if (eventType === 'daily_login' || eventType === 'DAILY_LOGIN') {
