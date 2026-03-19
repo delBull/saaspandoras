@@ -325,7 +325,7 @@ export function MultiStepForm({
 
   // Formulario principal
   const methods = useForm<FullProjectFormData>({
-    resolver: zodResolver(fullProjectSchema), // FIX 1: Reactivado
+    resolver: zodResolver(fullProjectSchema as any), // FIX 1: Reactivado (bypass ZodType check for memory issue)
     mode: 'onBlur', // Cambiar de 'onChange' a 'onBlur' para permitir escritura sin validación inmediata
     defaultValues: {
       // Sección 1

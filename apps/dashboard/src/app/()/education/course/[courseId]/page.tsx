@@ -85,11 +85,16 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [quizScore, setQuizScore] = useState(0);
 
-  // Reset quiz state when module changes
+  // Article state
+  const [articleChecklist, setArticleChecklist] = useState<boolean[]>([false, false, false]);
+  const isArticleCompleted = articleChecklist.every(v => v);
+
+  // Reset quiz & article state when module changes
   useEffect(() => {
     setQuizAnswers({});
     setQuizSubmitted(false);
     setQuizScore(0);
+    setArticleChecklist([false, false, false]);
   }, [selectedModule?.id]);
 
   useEffect(() => {
@@ -193,6 +198,21 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
   const isCompleted = enrollment?.status === 'completed';
   const totalModules = course.modules?.length ?? 0;
 
+  const totalDurationMin = (course.modules ?? []).reduce((acc, mod) => {
+    if (mod.type === 'quiz' && mod.questions) {
+      return acc + Math.max(1, Math.ceil(mod.questions.length * 0.5));
+    }
+    const minsMatch = mod.duration?.match(/(\d+)/);
+    const mins = minsMatch?.[1] ? parseInt(minsMatch[1], 10) : 0;
+    return acc + mins;
+  }, 0);
+  
+  const displayDuration = totalDurationMin > 0 
+    ? (totalDurationMin >= 60 
+        ? `${Math.floor(totalDurationMin / 60)}h ${totalDurationMin % 60 > 0 ? `${totalDurationMin % 60}m` : ''}`
+        : `${totalDurationMin} min`)
+    : course.duration || '0 min';
+
   return (
     <div className="min-h-screen bg-zinc-950 text-white pb-32">
       {/* Hero header */}
@@ -229,7 +249,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
 
           {/* Stats row */}
           <div className="flex flex-wrap items-center gap-6 mt-6 text-sm text-gray-400">
-            <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-cyan-400" />{course.duration}</div>
+            <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-cyan-400" />{displayDuration}</div>
             <div className="flex items-center gap-2"><BookOpen className="w-4 h-4 text-purple-400" />{totalModules} módulos</div>
             <div className="flex items-center gap-2"><Users className="w-4 h-4 text-blue-400" />{(course.enrolled_students ?? 0).toLocaleString()} estudiantes</div>
             <div className="flex items-center gap-2"><Trophy className="w-4 h-4 text-amber-400" />{course.completion_rate}% completan</div>
@@ -392,7 +412,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
                 </div>
                 <div className="flex items-center justify-between text-xs text-gray-500">
                   <span>Duración total</span>
-                  <span className="text-gray-300 font-medium">{course.duration}</span>
+                  <span className="text-gray-300 font-medium">{displayDuration}</span>
                 </div>
               </div>
 
@@ -496,7 +516,9 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-white leading-tight uppercase italic">{selectedModule.title}</h3>
-                  <p className="text-xs text-zinc-500 font-medium uppercase tracking-widest">{selectedModule.type} · {selectedModule.duration || '5 min'}</p>
+                  <p className="text-xs text-zinc-500 font-medium uppercase tracking-widest">
+                    {selectedModule.type} · {selectedModule.type === 'quiz' && selectedModule.questions ? `${Math.max(1, Math.ceil(selectedModule.questions.length * 0.5))} MIN` : selectedModule.duration || '5 MIN'}
+                  </p>
                 </div>
               </div>
               <button
@@ -547,6 +569,143 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
                       className="prose prose-invert prose-zinc max-w-none text-zinc-300 text-sm leading-loose prose-headings:text-white prose-a:text-cyan-400 prose-strong:text-white prose-strong:font-bold prose-ul:list-disc prose-ol:list-decimal rounded-2xl p-6 bg-zinc-900/20 border border-zinc-800/50"
                       dangerouslySetInnerHTML={{ __html: selectedModule.content }}
                     />
+                    
+                    {/* Interactive Completion Checklist */}
+                    <div className="mt-8 space-y-3 pt-6 border-t border-zinc-800">
+                      <h4 className="text-white font-bold text-sm mb-4 flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-cyan-400" />
+                          Checks de Comprensión
+                      </h4>
+                      {['Entiendo los conceptos principales de esta lectura.', 'He asimilado la información detallada en este módulo.', 'Estoy listo para aplicar este conocimiento.'].map((item, i) => (
+                        <label key={i} className={`flex items-start gap-4 p-4 border rounded-xl cursor-pointer transition-all duration-200 ${articleChecklist[i] ? 'bg-cyan-500/10 border-cyan-500/40 shadow-inner' : 'bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800/80 hover:border-zinc-600'}`}>
+                            <div className="mt-0.5 relative flex items-center justify-center">
+                                <input 
+                                    type="checkbox" 
+                                    className="peer w-5 h-5 appearance-none rounded border-2 border-zinc-600 checked:border-cyan-500 checked:bg-cyan-500 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+                                    checked={articleChecklist[i]}
+                                    onChange={(e) => {
+                                        const newChecks = [...articleChecklist];
+                                        newChecks[i] = e.target.checked;
+                                        setArticleChecklist(newChecks);
+                                    }}
+                                />
+                                <CheckCircle2 className="w-3.5 h-3.5 text-black absolute inset-0 m-auto opacity-0 peer-checked:opacity-100 pointer-events-none stroke-[3]" />
+                            </div>
+                            <span className={`text-sm tracking-wide transition-colors ${articleChecklist[i] ? 'text-cyan-50 font-medium' : 'text-zinc-400'}`}>{item}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ) : selectedModule.type === 'quiz' && selectedModule.questions && selectedModule.questions.length > 0 ? (
+                  <div className="space-y-6">
+                    <div className="p-6 bg-amber-500/10 border border-amber-500/30 rounded-3xl">
+                       <h4 className="text-white font-bold mb-2 flex items-center gap-2">
+                           <Award className="w-4 h-4 text-amber-400" />
+                           {selectedModule.title}
+                       </h4>
+                       <p className="text-zinc-400 text-sm leading-relaxed mb-4">
+                        {selectedModule.description || 'Responde a las siguientes preguntas para completar este módulo.'}
+                       </p>
+                       <div className="flex items-center gap-4 text-xs font-bold">
+                           <span className="text-amber-400 px-2 py-1 bg-amber-400/10 rounded">Puntuación mínima: {selectedModule.passing_score ?? 0}%</span>
+                           <span className="text-zinc-400 px-2 py-1 bg-zinc-800 rounded">{(selectedModule.questions || []).length} Preguntas</span>
+                       </div>
+                    </div>
+
+                    <div className="space-y-8">
+                        {(selectedModule.questions || []).map((q, qIndex) => (
+                            <div key={qIndex} className="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-6">
+                                <h5 className="text-white font-bold mb-4">{qIndex + 1}. {q.question}</h5>
+                                <div className="space-y-2">
+                                    {q.options.map((opt, oIndex) => {
+                                        const isSelected = quizAnswers[qIndex] === oIndex;
+                                        const isCorrect = q.correctIndex === oIndex;
+                                        const showSuccess = quizSubmitted && isCorrect;
+                                        const showError = quizSubmitted && isSelected && !isCorrect;
+
+                                        let borderClass = 'border-zinc-700 hover:border-cyan-500/50 hover:bg-zinc-800';
+                                        if (isSelected) borderClass = 'border-cyan-500 bg-cyan-500/10';
+                                        if (showSuccess) borderClass = 'border-green-500 bg-green-500/10';
+                                        if (showError) borderClass = 'border-red-500 bg-red-500/10';
+
+                                        return (
+                                            <button
+                                                key={oIndex}
+                                                disabled={quizSubmitted}
+                                                onClick={() => setQuizAnswers(prev => ({ ...prev, [qIndex]: oIndex }))}
+                                                className={`w-full text-left p-4 rounded-xl border transition-all text-sm flex items-center gap-3 ${borderClass}`}
+                                            >
+                                                <div className={`w-4 h-4 rounded-full border flex-shrink-0 flex items-center justify-center
+                                                    ${isSelected ? 'border-cyan-500' : 'border-zinc-600'}
+                                                    ${showSuccess ? 'border-green-500' : ''}
+                                                    ${showError ? 'border-red-500' : ''}
+                                                `}>
+                                                    {(isSelected || showSuccess || showError) && (
+                                                        <div className={`w-2 h-2 rounded-full 
+                                                            ${(showSuccess) ? 'bg-green-500' : showError ? 'bg-red-500' : 'bg-cyan-500'}
+                                                        `} />
+                                                    )}
+                                                </div>
+                                                <span className={showSuccess ? 'text-green-400 font-medium' : showError ? 'text-red-400' : 'text-zinc-300'}>{opt}</span>
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {!quizSubmitted ? (
+                        <button
+                            onClick={() => {
+                                const total = (selectedModule.questions || []).length;
+                                let correct = 0;
+                                (selectedModule.questions || []).forEach((q, idx) => {
+                                    if (quizAnswers[idx] === q.correctIndex) correct++;
+                                });
+                                const score = total > 0 ? Math.round((correct / total) * 100) : 0;
+                                setQuizScore(score);
+                                setQuizSubmitted(true);
+                            }}
+                            disabled={Object.keys(quizAnswers).length !== (selectedModule.questions || []).length}
+                            className="w-full py-4 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 disabled:hover:bg-cyan-600 text-white font-bold rounded-2xl transition-colors shadow-lg shadow-cyan-900/20"
+                        >
+                            Enviar Respuestas
+                        </button>
+                    ) : (
+                        <div className={`p-6 rounded-2xl border text-center ${quizScore >= (selectedModule.passing_score ?? 0) ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+                            <h4 className={`text-2xl font-black mb-2 ${quizScore >= (selectedModule.passing_score ?? 0) ? 'text-green-400' : 'text-red-400'}`}>
+                                {quizScore}% — {quizScore >= (selectedModule.passing_score ?? 0) ? '¡Aprobado!' : 'No Aprobado'}
+                            </h4>
+                            <p className="text-zinc-400 text-sm mb-6">
+                                {quizScore >= (selectedModule.passing_score ?? 0) 
+                                    ? '¡Felicidades! Has superado la puntuación mínima requerida.' 
+                                    : `Necesitabas un ${selectedModule.passing_score ?? 0}% para aprobar. Por favor, revisa el material e inténtalo de nuevo.`}
+                            </p>
+                            {quizScore >= (selectedModule.passing_score ?? 0) ? (
+                                <button
+                                    onClick={() => {
+                                        toast.success('¡Quiz completado!', { description: 'Has progresado en tu formación.' });
+                                        setSelectedModule(null);
+                                        if (enrollment && enrollment.status === 'in_progress') {
+                                            const newPct = Math.min(enrollment.progressPct + Math.floor(100 / totalModules), 100);
+                                            setEnrollment({...enrollment, progressPct: newPct});
+                                        }
+                                    }}
+                                    className="px-8 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl transition-colors inline-block"
+                                >
+                                    Completar Módulo y Continuar
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => { setQuizSubmitted(false); setQuizAnswers({}); setQuizScore(0); }}
+                                    className="px-8 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl transition-colors inline-block border border-zinc-700"
+                                >
+                                    Reintentar Quiz
+                                </button>
+                            )}
+                        </div>
+                    )}
                   </div>
                 ) : selectedModule.type === 'quiz' && selectedModule.questions && selectedModule.questions.length > 0 ? (
                   <div className="space-y-6">
@@ -713,6 +872,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
               </button>
               {selectedModule.type !== 'quiz' && (
                   <button
+                    disabled={selectedModule.type === 'article' && !isArticleCompleted}
                     onClick={() => {
                         toast.success('¡Módulo completado!', {
                             description: 'Has progresado en tu formación.'
@@ -724,9 +884,9 @@ export default function CourseDetailPage({ params }: { params: Promise<{ courseI
                             setEnrollment({...enrollment, progressPct: newPct});
                         }
                     }}
-                    className="px-8 py-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-cyan-900/20"
+                    className="px-8 py-3 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-30 disabled:hover:bg-cyan-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-cyan-900/20"
                   >
-                    Completar Módulo
+                    {selectedModule.type === 'article' && !isArticleCompleted ? 'Verifica la Lectura' : 'Completar Módulo'}
                   </button>
               )}
             </div>
