@@ -62,22 +62,22 @@ export const administrators = pgTable("administrators", {
 
 // Tabla users existente en la base de datos
 export const users = pgTable("users", {
-  id: varchar("id", { length: 255 }).primaryKey(), // Restaurado a varchar para coincidir con estructura existente
+  id: varchar("id", { length: 255 }).primaryKey(),
   name: varchar("name", { length: 255 }),
   email: varchar("email", { length: 255 }).unique(),
   image: text("image"),
-  walletAddress: varchar("walletAddress", { length: 42 }).unique(), // Restaurado nombre original
-  telegramId: varchar("telegram_id", { length: 255 }).unique(),
+  walletAddress: varchar("walletAddress", { length: 42 }).unique(), // LEGACY CASE: matched from DB introspection
+  telegramId: varchar("telegram_id", { length: 255 }).unique(), // SNAKE_CASE: confirmed from introspection
   status: varchar("status", { length: 20 }).default('ACTIVE').notNull(),
   role: varchar("role", { length: 20 }).default('user').notNull(),
-  hasPandorasKey: boolean("hasPandorasKey").default(false).notNull(),
+  hasPandorasKey: boolean("hasPandorasKey").default(false).notNull(), // LEGACY CASE
 
-  // KYC Related Fields
+  // KYC Related Fields (CamelCase legacy)
   kycLevel: varchar("kycLevel", { length: 20 }).default('basic').notNull(),
   kycCompleted: boolean("kycCompleted").default(false).notNull(),
   kycData: jsonb("kycData"),
 
-  // Telegram Standalone Identity support
+  // Telegram Standalone Identity support (Snake Case for newer fields)
   username: varchar("username", { length: 255 }),
   firstName: varchar("first_name", { length: 255 }),
   lastName: varchar("last_name", { length: 255 }),
@@ -87,6 +87,7 @@ export const users = pgTable("users", {
   lastHarvestAt: timestamp("last_harvest_at"),
   tags: jsonb("tags").default([]),
 
+  // Stats (CamelCase legacy)
   connectionCount: integer("connectionCount").default(1).notNull(),
   lastConnectionAt: timestamp("lastConnectionAt").defaultNow(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -302,7 +303,8 @@ export const eventTypeEnum = pgEnum("event_type", [
   "activity_completed",
   "forum_post",
   "access_card_acquired",
-  "artifact_acquired"
+  "artifact_acquired",
+  "achievement_unlocked"
 ]);
 
 export const eventCategoryEnum = pgEnum("event_category", [
