@@ -14,13 +14,23 @@ const EDGE_KEY = process.env.PANDORA_CORE_KEY ?? '';
  * GET /api/admin/telegram-bridge/educacion
  * Returns the list of active courses for the Telegram bot to render as inline buttons.
  * Also returns per-user enrollment if ?telegramId=xxx is passed.
+ * Supports server-to-server calls via x-pandora-key header (Edge API proxy).
  */
 export async function GET(request: Request) {
   try {
-    const { session } = await getAuth(await headers());
-    if (!session?.address) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Allow server-to-server calls (Edge API proxy) using x-pandora-key header
+    const incomingKey = request.headers.get('x-pandora-key') ?? request.headers.get('authorization')?.replace('Bearer ', '');
+    const isS2SCall = !!(incomingKey && EDGE_KEY && incomingKey === EDGE_KEY);
+
+    console.log(`[DEBUG CORE BRIDGE] Incoming Key: ${incomingKey?.substring(0, 5)}..., Expected: ${EDGE_KEY?.substring(0, 5)}..., isS2S: ${isS2SCall}`);
+
+    if (!isS2SCall) {
+      const { session } = await getAuth(await headers());
+      if (!session?.address) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
     }
+
 
     const { searchParams } = new URL(request.url);
     const telegramId = searchParams.get('telegramId');
@@ -44,6 +54,8 @@ export async function GET(request: Request) {
       .from(courses)
       .where(eq(courses.isActive, true))
       .orderBy(courses.orderIndex);
+
+    console.log(`[DEBUG CORE BRIDGE] Fetched ${activeCourses.length} active courses for telegramId: ${telegramId}`);
 
     // Optionally fetch user's gamification stats from Edge API
     let userStats = null;

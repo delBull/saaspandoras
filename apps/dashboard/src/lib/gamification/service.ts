@@ -25,6 +25,7 @@ import {
 import { eq, sql, desc, or, and } from 'drizzle-orm';
 import { WebhookService } from '@/lib/integrations/webhook-service';
 import { integrationClients as integrationClientsSchema } from '@/db/schema';
+import crypto from 'crypto';
 
 // Export the class before declaring it
 export class GamificationService {
@@ -42,13 +43,14 @@ export class GamificationService {
    * Get user gamification profile using real database
    */
   static async getUserProfile(walletAddress: string): Promise<UserGamificationProfile | null> {
-    console.log(`🔍 GamificationService: Getting profile for wallet ${walletAddress}`);
+    const walletAddressLower = walletAddress.toLowerCase();
+    console.log(`🔍 GamificationService: Getting profile for wallet ${walletAddressLower}`);
     try {
       // First, find the user_id from users table using wallet_address
       const user = await db
         .select({ id: users.id })
         .from(users)
-        .where(eq(users.walletAddress, walletAddress))
+        .where(eq(users.walletAddress, walletAddressLower))
         .limit(1);
 
       if (!user || user.length === 0 || !user[0]) {
@@ -118,15 +120,16 @@ export class GamificationService {
    * Create new user profile in database
    */
   private static async createUserProfileInDb(walletAddress: string): Promise<UserGamificationProfile> {
+    const walletAddressLower = walletAddress.toLowerCase();
     // Get the numeric user ID from users table
     const user = await db
       .select({ id: users.id })
       .from(users)
-      .where(eq(users.walletAddress, walletAddress))
+      .where(eq(users.walletAddress, walletAddressLower))
       .limit(1);
 
     if (!user || user.length === 0 || !user[0]) {
-      throw new Error(`User not found for wallet address ${walletAddress}`);
+      throw new Error(`User not found for wallet address ${walletAddressLower}`);
     }
 
     const userIdInt = user[0].id;
@@ -201,22 +204,24 @@ export class GamificationService {
     eventType: string,
     metadata?: Record<string, unknown>
   ): Promise<GamificationEvent> {
-    console.log(`🎯 GamificationService: Tracking event ${eventType} for wallet ${walletAddress}`);
+    const walletAddressLower = walletAddress.toLowerCase();
+    console.log(`🎯 GamificationService: Tracking event ${eventType} for wallet ${walletAddressLower}`);
     try {
       // First, ensure user exists in users table and get their numeric ID
       const userRecord = await db
         .select({ id: users.id })
         .from(users)
-        .where(eq(users.walletAddress, walletAddress))
+        .where(eq(users.walletAddress, walletAddressLower))
         .limit(1);
 
       let userId: string;
       if (!userRecord || userRecord.length === 0 || !userRecord[0]) {
         // User doesn't exist in users table, create them
-        console.log(`👤 Creating user record for wallet ${walletAddress}`);
+        console.log(`👤 Creating user record for wallet ${walletAddressLower}`);
+        const newId = crypto.randomUUID();
         const newUser = await db.insert(users).values({
-          id: walletAddress, // Use wallet address as ID since it's unique
-          walletAddress: walletAddress,
+          id: newId,
+          walletAddress: walletAddressLower,
           createdAt: new Date()
         }).returning({ id: users.id });
 
@@ -224,7 +229,7 @@ export class GamificationService {
           throw new Error('Failed to create user record');
         }
         userId = newUser[0].id.toString();
-        console.log(`✅ Created user with ID ${userId} for wallet ${walletAddress}`);
+        console.log(`✅ Created user with ID ${userId} for wallet ${walletAddressLower}`);
       } else {
         userId = userRecord[0].id.toString();
       }
@@ -616,19 +621,20 @@ export class GamificationService {
   static async getUserAchievements(userId: string): Promise<UserAchievement[]> {
     console.log(`🏆 GamificationService: Getting achievements for user ${userId}`);
     try {
+      const walletAddressLower = userId.toLowerCase();
       // First, find the user_id from users table using wallet_address
       const user = await db
         .select({ id: users.id })
         .from(users)
-        .where(eq(users.walletAddress, userId))
+        .where(eq(users.walletAddress, walletAddressLower))
         .limit(1);
 
       if (!user || user.length === 0 || !user[0]) {
-        console.log(`❌ No user found for wallet address ${userId}`);
+        console.log(`❌ No user found for wallet address ${walletAddressLower}`);
 
         // 🚀 CREATE PROFILE IF FIRST VISIT AND ENSURE BASIC ACHIEVEMENTS EXIST
         try {
-          await this.getUserProfile(userId); // This will create profile if needed
+          await this.getUserProfile(walletAddressLower); // This will create profile if needed
           await this.initializeBasicAchievements(); // Ensure achievements exist
         } catch (error) {
           console.warn('⚠️ Failed to create profile/achievements on first access:', error);
