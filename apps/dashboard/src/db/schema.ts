@@ -66,7 +66,7 @@ export const users = pgTable("users", {
   name: varchar("name", { length: 255 }),
   email: varchar("email", { length: 255 }).unique(),
   image: text("image"),
-  walletAddress: varchar("walletAddress", { length: 42 }).unique(), // Restaurado nombre original
+  walletAddress: varchar("wallet_address", { length: 42 }).unique(), // Restaurado nombre original a snake_case
   telegramId: varchar("telegram_id", { length: 255 }).unique(),
   status: varchar("status", { length: 20 }).default('ACTIVE').notNull(),
   role: varchar("role", { length: 20 }).default('user').notNull(),
