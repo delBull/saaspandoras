@@ -3,7 +3,16 @@
   "framework": "nextjs",
   "buildCommand": "bun run build",
   "installCommand": "bun install",
-  "ignoreCommand": "npx turbo-ignore @saasfly/dashboard",
+  "ignoreCommand": "git diff HEAD^ HEAD --quiet . ../../packages ../../tooling || npx turbo-ignore @saasfly/dashboard",
+  "functions": {
+    "api/admin/courses/generate/route.ts": {
+      "maxDuration": 10,
+      "memory": 1024
+    },
+    "api/**/*": {
+      "memory": 512
+    }
+  },
   "crons": [
     {
       "path": "/api/cron/marketing",

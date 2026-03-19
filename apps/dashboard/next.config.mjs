@@ -11,6 +11,16 @@ const nextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
   },
+  typescript: {
+    // !! ADVERTENCIA !!
+    // Se desactiva el chequeo de tipos durante el build para evitar el error SIGABRT (Memoria Insuficiente)
+    // causado por esquemas de Zod muy complejos. El chequeo debe hacerse localmente o en un paso previo.
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    // Desactivado durante build para acelerar el proceso y evitar crashes de memoria.
+    ignoreDuringBuilds: true,
+  },
 
   images: {
     remotePatterns: [
