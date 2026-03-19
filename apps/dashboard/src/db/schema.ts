@@ -70,7 +70,7 @@ export const users = pgTable("users", {
   telegramId: varchar("telegram_id", { length: 255 }).unique(),
   status: varchar("status", { length: 20 }).default('ACTIVE').notNull(),
   role: varchar("role", { length: 20 }).default('user').notNull(),
-  hasPandorasKey: boolean("hasPandorasKey").default(false).notNull(),
+  hasPandorasKey: boolean("has_pandoras_key").default(false).notNull(),
 
   // KYC Related Fields
   kycLevel: varchar("kycLevel", { length: 20 }).default('basic').notNull(),
