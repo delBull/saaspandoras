@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getContract, readContract } from "thirdweb";
+import crypto from "crypto";
 import { client } from "@/lib/thirdweb-client";
 import { config } from "@/config";
 import { PANDORAS_KEY_ABI } from "@/lib/pandoras-key-abi";
@@ -20,18 +21,70 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: "No session token" }, { status: 401 });
         }
 
-        const secret = process.env.JWT_SECRET || process.env.JWT_PRIVATE_KEY;
-        if (!secret) throw new Error("Missing secret");
+        // Function to forcibly reconstruct a valid PEM string
+        const reconstructPEM = (keyString: string, type: 'PRIVATE' | 'PUBLIC'): string => {
+            if (!keyString) return keyString;
+            
+            // 1. Remove obvious invalid wrapping quotes if they exist
+            let cleanKey = keyString.replace(/^["']|["']$/g, '');
+
+            // 2. Decode Base64 if it's base64 encoded (starts with LS0)
+            if (cleanKey.startsWith('LS0tLS1')) {
+                cleanKey = Buffer.from(cleanKey, 'base64').toString('utf-8');
+            }
+
+            // 3. Remove all headers, footers, spaces, and newlines to get pure base64 core
+            const base64Core = cleanKey
+                .replace(/-----BEGIN.*?-----/g, '')
+                .replace(/-----END.*?-----/g, '')
+                .replace(/\\n/g, '')
+                .replace(/\s+/g, '');
+
+            // 4. Chunk into 64-character lines (RFC 1421 standard)
+            const chunks = base64Core.match(/.{1,64}/g) || [];
+            const formattedCore = chunks.join('\n');
+
+            // 5. Try PKCS#1 wrapper first
+            const pkcs1 = `-----BEGIN RSA ${type} KEY-----\n${formattedCore}\n-----END RSA ${type} KEY-----\n`;
+            try {
+                if (type === 'PRIVATE') crypto.createPrivateKey(pkcs1);
+                else crypto.createPublicKey(pkcs1);
+                return pkcs1; 
+            } catch (e1) {
+                // 6. Fallback to PKCS#8 (PRIVATE) or SPKI (PUBLIC) wrapper
+                const pkcs8 = `-----BEGIN ${type} KEY-----\n${formattedCore}\n-----END ${type} KEY-----\n`;
+                try {
+                    if (type === 'PRIVATE') crypto.createPrivateKey(pkcs8);
+                    else crypto.createPublicKey(pkcs8);
+                    return pkcs8; 
+                } catch (e2: any) {
+                    throw new Error(`RSA_FORMAT_ERROR: Rejecting key. Both PKCS1 and PKCS8 wrappers failed validation.`);
+                }
+            }
+        };
+
+        const hasPublicKey = !!process.env.JWT_PUBLIC_KEY;
+        const secret = hasPublicKey ? reconstructPEM(process.env.JWT_PUBLIC_KEY!, 'PUBLIC') : (process.env.JWT_SECRET || process.env.JWT_PRIVATE_KEY);
+        
+        if (!secret) {
+            console.error("❌ JWT Configuration Error in Refresh: Missing Secret/Public Key");
+            return NextResponse.json({ error: "Server Configuration Error" }, { status: 500 });
+        }
 
         let payload: any;
         try {
-            payload = jwt.verify(token, secret);
-        } catch (e) {
-            return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+            payload = jwt.verify(token, secret, {
+                algorithms: hasPublicKey ? ['RS256'] : ['HS256']
+            });
+        } catch (e: any) {
+            console.warn("⚠️ [API Refresh] JWT Verification failed:", e.message);
+            return NextResponse.json({ error: "Invalid token", details: e.message }, { status: 401 });
         }
 
-        const address = payload.address || payload.sub;
-        if (!address) return NextResponse.json({ error: "Invalid token structure" }, { status: 401 });
+        const userId = payload.sub;
+        const address = payload.address || payload.sub; // Fallback if old token format
+        
+        if (!userId || !address) return NextResponse.json({ error: "Invalid token structure" }, { status: 401 });
 
         console.log(`🔄 [API Refresh] Re-verifying access for ${address} (NFT: ${config.nftContractAddress})`);
 
@@ -77,10 +130,14 @@ export async function GET(request: Request) {
         
         const newToken = jwt.sign({
             ...cleanPayload,
-            sub: address, // Ensure sub remains the same
+            sub: userId, // Maintain original UUID
+            address: address, // Maintain original wallet
             hasAccess: true,
             iat: Math.floor(Date.now() / 1000)
-        }, secret, { expiresIn: '24h' });
+        }, secret, { 
+            expiresIn: '24h',
+            algorithm: hasPublicKey ? 'RS256' : 'HS256'
+        });
 
         const isProd = process.env.NODE_ENV === "production";
         const cookieDomain = isProd ? (process.env.COOKIE_DOMAIN || ".pandoras.finance") : undefined;
@@ -101,7 +158,7 @@ export async function GET(request: Request) {
             authenticated: true,
             hasAccess: true,
             user: {
-                id: payload.sub || payload.userId,
+                id: userId,
                 address: address,
                 role: payload.role || "user",
                 scope: payload.scope,
