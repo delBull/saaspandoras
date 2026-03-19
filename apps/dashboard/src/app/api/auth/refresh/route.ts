@@ -164,7 +164,20 @@ export async function GET(request: Request): Promise<NextResponse> {
     } catch (error: any) {
         console.error("🔥 [API Refresh] CRITICAL ERROR:");
         console.error("Message:", error.message);
-        console.error("Stack:", error.stack);
-        return NextResponse.json({ error: "Internal Error", details: error.message }, { status: 500 });
+        console.error("Path:", request.url);
+        if (error.stack) console.error("Stack:", error.stack);
+        
+        // 🧪 Diagnostic: Log the error details to the response for the user to see in dev/staging
+        const isProd = process.env.NODE_ENV === "production";
+        const isStaging = typeof window !== 'undefined' && window.location.hostname.includes("staging");
+        
+        return NextResponse.json({ 
+            error: "Internal Error", 
+            details: error.message,
+            ...( (!isProd || isStaging) && { 
+                stack: error.stack,
+                hint: "Check if 'walletAddress' vs 'wallet_address' mismatch exists in schema.ts" 
+            })
+        }, { status: 500 });
     }
 }
