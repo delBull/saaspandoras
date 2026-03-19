@@ -96,14 +96,6 @@ export async function GET(
     const userConfirm = await db.select().from(users).where(eq(users.id, userId)).limit(1);
     console.log(`🔍 API DIAGNOSTIC: User record in DB:`, userConfirm[0] ? 'EXISTS' : 'MISSING');
 
-    // ===== ENSURE ACHIEVEMENTS ARE SEEDED =====
-    // This is critical to ensure all available achievements (43+) are visible even if DB was empty
-    try {
-      await GamificationService.initializeBasicAchievements();
-    } catch (seedError) {
-      console.warn(`⚠️ API: Seeding achievements failed (non-critical):`, seedError);
-    }
-
     // 2. Get gamification profile
     const profileResult = await db
       .select()
@@ -111,9 +103,7 @@ export async function GET(
       .where(eq(gamificationProfiles.userId, userId))
       .limit(1);
 
-    // ===== INICIALIZACIÓN AUTOMÁTICA PARA USUARIOS EXISTENTES =====
-    // Si el usuario existe en users pero NO tiene perfil de gamificación,
-    // creamos perfil básico con "Primer Login" (+10 pts) automáticamente
+    // ===== AUTO-INITIALIZATION FOR EXISTING USERS WITHOUT PROFILE =====
     let profile: UserGamificationProfile | null = null;
 
     if (profileResult && profileResult.length > 0 && profileResult[0]) {
@@ -141,15 +131,12 @@ export async function GET(
         updatedAt: new Date(dbProfile.updatedAt)
       };
     } else {
-      // 🔥 USUARIO EXISTENTE SIN PERfil GAMIFICACIÓN - INICIALIZACIÓN AUTOMÁTICA
-      console.log(`🎯 Usuario encontrado sin perfil gamificación. Inicializando automáticamente...`);
-
+      console.log(`🎯 User found without gamification profile. Initializing basics (no seeding)...`);
       try {
-        // 1. Crear perfil básico con 10 puntos (Primer Login)
         const initialProfile = {
           userId: userId.toString(),
           walletAddress: walletAddress,
-          totalPoints: 10, // Primer Login bonus
+          totalPoints: 10,
           currentLevel: 1,
           levelProgress: 10,
           pointsToNextLevel: 90,
@@ -159,7 +146,7 @@ export async function GET(
           communityContributions: 0,
           currentStreak: 0,
           longestStreak: 0,
-          totalActiveDays: 1, // Hoy cuenta como día activo
+          totalActiveDays: 1,
           referralsCount: 0,
           communityRank: 0,
           reputationScore: 0,
@@ -168,10 +155,10 @@ export async function GET(
           updatedAt: new Date()
         };
 
-        const newProfileResult = await db.insert(gamificationProfiles).values(initialProfile).returning();
-        if (newProfileResult[0]) {
+        const [newProfile] = await db.insert(gamificationProfiles).values(initialProfile).returning();
+        if (newProfile) {
           profile = {
-            id: newProfileResult[0].id.toString(),
+            id: newProfile.id.toString(),
             userId: userId.toString(),
             walletAddress: walletAddress,
             totalPoints: 10,
@@ -192,9 +179,7 @@ export async function GET(
             createdAt: new Date(),
             updatedAt: new Date()
           };
-          console.log(`✅ Perfil gamificación creado con 10 puntos iniciales`);
-
-          // 2. Registrar puntos iniciales con razón específica
+          
           await db.insert(userPoints).values({
             userId: userId,
             points: 10,
@@ -203,33 +188,9 @@ export async function GET(
             metadata: JSON.stringify({ type: 'first_login' }),
             createdAt: new Date()
           });
-
-          // 3. Otorgar achievement "Primer Login" automáticamente
-          // Buscar el achievement por nombre
-          const firstLoginAchievement = await db
-            .select({ id: achievements.id })
-            .from(achievements)
-            .where(eq(achievements.name, 'Primer Login'))
-            .limit(1);
-
-          if (firstLoginAchievement[0]) {
-            await db.insert(userAchievements).values({
-              userId: userId,
-              achievementId: firstLoginAchievement[0].id,
-              progress: 100,
-              isUnlocked: true,
-              unlockedAt: new Date(),
-              updatedAt: new Date()
-            });
-
-            console.log(`🎉 Achievement "Primer Login" otorgado automáticamente`);
-          }
-
-          console.log(`🎯 Inicialización completada: usuario ${walletAddress} ahora tiene 10 pts iniciales y achievement "Primer Login"`);
         }
       } catch (initError) {
-        console.error(`❌ Error en inicialización automática para ${walletAddress}:`, initError);
-        // No lanzamos error - el usuario podrá seguir usando el sistema sin gamificación por ahora
+        console.error(`❌ Error in auto-init for ${walletAddress}:`, initError);
       }
     }
 
@@ -244,9 +205,11 @@ export async function GET(
 
     console.log(`🔍 API DIAGNOSTIC: Found ${allAchievements.length} total achievements and ${userProgress.length} user progress records.`);
 
-    // 5. Map achievements to user progress
+    // 5. Map achievements to user progress (Optimized with a Map for O(N+M) lookup)
+    const progressMap = new Map(userProgress.map((p: any) => [p.achievementId, p]));
+
     const achievementsData: UserAchievement[] = allAchievements.map((item) => {
-      const progressRecord = userProgress.find(up => up.achievementId === item.id);
+      const progressRecord = progressMap.get(item.id) as any;
 
       // 🧠 Map semantics to satisfy BOTH legacy and new refactored expectations
       const rawType = item.type || 'community';

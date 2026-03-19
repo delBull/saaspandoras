@@ -46,7 +46,7 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
   const { mutate: sendTransaction } = useSendTransaction();
   const { toast } = useToast();
 
-  const [gateStatus, setGateStatus] = useState("idle");
+  const [gateStatus, setGateStatus] = useState<string>("idle");
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const hasStartedProcessing = useRef(false);
   const hasAttemptedAutoMint = useRef(false);
@@ -113,10 +113,22 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    // 1. If we don't have a wallet or user or they already have access, skip.
     if (!account || !user || user?.hasAccess || hasAttemptedAutoMint.current) return;
     
     hasAttemptedAutoMint.current = true;
-    handleMint();
+
+    // 2. SILENT REFRESH: Before trying to mint, try a silent refresh to see if they already have it.
+    // This handles manual browser refreshes where they already have the key but a stale JWT.
+    refreshSession().then(() => {
+        // After refreshSession, if hasAccess becomes true, the early return at 
+        // the top of the component (line 129) will handle the bypass.
+        // If it's still false, it falls through to handleMint().
+        handleMint();
+    }).catch(e => {
+        console.warn("Silent refresh on mount failed, proceeding to mint", e);
+        handleMint();
+    });
   }, [account, user]);
 
 
@@ -204,7 +216,7 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
     }} />;
   }
 
-  if (gateStatus !== "idle" && gateStatus !== "success" && gateStatus !== "has_key") {
+  if (gateStatus !== "idle" && gateStatus !== "success" && gateStatus !== "has_key" && gateStatus !== "refreshing") {
     return (
       <MintingProgressModal
         step={gateStatus}
@@ -241,10 +253,10 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
         <div className="space-y-4">
           <button
             onClick={handleMint}
-            disabled={hasStartedProcessing.current}
+            disabled={hasStartedProcessing.current || gateStatus === "refreshing"}
             className="w-full bg-gradient-to-r from-lime-400 to-emerald-500 hover:from-lime-500 hover:to-emerald-600 disabled:opacity-50 text-white py-3 px-6 rounded-lg font-bold shadow-lg"
           >
-            {hasStartedProcessing.current ? (
+            {hasStartedProcessing.current && gateStatus !== "refreshing" ? (
               <>
                 <Loader2 className="inline-block w-4 h-4 mr-2 animate-spin" />
                 Minting...
@@ -253,6 +265,41 @@ export function NFTGate({ children }: { children: React.ReactNode }) {
               <>Get Free Key</>
             )}
           </button>
+
+          <button
+            onClick={async () => {
+              setGateStatus("refreshing");
+              try {
+                toast({ title: "Re-verifying access...", description: "Checking blockchain..." });
+                await refreshSession();
+                // After refreshSession, the AuthProvider user.hasAccess will update
+                // which will trigger the early return in this component.
+                if (!user?.hasAccess) {
+                    toast({ 
+                        title: "Access Denied", 
+                        description: "No NFT found in your wallet. If you just minted, please wait 30-60 seconds.",
+                        variant: "destructive"
+                    });
+                }
+              } catch (e) {
+                console.error(e);
+              } finally {
+                setGateStatus("idle");
+              }
+            }}
+            disabled={hasStartedProcessing.current || gateStatus === "refreshing"}
+            className="w-full bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 text-gray-300 py-2 px-6 rounded-lg font-medium text-sm border border-zinc-700 transition-colors"
+          >
+            {gateStatus === "refreshing" ? (
+              <>
+                <Loader2 className="inline-block w-4 h-4 mr-2 animate-spin" />
+                Verifying...
+              </>
+            ) : (
+              <>I already have a key / Refresh status</>
+            )}
+          </button>
+
           <div className="text-xs text-gray-400 bg-zinc-800/50 p-3 rounded-lg">
             <p>Gas is on us.</p>
           </div>
