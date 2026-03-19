@@ -5,8 +5,10 @@ import { toast } from 'sonner';
 import {
     BookOpen, Plus, Pencil, Trash2, RefreshCw, Check, X,
     Zap, Coins, Users, BarChart3, Database, Eye, EyeOff, GripVertical,
-    ChevronDown, ChevronUp, Tag, HelpCircle
+    ChevronDown, ChevronUp, Tag, HelpCircle, Sparkles
 } from 'lucide-react';
+
+import { GenerateCourseModal } from './GenerateCourseModal';
 
 interface CourseModule {
     id: string;
@@ -91,6 +93,7 @@ export function CoursesAdminPanel() {
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const [showModuleHelp, setShowModuleHelp] = useState(false);
+    const [isAiModalOpen, setIsAiModalOpen] = useState(false);
 
     const [form, setForm] = useState({ ...EMPTY_FORM });
 
@@ -136,6 +139,12 @@ export function CoursesAdminPanel() {
 
     const startCreate = () => {
         setForm({ ...EMPTY_FORM, orderIndex: courses.length });
+        setEditingId(null);
+        setCreating(true);
+    };
+
+    const handleAiSuccess = (aiCourse: any) => {
+        setForm({ ...EMPTY_FORM, ...aiCourse, orderIndex: courses.length });
         setEditingId(null);
         setCreating(true);
     };
@@ -273,13 +282,24 @@ export function CoursesAdminPanel() {
                         <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
                         Refresh
                     </button>
-                    <button
-                        onClick={startCreate}
-                        className="flex items-center gap-2 px-4 py-1.5 text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg transition-colors shadow-lg shadow-cyan-900/20"
-                    >
-                        <Plus className="w-3.5 h-3.5" />
-                        Nuevo Curso
-                    </button>
+                    <div className="flex items-center gap-2 rounded-lg bg-cyan-600 shadow-lg shadow-cyan-900/20 overflow-hidden text-white font-bold transition-colors">
+                        <button
+                            onClick={startCreate}
+                            className="flex items-center gap-2 px-4 py-2 text-xs hover:bg-cyan-500 transition-colors"
+                        >
+                            <Plus className="w-3.5 h-3.5" />
+                            Nuevo Curso
+                        </button>
+                        <div className="w-[1px] h-4 bg-cyan-700 mx-0" />
+                        <button
+                            onClick={() => setIsAiModalOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2 text-xs hover:bg-cyan-500 transition-colors bg-cyan-700/50"
+                            title="Borrador con Inteligencia Artificial"
+                        >
+                            <Sparkles className="w-3.5 h-3.5" />
+                            AI Draft
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -750,6 +770,12 @@ export function CoursesAdminPanel() {
                     </div>
                 </div>
             )}
+
+            <GenerateCourseModal 
+                isOpen={isAiModalOpen} 
+                onClose={() => setIsAiModalOpen(false)} 
+                onSuccess={handleAiSuccess} 
+            />
         </div>
     );
 }
