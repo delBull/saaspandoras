@@ -12,7 +12,7 @@ import { PANDORAS_KEY_ABI } from "@/lib/pandoras-key-abi";
 
 export const runtime = "nodejs";
 
-export async function GET(request: Request) {
+export async function GET(request: Request): Promise<NextResponse> {
     try {
         const cookieStore = await cookies();
         const token = cookieStore.get("auth_token")?.value;
@@ -64,20 +64,20 @@ export async function GET(request: Request) {
         };
 
         const hasPublicKey = !!process.env.JWT_PUBLIC_KEY;
-        const secret = hasPublicKey ? reconstructPEM(process.env.JWT_PUBLIC_KEY!, 'PUBLIC') : (process.env.JWT_SECRET || process.env.JWT_PRIVATE_KEY);
+        const decodedToken = jwt.decode(token, { complete: true }) as any;
+        const tokenAlg = decodedToken?.header?.alg || (hasPublicKey ? 'RS256' : 'HS256');
         
-        if (!secret) {
-            console.error("❌ JWT Configuration Error in Refresh: Missing Secret/Public Key");
-            return NextResponse.json({ error: "Server Configuration Error" }, { status: 500 });
-        }
+        const secret = tokenAlg === 'RS256' && process.env.JWT_PUBLIC_KEY 
+            ? reconstructPEM(process.env.JWT_PUBLIC_KEY, 'PUBLIC') 
+            : (process.env.JWT_SECRET || process.env.JWT_PRIVATE_KEY || "");
 
         let payload: any;
         try {
             payload = jwt.verify(token, secret, {
-                algorithms: hasPublicKey ? ['RS256'] : ['HS256']
+                algorithms: [tokenAlg as any]
             });
         } catch (e: any) {
-            console.warn("⚠️ [API Refresh] JWT Verification failed:", e.message);
+            console.warn(`⚠️ [API Refresh] JWT Verification failed with ${tokenAlg}:`, e.message);
             return NextResponse.json({ error: "Invalid token", details: e.message }, { status: 401 });
         }
 
@@ -107,21 +107,16 @@ export async function GET(request: Request) {
             console.error("Gate check error in refresh:", e);
             hasAccess = false;
         }
-
-        if (!hasAccess) {
-             console.log(`❌ [API Refresh] Still no access on-chain for ${address} at ${config.nftContractAddress}`);
-             return NextResponse.json({ 
-                error: "Access denied on-chain", 
-                details: `Wallet ${address} does not hold NFT at ${config.nftContractAddress}` 
-             }, { status: 403 });
-        }
-
-        console.log(`🔄 [API Refresh] Step 4 - Updating DB for ${address}`);
+        // 🛑 REMOVAL: We no longer return 403 if hasAccess is false. 
+        // This allows the frontend to receive the updated (false) status and handle it gracefully
+        // instead of being blocked by a failed request.
+        
+        console.log(`🔄 [API Refresh] Step 4 - Updating DB for ${address} (Access: ${hasAccess})`);
         // Update DB
         const walletAddressLower = typeof address === 'string' ? address.toLowerCase() : String(address).toLowerCase();
         
         await db.update(users)
-            .set({ hasPandorasKey: true })
+            .set({ hasPandorasKey: hasAccess })
             .where(eq(users.walletAddress, walletAddressLower));
 
         console.log(`🔄 [API Refresh] Step 5 - Re-issuing session token`);
@@ -132,7 +127,7 @@ export async function GET(request: Request) {
             ...cleanPayload,
             sub: userId, // Maintain original UUID
             address: address, // Maintain original wallet
-            hasAccess: true,
+            hasAccess: hasAccess, // DYNAMIC! Re-verify with on-chain check
             iat: Math.floor(Date.now() / 1000)
         }, secret, { 
             expiresIn: '24h',
@@ -156,13 +151,13 @@ export async function GET(request: Request) {
 
         return NextResponse.json({
             authenticated: true,
-            hasAccess: true,
+            hasAccess: hasAccess,
             user: {
                 id: userId,
                 address: address,
                 role: payload.role || "user",
                 scope: payload.scope,
-                hasAccess: true,
+                hasAccess: hasAccess,
             }
         });
 

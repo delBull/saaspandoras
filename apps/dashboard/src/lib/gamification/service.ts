@@ -288,47 +288,46 @@ export class GamificationService {
 
       console.log(`💰 Event ${eventType} grants ${points} points`);
 
-      // Award points directly using raw SQL (without events table dependency)
+      // Award points directly using real database
       let finalTotalPoints = 0;
       if (points > 0) {
         console.log(`🎯 Awarding ${points} points to user ${userId} (wallet: ${walletAddress})`);
 
-        // Get current points first to calculate final total
-        const currentProfile = await db.execute(sql`
-          SELECT total_points FROM gamification_profiles WHERE user_id = ${userId}
-        `);
-        const currentPoints = (currentProfile as any).rows?.[0]?.total_points ?? 0;
-        finalTotalPoints = currentPoints + points;
+        // 1. Update Profile (Type-safe)
+        const [updatedProfile] = await db.update(gamificationProfiles)
+          .set({
+            totalPoints: sql`${gamificationProfiles.totalPoints} + ${points}`,
+            currentLevel: sql`GREATEST(1, FLOOR((${gamificationProfiles.totalPoints} + ${points}) / 100) + 1)`,
+            levelProgress: sql`(${gamificationProfiles.totalPoints} + ${points}) % 100`,
+            pointsToNextLevel: sql`100 - ((${gamificationProfiles.totalPoints} + ${points}) % 100)`,
+            updatedAt: new Date()
+          })
+          .where(eq(gamificationProfiles.userId, userId))
+          .returning({ totalPoints: gamificationProfiles.totalPoints });
 
-        await db.execute(sql`
-          UPDATE gamification_profiles
-          SET
-            total_points = total_points + ${points},
-            current_level = GREATEST(1, FLOOR((total_points + ${points}) / 100) + 1),
-            level_progress = ((total_points + ${points}) % 100),
-            points_to_next_level = 100 - ((total_points + ${points}) % 100),
-            updated_at = NOW()
-          WHERE user_id = ${userId}
-        `);
+        finalTotalPoints = updatedProfile?.totalPoints ?? 0;
 
-        // Insert points record using numeric user ID and dynamic category
-        const eventCategory = this.getEventCategory(eventType);
-        await db.execute(sql`
-          INSERT INTO user_points
-          (user_id, points, reason, category, metadata, created_at)
-          VALUES (${userId}, ${points}, ${metadata?.achievementId ? `Logro Desbloqueado: ${String(metadata.achievementId)}` : `Evento: ${String(eventType)}`}, ${eventCategory}, ${JSON.stringify(metadata ?? {})}, NOW())
-        `);
+        // 2. Insert Points Record (Type-safe)
+        const pointsCategory = this.getPointsCategory(eventType);
+        await db.insert(userPoints).values({
+          userId: userId,
+          points: points,
+          reason: metadata?.achievementId ? `Logro Desbloqueado: ${String(metadata.achievementId)}` : `Evento: ${String(eventType)}`,
+          category: pointsCategory as any,
+          metadata: metadata || {},
+          createdAt: new Date()
+        });
+
+        // 🚀 CHECK AND UNLOCK ACHIEVEMENTS AUTOMATICALLY
+        await this.checkAndUnlockAchievements(walletAddress, eventType, finalTotalPoints);
       }
-
-      // 🚀 CHECK AND UNLOCK ACHIEVEMENTS AUTOMATICALLY
-      await this.checkAndUnlockAchievements(walletAddress, eventType, finalTotalPoints);
 
       console.log(`✅ Event tracked: +${points} points awarded to wallet ${walletAddress} (user ID: ${userId})`);
 
       // PERSIST EVENT HISTORY
       const [savedEvent] = await db.insert(gamificationEvents).values({
         userId: userId,
-        type: eventType as any,
+        type: eventType.toLowerCase() as any,
         category: this.getEventCategory(eventType) as any,
         points: points,
         projectId: metadata?.projectId ? Number(metadata.projectId) : null,
