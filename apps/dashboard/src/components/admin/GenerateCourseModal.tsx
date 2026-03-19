@@ -25,26 +25,32 @@ export function GenerateCourseModal({ isOpen, onClose, onSuccess }: GenerateCour
     try {
       // PHASE 1: Outline
       setPhase('outline');
-      setProgressMsg('Dise\u00F1ando estructura modular y hooks de dopamina...');
+      setProgressMsg('Diseñando estructura modular y hooks de dopamina...');
       
       const res1 = await fetch('/api/admin/courses/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phase: 'outline', topic, difficulty, tone })
       });
-      if (!res1.ok) throw new Error('Error generando estructura');
+      if (!res1.ok) {
+        const errBody = await res1.json().catch(() => ({}));
+        throw new Error(errBody?.error || 'Error generando estructura');
+      }
       const outlineData = await res1.json();
 
       // PHASE 2: Modules Content
       setPhase('modules');
-      setProgressMsg('Redactando lunas y estrellas (micro-dosis de contenido)...');
+      setProgressMsg('Redactando módulos (micro-dosis de contenido)...');
 
       const res2 = await fetch('/api/admin/courses/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phase: 'modules', topic, difficulty, tone, currentState: outlineData })
       });
-      if (!res2.ok) throw new Error('Error generando m\u00F3dulos');
+      if (!res2.ok) {
+        const errBody = await res2.json().catch(() => ({}));
+        throw new Error(errBody?.error || 'Error generando módulos');
+      }
       const modulesData = await res2.json();
 
       // Merge modules content into outline
@@ -63,7 +69,10 @@ export function GenerateCourseModal({ isOpen, onClose, onSuccess }: GenerateCour
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phase: 'quiz', topic, difficulty, tone, currentState: mergedOutline })
       });
-      if (!res3.ok) throw new Error('Error generando quizzes');
+      if (!res3.ok) {
+        const errBody = await res3.json().catch(() => ({}));
+        throw new Error(errBody?.error || 'Error generando quizzes');
+      }
       const quizData = await res3.json();
 
       // Merge final quiz questions
@@ -73,7 +82,6 @@ export function GenerateCourseModal({ isOpen, onClose, onSuccess }: GenerateCour
         finalCourse.modules[quizModuleIndex].questions = quizData.questions || [];
         finalCourse.modules[quizModuleIndex].question_count = quizData.questions?.length || 5;
         finalCourse.modules[quizModuleIndex].passing_score = 80;
-        // Dynamically calculate quiz duration
         finalCourse.modules[quizModuleIndex].duration = `${Math.max(1, Math.ceil((quizData.questions?.length || 5) * 0.5))} min`;
       }
 
@@ -95,14 +103,14 @@ export function GenerateCourseModal({ isOpen, onClose, onSuccess }: GenerateCour
         modules: JSON.stringify(finalCourse.modules, null, 2),
       };
 
-      toast.success('¡Curso M\u00E1gico generado!');
+      toast.success('¡Curso generado con éxito! 🧠✨');
       setPhase('idle');
       onSuccess(finalForm);
       onClose();
 
     } catch (err: any) {
       console.error(err);
-      toast.error(err.message || 'La IA tropez\u00F3 en el camino. Intenta de nuevo.');
+      toast.error(err.message || 'La IA tropezó en el camino. Intenta de nuevo.');
       setPhase('idle');
     }
   };
@@ -157,11 +165,11 @@ export function GenerateCourseModal({ isOpen, onClose, onSuccess }: GenerateCour
         ) : (
           <div className="space-y-4 relative">
              <div className="space-y-1">
-                <label htmlFor="ai-topic" className="text-xs text-gray-400 font-bold uppercase tracking-wider">Tema Pincipal del Curso</label>
+                <label htmlFor="ai-topic" className="text-xs text-gray-400 font-bold uppercase tracking-wider">Tema Principal del Curso</label>
                 <input
                   id="ai-topic"
                   type="text"
-                  placeholder="Ej. Introducci\u00F3n a los Rollups de Ethereum"
+                  placeholder="Ej. Introducción a los Rollups de Ethereum"
                   value={topic}
                   onChange={e => setTopic(e.target.value)}
                   className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-cyan-500 transition-colors"
@@ -189,8 +197,8 @@ export function GenerateCourseModal({ isOpen, onClose, onSuccess }: GenerateCour
                         onChange={e => setTone(e.target.value)}
                         className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-cyan-500 appearance-none"
                     >
-                        <option value="Motivacional, dopamin\u00E9rgico">Cripto / Degen</option>
-                        <option value="Directo, t\u00E9cnico y conciso">T\u00E9cnico (Devs)</option>
+                        <option value="Motivacional, dopaminérgico">Cripto / Degen</option>
+                        <option value="Directo, técnico y conciso">Técnico (Devs)</option>
                         <option value="Amigable, para novatos">Amigable (No-coiners)</option>
                     </select>
                 </div>
@@ -201,11 +209,11 @@ export function GenerateCourseModal({ isOpen, onClose, onSuccess }: GenerateCour
                    onClick={handleGenerate}
                    className="w-full py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black rounded-xl text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-lg shadow-cyan-900/30"
                 >
-                    Generar Curso M\u00E1gicamente
+                    Generar Curso Mágicamente ✨
                     <ArrowRight className="w-4 h-4" />
                 </button>
                 <p className="text-center text-[10px] text-zinc-500 mt-3">
-                    Este proceso tomar\u00E1 \u00B120 segundos. Se generar\u00E1 un borrador para tu revisi\u00F3n antes de publicarlo.
+                    Este proceso tomará ~120 segundos. Se generará un borrador para tu revisión antes de publicarlo.
                 </p>
              </div>
           </div>
