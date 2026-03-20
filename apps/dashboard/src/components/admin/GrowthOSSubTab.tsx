@@ -2,19 +2,32 @@
 
 import { useState, useEffect } from 'react';
 import { Badge } from "@/components/ui/badge";
-import { Zap, Globe, ShieldCheck, TrendingUp, Info, HelpCircle, BookOpen, ChevronDown, ChevronUp, UserCheck, Sparkles, Lightbulb, Target, RefreshCw } from "lucide-react";
+import { Zap, Globe, ShieldCheck, TrendingUp, Info, HelpCircle, BookOpen, ChevronDown, ChevronUp, UserCheck, Sparkles, Lightbulb, Target, RefreshCw, X } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button as UIButton } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface Project {
   id: number;
   title: string;
   slug: string;
   status: string;
+  allowedDomains: string[];
 }
 
 interface Lead {
@@ -55,6 +68,61 @@ export default function GrowthOSSubTab() {
   const [apiKey, setApiKey] = useState<string>('pk_grow_live_xxxxxxx'); // Simulation
   const [copied, setCopied] = useState(false);
   const [showDevHub, setShowDevHub] = useState(false);
+  
+  // Real Domain Management State
+  const [newDomain, setNewDomain] = useState('');
+  const [isAddingDomain, setIsAddingDomain] = useState(false);
+
+  const handleAddDomain = () => {
+    if (!newDomain) return;
+    if (allowedDomains.includes(newDomain)) {
+        toast.error("El dominio ya está en la lista");
+        return;
+    }
+    // Simple validation
+    if (!newDomain.includes('.')) {
+        toast.error("Por favor ingresa un dominio válido");
+        return;
+    }
+
+    const updatedDomains = [...allowedDomains, newDomain];
+    setAllowedDomains(updatedDomains);
+    setNewDomain('');
+    setIsAddingDomain(false);
+    
+    // Persistir en el backend
+    saveAllowedDomains(updatedDomains);
+  };
+
+  const removeDomain = (domain: string) => {
+    const updatedDomains = allowedDomains.filter(d => d !== domain);
+    setAllowedDomains(updatedDomains);
+    saveAllowedDomains(updatedDomains);
+  };
+
+  const saveAllowedDomains = async (domains: string[]) => {
+    if (selectedProjectId === 'all') return;
+    
+    try {
+      const response = await fetch(`/api/admin/projects/${selectedProjectId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          allowedDomains: domains,
+          isBasicEdit: true // Para que use el caso de edición básica en el backend
+        })
+      });
+      
+      if (response.ok) {
+        toast.success("Dominios actualizados correctamente");
+      } else {
+        toast.error("Error al guardar dominios en el servidor");
+      }
+    } catch (error) {
+      console.error('Error saving domains:', error);
+      toast.error("Error de conexión al guardar dominios");
+    }
+  };
 
   // Fetch Projects for Filter
   const fetchProjects = async () => {
@@ -118,18 +186,21 @@ export default function GrowthOSSubTab() {
     fetchLeads(selectedProjectId);
     setAiInsights(null); // Reset insights when project changes
     
-    // Simulate fetching funnel stats
+    // Fetch funnel stats & allowed domains
     if (selectedProjectId !== 'all') {
+        const project = projects.find(p => p.id === Number(selectedProjectId));
+        setAllowedDomains(project?.allowedDomains || []);
+        
         setStats({
             views: Math.floor(leads.length * 4.2),
             clicks: Math.floor(leads.length * 1.8),
             leads: leads.length
         });
-        setAllowedDomains(['protocol-landing.io', 'test-app.xyz']);
     } else {
         setStats({ views: 0, clicks: 0, leads: 0 });
+        setAllowedDomains([]);
     }
-  }, [selectedProjectId, leads.length]);
+  }, [selectedProjectId, leads.length, projects]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -221,17 +292,32 @@ export default function GrowthOSSubTab() {
             <div className="flex items-center gap-2">
               <h3 className="text-xl font-bold text-white tracking-tight">🚀 Growth OS</h3>
               <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/20 text-[10px] uppercase font-bold tracking-widest">Protocol Multi-tenant</Badge>
-              <Tooltip>
-                <TooltipTrigger asChild>
+              <Dialog>
+                <DialogTrigger asChild>
                   <button className="text-zinc-600 hover:text-purple-400 transition-colors p-1 rounded-full hover:bg-white/5">
                     <HelpCircle className="w-5 h-5" />
                   </button>
-                </TooltipTrigger>
-                <TooltipContent className="max-w-xs p-4 bg-zinc-950 border-zinc-800 shadow-2xl">
-                  <p className="font-bold text-purple-400 mb-1 tracking-tight">Growth System Overview</p>
-                  <p className="text-xs leading-relaxed">Sistema centralizado de captación de demanda. Separa los leads de Pandoras de los leads específicos de cada protocolo externo.</p>
-                </TooltipContent>
-              </Tooltip>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2 text-purple-400">
+                      <BookOpen className="w-5 h-5" />
+                      Growth OS Overview
+                    </DialogTitle>
+                    <DialogDescription className="text-zinc-400 pt-4">
+                      Sistema centralizado de captación de demanda. Separa los leads de Pandoras de los leads específicos de cada protocolo externo.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4 text-xs text-zinc-400 leading-relaxed">
+                    <p>Esta herramienta permite a los protocolos del ecosistema Pandoras gestionar su propia audiencia de forma soberana.</p>
+                    <ul className="list-disc ml-4 space-y-2">
+                      <li>Seguimiento de conversiones en tiempo real.</li>
+                      <li>Segmentación por intención de usuario.</li>
+                      <li>Integración vía Script o API global.</li>
+                    </ul>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
             <p className="text-sm text-zinc-500 mt-1">Gestión de audiencia y captación de demanda para protocolos del ecosistema.</p>
           </div>
@@ -256,17 +342,24 @@ export default function GrowthOSSubTab() {
           <div className="bg-zinc-900/50 rounded-2xl p-6 border border-zinc-800 hover:border-blue-500/30 transition-all group">
             <div className="flex justify-between items-start mb-2">
               <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400"><Globe className="w-5 h-5" /></div>
-              <Tooltip>
-                <TooltipTrigger asChild>
+              <Dialog>
+                <DialogTrigger asChild>
                   <button className="text-xs font-bold text-zinc-600 flex items-center gap-1 cursor-help hover:text-blue-400 p-0.5 rounded transition-colors group/info">
                     AUDIENCIA <Info className="w-3 h-3 group-hover/info:animate-pulse" />
                   </button>
-                </TooltipTrigger>
-                <TooltipContent className="bg-zinc-950 border-zinc-800 p-3 shadow-xl">
-                  <p className="font-bold text-blue-400 mb-1 text-[11px]">AUDIENCIA TOTAL</p>
-                  <p className="text-[11px]">Número total de correos únicos capturados para este proyecto.</p>
-                </TooltipContent>
-              </Tooltip>
+                </DialogTrigger>
+                <DialogContent className="bg-zinc-950 border-zinc-800 text-white">
+                  <DialogHeader>
+                    <DialogTitle className="text-blue-400 flex items-center gap-2">
+                        <Globe className="w-5 h-5" />
+                        Audiencia Total
+                    </DialogTitle>
+                    <DialogDescription className="text-zinc-400">
+                        Número total de correos únicos capturados para este proyecto a través de todos los canales de entrada (Widget, API, Formulario).
+                    </DialogDescription>
+                  </DialogHeader>
+                </DialogContent>
+              </Dialog>
             </div>
             <div className="text-3xl font-bold text-white">{leads.length}</div>
             <div className="text-xs text-zinc-500 mt-1">Total Leads capturados</div>
@@ -275,17 +368,24 @@ export default function GrowthOSSubTab() {
           <div className="bg-zinc-900/50 rounded-2xl p-6 border border-zinc-800 hover:border-green-500/30 transition-all">
             <div className="flex justify-between items-start mb-2">
               <div className="p-2 bg-green-500/10 rounded-lg text-green-400"><ShieldCheck className="w-5 h-5" /></div>
-              <Tooltip>
-                <TooltipTrigger asChild>
+              <Dialog>
+                <DialogTrigger asChild>
                   <button className="text-xs font-bold text-zinc-600 flex items-center gap-1 cursor-help hover:text-green-400 p-0.5 rounded transition-colors group/info">
                     WHITELIST <Info className="w-3 h-3 group-hover/info:animate-pulse" />
                   </button>
-                </TooltipTrigger>
-                <TooltipContent className="bg-zinc-950 border-zinc-800 p-3 shadow-xl">
-                    <p className="font-bold text-green-400 mb-1 text-[11px]">SISTEMA DE WHITELIST</p>
-                  <p className="text-[11px]">Usuarios marcados como aprobados o prioritarios para el protocolo.</p>
-                </TooltipContent>
-              </Tooltip>
+                </DialogTrigger>
+                <DialogContent className="bg-zinc-950 border-zinc-800 text-white">
+                  <DialogHeader>
+                    <DialogTitle className="text-green-400 flex items-center gap-2">
+                        <ShieldCheck className="w-5 h-5" />
+                        Sistema de Whitelist
+                    </DialogTitle>
+                    <DialogDescription className="text-zinc-400">
+                        Usuarios que han sido marcados como aprobados o prioritarios. Esto permite filtrar a los usuarios con mayor potencial de interacción con el protocolo.
+                    </DialogDescription>
+                  </DialogHeader>
+                </DialogContent>
+              </Dialog>
             </div>
             <div className="text-3xl font-bold text-white">
               {leads.filter(l => l.status === 'whitelisted').length}
@@ -299,17 +399,24 @@ export default function GrowthOSSubTab() {
           <div className="bg-zinc-900/50 rounded-2xl p-6 border border-zinc-800 hover:border-purple-500/30 transition-all">
             <div className="flex justify-between items-start mb-2">
               <div className="p-2 bg-purple-500/10 rounded-lg text-purple-400"><Zap className="w-5 h-5" /></div>
-              <Tooltip>
-                <TooltipTrigger asChild>
+              <Dialog>
+                <DialogTrigger asChild>
                   <button className="text-xs font-bold text-zinc-600 flex items-center gap-1 cursor-help hover:text-purple-400 p-0.5 rounded transition-colors group/info">
                     INTENCIÓN <Info className="w-3 h-3 group-hover/info:animate-pulse" />
                   </button>
-                </TooltipTrigger>
-                <TooltipContent className="bg-zinc-950 border-zinc-800 p-3 shadow-xl">
-                    <p className="font-bold text-purple-400 mb-1 text-[11px]">NIVEL DE INTENCIÓN</p>
-                  <p className="text-[11px]">Usuarios que han expresado interés explícito en entrar a la Whitelist.</p>
-                </TooltipContent>
-              </Tooltip>
+                </DialogTrigger>
+                <DialogContent className="bg-zinc-950 border-zinc-800 text-white">
+                  <DialogHeader>
+                    <DialogTitle className="text-purple-400 flex items-center gap-2">
+                        <Zap className="w-5 h-5" />
+                        Nivel de Intención
+                    </DialogTitle>
+                    <DialogDescription className="text-zinc-400">
+                        Usuarios que han completado formularios de Whitelist o han expresado interés explícito en participar en rondas de preventa o staking.
+                    </DialogDescription>
+                  </DialogHeader>
+                </DialogContent>
+              </Dialog>
             </div>
             <div className="text-3xl font-bold text-white">
               {leads.filter(l => l.intent === 'whitelist').length}
@@ -320,22 +427,34 @@ export default function GrowthOSSubTab() {
           <div className="bg-zinc-900/50 rounded-2xl p-6 border border-zinc-800 hover:border-orange-500/30 transition-all">
             <div className="flex justify-between items-start mb-2">
               <div className="p-2 bg-orange-500/10 rounded-lg text-orange-400 font-mono font-bold">QS</div>
-              <Tooltip>
-                <TooltipTrigger asChild>
+              <Dialog>
+                <DialogTrigger asChild>
                   <button className="text-xs font-bold text-zinc-600 flex items-center gap-1 cursor-help hover:text-orange-400 p-0.5 rounded transition-colors group/info">
                     QUALITY <Info className="w-3 h-3 group-hover/info:animate-pulse" />
                   </button>
-                </TooltipTrigger>
-                <TooltipContent className="max-w-[240px] bg-zinc-950 border-zinc-800 p-3 shadow-xl">
-                  <p className="font-bold text-orange-400 mb-1 text-[11px]">QUALITY SCORE (QS)</p>
-                  <p className="text-[11px]">Algoritmo que puntúa al lead basado en:</p>
-                  <ul className="list-disc ml-4 mt-1 text-[10px] text-zinc-400">
-                    <li>Intención de inversión (+30 pts)</li>
-                    <li>Usuario registrado (+20 pts)</li>
-                    <li>Completitud de perfil / Antigüedad</li>
-                  </ul>
-                </TooltipContent>
-              </Tooltip>
+                </DialogTrigger>
+                <DialogContent className="bg-zinc-950 border-zinc-800 text-white">
+                  <DialogHeader>
+                    <DialogTitle className="text-orange-400 flex items-center gap-2">
+                        <Target className="w-5 h-5" />
+                        Quality Score (QS)
+                    </DialogTitle>
+                    <DialogDescription className="text-zinc-400">
+                        Nuestro motor de IA puntúa cada lead basándose en su comportamiento, completitud de perfil y acciones on-chain vinculadas.
+                    </DialogDescription>
+                  </DialogHeader>
+                   <div className="space-y-4 py-4 text-xs text-zinc-400">
+                    <div className="flex justify-between items-center p-3 bg-zinc-900 rounded-xl">
+                        <span>Intención de Inversión</span>
+                        <span className="text-green-400">+30 pts</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-zinc-900 rounded-xl">
+                        <span>Usuario Registrado en Pandoras</span>
+                        <span className="text-blue-400">+20 pts</span>
+                    </div>
+                </div>
+                </DialogContent>
+              </Dialog>
             </div>
             <div className="text-3xl font-bold text-white">
               {Math.round(leads.reduce((acc, l) => acc + (l.score || 0), 0) / (leads.length || 1))}
@@ -509,14 +628,41 @@ export default function GrowthOSSubTab() {
                 <div className="space-y-6">
                     <div>
                     <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block mb-2">Dominios Permitidos</label>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 mb-3">
                         {allowedDomains.map(domain => (
-                        <Badge key={domain} variant="secondary" className="bg-zinc-800/50 text-zinc-400 border-zinc-700 text-[10px]">
+                        <Badge key={domain} variant="secondary" className="bg-zinc-800/50 text-zinc-400 border-zinc-700 text-[10px] flex items-center gap-1 pr-1">
                             {domain}
+                            <button 
+                                onClick={() => removeDomain(domain)}
+                                className="hover:text-red-400 p-0.5"
+                            >
+                                <X className="w-2 h-2" />
+                            </button>
                         </Badge>
                         ))}
-                        <button className="text-[10px] text-purple-400 hover:text-purple-300 font-bold">+ Agregar</button>
                     </div>
+                    
+                    {isAddingDomain ? (
+                        <div className="flex gap-2 animate-in slide-in-from-left-2">
+                            <Input 
+                                value={newDomain}
+                                onChange={(e) => setNewDomain(e.target.value)}
+                                placeholder="protocol-domain.io"
+                                className="h-8 text-xs bg-zinc-950 border-zinc-800"
+                                autoFocus
+                                onKeyDown={(e) => e.key === 'Enter' && handleAddDomain()}
+                            />
+                            <UIButton size="sm" className="h-8 px-3 text-[10px] bg-purple-600 hover:bg-purple-700" onClick={handleAddDomain}>Agregar</UIButton>
+                            <UIButton size="sm" variant="ghost" className="h-8 px-2 text-[10px]" onClick={() => setIsAddingDomain(false)}>X</UIButton>
+                        </div>
+                    ) : (
+                        <button 
+                            onClick={() => setIsAddingDomain(true)}
+                            className="text-[10px] text-purple-400 hover:text-purple-300 font-bold flex items-center gap-1"
+                        >
+                            + Agregar Dominio Real
+                        </button>
+                    )}
                     </div>
 
                     <div className="pt-4 border-t border-zinc-800">

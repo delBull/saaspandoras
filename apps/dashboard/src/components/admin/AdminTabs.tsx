@@ -124,90 +124,46 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
             </div>
           </div>
 
-          {/* Sub-tabs para diferentes secciones de marketing */}
-          <div className="mb-6">
-            <div className="flex flex-wrap gap-4 border-b border-zinc-700 pb-2">
-              <button
-                onClick={() => setSubTab('wa-leads')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeMarketingSubTab === 'wa-leads'
-                  ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                  : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
-                  }`}
-              >
-                💬 WA Leads
-              </button>
-              <button
-                onClick={() => setSubTab('pay')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeMarketingSubTab === 'pay'
-                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                  : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
-                  }`}
-              >
-                💸 Pay & Finance
-              </button>
-              <button
-                onClick={() => setSubTab('shortlinks')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeMarketingSubTab === 'shortlinks'
-                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                  : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
-                  }`}
-              >
-                🔗 Shortlinks
-              </button>
-              <button
-                onClick={() => setSubTab('newsletter')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeMarketingSubTab === 'newsletter'
-                  ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                  : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
-                  }`}
-              >
-                📧 Newsletter Analytics
-              </button>
-              <button
-                onClick={() => setSubTab('growth-os')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeMarketingSubTab === 'growth-os'
-                  ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 animate-pulse-subtle'
-                  : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
-                  }`}
-              >
-                🚀 Growth OS
-              </button>
-              <button
-                onClick={() => setSubTab('discord')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeMarketingSubTab === 'discord'
-                  ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
-                  : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
-                  }`}
-              >
-                🎮 Discord
-              </button>
-              <button
-                onClick={() => setSubTab('campaigns')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeMarketingSubTab === 'campaigns'
-                  ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-                  : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
-                  }`}
-              >
-                🎯 Campaigns
-              </button>
-              <button
-                onClick={() => setSubTab('agenda')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeMarketingSubTab === 'agenda'
-                  ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-                  : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
-                  }`}
-              >
-                🗓️ Agenda
-              </button>
-              <button
-                onClick={() => setSubTab('cursos')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeMarketingSubTab === 'cursos'
-                  ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
-                  : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
-                  }`}
-              >
-                📚 Cursos
-              </button>
+          {/* Sub-tabs Redesign: Modern Grid Navigation */}
+          <div className="mb-10">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9 gap-3">
+              {[
+                { id: 'wa-leads', label: 'WA Leads', icon: '💬', color: 'text-green-400', active: 'bg-green-500/10 border-green-500/30 text-green-400 shadow-green-500/5', glow: 'bg-green-500/5', dot: 'bg-green-400' },
+                { id: 'pay', label: 'Pay & Finance', icon: '💸', color: 'text-emerald-400', active: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-emerald-500/5', glow: 'bg-emerald-500/5', dot: 'bg-emerald-400' },
+                { id: 'shortlinks', label: 'Shortlinks', icon: '🔗', color: 'text-blue-400', active: 'bg-blue-500/10 border-blue-500/30 text-blue-400 shadow-blue-500/5', glow: 'bg-blue-500/5', dot: 'bg-blue-400' },
+                { id: 'newsletter', label: 'Newsletter', icon: '📧', color: 'text-purple-400', active: 'bg-purple-500/10 border-purple-500/30 text-purple-400 shadow-purple-500/5', glow: 'bg-purple-500/5', dot: 'bg-purple-400' },
+                { id: 'growth-os', label: 'Growth OS', icon: '🚀', color: 'text-indigo-400', active: 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400 shadow-indigo-500/5', glow: 'bg-indigo-500/5', dot: 'bg-indigo-400', pulse: true },
+                { id: 'discord', label: 'Discord', icon: '🎮', color: 'text-indigo-400', active: 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400 shadow-indigo-500/5', glow: 'bg-indigo-500/5', dot: 'bg-indigo-400' },
+                { id: 'campaigns', label: 'Campaigns', icon: '🎯', color: 'text-orange-400', active: 'bg-orange-500/10 border-orange-500/30 text-orange-400 shadow-orange-500/5', glow: 'bg-orange-500/5', dot: 'bg-orange-400' },
+                { id: 'agenda', label: 'Agenda', icon: '🗓️', color: 'text-rose-400', active: 'bg-rose-500/10 border-rose-500/30 text-rose-400 shadow-rose-500/5', glow: 'bg-rose-500/5', dot: 'bg-rose-400' },
+                { id: 'cursos', label: 'Cursos', icon: '📚', color: 'text-cyan-400', active: 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400 shadow-cyan-500/5', glow: 'bg-cyan-500/5', dot: 'bg-cyan-400' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setSubTab(tab.id)}
+                  className={`
+                    relative group flex flex-col items-center justify-center p-4 rounded-2xl border transition-all duration-300
+                    ${activeMarketingSubTab === tab.id 
+                      ? `${tab.active}` 
+                      : 'bg-zinc-900/30 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/50 hover:border-zinc-700 hover:text-zinc-300'
+                    }
+                    ${tab.pulse && activeMarketingSubTab === tab.id ? 'animate-pulse-subtle' : ''}
+                  `}
+                >
+                  {/* Subtle Background Glow for Active State */}
+                  {activeMarketingSubTab === tab.id && (
+                    <div className={`absolute inset-0 ${tab.glow} blur-xl rounded-2xl -z-10 animate-in fade-in duration-500`} />
+                  )}
+                  
+                  <span className="text-2xl mb-2 group-hover:scale-110 transition-transform duration-300">{tab.icon}</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-center leading-tight">{tab.label}</span>
+                  
+                  {/* Active Indicator Dot */}
+                  {activeMarketingSubTab === tab.id && (
+                    <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full ${tab.dot} shadow-[0_0_8px_rgba(255,255,255,0.2)]`} />
+                  )}
+                </button>
+              ))}
             </div>
           </div>
 

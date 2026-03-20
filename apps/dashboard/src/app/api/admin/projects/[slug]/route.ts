@@ -108,6 +108,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
       updateAuthorityAddress: true,
       applicantPosition: true,
       verificationAgreement: true,
+      allowedDomains: true,
 
       // Note: Additional fields from extended schema are not currently defined in the database schema
     };
@@ -235,6 +236,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       if (body.description) updates.description = body.description;
       if (body.logoUrl !== undefined) updates.logoUrl = body.logoUrl;
       if (body.coverPhotoUrl !== undefined) updates.coverPhotoUrl = body.coverPhotoUrl;
+      if (body.allowedDomains !== undefined) updates.allowedDomains = body.allowedDomains;
 
       // Optional: generate new slug if title changed (admin only or owner?)
       if (body.title && body.title !== existingProject.title) {
