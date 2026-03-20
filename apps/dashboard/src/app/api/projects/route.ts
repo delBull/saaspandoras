@@ -97,7 +97,7 @@ export async function GET() {
         .from(projects)
         .where(
           and(
-            inArray(projects.status, ['pending', 'approved', 'live', 'completed']),
+            inArray(projects.status, ['draft', 'pending', 'active_client', 'approved', 'live', 'completed']),
             ne(projects.businessCategory, 'infrastructure'), // Exclude NFT Passes/System contracts
             eq(projects.isDeleted, false)
           )
