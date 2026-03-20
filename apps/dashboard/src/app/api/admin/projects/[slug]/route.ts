@@ -17,6 +17,7 @@ import { headers } from "next/headers";
 import { eq, and } from "drizzle-orm";
 import slugify from "slugify";
 import { sanitizeLogData, validateRequestBody } from "@/lib/security-utils";
+import { IntegrationKeyService } from "@/lib/integrations/auth";
 
 interface RouteParams {
   params: Promise<{ slug: string }>;
@@ -108,6 +109,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
       updateAuthorityAddress: true,
       applicantPosition: true,
       verificationAgreement: true,
+      allowedDomains: true,
 
       // Note: Additional fields from extended schema are not currently defined in the database schema
     };
@@ -235,6 +237,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       if (body.description) updates.description = body.description;
       if (body.logoUrl !== undefined) updates.logoUrl = body.logoUrl;
       if (body.coverPhotoUrl !== undefined) updates.coverPhotoUrl = body.coverPhotoUrl;
+      if (body.allowedDomains !== undefined) updates.allowedDomains = body.allowedDomains;
 
       // Optional: generate new slug if title changed (admin only or owner?)
       if (body.title && body.title !== existingProject.title) {
@@ -249,6 +252,17 @@ export async function PATCH(request: Request, { params }: RouteParams) {
         .update(projectsSchema)
         .set(updates)
         .where(eq(projectsSchema.id, projectId));
+
+      // --- AUTOMATIC API KEY GENERATION ---
+      // If allowedDomains were updated (External Project integration start)
+      if (body.allowedDomains && Array.isArray(body.allowedDomains) && body.allowedDomains.length > 0) {
+        try {
+          console.log(`🔑 Automatically ensuring API Key for project ${projectId} due to domain update...`);
+          await IntegrationKeyService.ensureKeyForProject(projectId, 'production', `Client: ${existingProject.title}`);
+        } catch (keyErr) {
+          console.error('❌ Failed to auto-generate API Key:', keyErr);
+        }
+      }
 
       return NextResponse.json({ message: "Propiedades básicas actualizadas" }, { status: 200 });
     }

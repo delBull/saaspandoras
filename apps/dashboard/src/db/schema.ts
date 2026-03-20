@@ -42,6 +42,19 @@ export const tokenTypeEnum = pgEnum("token_type", [
   "erc1155", // Híbrido (ERC-1155)
 ]);
 
+export const leadAttributionTypeEnum = pgEnum("lead_attribution_type", [
+  "exclusive",
+  "shared"
+]);
+
+export const leadAttributionMethodEnum = pgEnum("lead_attribution_method", [
+  "domain_match",
+  "fingerprint_match",
+  "email_match",
+  "manual"
+]);
+
+
 export const yieldSourceEnum = pgEnum("yield_source", [
   "rental_income", // Rentas de Alquiler
   "capital_appreciation", // Plusvalía por Venta
@@ -58,6 +71,8 @@ export const administrators = pgTable("administrators", {
   addedBy: varchar("added_by", { length: 42 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   availability: jsonb("availability"), // Configuración de agenda (días, horas, etc)
+  allowedDomains: jsonb("allowed_domains").default([]).notNull(), // URLs permitidas para el widget
+  secretKey: varchar("secret_key", { length: 255 }), // Para firmas de API (Growth Infra)
 });
 
 // Tabla users existente en la base de datos
@@ -267,6 +282,7 @@ export const projects = pgTable("projects", {
   // Pricing & Access Metadata
   accessType: varchar("access_type", { length: 20 }).default('free'), // free, license, gated, premium
   price: decimal("price", { precision: 18, scale: 6 }).default("0.000000"),
+  allowedDomains: jsonb("allowed_domains").default([]).notNull(), // URLs permitidas para el widget
   isDeleted: boolean("is_deleted").default(false).notNull(),
 }, (table) => ({
   slugIndex: index("project_slug_index").on(table.slug),
@@ -1122,6 +1138,7 @@ export const integrationClients = pgTable("integration_clients", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   environment: integrationEnvironmentEnum("environment").default("staging").notNull(),
+  projectId: integer("project_id").references(() => projects.id), // Link to project (if applicable)
 
   // Security
   apiKeyHash: text("api_key_hash").notNull(),
@@ -1624,8 +1641,117 @@ export const deploymentJobs = pgTable("deployment_jobs", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().$onUpdate(() => new Date()).notNull(),
 });
 
+// --- MARKETING / GROWTH OS TABLES ---
+
+export const marketingLeadStatusEnum = pgEnum("marketing_lead_status", [
+  "active",
+  "whitelisted",
+  "converted",
+  "bounced",
+  "unsubscribed"
+]);
+
+export const marketingLeadIntentEnum = pgEnum("marketing_lead_intent", [
+  "invest",
+  "explore",
+  "whitelist",
+  "earn",
+  "other"
+]);
+
+/**
+ * marketing_leads — Multi-tenant lead storage.
+ * Links to global 'users' if already registered, otherwise identity is email-based.
+ */
+export const marketingLeads = pgTable("marketing_leads", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: varchar("user_id", { length: 255 }).references(() => users.id),
+  projectId: integer("project_id").references(() => projects.id).notNull(),
+  
+  email: varchar("email", { length: 255 }).notNull(),
+  name: varchar("name", { length: 255 }),
+  phoneNumber: varchar("phone_number", { length: 50 }), // Added for WhatsApp support
+  walletAddress: varchar("wallet_address", { length: 42 }), // Web3 Identity
+  fingerprint: varchar("fingerprint", { length: 255 }), // Device tracking
+  identityHash: varchar("identity_hash", { length: 255 }), // Multi-id deduplication (email|wallet|fingerprint)
+  origin: varchar("origin", { length: 512 }), // Where the lead came from
+  referrer: varchar("referrer", { length: 255 }), // Affiliate/Inviter ID
+  
+  status: marketingLeadStatusEnum("status").default("active").notNull(),
+  intent: marketingLeadIntentEnum("intent").default("explore").notNull(),
+  score: integer("score").default(0).notNull(),
+  
+  metadata: jsonb("metadata").default({}).notNull(),
+  consent: boolean("consent").default(false).notNull(),
+  
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  // A lead is unique per Project + Email
+  projectEmailIdx: uniqueIndex("marketing_leads_project_email_idx").on(t.projectId, t.email),
+}));
+
+/**
+ * marketing_lead_events — Immutable log of lead interactions.
+ * Powers the Event System and Analytics.
+ */
+export const marketingLeadEvents = pgTable("marketing_lead_events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  leadId: uuid("lead_id").references(() => marketingLeads.id).notNull(),
+  type: varchar("type", { length: 100 }).notNull(), // signup, whitelist_approved, converted...
+  payload: jsonb("payload").default({}).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+
+/**
+ * marketing_reward_logs — Idempotency log for rewards system.
+ * Prevents double-awarding XP/Credits for the same marketing event.
+ */
+export const marketingRewardLogs = pgTable("marketing_reward_logs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  leadId: uuid("lead_id").notNull().references(() => marketingLeads.id),
+  eventId: uuid("event_id").notNull().references(() => marketingLeadEvents.id),
+  
+  rewardType: varchar("reward_type", { length: 50 }).notNull(), // 'XP' | 'CREDITS' | 'PBOX'
+  amount: integer("amount").notNull(),
+  
+  processedAt: timestamp("processed_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  // CRITICAL: Prevent double reward for the same event per user
+  uniqueUserEventReward: uniqueIndex("marketing_reward_unique_idx").on(t.userId, t.eventId, t.rewardType),
+}));
+
+
+/**
+ * marketing_lead_attributions — Relationship between leads and projects.
+ * Supports many-to-many attribution with confidence scoring.
+ */
+export const marketingLeadAttributions = pgTable("marketing_lead_attributions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  leadId: uuid("lead_id").references(() => marketingLeads.id).notNull(),
+  projectId: integer("project_id").references(() => projects.id).notNull(),
+  
+  attributionType: leadAttributionTypeEnum("attribution_type").default("shared").notNull(),
+  attributionMethod: leadAttributionMethodEnum("attribution_method").notNull(),
+  confidenceScore: decimal("confidence_score", { precision: 3, scale: 2 }).notNull(), // 0.00 to 1.00
+  
+  attributedAt: timestamp("attributed_at", { withTimezone: true }).defaultNow().notNull(),
+  metadata: jsonb("metadata").default({}).notNull(),
+}, (t) => ({
+  uniqueLeadProject: uniqueIndex("marketing_lead_project_unique_idx").on(t.leadId, t.projectId),
+  leadIdx: index("attribution_lead_idx").on(t.leadId),
+  projectIdx: index("attribution_project_idx").on(t.projectId),
+}));
+
 
 export type DeploymentJob = typeof deploymentJobs.$inferSelect;
+export type MarketingLead = typeof marketingLeads.$inferSelect;
+export type MarketingLeadEvent = typeof marketingLeadEvents.$inferSelect;
+export type MarketingRewardLog = typeof marketingRewardLogs.$inferSelect;
+export type MarketingLeadAttribution = typeof marketingLeadAttributions.$inferSelect;
+
 
 export const governanceProposalsRelations = relations(governanceProposals, ({ many }) => ({
   votes: many(governanceVotes),
@@ -1637,3 +1763,20 @@ export const governanceVotesRelations = relations(governanceVotes, ({ one }) => 
     references: [governanceProposals.proposalId],
   }),
 }));
+
+export const marketingLeadsRelations = relations(marketingLeads, ({ many }) => ({
+  attributions: many(marketingLeadAttributions),
+  events: many(marketingLeadEvents),
+}));
+
+export const marketingLeadAttributionsRelations = relations(marketingLeadAttributions, ({ one }) => ({
+  lead: one(marketingLeads, {
+    fields: [marketingLeadAttributions.leadId],
+    references: [marketingLeads.id],
+  }),
+  project: one(projects, {
+    fields: [marketingLeadAttributions.projectId],
+    references: [projects.id],
+  }),
+}));
+
