@@ -32,22 +32,23 @@ export function NetworkSelector({ selectedChain, onChainChange, supportedNetwork
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full min-w-[200px] flex items-center justify-between p-3 bg-zinc-800/50 border border-zinc-700 rounded-lg hover:bg-zinc-700/50 transition-colors"
+        className="w-full flex items-center justify-between p-2 hover:bg-zinc-800/50 rounded-md transition-all group"
       >
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-          <span className="text-xs font-mono text-gray-300">
-            {supportedNetworks.find(n => n.chain.id === selectedChain.id)?.name ?? "Ethereum"}
+          <div className="w-1.5 h-1.5 bg-lime-500 rounded-full shadow-[0_0_8px_rgba(163,230,53,0.5)]"></div>
+          <span className="text-[10px] uppercase tracking-wider font-bold text-gray-400 group-hover:text-lime-400 pb-0.5">
+            {supportedNetworks.find(n => n.chain.id === selectedChain.id)?.name ?? "Network"}
           </span>
         </div>
-        <svg
-          className="w-3 h-3 text-gray-400"
+        <motion.svg
+          animate={{ rotate: isOpen ? 180 : 0 }}
+          className="w-3.5 h-3.5 text-gray-500 group-hover:text-white transition-colors"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        </motion.svg>
       </button>
 
       {/* Network Dropdown */}
