@@ -65,21 +65,37 @@ export default function ApplyInfoPage() {
     checkGateStatus();
   }, []);
 
-  // 2. Check NFT Balance
+  // 2. Check NFT Balance (Dual Check for compatibility)
   const contract = getContract({
     client,
     chain: config.chain,
     address: config.applyPassNftAddress,
   });
 
-  const { data: balance } = useReadContract({
+  const { data: balance, isLoading: loadingBalance } = useReadContract({
     contract,
-    method: "balanceOf",
+    method: "function balanceOf(address owner) view returns (uint256)",
     params: [account?.address || "0x0000000000000000000000000000000000000000"],
     queryOptions: { enabled: !!account && isGateEnabled }
   });
 
-  const hasAccess = !isGateEnabled || (balance && Number(balance) > 0);
+  const { data: isHolder, isLoading: loadingHolder } = useReadContract({
+    contract,
+    method: "function isGateHolder(address) view returns (bool)",
+    params: [account?.address || "0x0000000000000000000000000000000000000000"],
+    queryOptions: { enabled: !!account && isGateEnabled }
+  });
+
+  // Debug logging for staging
+  useEffect(() => {
+    if (account && isGateEnabled) {
+      console.log(`🔍 [ApplyGate_Debug] Checking access for ${account.address}`);
+      console.log(`📍 [ApplyGate_Debug] NFT Contract: ${config.applyPassNftAddress} on Chain ID ${config.chain.id}`);
+      console.log(`📊 [ApplyGate_Debug] Result - balanceOf: ${balance?.toString() || '0'}, isGateHolder: ${isHolder}`);
+    }
+  }, [account, isGateEnabled, balance, isHolder]);
+
+  const hasAccess = !isGateEnabled || (balance !== undefined && Number(balance) > 0) || isHolder === true;
 
   // Función para manejar el clic en los botones
   const handleFormSelection = (formType: 'multi-step' | 'conversational') => {

@@ -15,6 +15,8 @@ import { RewardModal } from "@/components/RewardModal";
 import type { Reward } from "@/components/RewardModal";
 // Mobile Navigation Component
 import { MobileNavMenu } from "@/components/MobileNavMenu";
+import { MobileHeader } from "@/components/MobileHeader";
+import { MobileSidebar } from "@/components/MobileSidebar";
 // 🎁 AGREGAR DETECCIÓN AUTOMÁTICA DE REFERIDOS
 import { useReferralDetection } from "@/hooks/useReferralDetection";
 // TopNavbar para el perfil superior
@@ -54,6 +56,7 @@ export function DashboardClientWrapper({
   const { account } = usePersistedAccount();
   const { profile } = useProfile();
   const [userName, setUserName] = useState<string | null>(null);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Estados de loading para controlar UI
   const [isLoadingUserData, setIsLoadingUserData] = useState(true);
@@ -147,6 +150,19 @@ export function DashboardClientWrapper({
               isSuperAdmin={isSuperAdmin}
               sidebarDefaultOpen={pathname === '/applicants' ? false : undefined}
             >
+              {/* Mobile Header - Visible only on mobile */}
+              <MobileHeader 
+                onMenuClick={() => setIsMobileSidebarOpen(true)} 
+                profileImage={profile?.image ?? undefined} 
+              />
+
+              {/* Mobile Sidebar (Drawer) */}
+              <MobileSidebar 
+                isOpen={isMobileSidebarOpen} 
+                onClose={() => setIsMobileSidebarOpen(false)} 
+                isAdmin={isAdmin || isSuperAdmin}
+              />
+
               {/* Top Navbar with Profile - Superior derecha - OK */}
               <div className="relative md:block hidden">
                 <TopNavbar
