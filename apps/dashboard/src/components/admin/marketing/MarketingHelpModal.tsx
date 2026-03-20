@@ -97,6 +97,42 @@ export function MarketingHelpModal() {
                         </div>
                     </section>
 
+                    {/* Section 4: Módulos del Marketing Hub */}
+                    <section className="space-y-3">
+                        <h3 className="text-lg font-semibold flex items-center gap-2 border-b pb-2">
+                            <Zap className="h-5 w-5 text-purple-500" />
+                            4. Módulos y Sub-pestañas
+                        </h3>
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            <div className="border p-2 rounded bg-background/50 transition-colors hover:border-primary/50">
+                                <h5 className="font-bold text-[10px] uppercase px-1 mb-1 text-primary">WA Leads</h5>
+                                <p className="text-[11px] leading-tight text-muted-foreground">Captura y calificación automática de leads mediante flujos conversacionales de WhatsApp.</p>
+                            </div>
+                            <div className="border p-2 rounded bg-background/50 transition-colors hover:border-primary/50">
+                                <h5 className="font-bold text-[10px] uppercase px-1 mb-1 text-primary">Pay & Finance</h5>
+                                <p className="text-[11px] leading-tight text-muted-foreground">Generación de links de pago Cripto/Stripe y seguimiento de ingresos por protocolo.</p>
+                            </div>
+                            <div className="border p-2 rounded bg-background/50 transition-colors hover:border-primary/50">
+                                <h5 className="font-bold text-[10px] uppercase px-1 mb-1 text-primary">Shortlinks</h5>
+                                <p className="text-[11px] leading-tight text-muted-foreground">URLs inteligentes con tracking de atribución para medir qué canales traen más conversión.</p>
+                            </div>
+                            <div className="border p-2 rounded bg-background/50 transition-colors hover:border-primary/50">
+                                <h5 className="font-bold text-[10px] uppercase px-1 mb-1 text-primary">Newsletter</h5>
+                                <p className="text-[11px] leading-tight text-muted-foreground">Gestión de audiencias y envío de campañas de correo para nutrición de prospectos.</p>
+                            </div>
+                            <div className="border p-2 rounded bg-background/50 transition-colors hover:border-primary/50">
+                                <h5 className="font-bold text-[10px] uppercase px-1 mb-1 text-primary">Growth OS</h5>
+                                <p className="text-[11px] leading-tight text-muted-foreground">Sistema de puntuación (Lead Scoring) y gestión avanzada de comunidad y whitelists.</p>
+                            </div>
+                            <div className="border p-2 rounded bg-background/50 transition-colors hover:border-primary/50">
+                                <h5 className="font-bold text-[10px] uppercase px-1 mb-1 text-primary">Campañas</h5>
+                                <p className="text-[11px] leading-tight text-muted-foreground">Automatización de flujos multi-paso (Email, WhatsApp, Discord) por eventos.</p>
+                            </div>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground italic mt-3 text-center border-t pt-2 border-dashed">
+                            Nota: Los módulos de Discord, Agenda y Cursos están en fase de integración continua.
+                        </p>
+                    </section>
                 </div>
             </DialogContent>
         </Dialog>
