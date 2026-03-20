@@ -223,12 +223,13 @@ export default function GrowthOSSubTab() {
               <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/20 text-[10px] uppercase font-bold tracking-widest">Protocol Multi-tenant</Badge>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button className="text-zinc-600 hover:text-purple-400 transition-colors">
-                    <HelpCircle className="w-4 h-4" />
+                  <button className="text-zinc-600 hover:text-purple-400 transition-colors p-1 rounded-full hover:bg-white/5">
+                    <HelpCircle className="w-5 h-5" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent className="max-w-xs">
-                  <p>Sistema centralizado de captación de demanda. Separa los leads de Pandoras de los leads específicos de cada protocolo externo.</p>
+                <TooltipContent className="max-w-xs p-4 bg-zinc-950 border-zinc-800 shadow-2xl">
+                  <p className="font-bold text-purple-400 mb-1 tracking-tight">Growth System Overview</p>
+                  <p className="text-xs leading-relaxed">Sistema centralizado de captación de demanda. Separa los leads de Pandoras de los leads específicos de cada protocolo externo.</p>
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -257,10 +258,13 @@ export default function GrowthOSSubTab() {
               <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400"><Globe className="w-5 h-5" /></div>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="text-xs font-bold text-zinc-600 flex items-center gap-1 cursor-help">AUDIENCIA <Info className="w-3 h-3" /></span>
+                  <button className="text-xs font-bold text-zinc-600 flex items-center gap-1 cursor-help hover:text-blue-400 p-0.5 rounded transition-colors group/info">
+                    AUDIENCIA <Info className="w-3 h-3 group-hover/info:animate-pulse" />
+                  </button>
                 </TooltipTrigger>
-                <TooltipContent>
-                  <p>Número total de correos únicos capturados para este proyecto.</p>
+                <TooltipContent className="bg-zinc-950 border-zinc-800 p-3 shadow-xl">
+                  <p className="font-bold text-blue-400 mb-1 text-[11px]">AUDIENCIA TOTAL</p>
+                  <p className="text-[11px]">Número total de correos únicos capturados para este proyecto.</p>
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -273,10 +277,13 @@ export default function GrowthOSSubTab() {
               <div className="p-2 bg-green-500/10 rounded-lg text-green-400"><ShieldCheck className="w-5 h-5" /></div>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="text-xs font-bold text-zinc-600 flex items-center gap-1 cursor-help">WHITELIST <Info className="w-3 h-3" /></span>
+                  <button className="text-xs font-bold text-zinc-600 flex items-center gap-1 cursor-help hover:text-green-400 p-0.5 rounded transition-colors group/info">
+                    WHITELIST <Info className="w-3 h-3 group-hover/info:animate-pulse" />
+                  </button>
                 </TooltipTrigger>
-                <TooltipContent>
-                  <p>Usuarios marcados como aprobados o prioritarios para el protocolo.</p>
+                <TooltipContent className="bg-zinc-950 border-zinc-800 p-3 shadow-xl">
+                    <p className="font-bold text-green-400 mb-1 text-[11px]">SISTEMA DE WHITELIST</p>
+                  <p className="text-[11px]">Usuarios marcados como aprobados o prioritarios para el protocolo.</p>
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -294,10 +301,13 @@ export default function GrowthOSSubTab() {
               <div className="p-2 bg-purple-500/10 rounded-lg text-purple-400"><Zap className="w-5 h-5" /></div>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="text-xs font-bold text-zinc-600 flex items-center gap-1 cursor-help">INTENCIÓN <Info className="w-3 h-3" /></span>
+                  <button className="text-xs font-bold text-zinc-600 flex items-center gap-1 cursor-help hover:text-purple-400 p-0.5 rounded transition-colors group/info">
+                    INTENCIÓN <Info className="w-3 h-3 group-hover/info:animate-pulse" />
+                  </button>
                 </TooltipTrigger>
-                <TooltipContent>
-                  <p>Usuarios que han expresado interés explícito en entrar a la Whitelist.</p>
+                <TooltipContent className="bg-zinc-950 border-zinc-800 p-3 shadow-xl">
+                    <p className="font-bold text-purple-400 mb-1 text-[11px]">NIVEL DE INTENCIÓN</p>
+                  <p className="text-[11px]">Usuarios que han expresado interés explícito en entrar a la Whitelist.</p>
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -312,14 +322,17 @@ export default function GrowthOSSubTab() {
               <div className="p-2 bg-orange-500/10 rounded-lg text-orange-400 font-mono font-bold">QS</div>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="text-xs font-bold text-zinc-600 flex items-center gap-1 cursor-help">QUALITY <Info className="w-3 h-3" /></span>
+                  <button className="text-xs font-bold text-zinc-600 flex items-center gap-1 cursor-help hover:text-orange-400 p-0.5 rounded transition-colors group/info">
+                    QUALITY <Info className="w-3 h-3 group-hover/info:animate-pulse" />
+                  </button>
                 </TooltipTrigger>
-                <TooltipContent className="max-w-[240px]">
-                  <p>**Quality Score (QS)**: Algoritmo que puntúa al lead basado en:</p>
-                  <ul className="list-disc ml-4 mt-1 text-[11px]">
-                    <li>Intención de inversión (+30)</li>
-                    <li>Usuario registrado (+20)</li>
-                    <li>Completitud de perfil</li>
+                <TooltipContent className="max-w-[240px] bg-zinc-950 border-zinc-800 p-3 shadow-xl">
+                  <p className="font-bold text-orange-400 mb-1 text-[11px]">QUALITY SCORE (QS)</p>
+                  <p className="text-[11px]">Algoritmo que puntúa al lead basado en:</p>
+                  <ul className="list-disc ml-4 mt-1 text-[10px] text-zinc-400">
+                    <li>Intención de inversión (+30 pts)</li>
+                    <li>Usuario registrado (+20 pts)</li>
+                    <li>Completitud de perfil / Antigüedad</li>
                   </ul>
                 </TooltipContent>
               </Tooltip>
@@ -426,9 +439,8 @@ export default function GrowthOSSubTab() {
           )}
         </div>
 
-        {/* Phase 4: Growth Infra - Widget & Funnel */}
-        {selectedProjectId !== 'all' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Phase 4: Growth Infra - Widget & Funnel (Visible even if 'all' selected) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             {/* Conversion Funnel */}
             <div className="lg:col-span-2 bg-zinc-900/40 border border-zinc-800 rounded-3xl p-8">
@@ -508,40 +520,78 @@ export default function GrowthOSSubTab() {
                     </div>
 
                     <div className="pt-4 border-t border-zinc-800">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block mb-2">Integration Snippet</label>
-                    <div className="bg-zinc-950 rounded-xl p-3 border border-zinc-800 font-mono text-[10px] text-zinc-400 break-all relative group/code">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block">Integration Snippet</label>
+                        {selectedProjectId === 'all' && (
+                          <Badge className="bg-orange-500/10 text-orange-400 border-orange-500/20 text-[9px] uppercase font-bold">
+                            Global Mode (External)
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="bg-zinc-950 rounded-xl p-3 border border-zinc-800 font-mono text-[10px] text-zinc-400 break-all relative group/code">
                         <code>
-                        {`<script src="https://pandoras.app/widget.js" data-project-id="${selectedProjectId}" data-api-key="${apiKey}" data-color="#7c3aed"></script>`}
+                          {`<script src="https://pandoras.app/widget.js" data-project-id="${selectedProjectId === 'all' ? 'external' : selectedProjectId}" data-api-key="${apiKey}" data-color="#7c3aed"></script>`}
                         </code>
                         <button 
-                        onClick={() => {
-                            navigator.clipboard.writeText(`<script src="https://pandoras.app/widget.js" data-project-id="${selectedProjectId}" data-api-key="${apiKey}" data-color="#7c3aed"></script>`);
+                          onClick={() => {
+                            const code = `<script src="https://pandoras.app/widget.js" data-project-id="${selectedProjectId === 'all' ? 'external' : selectedProjectId}" data-api-key="${apiKey}" data-color="#7c3aed"></script>`;
+                            navigator.clipboard.writeText(code);
                             setCopied(true);
                             setTimeout(() => setCopied(false), 2000);
-                        }}
-                        className="absolute top-2 right-2 p-2 bg-zinc-900 border border-zinc-700 rounded-lg opacity-0 group-hover/code:opacity-100 transition-all hover:bg-zinc-800"
+                          }}
+                          className="absolute top-2 right-2 p-2 bg-zinc-900 border border-zinc-700 rounded-lg opacity-0 group-hover/code:opacity-100 transition-all hover:bg-zinc-800"
                         >
-                        {copied ? <span className="text-green-400 font-bold">✓</span> : <BookOpen className="w-3 h-3 text-zinc-400" />}
+                          {copied ? <span className="text-green-400 font-bold">✓</span> : <BookOpen className="w-3 h-3 text-zinc-400" />}
                         </button>
-                    </div>
+                      </div>
+
+                      {/* Mini Guía Dev (Quick Reference) */}
+                      <div className="mt-4 p-4 bg-purple-500/5 border border-purple-500/10 rounded-xl space-y-3">
+                        <p className="text-[10px] font-bold text-purple-300 uppercase tracking-widest flex items-center gap-2">
+                            <Sparkles className="w-3 h-3" />
+                            Mini Guía: Atributos del Widget
+                        </p>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[9px] font-mono">
+                            <div className="flex flex-col gap-0.5">
+                                <span className="text-zinc-500">data-title</span>
+                                <span className="text-zinc-300">"Título del Widget"</span>
+                            </div>
+                            <div className="flex flex-col gap-0.5">
+                                <span className="text-zinc-500">data-color</span>
+                                <span className="text-zinc-300">"#HexColor"</span>
+                            </div>
+                            <div className="flex flex-col gap-0.5">
+                                <span className="text-zinc-500">data-subtitle</span>
+                                <span className="text-zinc-300">"Descripción corta"</span>
+                            </div>
+                            <div className="flex flex-col gap-0.5">
+                                <span className="text-zinc-500">data-position</span>
+                                <span className="text-zinc-300">"left | right"</span>
+                            </div>
+                        </div>
+                        <p className="text-[9px] text-zinc-600 italic border-t border-purple-500/10 pt-2">
+                            💡 Usa estos atributos para personalizar la experiencia en tu landing.
+                        </p>
+                          </div>
+                        </div>
                     </div>
                 </div>
-              </div>
 
-              <button 
+               <button 
                 onClick={() => setShowDevHub(!showDevHub)}
-                className="w-full mt-6 py-3 border border-zinc-700 rounded-xl text-xs font-bold text-zinc-400 hover:bg-white/5 transition-all flex items-center justify-center gap-2"
+                className={`w-full mt-6 py-3 border rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                    showDevHub ? 'bg-zinc-800 border-zinc-600 text-white' : 'border-zinc-700 text-zinc-400 hover:bg-white/5'
+                }`}
               >
                 <BookOpen className="w-4 h-4" />
-                {showDevHub ? 'Ocultar Guía' : 'Ver Guía de Integración'}
+                {showDevHub ? 'Ocultar Documentación Full' : 'Ver Documentación SDK Full'}
               </button>
             </div>
 
-          </div>
-        )}
+        </div>
 
         {/* Developer Hub - Expanded Documentation */}
-        {selectedProjectId !== 'all' && showDevHub && (
+        {showDevHub && (
             <div className="bg-zinc-900/60 border border-zinc-800 rounded-3xl p-8 animate-in slide-in-from-top-4 duration-500">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                     <div className="space-y-6">

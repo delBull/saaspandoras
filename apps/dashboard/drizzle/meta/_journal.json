@@ -64,6 +64,13 @@
       "when": 1772568305249,
       "tag": "0008_add_deployment_jobs",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1773974095588,
+      "tag": "0009_fearless_captain_cross",
+      "breakpoints": true
     }
   ]
 }
