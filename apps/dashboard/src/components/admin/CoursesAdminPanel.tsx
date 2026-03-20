@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     BookOpen, Plus, Pencil, Trash2, RefreshCw, Check, X,
     Zap, Coins, Users, BarChart3, Database, Eye, EyeOff, GripVertical,
-    ChevronDown, ChevronUp, Tag, HelpCircle, Sparkles
+    ChevronDown, ChevronUp, Tag, HelpCircle, Sparkles, Maximize2
 } from 'lucide-react';
 
 import { GenerateCourseModal } from './GenerateCourseModal';
@@ -95,7 +96,20 @@ export function CoursesAdminPanel() {
     const [showModuleHelp, setShowModuleHelp] = useState(false);
     const [isAiModalOpen, setIsAiModalOpen] = useState(false);
 
+    const [isModuleEditorOpen, setIsModuleEditorOpen] = useState(false);
+    const [moduleEditorValue, setModuleEditorValue] = useState('[]');
+
     const [form, setForm] = useState({ ...EMPTY_FORM });
+
+    const openModuleEditor = () => {
+        setModuleEditorValue(form.modules);
+        setIsModuleEditorOpen(true);
+    };
+
+    const saveModulesFromEditor = (newValue: string) => {
+        setForm(prev => ({ ...prev, modules: newValue }));
+        setIsModuleEditorOpen(false);
+    };
 
     const fetchCourses = useCallback(async () => {
         setLoading(true);
@@ -487,21 +501,44 @@ export function CoursesAdminPanel() {
                         <div className="space-y-1 md:col-span-2">
                             <div className="flex items-center justify-between">
                                 <label htmlFor="course-modules" className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Módulos (JSON Array)</label>
-                                <button 
-                                    onClick={() => setShowModuleHelp(true)}
-                                    className="text-[10px] text-cyan-500 hover:text-cyan-400 flex items-center gap-1 font-bold"
-                                >
-                                    <HelpCircle className="w-3 h-3" />
-                                    Ver Formato
-                                </button>
+                                <div className="flex items-center gap-3">
+                                    <button 
+                                        type="button"
+                                        onClick={openModuleEditor}
+                                        className="text-[10px] text-lime-400 hover:text-lime-300 flex items-center gap-1 font-bold bg-lime-400/10 px-2 py-0.5 rounded border border-lime-400/20 transition-colors"
+                                    >
+                                        <Sparkles className="w-3 h-3" />
+                                        Expandir Editor
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        onClick={() => setShowModuleHelp(true)}
+                                        className="text-[10px] text-cyan-500 hover:text-cyan-400 flex items-center gap-1 font-bold"
+                                    >
+                                        <HelpCircle className="w-3 h-3" />
+                                        Ver Formato
+                                    </button>
+                                </div>
                             </div>
-                            <textarea
-                                id="course-modules"
-                                placeholder='[{"id":"m1","title":"Intro","type":"video","duration":"15 min"}]'
-                                value={form.modules}
-                                onChange={e => setForm({ ...form, modules: e.target.value })}
-                                className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white text-xs font-mono outline-none focus:border-cyan-500 h-24 resize-none"
-                            />
+                            <div className="relative group">
+                                <textarea
+                                    id="course-modules"
+                                    placeholder='[{"id":"m1","title":"Intro","type":"video","duration":"15 min"}]'
+                                    value={form.modules}
+                                    onChange={e => setForm({ ...form, modules: e.target.value })}
+                                    className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white text-xs font-mono outline-none focus:border-cyan-500 h-24 resize-none transition-all"
+                                />
+                                <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                        type="button"
+                                        onClick={openModuleEditor}
+                                        className="p-1.5 bg-zinc-800 rounded-md border border-zinc-600 text-gray-400 hover:text-white"
+                                        title="Expandir vista"
+                                    >
+                                        <Maximize2 className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                         {/* Active toggle */}
                         <div className="flex items-center gap-3">
@@ -776,6 +813,89 @@ export function CoursesAdminPanel() {
                 onClose={() => setIsAiModalOpen(false)} 
                 onSuccess={handleAiSuccess} 
             />
+
+            {/* JSON Module Editor Modal */}
+            {isModuleEditorOpen && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-4xl h-[85vh] flex flex-col shadow-2xl overflow-hidden"
+                    >
+                        {/* Header */}
+                        <div className="p-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/50">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-lime-400/10 flex items-center justify-center">
+                                    <Database className="w-4 h-4 text-lime-400" />
+                                </div>
+                                <div>
+                                    <h5 className="font-bold text-white text-sm">Editor Avanzado de Módulos</h5>
+                                    <p className="text-[10px] text-gray-400">Edita la estructura JSON de los módulos con mayor comodidad</p>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => setIsModuleEditorOpen(false)}
+                                className="p-2 text-gray-500 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Editor Body */}
+                        <div className="flex-1 p-4 overflow-hidden flex flex-col gap-3">
+                            <div className="flex items-center justify-between text-[10px] text-gray-500 font-mono">
+                                <span>JSON ARRAY FORMAT</span>
+                                <span className="text-lime-400/60 uppercase">Draft Mode</span>
+                            </div>
+                            <textarea
+                                value={moduleEditorValue}
+                                onChange={(e) => setModuleEditorValue(e.target.value)}
+                                className="flex-1 w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-cyan-300 font-mono text-xs outline-none focus:border-lime-400/50 resize-none custom-scrollbar shadow-inner"
+                                placeholder='[
+  {
+    "id": "m1",
+    "title": "...",
+    "type": "video",
+    ...
+  }
+]'
+                            />
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-4 border-t border-zinc-800 bg-zinc-900/50 flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <button 
+                                    onClick={() => setShowModuleHelp(true)}
+                                    className="text-[11px] text-cyan-400 hover:text-cyan-300 flex items-center gap-1.5 font-bold"
+                                >
+                                    <HelpCircle className="w-3.5 h-3.5" />
+                                    Ver Guía de Formato
+                                </button>
+                                <div className="h-4 w-[1px] bg-zinc-800" />
+                                <div className="text-[10px] text-gray-500 italic">
+                                    Asegúrese de que el JSON sea válido antes de guardar.
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={() => setIsModuleEditorOpen(false)}
+                                    className="px-4 py-2 text-xs font-bold text-gray-400 hover:text-white transition-colors"
+                                >
+                                    Descartar
+                                </button>
+                                <button
+                                    onClick={() => saveModulesFromEditor(moduleEditorValue)}
+                                    className="px-6 py-2 text-xs font-bold bg-lime-500 hover:bg-lime-400 text-black rounded-lg transition-all shadow-lg shadow-lime-500/10 flex items-center gap-2"
+                                >
+                                    <Check className="w-3.5 h-3.5" />
+                                    Aplicar Cambios
+                                </button>
+                            </div>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
         </div>
     );
 }

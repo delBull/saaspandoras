@@ -71,6 +71,13 @@
       "when": 1773974095588,
       "tag": "0009_fearless_captain_cross",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1773988079963,
+      "tag": "0010_free_silver_centurion",
+      "breakpoints": true
     }
   ]
 }
