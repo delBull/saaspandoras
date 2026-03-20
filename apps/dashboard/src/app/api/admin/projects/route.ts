@@ -135,6 +135,7 @@ export async function GET(_request: Request) {
           chainId: true,
           deploymentStatus: true,
           w2eConfig: true,
+          allowedDomains: true,
         }
       });
       console.log(`📊 Admin API: Found ${projectsData.length} projects (excluding infrastructure)`);
