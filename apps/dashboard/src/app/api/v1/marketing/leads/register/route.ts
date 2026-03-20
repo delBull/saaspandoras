@@ -6,7 +6,8 @@ import {
   users, 
   integrationClients,
   marketingLeadStatusEnum,
-  marketingLeadIntentEnum
+  marketingLeadIntentEnum,
+  projects
 } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { IntegrationKeyService } from '@/lib/integrations/auth';
@@ -47,6 +48,21 @@ export async function POST(req: NextRequest) {
 
     // Resolve Project Context - Ensure it's never null/undefined for the DB
     const targetProjectId = Number(projectId === 'external' ? 1 : (projectId || client.projectId || 1));
+
+    // 1.5 Security Check: Allowed Domains
+    const requestOrigin = req.headers.get('origin') || req.headers.get('referer');
+    const projectContext = await db.query.projects.findFirst({
+      where: eq(projects.id, targetProjectId),
+      columns: { allowedDomains: true }
+    });
+
+    if (projectContext?.allowedDomains && Array.isArray(projectContext.allowedDomains) && projectContext.allowedDomains.length > 0) {
+      const isAllowed = projectContext.allowedDomains.some(domain => requestOrigin?.toLowerCase().includes(domain.toLowerCase()));
+      if (!isAllowed) {
+        console.warn(`[SECURITY] Lead blocked for Domain ${requestOrigin} (Project: ${targetProjectId})`);
+        return NextResponse.json({ error: 'Unauthorized domain for this Growth SDK instance' }, { status: 403 });
+      }
+    }
 
     if (!email || !email.includes('@')) {
       return NextResponse.json({ error: 'Valid email required' }, { status: 400 });

@@ -269,6 +269,7 @@ export const projects = pgTable("projects", {
   // Pricing & Access Metadata
   accessType: varchar("access_type", { length: 20 }).default('free'), // free, license, gated, premium
   price: decimal("price", { precision: 18, scale: 6 }).default("0.000000"),
+  allowedDomains: jsonb("allowed_domains").default([]).notNull(), // URLs permitidas para el widget
   isDeleted: boolean("is_deleted").default(false).notNull(),
 }, (table) => ({
   slugIndex: index("project_slug_index").on(table.slug),
