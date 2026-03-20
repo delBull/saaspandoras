@@ -3,7 +3,7 @@ import * as dotenv from 'dotenv';
 import path from 'path';
 
 // Load .env.local for database URLs
-dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+dotenv.config({ path: path.resolve(process.cwd(), 'apps/dashboard/.env.local') });
 
 const envs = [
   { name: 'LOCAL', url: process.env.DATABASE_URL },

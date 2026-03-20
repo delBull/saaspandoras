@@ -1,6 +1,6 @@
 import type { calculateProjectCompletion } from "@/lib/project-utils";
 
-export type ProjectStatus = "pending" | "approved" | "live" | "completed" | "rejected";
+export type ProjectStatus = "draft" | "pending" | "active_client" | "approved" | "live" | "completed" | "rejected";
 
 export interface Project {
   id: string;
@@ -14,6 +14,9 @@ export interface Project {
   linkedinUrl?: string;
   businessCategory?: string;
   targetAmount: number;
+  target_amount?: number | string;
+  raisedAmount?: number | string;
+  raised_amount?: number | string;
   status: ProjectStatus;
   source?: string; // Identifies where project came from: 'web_form' | 'whatsapp_form'
   createdAt: string;

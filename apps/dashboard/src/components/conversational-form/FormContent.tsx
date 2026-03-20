@@ -132,7 +132,7 @@ export default function FormContent({
             /* Declaración de aceptación en el último paso */
             <div className="space-y-6">
               <div className="text-white text-lg font-medium leading-relaxed mb-6">
-                Declaración del Creador (Aceptación de Términos SaaS): Declaro que toda la información proporcionada es precisa. Entiendo y acepto que Pandora's Finance actúa exclusivamente como un proveedor de infraestructura SaaS 'no-code', y que soy el único responsable de la estructura legal, la promesa de utilidad y la gestión de la comunidad de mi 'Piterillos' y sus Artefactos.
+                Declaración del Creador (Aceptación de Términos SaaS): Declaro que toda la información proporcionada es precisa. Entiendo y acepto que Pandora's Finance actúa exclusivamente como un proveedor de infraestructura SaaS 'no-code', y que soy el único responsable de la estructura legal, la promesa de utilidad y la gestión de la comunidad de mi '{projectTitle || 'Protocolo'}' y sus Artefactos.
               </div>
 
               {/* Checkbox de aceptación */}

@@ -132,9 +132,9 @@ export async function GET(request: Request) {
       ORDER BY "created_at" DESC
     `;
 
-    // Calculate active project count (live, approved, pending)
+    // Calculate active project count (live, approved, pending, draft, active_client)
     const activeProjectCount = projects.filter((p: any) =>
-      ['live', 'approved', 'pending'].includes(p.status)
+      ['live', 'approved', 'pending', 'draft', 'active_client'].includes(p.status)
     ).length;
 
 
