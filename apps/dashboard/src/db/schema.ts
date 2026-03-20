@@ -907,7 +907,7 @@ export const authChallenges = pgTable("auth_challenges", {
 
 // Tabla para almacenar métricas de envío de emails desde Resend webhooks
 export const emailMetrics = pgTable("email_metrics", {
-  id: serial("id").primaryKey(),
+  id: uuid("id").primaryKey().defaultRandom(),
   emailId: varchar("email_id", { length: 255 }).unique().notNull(),
   type: varchar("type", { length: 50 }).default('unknown').notNull(), // creator_welcome, founders, utility, etc.
   status: varchar('status', { length: 20 }).default('pending').notNull(), // pending, delivered, opened, clicked, bounced, etc.
