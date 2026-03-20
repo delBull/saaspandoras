@@ -463,6 +463,7 @@ export async function GET(_request: Request) {
         orderIndex: courses.orderIndex,
         isActive: courses.isActive,
         imageUrl: courses.imageUrl,
+        modules: courses.modules, // 🔥 Add this line
         createdAt: courses.createdAt,
         updatedAt: courses.updatedAt,
         totalEnrollments: sql<number>`cast(count(${courseEnrollments.id}) as integer)`,

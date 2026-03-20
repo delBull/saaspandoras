@@ -31,8 +31,10 @@ const tables = [
   'user_rewards',
   'marketing_leads',
   'marketing_lead_events',
+  'marketing_lead_attributions',
   'marketing_campaigns'
 ];
+
 
 async function syncTo(targetName, targetUrl) {
   console.log(`\n🚀 Syncing to ${targetName}...`);
@@ -76,11 +78,12 @@ async function syncTo(targetName, targetUrl) {
           const values = batch.map(row => {
             return `(${columns.map(col => {
               const value = row[col];
-              if (value === null) return 'NULL';
+              if (value === null || value === undefined) return 'NULL';
               if (typeof value === 'string') return `'${value.replace(/'/g, "''")}'`;
-              if (typeof value === 'object') return `'${JSON.stringify(value)}'`;
+              if (typeof value === 'object') return `'${JSON.stringify(value).replace(/'/g, "''")}'`;
               if (value instanceof Date) return `'${value.toISOString()}'`;
               return value;
+
             }).join(', ')})`;
           }).join(', ');
 
