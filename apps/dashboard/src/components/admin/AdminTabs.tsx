@@ -9,6 +9,7 @@ import WhatsAppLeadsTab from './WhatsAppLeadsTab';
 import ShortlinksSubTab from './ShortlinksSubTab';
 import { NFTManager } from "./NFTManager";
 import NewsletterSubTab from './NewsletterSubTab';
+import GrowthOSSubTab from './GrowthOSSubTab';
 import { DiscordManager } from './DiscordManager';
 import { MarketingDashboard } from './marketing/MarketingDashboard';
 import { CalendarManager } from "./CalendarManager";
@@ -47,7 +48,7 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeTab = searchParams.get('tab') ?? 'projects';
-  const activeMarketingSubTab = (searchParams.get('sub') ?? 'wa-leads') as 'wa-leads' | 'shortlinks' | 'newsletter' | 'discord' | 'campaigns' | 'agenda' | 'pay' | 'cursos';
+  const activeMarketingSubTab = (searchParams.get('sub') ?? 'wa-leads') as 'wa-leads' | 'shortlinks' | 'newsletter' | 'discord' | 'campaigns' | 'agenda' | 'pay' | 'cursos' | 'growth-os';
 
   const setTab = useCallback((tab: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -163,6 +164,15 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
                 📧 Newsletter Analytics
               </button>
               <button
+                onClick={() => setSubTab('growth-os')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeMarketingSubTab === 'growth-os'
+                  ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 animate-pulse-subtle'
+                  : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
+                  }`}
+              >
+                🚀 Growth OS
+              </button>
+              <button
                 onClick={() => setSubTab('discord')}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeMarketingSubTab === 'discord'
                   ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
@@ -206,6 +216,7 @@ export function AdminTabs({ swaps, users, children, showSettings = false, showUs
           {activeMarketingSubTab === 'pay' && <PaymentsDashboard />}
           {activeMarketingSubTab === 'shortlinks' && <ShortlinksSubTab />}
           {activeMarketingSubTab === 'newsletter' && <NewsletterSubTab />}
+          {activeMarketingSubTab === 'growth-os' && <GrowthOSSubTab />}
           {activeMarketingSubTab === 'discord' && <DiscordManager />}
           {activeMarketingSubTab === 'campaigns' && (
             <MarketingDashboard />

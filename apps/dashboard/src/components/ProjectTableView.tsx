@@ -9,6 +9,14 @@ import DeploymentProgressModal from './admin/DeploymentProgressModal';
 import type { DeploymentConfig } from '@/types/deployment';
 import { AdminPayouts } from './dao/AdminPayouts';
 
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Info, Zap } from "lucide-react";
+
 interface ProjectTableViewProps {
   projects: Project[];
   expandedProject: string | null;
@@ -150,6 +158,27 @@ export function ProjectTableView({
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 whitespace-nowrap">
                           🔮 Full Protocol
                         </span>
+                      )}
+                      {/* Growth OS Visual Identifier (Zap) with Tooltip */}
+                      {p.deploymentStatus === 'deployed' && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30 animate-pulse-subtle shadow-[0_0_8px_rgba(168,85,247,0.2)] cursor-help">
+                              <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                              </svg>
+                              <span>GROWTH OS</span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="bg-zinc-900 border-purple-500/30 text-zinc-200">
+                            <p className="font-bold flex items-center gap-1 text-purple-400 mb-1">
+                              <Zap className="w-3 h-3" /> Integración Activa
+                            </p>
+                            <p className="text-[11px] leading-relaxed">
+                              Este protocolo utiliza las herramientas de Growth OS (API/Widget) para captar leads y gestionar whitelists.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
                       )}
                     </div>
                   </td>
@@ -649,7 +678,7 @@ export function ProjectTableView({
             ))}
           </tbody>
         </table>
-      </div >
+      </div>
 
       {/* Deployment Configuration Modal */}
       <DeploymentConfigModal
