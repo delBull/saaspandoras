@@ -71,52 +71,47 @@ export function NotificationsPanel({ hasAccess, notifications = [] }: { hasAcces
         }
     ];
 
-    const [items, setItems] = React.useState([...apiItems, ...defaultItems]);
+    const [items, setItems] = React.useState<any[]>([]);
     const [page, setPage] = React.useState(0);
     const tour = useTour();
 
-    // Check for Onboarding Tour status
+    // Initialize items and handle persistence
     React.useEffect(() => {
+        const dismissedIds = JSON.parse(localStorage.getItem('dismissed_notifications') || '[]');
         const tourCompleted = localStorage.getItem('pandoras_tour_completed');
-        if (!tourCompleted && tour?.startTour) {
-            setItems(prev => {
-                if (prev.some(i => i.id === 999)) return prev;
-                return [
-                    {
-                        id: 999,
-                        type: "action",
-                        title: "Iniciación Pendiente",
-                        description: "Completa el recorrido para obtener tu insignia de 'Iniciado'.",
-                        icon: <div className="text-xl">🚀</div>,
-                        actionText: "Iniciar",
-                        bgClass: "bg-purple-900/40 border-purple-500/50 animate-pulse-slow", // Highlight
-                        dismissible: false, // Force them to do it or click start
-                        onClick: () => tour.startTour()
-                    },
-                    ...prev
-                ];
-            });
-        }
-    }, [tour]);
 
-    // Update items if notifications prop changes (e.g. after fetch)
-    React.useEffect(() => {
-        if (notifications.length > 0) {
-            setItems(prev => {
-                // Avoid duplicates if already merged
-                const existingIds = new Set(prev.map(i => i.id));
-                const newItems = apiItems.filter(i => !existingIds.has(i.id));
-                return [...newItems, ...prev];
+        let combinedItems = [...apiItems, ...defaultItems];
+
+        // Add Tour notification if not completed
+        if (!tourCompleted && tour?.startTour) {
+            combinedItems.unshift({
+                id: 999,
+                type: "action",
+                title: "Iniciación Pendiente",
+                description: "Completa el recorrido para obtener tu insignia de 'Iniciado'.",
+                icon: <div className="text-xl">🚀</div>,
+                actionText: "Iniciar",
+                bgClass: "bg-purple-900/40 border-purple-500/50 animate-pulse-slow",
+                dismissible: false,
+                onClick: () => tour.startTour()
             });
         }
-    }, [notifications]);
+
+        // Filter out dismissed items
+        const filteredItems = combinedItems.filter(item => !dismissedIds.includes(item.id));
+        setItems(filteredItems);
+    }, [hasAccess, notifications.length, tour]);
 
     const dismiss = (id: number | string, e: React.MouseEvent) => {
-        e.stopPropagation(); // Prevent card click
+        e.stopPropagation();
         setItems(prev => prev.filter(i => i.id !== id));
-        // Reset to page 0 if current page becomes empty?
-        // Actually, if we delete items, page count might shrink.
-        // We'll handle that efficiently in render.
+        
+        // Persist dismissal
+        const dismissedIds = JSON.parse(localStorage.getItem('dismissed_notifications') || '[]');
+        if (!dismissedIds.includes(id)) {
+            dismissedIds.push(id);
+            localStorage.setItem('dismissed_notifications', JSON.stringify(dismissedIds));
+        }
     };
 
     // Pagination Logic
@@ -131,17 +126,17 @@ export function NotificationsPanel({ hasAccess, notifications = [] }: { hasAcces
     }, [items.length, totalPages, page]);
 
     return (
-        <div className="h-full flex flex-col bg-zinc-900/30 border border-white/5 rounded-2xl overflow-hidden backdrop-blur-sm relative">
+        <div className="h-full flex flex-col bg-zinc-900/30 border border-white/5 rounded-2xl overflow-hidden backdrop-blur-sm relative shadow-2xl">
             {/* Header */}
             <div className="p-4 border-b border-white/5 flex justify-between items-center bg-zinc-900/50 shrink-0">
                 <div className="flex items-center gap-2">
-                    <BellIcon className="w-4 h-4 text-gray-400" />
-                    <h3 className="text-sm text-gray-200 tracking-wide">Notificaciones</h3>
+                    <div className="w-2 h-2 rounded-full bg-lime-500 animate-pulse" />
+                    <h3 className="text-sm font-bold text-gray-200 tracking-tight">Centro de Actividad</h3>
                 </div>
                 <div className="flex items-center gap-2">
                     {items.length > 0 && (
-                        <span className="text-[10px] bg-lime-500/20 text-lime-400 px-1.5 py-0.5 rounded border border-red-500/20">
-                            {items.length} Notifs
+                        <span className="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full border border-white/5 font-mono">
+                            {items.length} EVENTOS
                         </span>
                     )}
                 </div>
@@ -153,7 +148,7 @@ export function NotificationsPanel({ hasAccess, notifications = [] }: { hasAcces
                     displayedItems.map((item) => (
                         <div
                             key={item.id}
-                            className={`relative rounded-xl border ${item.bgClass} transition-all duration-300 hover:bg-zinc-800/80 group hover:scale-[1.02] active:scale-[0.98]`}
+                            className={`relative rounded-xl border border-white/5 ${item.bgClass} transition-all duration-500 hover:bg-zinc-800/80 group hover:border-white/10 active:scale-[0.98] shadow-lg`}
                         >
                             {/* Dismiss Button - Outside the main click handler */}
                             <button
@@ -176,8 +171,8 @@ export function NotificationsPanel({ hasAccess, notifications = [] }: { hasAcces
                                 }}
                                 className="p-3 flex flex-col gap-2 w-full h-full outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-zinc-900 focus:ring-white/20 rounded-xl"
                             >
-                                <div className="flex items-start gap-3">
-                                    <div className="p-2 bg-black/40 rounded-lg shrink-0">
+                                <div className="flex items-start gap-4">
+                                    <div className="p-2.5 bg-black/60 rounded-xl shrink-0 border border-white/5 group-hover:border-white/10 transition-colors shadow-inner">
                                         {item.icon}
                                     </div>
                                     <div>
