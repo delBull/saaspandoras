@@ -535,11 +535,14 @@ export function TopNavbar({
 
               <div className="border-t border-zinc-700 my-2"></div>
 
-              <div className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full">
-                <WalletIcon className="w-5 h-5 text-gray-400 md:block" />
-                <ConnectWalletButton
-                  className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full"
-                />
+              {/* Gestión de Billetera - Removed per user request to avoid redundancy with Sidebar */}
+              <div className="px-2 py-1">
+                <div className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-1">
+                  Gestión de Billetera
+                </div>
+                <div className="text-[11px] text-gray-400">
+                  Use el botón "Desconectar" al final del sidebar para salir del sistema.
+                </div>
               </div>
 
               {/* Sandbox Toggle - Now in Dropdown */}
