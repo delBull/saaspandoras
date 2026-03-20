@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, desc, and, sql } from 'drizzle-orm';
 import type {
   UserGamificationProfile,
   UserAchievement,
@@ -301,13 +301,29 @@ export async function GET(
       joinedAt: new Date(item.createdAt)
     }));
 
+    // 6. Calculate actual rank for this user (Global Position)
+    let userRank = 'N/A';
+    try {
+      if (profile && profile.totalPoints > 0) {
+        const rankResult = await db
+          .select({ count: sql`count(*)` })
+          .from(gamificationProfiles)
+          .where(sql`${gamificationProfiles.totalPoints} > ${profile.totalPoints}`);
+        
+        userRank = (Number(rankResult[0]?.count || 0) + 1).toString();
+        console.log(`📊 API rank for ${walletAddress}: #${userRank} (with ${profile.totalPoints} pts)`);
+      }
+    } catch (rankError) {
+      console.warn(`⚠️ Failed to calculate rank for ${walletAddress}:`, rankError);
+    }
+
     // Calculate derived values
     const totalPoints = profile?.totalPoints || 0;
     const currentLevel = profile?.currentLevel || 1;
     const levelProgress = profile?.levelProgress || 0;
 
     console.log(`✅ API: Retrieved gamification data for ${walletAddress}:`);
-    console.log(`   - Profile: ${profile ? 'Yes' : 'No'} (Level ${currentLevel}, ${totalPoints} pts)`);
+    console.log(`   - Profile: ${profile ? 'Yes' : 'No'} (Level ${currentLevel}, ${totalPoints} pts, Rank: ${userRank})`);
     console.log(`   - Achievements: ${achievementsData.length}`);
     console.log(`   - Leaderboard: ${leaderboardData.length} entries`);
 
@@ -319,6 +335,7 @@ export async function GET(
       totalPoints,
       currentLevel,
       levelProgress,
+      userRank, // 🔥 ADDED: Actual global rank
       success: true,
       message: `Gamification data loaded: ${achievementsData.length} achievements, ${leaderboardData.length} leaderboard entries`
     });
