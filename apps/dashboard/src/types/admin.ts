@@ -1,6 +1,6 @@
 import type { calculateProjectCompletion } from "@/lib/project-utils";
 
-export type ProjectStatus = "pending" | "approved" | "live" | "completed" | "rejected";
+export type ProjectStatus = "draft" | "pending" | "active_client" | "approved" | "live" | "completed" | "rejected";
 
 export interface Project {
   id: string;

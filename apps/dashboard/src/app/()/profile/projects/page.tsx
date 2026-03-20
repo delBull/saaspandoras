@@ -582,19 +582,21 @@ export default function ProfileProjectsPage() {
                       <div className="flex items-center gap-2">
                         <div className={`w-2 h-2 rounded-full ${project.status === 'live' ? 'bg-green-500' :
                           project.status === 'approved' ? 'bg-blue-500' :
-                            project.status === 'pending' ? 'bg-yellow-500' :
-                              project.status === 'completed' ? 'bg-emerald-500' :
-                                project.status === 'rejected' ? 'bg-red-500' :
-                                  'bg-gray-500'
+                            project.status === 'pending' || project.status === 'draft' ? 'bg-yellow-500' :
+                              project.status === 'active_client' ? 'bg-purple-500' :
+                                project.status === 'completed' ? 'bg-emerald-500' :
+                                  project.status === 'rejected' ? 'bg-red-500' :
+                                    'bg-gray-500'
                           }`}></div>
                         <span className="text-sm text-gray-400">
                           {project.status === 'live' ? 'Activo' :
                             project.status === 'approved' ? 'Aprobado' :
                               project.status === 'pending' ? 'En Revisión' :
-                                project.status === 'completed' ? 'Completado' :
-                                  project.status === 'rejected' ? 'Rechazado' :
-                                    project.status === 'draft' ? 'Borrador' :
-                                      project.status}
+                                project.status === 'draft' ? 'En proceso de validación' :
+                                  project.status === 'active_client' ? 'Análisis de Protocolo' :
+                                    project.status === 'completed' ? 'Completado' :
+                                      project.status === 'rejected' ? 'Rechazado' :
+                                        project.status}
                         </span>
                       </div>
                     </div>
