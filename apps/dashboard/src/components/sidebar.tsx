@@ -550,92 +550,98 @@ export function Sidebar({
                     />
                   </button>
 
-                  {/* Wallet display - copiar al hacer click */}
-                  <motion.div
-                    animate={{ opacity: open ? 1 : 0 }}
-                    className="flex-1 flex items-center gap-2"
-                  >
-                    <button
-                      className="flex items-center gap-2 cursor-pointer hover:bg-zinc-800/30 rounded px-2 py-1 transition-colors group w-full text-left"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const fullAddress = account?.address ?? userName ?? walletProp ?? '';
-                        void copyWalletAddress(fullAddress);
-                      }}
-                      title={`${account?.address ?? userName ?? walletProp ?? ''} - Click to copy entire wallet address`}
+                    {/* Wallet display - copiar al hacer click */}
+                    <motion.div
+                      animate={{ opacity: open ? 1 : 0 }}
+                      className="flex-1 flex items-center gap-1 overflow-hidden"
                     >
-                      <span
-                        className="overflow-hidden whitespace-nowrap font-mono text-xs text-gray-400 flex-shrink-0"
-                      >
-                        {open ? "C:\\USER\\" : ""}
-                      </span>
-                      <span
-                        className={`truncate font - mono text - xs transition - colors ${copyAnimation ? 'text-green-400' : 'text-lime-400 group-hover:text-lime-300'
-                          } `}
-                      >
-                        {isClient
-                          ? (account?.address ?? walletProp ?? userName ?? "...").substring(0, 8) + '...' + (account?.address ?? walletProp ?? userName ?? "...").substring(36, 42)
-                          : "..."}
-                      </span>
-                      {/* Copy icon with animation */}
-                      <motion.div
-                        animate={{
-                          scale: copyAnimation ? [1, 1.2, 1] : 1,
-                          color: copyAnimation ? '#10b981' : undefined
+                      <button
+                        className="flex-1 flex items-center gap-1.5 cursor-pointer hover:bg-zinc-800/30 rounded px-1.5 py-1 transition-colors group truncate text-left"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const fullAddress = account?.address ?? userName ?? walletProp ?? '';
+                          void copyWalletAddress(fullAddress);
                         }}
-                        transition={{ duration: 0.3 }}
-                        className="flex-shrink-0"
+                        title={`${account?.address ?? userName ?? walletProp ?? ''} - Click to copy entire wallet address`}
                       >
-                        {copyAnimation ? (
-                          <svg
-                            className="w-3 h-3 text-green-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        ) : (
-                          <svg
-                            className="w-3 h-3 text-gray-500 group-hover:text-gray-300 transition-colors"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                          </svg>
-                        )}
-                      </motion.div>
-                    </button>
-                  </motion.div>
+                        <span
+                          className="font-mono text-[10px] text-gray-500 flex-shrink-0"
+                        >
+                          {open ? "C:\\" : ""}
+                        </span>
+                        <span
+                          className={`truncate font-mono text-xs transition-colors ${copyAnimation ? 'text-green-400' : 'text-lime-400 group-hover:text-lime-300'
+                            }`}
+                        >
+                          {isClient
+                            ? (account?.address ?? walletProp ?? userName ?? "...").substring(0, 8) + '...' + (account?.address ?? walletProp ?? userName ?? "...").substring(36, 42)
+                            : "..."}
+                        </span>
+                        {/* Copy icon with animation */}
+                        <motion.div
+                          animate={{
+                            scale: copyAnimation ? [1, 1.2, 1] : 1,
+                            color: copyAnimation ? '#10b981' : undefined
+                          }}
+                          transition={{ duration: 0.3 }}
+                          className="flex-shrink-0 ml-auto"
+                        >
+                          {copyAnimation ? (
+                            <svg
+                              className="w-3 h-3 text-green-400"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          ) : (
+                            <svg
+                              className="w-3 h-3 text-gray-600 group-hover:text-gray-400 transition-colors"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                          )}
+                        </motion.div>
+                      </button>
 
-                  {/* Toggle Expand Wallet Icon */}
-                  <button 
-                    onClick={() => setWalletExpanded(!walletExpanded)}
-                    className="p-1 hover:bg-zinc-700/30 rounded transition-colors text-gray-400 hover:text-white"
-                  >
-                    <AnimatePresence mode="wait">
-                      {walletExpanded ? (
-                        <motion.div
-                          key="chevron-up"
-                          initial={{ rotate: -180, opacity: 0 }}
-                          animate={{ rotate: 0, opacity: 1 }}
-                          exit={{ rotate: 180, opacity: 0 }}
-                        >
-                          <ChevronUp className="w-4 h-4" />
-                        </motion.div>
-                      ) : (
-                        <motion.div
-                          key="chevron-down"
-                          initial={{ rotate: 180, opacity: 0 }}
-                          animate={{ rotate: 0, opacity: 1 }}
-                          exit={{ rotate: -180, opacity: 0 }}
-                        >
-                          <ChevronDown className="w-4 h-4" />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </button>
+                      {/* Integrated Expand Toggle */}
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setWalletExpanded(!walletExpanded);
+                        }}
+                        className="flex-shrink-0 p-1.5 hover:bg-zinc-700/50 rounded-md transition-all text-gray-500 hover:text-lime-400 border border-transparent hover:border-zinc-700/50"
+                        title={walletExpanded ? "Colapsar detalles" : "Expandir detalles"}
+                      >
+                        <AnimatePresence mode="wait">
+                          {walletExpanded ? (
+                            <motion.div
+                              key="chevron-up"
+                              initial={{ rotate: -180, opacity: 0 }}
+                              animate={{ rotate: 0, opacity: 1 }}
+                              exit={{ rotate: 180, opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              <ChevronUp className="w-3.5 h-3.5" />
+                            </motion.div>
+                          ) : (
+                            <motion.div
+                              key="chevron-down"
+                              initial={{ rotate: 180, opacity: 0 }}
+                              animate={{ rotate: 0, opacity: 1 }}
+                              exit={{ rotate: -180, opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              <ChevronDown className="w-3.5 h-3.5" />
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </button>
+                    </motion.div>
                 </div>
 
                 {/* Profile Dropdown - Fixed width to prevent compression */}
