@@ -1,5 +1,8 @@
 import { db } from '~/db';
-import { sql } from 'drizzle-orm';
+import { sql, eq } from 'drizzle-orm';
+import { users as usersSchema } from '@/db/schema';
+import { IdentityService } from '@/lib/marketing/identity-service';
+import { RewardEngine } from '@/lib/marketing/reward-engine';
 
 export async function syncThirdwebUser(userData: {
   walletAddress: string;
@@ -154,6 +157,31 @@ export async function syncThirdwebUser(userData: {
     } catch (socialError) {
       console.warn('⚠️ Social profile enrichment failed - continuing with basic user sync:', socialError);
       // NO fallamos aquí - la sincronización básica ya funciona
+    }
+
+    // 🔗 GROWTH OS IDENTITY BRIDGE (Phase 5)
+    // Link anonymous marketing leads to this verified user and sync rewards
+    try {
+      const finalUser = await db.query.users.findFirst({
+        where: eq(usersSchema.walletAddress, userData.walletAddress.toLowerCase())
+      });
+
+      if (finalUser) {
+        console.log(`🔗 [Growth OS] Bridging identity for user: ${finalUser.id}`);
+        
+        // 1. Link leads by Email or Wallet
+        await IdentityService.linkIdentity(finalUser.id, {
+          email: userData.email || finalUser.email || undefined,
+          walletAddress: userData.walletAddress
+        });
+
+        // 2. Sync Rewards (Asynchronously to avoid blocking login)
+        RewardEngine.syncUserRewards(finalUser.id).catch(err => {
+          console.error('❌ [Growth OS] Async Reward Sync failed:', err);
+        });
+      }
+    } catch (bridgeError) {
+      console.warn('⚠️ [Growth OS] Identity Bridge failed:', bridgeError);
     }
 
   } catch (error) {

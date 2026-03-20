@@ -238,6 +238,45 @@ function RewardModalManager() {
   const [currentReward, setCurrentReward] = useState<Reward | null>(null);
   const { account } = usePersistedAccount();
 
+  const checkForMarketingRewards = React.useCallback(async () => {
+    if (!account?.address) return;
+
+    try {
+      const modalShownKey = `marketing_reward_modal_shown_${account.address}`;
+      if (localStorage.getItem(modalShownKey) === 'true') return;
+
+      const response = await fetch('/api/v1/marketing/rewards/summary', {
+        headers: { 'X-Wallet-Address': account.address }
+      });
+
+      if (response.ok) {
+        const json = await response.json();
+        const data = json.data;
+        if (data && data.totalXp > 0) {
+          console.log(`🔥 [Growth OS] Found pre-login rewards: ${data.totalXp} XP`);
+          
+          const marketingReward: Reward = {
+            type: 'achievement',
+            title: '🔥 ¡Bono de Bienvenida!',
+            description: `¡Increíble! Ya habías acumulado ${data.totalXp} XP antes de unirte. Los hemos sumado a tu cuenta.`,
+            tokens: data.totalXp,
+            icon: '🔥',
+            rarity: 'rare'
+          };
+
+          localStorage.setItem(modalShownKey, 'true');
+          
+          setTimeout(() => {
+            setCurrentReward(marketingReward);
+            setShowRewardModal(true);
+          }, 4000); // Show after other potential welcome modals
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ [Growth OS] Error checking marketing rewards:', error);
+    }
+  }, [account?.address, setCurrentReward, setShowRewardModal]);
+
   const checkForReferralRewards = React.useCallback(async () => {
     if (!account?.address) return;
 
@@ -320,8 +359,9 @@ function RewardModalManager() {
         }, 2000); // Increased delay for better UX
 
       } else {
-        // 🎉 CHECK FOR REFERRAL REWARDS - Show modal when user has successful referrals
+        // 🎉 CHECK FOR ALL REWARDS
         void checkForReferralRewards();
+        void checkForMarketingRewards();
       }
     }
   }, [account?.address, checkForReferralRewards]);
