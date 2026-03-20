@@ -668,20 +668,13 @@ export function Sidebar({
 
                             <div className="border-t border-zinc-700 my-2"></div>
 
-                            {/* Thirdweb ConnectButton - Maneja automáticamente conectar vs gestionar */}
-                            <div className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full">
-                              <ConnectWalletButton
-                                className="w-full justify-start pl-0 bg-transparent text-white hover:bg-transparent shadow-none font-normal"
-                                onConnect={() => {
-                                  console.log('🔗 Wallet connected');
-                                }}
-                                onDisconnect={() => {
-                                  console.log('🔌 Wallet disconnected');
-                                  // Close dropdowns on disconnect
-                                  setProfileDropdown(false);
-                                  setMobileOpen(false);
-                                }}
-                              />
+                            <div className="px-2 py-1">
+                              <div className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-1">
+                                Gestión de Billetera
+                              </div>
+                              <div className="text-[11px] text-gray-400">
+                                Use el botón "Desconectar" al final del sidebar para salir.
+                              </div>
                             </div>
 
 
@@ -1133,21 +1126,13 @@ export function Sidebar({
 
                             <div className="border-t border-zinc-700 my-2"></div>
 
-                            {/* Thirdweb ConnectButton - Maneja automáticamente conectar vs gestionar */}
-                            <div className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full">
-                              <ConnectWalletButton
-                                className="flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors w-full"
-                                onConnect={() => {
-                                  // Don't close dropdown on connect - let user stay in dropdown
-                                  console.log('🔗 Mobile wallet connected - keeping dropdown open');
-                                  setMobileOpen(false); // Still close mobile sidebar
-                                }}
-                                onDisconnect={() => {
-                                  // Don't close dropdown on disconnect - let user stay in dropdown
-                                  console.log('🔌 Mobile wallet disconnected - keeping dropdown open');
-                                  setMobileOpen(false); // Still close mobile sidebar
-                                }}
-                              />
+                            <div className="px-2 py-1">
+                              <div className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-1">
+                                Gestión de Billetera
+                              </div>
+                              <div className="text-[11px] text-gray-400">
+                                Use el botón "Desconectar" al final del sidebar para salir.
+                              </div>
                             </div>
                           </div>
                         </motion.div>

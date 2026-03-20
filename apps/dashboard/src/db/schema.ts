@@ -910,8 +910,8 @@ export const emailMetrics = pgTable("email_metrics", {
   id: serial("id").primaryKey(),
   emailId: varchar("email_id", { length: 255 }).unique().notNull(),
   type: varchar("type", { length: 50 }).default('unknown').notNull(), // creator_welcome, founders, utility, etc.
-  status: varchar('status', { length: 20 }).default('pending').notNull(), // pending, approved, rejected, clicked, bounced, etc.
-  recipient: varchar("recipient", { length: 255 }),
+  status: varchar('status', { length: 20 }).default('pending').notNull(), // pending, delivered, opened, clicked, bounced, etc.
+  recipient: varchar("recipient", { length: 255 }).notNull(),
   emailSubject: text("email_subject"),
   clickedUrl: text("clicked_url"), // URL que se clickeó
   deliveredAt: timestamp("delivered_at", { withTimezone: true }),
@@ -923,7 +923,7 @@ export const emailMetrics = pgTable("email_metrics", {
   ipAddress: varchar("ip_address", { length: 45 }), // IPv4/IPv6 para tracking
   metadata: jsonb("metadata").default({}), // Datos extras del webhook
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().$onUpdate(() => new Date()).notNull(),
 }, (table) => ({
   emailIdIndex: uniqueIndex("email_metrics_email_id_idx").on(table.emailId),
   typeStatusIndex: index("email_metrics_type_status_idx").on(table.type, table.status),
@@ -1779,4 +1779,3 @@ export const marketingLeadAttributionsRelations = relations(marketingLeadAttribu
     references: [projects.id],
   }),
 }));
-
