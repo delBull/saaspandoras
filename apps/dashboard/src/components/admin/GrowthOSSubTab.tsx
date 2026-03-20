@@ -72,6 +72,41 @@ export default function GrowthOSSubTab() {
   // Real Domain Management State
   const [newDomain, setNewDomain] = useState('');
   const [isAddingDomain, setIsAddingDomain] = useState(false);
+  const [loadingKey, setLoadingKey] = useState(false);
+
+  const fetchApiKey = async (projectId: string) => {
+    if (projectId === 'all') {
+      setApiKey('pk_grow_live_xxxxxxx');
+      return;
+    }
+
+    setLoadingKey(true);
+    try {
+      const project = projects.find(p => p.id === Number(projectId));
+      if (!project) return;
+
+      // 1. Try to GET existing key
+      let response = await fetch(`/api/admin/projects/${project.slug}/keys`);
+      let data = await response.json();
+
+      if (response.ok && data.hasKey) {
+        setApiKey(data.apiKey);
+      } else {
+        // 2. Proactive generation for internal/selected project
+        console.log("Generating API Key proactive...");
+        response = await fetch(`/api/admin/projects/${project.slug}/keys`, { method: 'POST' });
+        data = await response.json();
+        if (response.ok) {
+          setApiKey(data.apiKey);
+          if (data.isNew) toast.success("Clave API generada para este proyecto");
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching API Key:', error);
+    } finally {
+      setLoadingKey(false);
+    }
+  };
 
   const handleAddDomain = () => {
     if (!newDomain) return;
@@ -186,10 +221,11 @@ export default function GrowthOSSubTab() {
     fetchLeads(selectedProjectId);
     setAiInsights(null); // Reset insights when project changes
     
-    // Fetch funnel stats & allowed domains
+    // Fetch funnel stats & allowed domains & API Key
     if (selectedProjectId !== 'all') {
         const project = projects.find(p => p.id === Number(selectedProjectId));
         setAllowedDomains(project?.allowedDomains || []);
+        fetchApiKey(selectedProjectId);
         
         setStats({
             views: Math.floor(leads.length * 4.2),
@@ -199,6 +235,7 @@ export default function GrowthOSSubTab() {
     } else {
         setStats({ views: 0, clicks: 0, leads: 0 });
         setAllowedDomains([]);
+        setApiKey('pk_grow_live_xxxxxxx');
     }
   }, [selectedProjectId, leads.length, projects]);
 
@@ -676,15 +713,21 @@ export default function GrowthOSSubTab() {
                       </div>
                       <div className="bg-zinc-950 rounded-xl p-3 border border-zinc-800 font-mono text-[10px] text-zinc-400 break-all relative group/code">
                         <code>
-                          {`<script src="https://pandoras.app/widget.js" data-project-id="${selectedProjectId === 'all' ? 'external' : selectedProjectId}" data-api-key="${apiKey}" data-color="#7c3aed"></script>`}
+                          {loadingKey ? (
+                            <span className="animate-pulse">Cargando configuración...</span>
+                          ) : (
+                            `<script \n  src="https://dashboard.pandoras.finance/api/v1/widget/v1.js" \n  data-project-id="${selectedProjectId === 'all' ? 'external' : (projects.find(p => p.id === Number(selectedProjectId))?.slug || selectedProjectId)}" \n  data-api-key="${apiKey}" \n  defer\n></script>`
+                          )}
                         </code>
                         <button 
                           onClick={() => {
-                            const code = `<script src="https://pandoras.app/widget.js" data-project-id="${selectedProjectId === 'all' ? 'external' : selectedProjectId}" data-api-key="${apiKey}" data-color="#7c3aed"></script>`;
+                            const projectSlug = selectedProjectId === 'all' ? 'external' : (projects.find(p => p.id === Number(selectedProjectId))?.slug || selectedProjectId);
+                            const code = `<script src="https://dashboard.pandoras.finance/api/v1/widget/v1.js" data-project-id="${projectSlug}" data-api-key="${apiKey}" defer></script>`;
                             navigator.clipboard.writeText(code);
                             setCopied(true);
                             setTimeout(() => setCopied(false), 2000);
                           }}
+                          disabled={loadingKey}
                           className="absolute top-2 right-2 p-2 bg-zinc-900 border border-zinc-700 rounded-lg opacity-0 group-hover/code:opacity-100 transition-all hover:bg-zinc-800"
                         >
                           {copied ? <span className="text-green-400 font-bold">✓</span> : <BookOpen className="w-3 h-3 text-zinc-400" />}

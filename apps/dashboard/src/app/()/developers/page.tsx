@@ -31,9 +31,10 @@ export default function DevelopersPage() {
   };
 
   const widgetSnippet = `<script 
-  src="https://pandoras.app/widget.js" 
-  data-project-id="YOUR_PROJECT_ID" 
+  src="https://dashboard.pandoras.finance/api/v1/widget/v1.js" 
+  data-project-id="YOUR_PROJECT_SLUG" 
   data-api-key="pk_grow_live_..."
+  defer
 ></script>`;
 
   const apiSnippet = `// Register a lead via JS API

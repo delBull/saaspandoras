@@ -46,8 +46,19 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     let { email, name, phoneNumber, walletAddress, fingerprint, origin, intent, consent, metadata, projectId } = body;
 
-    // Resolve Project Context - Ensure it's never null/undefined for the DB
-    const targetProjectId = Number(projectId === 'external' ? 1 : (projectId || client.projectId || 1));
+    // Resolve Project Context - Support both ID (numeric) and Slug (string)
+    let targetProjectId: number;
+    if (projectId === 'external') {
+      targetProjectId = 1;
+    } else if (projectId && isNaN(Number(projectId))) {
+      const projectBySlug = await db.query.projects.findFirst({
+        where: eq(projects.slug, projectId),
+        columns: { id: true }
+      });
+      targetProjectId = projectBySlug?.id || 1;
+    } else {
+      targetProjectId = Number(projectId || client.projectId || 1);
+    }
 
     // 1.5 Security Check: Allowed Domains
     const requestOrigin = req.headers.get('origin') || req.headers.get('referer');
