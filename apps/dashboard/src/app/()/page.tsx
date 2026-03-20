@@ -36,26 +36,6 @@ interface Profile {
   name?: string | null;
 }
 
-function MobileHeader({ userName, walletAddress, profile }: { userName: string | null; walletAddress?: string; profile?: Profile }) {
-  return (
-    <div className="flex md:hidden items-center justify-between w-full mt-5 ml-5">
-      <div className="flex items-center gap-2">
-        <div className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden">
-          <Image
-            src={profile?.image ?? '/images/avatars/onlybox2.png'}
-            width={24}
-            height={24}
-            alt="User Avatar"
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <span className="font-mono text-sm font-semibold text-white">
-          {userName ?? (walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : "Not Connected")}
-        </span>
-      </div>
-    </div>
-  );
-}
 
 function TypewriterText({ text, className, delay = 0 }: { text: string; className?: string; delay?: number }) {
   const [displayText, setDisplayText] = useState('');
@@ -325,7 +305,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <MobileHeader userName={homeData.profile?.name || null} walletAddress={account?.address} profile={homeData.profile} />
 
       <div className="text-left pt-6 ml-5 mb-6 pr-5">
         <TypewriterText

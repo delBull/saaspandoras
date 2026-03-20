@@ -15,6 +15,8 @@ import { RewardModal } from "@/components/RewardModal";
 import type { Reward } from "@/components/RewardModal";
 // Mobile Navigation Component
 import { MobileNavMenu } from "@/components/MobileNavMenu";
+import { MobileHeader } from "@/components/MobileHeader";
+import { MobileSidebar } from "@/components/MobileSidebar";
 // 🎁 AGREGAR DETECCIÓN AUTOMÁTICA DE REFERIDOS
 import { useReferralDetection } from "@/hooks/useReferralDetection";
 // TopNavbar para el perfil superior
@@ -54,6 +56,7 @@ export function DashboardClientWrapper({
   const { account } = usePersistedAccount();
   const { profile } = useProfile();
   const [userName, setUserName] = useState<string | null>(null);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Estados de loading para controlar UI
   const [isLoadingUserData, setIsLoadingUserData] = useState(true);
@@ -147,6 +150,19 @@ export function DashboardClientWrapper({
               isSuperAdmin={isSuperAdmin}
               sidebarDefaultOpen={pathname === '/applicants' ? false : undefined}
             >
+              {/* Mobile Header - Visible only on mobile */}
+              <MobileHeader 
+                onMenuClick={() => setIsMobileSidebarOpen(true)} 
+                profileImage={profile?.image ?? undefined} 
+              />
+
+              {/* Mobile Sidebar (Drawer) */}
+              <MobileSidebar 
+                isOpen={isMobileSidebarOpen} 
+                onClose={() => setIsMobileSidebarOpen(false)} 
+                isAdmin={isAdmin || isSuperAdmin}
+              />
+
               {/* Top Navbar with Profile - Superior derecha - OK */}
               <div className="relative md:block hidden">
                 <TopNavbar
@@ -238,6 +254,45 @@ function RewardModalManager() {
   const [currentReward, setCurrentReward] = useState<Reward | null>(null);
   const { account } = usePersistedAccount();
 
+  const checkForMarketingRewards = React.useCallback(async () => {
+    if (!account?.address) return;
+
+    try {
+      const modalShownKey = `marketing_reward_modal_shown_${account.address}`;
+      if (localStorage.getItem(modalShownKey) === 'true') return;
+
+      const response = await fetch('/api/v1/marketing/rewards/summary', {
+        headers: { 'X-Wallet-Address': account.address }
+      });
+
+      if (response.ok) {
+        const json = await response.json();
+        const data = json.data;
+        if (data && data.totalXp > 0) {
+          console.log(`🔥 [Growth OS] Found pre-login rewards: ${data.totalXp} XP`);
+          
+          const marketingReward: Reward = {
+            type: 'achievement',
+            title: '🔥 ¡Bono de Bienvenida!',
+            description: `¡Increíble! Ya habías acumulado ${data.totalXp} XP antes de unirte. Los hemos sumado a tu cuenta.`,
+            tokens: data.totalXp,
+            icon: '🔥',
+            rarity: 'rare'
+          };
+
+          localStorage.setItem(modalShownKey, 'true');
+          
+          setTimeout(() => {
+            setCurrentReward(marketingReward);
+            setShowRewardModal(true);
+          }, 4000); // Show after other potential welcome modals
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ [Growth OS] Error checking marketing rewards:', error);
+    }
+  }, [account?.address, setCurrentReward, setShowRewardModal]);
+
   const checkForReferralRewards = React.useCallback(async () => {
     if (!account?.address) return;
 
@@ -320,8 +375,9 @@ function RewardModalManager() {
         }, 2000); // Increased delay for better UX
 
       } else {
-        // 🎉 CHECK FOR REFERRAL REWARDS - Show modal when user has successful referrals
+        // 🎉 CHECK FOR ALL REWARDS
         void checkForReferralRewards();
+        void checkForMarketingRewards();
       }
     }
   }, [account?.address, checkForReferralRewards]);
