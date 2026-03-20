@@ -65,6 +65,7 @@ export function Sidebar({
   const [networkDropdown, setNetworkDropdown] = useState(false);
   const [dropdownOpenedAt, setDropdownOpenedAt] = useState<number>(0);
   const [copyAnimation, setCopyAnimation] = useState(false);
+  const [walletExpanded, setWalletExpanded] = useState(false);
 
   const account = useActiveAccount();
   const wallet = useActiveWallet();
@@ -607,6 +608,34 @@ export function Sidebar({
                       </motion.div>
                     </button>
                   </motion.div>
+
+                  {/* Toggle Expand Wallet Icon */}
+                  <button 
+                    onClick={() => setWalletExpanded(!walletExpanded)}
+                    className="p-1 hover:bg-zinc-700/30 rounded transition-colors text-gray-400 hover:text-white"
+                  >
+                    <AnimatePresence mode="wait">
+                      {walletExpanded ? (
+                        <motion.div
+                          key="chevron-up"
+                          initial={{ rotate: -180, opacity: 0 }}
+                          animate={{ rotate: 0, opacity: 1 }}
+                          exit={{ rotate: 180, opacity: 0 }}
+                        >
+                          <ChevronUp className="w-4 h-4" />
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="chevron-down"
+                          initial={{ rotate: 180, opacity: 0 }}
+                          animate={{ rotate: 0, opacity: 1 }}
+                          exit={{ rotate: -180, opacity: 0 }}
+                        >
+                          <ChevronDown className="w-4 h-4" />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </button>
                 </div>
 
                 {/* Profile Dropdown - Fixed width to prevent compression */}
@@ -663,24 +692,32 @@ export function Sidebar({
                   )}
                 </AnimatePresence>
 
-                {/* Multi-Chain Wallet Interface - Only show when sidebar is expanded */}
-                {isClient && account && open && (
-                  <div className="mt-3 space-y-2">
-                    {/* Network Selector */}
-                    <NetworkSelector
-                      selectedChain={selectedChain}
-                      onChainChange={(chain) => setSelectedChain(chain)}
-                      supportedNetworks={supportedNetworks}
-                    />
+                {/* Multi-Chain Wallet Interface - Now Collapsible */}
+                <AnimatePresence>
+                  {isClient && account && open && walletExpanded && (
+                    <motion.div 
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      className="mt-3 space-y-2 overflow-hidden border-t border-gray-700/50 pt-3"
+                    >
+                      {/* Network Selector */}
+                      <NetworkSelector
+                        selectedChain={selectedChain}
+                        onChainChange={(chain) => setSelectedChain(chain)}
+                        supportedNetworks={supportedNetworks}
+                      />
 
-                    {/* Wallet Balances */}
-                    <WalletBalance
-                      selectedChain={selectedChain}
-                      accountAddress={account?.address}
-                      supportedNetworks={supportedNetworks}
-                    />
-                  </div>
-                )}
+                      {/* Wallet Balances */}
+                      <WalletBalance
+                        selectedChain={selectedChain}
+                        accountAddress={account?.address}
+                        supportedNetworks={supportedNetworks}
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             ) : null}
           </div>
@@ -716,20 +753,22 @@ export function Sidebar({
                     </Tooltip.Portal>
                   </Tooltip.Root>
                 ) : (
-                  <Link
-                    key={link.label}
-                    href={link.href}
-                    className={cn(
-                      "relative flex items-center rounded-lg py-3 font-light text-gray-400 transition-all duration-200 border-b border-gray-800 px-4",
-                      link.disabled
-                        ? "cursor-not-allowed opacity-60"
-                        : "hover:bg-gray-800/50 hover:text-white",
-                      link.admin &&
-                      "font-bold text-lime-400 hover:bg-lime-900/50 hover:text-lime-300"
-                    )}
-                    onClick={(e) => link.disabled && e.preventDefault()}
-                  >
-                    {link.icon}
+                      <Link
+                        key={link.label}
+                        href={link.href}
+                        className={cn(
+                          "relative flex items-center rounded-lg py-4 font-light text-gray-400 transition-all duration-200 border-b border-gray-800/50 px-5 group",
+                          link.disabled
+                            ? "cursor-not-allowed opacity-60"
+                            : "hover:bg-gray-800/50 hover:text-white",
+                          link.admin &&
+                          "font-bold text-lime-400 hover:bg-lime-900/50 hover:text-lime-300"
+                        )}
+                        onClick={(e) => link.disabled && e.preventDefault()}
+                      >
+                        <div className="group-hover:scale-110 transition-transform duration-200">
+                          {link.icon}
+                        </div>
                     <motion.span
                       animate={{
                         opacity: open ? 1 : 0,
