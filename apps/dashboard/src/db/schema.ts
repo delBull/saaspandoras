@@ -42,6 +42,19 @@ export const tokenTypeEnum = pgEnum("token_type", [
   "erc1155", // Híbrido (ERC-1155)
 ]);
 
+export const leadAttributionTypeEnum = pgEnum("lead_attribution_type", [
+  "exclusive",
+  "shared"
+]);
+
+export const leadAttributionMethodEnum = pgEnum("lead_attribution_method", [
+  "domain_match",
+  "fingerprint_match",
+  "email_match",
+  "manual"
+]);
+
+
 export const yieldSourceEnum = pgEnum("yield_source", [
   "rental_income", // Rentas de Alquiler
   "capital_appreciation", // Plusvalía por Venta
@@ -1711,10 +1724,34 @@ export const marketingRewardLogs = pgTable("marketing_reward_logs", {
 }));
 
 
+/**
+ * marketing_lead_attributions — Relationship between leads and projects.
+ * Supports many-to-many attribution with confidence scoring.
+ */
+export const marketingLeadAttributions = pgTable("marketing_lead_attributions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  leadId: uuid("lead_id").references(() => marketingLeads.id).notNull(),
+  projectId: integer("project_id").references(() => projects.id).notNull(),
+  
+  attributionType: leadAttributionTypeEnum("attribution_type").default("shared").notNull(),
+  attributionMethod: leadAttributionMethodEnum("attribution_method").notNull(),
+  confidenceScore: decimal("confidence_score", { precision: 3, scale: 2 }).notNull(), // 0.00 to 1.00
+  
+  attributedAt: timestamp("attributed_at", { withTimezone: true }).defaultNow().notNull(),
+  metadata: jsonb("metadata").default({}).notNull(),
+}, (t) => ({
+  uniqueLeadProject: uniqueIndex("marketing_lead_project_unique_idx").on(t.leadId, t.projectId),
+  leadIdx: index("attribution_lead_idx").on(t.leadId),
+  projectIdx: index("attribution_project_idx").on(t.projectId),
+}));
+
+
 export type DeploymentJob = typeof deploymentJobs.$inferSelect;
 export type MarketingLead = typeof marketingLeads.$inferSelect;
 export type MarketingLeadEvent = typeof marketingLeadEvents.$inferSelect;
 export type MarketingRewardLog = typeof marketingRewardLogs.$inferSelect;
+export type MarketingLeadAttribution = typeof marketingLeadAttributions.$inferSelect;
+
 
 export const governanceProposalsRelations = relations(governanceProposals, ({ many }) => ({
   votes: many(governanceVotes),
@@ -1726,3 +1763,20 @@ export const governanceVotesRelations = relations(governanceVotes, ({ one }) => 
     references: [governanceProposals.proposalId],
   }),
 }));
+
+export const marketingLeadsRelations = relations(marketingLeads, ({ many }) => ({
+  attributions: many(marketingLeadAttributions),
+  events: many(marketingLeadEvents),
+}));
+
+export const marketingLeadAttributionsRelations = relations(marketingLeadAttributions, ({ one }) => ({
+  lead: one(marketingLeads, {
+    fields: [marketingLeadAttributions.leadId],
+    references: [marketingLeads.id],
+  }),
+  project: one(projects, {
+    fields: [marketingLeadAttributions.projectId],
+    references: [projects.id],
+  }),
+}));
+
