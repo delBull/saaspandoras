@@ -19,7 +19,7 @@ export function MobileHeader({ onMenuClick, profileImage }: MobileHeaderProps) {
       <div className="flex items-center gap-2">
         <div className="w-8 h-8 relative">
           <Image
-            src="/images/logo-pandoras.png" // Align with desktop logo if possible
+            src="/images/logo_green.png" // Align with desktop logo if possible
             alt="Pandora's Logo"
             fill
             className="object-contain"

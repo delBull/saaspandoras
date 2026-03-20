@@ -33,6 +33,7 @@ interface RealTimeGamificationData {
   totalPoints: number;
   currentLevel: number;
   levelProgress: number;
+  userRank: string;
   refreshData: () => Promise<void>;
   trackNewEvent: (eventType: string, metadata?: Record<string, unknown>) => Promise<void>;
 }
@@ -73,6 +74,7 @@ export function useRealGamification(userId?: string): RealTimeGamificationData {
   const [totalPoints, setTotalPoints] = useState(0);
   const [currentLevel, setCurrentLevel] = useState(1);
   const [levelProgress, setLevelProgress] = useState(0);
+  const [userRank, setUserRank] = useState('N/A');
 
   // Function to refresh all data synchronously
   const refreshData = useCallback(async () => {
@@ -82,6 +84,7 @@ export function useRealGamification(userId?: string): RealTimeGamificationData {
       setTotalPoints(0);
       setCurrentLevel(1);
       setLevelProgress(0);
+      setUserRank('N/A');
       return;
     }
 
@@ -128,6 +131,7 @@ export function useRealGamification(userId?: string): RealTimeGamificationData {
       setTotalPoints(Number(data.totalPoints ?? data.profile?.totalPoints ?? 0));
       setCurrentLevel(Number(data.currentLevel ?? data.profile?.currentLevel ?? 1));
       setLevelProgress(Number(data.levelProgress ?? data.profile?.levelProgress ?? 0));
+      setUserRank(data.userRank ?? 'N/A');
 
       console.log(`✅ [useRealGamification] Loaded ${normalizedAchievements.length} achievements`);
 
@@ -192,6 +196,7 @@ export function useRealGamification(userId?: string): RealTimeGamificationData {
     totalPoints,
     currentLevel,
     levelProgress,
+    userRank,
     refreshData,
     trackNewEvent
   };
