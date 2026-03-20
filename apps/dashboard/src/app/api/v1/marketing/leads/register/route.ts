@@ -75,6 +75,21 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // 1.5 Security Check: Allowed Domains
+    const requestOrigin = req.headers.get('origin') || req.headers.get('referer');
+    const projectContext = await db.query.projects.findFirst({
+      where: eq(projects.id, targetProjectId),
+      columns: { allowedDomains: true }
+    });
+
+    if (projectContext?.allowedDomains && Array.isArray(projectContext.allowedDomains) && projectContext.allowedDomains.length > 0) {
+      const isAllowed = projectContext.allowedDomains.some(domain => requestOrigin?.toLowerCase().includes(domain.toLowerCase()));
+      if (!isAllowed) {
+        console.warn(`[SECURITY] Lead blocked for Domain ${requestOrigin} (Project: ${targetProjectId})`);
+        return NextResponse.json({ error: 'Unauthorized domain for this Growth SDK instance' }, { status: 403 });
+      }
+    }
+
     if (!email || !email.includes('@')) {
       return NextResponse.json({ error: 'Valid email required' }, { status: 400 });
     }
