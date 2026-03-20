@@ -4,6 +4,14 @@ import React from 'react';
 import { useFeaturedProjects } from '@/hooks/useFeaturedProjects';
 import type { Project } from '@/types/admin';
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Zap } from "lucide-react";
+
 interface ProjectCardsViewProps {
   projects: Project[];
   expandedProject: string | null;
@@ -22,7 +30,8 @@ export function ProjectCardsView({
   const { isFeatured, toggleFeatured } = useFeaturedProjects();
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+    <TooltipProvider>
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
       {projects.length === 0 ? (
         <div className="col-span-full bg-zinc-800/50 rounded-lg p-12 text-center border border-zinc-700">
           <div className="text-gray-400 text-lg font-medium mb-2">No hay proyectos registrados</div>
@@ -51,6 +60,27 @@ export function ProjectCardsView({
                     <span className="text-xs bg-lime-500 text-black px-2 py-1 rounded flex items-center gap-1">
                       ⭐ Featured
                     </span>
+                  )}
+                  {/* Growth OS Visual Identifier (Zap) with Tooltip */}
+                  {p.deploymentStatus === 'deployed' && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30 animate-pulse-subtle shadow-[0_0_8px_rgba(168,85,247,0.2)] cursor-help">
+                          <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                          </svg>
+                          <span>GROWTH OS</span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="bg-zinc-900 border-purple-500/30 text-zinc-200">
+                        <p className="font-bold flex items-center gap-1 text-purple-400 mb-1">
+                          <Zap className="w-3 h-3" /> Integración Activa
+                        </p>
+                        <p className="text-[11px] leading-relaxed">
+                          Este protocolo utiliza las herramientas de Growth OS para captar leads y gestionar whitelists.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
                   )}
                 </div>
               </div>
@@ -154,9 +184,10 @@ export function ProjectCardsView({
                 </div>
               </div>
             )}
-          </div>
-        ))
-      )}
-    </div>
+            </div>
+          ))
+        )}
+      </div>
+    </TooltipProvider>
   );
 }
