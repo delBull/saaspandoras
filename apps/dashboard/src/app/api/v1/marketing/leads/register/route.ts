@@ -46,7 +46,14 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     let { email, name, phoneNumber, walletAddress, fingerprint, origin, intent, consent, metadata, projectId } = body;
 
+    // Use request origin/referer as fallback for origin if not provided in body
+    const requestOrigin = req.headers.get('origin') || req.headers.get('referer');
+    if (!origin && requestOrigin) {
+      origin = requestOrigin;
+    }
+
     // Resolve Project Context - Support both ID (numeric) and Slug (string)
+
     let targetProjectId: number;
     if (projectId === 'external') {
       targetProjectId = 1;
@@ -61,7 +68,6 @@ export async function POST(req: NextRequest) {
     }
 
     // 1.5 Security Check: Allowed Domains
-    const requestOrigin = req.headers.get('origin') || req.headers.get('referer');
     const projectContext = await db.query.projects.findFirst({
       where: eq(projects.id, targetProjectId),
       columns: { allowedDomains: true }
@@ -74,6 +80,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Unauthorized domain for this Growth SDK instance' }, { status: 403 });
       }
     }
+
 
     if (!email || !email.includes('@')) {
       return NextResponse.json({ error: 'Valid email required' }, { status: 400 });

@@ -41,7 +41,10 @@ interface Lead {
   createdAt: string;
   projectName: string;
   userId: string | null;
+  origin: string | null;
+  fingerprint: string | null;
 }
+
 
 interface GrowthInsight {
   title: string;
@@ -49,6 +52,19 @@ interface GrowthInsight {
   impact: 'low' | 'medium' | 'high';
   type: 'strategy' | 'segmentation' | 'engagement';
 }
+
+interface LeadSuggestion {
+  lead: Lead;
+  attribution: {
+    score: number;
+    factors: {
+      domainMatch: boolean;
+      fingerprintMatch: boolean;
+      emailMatch: boolean;
+    };
+  };
+}
+
 
 export default function GrowthOSSubTab() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -73,6 +89,13 @@ export default function GrowthOSSubTab() {
   const [newDomain, setNewDomain] = useState('');
   const [isAddingDomain, setIsAddingDomain] = useState(false);
   const [loadingKey, setLoadingKey] = useState(false);
+
+  // Unification States
+  const [suggestions, setSuggestions] = useState<LeadSuggestion[]>([]);
+  const [isUnifying, setIsUnifying] = useState(false);
+  const [isScanningSuggestions, setIsScanningSuggestions] = useState(false);
+  const [showUnifyModal, setShowUnifyModal] = useState(false);
+
 
   const fetchApiKey = async (projectId: string) => {
     if (projectId === 'all') {
@@ -212,6 +235,60 @@ export default function GrowthOSSubTab() {
     }
   };
 
+  // Fetch Unification Suggestions
+  const fetchSuggestions = async (projectId: string) => {
+    if (projectId === 'all') {
+      setSuggestions([]);
+      return;
+    }
+
+    setIsScanningSuggestions(true);
+    try {
+      const response = await fetch(`/api/admin/marketing/leads/suggestions?projectId=${projectId}`);
+      const result = await response.json();
+      if (result.success) {
+        setSuggestions(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching suggestions:', error);
+    } finally {
+      setIsScanningSuggestions(false);
+    }
+  };
+
+  const handleUnify = async (leadIds: string[]) => {
+    if (selectedProjectId === 'all' || leadIds.length === 0) return;
+
+    setIsUnifying(true);
+    try {
+      const response = await fetch('/api/admin/marketing/leads/unify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: Number(selectedProjectId),
+          leadIds,
+          attributionMethod: 'domain_match'
+        })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        toast.success(`¡Éxito! ${result.attributedCount} leads unificados`);
+        setShowUnifyModal(false);
+        fetchSuggestions(selectedProjectId);
+        fetchLeads(selectedProjectId);
+      } else {
+        toast.error("Error al unificar leads");
+      }
+    } catch (error) {
+      console.error('Error unifying leads:', error);
+      toast.error("Error de conexión");
+    } finally {
+      setIsUnifying(false);
+    }
+  };
+
+
   useEffect(() => {
     fetchProjects();
     fetchLeads('all');
@@ -221,11 +298,12 @@ export default function GrowthOSSubTab() {
     fetchLeads(selectedProjectId);
     setAiInsights(null); // Reset insights when project changes
     
-    // Fetch funnel stats & allowed domains & API Key
+    // Fetch funnel stats & allowed domains & API Key & Suggestions
     if (selectedProjectId !== 'all') {
         const project = projects.find(p => p.id === Number(selectedProjectId));
         setAllowedDomains(project?.allowedDomains || []);
         fetchApiKey(selectedProjectId);
+        fetchSuggestions(selectedProjectId);
         
         setStats({
             views: Math.floor(leads.length * 4.2),
@@ -236,8 +314,10 @@ export default function GrowthOSSubTab() {
         setStats({ views: 0, clicks: 0, leads: 0 });
         setAllowedDomains([]);
         setApiKey('pk_grow_live_xxxxxxx');
+        setSuggestions([]);
     }
   }, [selectedProjectId, leads.length, projects]);
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -323,6 +403,88 @@ export default function GrowthOSSubTab() {
           )}
         </div>
 
+        {/* Lead Unification Alert (Strategic Feature) */}
+        {selectedProjectId !== 'all' && (suggestions.length > 0 || isScanningSuggestions) && (
+          <div className="bg-gradient-to-r from-blue-900/40 to-indigo-900/20 border border-blue-500/30 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4 animate-in zoom-in-95 duration-500">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-blue-500/20 rounded-2xl text-blue-400">
+                <RefreshCw className={`w-6 h-6 ${isScanningSuggestions ? 'animate-spin' : ''}`} />
+              </div>
+              <div>
+                <h4 className="font-bold text-white flex items-center gap-2">
+                  Detección de Leads Externos
+                  <Badge className="bg-blue-500 text-white border-none text-[9px] uppercase">Estrategia Activa</Badge>
+                </h4>
+                <p className="text-sm text-zinc-400">
+                  {isScanningSuggestions 
+                    ? "Escaneando el pool global de leads para tu dominio..." 
+                    : `Hemos detectado ${suggestions.length} leads capturados vía widget global que coinciden con tus dominios.`}
+                </p>
+              </div>
+            </div>
+            
+            <Dialog open={showUnifyModal} onOpenChange={setShowUnifyModal}>
+              <DialogTrigger asChild>
+                <UIButton disabled={isScanningSuggestions || suggestions.length === 0} className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl px-6">
+                  Revisar y Unificar
+                </UIButton>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-2xl bg-zinc-950 border-zinc-800 text-white">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-blue-400">
+                    <RefreshCw className="w-5 h-5" />
+                    Unificación de Audiencia (Relational)
+                  </DialogTitle>
+                  <DialogDescription className="text-zinc-400">
+                    Atribuye leads globales a tu protocolo sin destruir el origen. Esto permite compartir analytics y rewards.
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="max-h-[400px] overflow-y-auto space-y-3 my-4 pr-2 scrollbar-thin scrollbar-thumb-zinc-800">
+                  {suggestions.map((s) => (
+                    <div key={s.lead.id} className="flex items-center justify-between p-4 bg-zinc-900/50 rounded-xl border border-zinc-800 hover:border-blue-500/20 transition-all">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-white">{s.lead.email}</span>
+                        <span className="text-[10px] text-zinc-500 font-mono mt-1">Origin: {s.lead.origin}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="text-right">
+                          <Badge className={`${s.attribution.score >= 0.5 ? 'bg-green-500/10 text-green-400' : 'bg-yellow-500/10 text-yellow-400'} border-none text-[10px]`}>
+                            {Math.round(s.attribution.score * 100)}% Confianza
+                          </Badge>
+                          <p className="text-[9px] text-zinc-600 mt-1">Matching: {s.attribution.factors.domainMatch ? 'Domain' : 'Other'}</p>
+                        </div>
+                        <UIButton 
+                          size="sm" 
+                          variant="outline" 
+                          className="h-8 border-zinc-700 hover:bg-blue-600 hover:text-white"
+                          onClick={() => handleUnify([s.lead.id])}
+                          disabled={isUnifying}
+                        >
+                          Unificar
+                        </UIButton>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <DialogFooter className="flex flex-col sm:flex-row gap-3 border-t border-zinc-800 pt-6">
+                  <p className="text-[10px] text-zinc-500 italic flex-1">
+                    * Al unificar, el lead se asocia a tu proyecto pero mantiene su registro global.
+                  </p>
+                  <UIButton 
+                    onClick={() => handleUnify(suggestions.map(s => s.lead.id))}
+                    disabled={isUnifying}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    Unificar {suggestions.length} leads (Bulk)
+                  </UIButton>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        )}
+
         {/* Header & Filter */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-zinc-900/40 p-6 rounded-2xl border border-zinc-800/50">
           <div>
@@ -373,6 +535,7 @@ export default function GrowthOSSubTab() {
             </select>
           </div>
         </div>
+
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
