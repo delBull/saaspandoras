@@ -700,8 +700,10 @@ export function Sidebar({
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.3, ease: "easeInOut" }}
-                      className="mt-3 space-y-2 overflow-hidden border-t border-gray-700/50 pt-3"
+                      className="mt-2 space-y-1 overflow-hidden"
                     >
+                      <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-gray-700/50 to-transparent mb-2" />
+                      
                       {/* Network Selector */}
                       <NetworkSelector
                         selectedChain={selectedChain}
