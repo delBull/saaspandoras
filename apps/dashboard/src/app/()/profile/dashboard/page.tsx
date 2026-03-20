@@ -23,29 +23,12 @@ import Link from 'next/link';
 import { useProfile } from "@/hooks/useProfile";
 import { useActiveAccount } from 'thirdweb/react';
 import { useRealGamification } from "@/hooks/useRealGamification";
+import { Project as ProjectData } from '@/types/admin';
 
 import { ActivityHistoryCard } from '@/components/ActivityHistoryCard';
 
 
 
-interface Project {
-  id: string | number;
-  title: string;
-  slug?: string;
-  status: 'live' | 'approved' | 'pending' | 'completed' | 'rejected' | 'draft';
-  raisedAmount?: string | number;
-  raised_amount?: string | number; // To support both property names
-}
-
-// Define a type for your project data to avoid using 'any'
-interface Project {
-  id: string | number;
-  title: string;
-  slug?: string;
-  status: 'live' | 'approved' | 'pending' | 'completed' | 'rejected' | 'draft';
-  raisedAmount?: string | number;
-  raised_amount?: string | number; // To support both property names
-}
 
 // Activity interface for recent activity - prefixed with _ to avoid unused var warning
 interface _ActivityItem {
@@ -76,6 +59,7 @@ export default function PandoriansDashboardPage() {
     totalPoints,
     currentLevel,
     levelProgress: _levelProgress,
+    userRank,
     isLoading: _gamificationLoading
   } = useRealGamification(walletAddress);
 
@@ -135,7 +119,7 @@ export default function PandoriansDashboardPage() {
   // Calculate metrics from profile projects data
   const calculateDashboardMetrics = () => {
     // Calculate total raised amounts (actual invested amount)
-    const totalInvested = projects.reduce((sum: number, project: Project) => {
+    const totalInvested = (projects || []).reduce((sum: number, project: ProjectData) => {
       const raised = Number(project.raisedAmount || project.raised_amount || 0);
       return sum + raised;
     }, 0);
@@ -144,11 +128,21 @@ export default function PandoriansDashboardPage() {
     const totalReturns = totalInvested * 0.125; // 12.5% annual returns estimate
 
     // Count project statuses correctly - include ALL statuses
-    const statusCounts = projects.reduce((counts: any, project: Project) => {
+    interface StatusCounts {
+      active: number;
+      completed: number;
+      pending: number;
+      draft: number;
+      rejected: number;
+    }
+
+    const initialCounts: StatusCounts = { active: 0, completed: 0, pending: 0, draft: 0, rejected: 0 };
+
+    const statusCounts = (projects || []).reduce((counts: StatusCounts, project: ProjectData) => {
       const status = project.status;
 
-      // Active projects: live, approved, pending
-      if (['live', 'approved', 'pending'].includes(status)) {
+      // Active projects: live, approved, pending, active_client
+      if (['live', 'approved', 'pending', 'active_client'].includes(status)) {
         counts.active += 1;
       }
 
@@ -157,8 +151,8 @@ export default function PandoriansDashboardPage() {
         counts.completed += 1;
       }
 
-      // Pending projects (pending, approved)
-      if (['pending', 'approved'].includes(status)) {
+      // Pending projects (pending, approved, active_client)
+      if (['pending', 'approved', 'active_client'].includes(status)) {
         counts.pending += 1;
       }
 
@@ -173,7 +167,7 @@ export default function PandoriansDashboardPage() {
       }
 
       return counts;
-    }, { active: 0, completed: 0, pending: 0, draft: 0, rejected: 0 });
+    }, initialCounts);
 
     // Calculate average APY for active projects (in production, this would be dynamic per project)
     const averageAPY = projects.length > 0 ? 12.5 : 0;
@@ -541,7 +535,7 @@ export default function PandoriansDashboardPage() {
               </div>
               <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
                 <div className="text-2xl font-bold text-purple-400 mb-1">
-                  #{leaderboard.findIndex(entry => entry.walletAddress === walletAddress) + 1 || 'N/A'}
+                  #{userRank}
                 </div>
                 <div className="text-sm text-gray-400">Posición Global</div>
               </div>
