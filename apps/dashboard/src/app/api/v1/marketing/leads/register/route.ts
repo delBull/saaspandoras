@@ -138,6 +138,25 @@ export async function POST(req: NextRequest) {
       })
     ]);
 
+    // 3.5 Replay Protection / Deduplication
+    if (existingLead && existingLead.updatedAt) {
+      const lastUpdate = new Date(existingLead.updatedAt).getTime();
+      const now = new Date().getTime();
+      if (now - lastUpdate < 30000) { // 30 seconds window
+        console.info(`[DEDUPE] Lead already registered recently: ${email} for Project ${targetProjectId}`);
+        return NextResponse.json({
+          success: true,
+          message: 'Lead already registered recently',
+          isNewLead: false,
+          data: {
+            id: existingLead.id,
+            score: existingLead.score,
+            status: existingLead.status
+          }
+        });
+      }
+    }
+
     // 4. Intent Scoring Logic
     let score = 50; 
     if (intent === 'invest') score += 30;
@@ -193,7 +212,9 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    console.log(`📥 [Growth OS] Registration successful: ${email} for Project ${targetProjectId}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`📥 [Growth OS] Registration successful: ${email} for Project ${targetProjectId}`);
+    }
 
     return NextResponse.json({
       success: true,

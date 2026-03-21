@@ -292,20 +292,27 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
 
                                                     const quantity = BigInt(Math.floor(Number(amount)));
                                                     const costInWei = effectivePriceInWei * quantity;
+                                                    
+                                                    // Add 2% Slippage Buffer to prevent reverts if price fluctuates
+                                                    const slippageBuffer = (costInWei * 2n) / 100n;
+                                                    const totalValue = costInWei + slippageBuffer;
 
-                                                    console.log("Input Amount:", amount);
-                                                    console.log("Parsed Quantity (BigInt):", quantity.toString());
-                                                    console.log("Price (DB):", price);
-                                                    console.log("Price (Contract):", contractPrice?.toString());
-                                                    console.log("Effective Price in Wei:", effectivePriceInWei.toString());
-                                                    console.log("Total Cost in Wei (BigInt):", costInWei.toString());
-                                                    console.groupEnd();
+                                                    if (process.env.NODE_ENV !== 'production') {
+                                                      console.group("🚀 Preparing Artifact Purchase");
+                                                      console.log("Protocol:", project.slug);
+                                                      console.log("Phase:", phase?.name);
+                                                      console.log("FINAL Target Contract:", targetAddress);
+                                                      console.log("Input Amount:", amount);
+                                                      console.log("Total Cost in Wei:", costInWei.toString());
+                                                      console.log("Value with 2% Buffer:", totalValue.toString());
+                                                      console.groupEnd();
+                                                    }
 
                                                     return prepareContractCall({
                                                         contract: targetContract,
                                                         method: "function mintWithPayment(uint256 quantity) payable",
                                                         params: [quantity],
-                                                        value: costInWei
+                                                        value: totalValue
                                                     });
                                                 }}
                                                 onTransactionSent={() => {
