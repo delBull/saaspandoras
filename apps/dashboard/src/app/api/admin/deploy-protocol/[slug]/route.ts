@@ -10,7 +10,7 @@ import type { W2EConfig } from "@pandoras/protocol-deployer";
 import { trackGamificationEvent } from "@/lib/gamification/service";
 import { WebhookService } from "@/lib/integrations/webhook-service";
 import { integrationClients, deploymentJobs, deploymentJobStatusEnum } from "@/db/schema";
-import { isAddress } from "ethers";
+import { isAddress } from "viem";
 
 
 // Force Node.js runtime for database interactions
