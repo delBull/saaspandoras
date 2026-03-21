@@ -81,9 +81,10 @@ export class AttributionService {
 
     if (!project) throw new Error("Project not found");
 
-    // Fetch leads from global pool (projectId = 1)
+    // Fetch leads from global pool AND other external captures
+    // Logic: Look for leads that are NOT already attributed to this project
     const globalLeads = await db.query.marketingLeads.findMany({
-      where: eq(marketingLeads.projectId, 1),
+      where: (leads, { ne }) => ne(leads.projectId, projectId),
       limit: 100 // Safety limit
     });
 
