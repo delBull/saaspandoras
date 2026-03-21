@@ -132,10 +132,8 @@ export async function GET(request: Request) {
       ORDER BY "created_at" DESC
     `;
 
-    // Calculate active project count (live, approved, pending, draft, active_client)
-    const activeProjectCount = projects.filter((p: any) =>
-      ['live', 'approved', 'pending', 'draft', 'active_client'].includes(p.status)
-    ).length;
+    // Calculate project count (including all statuses: live, approved, pending, draft, active_client, completed, rejected, etc.)
+    const projectCount = projects.length;
 
 
     // Calculate user role
@@ -165,7 +163,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       ...user,
       projects,
-      projectCount: activeProjectCount,
+      projectCount: projectCount,
       totalProjects: projects?.length || 0,
       role,
       systemProjectsManaged,

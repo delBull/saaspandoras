@@ -17,6 +17,12 @@ export interface TokenConfig {
   standard?: 'ERC721' | 'ERC1155' | 'ERC20' | 'SBT'; // V2
   transferable?: boolean;          // V2
   burnable?: boolean;              // V2
+  
+  // Initial Allocations (V2)
+  teamAllocationBps?: number;
+  pandorasAllocationBps?: number;
+  teamWallet?: string;
+  pandorasWallet?: string;
 }
 
 export interface W2EConfig {
