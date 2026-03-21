@@ -43,8 +43,13 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
     // License Price is usually in Wei or Native Token
     const price = phase?.tokenPrice || 0;
 
-    // License Contract
-    const licenseAddress = project?.licenseContractAddress;
+    // Robust contract address resolution
+    const resolvedLicenseAddress = 
+        project.licenseContractAddress || 
+        project.w2eConfig?.licenseToken?.address || 
+        (project as any).contractAddress || 
+        project.utilityContractAddress || 
+        undefined;
 
     const totalCost = Number(amount) * Number(price);
 
@@ -203,7 +208,7 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                                     <div className="h-px bg-white/5" />
                                     <div className="flex justify-between items-center text-sm">
                                         <span className="text-gray-400">Total a Pagar</span>
-                                        <span className="text-lime-400 font-bold font-mono text-lg">{totalCost.toLocaleString()} {safeChainId === 8453 ? 'USDC' : 'ETH'}</span>
+                                        <span className="text-lime-400 font-bold font-mono text-lg">{totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })} {safeChainId === 8453 ? 'USDC' : 'ETH'}</span>
                                     </div>
                                     
                                     {/* Low Balance Warning (Testnet Only) */}
@@ -256,7 +261,7 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                                                     const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
 
                                                     // Prepare Contract
-                                                    const targetAddress = utilityContract?.address || licenseAddress;
+                                                    const targetAddress = utilityContract?.address || resolvedLicenseAddress;
                                                     const targetContract = getContract({
                                                         client,
                                                         chain: defineChain(safeChainId),
@@ -264,7 +269,9 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                                                     });
 
                                                     const quantity = BigInt(Math.floor(Number(amount)));
-                                                    const costInWei = BigInt(Math.floor(totalCost * 1e18)); // Assume price is ETH/Matic-like unit
+                                                    // Use more precise BigInt math to avoid float issues causing reverts
+                                                    const priceInWei = BigInt(Math.round(Number(price) * 1e18));
+                                                    const costInWei = priceInWei * quantity;
 
                                                     return prepareContractCall({
                                                         contract: targetContract,

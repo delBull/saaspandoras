@@ -1,0 +1,29 @@
+# Vercel Ignore File
+# Prevent unnecessary build triggers by ignoring files that don't affect the build
+
+# Documentation
+DOCUMENTACIÓN/
+docs/
+*.md
+!README.md
+
+# Scripts & Data
+scripts/
+cache/
+*.json
+!package.json
+!tsconfig.json
+!turbo.json
+!vercel.json
+
+# Local / Temp
+.temp/
+tmp/
+.DS_Store
+*.log
+
+# Git
+.git/
+.github/
+.gitignore
+.gitmodules
