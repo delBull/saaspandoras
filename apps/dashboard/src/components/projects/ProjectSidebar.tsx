@@ -250,7 +250,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
             )}
 
             <div className="text-center mb-6 relative z-10">
-              {project.w2eConfig?.accessCardImage ? (
+              {project.w2eConfig?.accessCardImage && (
                 <div className="mb-4 flex flex-col items-center">
                   <div className="w-32 h-32 rounded-lg overflow-hidden border-2 border-lime-400/50 shadow-[0_0_20px_rgba(163,230,53,0.3)] mb-3">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -258,37 +258,33 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                   </div>
                   <h3 className="text-lime-400 font-bold text-sm tracking-wider uppercase">Access Card</h3>
                 </div>
-              ) : (
-                <div className="text-3xl font-bold text-white mb-2">
-                  {price === 0 ? (
-                    <span>{currentSupply} / {maxSupply > 0 ? maxSupply.toLocaleString() : '∞'}</span>
-                  ) : (
-                    <span>${raisedAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: (raisedAmount < 1 ? 4 : 2) })}</span>
-                  )}
-                </div>
               )}
 
-              {!project.w2eConfig?.accessCardImage && (
-                <div className="w-full bg-zinc-800/50 rounded-full h-3 mb-4 overflow-hidden border border-white/5">
-                  <div
-                    className="bg-lime-400 h-full rounded-full transition-all duration-500"
-                    style={{ width: `${Math.min(raisedPercentage, 100)}%` }}
-                  ></div>
+              {/* Goal and Status Tags */}
+              <div className="flex flex-wrap justify-center gap-2 mb-6 relative z-10">
+                <div className="bg-zinc-800/80 border border-white/5 px-3 py-1.5 rounded-lg flex flex-col items-center gap-0.5 min-w-[100px]">
+                  <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold">Objetivo</span>
+                  <span className="text-sm font-bold text-white">${targetAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: (targetAmount < 1 ? 4 : 0) })} USD</span>
                 </div>
-              )}
-
-              <div className="flex justify-between text-sm mb-6">
-                <span className="text-zinc-400">Objetivo: ${targetAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: (targetAmount < 1 ? 4 : 0) })} USD</span>
-                <span className="text-zinc-400">Estado: {isDeployed ? '🟢 Activo' : '🟡 Espera'}</span>
+                <div className="bg-zinc-800/80 border border-white/5 px-3 py-1.5 rounded-lg flex flex-col items-center gap-0.5 min-w-[100px]">
+                  <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold">Estado</span>
+                  <span className="text-sm font-bold text-white flex items-center gap-1.5">
+                    {isDeployed ? (
+                      <>
+                        <span className="w-1.5 h-1.5 rounded-full bg-lime-400 animate-pulse" />
+                        Activo
+                      </>
+                    ) : (
+                      <>
+                        <span className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
+                        Espera
+                      </>
+                    )}
+                  </span>
+                </div>
               </div>
 
-              {/* === BUTTON LOGIC ===
-                Priority: 1) Owner → DAO Management
-                          2) Has Access NFT → Acceso Verificado
-                          3) Deployed + Contract + Connected → Obtener Acceso
-                          4) Deployed + Connected (no contract) → locked placeholder
-                          5) Not connected → Conecta tu Wallet
-              */}
+              {/* === BUTTON LOGIC === */}
               {isOwner ? (
                 // Owner: show DAO management button
                 <div className="space-y-2 w-full mb-4">
