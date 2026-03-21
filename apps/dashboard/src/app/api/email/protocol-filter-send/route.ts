@@ -1,11 +1,8 @@
 import { NextResponse } from 'next/server';
 import { db } from "@/db";
-import { Resend } from 'resend';
-import PandorasWelcomeEmail from '@/emails/creator-email'; // Reuse or create new template if needed
+import PandorasWelcomeEmail from '@/emails/creator-email';
 import { syncLeadAsClient } from '@/actions/leads';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+import { resend, FROM_EMAIL } from '@/lib/resend';
 
 export async function POST(request: Request) {
     try {

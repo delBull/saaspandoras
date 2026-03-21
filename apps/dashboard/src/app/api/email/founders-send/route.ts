@@ -1,12 +1,8 @@
 import { NextResponse } from 'next/server';
-import { Resend } from 'resend';
 import { notifyNewLead } from '@/lib/discord';
 import { syncLeadAsClient } from '@/actions/leads';
-// Import a specific Founders Template if exists, otherwise reuse generic or simple html
 import PandorasWelcomeEmail from '@/emails/creator-email';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+import { resend, FROM_EMAIL } from '@/lib/resend';
 
 export async function POST(request: Request) {
     try {
