@@ -33,23 +33,29 @@ export async function POST(req: NextRequest) {
   try {
     // 1. Authenticate Request
     const apiKey = req.headers.get('x-api-key');
+    const userAgent = req.headers.get('user-agent') || 'unknown';
+    const ip = req.headers.get('x-forwarded-for') || 'unknown';
+
+    // Use request origin/referer as fallback for origin if not provided in body
+    const requestOrigin = req.headers.get('origin') || req.headers.get('referer');
+
     if (!apiKey) {
-      console.warn(`[Growth OS] Missing API Key in registration attempt from ${req.headers.get('origin') || 'unknown'}`);
+      console.warn(`[Growth OS] Missing API Key in registration attempt from IP: ${ip}, Origin: ${requestOrigin}`);
       return NextResponse.json({ error: 'Missing API Key' }, { status: 401 });
     }
 
     const client = await IntegrationKeyService.validateKey(apiKey);
     if (!client) {
-      console.warn(`[SECURITY] Invalid API Key attempt: ${apiKey.substring(0, 12)}... from ${req.headers.get('origin') || 'unknown'}`);
+      console.warn(`[SECURITY] Invalid API Key attempt: ${apiKey.substring(0, 12)}... from IP: ${ip}, Origin: ${requestOrigin}`);
       return NextResponse.json({ error: 'Invalid API Key' }, { status: 403 });
     }
+
+    const { keyType, keyEnv, projectId: clientProjectId } = client;
 
     // 2. Parse & Validate Body
     const body = await req.json();
     let { email, name, phoneNumber, walletAddress, fingerprint, origin, intent, consent, metadata, projectId } = body;
 
-    // Use request origin/referer as fallback for origin if not provided in body
-    const requestOrigin = req.headers.get('origin') || req.headers.get('referer');
     if (!origin && requestOrigin) {
       origin = requestOrigin;
     }
@@ -59,7 +65,7 @@ export async function POST(req: NextRequest) {
     let resolutionMethod = 'unknown';
 
     if (projectId === 'external' || !projectId) {
-      targetProjectId = Number(client.projectId || 1);
+      targetProjectId = Number(clientProjectId || 1);
       resolutionMethod = projectId === 'external' ? 'explicit_external' : 'client_default';
     } else if (isNaN(Number(projectId))) {
       // It's a slug, try to find it
@@ -73,17 +79,16 @@ export async function POST(req: NextRequest) {
         resolutionMethod = 'slug_match';
       } else {
         // FALLBACK: If slug doesn't match, use the client's associated project
-        // This handles cases like "narai" vs "narai-buceras" mismatches across envs
-        targetProjectId = Number(client.projectId || 1);
+        targetProjectId = Number(clientProjectId || 1);
         resolutionMethod = 'slug_mismatch_fallback';
-        console.warn(`⚠️ [Growth OS] Slug mismatch: Received "${projectId}", but using Client Project ID ${targetProjectId}`);
+        console.warn(`⚠️ [Growth OS] Slug mismatch: Received "${projectId}", falling back to Client Project ID ${targetProjectId}`);
       }
     } else {
       targetProjectId = Number(projectId);
       resolutionMethod = 'explicit_id';
     }
 
-    // 1.5 Security Check: Allowed Domains
+    // 1.5 Security Check: Allowed Domains (ONLY FOR PUBLIC KEYS)
     const projectContext = await db.query.projects.findFirst({
       where: eq(projects.id, targetProjectId),
       columns: { allowedDomains: true, slug: true }
@@ -94,15 +99,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid project context' }, { status: 404 });
     }
 
-    if (projectContext?.allowedDomains && Array.isArray(projectContext.allowedDomains) && projectContext.allowedDomains.length > 0) {
+    const isSecretKey = keyType === 'secret';
+
+    if (!isSecretKey && projectContext?.allowedDomains && Array.isArray(projectContext.allowedDomains) && projectContext.allowedDomains.length > 0) {
       const isAllowed = projectContext.allowedDomains.some(domain => requestOrigin?.toLowerCase().includes(domain.toLowerCase()));
       if (!isAllowed) {
-        console.warn(`[SECURITY] Lead blocked for Domain ${requestOrigin} (Project: ${projectContext.slug || targetProjectId})`);
+        console.warn(`[SECURITY] Public Lead blocked for Domain ${requestOrigin} (Project: ${projectContext.slug}, IP: ${ip})`);
         return NextResponse.json({ 
           error: 'Unauthorized domain for this Growth SDK instance',
           details: process.env.NODE_ENV === 'development' ? `Domain ${requestOrigin} not in [${projectContext.allowedDomains.join(',')}]` : undefined
         }, { status: 403 });
       }
+    } else if (isSecretKey) {
+      console.info(`[AUDIT] Secret Key Registration for Project: ${projectContext.slug} (IP: ${ip}, UA: ${userAgent})`);
     }
 
 
