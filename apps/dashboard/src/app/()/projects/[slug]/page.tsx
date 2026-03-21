@@ -12,6 +12,7 @@ import ProjectDetails from "../../../../components/projects/ProjectDetails";
 import MobileInvestmentCard from "../../../../components/projects/MobileInvestmentCard";
 import RecommendedProjectsSection from "../../../../components/projects/RecommendedProjectsSection";
 import ProtocolPageDispatcher from "../../../../components/projects/v2/ProtocolPageDispatcher";
+import { StatusAlert } from "../../../../components/projects/ProjectStatusIndicators";
 
 /**
  * Normalize legacy V1 project fields into the canonical ProjectData shape.
@@ -197,6 +198,7 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
         <div className="relative">
           <ProjectSidebar project={normalizedProject!} targetAmount={targetAmount} />
           <div className="lg:mr-80 xl:mr-80 2xl:mr-80">
+            <StatusAlert status={project.status} />
             <ProjectHeader project={normalizedProject!} onVideoClick={showVideoFromHeader} />
             <ProjectVideoSection ref={videoRef} project={normalizedProject!} />
             <Suspense fallback={<div className="h-96 animate-pulse bg-zinc-800/20 rounded-xl" />}>
