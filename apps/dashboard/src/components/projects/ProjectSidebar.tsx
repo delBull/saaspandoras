@@ -278,7 +278,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
               )}
 
               <div className="flex justify-between text-sm mb-6">
-                <span className="text-zinc-400">Meta: {project.w2eConfig?.licenseToken?.maxSupply ? Number(project.w2eConfig.licenseToken.maxSupply).toLocaleString() : targetAmount.toLocaleString()} tokens</span>
+                <span className="text-zinc-400">Meta: ${targetAmount.toLocaleString()} USD</span>
                 <span className="text-zinc-400">Status: {isDeployed ? '🟢 Activo' : '🟡 Espera'}</span>
               </div>
 

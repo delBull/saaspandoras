@@ -3,7 +3,7 @@
   "framework": "nextjs",
   "buildCommand": "bun run build",
   "installCommand": "bun install",
-  "ignoreCommand": "npx turbo-ignore @saasfly/dashboard",
+  "ignoreCommand": "npx turbo-ignore",
   "crons": [
     {
       "path": "/api/cron/marketing",

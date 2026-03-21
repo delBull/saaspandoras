@@ -13,6 +13,7 @@ import MobileInvestmentCard from "../../../../components/projects/MobileInvestme
 import RecommendedProjectsSection from "../../../../components/projects/RecommendedProjectsSection";
 import ProtocolPageDispatcher from "../../../../components/projects/v2/ProtocolPageDispatcher";
 import { StatusAlert } from "../../../../components/projects/ProjectStatusIndicators";
+import { getTargetAmount } from "../../../../lib/project-utils";
 
 /**
  * Normalize legacy V1 project fields into the canonical ProjectData shape.
@@ -189,7 +190,7 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
   }
 
   // ── V1 Legacy Layout ─────────────────────────────────────────────────────
-  const targetAmount = Number(normalizedProject!.target_amount ?? 1);
+  const targetAmount = useMemo(() => getTargetAmount(normalizedProject!), [normalizedProject]);
 
   return (
     <div className="min-h-screen pb-20 md:pb-6 bg-black">

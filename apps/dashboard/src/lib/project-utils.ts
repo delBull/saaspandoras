@@ -112,6 +112,36 @@ export function calculateProjectCompletion(project: Record<string, unknown>): {
   };
 }
 
+/**
+ * Helper to get the calculated target amount (Meta) of a project.
+ * Prioritizes the deployed configuration (w2eConfig) over the initial application form.
+ */
+export function getTargetAmount(project: any): number {
+  if (!project) return 10000;
+  try {
+    const config = typeof project.w2eConfig === 'string'
+      ? JSON.parse(project.w2eConfig)
+      : (project.w2eConfig || {});
+
+    // V2 Structure
+    const tokenomics = config.tokenomics || {};
+    if (tokenomics.initialSupply && tokenomics.price) {
+      return Number(tokenomics.initialSupply) * Number(tokenomics.price);
+    }
+
+    // V1 Structure (Fallback)
+    const tokenDetails = config.tokenDetails || {};
+    if (tokenDetails.initialSupply && tokenDetails.price) {
+      return Number(tokenDetails.initialSupply) * Number(tokenDetails.price);
+    }
+
+    // Database Fallback
+    return Number(project.target_amount || project.targetAmount) || 10000;
+  } catch (e) {
+    return Number(project.target_amount || project.targetAmount) || 10000;
+  }
+}
+
 // ... existing code ...
 
 /**
