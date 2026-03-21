@@ -1,7 +1,0 @@
-# Local Vercel Ignore for Nextjs
-# Ignore irrelevant files in the app folder
-
-*.md
-!README.md
-ignition/
-.contentlayer/

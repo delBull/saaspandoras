@@ -1,29 +1,12 @@
-# Vercel Ignore File
-# Prevent unnecessary build triggers by ignoring files that don't affect the build
+# Minimal Vercel Ignore
+# Rely on turbo-ignore for smart skipping
 
-# Documentation
-/DOCUMENTACIÓN/
-/docs/
-
-*.md
-!README.md
-
-# Scripts & Data
-/scripts/
-
+.git
+node_modules
+.next
+.turbo
 cache/
-# Configuration
-!**/*.json
-
-
-# Local / Temp
-.temp/
 tmp/
-.DS_Store
+.temp/
 *.log
-
-# Git
-.git/
-.github/
-.gitignore
-.gitmodules
+.DS_Store
