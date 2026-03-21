@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Coins, CheckCircle, Loader2, HelpCircle, Copy, ExternalLink, AlertCircle } from 'lucide-react';
 import { useActiveAccount, TransactionButton, useWalletBalance } from "thirdweb/react";
@@ -34,7 +34,7 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
     // Chain detection
     const rawChainId = Number((project as any).chainId);
     const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
-    const chain = defineChain(safeChainId);
+    const chain = useMemo(() => defineChain(safeChainId), [safeChainId]);
     const isTestnet = safeChainId === 11155111 || safeChainId === 84532;
 
     // Balance check
@@ -52,11 +52,11 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                          (project as any).contractAddress || 
                          utilityContract?.address;
     
-    const targetContract = getContract({ 
+    const targetContract = useMemo(() => getContract({ 
         client, 
         chain, 
         address: targetAddress || "0x0000000000000000000000000000000000000000" 
-    });
+    }), [chain, targetAddress]);
 
     // 2. Robust Price Fetching (Prevents hook reverts)
     useEffect(() => {
@@ -87,7 +87,8 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
     }, [targetAddress, targetContract, phase?.tokenPrice]);
 
     // 3. Calculation & Config Generation
-    const decimals = safeChainId === 8453 ? 1e6 : 1e18;
+    const isBase = safeChainId === 8453 || safeChainId === 84532;
+    const decimals = isBase ? 1e6 : 1e18;
     const effectivePriceInWei = contractPrice ?? BigInt(Math.round((phase?.tokenPrice || 0) * decimals));
     const totalCost = Number(amount) * (Number(effectivePriceInWei) / decimals);
 
@@ -243,7 +244,7 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                                                 <Loader2 className="w-3 h-3 animate-spin" />
                                             ) : (
                                                 <>
-                                                    {Number(effectivePriceInWei) / (safeChainId === 8453 ? 1e6 : 1e18)} {txConfig.token}
+                                                    {Number(effectivePriceInWei) / (isBase ? 1e6 : 1e18)} {txConfig.token}
                                                 </>
                                             )}
                                         </span>
