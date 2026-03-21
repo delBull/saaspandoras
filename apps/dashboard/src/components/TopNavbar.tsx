@@ -471,9 +471,8 @@ export function TopNavbar({
                   <div className="text-gray-400 text-xs">Cursos Web3 con rewards (+toknes)</div>
                 </div>
               </Link>
-
               {((adminStatus.verified ? (adminStatus.isAdmin || adminStatus.isSuperAdmin) : (isAdminProp ?? isSuperAdminProp)) ||
-                (userProfile?.role === 'applicant' && (userProfile?.projectCount ?? 0) > 0)) && (
+                (userProfile?.projectCount && userProfile.projectCount > 0)) && (
                   <Link
                     href="/profile/projects"
                     onClick={() => setProfileDropdown(false)}
@@ -481,7 +480,7 @@ export function TopNavbar({
                   >
                     <FolderIcon className="w-5 h-5 text-gray-400" />
                     <div>
-                      <div className="text-white text-sm">Tus Protocolos</div>
+                      <div className="text-white text-sm">Mis Protocolos</div>
                       <div className="text-gray-400 text-xs">
                         {userProfile?.projectCount ? `${userProfile.projectCount} protocolos` : 'Gestionar protocolos'}
                       </div>
