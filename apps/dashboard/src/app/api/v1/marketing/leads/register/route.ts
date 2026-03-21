@@ -34,11 +34,13 @@ export async function POST(req: NextRequest) {
     // 1. Authenticate Request
     const apiKey = req.headers.get('x-api-key');
     if (!apiKey) {
+      console.warn(`[Growth OS] Missing API Key in registration attempt from ${req.headers.get('origin') || 'unknown'}`);
       return NextResponse.json({ error: 'Missing API Key' }, { status: 401 });
     }
 
     const client = await IntegrationKeyService.validateKey(apiKey);
     if (!client) {
+      console.warn(`[SECURITY] Invalid API Key attempt: ${apiKey.substring(0, 12)}... from ${req.headers.get('origin') || 'unknown'}`);
       return NextResponse.json({ error: 'Invalid API Key' }, { status: 403 });
     }
 
@@ -53,31 +55,53 @@ export async function POST(req: NextRequest) {
     }
 
     // Resolve Project Context - Support both ID (numeric) and Slug (string)
-
     let targetProjectId: number;
-    if (projectId === 'external') {
-      targetProjectId = 1;
-    } else if (projectId && isNaN(Number(projectId))) {
+    let resolutionMethod = 'unknown';
+
+    if (projectId === 'external' || !projectId) {
+      targetProjectId = Number(client.projectId || 1);
+      resolutionMethod = projectId === 'external' ? 'explicit_external' : 'client_default';
+    } else if (isNaN(Number(projectId))) {
+      // It's a slug, try to find it
       const projectBySlug = await db.query.projects.findFirst({
         where: eq(projects.slug, projectId),
         columns: { id: true }
       });
-      targetProjectId = projectBySlug?.id || 1;
+      
+      if (projectBySlug) {
+        targetProjectId = projectBySlug.id;
+        resolutionMethod = 'slug_match';
+      } else {
+        // FALLBACK: If slug doesn't match, use the client's associated project
+        // This handles cases like "narai" vs "narai-buceras" mismatches across envs
+        targetProjectId = Number(client.projectId || 1);
+        resolutionMethod = 'slug_mismatch_fallback';
+        console.warn(`⚠️ [Growth OS] Slug mismatch: Received "${projectId}", but using Client Project ID ${targetProjectId}`);
+      }
     } else {
-      targetProjectId = Number(projectId || client.projectId || 1);
+      targetProjectId = Number(projectId);
+      resolutionMethod = 'explicit_id';
     }
 
     // 1.5 Security Check: Allowed Domains
     const projectContext = await db.query.projects.findFirst({
       where: eq(projects.id, targetProjectId),
-      columns: { allowedDomains: true }
+      columns: { allowedDomains: true, slug: true }
     });
+
+    if (!projectContext) {
+      console.error(`❌ [Growth OS] Project Context not found for ID ${targetProjectId} (Method: ${resolutionMethod})`);
+      return NextResponse.json({ error: 'Invalid project context' }, { status: 404 });
+    }
 
     if (projectContext?.allowedDomains && Array.isArray(projectContext.allowedDomains) && projectContext.allowedDomains.length > 0) {
       const isAllowed = projectContext.allowedDomains.some(domain => requestOrigin?.toLowerCase().includes(domain.toLowerCase()));
       if (!isAllowed) {
-        console.warn(`[SECURITY] Lead blocked for Domain ${requestOrigin} (Project: ${targetProjectId})`);
-        return NextResponse.json({ error: 'Unauthorized domain for this Growth SDK instance' }, { status: 403 });
+        console.warn(`[SECURITY] Lead blocked for Domain ${requestOrigin} (Project: ${projectContext.slug || targetProjectId})`);
+        return NextResponse.json({ 
+          error: 'Unauthorized domain for this Growth SDK instance',
+          details: process.env.NODE_ENV === 'development' ? `Domain ${requestOrigin} not in [${projectContext.allowedDomains.join(',')}]` : undefined
+        }, { status: 403 });
       }
     }
 
