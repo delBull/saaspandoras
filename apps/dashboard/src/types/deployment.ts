@@ -37,10 +37,17 @@ export interface UtilityPhase {
 }
 
 export interface TokenomicsConfig {
-    initialSupply: number;
+    initialSupply: number; // For V1 compatibility
+    totalSupply?: number;  // Absolute supply (100%)
     price: number;
     votingPowerMultiplier: number;
-    reserveSupply?: number;
+    reserveSupply?: number; // Legacy Team Amount
+    
+    // New Allocation Model
+    teamAllocationBps?: number;     // e.g., 1500 for 15%
+    pandorasAllocationBps?: number; // e.g., 500 for 5%
+    teamWallet?: string;
+    pandorasWallet?: string;
 }
 
 export type NetworkType = 'sepolia' | 'base';
@@ -106,6 +113,7 @@ export const DEFAULT_PHASES: UtilityPhase[] = [
 
 export const DEFAULT_TOKENOMICS: TokenomicsConfig = {
     initialSupply: 1000000,
+    totalSupply: 1000000,
     price: 0.1,
     votingPowerMultiplier: 1,
 };

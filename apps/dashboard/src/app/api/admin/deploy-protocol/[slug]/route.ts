@@ -10,6 +10,7 @@ import type { W2EConfig } from "@pandoras/protocol-deployer";
 import { trackGamificationEvent } from "@/lib/gamification/service";
 import { WebhookService } from "@/lib/integrations/webhook-service";
 import { integrationClients, deploymentJobs, deploymentJobStatusEnum } from "@/db/schema";
+import { isAddress } from "ethers";
 
 
 // Force Node.js runtime for database interactions
@@ -66,6 +67,30 @@ export async function POST(
             return NextResponse.json({ error: "Project already deployed" }, { status: 400 });
         }
 
+        // 2. Tokenomics Validations
+        const tokenomics = reqConfig?.tokenomics;
+        const totalSupply = tokenomics?.totalSupply || 1000000;
+        const teamBps = tokenomics?.teamAllocationBps || 0;
+        const pandorasBps = tokenomics?.pandorasAllocationBps || 0;
+        const teamWallet = tokenomics?.teamWallet;
+        const pandorasWallet = tokenomics?.pandorasWallet;
+
+        if (teamBps + pandorasBps > 10000) {
+            return NextResponse.json({ error: "Total allocation (Team + Pandoras) cannot exceed 100%" }, { status: 400 });
+        }
+
+        if (teamBps > 0 && (!teamWallet || !isAddress(teamWallet))) {
+            return NextResponse.json({ error: `Invalid Team Wallet: ${teamWallet}` }, { status: 400 });
+        }
+
+        if (pandorasBps > 0 && (!pandorasWallet || !isAddress(pandorasWallet))) {
+            return NextResponse.json({ error: `Invalid Pandoras Wallet: ${pandorasWallet}` }, { status: 400 });
+        }
+
+        if (teamBps > 0 && pandorasBps > 0 && teamWallet?.toLowerCase() === pandorasWallet?.toLowerCase()) {
+            return NextResponse.json({ error: "Team and Pandoras wallets must be different" }, { status: 400 });
+        }
+
         // Use Treasury Address or fallback to Applicant Wallet (Founder)
         const treasuryAddress = project.treasuryAddress || project.applicantWalletAddress;
 
@@ -112,19 +137,26 @@ export async function POST(
             // Token Config
             licenseToken: {
                 name: `Licencia ${project.title}`,
-                symbol: "VHORA", // Using standard symbol or custom if needed
+                symbol: "VHORA", 
                 maxSupply: project.totalTokens || 1000,
-                price: "0", // Access Cards (Licenses) are always FREE. Revenue comes from Token Sales, not Access.
+                price: "0", 
             },
             utilityToken: {
                 name: `${project.title} Utility`,
-                symbol: "PHI", // Standard utility symbol
-                initialSupply: reqConfig?.tokenomics?.initialSupply || 0, // Minted via W2E
-                feePercentage: 100, // 1% (basis points usually 100 = 1%)
+                symbol: "PHI",
+                initialSupply: totalSupply, 
+                maxSupply: totalSupply,
+                feePercentage: reqConfig?.w2eConfig?.royaltyBPS || 100, 
+                
+                // Allocation context (for deployer)
+                teamAllocationBps: teamBps,
+                pandorasAllocationBps: pandorasBps,
+                teamWallet: teamWallet,
+                pandorasWallet: pandorasWallet
             },
 
             // Governance
-            quorumPercentage: reqConfig?.tokenomics?.votingPowerMultiplier ? Math.min(Math.max(reqConfig.tokenomics.votingPowerMultiplier, 10), 100) : 10, // Must be >= 10
+            quorumPercentage: tokenomics?.votingPowerMultiplier ? Math.min(Math.max(tokenomics.votingPowerMultiplier, 10), 100) : 10,
             votingDelaySeconds: 0,
             votingPeriodHours: 24, // 1 day
             executionDelayHours: 24, // 1 day timelock
@@ -147,7 +179,6 @@ export async function POST(
             // Lifecycle
             inactivityThresholdSeconds: 60 * 60 * 24 * 30, // 30 days
 
-            // Network
             // Network
             targetNetwork: network,
 
