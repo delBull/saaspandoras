@@ -151,6 +151,7 @@ export async function deployW2EProtocol(
     utilityTokenName: config.utilityToken.name || `${projectSlug} Utility`,
     utilityTokenSymbol: config.utilityToken.symbol || "PHI",
     utilityFeePercentage: config.utilityToken.feePercentage || 50,
+    utilityMaxSupply: config.utilityToken.maxSupply || 1000000,
 
     licenseName: primaryArtifact.name || `Licencia ${projectSlug}`,
     licenseSymbol: primaryArtifact.symbol || "VHORA",
@@ -232,6 +233,68 @@ export async function deployW2EProtocol(
     } = event.args;
 
     console.log("✅ Core stack deployed atomically!", { finalLoom, finalGovernor });
+
+    // --- Post-Deploy Allocation (Minting) ---
+    const utilityContract = new eth.Contract(finalUtility, W2EUtilityArtifact.abi, wallet);
+    
+    try {
+        console.log(`🪙 Starting Post-Deploy Allocation for ${finalUtility}...`);
+        
+        // 1. Enter Initializing Mode
+        const initTx = await utilityContract.setInitializing(true);
+        await initTx.wait();
+
+        const totalCap = eth.BigNumber.from(config.utilityToken.initialSupply || "1000000");
+
+        // 2. Mint Team Allocation
+        if (config.utilityToken.teamAllocationBps && config.utilityToken.teamAllocationBps > 0 && config.utilityToken.teamWallet) {
+            const teamAmount = totalCap.mul(config.utilityToken.teamAllocationBps).div(10000);
+            console.log(`👥 Minting Team Allocation: ${teamAmount.toString()} to ${config.utilityToken.teamWallet}`);
+            
+            const currentBalance = await utilityContract.balanceOf(config.utilityToken.teamWallet);
+            if (currentBalance.lt(teamAmount)) {
+                const mintTx = await utilityContract.mint(config.utilityToken.teamWallet, teamAmount.sub(currentBalance));
+                await mintTx.wait();
+            }
+        }
+
+        // 3. Mint Pandoras Allocation
+        if (config.utilityToken.pandorasAllocationBps && config.utilityToken.pandorasAllocationBps > 0 && config.utilityToken.pandorasWallet) {
+            const pandorasAmount = totalCap.mul(config.utilityToken.pandorasAllocationBps).div(10000);
+            console.log(`💎 Minting Pandoras Allocation: ${pandorasAmount.toString()} to ${config.utilityToken.pandorasWallet}`);
+            
+            const currentBalance = await utilityContract.balanceOf(config.utilityToken.pandorasWallet);
+            if (currentBalance.lt(pandorasAmount)) {
+                const mintTx = await utilityContract.mint(config.utilityToken.pandorasWallet, pandorasAmount.sub(currentBalance));
+                await mintTx.wait();
+            }
+        }
+
+        // 4. Exit Initializing Mode
+        const endInitTx = await utilityContract.setInitializing(false);
+        await endInitTx.wait();
+        
+    } catch (mintError) {
+        console.error("⚠️ Post-Deploy Minting encountered an error:", mintError);
+    } finally {
+        // 5. Mandatory Ownership Transfer to Governor
+        console.log(`🔐 Transferring Utility Ownership to Governor: ${finalGovernor}`);
+        try {
+            const transferTx = await utilityContract.transferOwnership(finalGovernor);
+            await transferTx.wait();
+        } catch (transferError) {
+             console.error("❌ CRITICAL: Failed to transfer ownership to Governor!", transferError);
+        }
+
+        // 6. Mandatory Ownership Transfer for License to Governor
+        try {
+            const licenseContract = new eth.Contract(finalLicense, W2ELicenseArtifact.abi, wallet);
+            const lTransferTx = await licenseContract.transferOwnership(finalGovernor);
+            await lTransferTx.wait();
+        } catch (lTransferError) {
+            console.error("❌ CRITICAL: Failed to transfer License ownership to Governor!", lTransferError);
+        }
+    }
 
     return {
       licenseAddress: finalLicense,

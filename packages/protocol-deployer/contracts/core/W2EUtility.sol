@@ -31,8 +31,11 @@ contract W2EUtility is ERC20, Ownable, ERC20Pausable, ReentrancyGuard {
     uint256 public constant DEFAULT_FEE_BPS = 50; // 0.5% por defecto
     uint256 public constant MIN_LOCK_PERIOD = 1 days; // Periodo mínimo de lock
     
-    /// @notice Authority Address (Pandora) for Economic Schedule
-    address public authority;
+    /// @notice Maximum supply of the token
+    uint256 public maxSupply;
+
+    /// @notice Flag to allow initial configurations (minting)
+    bool public initializing = false;
 
     /// @notice Current Phase ID for APY calculation
     uint256 public currentPhase = 1;
@@ -113,6 +116,7 @@ contract W2EUtility is ERC20, Ownable, ERC20Pausable, ReentrancyGuard {
      * @param _transactionFee Tasa de fee por transacción en basis points (ej: 50 = 0.5%)
      * @param _feeRecipient Dirección que recibe las tarifas de transacción
      * @param initialOwner Owner inicial del contrato
+     * @param _maxSupply Suministro máximo del token
      */
     constructor(
         string memory name,
@@ -120,7 +124,8 @@ contract W2EUtility is ERC20, Ownable, ERC20Pausable, ReentrancyGuard {
         uint8 initialDecimals,
         uint256 _transactionFee,
         address _feeRecipient,
-        address initialOwner
+        address initialOwner,
+        uint256 _maxSupply
     ) ERC20(name, symbol) Ownable() {
         require(initialDecimals > 0 && initialDecimals <= 18, "W2E: Invalid decimals");
         require(_transactionFee <= MAX_FEE_BPS, "W2E: Fee cannot exceed 10%");
@@ -129,6 +134,7 @@ contract W2EUtility is ERC20, Ownable, ERC20Pausable, ReentrancyGuard {
         _decimals = initialDecimals;
         transactionFee = _transactionFee;
         feeRecipient = _feeRecipient;
+        maxSupply = _maxSupply;
 
         // Set Authority to deployer initially (Pandora)
         authority = msg.sender;
@@ -137,6 +143,10 @@ contract W2EUtility is ERC20, Ownable, ERC20Pausable, ReentrancyGuard {
         phaseAPY[1] = 500; // Phase 1: 5%
         phaseAPY[2] = 1000; // Phase 2: 10%
         phaseAPY[3] = 2000; // Phase 3: 20%
+
+        if (initialOwner != address(0) && initialOwner != msg.sender) {
+            transferOwnership(initialOwner);
+        }
     }
 
     // ========== MODIFICADORES ==========
@@ -151,17 +161,21 @@ contract W2EUtility is ERC20, Ownable, ERC20Pausable, ReentrancyGuard {
 
     /**
      * @notice Acuña nuevos tokens
-     * @dev Solo callable por el contrato W2ELoom para recompensas
+     * @dev Solo callable por el contrato W2ELoom para recompensas o por el owner en fase de inicialización
      * @param to Dirección destinataria
      * @param amount Cantidad a acuñar
      */
     function mint(address to, uint256 amount)
         external
-        onlyW2ELoom
         nonReentrant
     {
+        require(msg.sender == w2eLoomAddress || (initializing && msg.sender == owner()), "W2E: Unauthorized mint");
         require(to != address(0), "W2E: Invalid address");
         require(amount > 0, "W2E: Amount must be positive");
+        
+        if (maxSupply > 0) {
+            require(totalSupply() + amount <= maxSupply, "W2E: Exceeds max supply");
+        }
 
         _mint(to, amount);
 
@@ -392,13 +406,24 @@ contract W2EUtility is ERC20, Ownable, ERC20Pausable, ReentrancyGuard {
      * @param loomAddress Nueva dirección del W2ELoom
      */
     function setW2ELoomAddress(address loomAddress) external onlyOwner {
-        require(!transfersEnabled, "W2E: Loom immutable after defense");
         require(loomAddress != address(0), "W2E: Invalid loom address");
         address oldLoom = w2eLoomAddress;
         w2eLoomAddress = loomAddress;
 
         emit LoomAddressUpdated(oldLoom, loomAddress);
     }
+
+    /**
+     * @notice Activa o desactiva la fase de inicialización
+     * @dev Solo callable por el dueño
+     * @param _state Nuevo estado del flag
+     */
+    function setInitializing(bool _state) external onlyOwner {
+        initializing = _state;
+        emit InitializationStateChanged(_state);
+    }
+
+    event InitializationStateChanged(bool state);
 
     /**
      * @notice Establece la dirección de la tesorería

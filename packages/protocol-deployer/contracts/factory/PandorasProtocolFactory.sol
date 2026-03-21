@@ -45,6 +45,7 @@ contract PandorasProtocolFactory is Ownable {
         string utilityTokenName;
         string utilityTokenSymbol;
         uint256 utilityFeePercentage;
+        uint256 utilityMaxSupply; // New field
         
         string licenseName;
         string licenseSymbol;
@@ -148,7 +149,8 @@ contract PandorasProtocolFactory is Ownable {
                 uint8(18), 
                 config.utilityFeePercentage, 
                 config.platformFeeWallet, 
-                address(this)
+                address(this),
+                config.utilityMaxSupply // Pass maxSupply
             )
         );
         utilityToken = _deploy(utilInit, salt, "Utility");
@@ -249,11 +251,12 @@ contract PandorasProtocolFactory is Ownable {
         W2ELoomV2(loom).transferOwnership(governor);
         ProtocolRegistry(registry).transferOwnership(governor);
         
-        // Use low-level call for transferOwnership on Utility and License to bypass interface requirements
-        (bool uSuccess, ) = utilityToken.call(abi.encodeWithSignature("transferOwnership(address)", governor));
+        // Use low-level call for transferOwnership on Utility and License
+        // Transfer to initialOwner (Oracle) first to ALLOW POST-DEPLOY MINTING
+        (bool uSuccess, ) = utilityToken.call(abi.encodeWithSignature("transferOwnership(address)", config.initialOwner));
         require(uSuccess, "PandorasFactory: utility transferOwnership failed");
         
-        (bool lSuccess, ) = licenseToken.call(abi.encodeWithSignature("transferOwnership(address)", governor));
+        (bool lSuccess, ) = licenseToken.call(abi.encodeWithSignature("transferOwnership(address)", config.initialOwner));
         require(lSuccess, "PandorasFactory: license transferOwnership failed");
 
         // Governor is the ultimate owner of the protocol components.

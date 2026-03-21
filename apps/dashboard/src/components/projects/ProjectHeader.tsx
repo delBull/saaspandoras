@@ -66,13 +66,15 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
           <div className="flex items-center md:items-end gap-4 md:gap-6">
             {/* Logo */}
             <div className="hidden sm:block">
-              <Image
-                src={logoUrl as string}
-                alt={`${project.title} logo`}
-                width={80}
-                height={80}
-                className="rounded-xl border-2 md:border-4 border-zinc-900 bg-zinc-800 md:w-[100px] md:h-[100px]"
-              />
+              <div className="rounded-xl border-2 md:border-4 border-zinc-900 bg-zinc-800 w-[80px] h-[80px] md:w-[100px] md:h-[100px] flex items-center justify-center p-3 overflow-hidden">
+                <Image
+                  src={logoUrl as string}
+                  alt={`${project.title} logo`}
+                  width={100}
+                  height={100}
+                  className="object-contain w-full h-full"
+                />
+              </div>
             </div>
             <div className="flex flex-col">
               <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-4">
@@ -86,17 +88,6 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
             </div>
           </div>
 
-          {/* Manage DAO Button for Owner */}
-          {isOwner && (
-            <div className="flex flex-col gap-2 w-full md:w-auto mb-2">
-              <Link href={`/projects/${project.slug || project.id}/dao`} className="w-full">
-                <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors shadow-lg shadow-purple-900/20 border border-purple-500/50 text-sm md:text-base">
-                  <BuildingLibraryIcon className="w-4 h-4 md:w-5 md:h-5" />
-                  <span>Gestionar DAO</span>
-                </button>
-              </Link>
-            </div>
-          )}
         </div>
       </div>
     </div>

@@ -70,7 +70,14 @@ export function DeploymentConfigModal({
         DEFAULT_ARTIFACT(projectTitle, projectTitle.substring(0, 4).toUpperCase(), projectTotalTokens || 1000)
     ]);
     const [phases, setPhases] = useState<UtilityPhase[]>(DEFAULT_PHASES);
-    const [tokenomics, setTokenomics] = useState<TokenomicsConfig>(DEFAULT_TOKENOMICS);
+    const [tokenomics, setTokenomics] = useState<TokenomicsConfig>({
+        ...DEFAULT_TOKENOMICS,
+        totalSupply: projectTotalTokens || (DEFAULT_TOKENOMICS.totalSupply ?? 1000000),
+        teamAllocationBps: 1500, // 15% default
+        pandorasAllocationBps: 500, // 5% default
+        teamWallet: '',
+        pandorasWallet: '0x1e92270332F1BAa9c98679c44792997c1A33bD50', // Default Pandoras Treasury
+    });
     const [economicSchedule, setEconomicSchedule] = useState({
         phase1APY: 500,
         phase2APY: 1000,
@@ -148,20 +155,22 @@ export function DeploymentConfigModal({
 
     // ── Submit ────────────────────────────────────────────────────────
     const handleSubmit = () => {
-        const totalPhaseAlloc = phases.reduce((s, p) => s + (p.tokenAllocation || 0), 0);
         onConfirm({
-            artifacts,
             network,
             pageLayoutType,
+            artifacts: artifacts.map(a => ({ ...a, price: a.price.toString() })),
             phases,
-            tokenomics: { ...tokenomics, initialSupply: totalPhaseAlloc + (tokenomics.reserveSupply || 0) },
+            tokenomics: {
+                ...tokenomics,
+                initialSupply: tokenomics.totalSupply || 1000000,
+            },
             w2eConfig: economicSchedule,
         });
     };
 
     // ── Computed ───────────────────────────────────────────────────────
     const totalPhaseAllocation = phases.reduce((s, p) => s + (p.tokenAllocation || 0), 0);
-    const totalSupply = totalPhaseAllocation + (tokenomics.reserveSupply || 0);
+    const totalSupply = tokenomics.totalSupply || 1000000;
 
     const TABS = [
         { id: 'artifacts', label: '🔌 Artefactos V2', badge: artifacts.length },
@@ -609,58 +618,153 @@ export function DeploymentConfigModal({
 
                     {/* ── TAB: Economics ── */}
                     {activeTab === 'economics' && (
-                        <div className="space-y-4">
-                            <div>
-                                <h3 className="font-semibold text-white">Cronograma Económico (Pacto W2E)</h3>
-                                <p className="text-xs text-gray-400 mt-0.5 flex items-center">
-                                    Estos valores son inmutables post-deploy y solo modificables por la Autoridad Pandora.
-                                    <InfoTooltip title="¿Por qué son inmutables?">
-                                        <p>Los APY y el royalty se graban en el bytecode del contrato <strong className="text-indigo-300">W2ELoomV2</strong> en el momento del deploy.</p>
-                                        <p>Esto <strong className="text-emerald-300">protege al usuario final</strong>: el dueño del protocolo no puede cambiarlos unilateralmente después del lanzamiento.</p>
-                                        <p>Solo la <strong className="text-purple-300">Autoridad Pandora</strong> (vía Timelock + Governor) puede modificarlos, con un período de aviso previo.</p>
-                                    </InfoTooltip>
-                                </p>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {([{
-                                    key: 'phase1APY', label: 'APY Fase 1 (Base)', color: 'text-emerald-400',
-                                    info: { title: 'APY Fase 1 — Base', body: 'El rendimiento anual ofrecido a participantes en la fase temprana. Ej: 500 BPS = 5%. Es el APY más alto para recompensar a early adopters. Recomendado entre 500–2000 BPS.' }
-                                }, {
-                                    key: 'phase2APY', label: 'APY Fase 2 (Scale)', color: 'text-lime-400',
-                                    info: { title: 'APY Fase 2 — Scale', body: 'APY de la fase de expansión. Debe ser mayor al de Fase 1 para reflejar crecimiento del protocolo. Recomendado: 1.5×–2× el APY de Fase 1.' }
-                                }, {
-                                    key: 'phase3APY', label: 'APY Fase 3 (Mature)', color: 'text-yellow-400',
-                                    info: { title: 'APY Fase 3 — Mature', body: 'APY del estado maduro del protocolo (largo plazo). Debe ser sustentable económicamente. Demasiado alto en esta fase puede generar inflación. Recomendado: 1500–3000 BPS máx.' }
-                                }, {
-                                    key: 'royaltyBPS', label: 'Royalty (BPS)', color: 'text-purple-400',
-                                    info: { title: 'Royalty de Mercado Secundario', body: 'Porcentaje del precio de reventa que el protocolo recibe cuando un NFT se vende en mercados como OpenSea. Ej: 500 BPS = 5% de royalty. OpenSea y otros respetan royalties de hasta 10% (1000 BPS). Recomendado: 300–700 BPS.' }
-                                }] as const).map(item => (
-                                    <div key={item.key} className="p-4 bg-zinc-800/30 rounded-xl border border-zinc-700">
-                                        <label htmlFor={`econo-${item.key}`} className="text-xs text-gray-400 block mb-2 flex items-center">
-                                            {item.label}
-                                            <InfoTooltip title={item.info.title}>
-                                                <p>{item.info.body}</p>
-                                            </InfoTooltip>
-                                        </label>
-                                        <div className="flex items-center gap-3">
-                                            <input
-                                                id={`econo-${item.key}`}
-                                                type="number"
-                                                value={economicSchedule[item.key]}
-                                                onChange={e => setEconomicSchedule(prev => ({ ...prev, [item.key]: Number(e.target.value) }))}
-                                                className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white font-mono outline-none focus:border-indigo-500 transition-colors"
-                                            />
-                                            <span className="text-xs text-gray-500 w-8">BPS</span>
-                                        </div>
-                                        <p className={`text-sm font-bold mt-1.5 ${item.color}`}>
-                                            {(economicSchedule[item.key] / 100).toFixed(2)}%
-                                        </p>
+                        <div className="space-y-6">
+                            {/* Section 1: Tokenomics Allocations */}
+                            <div className="p-4 bg-zinc-800/20 border border-zinc-700/50 rounded-2xl space-y-4">
+                                <div>
+                                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                                        <StarIconSolid className="w-4 h-4 text-amber-400" />
+                                        Configuración de Tokenomics (Suministro 100%)
+                                    </h3>
+                                    <p className="text-[11px] text-gray-400 mt-1">
+                                        Define el suministro total y cómo se distribuye inicialmente on-chain.
+                                    </p>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[11px] text-gray-400 uppercase tracking-wider font-bold">Suministro Total (Cap)</label>
+                                        <input
+                                            type="number"
+                                            value={tokenomics.totalSupply}
+                                            onChange={e => setTokenomics(prev => ({ ...prev, totalSupply: Number(e.target.value) }))}
+                                            className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white font-mono outline-none focus:border-indigo-500"
+                                        />
                                     </div>
-                                ))}
+                                    <div className="space-y-1.5">
+                                        <label className="text-[11px] text-gray-400 uppercase tracking-wider font-bold">Precio Unitario Sugerido</label>
+                                        <div className="relative">
+                                            <input
+                                                type="number"
+                                                value={tokenomics.price}
+                                                onChange={e => setTokenomics(prev => ({ ...prev, price: Number(e.target.value) }))}
+                                                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg pl-3 pr-10 py-2 text-white font-mono outline-none focus:border-indigo-500"
+                                            />
+                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500">USD</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="p-3 bg-zinc-900/50 rounded-xl border border-zinc-700/50 space-y-3">
+                                        <label className="text-[11px] text-indigo-400 font-bold uppercase">Pandoras Allocation</label>
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="number"
+                                                value={(tokenomics.pandorasAllocationBps || 0) / 100}
+                                                onChange={e => setTokenomics(prev => ({ ...prev, pandorasAllocationBps: Number(e.target.value) * 100 }))}
+                                                className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-white font-mono text-sm"
+                                            />
+                                            <span className="text-xs text-gray-500">%</span>
+                                        </div>
+                                        <input
+                                            type="text"
+                                            placeholder="Wallet de Pandoras (0x...)"
+                                            value={tokenomics.pandorasWallet}
+                                            onChange={e => setTokenomics(prev => ({ ...prev, pandorasWallet: e.target.value }))}
+                                            className="w-full bg-zinc-900/50 border border-zinc-700/50 rounded-lg px-2 py-1.5 text-[10px] text-gray-400 font-mono"
+                                        />
+                                    </div>
+                                    <div className="p-3 bg-zinc-900/50 rounded-xl border border-zinc-700/50 space-y-3">
+                                        <label className="text-[11px] text-emerald-400 font-bold uppercase">Team Allocation</label>
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="number"
+                                                value={(tokenomics.teamAllocationBps || 0) / 100}
+                                                onChange={e => setTokenomics(prev => ({ ...prev, teamAllocationBps: Number(e.target.value) * 100 }))}
+                                                className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-white font-mono text-sm"
+                                            />
+                                            <span className="text-xs text-gray-500">%</span>
+                                        </div>
+                                        <input
+                                            type="text"
+                                            placeholder="Wallet del Equipo (0x...)"
+                                            value={tokenomics.teamWallet}
+                                            onChange={e => setTokenomics(prev => ({ ...prev, teamWallet: e.target.value }))}
+                                            className="w-full bg-zinc-900/50 border border-zinc-700/50 rounded-lg px-2 py-1.5 text-[10px] text-gray-400 font-mono"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Allocation Preview */}
+                                <div className="pt-2">
+                                    <p className="text-[10px] text-gray-500 uppercase font-bold mb-2">Resumen de Distribución</p>
+                                    <div className="space-y-1.5">
+                                        {[
+                                            { label: 'Pandoras', color: 'bg-indigo-500', bps: tokenomics.pandorasAllocationBps || 0 },
+                                            { label: 'Equipo', color: 'bg-emerald-500', bps: tokenomics.teamAllocationBps || 0 },
+                                            { label: 'Venta Pública', color: 'bg-zinc-600', bps: 10000 - (tokenomics.pandorasAllocationBps || 0) - (tokenomics.teamAllocationBps || 0) }
+                                        ].map(item => (
+                                            <div key={item.label} className="flex items-center justify-between text-xs">
+                                                <div className="flex items-center gap-2">
+                                                    <div className={`w-2 h-2 rounded-full ${item.color}`} />
+                                                    <span className="text-gray-400">{item.label}</span>
+                                                </div>
+                                                <div className="font-mono text-white">
+                                                    {(Math.floor((tokenomics.totalSupply || 0) * item.bps / 10000)).toLocaleString()} PHI
+                                                    <span className="text-gray-500 ml-2">({(item.bps / 100).toFixed(1)}%)</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
-                            <div className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl text-xs text-amber-200/70">
-                                <p className="font-bold text-amber-300 mb-1">💡 Acerca del Cronograma</p>
-                                <p>Los APY se almacenan en Basis Points (BPS). 1% = 100 BPS. Estos valores configuran los parámetros de `W2ELoomV2` en el momento del deploy y no pueden ser modificados por el cliente del protocolo.</p>
+
+                            {/* Section 2: APY Schedule */}
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-sm font-bold text-white">Cronograma Económico (APYs)</h3>
+                                    <div className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl text-[10px] text-amber-200/70 inline-block">
+                                        Valores inmutables post-deploy.
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {([{
+                                        key: 'phase1APY', label: 'APY Fase 1 (Base)', color: 'text-emerald-400',
+                                        info: { title: 'APY Fase 1 — Base', body: 'Rendimiento inicial para recompensar a early adopters. Recomendado: 500–2000 BPS (5-20%).' }
+                                    }, {
+                                        key: 'phase2APY', label: 'APY Fase 2 (Scale)', color: 'text-lime-400',
+                                        info: { title: 'APY Fase 2 — Scale', body: 'Rendimiento de expansión. Recomendado: 1.5×–2× el APY de Fase 1.' }
+                                    }, {
+                                        key: 'phase3APY', label: 'APY Fase 3 (Mature)', color: 'text-yellow-400',
+                                        info: { title: 'APY Fase 3 — Mature', body: 'Rendimiento sustentable a largo plazo. Recomendado: 1500–3000 BPS máx.' }
+                                    }, {
+                                        key: 'royaltyBPS', label: 'Royalty (BPS)', color: 'text-purple-400',
+                                        info: { title: 'Royalty de Mercado Secundario', body: 'Fee en reventas (OpenSea, etc). Recomendado: 300–700 BPS (3-7%).' }
+                                    }] as const).map(item => (
+                                        <div key={item.key} className="p-3 bg-zinc-800/30 rounded-xl border border-zinc-700">
+                                            <label htmlFor={`econo-${item.key}`} className="text-[10px] text-gray-400 block mb-2 flex items-center">
+                                                {item.label}
+                                                <InfoTooltip title={item.info.title}>
+                                                    <p>{item.info.body}</p>
+                                                </InfoTooltip>
+                                            </label>
+                                            <div className="flex items-center gap-3">
+                                                <input
+                                                    id={`econo-${item.key}`}
+                                                    type="number"
+                                                    value={economicSchedule[item.key]}
+                                                    onChange={e => setEconomicSchedule(prev => ({ ...prev, [item.key]: Number(e.target.value) }))}
+                                                    className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-white font-mono text-sm outline-none focus:border-indigo-500 transition-colors"
+                                                />
+                                                <span className="text-[10px] text-gray-500 w-8">BPS</span>
+                                            </div>
+                                            <p className={`text-xs font-bold mt-1.5 ${item.color}`}>
+                                                {(economicSchedule[item.key] / 100).toFixed(2)}%
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     )}
