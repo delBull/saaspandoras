@@ -2,13 +2,15 @@
 # Prevent unnecessary build triggers by ignoring files that don't affect the build
 
 # Documentation
-DOCUMENTACIÓN/
-docs/
+/DOCUMENTACIÓN/
+/docs/
+
 *.md
 !README.md
 
 # Scripts & Data
-scripts/
+/scripts/
+
 cache/
 # Configuration
 !**/*.json
