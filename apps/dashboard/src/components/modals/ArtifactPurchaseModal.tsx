@@ -40,18 +40,28 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
         address: account?.address,
     });
 
-    // License Price is usually in Wei or Native Token
-    const price = phase?.tokenPrice || 0;
-
     // Robust contract address resolution
+    const artifactAddress = phase?.artifactAddress;
     const resolvedLicenseAddress = 
         project.licenseContractAddress || 
         project.w2eConfig?.licenseToken?.address || 
         (project as any).contractAddress || 
         project.utilityContractAddress || 
         undefined;
+    
+    const targetAddress = artifactAddress || utilityContract?.address || resolvedLicenseAddress;
 
-    const totalCost = Number(amount) * Number(price);
+    // Read Price from Contract to ensure accuracy (Fallback to DB price if read fails)
+    const { data: contractPrice } = useReadContract({
+        contract: getContract({ client, chain, address: targetAddress || "0x0000000000000000000000000000000000000000" }),
+        method: "function licensePrice() view returns (uint256)",
+        params: [],
+        queryOptions: { enabled: !!targetAddress && targetAddress !== "0x0000000000000000000000000000000000000000" }
+    });
+
+    const price = phase?.tokenPrice || 0;
+    const effectivePriceInWei = contractPrice !== undefined ? BigInt(contractPrice) : BigInt(Math.round(Number(price) * 1e18));
+    const totalCost = Number(amount) * (contractPrice !== undefined ? Number(effectivePriceInWei) / 1e18 : Number(price));
 
     const handleSuccess = async () => {
         // Track Gamification Event
@@ -259,14 +269,19 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                                                     const rawChainId = Number((project as any).chainId);
                                                     const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
 
-                                                    // Prepare Contract
-                                                    const targetAddress = utilityContract?.address || resolvedLicenseAddress;
+                                                    // 1. Priority 1: Specific Artifact Address from the Phase (V2)
+                                                    // 2. Priority 2: Utility Contract Address (Passed from parent)
+                                                    // 3. Priority 3: Resolved License Address (Fallback)
+                                                    const targetAddress = phase?.artifactAddress || utilityContract?.address || resolvedLicenseAddress;
                                                     
                                                     console.group("🚀 Preparing Artifact Purchase");
                                                     console.log("Protocol:", project.slug);
                                                     console.log("Phase:", phase?.name);
+                                                    console.log("Artifact Address:", phase?.artifactAddress);
+                                                    console.log("Utility Address:", utilityContract?.address);
+                                                    console.log("Resolved License:", resolvedLicenseAddress);
+                                                    console.log("FINAL Target Contract:", targetAddress);
                                                     console.log("Chain ID:", safeChainId);
-                                                    console.log("Target Contract:", targetAddress);
                                                     console.log("Account:", account?.address);
                                                     
                                                     const targetContract = getContract({
@@ -276,13 +291,13 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                                                     });
 
                                                     const quantity = BigInt(Math.floor(Number(amount)));
-                                                    const priceInWei = BigInt(Math.round(Number(price) * 1e18));
-                                                    const costInWei = priceInWei * quantity;
+                                                    const costInWei = effectivePriceInWei * quantity;
 
                                                     console.log("Input Amount:", amount);
                                                     console.log("Parsed Quantity (BigInt):", quantity.toString());
-                                                    console.log("Price per unit:", price);
-                                                    console.log("Price in Wei (BigInt):", priceInWei.toString());
+                                                    console.log("Price (DB):", price);
+                                                    console.log("Price (Contract):", contractPrice?.toString());
+                                                    console.log("Effective Price in Wei:", effectivePriceInWei.toString());
                                                     console.log("Total Cost in Wei (BigInt):", costInWei.toString());
                                                     console.groupEnd();
 

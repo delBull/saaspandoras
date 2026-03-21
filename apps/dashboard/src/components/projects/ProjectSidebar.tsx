@@ -133,9 +133,12 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
       // 2. If V2, check artifacts for phases
       if (phases.length === 0 && project.artifacts?.length) {
         // Collect phases from all artifacts (V2 modular approach)
-        // Usually, the primary artifact has the phases the user configured in the modal
+        // Ensure each phase knows which contract address it belongs to
         const artifactPhases = project.artifacts
-          .flatMap((a: any) => a.phases || [])
+          .flatMap((a: any) => (a.phases || []).map((p: any) => ({
+            ...p,
+            artifactAddress: a.address || a.contractAddress // Handle both possible field names
+          })))
           .filter((p: any) => p?.name);
 
         if (artifactPhases.length > 0) {
@@ -261,26 +264,25 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
               )}
 
               {/* Goal and Status Tags */}
-              <div className="flex flex-wrap justify-center gap-2 mb-6 relative z-10">
-                <div className="bg-zinc-800/80 border border-white/5 px-3 py-1.5 rounded-lg flex flex-col items-center gap-0.5 min-w-[100px]">
-                  <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold">Objetivo</span>
-                  <span className="text-sm font-bold text-white">${targetAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: (targetAmount < 1 ? 4 : 0) })} USD</span>
-                </div>
-                <div className="bg-zinc-800/80 border border-white/5 px-3 py-1.5 rounded-lg flex flex-col items-center gap-0.5 min-w-[100px]">
-                  <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold">Estado</span>
-                  <span className="text-sm font-bold text-white flex items-center gap-1.5">
-                    {isDeployed ? (
-                      <>
-                        <span className="w-1.5 h-1.5 rounded-full bg-lime-400 animate-pulse" />
-                        Activo
-                      </>
-                    ) : (
-                      <>
-                        <span className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
-                        Espera
-                      </>
-                    )}
-                  </span>
+              <div className="flex flex-col items-center gap-3 mb-6 relative z-10 w-full px-4">
+                <div className="bg-zinc-900/60 border border-white/10 px-4 py-3 rounded-2xl flex items-center justify-between gap-4 w-full shadow-lg">
+                  <div className="flex flex-col items-start gap-0.5">
+                    <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-black">Objetivo</span>
+                    <span className="text-sm font-bold text-white tracking-tight">
+                      ${targetAmount.toLocaleString(undefined, { 
+                        minimumFractionDigits: 0, 
+                        maximumFractionDigits: (targetAmount < 1 ? 4 : 0) 
+                      })} USD
+                    </span>
+                  </div>
+                  <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                    isDeployed 
+                    ? 'bg-lime-500/10 text-lime-400 border border-lime-500/20' 
+                    : 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
+                  }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${isDeployed ? 'bg-lime-400 animate-pulse' : 'bg-yellow-400'}`} />
+                    {isDeployed ? 'Activo' : 'Espera'}
+                  </div>
                 </div>
               </div>
 
