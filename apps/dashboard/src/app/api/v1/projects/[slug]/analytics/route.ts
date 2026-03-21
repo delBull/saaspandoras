@@ -4,16 +4,27 @@ import { projects } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { IntegrationKeyService } from '@/lib/integrations/auth';
 import { calculatePhaseStats, fetchProjectOnChainData } from '@/lib/projects/stats';
+import { unstable_cache } from 'next/cache';
 
-export const dynamic = 'force-dynamic';
+// Cache project data and analytics for 60 seconds to prevent RPC bottlenecks
+const getCachedProjectAnalytics = unstable_cache(
+    async (project: any) => {
+        const onChainData = await fetchProjectOnChainData(project);
+        const phasesWithStats = calculatePhaseStats(
+            project,
+            onChainData.totalSupply
+        );
+        return { onChainData, phasesWithStats };
+    },
+    ['project-analytics'],
+    { revalidate: 60, tags: ['analytics'] }
+);
 
 /**
  * GET /api/v1/projects/[slug]/analytics
  * 
  * Public endpoint for Growth OS Widget and external integrations.
- * Returns real-time phase progress and project metrics.
- * 
- * Header: x-api-key - Validated against integration_clients
+ * Returns cached (60s) phase progress and project metrics.
  */
 export async function GET(
     req: NextRequest,
@@ -33,13 +44,13 @@ export async function GET(
 
         const { slug } = await params;
 
-        // 2. Resolve Project
-        const projectId = Number(slug);
-        const isId = !isNaN(projectId);
+        // 2. Resolve Project (Prioritize ID as source of truth)
+        const projectIdFromSlug = Number(slug);
+        const isId = !isNaN(projectIdFromSlug);
 
         const projectResult = await db.query.projects.findFirst({
             where: and(
-                isId ? eq(projects.id, projectId) : eq(projects.slug, slug),
+                isId ? eq(projects.id, projectIdFromSlug) : eq(projects.slug, slug),
                 eq(projects.isDeleted, false)
             )
         });
@@ -48,23 +59,15 @@ export async function GET(
             return NextResponse.json({ error: 'Project not found' }, { status: 404 });
         }
 
-        // 3. Security: Check if API Key belongs to this project OR is a global/admin key
-        // Note: IntegrationKeyService.validateKey returns the client. 
-        // We should check if clientAuth.projectId matches projectResult.id if it's not a platform key.
+        // 3. Security: Scope API Key to specific project
         if (clientAuth.projectId && clientAuth.projectId !== projectResult.id) {
             return NextResponse.json({ error: 'API Key does not have access to this project' }, { status: 403 });
         }
 
-        // 4. Fetch On-Chain Data (Real-time Supply)
-        const onChainData = await fetchProjectOnChainData(projectResult);
+        // 4. Fetch Analytics (Cached)
+        const { onChainData, phasesWithStats } = await getCachedProjectAnalytics(projectResult);
 
-        // 5. Calculate Phase Stats
-        const phasesWithStats = calculatePhaseStats(
-            projectResult,
-            onChainData.totalSupply
-        );
-
-        // 6. Format Response
+        // 5. Format Response
         const analytics = {
             success: true,
             project: {
@@ -98,6 +101,7 @@ export async function GET(
                 "Access-Control-Allow-Methods": "GET, OPTIONS",
                 "Access-Control-Allow-Headers": "Content-Type, x-api-key",
                 "Access-Control-Allow-Credentials": "true",
+                "Cache-Control": "public, s-maxage=60, stale-while-revalidate=30"
             }
         });
 
@@ -105,7 +109,7 @@ export async function GET(
         console.error('❌ Project Analytics API Error:', error);
         return NextResponse.json({ 
             error: 'Internal Server Error',
-            message: error instanceof Error ? error.message : 'Unknown'
+            message: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : 'Unknown') : undefined
         }, { status: 500 });
     }
 }
