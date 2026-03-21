@@ -254,13 +254,21 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                                             </button>
                                         ) : (
                                             <TransactionButton
-                                                transaction={() => {
+                                                transaction={async () => {
                                                     // Determine Chain
                                                     const rawChainId = Number((project as any).chainId);
                                                     const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
 
                                                     // Prepare Contract
                                                     const targetAddress = utilityContract?.address || resolvedLicenseAddress;
+                                                    
+                                                    console.group("🚀 Preparing Artifact Purchase");
+                                                    console.log("Protocol:", project.slug);
+                                                    console.log("Phase:", phase?.name);
+                                                    console.log("Chain ID:", safeChainId);
+                                                    console.log("Target Contract:", targetAddress);
+                                                    console.log("Account:", account?.address);
+                                                    
                                                     const targetContract = getContract({
                                                         client,
                                                         chain: defineChain(safeChainId),
@@ -268,9 +276,15 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                                                     });
 
                                                     const quantity = BigInt(Math.floor(Number(amount)));
-                                                    // Use more precise BigInt math to avoid float issues causing reverts
                                                     const priceInWei = BigInt(Math.round(Number(price) * 1e18));
                                                     const costInWei = priceInWei * quantity;
+
+                                                    console.log("Input Amount:", amount);
+                                                    console.log("Parsed Quantity (BigInt):", quantity.toString());
+                                                    console.log("Price per unit:", price);
+                                                    console.log("Price in Wei (BigInt):", priceInWei.toString());
+                                                    console.log("Total Cost in Wei (BigInt):", costInWei.toString());
+                                                    console.groupEnd();
 
                                                     return prepareContractCall({
                                                         contract: targetContract,
