@@ -192,14 +192,14 @@ export default function ProtocolMarketPage({ params }: { params: Promise<{ id: s
                                         <span className="text-gray-400 text-sm">Sale Price</span>
                                         <span className="text-xl font-black">${parseFloat(selectedListing.price).toFixed(2)}</span>
                                     </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-gray-400 text-sm">Network Fee {(parseFloat(config.feeRate) * 100).toFixed(1)}%</span>
-                                        <span className="text-sm font-mono text-gray-400">+${(parseFloat(selectedListing.price) * parseFloat(config.feeRate)).toFixed(2)}</span>
+                                    <div className="flex justify-between items-center text-sm">
+                                        <span className="text-gray-400">Network Fee {(parseFloat(config?.feeRate || '0') * 100).toFixed(1)}%</span>
+                                        <span className="text-sm font-mono text-gray-400">+${(parseFloat(selectedListing.price) * parseFloat(config?.feeRate || '0')).toFixed(2)}</span>
                                     </div>
                                     <div className="h-px bg-white/10" />
                                     <div className="flex justify-between items-center text-lg font-black">
                                         <span>Total Payout</span>
-                                        <span className="text-purple-500">${(parseFloat(selectedListing.price) * (1 + parseFloat(config.feeRate))).toFixed(2)}</span>
+                                        <span className="text-purple-500">${(parseFloat(selectedListing.price) * (1 + parseFloat(config?.feeRate || '0'))).toFixed(2)}</span>
                                     </div>
                                 </div>
 

@@ -51,12 +51,13 @@ import { config } from "@/config";
 
 // Format Helper
 const formatCurrency = (amount: number | string) => {
+  const num = Number(amount);
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(Number(amount));
+    minimumFractionDigits: num < 1 ? 4 : 0,
+    maximumFractionDigits: num < 1 ? 4 : 2,
+  }).format(num);
 };
 import SectionCard from "./SectionCard";
 

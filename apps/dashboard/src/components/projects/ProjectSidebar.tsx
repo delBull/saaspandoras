@@ -260,8 +260,11 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
                 </div>
               ) : (
                 <div className="text-3xl font-bold text-white mb-2">
-                  <span>${raisedAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
-
+                  {price === 0 ? (
+                    <span>{currentSupply} / {maxSupply > 0 ? maxSupply.toLocaleString() : '∞'}</span>
+                  ) : (
+                    <span>${raisedAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: (raisedAmount < 1 ? 4 : 2) })}</span>
+                  )}
                 </div>
               )}
 
@@ -275,7 +278,7 @@ export default function ProjectSidebar({ project, targetAmount }: ProjectSidebar
               )}
 
               <div className="flex justify-between text-sm mb-6">
-                <span className="text-zinc-400">Objetivo: ${targetAmount.toLocaleString()} USD</span>
+                <span className="text-zinc-400">Objetivo: ${targetAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: (targetAmount < 1 ? 4 : 0) })} USD</span>
                 <span className="text-zinc-400">Estado: {isDeployed ? '🟢 Activo' : '🟡 Espera'}</span>
               </div>
 
