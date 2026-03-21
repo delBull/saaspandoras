@@ -3,5 +3,5 @@
   "framework": "nextjs",
   "buildCommand": "bun run build",
   "installCommand": "bun install",
-  "ignoreCommand": "npx turbo-ignore @saasfly/nextjs"
+  "ignoreCommand": "npx turbo-ignore"
 }

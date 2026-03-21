@@ -22,10 +22,21 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     const userIsAdmin = await isAdmin(session?.userId) || await isAdmin(session?.address);
 
     const { slug } = await params;
-    const project = await db.query.projects.findFirst({
-        where: eq(projectsSchema.slug, slug),
-        columns: { id: true, applicantWalletAddress: true }
-    });
+    const projectIdRaw = Number(slug);
+    const isId = !isNaN(projectIdRaw);
+
+    let project;
+    if (isId) {
+        project = await db.query.projects.findFirst({
+            where: eq(projectsSchema.id, projectIdRaw),
+            columns: { id: true, applicantWalletAddress: true }
+        });
+    } else {
+        project = await db.query.projects.findFirst({
+            where: eq(projectsSchema.slug, slug),
+            columns: { id: true, applicantWalletAddress: true }
+        });
+    }
 
     if (!project) {
         return NextResponse.json({ message: "Proyecto no encontrado" }, { status: 404 });
@@ -72,10 +83,21 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
         const userIsAdmin = await isAdmin(session?.userId) || await isAdmin(session?.address);
     
         const { slug } = await params;
-        const project = await db.query.projects.findFirst({
-            where: eq(projectsSchema.slug, slug),
-            columns: { id: true, title: true, applicantWalletAddress: true }
-        });
+        const projectIdRaw = Number(slug);
+        const isId = !isNaN(projectIdRaw);
+    
+        let project;
+        if (isId) {
+            project = await db.query.projects.findFirst({
+                where: eq(projectsSchema.id, projectIdRaw),
+                columns: { id: true, title: true, applicantWalletAddress: true }
+            });
+        } else {
+            project = await db.query.projects.findFirst({
+                where: eq(projectsSchema.slug, slug),
+                columns: { id: true, title: true, applicantWalletAddress: true }
+            });
+        }
     
         if (!project) {
             return NextResponse.json({ message: "Proyecto no encontrado" }, { status: 404 });

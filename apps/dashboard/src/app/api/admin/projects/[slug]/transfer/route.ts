@@ -9,7 +9,7 @@ import { db } from "~/db";
 // const db = drizzle(client, { schema: { projects: projectsSchema } });
 import { isAdmin } from "@/lib/auth";
 import { headers } from "next/headers";
-import { sql } from "drizzle-orm";
+import { sql, eq } from "drizzle-orm";
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
 export const runtime = "nodejs";
@@ -56,11 +56,24 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     console.log('🔄 TRANSFER: Step 5 - Getting params');
     const { slug } = await params;
-    const projectId = Number(slug);
+    const projectIdRaw = Number(slug);
+    const isId = !isNaN(projectIdRaw);
 
-    if (isNaN(projectId)) {
-      return NextResponse.json({ message: "ID de proyecto inválido" }, { status: 400 });
+    let projectId = projectIdRaw;
+
+    if (!isId) {
+      console.log('🔄 TRANSFER: Slug provided instead of ID, looking up project:', slug);
+      const project = await db.query.projects.findFirst({
+        where: eq(sql`slug`, slug),
+        columns: { id: true }
+      });
+      if (!project) {
+        return NextResponse.json({ message: "Proyecto no encontrado" }, { status: 404 });
+      }
+      projectId = project.id;
     }
+
+    console.log('🔄 TRANSFER: Target Project ID:', projectId);
 
     console.log('🔄 TRANSFER: Step 6 - Parsing body');
     const body: unknown = await request.json();

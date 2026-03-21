@@ -687,6 +687,7 @@ export function ProjectTableView({
         onConfirm={handleConfigConfirm}
         projectTitle={selectedProjectForDeployment?.title || ''}
         projectSlug={selectedProjectForDeployment?.slug}
+        applicantWalletAddress={projects.find(p => p.id === selectedProjectForDeployment?.id)?.applicantWalletAddress}
         projectTotalTokens={projects.find(p => p.id === selectedProjectForDeployment?.id)?.totalTokens ?? undefined}
         isLoading={false}
       />

@@ -77,6 +77,10 @@ const nextConfig = {
   async rewrites() {
     return [
       {
+        source: "/api/v1/widget/v1.js",
+        destination: "/scripts/growth-widget.v1.js",
+      },
+      {
         source: "/auth/:path*",
         destination: `${process.env.NEXT_PUBLIC_API_URL || "https://api.pandoras.finance"}/auth/:path*`,
       },

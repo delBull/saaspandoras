@@ -43,8 +43,9 @@ import {
 } from "lucide-react";
 import { UserGovernanceList } from "../user/UserGovernanceList";
 import type { ProjectData } from "@/app/()/projects/types";
-import { getContract, defineChain } from "thirdweb";
+import { defineChain, getContract, readContract, resolveMethod } from "thirdweb";
 import { useReadContract, useWalletBalance } from "thirdweb/react";
+import { getTargetAmount } from "@/lib/project-utils";
 import { client } from "@/lib/thirdweb-client";
 import { config } from "@/config";
 
@@ -148,7 +149,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
   });
 
   const fundsRaised = treasuryBalance ? Number(treasuryBalance.displayValue) : 0;
-  const targetAmount = Number(project.target_amount) || 100000;
+  const targetAmount = getTargetAmount(project);
   const progressPercent = Math.min((fundsRaised / targetAmount) * 100, 100);
 
   // Fallback contract to fix TS error when licenseContract is undefined
@@ -228,7 +229,7 @@ export default function ProjectContentTabs({ project }: ProjectContentTabsProps)
     const phaseStartTokens = accumulatedTokens;
     const currentPhaseRaisedTokens = Math.max(0, Math.min(allocation, totalSupply - phaseStartTokens));
 
-    stats.participants = currentPhaseRaisedTokens;
+    // stats.participants = currentPhaseRaisedTokens; // Removed: inaccurate mapping of tokens to participants
 
     if (price === 0) {
       // Free Mint -> Track by Tokens

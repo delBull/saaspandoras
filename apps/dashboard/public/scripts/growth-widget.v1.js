@@ -21,7 +21,20 @@
     const successUrl = script.getAttribute('data-success-url');
     
     // Config
-    const BASE_URL = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://pandoras.app';
+    // Use the script source itself to determine the base URL (Staging vs Prod)
+    const getBaseUrl = () => {
+        try {
+            if (script && script.src) {
+                const url = new URL(script.src);
+                return `${url.protocol}//${url.host}`;
+            }
+        } catch (e) {
+            console.warn('[Pandoras] Failed to detect script origin, using fallbacks');
+        }
+        return window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://dash.pandoras.finance';
+    };
+
+    const BASE_URL = getBaseUrl();
     const API_ENDPOINT = `${BASE_URL}/api/v1/marketing`;
     
     // State

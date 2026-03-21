@@ -53,6 +53,7 @@ interface DeploymentConfigModalProps {
     projectTitle: string;
     projectTotalTokens?: number;
     projectSlug?: string;
+    applicantWalletAddress?: string;
     isLoading?: boolean;
 }
 
@@ -62,6 +63,7 @@ export function DeploymentConfigModal({
     onConfirm,
     projectTitle,
     projectTotalTokens,
+    applicantWalletAddress,
     isLoading = false
 }: DeploymentConfigModalProps) {
     const [network, setNetwork] = useState<NetworkType>('sepolia');
@@ -75,8 +77,8 @@ export function DeploymentConfigModal({
         totalSupply: projectTotalTokens || (DEFAULT_TOKENOMICS.totalSupply ?? 1000000),
         teamAllocationBps: 1500, // 15% default
         pandorasAllocationBps: 500, // 5% default
-        teamWallet: '',
-        pandorasWallet: '0x1e92270332F1BAa9c98679c44792997c1A33bD50', // Default Pandoras Treasury
+        teamWallet: applicantWalletAddress || '',
+        pandorasWallet: '0xDEEb671dEda720a75B07E9874e4371c194e38919', // Default Pandoras Treasury
     });
     const [economicSchedule, setEconomicSchedule] = useState({
         phase1APY: 500,
