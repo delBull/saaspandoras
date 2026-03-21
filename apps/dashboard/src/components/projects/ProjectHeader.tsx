@@ -7,6 +7,7 @@ import { BuildingLibraryIcon } from "@heroicons/react/24/outline";
 import { useActiveAccount } from "thirdweb/react";
 import { useRouter } from "next/navigation";
 import type { ProjectData } from "@/app/()/projects/types";
+import { StatusTag } from "./ProjectStatusIndicators";
 
 interface ProjectHeaderProps {
   project: ProjectData;
@@ -74,7 +75,10 @@ export default function ProjectHeader({ project, onVideoClick }: ProjectHeaderPr
               />
             </div>
             <div className="flex flex-col">
-              <h1 className="text-2xl md:text-4xl font-bold text-white leading-tight">{project.title}</h1>
+              <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-4">
+                <h1 className="text-2xl md:text-4xl font-bold text-white leading-tight">{project.title}</h1>
+                <StatusTag status={project.status} />
+              </div>
               <p className="text-sm md:text-xl text-lime-400 mt-1">{tagline as string}</p>
               <div className="mt-1 text-[10px] md:text-sm text-zinc-400">
                 {businessCategory ? businessCategory.toUpperCase().replace(/_/g, ' ') : 'Sin Categoría'}
