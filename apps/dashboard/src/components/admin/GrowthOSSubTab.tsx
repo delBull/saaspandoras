@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Badge } from "@/components/ui/badge";
+import { cn, getDashboardDomain } from "@/lib/utils"
 import { Zap, Globe, ShieldCheck, TrendingUp, Info, HelpCircle, BookOpen, ChevronDown, ChevronUp, UserCheck, Sparkles, Lightbulb, Target, RefreshCw, X } from "lucide-react";
 import {
   Tooltip,
@@ -875,17 +876,18 @@ export default function GrowthOSSubTab() {
                         )}
                       </div>
                       <div className="bg-zinc-950 rounded-xl p-3 border border-zinc-800 font-mono text-[10px] text-zinc-400 break-all relative group/code">
+                        Code:
                         <code>
                           {loadingKey ? (
                             <span className="animate-pulse">Cargando configuración...</span>
                           ) : (
-                            `<script \n  src="https://dashboard.pandoras.finance/api/v1/widget/v1.js" \n  data-project-id="${selectedProjectId === 'all' ? 'external' : (projects.find(p => p.id === Number(selectedProjectId))?.slug || selectedProjectId)}" \n  data-api-key="${apiKey}" \n  defer\n></script>`
+                            `<script \n  src="https://${getDashboardDomain()}/api/v1/widget/v1.js" \n  data-project-id="${selectedProjectId === 'all' ? 'external' : (projects.find(p => p.id === Number(selectedProjectId))?.slug || selectedProjectId)}" \n  data-api-key="${apiKey}" \n  defer\n></script>`
                           )}
                         </code>
                         <button 
                           onClick={() => {
                             const projectSlug = selectedProjectId === 'all' ? 'external' : (projects.find(p => p.id === Number(selectedProjectId))?.slug || selectedProjectId);
-                            const code = `<script src="https://dashboard.pandoras.finance/api/v1/widget/v1.js" data-project-id="${projectSlug}" data-api-key="${apiKey}" defer></script>`;
+                            const code = `<script src="https://${getDashboardDomain()}/api/v1/widget/v1.js" data-project-id="${projectSlug}" data-api-key="${apiKey}" defer></script>`;
                             navigator.clipboard.writeText(code);
                             setCopied(true);
                             setTimeout(() => setCopied(false), 2000);
@@ -1023,10 +1025,10 @@ export default function GrowthOSSubTab() {
                             </p>
                             <div className="bg-zinc-950 rounded-xl p-3 border border-zinc-800 font-mono text-[9px] text-zinc-500 relative group/global">
                                 <code>
-                                    {`<script src="..." data-project-id="external" data-api-key="${apiKey}"></script>`}
+                                    {`<script src="https://${getDashboardDomain()}/api/v1/widget/v1.js" data-project-id="external" data-api-key="${apiKey}"></script>`}
                                 </code>
                                 <button 
-                                    onClick={() => navigator.clipboard.writeText(`<script src="https://pandoras.app/widget.js" data-project-id="external" data-api-key="${apiKey}" data-color="#7c3aed"></script>`)}
+                                    onClick={() => navigator.clipboard.writeText(`<script src="https://${getDashboardDomain()}/api/v1/widget/v1.js" data-project-id="external" data-api-key="${apiKey}" data-color="#7c3aed"></script>`)}
                                     className="absolute top-2 right-2 p-1.5 bg-zinc-900 border border-zinc-700 rounded text-[9px] opacity-0 group-hover/global:opacity-100 hover:text-white"
                                 >
                                     Copiar Global
