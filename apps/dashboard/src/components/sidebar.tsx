@@ -343,7 +343,7 @@ export function Sidebar({
     ];
 
     // Projects link - only show for admins or applicants with projects
-    const projectsItem = (isAdmin || (userProfile?.role === 'applicant' && userProfile?.projectCount > 0)) ? [{
+    const projectsItem = (isAdmin || (userProfile?.role === 'applicant' && (userProfile?.projectCount ?? 0) > 0)) ? [{
       href: "/profile/projects",
       icon: <FolderIcon className="w-5 h-5 text-gray-400" />,
       label: "Tus Protocolos",
