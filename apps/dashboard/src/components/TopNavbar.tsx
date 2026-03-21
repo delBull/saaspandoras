@@ -472,7 +472,7 @@ export function TopNavbar({
                 </div>
               </Link>
 
-              {(adminStatus.verified ? (adminStatus.isAdmin || adminStatus.isSuperAdmin) : (isAdminProp ?? isSuperAdminProp) ??
+              {((adminStatus.verified ? (adminStatus.isAdmin || adminStatus.isSuperAdmin) : (isAdminProp ?? isSuperAdminProp)) ||
                 (userProfile?.role === 'applicant' && (userProfile?.projectCount ?? 0) > 0)) && (
                   <Link
                     href="/profile/projects"
