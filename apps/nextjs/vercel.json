@@ -1,7 +1,7 @@
 {
   "version": 2,
   "framework": "nextjs",
-  "buildCommand": "bun run build",
+  "buildCommand": "turbo run build --filter=@saasfly/nextjs",
   "installCommand": "bun install",
-  "ignoreCommand": "npx turbo-ignore"
+  "ignoreCommand": "npx turbo-ignore @saasfly/nextjs"
 }
