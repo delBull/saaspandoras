@@ -10,11 +10,9 @@ docs/
 # Scripts & Data
 scripts/
 cache/
-*.json
-!package.json
-!tsconfig.json
-!turbo.json
-!vercel.json
+# Configuration
+!**/*.json
+
 
 # Local / Temp
 .temp/
