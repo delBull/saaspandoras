@@ -38,7 +38,8 @@ export async function resolveArtifactPrice({
   }
 
   // 3. Static Fallback from Phase/Project data
-  const decimals = chainId === 8453 ? 1e6 : 1e18;
+  const isBase = chainId === 8453 || chainId === 84532;
+  const decimals = isBase ? 1e6 : 1e18;
   return {
     price: BigInt(Math.round((fallbackPrice || 0) * decimals)),
     source: 'fallback'
