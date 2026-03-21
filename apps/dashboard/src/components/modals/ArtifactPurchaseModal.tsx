@@ -207,7 +207,6 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                                     </div>
                                     <div className="h-px bg-white/5" />
                                     <div className="flex justify-between items-center text-sm">
-                                        <span className="text-gray-400">Total a Pagar</span>
                                         <span className="text-lime-400 font-bold font-mono text-lg">{totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })} {safeChainId === 8453 ? 'USDC' : 'ETH'}</span>
                                     </div>
                                     
@@ -308,7 +307,7 @@ export default function ArtifactPurchaseModal({ isOpen, onClose, project, utilit
                                                     const rawChainId = Number((project as any).chainId);
                                                     const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
                                                     const isBase = safeChainId === 8453;
-                                                    return `Adquirir Ahora (${totalCost.toFixed(4)} ${isBase ? 'USDC' : 'ETH'})`;
+                                                    return `Adquirir Ahora (${totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })} ${isBase ? 'USDC' : 'ETH'})`;
                                                 })()}
                                             </TransactionButton>
                                         )
