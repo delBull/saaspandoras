@@ -3,10 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "exports": {
-    ".": "./index.ts"
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
   },
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "clean": "rm -rf .turbo node_modules",
     "lint": "eslint .",
@@ -14,7 +18,9 @@
     "db:generate": "prisma generate",
     "db:push": "bun with-env prisma db push --skip-generate",
     "typecheck": "tsc --noEmit",
-    "with-env": "dotenv -e ../../.env.local --"
+    "with-env": "dotenv -e ../../.env.local --",
+    "build": "tsup index.ts --format esm,cjs --dts --clean",
+    "dev": "tsup index.ts --format esm,cjs --watch"
   },
   "dependencies": {
     "kysely": "0.27.3",
@@ -24,12 +30,13 @@
     "@saasfly/eslint-config": "workspace:*",
     "@saasfly/prettier-config": "workspace:*",
     "@saasfly/typescript-config": "workspace:*",
+    "@types/pg": "8.11.0",
     "dotenv-cli": "7.3.0",
     "eslint": "8.57.0",
     "prettier": "3.2.5",
     "prisma": "5.9.1",
     "prisma-kysely": "1.7.1",
-    "@types/pg": "8.11.0",
+    "tsup": "^8.5.1",
     "typescript": "5.4.5"
   },
   "eslintConfig": {
@@ -41,5 +48,6 @@
       "@typescript-eslint/consistent-type-definitions": "off"
     }
   },
-  "prettier": "@saasfly/prettier-config"
+  "prettier": "@saasfly/prettier-config",
+  "module": "./dist/index.mjs"
 }

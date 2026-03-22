@@ -44,7 +44,6 @@ const nextConfig = {
 
   transpilePackages: [
     "@pandoras/core-webhooks",
-    "@saasfly/ui",
     "react-markdown",
     "remark-gfm",
     "rehype-highlight",
